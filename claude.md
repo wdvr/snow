@@ -1,0 +1,126 @@
+# Claude Working Instructions - Snow Quality Tracker
+
+## Project Overview
+This is a snow quality tracking application for ski resorts, focusing on Canada and US initially. The app tracks snow conditions by analyzing weather data at different elevations (base, mid, top) and estimates fresh powder that hasn't turned to ice based on temperature patterns.
+
+## Tech Stack
+
+### Frontend (iOS)
+- **Language**: Swift 6
+- **UI Framework**: SwiftUI
+- **IDE**: Xcode 26
+- **Target**: iOS app compatible with Mac and iPhone
+- **Authentication**: Sign in with Apple
+
+### Backend (AWS)
+- **Language**: Python
+- **Infrastructure**: AWS (API Gateway, Lambda, DynamoDB)
+- **Deployment**: Lambda OR EKS/Fargate (TBD)
+- **Infrastructure as Code**: Pulumi
+- **Database**: DynamoDB
+
+### Development Workflow
+- **Version Control**: Git with GitHub (private repository)
+- **Workflow**: Pull Request based development
+- **Permissions**: Use dangerously disable sandbox after initial setup
+
+## iOS Development Tools & Setup (2026)
+
+### Modern iOS Development Stack
+- **Xcode 26**: 35% faster build times, AI-powered code assistance, instant SwiftUI previews
+- **Swift 6**: Enhanced performance, reduced boilerplate with macros, better type checking
+- **SwiftUI**: Declarative UI with live previews, new container views, material-aware animations
+- **Core ML**: For potential AI/ML features
+- **Combine**: Reactive programming for handling asynchronous events
+- **SwiftData**: Modern replacement for CoreData
+
+### Key Features in Xcode 26
+- Instant SwiftUI previews that behave like real app
+- Timeline view for tracing async operations
+- AI code assistant integration
+- Enhanced debugging tools
+- Live render previews
+
+### Best Practices
+- Use native Swift/SwiftUI for maximum performance
+- Implement proper testing (unit, integration, UI tests)
+- Follow accessibility guidelines (VoiceOver, Dynamic Type, high contrast)
+- Leverage async/await for API calls
+- Use MVVM or similar architecture pattern
+
+## Environment Setup
+
+### Required Files
+- `.env` - AWS credentials and configuration
+- `.gitignore` - Standard Swift/Python ignores plus AWS secrets
+- `Pulumi.yaml` - Infrastructure configuration
+
+### AWS Services
+- **API Gateway**: REST API endpoints
+- **Lambda**: Serverless functions for weather data processing
+- **DynamoDB**: NoSQL database for storing snow conditions
+- **CloudWatch**: Monitoring and logging
+
+### Weather Data Sources
+Research needed for:
+- Primary API (weatherapi.com, Apple Weather API)
+- Snow report integration (snow-report.com for elevation data)
+- User-generated data (apps like Slopes)
+
+## Development Workflow
+
+### Git Workflow
+1. Create feature branches from main
+2. Make commits with clear messages
+3. Create Pull Requests for review
+4. Merge to main after approval
+
+### Initial Ski Resorts
+- Big White (BC, Canada)
+- Lake Louise (AB, Canada)
+- Silver Star (BC, Canada)
+
+### Project Structure
+```
+snow/
+├── ios/              # SwiftUI iOS app
+├── backend/          # Python Lambda functions
+├── infrastructure/   # Pulumi AWS setup
+├── .env             # Environment variables
+├── README.md        # Project overview
+├── claude.md        # This file
+└── progress.md      # Task tracking and status
+```
+
+## Key Features to Implement
+
+### Core Functionality
+1. **Snow Quality Algorithm**: Track fresh snow vs iced conditions based on temperature
+2. **Multi-Elevation Tracking**: Base, mid, top elevation conditions per resort
+3. **Real-time Weather Data**: Daily updates from weather APIs
+4. **User Preferences**: Save favorite resorts, personalized alerts
+
+### Technical Implementation
+1. **Backend Lambda**: Scheduled function to fetch and process weather data
+2. **API Design**: REST endpoints for resort data, conditions, user preferences
+3. **iOS App**: Resort selector, condition display, user authentication
+4. **Database Schema**: Design for efficient querying by resort/elevation/date
+
+## Research Tasks
+- [ ] Weather API comparison and selection
+- [ ] Ski resort data source for comprehensive list
+- [ ] iOS app store requirements and guidelines
+- [ ] AWS cost optimization strategies
+- [ ] User-generated snow condition integration possibilities
+
+## Development Phases
+See `progress.md` for detailed task breakdown and current status.
+
+---
+
+**Sources for iOS Development Research:**
+- [Getting Started with iOS Programming in 2026](https://www.davydovconsulting.com/post/getting-started-with-ios-programming-in-2026-tools-languages-and-setup)
+- [iOS Development Masterclass 2026 – SwiftUI, SwiftData, AI](https://www.udemy.com/course/swiftui-masterclass-course-ios-development-with-swift/)
+- [iOS 26 Explained: Apple's Biggest Update for Developers](https://www.index.dev/blog/ios-26-developer-guide)
+- [Best iOS App Development Tools to Use in 2026](https://webandcrafts.com/blog/best-ios-development-tools)
+- [iOS App Development Essentials: Best Practices](https://solidappmaker.com/ios-app-development-essentials-best-practices-for-modern-developers/)
