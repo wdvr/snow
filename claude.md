@@ -21,8 +21,9 @@ This is a snow quality tracking application for ski resorts, focusing on Canada 
 
 ### Development Workflow
 - **Version Control**: Git with GitHub (private repository)
-- **Workflow**: Pull Request based development
+- **Workflow**: Pull Request based development with frequent commits
 - **Permissions**: Use dangerously disable sandbox after initial setup
+- **Testing**: Comprehensive automated testing for all components
 
 ## iOS Development Tools & Setup (2026)
 
@@ -69,11 +70,63 @@ Research needed for:
 
 ## Development Workflow
 
-### Git Workflow
-1. Create feature branches from main
-2. Make commits with clear messages
-3. Create Pull Requests for review
-4. Merge to main after approval
+### Git Workflow - COMMIT FREQUENTLY
+1. **Frequent Commits**: Commit every logical change, don't batch work
+2. **Feature Branches**: Create branches from main for each feature/fix
+3. **Clear Messages**: Use descriptive commit messages explaining the "why"
+4. **Pull Requests**: ALL changes must go through PR review process
+5. **PR Requirements**:
+   - All tests must pass
+   - Code review approval required
+   - No direct pushes to main
+6. **Merge Strategy**: Squash and merge for clean history
+
+### Testing Strategy - TEST EVERYTHING
+
+#### Backend Testing (Python)
+- **Unit Tests**: Test all services, models, and utilities (`pytest`)
+- **Integration Tests**: Test Lambda functions end-to-end
+- **API Tests**: Test all REST endpoints with various inputs
+- **Database Tests**: Test DynamoDB operations with mocked tables
+- **Local Lambda Testing**: Use SAM CLI or localstack for local testing
+- **Coverage**: Aim for >90% code coverage
+
+#### Frontend Testing (iOS/Swift)
+- **Unit Tests**: Test ViewModels, services, and business logic (`XCTest`)
+- **UI Tests**: Test user flows and interface interactions
+- **Snapshot Tests**: Verify UI layout consistency
+- **Network Tests**: Mock API calls and test error handling
+- **Device Tests**: Test on multiple iOS versions and devices
+
+#### Infrastructure Testing
+- **Pulumi Tests**: Validate infrastructure configuration
+- **Security Tests**: Scan for IAM policy issues and vulnerabilities
+- **Performance Tests**: Load testing for API endpoints
+- **Deployment Tests**: Verify infrastructure deploys correctly
+
+#### Automated Testing Pipeline
+- **GitHub Actions**: Run tests on every PR and push
+- **Local Testing**: Commands to run all tests locally before push
+- **Pre-commit Hooks**: Run linting and quick tests before commits
+- **Test Environments**: Separate dev/staging/prod with test data
+
+#### Local Development Testing Commands
+```bash
+# Backend testing
+cd backend
+python -m pytest tests/ -v --cov=src --cov-report=html
+
+# Lambda local testing
+sam local start-api
+sam local invoke WeatherProcessorFunction
+
+# Infrastructure testing
+cd infrastructure
+pulumi preview --diff
+
+# iOS testing (from Xcode or command line)
+xcodebuild test -scheme SnowTracker -destination 'platform=iOS Simulator,name=iPhone 15'
+```
 
 ### Initial Ski Resorts
 - Big White (BC, Canada)

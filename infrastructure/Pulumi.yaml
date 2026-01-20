@@ -1,0 +1,14 @@
+name: snow-tracker-infrastructure
+runtime: python
+description: AWS infrastructure for Snow Quality Tracker app
+template:
+  config:
+    aws:region:
+      description: AWS region for all resources
+      default: us-west-2
+    snow-tracker:env:
+      description: Environment (dev/staging/prod)
+      default: dev
+    snow-tracker:appName:
+      description: Application name for resource naming
+      default: snow-tracker

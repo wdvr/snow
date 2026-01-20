@@ -1,0 +1,187 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Snow Quality Tracker - Local development template for SAM CLI
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Environment name
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.12
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+        RESORTS_TABLE: !Sub "snow-tracker-resorts-${Environment}"
+        WEATHER_CONDITIONS_TABLE: !Sub "snow-tracker-weather-conditions-${Environment}"
+        USER_PREFERENCES_TABLE: !Sub "snow-tracker-user-preferences-${Environment}"
+        WEATHER_API_KEY: "your-weather-api-key-here"
+
+Resources:
+  # Main API Gateway and Lambda function
+  SnowTrackerApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: AWS_IAM
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.api_handler.api_handler
+      Description: Main API handler for Snow Quality Tracker
+      Events:
+        ApiGatewayAny:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SnowTrackerApi
+            Path: /{proxy+}
+            Method: ANY
+        ApiGatewayRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SnowTrackerApi
+            Path: /
+            Method: ANY
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Sub "snow-tracker-*-${Environment}"
+        - DynamoDBWritePolicy:
+            TableName: !Sub "snow-tracker-*-${Environment}"
+
+  # Scheduled weather processor
+  WeatherProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.weather_processor.scheduled_weather_update_handler
+      Description: Scheduled function to process weather data
+      Timeout: 900  # 15 minutes for weather processing
+      Events:
+        ScheduledWeatherUpdate:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 hour)
+            Description: Trigger weather processing every hour
+            Enabled: false  # Enable in production
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Sub "snow-tracker-*-${Environment}"
+        - DynamoDBWritePolicy:
+            TableName: !Sub "snow-tracker-*-${Environment}"
+
+  # Manual weather processor trigger
+  ManualWeatherProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.weather_processor.weather_processor_handler
+      Description: Manual trigger for weather processing
+      Timeout: 900
+      Events:
+        ApiGatewayWeatherTrigger:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SnowTrackerApi
+            Path: /admin/process-weather
+            Method: POST
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Sub "snow-tracker-*-${Environment}"
+        - DynamoDBWritePolicy:
+            TableName: !Sub "snow-tracker-*-${Environment}"
+
+  # DynamoDB Tables for local development
+  ResortsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "snow-tracker-resorts-${Environment}"
+      AttributeDefinitions:
+        - AttributeName: resort_id
+          AttributeType: S
+        - AttributeName: country
+          AttributeType: S
+      KeySchema:
+        - AttributeName: resort_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CountryIndex
+          KeySchema:
+            - AttributeName: country
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          BillingMode: PAY_PER_REQUEST
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+  WeatherConditionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "snow-tracker-weather-conditions-${Environment}"
+      AttributeDefinitions:
+        - AttributeName: resort_id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+        - AttributeName: elevation_level
+          AttributeType: S
+      KeySchema:
+        - AttributeName: resort_id
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: ElevationIndex
+          KeySchema:
+            - AttributeName: elevation_level
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          BillingMode: PAY_PER_REQUEST
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  UserPreferencesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "snow-tracker-user-preferences-${Environment}"
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+Outputs:
+  SnowTrackerApiUrl:
+    Description: "API Gateway endpoint URL for Snow Tracker API"
+    Value: !Sub "https://${SnowTrackerApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiUrl"
+
+  WeatherProcessorFunctionArn:
+    Description: "Weather Processor Lambda Function ARN"
+    Value: !GetAtt WeatherProcessorFunction.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-WeatherProcessorArn"

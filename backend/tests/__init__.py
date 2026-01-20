@@ -1,0 +1,1 @@
+"""Tests for Snow Quality Tracker backend."""
