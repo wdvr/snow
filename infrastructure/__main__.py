@@ -2,6 +2,7 @@
 Snow Quality Tracker - AWS Infrastructure
 
 This Pulumi program defines the AWS infrastructure for the Snow Quality Tracker app:
+- S3 bucket for Pulumi state storage
 - DynamoDB tables for data storage
 - API Gateway for REST API
 - Lambda functions for weather processing
@@ -25,6 +26,42 @@ tags = {
     "Environment": environment,
     "ManagedBy": "Pulumi"
 }
+
+# S3 Bucket for Pulumi State Storage
+# Note: This bucket is used for storing Pulumi state after initial bootstrap
+pulumi_state_bucket = aws.s3.Bucket(
+    f"{app_name}-pulumi-state",
+    bucket=f"{app_name}-pulumi-state-{aws_region}",
+    versioning=aws.s3.BucketVersioningArgs(
+        enabled=True
+    ),
+    server_side_encryption_configuration=aws.s3.BucketServerSideEncryptionConfigurationArgs(
+        rule=aws.s3.BucketServerSideEncryptionConfigurationRuleArgs(
+            apply_server_side_encryption_by_default=aws.s3.BucketServerSideEncryptionConfigurationRuleApplyServerSideEncryptionByDefaultArgs(
+                sse_algorithm="AES256"
+            )
+        )
+    ),
+    lifecycle_rules=[
+        aws.s3.BucketLifecycleRuleArgs(
+            enabled=True,
+            noncurrent_version_expiration=aws.s3.BucketLifecycleRuleNoncurrentVersionExpirationArgs(
+                days=90
+            )
+        )
+    ],
+    tags=tags
+)
+
+# Block public access on state bucket
+pulumi_state_bucket_public_access_block = aws.s3.BucketPublicAccessBlock(
+    f"{app_name}-pulumi-state-public-access-block",
+    bucket=pulumi_state_bucket.id,
+    block_public_acls=True,
+    block_public_policy=True,
+    ignore_public_acls=True,
+    restrict_public_buckets=True
+)
 
 # DynamoDB Tables
 resorts_table = aws.dynamodb.Table(
@@ -214,6 +251,7 @@ user_pool_client = aws.cognito.UserPoolClient(
 )
 
 # Exports
+pulumi.export("pulumi_state_bucket", pulumi_state_bucket.bucket)
 pulumi.export("resorts_table_name", resorts_table.name)
 pulumi.export("weather_conditions_table_name", weather_conditions_table.name)
 pulumi.export("user_preferences_table_name", user_preferences_table.name)

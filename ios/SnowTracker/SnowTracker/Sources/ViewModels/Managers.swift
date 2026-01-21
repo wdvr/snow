@@ -60,6 +60,10 @@ class SnowConditionsManager: ObservableObject {
         await fetchAllConditions()
     }
 
+    func refreshConditions() async {
+        await fetchAllConditions()
+    }
+
     func fetchResorts() async {
         isLoading = true
         defer { isLoading = false }

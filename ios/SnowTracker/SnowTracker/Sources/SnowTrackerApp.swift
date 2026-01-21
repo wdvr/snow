@@ -1,46 +1,19 @@
 import SwiftUI
-import FirebaseCore
-import FirebaseAuth
 
 @main
 struct SnowTrackerApp: App {
-    @StateObject private var authenticationManager = AuthenticationManager()
     @StateObject private var snowConditionsManager = SnowConditionsManager()
-    @StateObject private var userPreferencesManager = UserPreferencesManager()
 
     init() {
-        // Configure Firebase
-        FirebaseApp.configure()
-
         // Configure API client
         APIClient.configure()
     }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(authenticationManager)
+            MainTabView()
                 .environmentObject(snowConditionsManager)
-                .environmentObject(userPreferencesManager)
-                .onAppear {
-                    authenticationManager.checkAuthenticationStatus()
-                }
         }
-    }
-}
-
-struct ContentView: View {
-    @EnvironmentObject private var authManager: AuthenticationManager
-
-    var body: some View {
-        Group {
-            if authManager.isAuthenticated {
-                MainTabView()
-            } else {
-                WelcomeView()
-            }
-        }
-        .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)
     }
 }
 
@@ -67,10 +40,10 @@ struct MainTabView: View {
                     Text("Favorites")
                 }
 
-            ProfileView()
+            SettingsView()
                 .tabItem {
-                    Image(systemName: "person")
-                    Text("Profile")
+                    Image(systemName: "gear")
+                    Text("Settings")
                 }
         }
         .tint(.blue)
@@ -80,9 +53,37 @@ struct MainTabView: View {
     }
 }
 
+struct SettingsView: View {
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Units") {
+                    Picker("Temperature", selection: .constant("celsius")) {
+                        Text("Celsius").tag("celsius")
+                        Text("Fahrenheit").tag("fahrenheit")
+                    }
+
+                    Picker("Distance", selection: .constant("metric")) {
+                        Text("Metric (m)").tag("metric")
+                        Text("Imperial (ft)").tag("imperial")
+                    }
+                }
+
+                Section("About") {
+                    HStack {
+                        Text("Version")
+                        Spacer()
+                        Text("1.0.0")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .navigationTitle("Settings")
+        }
+    }
+}
+
 #Preview("Main App") {
-    ContentView()
-        .environmentObject(AuthenticationManager())
+    MainTabView()
         .environmentObject(SnowConditionsManager())
-        .environmentObject(UserPreferencesManager())
 }
