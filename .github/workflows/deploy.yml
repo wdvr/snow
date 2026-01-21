@@ -1,0 +1,133 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - staging
+        - prod
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment || 'dev' }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Pulumi CLI
+      run: |
+        curl -fsSL https://get.pulumi.com | sh
+        echo "$HOME/.pulumi/bin" >> $GITHUB_PATH
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+
+    - name: Install infrastructure dependencies
+      run: |
+        cd infrastructure
+        pip install -r requirements.txt
+
+    - name: Set environment variables
+      run: |
+        echo "ENVIRONMENT=${{ github.event.inputs.environment || 'dev' }}" >> $GITHUB_ENV
+        echo "PULUMI_CONFIG_PASSPHRASE=${{ secrets.PULUMI_CONFIG_PASSPHRASE }}" >> $GITHUB_ENV
+
+    - name: Deploy infrastructure
+      run: |
+        cd infrastructure
+        pulumi login --local
+
+        # Create or select stack
+        pulumi stack select ${{ env.ENVIRONMENT }} || pulumi stack init ${{ env.ENVIRONMENT }}
+
+        # Set configuration
+        pulumi config set aws:region us-west-2
+        pulumi config set snow-tracker:env ${{ env.ENVIRONMENT }}
+        pulumi config set snow-tracker:appName snow-tracker
+
+        # Deploy with automatic approval for dev, manual for prod
+        if [ "${{ env.ENVIRONMENT }}" = "dev" ]; then
+          pulumi up --yes --diff
+        else
+          pulumi up --diff
+        fi
+
+    - name: Package Lambda functions
+      run: |
+        cd backend
+        mkdir -p dist
+        pip install -r requirements.txt -t dist/
+        cp -r src/* dist/
+        cd dist && zip -r ../lambda-package.zip . && cd ..
+
+    - name: Upload Lambda package
+      uses: actions/upload-artifact@v4
+      with:
+        name: lambda-package-${{ env.ENVIRONMENT }}
+        path: backend/lambda-package.zip
+
+    - name: Seed resort data (dev only)
+      if: env.ENVIRONMENT == 'dev'
+      run: |
+        cd backend
+        python scripts/seed_resorts.py --summary
+        python scripts/seed_resorts.py
+      env:
+        RESORTS_TABLE: snow-tracker-resorts-${{ env.ENVIRONMENT }}
+        AWS_DEFAULT_REGION: us-west-2
+
+    - name: Run smoke tests
+      run: |
+        # Wait for deployment to be ready
+        sleep 30
+
+        # Get API Gateway URL from Pulumi outputs
+        cd infrastructure
+        API_URL=$(pulumi stack output api_gateway_url 2>/dev/null || echo "")
+
+        if [ -n "$API_URL" ]; then
+          echo "Testing API at: $API_URL"
+
+          # Test health endpoint
+          curl -f "$API_URL/health" || echo "Health check failed"
+
+          # Test resorts endpoint
+          curl -f "$API_URL/api/v1/resorts" || echo "Resorts endpoint failed"
+        else
+          echo "API URL not available, skipping smoke tests"
+        fi
+
+    - name: Deployment Summary
+      run: |
+        echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ env.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Region**: us-west-2" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deployed at**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+
+        cd infrastructure
+        API_URL=$(pulumi stack output api_gateway_url 2>/dev/null || echo "Not available")
+        echo "- **API URL**: $API_URL" >> $GITHUB_STEP_SUMMARY

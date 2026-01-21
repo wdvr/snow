@@ -259,7 +259,7 @@ class ResortSeeder:
                 missing_levels = required_levels - existing_levels
 
                 if missing_levels:
-                    issues.append(f"Missing required elevation levels: {[l.value for l in missing_levels]}")
+                    issues.append(f"Missing required elevation levels: {[lvl.value for lvl in missing_levels]}")
 
                 # Validate coordinates
                 for point in resort.elevation_points:

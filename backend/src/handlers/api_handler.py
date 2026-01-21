@@ -49,6 +49,15 @@ user_service = UserService(
 )
 
 
+# MARK: - Authentication Dependency
+
+def get_current_user_id() -> str:
+    """Extract user ID from JWT token."""
+    # TODO: Implement JWT token validation
+    # For now, return a placeholder
+    return "test_user_123"
+
+
 # MARK: - Health Check
 
 @app.get("/health")
@@ -320,15 +329,6 @@ async def update_user_preferences(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update user preferences: {str(e)}"
         )
-
-
-# MARK: - Authentication Dependency
-
-def get_current_user_id() -> str:
-    """Extract user ID from JWT token."""
-    # TODO: Implement JWT token validation
-    # For now, return a placeholder
-    return "test_user_123"
 
 
 # MARK: - Error Handlers
