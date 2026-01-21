@@ -194,7 +194,7 @@ jobs:
         cd backend
         flake8 src/ tests/ --max-line-length=120 --extend-ignore=E203,W503,E501 --statistics
 
-    - name: Fast lint with Ruff
+    - name: Lint with Ruff
       run: |
         cd backend
         ruff check src/ tests/ --ignore=E501,F401,F841 --output-format=github

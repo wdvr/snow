@@ -5,7 +5,7 @@ import json
 import boto3
 import os
 from datetime import datetime, timezone
-from moto import mock_dynamodb
+from moto import mock_aws
 from fastapi.testclient import TestClient
 from unittest.mock import patch, Mock
 
@@ -19,7 +19,7 @@ class TestAPIIntegration:
     @pytest.fixture(scope="function")
     def dynamodb_setup(self):
         """Set up mock DynamoDB tables for testing."""
-        with mock_dynamodb():
+        with mock_aws():
             # Create mock DynamoDB resource
             dynamodb = boto3.resource('dynamodb', region_name='us-west-2')
 
