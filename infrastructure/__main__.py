@@ -2,16 +2,20 @@
 Snow Quality Tracker - AWS Infrastructure
 
 This Pulumi program defines the AWS infrastructure for the Snow Quality Tracker app:
+- S3 bucket for Pulumi state storage
 - DynamoDB tables for data storage
 - API Gateway for REST API
 - Lambda functions for weather processing
 - IAM roles and policies
 - CloudWatch for monitoring
+- EKS cluster with Grafana/Prometheus (staging/prod only)
 """
 
 import pulumi
 import pulumi_aws as aws
 import pulumi_awsx as awsx
+
+from monitoring import create_monitoring_stack, create_api_gateway_monitoring
 
 # Get configuration values
 config = pulumi.Config()
@@ -25,6 +29,42 @@ tags = {
     "Environment": environment,
     "ManagedBy": "Pulumi"
 }
+
+# S3 Bucket for Pulumi State Storage
+# Note: This bucket is used for storing Pulumi state after initial bootstrap
+pulumi_state_bucket = aws.s3.Bucket(
+    f"{app_name}-pulumi-state",
+    bucket=f"{app_name}-pulumi-state-{aws_region}",
+    versioning=aws.s3.BucketVersioningArgs(
+        enabled=True
+    ),
+    server_side_encryption_configuration=aws.s3.BucketServerSideEncryptionConfigurationArgs(
+        rule=aws.s3.BucketServerSideEncryptionConfigurationRuleArgs(
+            apply_server_side_encryption_by_default=aws.s3.BucketServerSideEncryptionConfigurationRuleApplyServerSideEncryptionByDefaultArgs(
+                sse_algorithm="AES256"
+            )
+        )
+    ),
+    lifecycle_rules=[
+        aws.s3.BucketLifecycleRuleArgs(
+            enabled=True,
+            noncurrent_version_expiration=aws.s3.BucketLifecycleRuleNoncurrentVersionExpirationArgs(
+                days=90
+            )
+        )
+    ],
+    tags=tags
+)
+
+# Block public access on state bucket
+pulumi_state_bucket_public_access_block = aws.s3.BucketPublicAccessBlock(
+    f"{app_name}-pulumi-state-public-access-block",
+    bucket=pulumi_state_bucket.id,
+    block_public_acls=True,
+    block_public_policy=True,
+    ignore_public_acls=True,
+    restrict_public_buckets=True
+)
 
 # DynamoDB Tables
 resorts_table = aws.dynamodb.Table(
@@ -213,7 +253,26 @@ user_pool_client = aws.cognito.UserPoolClient(
     ]
 )
 
+# API Gateway Monitoring (CloudWatch dashboards and alarms)
+api_monitoring = create_api_gateway_monitoring(
+    app_name=app_name,
+    environment=environment,
+    api_gateway_id=api_gateway.id,
+    tags=tags
+)
+
+# EKS with Grafana/Prometheus (only for staging/prod)
+# For dev, we use Lambda which is more cost-effective
+enable_eks = config.get_bool("enableEks") or environment in ["staging", "prod"]
+monitoring_stack = create_monitoring_stack(
+    app_name=app_name,
+    environment=environment,
+    tags=tags,
+    enable_eks=enable_eks
+)
+
 # Exports
+pulumi.export("pulumi_state_bucket", pulumi_state_bucket.bucket)
 pulumi.export("resorts_table_name", resorts_table.name)
 pulumi.export("weather_conditions_table_name", weather_conditions_table.name)
 pulumi.export("user_preferences_table_name", user_preferences_table.name)
@@ -224,3 +283,12 @@ pulumi.export("user_pool_id", user_pool.id)
 pulumi.export("user_pool_client_id", user_pool_client.id)
 pulumi.export("region", aws_region)
 pulumi.export("environment", environment)
+
+# Monitoring exports
+pulumi.export("cloudwatch_dashboard_name", api_monitoring["dashboard"].dashboard_name)
+pulumi.export("alarm_topic_arn", api_monitoring["alarm_topic"].arn)
+
+# EKS exports (only when enabled)
+if enable_eks and "eks_cluster" in monitoring_stack:
+    pulumi.export("eks_cluster_name", monitoring_stack["eks_cluster"].name)
+    pulumi.export("eks_kubeconfig", monitoring_stack["eks_cluster"].kubeconfig)

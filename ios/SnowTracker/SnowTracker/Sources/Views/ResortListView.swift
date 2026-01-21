@@ -69,6 +69,11 @@ struct ResortListView: View {
             .refreshable {
                 await snowConditionsManager.refreshData()
             }
+            .overlay {
+                if snowConditionsManager.isLoading && snowConditionsManager.resorts.isEmpty {
+                    ProgressView("Loading resorts...")
+                }
+            }
         }
     }
 }
@@ -167,45 +172,6 @@ struct FilterChip: View {
                 .foregroundColor(isSelected ? .white : .primary)
         }
         .buttonStyle(PlainButtonStyle())
-    }
-}
-
-// Placeholder views for navigation
-struct ResortDetailView: View {
-    let resort: Resort
-
-    var body: some View {
-        Text("Resort Detail for \(resort.name)")
-            .navigationTitle(resort.name)
-            .navigationBarTitleDisplayMode(.large)
-    }
-}
-
-struct ConditionsView: View {
-    var body: some View {
-        Text("Snow Conditions")
-            .navigationTitle("Conditions")
-    }
-}
-
-struct FavoritesView: View {
-    var body: some View {
-        Text("Favorites")
-            .navigationTitle("Favorites")
-    }
-}
-
-struct ProfileView: View {
-    var body: some View {
-        Text("Profile")
-            .navigationTitle("Profile")
-    }
-}
-
-struct WelcomeView: View {
-    var body: some View {
-        Text("Welcome to Snow Tracker")
-            .font(.title)
     }
 }
 

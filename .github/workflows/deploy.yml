@@ -3,35 +3,70 @@ name: Deploy to AWS
 on:
   push:
     branches: [ main ]
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to'
+        description: 'Environment to deploy to (dev only for manual)'
         required: true
         default: 'dev'
         type: choice
         options:
         - dev
-        - staging
-        - prod
 
 env:
   PYTHON_VERSION: '3.12'
+  PULUMI_STATE_BUCKET: snow-tracker-pulumi-state-us-west-2
 
 jobs:
-  deploy:
-    name: Deploy to ${{ github.event.inputs.environment || 'dev' }}
+  # Determine which environment to deploy to
+  determine-environment:
+    name: Determine Environment
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'dev' }}
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      should_deploy: ${{ steps.set-env.outputs.should_deploy }}
+    steps:
+      - name: Set environment based on trigger
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "Deploying to PROD from tag: ${{ github.ref_name }}"
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "Deploying to STAGING from main branch"
+          else
+            echo "environment=none" >> $GITHUB_OUTPUT
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+  deploy:
+    name: Deploy to ${{ needs.determine-environment.outputs.environment }}
+    needs: determine-environment
+    if: needs.determine-environment.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ needs.determine-environment.outputs.environment }}
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: "latest"
 
     - name: Install Pulumi CLI
       run: |
@@ -45,20 +80,27 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-west-2
 
-    - name: Install infrastructure dependencies
+    - name: Install infrastructure dependencies with uv
       run: |
         cd infrastructure
-        pip install -r requirements.txt
+        uv pip install --system -r requirements.txt
 
     - name: Set environment variables
       run: |
-        echo "ENVIRONMENT=${{ github.event.inputs.environment || 'dev' }}" >> $GITHUB_ENV
+        echo "ENVIRONMENT=${{ needs.determine-environment.outputs.environment }}" >> $GITHUB_ENV
         echo "PULUMI_CONFIG_PASSPHRASE=${{ secrets.PULUMI_CONFIG_PASSPHRASE }}" >> $GITHUB_ENV
 
     - name: Deploy infrastructure
       run: |
         cd infrastructure
-        pulumi login --local
+
+        # Use S3 backend for state (falls back to local if bucket doesn't exist yet)
+        if aws s3 ls "s3://${{ env.PULUMI_STATE_BUCKET }}" 2>/dev/null; then
+          pulumi login s3://${{ env.PULUMI_STATE_BUCKET }}
+        else
+          echo "S3 state bucket not found, using local backend for bootstrap"
+          pulumi login --local
+        fi
 
         # Create or select stack
         pulumi stack select ${{ env.ENVIRONMENT }} || pulumi stack init ${{ env.ENVIRONMENT }}
@@ -68,18 +110,19 @@ jobs:
         pulumi config set snow-tracker:env ${{ env.ENVIRONMENT }}
         pulumi config set snow-tracker:appName snow-tracker
 
-        # Deploy with automatic approval for dev, manual for prod
-        if [ "${{ env.ENVIRONMENT }}" = "dev" ]; then
+        # Deploy with automatic approval for dev/staging, require approval for prod
+        if [ "${{ env.ENVIRONMENT }}" = "prod" ]; then
+          echo "Production deployment requires manual approval in GitHub"
           pulumi up --yes --diff
         else
-          pulumi up --diff
+          pulumi up --yes --diff
         fi
 
-    - name: Package Lambda functions
+    - name: Package Lambda functions with uv
       run: |
         cd backend
         mkdir -p dist
-        pip install -r requirements.txt -t dist/
+        uv pip install --system -r requirements.txt --target dist/
         cp -r src/* dist/
         cd dist && zip -r ../lambda-package.zip . && cd ..
 
@@ -89,8 +132,8 @@ jobs:
         name: lambda-package-${{ env.ENVIRONMENT }}
         path: backend/lambda-package.zip
 
-    - name: Seed resort data (dev only)
-      if: env.ENVIRONMENT == 'dev'
+    - name: Seed resort data (dev/staging only)
+      if: env.ENVIRONMENT == 'dev' || env.ENVIRONMENT == 'staging'
       run: |
         cd backend
         python scripts/seed_resorts.py --summary
@@ -125,9 +168,21 @@ jobs:
         echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
         echo "- **Environment**: ${{ env.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Region**: us-west-2" >> $GITHUB_STEP_SUMMARY
+        echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ github.ref_type }}" = "tag" ]; then
+          echo "- **Tag**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        fi
         echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Deployed at**: $(date -u)" >> $GITHUB_STEP_SUMMARY
 
         cd infrastructure
         API_URL=$(pulumi stack output api_gateway_url 2>/dev/null || echo "Not available")
         echo "- **API URL**: $API_URL" >> $GITHUB_STEP_SUMMARY
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Deployment Strategy" >> $GITHUB_STEP_SUMMARY
+        echo "| Environment | Trigger |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------------|---------|" >> $GITHUB_STEP_SUMMARY
+        echo "| dev | Manual workflow dispatch |" >> $GITHUB_STEP_SUMMARY
+        echo "| staging | Merge to main branch |" >> $GITHUB_STEP_SUMMARY
+        echo "| prod | Git tag (v*) |" >> $GITHUB_STEP_SUMMARY
