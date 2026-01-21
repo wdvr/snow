@@ -1,5 +1,6 @@
 import Foundation
 import Alamofire
+import KeychainSwift
 
 // MARK: - API Client
 
@@ -10,12 +11,7 @@ class APIClient {
     private let session: Session
 
     private init() {
-        // TODO: Read from configuration
-        #if DEBUG
-        self.baseURL = URL(string: "https://api-dev.snow-tracker.com")!
-        #else
-        self.baseURL = URL(string: "https://api.snow-tracker.com")!
-        #endif
+        self.baseURL = AppConfiguration.shared.apiBaseURL
 
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 30
@@ -26,12 +22,13 @@ class APIClient {
 
     static func configure() {
         // Perform any initial configuration
+        print("API Client configured with base URL: \(shared.baseURL)")
     }
 
     // MARK: - Resort API
 
     func getResorts() async throws -> [Resort] {
-        let url = baseURL.appendingPathComponent("/api/v1/resorts")
+        let url = baseURL.appendingPathComponent("api/v1/resorts")
 
         return try await withCheckedThrowingContinuation { continuation in
             session.request(url)
@@ -41,14 +38,15 @@ class APIClient {
                     case .success(let resortsResponse):
                         continuation.resume(returning: resortsResponse.resorts)
                     case .failure(let error):
-                        continuation.resume(throwing: error)
+                        print("API Error: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
                     }
                 }
         }
     }
 
     func getResort(id: String) async throws -> Resort {
-        let url = baseURL.appendingPathComponent("/api/v1/resorts/\(id)")
+        let url = baseURL.appendingPathComponent("api/v1/resorts/\(id)")
 
         return try await withCheckedThrowingContinuation { continuation in
             session.request(url)
@@ -58,7 +56,7 @@ class APIClient {
                     case .success(let resort):
                         continuation.resume(returning: resort)
                     case .failure(let error):
-                        continuation.resume(throwing: error)
+                        continuation.resume(throwing: self.mapError(error))
                     }
                 }
         }
@@ -67,7 +65,7 @@ class APIClient {
     // MARK: - Weather Conditions API
 
     func getConditions(for resortId: String) async throws -> [WeatherCondition] {
-        let url = baseURL.appendingPathComponent("/api/v1/resorts/\(resortId)/conditions")
+        let url = baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/conditions")
 
         return try await withCheckedThrowingContinuation { continuation in
             session.request(url)
@@ -77,14 +75,14 @@ class APIClient {
                     case .success(let conditionsResponse):
                         continuation.resume(returning: conditionsResponse.conditions)
                     case .failure(let error):
-                        continuation.resume(throwing: error)
+                        continuation.resume(throwing: self.mapError(error))
                     }
                 }
         }
     }
 
     func getConditions(for resortId: String, elevation: ElevationLevel) async throws -> WeatherCondition {
-        let url = baseURL.appendingPathComponent("/api/v1/resorts/\(resortId)/conditions/\(elevation.rawValue)")
+        let url = baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/conditions/\(elevation.rawValue)")
 
         return try await withCheckedThrowingContinuation { continuation in
             session.request(url)
@@ -94,7 +92,24 @@ class APIClient {
                     case .success(let condition):
                         continuation.resume(returning: condition)
                     case .failure(let error):
-                        continuation.resume(throwing: error)
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
+    func getSnowQuality(for resortId: String) async throws -> SnowQualitySummary {
+        let url = baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/snow-quality")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url)
+                .validate()
+                .responseDecodable(of: SnowQualitySummary.self) { response in
+                    switch response.result {
+                    case .success(let summary):
+                        continuation.resume(returning: summary)
+                    case .failure(let error):
+                        continuation.resume(throwing: self.mapError(error))
                     }
                 }
         }
@@ -103,7 +118,7 @@ class APIClient {
     // MARK: - User API
 
     func getUserPreferences() async throws -> UserPreferences {
-        let url = baseURL.appendingPathComponent("/api/v1/user/preferences")
+        let url = baseURL.appendingPathComponent("api/v1/user/preferences")
 
         return try await withCheckedThrowingContinuation { continuation in
             session.request(url, headers: authHeaders())
@@ -113,14 +128,14 @@ class APIClient {
                     case .success(let preferences):
                         continuation.resume(returning: preferences)
                     case .failure(let error):
-                        continuation.resume(throwing: error)
+                        continuation.resume(throwing: self.mapError(error))
                     }
                 }
         }
     }
 
     func updateUserPreferences(_ preferences: UserPreferences) async throws {
-        let url = baseURL.appendingPathComponent("/api/v1/user/preferences")
+        let url = baseURL.appendingPathComponent("api/v1/user/preferences")
 
         return try await withCheckedThrowingContinuation { continuation in
             session.request(
@@ -133,7 +148,7 @@ class APIClient {
             .validate()
             .response { response in
                 if let error = response.error {
-                    continuation.resume(throwing: error)
+                    continuation.resume(throwing: self.mapError(error))
                 } else {
                     continuation.resume()
                 }
@@ -144,16 +159,51 @@ class APIClient {
     // MARK: - Authentication
 
     private func authHeaders() -> HTTPHeaders {
-        // TODO: Implement JWT token retrieval from keychain
-        return HTTPHeaders([
-            "Authorization": "Bearer \(getAuthToken() ?? "")",
+        var headers = HTTPHeaders([
             "Content-Type": "application/json"
         ])
+
+        // Get token from keychain directly (nonisolated)
+        if let token = KeychainSwift().get("com.snowtracker.authToken") {
+            headers.add(.authorization(bearerToken: token))
+        }
+
+        return headers
     }
 
-    private func getAuthToken() -> String? {
-        // TODO: Retrieve JWT token from keychain
-        return nil
+    // MARK: - Error Mapping
+
+    private func mapError(_ error: AFError) -> APIError {
+        switch error {
+        case .responseValidationFailed(let reason):
+            if case .unacceptableStatusCode(let code) = reason {
+                switch code {
+                case 401:
+                    return .unauthorized
+                case 404:
+                    return .notFound
+                case 500...599:
+                    return .serverError(code)
+                default:
+                    return .networkError(error.localizedDescription)
+                }
+            }
+            return .networkError(error.localizedDescription)
+        case .sessionTaskFailed(let error):
+            if let urlError = error as? URLError {
+                switch urlError.code {
+                case .notConnectedToInternet:
+                    return .noConnection
+                case .timedOut:
+                    return .timeout
+                default:
+                    return .networkError(urlError.localizedDescription)
+                }
+            }
+            return .networkError(error.localizedDescription)
+        default:
+            return .networkError(error.localizedDescription)
+        }
     }
 }
 
@@ -165,17 +215,66 @@ struct ResortsResponse: Codable {
 
 struct ConditionsResponse: Codable {
     let conditions: [WeatherCondition]
-    let lastUpdated: String
+    let lastUpdated: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case conditions
+        case lastUpdated = "last_updated"
+    }
+}
+
+struct SnowQualitySummary: Codable {
+    let resortId: String
+    let elevations: [String: ElevationSummary]
+    let overallQuality: String
+    let lastUpdated: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case resortId = "resort_id"
+        case elevations
+        case overallQuality = "overall_quality"
+        case lastUpdated = "last_updated"
+    }
+
+    var overallSnowQuality: SnowQuality {
+        SnowQuality(rawValue: overallQuality) ?? .unknown
+    }
+}
+
+struct ElevationSummary: Codable {
+    let quality: String
+    let freshSnowCm: Double
+    let confidence: String
+    let temperatureCelsius: Double
+    let snowfall24hCm: Double
+    let timestamp: String
+
+    private enum CodingKeys: String, CodingKey {
+        case quality
+        case freshSnowCm = "fresh_snow_cm"
+        case confidence
+        case temperatureCelsius = "temperature_celsius"
+        case snowfall24hCm = "snowfall_24h_cm"
+        case timestamp
+    }
+
+    var snowQuality: SnowQuality {
+        SnowQuality(rawValue: quality) ?? .unknown
+    }
+
+    var confidenceLevel: ConfidenceLevel {
+        ConfidenceLevel(rawValue: confidence) ?? .medium
+    }
 }
 
 struct UserPreferences: Codable {
-    let userId: String
-    let favoriteResorts: [String]
-    let notificationPreferences: [String: Bool]
-    let preferredUnits: [String: String]
-    let qualityThreshold: String
-    let createdAt: String
-    let updatedAt: String
+    var userId: String
+    var favoriteResorts: [String]
+    var notificationPreferences: [String: Bool]
+    var preferredUnits: [String: String]
+    var qualityThreshold: String
+    var createdAt: String
+    var updatedAt: String
 
     private enum CodingKeys: String, CodingKey {
         case userId = "user_id"
@@ -196,7 +295,10 @@ enum APIError: Error, LocalizedError {
     case decodingError
     case networkError(String)
     case unauthorized
+    case notFound
     case serverError(Int)
+    case noConnection
+    case timeout
 
     var errorDescription: String? {
         switch self {
@@ -209,9 +311,15 @@ enum APIError: Error, LocalizedError {
         case .networkError(let message):
             return "Network error: \(message)"
         case .unauthorized:
-            return "Authentication required"
+            return "Please sign in to continue"
+        case .notFound:
+            return "Resource not found"
         case .serverError(let code):
             return "Server error: \(code)"
+        case .noConnection:
+            return "No internet connection"
+        case .timeout:
+            return "Request timed out"
         }
     }
 }
