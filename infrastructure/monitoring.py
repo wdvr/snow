@@ -190,7 +190,7 @@ def create_monitoring_stack(
     cluster = eks.Cluster(
         f"{app_name}-eks-{environment}",
         name=f"{app_name}-{environment}",
-        version="1.31",  # Specify valid EKS version
+        version="1.34",  # EKS version
         vpc_id=vpc_id if isinstance(vpc_id, str) else vpc.id,
         subnet_ids=subnet_ids if "subnet_ids" in dir() else None,
         skip_default_node_group=True,  # Don't create default node group with Launch Config
@@ -242,13 +242,18 @@ def create_monitoring_stack(
             ),
             values={
                 "server": {
-                    "persistentVolume": {"size": "10Gi"},
+                    "persistentVolume": {
+                        "enabled": False
+                    },  # Disable until EBS CSI driver configured
                     "resources": {
                         "requests": {"cpu": "250m", "memory": "512Mi"},
                         "limits": {"cpu": "500m", "memory": "1Gi"},
                     },
                 },
-                "alertmanager": {"enabled": True},
+                "alertmanager": {
+                    "enabled": True,
+                    "persistentVolume": {"enabled": False},
+                },
             },
         ),
         opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[monitoring_ns]),
@@ -266,7 +271,9 @@ def create_monitoring_stack(
             values={
                 "adminPassword": pulumi.Config().get_secret("grafanaAdminPassword")
                 or "admin",
-                "persistence": {"enabled": True, "size": "5Gi"},
+                "persistence": {
+                    "enabled": False
+                },  # Disable until EBS CSI driver configured
                 "service": {
                     "type": "LoadBalancer",
                     "annotations": {
