@@ -155,19 +155,7 @@ def create_monitoring_stack(
         vpc_id = vpc.id
         subnet_ids = [s.id for s in public_subnets + private_subnets]
 
-    # Create EKS Cluster with managed node group (uses Launch Templates)
-    cluster = eks.Cluster(
-        f"{app_name}-eks-{environment}",
-        name=f"{app_name}-{environment}",
-        version="1.31",  # Specify valid EKS version
-        vpc_id=vpc_id if isinstance(vpc_id, str) else vpc.id,
-        subnet_ids=subnet_ids if "subnet_ids" in dir() else None,
-        skip_default_node_group=True,  # Don't create default node group with Launch Config
-        tags=tags,
-    )
-    resources["eks_cluster"] = cluster
-
-    # Create IAM role for managed node group
+    # Create IAM role for managed node group (must be created before cluster)
     node_role = aws.iam.Role(
         f"{app_name}-eks-node-role-{environment}",
         assume_role_policy="""{
@@ -184,17 +172,33 @@ def create_monitoring_stack(
     )
 
     # Attach required policies to the node role
+    policy_attachments = []
     for policy_arn in [
         "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",
         "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy",
         "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
     ]:
         policy_name = policy_arn.split("/")[-1]
-        aws.iam.RolePolicyAttachment(
+        attachment = aws.iam.RolePolicyAttachment(
             f"{app_name}-eks-node-{policy_name}-{environment}",
             role=node_role.name,
             policy_arn=policy_arn,
         )
+        policy_attachments.append(attachment)
+
+    # Create EKS Cluster with managed node group (uses Launch Templates)
+    cluster = eks.Cluster(
+        f"{app_name}-eks-{environment}",
+        name=f"{app_name}-{environment}",
+        version="1.31",  # Specify valid EKS version
+        vpc_id=vpc_id if isinstance(vpc_id, str) else vpc.id,
+        subnet_ids=subnet_ids if "subnet_ids" in dir() else None,
+        skip_default_node_group=True,  # Don't create default node group with Launch Config
+        instance_roles=[node_role],  # Register node role with cluster
+        tags=tags,
+        opts=pulumi.ResourceOptions(depends_on=policy_attachments),
+    )
+    resources["eks_cluster"] = cluster
 
     # Create managed node group (uses Launch Templates by default)
     managed_node_group = eks.ManagedNodeGroup(
