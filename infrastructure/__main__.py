@@ -384,9 +384,9 @@ api_monitoring = create_api_gateway_monitoring(
 
 # EKS with Grafana/Prometheus (only for staging/prod)
 # For dev, we use Lambda which is more cost-effective
-# EKS is expensive, only enable for prod or when explicitly requested
-# For staging, we use Lambda-based deployment which is more cost-effective
-enable_eks = config.get_bool("enableEks") or environment == "prod"
+# EKS with Grafana/Prometheus is enabled for staging and prod
+# For dev, Lambda-based deployment is more cost-effective
+enable_eks = config.get_bool("enableEks") or environment in ["staging", "prod"]
 monitoring_stack = create_monitoring_stack(
     app_name=app_name, environment=environment, tags=tags, enable_eks=enable_eks
 )

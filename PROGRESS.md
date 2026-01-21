@@ -9,8 +9,8 @@
 | Task | Status | Notes |
 |------|---------|-------|
 | Initialize git repository | ✅ COMPLETED | Git repo initialized |
-| Create claude.md with instructions | ✅ COMPLETED | Includes iOS tooling research + testing strategy |
-| Create progress.md (this file) | ✅ COMPLETED | Task tracking system |
+| Create CLAUDE.md with instructions | ✅ COMPLETED | Includes iOS tooling research + testing strategy |
+| Create PROGRESS.md (this file) | ✅ COMPLETED | Task tracking system |
 | Create README.md | ✅ COMPLETED | Project overview |
 | Create .env template | ✅ COMPLETED | AWS credentials template |
 | Create .gitignore | ✅ COMPLETED | Swift, Python, AWS secrets |

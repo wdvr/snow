@@ -159,6 +159,7 @@ def create_monitoring_stack(
     cluster = eks.Cluster(
         f"{app_name}-eks-{environment}",
         name=f"{app_name}-{environment}",
+        version="1.31",  # Specify valid EKS version
         vpc_id=vpc_id if isinstance(vpc_id, str) else vpc.id,
         subnet_ids=subnet_ids if "subnet_ids" in dir() else None,
         instance_type="t3.medium",

@@ -141,8 +141,8 @@ snow/
 ├── infrastructure/   # Pulumi AWS setup
 ├── .env             # Environment variables
 ├── README.md        # Project overview
-├── claude.md        # This file
-└── progress.md      # Task tracking and status
+├── CLAUDE.md        # This file
+└── PROGRESS.md      # Task tracking and status
 ```
 
 ## Key Features to Implement
@@ -167,7 +167,7 @@ snow/
 - [ ] User-generated snow condition integration possibilities
 
 ## Development Phases
-See `progress.md` for detailed task breakdown and current status.
+See `PROGRESS.md` for detailed task breakdown and current status.
 
 ---
 

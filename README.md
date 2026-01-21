@@ -72,7 +72,7 @@ snow/
 ### Setup
 1. Clone the repository
 2. Copy `.env.example` to `.env` and configure AWS credentials
-3. Follow setup instructions in `claude.md`
+3. Follow setup instructions in `CLAUDE.md`
 
 ## Development Workflow
 
@@ -84,13 +84,13 @@ This project follows a Pull Request based workflow:
 
 ## Documentation
 
-- **`claude.md`**: Detailed development instructions and tooling guide
-- **`progress.md`**: Current task status and development progress
+- **`CLAUDE.md`**: Detailed development instructions and tooling guide
+- **`PROGRESS.md`**: Current task status and development progress
 - **`docs/`**: Additional technical documentation
 
 ## Contributing
 
-Please read the development guidelines in `claude.md` before contributing. Key points:
+Please read the development guidelines in `CLAUDE.md` before contributing. Key points:
 - Use SwiftUI for iOS development
 - Follow Swift 6 best practices
 - Write tests for new functionality
@@ -119,4 +119,4 @@ Private repository - All rights reserved.
 
 ## Support
 
-For development questions and technical guidance, see `claude.md` for detailed instructions and best practices.
+For development questions and technical guidance, see `CLAUDE.md` for detailed instructions and best practices.
