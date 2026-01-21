@@ -130,6 +130,9 @@ jobs:
         pulumi config set snow-tracker-infrastructure:env ${{ env.ENVIRONMENT }}
         pulumi config set snow-tracker-infrastructure:appName snow-tracker
 
+        # Destroy existing resources first (fresh start)
+        pulumi destroy --yes 2>/dev/null || true
+
         # Deploy
         pulumi up --yes --diff
 
