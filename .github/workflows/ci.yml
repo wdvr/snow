@@ -1,0 +1,204 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  PYTHON_VERSION: '3.12'
+  NODE_VERSION: '18'
+
+jobs:
+  # Backend Python Tests
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      # DynamoDB Local for integration tests
+      dynamodb:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8000:8000
+        options: >-
+          --health-cmd "curl -f http://localhost:8000"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest-cov pytest-mock moto[dynamodb] localstack-client
+
+    - name: Set up environment variables
+      run: |
+        echo "RESORTS_TABLE=snow-tracker-resorts-test" >> $GITHUB_ENV
+        echo "WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-test" >> $GITHUB_ENV
+        echo "USER_PREFERENCES_TABLE=snow-tracker-user-preferences-test" >> $GITHUB_ENV
+        echo "WEATHER_API_KEY=test-key" >> $GITHUB_ENV
+        echo "AWS_DEFAULT_REGION=us-west-2" >> $GITHUB_ENV
+        echo "AWS_ACCESS_KEY_ID=test" >> $GITHUB_ENV
+        echo "AWS_SECRET_ACCESS_KEY=test" >> $GITHUB_ENV
+
+    - name: Run unit tests with coverage
+      run: |
+        cd backend
+        python -m pytest tests/ -v \
+          --cov=src \
+          --cov-report=xml \
+          --cov-report=html \
+          --cov-report=term-missing \
+          --cov-fail-under=85 \
+          --tb=short
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage.xml
+        flags: backend
+        name: backend-coverage
+
+    - name: Run integration tests
+      run: |
+        cd backend
+        python -m pytest tests/integration/ -v --tb=short
+      env:
+        DYNAMODB_ENDPOINT: http://localhost:8000
+
+    - name: Archive coverage reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-reports
+        path: backend/htmlcov/
+
+  # Infrastructure Validation
+  infrastructure-validation:
+    name: Infrastructure Validation
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Pulumi CLI
+      run: |
+        curl -fsSL https://get.pulumi.com | sh
+        echo "$HOME/.pulumi/bin" >> $GITHUB_PATH
+
+    - name: Install infrastructure dependencies
+      run: |
+        cd infrastructure
+        pip install -r requirements.txt
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+
+    - name: Validate Pulumi configuration
+      run: |
+        cd infrastructure
+        pulumi login --local
+        pulumi stack init test-stack || true
+        pulumi config set aws:region us-west-2
+        pulumi preview --diff --non-interactive
+      env:
+        PULUMI_CONFIG_PASSPHRASE: "test"
+
+  # Code Quality Checks
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install linting dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install black flake8 mypy isort bandit
+
+    - name: Check code formatting with Black
+      run: |
+        cd backend
+        black --check --diff src/ tests/
+
+    - name: Check import sorting with isort
+      run: |
+        cd backend
+        isort --check-only --diff src/ tests/
+
+    - name: Lint with flake8
+      run: |
+        cd backend
+        flake8 src/ tests/ --max-line-length=100 --extend-ignore=E203,W503
+
+    - name: Type checking with mypy
+      run: |
+        cd backend
+        mypy src/ --ignore-missing-imports --no-strict-optional
+
+    - name: Security scanning with bandit
+      run: |
+        cd backend
+        bandit -r src/ -f json -o bandit-report.json || true
+        bandit -r src/ --severity-level medium
+
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-scan
+        path: backend/bandit-report.json
+
+  # Build and Test Results Summary
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [backend-tests, infrastructure-validation, code-quality]
+    if: always()
+
+    steps:
+    - name: Test Results Summary
+      run: |
+        echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Backend Tests | ${{ needs.backend-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Infrastructure Validation | ${{ needs.infrastructure-validation.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Code Quality | ${{ needs.code-quality.result }} |" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ needs.backend-tests.result }}" = "success" ] &&
+           [ "${{ needs.infrastructure-validation.result }}" = "success" ] &&
+           [ "${{ needs.code-quality.result }}" = "success" ]; then
+          echo "✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Some checks failed. Please review the logs." >> $GITHUB_STEP_SUMMARY
+        fi
