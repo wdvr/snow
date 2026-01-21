@@ -167,11 +167,41 @@ def create_monitoring_stack(
     )
     resources["eks_cluster"] = cluster
 
+    # Create IAM role for managed node group
+    node_role = aws.iam.Role(
+        f"{app_name}-eks-node-role-{environment}",
+        assume_role_policy="""{
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                }
+            }]
+        }""",
+        tags=tags,
+    )
+
+    # Attach required policies to the node role
+    for policy_arn in [
+        "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",
+        "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy",
+        "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
+    ]:
+        policy_name = policy_arn.split("/")[-1]
+        aws.iam.RolePolicyAttachment(
+            f"{app_name}-eks-node-{policy_name}-{environment}",
+            role=node_role.name,
+            policy_arn=policy_arn,
+        )
+
     # Create managed node group (uses Launch Templates by default)
     managed_node_group = eks.ManagedNodeGroup(
         f"{app_name}-eks-nodegroup-{environment}",
         cluster=cluster,
         node_group_name=f"{app_name}-workers-{environment}",
+        node_role=node_role,
         instance_types=["t3.medium"],
         scaling_config=aws.eks.NodeGroupScalingConfigArgs(
             desired_size=2,
