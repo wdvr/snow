@@ -122,6 +122,9 @@ jobs:
         # Create or select stack
         pulumi stack select ${{ env.ENVIRONMENT }} || pulumi stack init ${{ env.ENVIRONMENT }}
 
+        # Cancel any stale locks from previous failed runs
+        pulumi cancel --yes 2>/dev/null || true
+
         # Set configuration
         pulumi config set aws:region us-west-2
         pulumi config set snow-tracker-infrastructure:env ${{ env.ENVIRONMENT }}
