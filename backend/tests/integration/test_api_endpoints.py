@@ -39,8 +39,7 @@ class TestAPIIntegration:
                         'KeySchema': [
                             {'AttributeName': 'country', 'KeyType': 'HASH'}
                         ],
-                        'Projection': {'ProjectionType': 'ALL'},
-                        'BillingMode': 'PAY_PER_REQUEST'
+                        'Projection': {'ProjectionType': 'ALL'}
                     }
                 ],
                 BillingMode='PAY_PER_REQUEST'
@@ -65,8 +64,7 @@ class TestAPIIntegration:
                             {'AttributeName': 'elevation_level', 'KeyType': 'HASH'},
                             {'AttributeName': 'timestamp', 'KeyType': 'RANGE'}
                         ],
-                        'Projection': {'ProjectionType': 'ALL'},
-                        'BillingMode': 'PAY_PER_REQUEST'
+                        'Projection': {'ProjectionType': 'ALL'}
                     }
                 ],
                 BillingMode='PAY_PER_REQUEST'
