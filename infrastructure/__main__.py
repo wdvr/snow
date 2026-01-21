@@ -224,6 +224,15 @@ weather_processor_log_group = aws.cloudwatch.LogGroup(
 
 # Lambda function for weather data processing
 # Note: The actual code package is deployed separately via CI/CD
+# Placeholder code that will be replaced by CI/CD
+placeholder_lambda_code = """
+def handler(event, context):
+    return {
+        'statusCode': 200,
+        'body': 'Placeholder - deploy actual code via CI/CD'
+    }
+"""
+
 weather_processor_lambda = aws.lambda_.Function(
     f"{app_name}-weather-processor-{environment}",
     name=f"{app_name}-weather-processor-{environment}",
@@ -232,6 +241,14 @@ weather_processor_lambda = aws.lambda_.Function(
     runtime="python3.12",
     timeout=300,  # 5 minutes for processing all resorts
     memory_size=256,
+    code=pulumi.AssetArchive(
+        {
+            "handlers/weather_processor.py": pulumi.StringAsset(
+                placeholder_lambda_code
+            ),
+            "handlers/__init__.py": pulumi.StringAsset(""),
+        }
+    ),
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
             "ENVIRONMENT": environment,
@@ -279,12 +296,64 @@ api_gateway = aws.apigateway.RestApi(
     tags=tags,
 )
 
-# API Gateway Deployment (placeholder - will be configured with actual endpoints)
+# Health check resource
+health_resource = aws.apigateway.Resource(
+    f"{app_name}-health-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_gateway.root_resource_id,
+    path_part="health",
+)
+
+# Health check method (MOCK integration for simple health check)
+health_method = aws.apigateway.Method(
+    f"{app_name}-health-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=health_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+# Health check integration (MOCK)
+health_integration = aws.apigateway.Integration(
+    f"{app_name}-health-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=health_resource.id,
+    http_method=health_method.http_method,
+    type="MOCK",
+    request_templates={"application/json": '{"statusCode": 200}'},
+)
+
+# Health check method response
+health_method_response = aws.apigateway.MethodResponse(
+    f"{app_name}-health-method-response-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=health_resource.id,
+    http_method=health_method.http_method,
+    status_code="200",
+    response_models={"application/json": "Empty"},
+)
+
+# Health check integration response
+health_integration_response = aws.apigateway.IntegrationResponse(
+    f"{app_name}-health-integration-response-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=health_resource.id,
+    http_method=health_method.http_method,
+    status_code="200",
+    response_templates={
+        "application/json": '{"status": "healthy", "environment": "'
+        + environment
+        + '"}'
+    },
+    opts=pulumi.ResourceOptions(depends_on=[health_integration]),
+)
+
+# API Gateway Deployment
 api_deployment = aws.apigateway.Deployment(
     f"{app_name}-api-deployment-{environment}",
     rest_api=api_gateway.id,
     stage_name=environment,
-    opts=pulumi.ResourceOptions(depends_on=[api_gateway]),
+    opts=pulumi.ResourceOptions(depends_on=[health_integration_response]),
 )
 
 # Cognito User Pool for authentication
