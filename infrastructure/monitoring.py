@@ -399,7 +399,7 @@ def create_api_gateway_monitoring(
     # High Error Rate Alarm
     error_alarm = aws.cloudwatch.MetricAlarm(
         f"{app_name}-high-error-rate-{environment}",
-        alarm_name=f"{app_name}-high-error-rate-{environment}",
+        name=f"{app_name}-high-error-rate-{environment}",
         comparison_operator="GreaterThanThreshold",
         evaluation_periods=2,
         metric_name="5XXError",
@@ -417,7 +417,7 @@ def create_api_gateway_monitoring(
     # High Latency Alarm
     latency_alarm = aws.cloudwatch.MetricAlarm(
         f"{app_name}-high-latency-{environment}",
-        alarm_name=f"{app_name}-high-latency-{environment}",
+        name=f"{app_name}-high-latency-{environment}",
         comparison_operator="GreaterThanThreshold",
         evaluation_periods=3,
         metric_name="Latency",
