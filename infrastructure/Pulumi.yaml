@@ -6,9 +6,9 @@ template:
     aws:region:
       description: AWS region for all resources
       default: us-west-2
-    snow-tracker:env:
+    snow-tracker-infrastructure:env:
       description: Environment (dev/staging/prod)
       default: dev
-    snow-tracker:appName:
+    snow-tracker-infrastructure:appName:
       description: Application name for resource naming
       default: snow-tracker

@@ -20,7 +20,8 @@ from monitoring import create_monitoring_stack, create_api_gateway_monitoring
 config = pulumi.Config()
 app_name = config.get("appName") or "snow-tracker"
 environment = config.get("env") or "dev"
-aws_region = config.get("aws:region") or "us-west-2"
+aws_config = pulumi.Config("aws")
+aws_region = aws_config.get("region") or "us-west-2"
 
 # Create tags for all resources
 tags = {
@@ -177,6 +178,63 @@ log_group = aws.cloudwatch.LogGroup(
     tags=tags,
 )
 
+# Weather processor log group
+weather_processor_log_group = aws.cloudwatch.LogGroup(
+    f"{app_name}-weather-processor-logs-{environment}",
+    name=f"/aws/lambda/{app_name}-weather-processor-{environment}",
+    retention_in_days=14,
+    tags=tags,
+)
+
+# Lambda function for weather data processing
+# Note: The actual code package is deployed separately via CI/CD
+weather_processor_lambda = aws.lambda_.Function(
+    f"{app_name}-weather-processor-{environment}",
+    name=f"{app_name}-weather-processor-{environment}",
+    role=lambda_role.arn,
+    handler="handlers.weather_processor.handler",
+    runtime="python3.12",
+    timeout=300,  # 5 minutes for processing all resorts
+    memory_size=256,
+    environment=aws.lambda_.FunctionEnvironmentArgs(
+        variables={
+            "ENVIRONMENT": environment,
+            "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
+            "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
+            "AWS_REGION_NAME": aws_region,
+            # Weather API key is set via AWS Secrets Manager or environment variable
+            # For now, placeholder - will be configured via CI/CD secrets
+        }
+    ),
+    tags=tags,
+    opts=pulumi.ResourceOptions(depends_on=[lambda_role, weather_processor_log_group]),
+)
+
+# CloudWatch Events rule to trigger weather processor every hour
+weather_schedule_rule = aws.cloudwatch.EventRule(
+    f"{app_name}-weather-schedule-{environment}",
+    name=f"{app_name}-weather-schedule-{environment}",
+    description="Trigger weather data fetch every hour",
+    schedule_expression="rate(1 hour)",
+    tags=tags,
+)
+
+# Permission for CloudWatch Events to invoke the Lambda
+weather_schedule_permission = aws.lambda_.Permission(
+    f"{app_name}-weather-schedule-permission-{environment}",
+    action="lambda:InvokeFunction",
+    function=weather_processor_lambda.name,
+    principal="events.amazonaws.com",
+    source_arn=weather_schedule_rule.arn,
+)
+
+# CloudWatch Events target to invoke the weather processor Lambda
+weather_schedule_target = aws.cloudwatch.EventTarget(
+    f"{app_name}-weather-schedule-target-{environment}",
+    rule=weather_schedule_rule.name,
+    arn=weather_processor_lambda.arn,
+)
+
 # API Gateway REST API
 api_gateway = aws.apigateway.RestApi(
     f"{app_name}-api-{environment}",
@@ -241,6 +299,8 @@ pulumi.export("user_pool_id", user_pool.id)
 pulumi.export("user_pool_client_id", user_pool_client.id)
 pulumi.export("region", aws_region)
 pulumi.export("environment", environment)
+pulumi.export("weather_processor_lambda_name", weather_processor_lambda.name)
+pulumi.export("weather_schedule_rule_name", weather_schedule_rule.name)
 
 # Monitoring exports
 pulumi.export("cloudwatch_dashboard_name", api_monitoring["dashboard"].dashboard_name)

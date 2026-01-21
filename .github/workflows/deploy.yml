@@ -124,8 +124,8 @@ jobs:
 
         # Set configuration
         pulumi config set aws:region us-west-2
-        pulumi config set snow-tracker:env ${{ env.ENVIRONMENT }}
-        pulumi config set snow-tracker:appName snow-tracker
+        pulumi config set snow-tracker-infrastructure:env ${{ env.ENVIRONMENT }}
+        pulumi config set snow-tracker-infrastructure:appName snow-tracker
 
         # Deploy
         pulumi up --yes --diff
@@ -143,6 +143,35 @@ jobs:
       with:
         name: lambda-package-${{ env.ENVIRONMENT }}
         path: backend/lambda-package.zip
+
+    - name: Deploy Lambda code and configure
+      run: |
+        # Get Lambda function name from Pulumi outputs
+        cd infrastructure
+        LAMBDA_NAME=$(pulumi stack output weather_processor_lambda_name 2>/dev/null || echo "")
+
+        if [ -n "$LAMBDA_NAME" ]; then
+          echo "Deploying Lambda code to: $LAMBDA_NAME"
+
+          # Update Lambda function code
+          aws lambda update-function-code \
+            --function-name "$LAMBDA_NAME" \
+            --zip-file fileb://../backend/lambda-package.zip \
+            --region us-west-2
+
+          # Wait for update to complete
+          aws lambda wait function-updated --function-name "$LAMBDA_NAME" --region us-west-2
+
+          # Update Lambda environment variables with Weather API key
+          aws lambda update-function-configuration \
+            --function-name "$LAMBDA_NAME" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,WEATHER_API_KEY=${{ secrets.WEATHER_API_KEY }}}" \
+            --region us-west-2
+
+          echo "Lambda deployment complete"
+        else
+          echo "Lambda function name not available, skipping code deployment"
+        fi
 
     - name: Seed resort data (dev/staging only)
       if: env.ENVIRONMENT == 'dev' || env.ENVIRONMENT == 'staging'
