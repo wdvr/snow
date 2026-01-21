@@ -84,7 +84,7 @@ jobs:
         cd dist && zip -r ../lambda-package.zip . && cd ..
 
     - name: Upload Lambda package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: lambda-package-${{ env.ENVIRONMENT }}
         path: backend/lambda-package.zip

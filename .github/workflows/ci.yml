@@ -67,11 +67,12 @@ jobs:
           --tb=short
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./backend/coverage.xml
         flags: backend
         name: backend-coverage
+        token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Run integration tests
       run: |
@@ -81,7 +82,7 @@ jobs:
         DYNAMODB_ENDPOINT: http://localhost:8000
 
     - name: Archive coverage reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-reports
         path: backend/htmlcov/
@@ -173,7 +174,7 @@ jobs:
         bandit -r src/ --severity-level medium
 
     - name: Upload security scan results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: security-scan
         path: backend/bandit-report.json
