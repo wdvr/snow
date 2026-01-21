@@ -44,8 +44,8 @@ jobs:
     - name: Install backend dependencies with uv
       run: |
         cd backend
-        uv pip install --system -r requirements.txt
-        uv pip install --system pytest-cov pytest-mock moto[dynamodb] localstack-client
+        uv pip install --python ${{ env.PYTHON_VERSION }} -r requirements.txt
+        uv pip install --python ${{ env.PYTHON_VERSION }} pytest-cov pytest-mock moto[dynamodb] localstack-client
 
     - name: Set up environment variables
       run: |
@@ -60,7 +60,7 @@ jobs:
     - name: Run unit tests with coverage
       run: |
         cd backend
-        python -m pytest tests/ -v \
+        uv run --python ${{ env.PYTHON_VERSION }} pytest tests/ -v \
           --cov=src \
           --cov-report=xml \
           --cov-report=html \
@@ -79,7 +79,7 @@ jobs:
     - name: Run integration tests
       run: |
         cd backend
-        python -m pytest tests/integration/ -v --tb=short
+        uv run --python ${{ env.PYTHON_VERSION }} pytest tests/integration/ -v --tb=short
       env:
         DYNAMODB_ENDPOINT: http://localhost:8000
 
@@ -114,12 +114,12 @@ jobs:
     - name: Install infrastructure dependencies with uv
       run: |
         cd infrastructure
-        uv pip install --system -r requirements.txt
+        uv pip install --python ${{ env.PYTHON_VERSION }} -r requirements.txt
 
     - name: Validate Pulumi Python syntax
       run: |
         cd infrastructure
-        python -m py_compile __main__.py
+        uv run --python ${{ env.PYTHON_VERSION }} python -m py_compile __main__.py
         echo "✅ Infrastructure code syntax is valid"
 
     # AWS credentials validation is optional - skip preview if not configured
@@ -168,42 +168,42 @@ jobs:
 
     - name: Install linting dependencies with uv
       run: |
-        uv pip install --system black flake8 mypy isort bandit ruff
+        uv pip install --python ${{ env.PYTHON_VERSION }} black flake8 mypy isort bandit ruff
 
     - name: Check code formatting with Black (non-blocking)
       continue-on-error: true
       run: |
         cd backend
-        black --check --diff src/ tests/ || echo "⚠️ Code formatting issues found - run 'black src/ tests/' to fix"
+        uv run --python ${{ env.PYTHON_VERSION }} black --check --diff src/ tests/ || echo "⚠️ Code formatting issues found - run 'black src/ tests/' to fix"
 
     - name: Check import sorting with isort (non-blocking)
       continue-on-error: true
       run: |
         cd backend
-        isort --check-only --diff src/ tests/ || echo "⚠️ Import sorting issues found - run 'isort src/ tests/' to fix"
+        uv run --python ${{ env.PYTHON_VERSION }} isort --check-only --diff src/ tests/ || echo "⚠️ Import sorting issues found - run 'isort src/ tests/' to fix"
 
     - name: Lint with flake8
       continue-on-error: true
       run: |
         cd backend
-        flake8 src/ tests/ --max-line-length=120 --extend-ignore=E203,W503,E501 --statistics
+        uv run --python ${{ env.PYTHON_VERSION }} flake8 src/ tests/ --max-line-length=120 --extend-ignore=E203,W503,E501 --statistics
 
     - name: Fast lint with Ruff
       run: |
         cd backend
-        ruff check src/ tests/ --ignore=E501,F401,F841 --output-format=github
+        uv run --python ${{ env.PYTHON_VERSION }} ruff check src/ tests/ --ignore=E501,F401,F841 --output-format=github
 
     - name: Type checking with mypy (non-blocking)
       continue-on-error: true
       run: |
         cd backend
-        mypy src/ --ignore-missing-imports --no-strict-optional || echo "⚠️ Type checking issues found"
+        uv run --python ${{ env.PYTHON_VERSION }} mypy src/ --ignore-missing-imports --no-strict-optional || echo "⚠️ Type checking issues found"
 
     - name: Security scanning with bandit
       run: |
         cd backend
-        bandit -r src/ -f json -o bandit-report.json -ll || true
-        bandit -r src/ --severity-level high -f txt
+        uv run --python ${{ env.PYTHON_VERSION }} bandit -r src/ -f json -o bandit-report.json -ll || true
+        uv run --python ${{ env.PYTHON_VERSION }} bandit -r src/ --severity-level high -f txt
 
     - name: Upload security scan results
       uses: actions/upload-artifact@v4
