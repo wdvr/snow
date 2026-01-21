@@ -31,28 +31,64 @@ tags = {
 }
 
 # S3 Bucket for Pulumi State Storage
-# Note: This bucket is used for storing Pulumi state after initial bootstrap
-pulumi_state_bucket = aws.s3.Bucket(
-    f"{app_name}-pulumi-state",
-    bucket=f"{app_name}-pulumi-state-{aws_region}",
-    versioning=aws.s3.BucketVersioningArgs(enabled=True),
-    server_side_encryption_configuration=aws.s3.BucketServerSideEncryptionConfigurationArgs(
-        rule=aws.s3.BucketServerSideEncryptionConfigurationRuleArgs(
-            apply_server_side_encryption_by_default=aws.s3.BucketServerSideEncryptionConfigurationRuleApplyServerSideEncryptionByDefaultArgs(
-                sse_algorithm="AES256"
+# Note: This bucket is shared across all environments for state storage
+# Use get_bucket to check if it exists, otherwise create it
+state_bucket_name = f"{app_name}-pulumi-state-{aws_region}"
+
+# Try to get existing bucket, create if it doesn't exist
+try:
+    existing_bucket = aws.s3.get_bucket(bucket=state_bucket_name)
+    pulumi_state_bucket = aws.s3.BucketV2.get(
+        f"{app_name}-pulumi-state",
+        id=state_bucket_name,
+    )
+    pulumi.log.info(f"Using existing S3 bucket: {state_bucket_name}")
+except Exception:
+    # Bucket doesn't exist, create it
+    pulumi_state_bucket = aws.s3.BucketV2(
+        f"{app_name}-pulumi-state",
+        bucket=state_bucket_name,
+        tags=tags,
+    )
+
+    # Enable versioning
+    aws.s3.BucketVersioningV2(
+        f"{app_name}-pulumi-state-versioning",
+        bucket=pulumi_state_bucket.id,
+        versioning_configuration=aws.s3.BucketVersioningV2VersioningConfigurationArgs(
+            status="Enabled"
+        ),
+    )
+
+    # Enable server-side encryption
+    aws.s3.BucketServerSideEncryptionConfigurationV2(
+        f"{app_name}-pulumi-state-encryption",
+        bucket=pulumi_state_bucket.id,
+        rules=[
+            aws.s3.BucketServerSideEncryptionConfigurationV2RuleArgs(
+                apply_server_side_encryption_by_default=aws.s3.BucketServerSideEncryptionConfigurationV2RuleApplyServerSideEncryptionByDefaultArgs(
+                    sse_algorithm="AES256"
+                )
             )
-        )
-    ),
-    lifecycle_rules=[
-        aws.s3.BucketLifecycleRuleArgs(
-            enabled=True,
-            noncurrent_version_expiration=aws.s3.BucketLifecycleRuleNoncurrentVersionExpirationArgs(
-                days=90
-            ),
-        )
-    ],
-    tags=tags,
-)
+        ],
+    )
+
+    # Add lifecycle rules
+    aws.s3.BucketLifecycleConfigurationV2(
+        f"{app_name}-pulumi-state-lifecycle",
+        bucket=pulumi_state_bucket.id,
+        rules=[
+            aws.s3.BucketLifecycleConfigurationV2RuleArgs(
+                id="cleanup-old-versions",
+                status="Enabled",
+                noncurrent_version_expiration=aws.s3.BucketLifecycleConfigurationV2RuleNoncurrentVersionExpirationArgs(
+                    noncurrent_days=90
+                ),
+            )
+        ],
+    )
+
+    pulumi.log.info(f"Created new S3 bucket: {state_bucket_name}")
 
 # Block public access on state bucket
 pulumi_state_bucket_public_access_block = aws.s3.BucketPublicAccessBlock(
