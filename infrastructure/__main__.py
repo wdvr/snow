@@ -237,16 +237,13 @@ weather_processor_lambda = aws.lambda_.Function(
     f"{app_name}-weather-processor-{environment}",
     name=f"{app_name}-weather-processor-{environment}",
     role=lambda_role.arn,
-    handler="handlers.weather_processor.handler",
+    handler="index.handler",
     runtime="python3.12",
     timeout=300,  # 5 minutes for processing all resorts
     memory_size=256,
     code=pulumi.AssetArchive(
         {
-            "handlers/weather_processor.py": pulumi.StringAsset(
-                placeholder_lambda_code
-            ),
-            "handlers/__init__.py": pulumi.StringAsset(""),
+            "index.py": pulumi.StringAsset(placeholder_lambda_code),
         }
     ),
     environment=aws.lambda_.FunctionEnvironmentArgs(
