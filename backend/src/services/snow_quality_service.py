@@ -1,10 +1,14 @@
 """Snow quality assessment service."""
 
-import math
-from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from datetime import datetime
+from typing import Dict, List
 
-from ..models.weather import WeatherCondition, SnowQuality, ConfidenceLevel, SnowQualityAlgorithm
+from ..models.weather import (
+    ConfidenceLevel,
+    SnowQuality,
+    SnowQualityAlgorithm,
+    WeatherCondition,
+)
 
 
 class SnowQualityService:
@@ -14,7 +18,9 @@ class SnowQualityService:
         """Initialize the service with algorithm configuration."""
         self.algorithm = algorithm_config or SnowQualityAlgorithm()
 
-    def assess_snow_quality(self, weather: WeatherCondition) -> tuple[SnowQuality, float, ConfidenceLevel]:
+    def assess_snow_quality(
+        self, weather: WeatherCondition
+    ) -> tuple[SnowQuality, float, ConfidenceLevel]:
         """
         Assess snow quality based on weather conditions.
 
@@ -25,7 +31,7 @@ class SnowQualityService:
         temp_score = self._calculate_temperature_score(
             weather.current_temp_celsius,
             weather.max_temp_celsius,
-            weather.hours_above_ice_threshold
+            weather.hours_above_ice_threshold,
         )
 
         # Calculate time-based degradation
@@ -33,16 +39,14 @@ class SnowQualityService:
 
         # Calculate snowfall benefit
         snowfall_score = self._calculate_snowfall_score(
-            weather.snowfall_24h_cm,
-            weather.snowfall_48h_cm,
-            weather.snowfall_72h_cm
+            weather.snowfall_24h_cm, weather.snowfall_48h_cm, weather.snowfall_72h_cm
         )
 
         # Combine scores with weights
         overall_score = (
-            self.algorithm.temperature_weight * temp_score +
-            self.algorithm.time_weight * time_score +
-            self.algorithm.snowfall_weight * snowfall_score
+            self.algorithm.temperature_weight * temp_score
+            + self.algorithm.time_weight * time_score
+            + self.algorithm.snowfall_weight * snowfall_score
         )
 
         # Apply source confidence multiplier
@@ -62,7 +66,9 @@ class SnowQualityService:
 
         return snow_quality, fresh_snow_cm, confidence
 
-    def _calculate_temperature_score(self, current_temp: float, max_temp: float, hours_above_threshold: float) -> float:
+    def _calculate_temperature_score(
+        self, current_temp: float, max_temp: float, hours_above_threshold: float
+    ) -> float:
         """Calculate score based on temperature conditions (0.0 = worst, 1.0 = best)."""
         # Optimal temperature range: -10°C to -2°C
         if -10 <= current_temp <= -2:
@@ -79,20 +85,24 @@ class SnowQualityService:
 
         # Penalize for time spent above ice formation threshold
         if hours_above_threshold > 0:
-            ice_penalty = min(0.8, hours_above_threshold / self.algorithm.ice_formation_hours)
-            temp_score *= (1.0 - ice_penalty)
+            ice_penalty = min(
+                0.8, hours_above_threshold / self.algorithm.ice_formation_hours
+            )
+            temp_score *= 1.0 - ice_penalty
 
         # Additional penalty for high maximum temperatures
         if max_temp > self.algorithm.ice_formation_temp_celsius:
-            max_temp_penalty = min(0.5, (max_temp - self.algorithm.ice_formation_temp_celsius) * 0.1)
-            temp_score *= (1.0 - max_temp_penalty)
+            max_temp_penalty = min(
+                0.5, (max_temp - self.algorithm.ice_formation_temp_celsius) * 0.1
+            )
+            temp_score *= 1.0 - max_temp_penalty
 
         return max(0.0, min(1.0, temp_score))
 
     def _calculate_time_degradation_score(self, timestamp: str) -> float:
         """Calculate score based on time since conditions were recorded."""
         try:
-            condition_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+            condition_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
             now = datetime.now(condition_time.tzinfo)
             hours_since = (now - condition_time).total_seconds() / 3600
 
@@ -101,7 +111,12 @@ class SnowQualityService:
                 return 1.0
             # Linear degradation over 48 hours
             elif hours_since <= self.algorithm.fresh_snow_validity_hours:
-                return 1.0 - (hours_since - 1) / (self.algorithm.fresh_snow_validity_hours - 1) * 0.7
+                return (
+                    1.0
+                    - (hours_since - 1)
+                    / (self.algorithm.fresh_snow_validity_hours - 1)
+                    * 0.7
+                )
             else:
                 # Old conditions get low score
                 return 0.1
@@ -110,13 +125,18 @@ class SnowQualityService:
             # Invalid timestamp, assume old data
             return 0.3
 
-    def _calculate_snowfall_score(self, snow_24h: float, snow_48h: float, snow_72h: float) -> float:
+    def _calculate_snowfall_score(
+        self, snow_24h: float, snow_48h: float, snow_72h: float
+    ) -> float:
         """Calculate score based on recent snowfall amounts."""
+        # Handle None values by using available data
+        snow_24h = snow_24h or 0.0
+        snow_48h = snow_48h if snow_48h is not None else snow_24h
+        snow_72h = snow_72h if snow_72h is not None else snow_48h
+
         # Weight recent snowfall more heavily
         weighted_snowfall = (
-            snow_24h * 0.6 +
-            (snow_48h - snow_24h) * 0.3 +
-            (snow_72h - snow_48h) * 0.1
+            snow_24h * 0.6 + (snow_48h - snow_24h) * 0.3 + (snow_72h - snow_48h) * 0.1
         )
 
         # Score based on snowfall amount
@@ -124,9 +144,9 @@ class SnowQualityService:
             return 1.0
         elif weighted_snowfall >= 10:  # Good snowfall
             return 0.7 + (weighted_snowfall - 10) * 0.03
-        elif weighted_snowfall >= 5:   # Fair snowfall
+        elif weighted_snowfall >= 5:  # Fair snowfall
             return 0.4 + (weighted_snowfall - 5) * 0.06
-        elif weighted_snowfall > 0:    # Some snowfall
+        elif weighted_snowfall > 0:  # Some snowfall
             return 0.2 + weighted_snowfall * 0.04
         else:  # No snowfall
             return 0.0
@@ -144,24 +164,29 @@ class SnowQualityService:
         else:
             return SnowQuality.BAD
 
-    def _estimate_fresh_snow(self, weather: WeatherCondition, temp_score: float, time_score: float) -> float:
+    def _estimate_fresh_snow(
+        self, weather: WeatherCondition, temp_score: float, time_score: float
+    ) -> float:
         """Estimate amount of fresh (non-iced) snow in cm."""
-        base_snow = weather.snowfall_24h_cm
+        base_snow = weather.snowfall_24h_cm or 0.0
+        snowfall_48h = weather.snowfall_48h_cm or 0.0
 
         # Apply degradation based on temperature and time
-        degradation_factor = (temp_score * 0.6 + time_score * 0.4)
+        degradation_factor = temp_score * 0.6 + time_score * 0.4
 
         # Estimate how much snow remains fresh
         fresh_snow = base_snow * degradation_factor
 
         # Add some from 48h snowfall if recent enough
-        if weather.snowfall_48h_cm > weather.snowfall_24h_cm and time_score > 0.3:
-            additional_fresh = (weather.snowfall_48h_cm - weather.snowfall_24h_cm) * degradation_factor * 0.5
+        if snowfall_48h > base_snow and time_score > 0.3:
+            additional_fresh = (snowfall_48h - base_snow) * degradation_factor * 0.5
             fresh_snow += additional_fresh
 
         return round(max(0.0, fresh_snow), 1)
 
-    def _calculate_confidence_level(self, weather: WeatherCondition, source_multiplier: float) -> ConfidenceLevel:
+    def _calculate_confidence_level(
+        self, weather: WeatherCondition, source_multiplier: float
+    ) -> ConfidenceLevel:
         """Calculate overall confidence in the assessment."""
         base_confidence = weather.source_confidence
 
@@ -190,14 +215,14 @@ class SnowQualityService:
             weather.min_temp_celsius is not None,
             weather.max_temp_celsius is not None,
             weather.snowfall_24h_cm is not None,
-            weather.hours_above_ice_threshold is not None
+            weather.hours_above_ice_threshold is not None,
         ]
 
         optional_fields = [
             weather.snowfall_48h_cm is not None and weather.snowfall_48h_cm > 0,
             weather.humidity_percent is not None,
             weather.wind_speed_kmh is not None,
-            weather.weather_description is not None
+            weather.weather_description is not None,
         ]
 
         required_score = sum(required_fields) / len(required_fields)
@@ -206,7 +231,9 @@ class SnowQualityService:
         # Weight required fields more heavily
         return required_score * 0.8 + optional_score * 0.2
 
-    def bulk_assess_resort_conditions(self, conditions: List[WeatherCondition]) -> Dict[str, List[tuple]]:
+    def bulk_assess_resort_conditions(
+        self, conditions: list[WeatherCondition]
+    ) -> dict[str, list[tuple]]:
         """
         Assess snow quality for multiple elevation points at a resort.
 

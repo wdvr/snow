@@ -1,10 +1,10 @@
 """Weather data service for fetching and processing weather information."""
 
-import requests
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone, timedelta
+from typing import Any, Dict, List, Optional
 
-from ..models.weather import WeatherCondition, ConfidenceLevel
+import requests
+
+from ..models.weather import ConfidenceLevel, WeatherCondition
 
 
 class WeatherService:
@@ -16,11 +16,8 @@ class WeatherService:
         self.base_url = "https://api.weatherapi.com/v1"
 
     def get_current_weather(
-        self,
-        latitude: float,
-        longitude: float,
-        elevation_meters: int
-    ) -> Dict[str, Any]:
+        self, latitude: float, longitude: float, elevation_meters: int
+    ) -> dict[str, Any]:
         """
         Fetch current weather data for a specific location.
 
@@ -29,11 +26,7 @@ class WeatherService:
         try:
             # Construct API request
             url = f"{self.base_url}/current.json"
-            params = {
-                "key": self.api_key,
-                "q": f"{latitude},{longitude}",
-                "aqi": "no"
-            }
+            params = {"key": self.api_key, "q": f"{latitude},{longitude}", "aqi": "no"}
 
             response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
@@ -48,13 +41,19 @@ class WeatherService:
             # Extract relevant weather information
             weather_data = {
                 "current_temp_celsius": current["temp_c"],
-                "min_temp_celsius": forecast_data.get("min_temp_24h", current["temp_c"] - 2),
-                "max_temp_celsius": forecast_data.get("max_temp_24h", current["temp_c"] + 2),
+                "min_temp_celsius": forecast_data.get(
+                    "min_temp_24h", current["temp_c"] - 2
+                ),
+                "max_temp_celsius": forecast_data.get(
+                    "max_temp_24h", current["temp_c"] + 2
+                ),
                 "snowfall_24h_cm": forecast_data.get("snowfall_24h", 0.0),
                 "snowfall_48h_cm": forecast_data.get("snowfall_48h", 0.0),
                 "snowfall_72h_cm": forecast_data.get("snowfall_72h", 0.0),
                 "hours_above_ice_threshold": self._calculate_ice_hours(forecast_data),
-                "max_consecutive_warm_hours": self._calculate_max_warm_hours(forecast_data),
+                "max_consecutive_warm_hours": self._calculate_max_warm_hours(
+                    forecast_data
+                ),
                 "humidity_percent": current["humidity"],
                 "wind_speed_kmh": current["wind_kph"],
                 "weather_description": current["condition"]["text"],
@@ -63,8 +62,8 @@ class WeatherService:
                 "raw_data": {
                     "api_response": data,
                     "elevation_meters": elevation_meters,
-                    "location_name": location["name"]
-                }
+                    "location_name": location["name"],
+                },
             }
 
             return weather_data
@@ -76,7 +75,9 @@ class WeatherService:
         except Exception as e:
             raise Exception(f"Error processing weather data: {str(e)}")
 
-    def _get_forecast_data(self, latitude: float, longitude: float, days: int = 3) -> Dict[str, Any]:
+    def _get_forecast_data(
+        self, latitude: float, longitude: float, days: int = 3
+    ) -> dict[str, Any]:
         """Fetch forecast data for snowfall and temperature analysis."""
         try:
             url = f"{self.base_url}/forecast.json"
@@ -85,7 +86,7 @@ class WeatherService:
                 "q": f"{latitude},{longitude}",
                 "days": days,
                 "aqi": "no",
-                "alerts": "no"
+                "alerts": "no",
             }
 
             response = requests.get(url, params=params, timeout=30)
@@ -98,8 +99,8 @@ class WeatherService:
             snowfall_24h = 0.0
             snowfall_48h = 0.0
             snowfall_72h = 0.0
-            min_temp_24h = float('inf')
-            max_temp_24h = float('-inf')
+            min_temp_24h = float("inf")
+            max_temp_24h = float("-inf")
             hourly_temps = []
 
             for i, day in enumerate(forecast_days):
@@ -123,21 +124,23 @@ class WeatherService:
                 "snowfall_24h": snowfall_24h,
                 "snowfall_48h": snowfall_48h,
                 "snowfall_72h": snowfall_72h,
-                "min_temp_24h": min_temp_24h if min_temp_24h != float('inf') else None,
-                "max_temp_24h": max_temp_24h if max_temp_24h != float('-inf') else None,
-                "hourly_temperatures": hourly_temps
+                "min_temp_24h": min_temp_24h if min_temp_24h != float("inf") else None,
+                "max_temp_24h": max_temp_24h if max_temp_24h != float("-inf") else None,
+                "hourly_temperatures": hourly_temps,
             }
 
-        except Exception as e:
+        except Exception:
             # Return empty forecast data if forecast fails
             return {
                 "snowfall_24h": 0.0,
                 "snowfall_48h": 0.0,
                 "snowfall_72h": 0.0,
-                "hourly_temperatures": []
+                "hourly_temperatures": [],
             }
 
-    def _calculate_ice_hours(self, forecast_data: Dict[str, Any], threshold_temp: float = 3.0) -> float:
+    def _calculate_ice_hours(
+        self, forecast_data: dict[str, Any], threshold_temp: float = 3.0
+    ) -> float:
         """Calculate hours spent above ice formation threshold."""
         hourly_temps = forecast_data.get("hourly_temperatures", [])
         if not hourly_temps:
@@ -145,11 +148,15 @@ class WeatherService:
 
         # Count hours above threshold in the last 24 hours
         recent_temps = hourly_temps[-24:] if len(hourly_temps) >= 24 else hourly_temps
-        hours_above_threshold = sum(1 for temp in recent_temps if temp >= threshold_temp)
+        hours_above_threshold = sum(
+            1 for temp in recent_temps if temp >= threshold_temp
+        )
 
         return float(hours_above_threshold)
 
-    def _calculate_max_warm_hours(self, forecast_data: Dict[str, Any], threshold_temp: float = 0.0) -> float:
+    def _calculate_max_warm_hours(
+        self, forecast_data: dict[str, Any], threshold_temp: float = 0.0
+    ) -> float:
         """Calculate maximum consecutive hours above freezing."""
         hourly_temps = forecast_data.get("hourly_temperatures", [])
         if not hourly_temps:
@@ -167,23 +174,24 @@ class WeatherService:
 
         return float(max_consecutive)
 
-    def get_conditions_for_resort(self, resort_id: str, hours_back: int = 24) -> List[WeatherCondition]:
+    def get_conditions_for_resort(
+        self, resort_id: str, hours_back: int = 24
+    ) -> list[WeatherCondition]:
         """Get historical conditions for a resort (placeholder for database query)."""
         # TODO: Implement database query to fetch historical conditions
         # This would query the weather_conditions DynamoDB table
         return []
 
-    def get_latest_condition(self, resort_id: str, elevation_level: str) -> Optional[WeatherCondition]:
+    def get_latest_condition(
+        self, resort_id: str, elevation_level: str
+    ) -> WeatherCondition | None:
         """Get the latest condition for a specific resort and elevation (placeholder)."""
         # TODO: Implement database query to fetch latest condition
         return None
 
     def get_weather_forecast(
-        self,
-        latitude: float,
-        longitude: float,
-        days: int = 7
-    ) -> Dict[str, Any]:
+        self, latitude: float, longitude: float, days: int = 7
+    ) -> dict[str, Any]:
         """Get extended weather forecast for planning purposes."""
         try:
             url = f"{self.base_url}/forecast.json"
@@ -192,7 +200,7 @@ class WeatherService:
                 "q": f"{latitude},{longitude}",
                 "days": min(days, 10),  # API limit
                 "aqi": "no",
-                "alerts": "yes"
+                "alerts": "yes",
             }
 
             response = requests.get(url, params=params, timeout=30)
@@ -202,7 +210,7 @@ class WeatherService:
             return {
                 "forecast": data["forecast"],
                 "location": data["location"],
-                "alerts": data.get("alerts", {})
+                "alerts": data.get("alerts", {}),
             }
 
         except Exception as e:
@@ -216,7 +224,7 @@ class WeatherService:
             params = {
                 "key": self.api_key,
                 "q": "49.7167,-118.9333",  # Big White coordinates
-                "aqi": "no"
+                "aqi": "no",
             }
 
             response = requests.get(url, params=params, timeout=10)

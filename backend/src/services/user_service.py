@@ -1,11 +1,12 @@
 """User management service."""
 
+from datetime import UTC, datetime, timezone
 from typing import Optional
-from datetime import datetime, timezone
-import boto3
+
 from botocore.exceptions import ClientError
 
 from ..models.user import User, UserPreferences
+from ..utils.dynamodb_utils import parse_from_dynamodb, prepare_for_dynamodb
 
 
 class UserService:
@@ -15,21 +16,23 @@ class UserService:
         """Initialize the service with a DynamoDB table."""
         self.table = table
 
-    def get_user_preferences(self, user_id: str) -> Optional[UserPreferences]:
+    def get_user_preferences(self, user_id: str) -> UserPreferences | None:
         """Get user preferences by user ID."""
         try:
-            response = self.table.get_item(
-                Key={'user_id': user_id}
-            )
+            response = self.table.get_item(Key={"user_id": user_id})
 
-            item = response.get('Item')
+            item = response.get("Item")
             if not item:
                 return None
 
-            return UserPreferences(**item)
+            # Convert DynamoDB Decimal types to Python native types
+            parsed_item = parse_from_dynamodb(item)
+            return UserPreferences(**parsed_item)
 
         except ClientError as e:
-            raise Exception(f"Failed to retrieve user preferences for {user_id}: {str(e)}")
+            raise Exception(
+                f"Failed to retrieve user preferences for {user_id}: {str(e)}"
+            )
         except Exception as e:
             raise Exception(f"Error processing user preferences: {str(e)}")
 
@@ -40,14 +43,18 @@ class UserService:
             item = preferences.dict()
 
             # Ensure timestamps are set
-            if not item.get('created_at'):
-                item['created_at'] = datetime.now(timezone.utc).isoformat()
+            if not item.get("created_at"):
+                item["created_at"] = datetime.now(UTC).isoformat()
 
-            item['updated_at'] = datetime.now(timezone.utc).isoformat()
+            item["updated_at"] = datetime.now(UTC).isoformat()
+
+            # Convert Python types to DynamoDB Decimal types
+            item = prepare_for_dynamodb(item)
 
             self.table.put_item(Item=item)
 
-            return UserPreferences(**item)
+            # Parse back for return value
+            return UserPreferences(**parse_from_dynamodb(item))
 
         except ClientError as e:
             raise Exception(f"Failed to save user preferences: {str(e)}")
@@ -60,15 +67,17 @@ class UserService:
             # Convert user to DynamoDB item format
             item = user.dict()
 
+            # Convert Python types to DynamoDB Decimal types
+            item = prepare_for_dynamodb(item)
+
             self.table.put_item(
-                Item=item,
-                ConditionExpression='attribute_not_exists(user_id)'
+                Item=item, ConditionExpression="attribute_not_exists(user_id)"
             )
 
             return user
 
         except ClientError as e:
-            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
                 raise Exception(f"User {user.user_id} already exists")
             else:
                 raise Exception(f"Failed to create user: {str(e)}")
@@ -81,33 +90,35 @@ class UserService:
             # Convert user to DynamoDB item format
             item = user.dict()
 
+            # Convert Python types to DynamoDB Decimal types
+            item = prepare_for_dynamodb(item)
+
             self.table.put_item(
-                Item=item,
-                ConditionExpression='attribute_exists(user_id)'
+                Item=item, ConditionExpression="attribute_exists(user_id)"
             )
 
             return user
 
         except ClientError as e:
-            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
                 raise Exception(f"User {user.user_id} does not exist")
             else:
                 raise Exception(f"Failed to update user: {str(e)}")
         except Exception as e:
             raise Exception(f"Error updating user: {str(e)}")
 
-    def get_user(self, user_id: str) -> Optional[User]:
+    def get_user(self, user_id: str) -> User | None:
         """Get user by ID."""
         try:
-            response = self.table.get_item(
-                Key={'user_id': user_id}
-            )
+            response = self.table.get_item(Key={"user_id": user_id})
 
-            item = response.get('Item')
+            item = response.get("Item")
             if not item:
                 return None
 
-            return User(**item)
+            # Convert DynamoDB Decimal types to Python native types
+            parsed_item = parse_from_dynamodb(item)
+            return User(**parsed_item)
 
         except ClientError as e:
             raise Exception(f"Failed to retrieve user {user_id}: {str(e)}")
@@ -118,9 +129,7 @@ class UserService:
         """Delete all user data (GDPR compliance)."""
         try:
             # Delete user preferences
-            self.table.delete_item(
-                Key={'user_id': user_id}
-            )
+            self.table.delete_item(Key={"user_id": user_id})
 
             # TODO: Delete from other tables (user table, etc.)
             # This should be implemented when user table is created

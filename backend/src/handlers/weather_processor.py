@@ -3,31 +3,33 @@
 import json
 import logging
 import os
-from datetime import datetime, timezone
-from typing import Dict, Any, List
+from datetime import UTC, datetime, timezone
+from typing import Any, Dict
 
 import boto3
 from botocore.exceptions import ClientError
 
+from ..models.weather import WeatherCondition
+from ..services.resort_service import ResortService
 from ..services.snow_quality_service import SnowQualityService
 from ..services.weather_service import WeatherService
-from ..services.resort_service import ResortService
-from ..models.weather import WeatherCondition, SnowQualityAlgorithm
 
 # Configure logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # Initialize AWS clients
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.resource("dynamodb")
 
 # Environment variables
-RESORTS_TABLE = os.environ.get('RESORTS_TABLE', 'snow-tracker-resorts-dev')
-WEATHER_CONDITIONS_TABLE = os.environ.get('WEATHER_CONDITIONS_TABLE', 'snow-tracker-weather-conditions-dev')
-WEATHER_API_KEY = os.environ.get('WEATHER_API_KEY')
+RESORTS_TABLE = os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
+WEATHER_CONDITIONS_TABLE = os.environ.get(
+    "WEATHER_CONDITIONS_TABLE", "snow-tracker-weather-conditions-dev"
+)
+WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY")
 
 
-def weather_processor_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
+def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
     """
     Lambda handler for scheduled weather data processing.
 
@@ -45,7 +47,7 @@ def weather_processor_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         Dict with processing results and statistics
     """
     try:
-        logger.info(f"Starting weather processing at {datetime.now(timezone.utc).isoformat()}")
+        logger.info(f"Starting weather processing at {datetime.now(UTC).isoformat()}")
 
         # Initialize services
         resort_service = ResortService(dynamodb.Table(RESORTS_TABLE))
@@ -54,11 +56,11 @@ def weather_processor_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
 
         # Statistics tracking
         stats = {
-            'resorts_processed': 0,
-            'elevation_points_processed': 0,
-            'conditions_saved': 0,
-            'errors': 0,
-            'start_time': datetime.now(timezone.utc).isoformat()
+            "resorts_processed": 0,
+            "elevation_points_processed": 0,
+            "conditions_saved": 0,
+            "errors": 0,
+            "start_time": datetime.now(UTC).isoformat(),
         }
 
         # Get all active resorts
@@ -78,20 +80,20 @@ def weather_processor_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                         weather_data = weather_service.get_current_weather(
                             latitude=elevation_point.latitude,
                             longitude=elevation_point.longitude,
-                            elevation_meters=elevation_point.elevation_meters
+                            elevation_meters=elevation_point.elevation_meters,
                         )
 
                         # Create weather condition object
                         weather_condition = WeatherCondition(
                             resort_id=resort.resort_id,
                             elevation_level=elevation_point.level.value,
-                            timestamp=datetime.now(timezone.utc).isoformat(),
-                            **weather_data
+                            timestamp=datetime.now(UTC).isoformat(),
+                            **weather_data,
                         )
 
                         # Assess snow quality
-                        snow_quality, fresh_snow_cm, confidence = snow_quality_service.assess_snow_quality(
-                            weather_condition
+                        snow_quality, fresh_snow_cm, confidence = (
+                            snow_quality_service.assess_snow_quality(weather_condition)
                         )
 
                         # Update condition with assessment results
@@ -101,14 +103,16 @@ def weather_processor_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
 
                         # Set TTL (expire after 7 days)
                         weather_condition.ttl = int(
-                            (datetime.now(timezone.utc).timestamp() + 7 * 24 * 60 * 60)
+                            datetime.now(UTC).timestamp() + 7 * 24 * 60 * 60
                         )
 
                         # Save to DynamoDB
-                        save_weather_condition(weather_conditions_table, weather_condition)
+                        save_weather_condition(
+                            weather_conditions_table, weather_condition
+                        )
 
-                        stats['elevation_points_processed'] += 1
-                        stats['conditions_saved'] += 1
+                        stats["elevation_points_processed"] += 1
+                        stats["conditions_saved"] += 1
 
                         logger.info(
                             f"Processed {resort.resort_id} {elevation_point.level.value}: "
@@ -121,39 +125,37 @@ def weather_processor_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                             f"Error processing elevation {elevation_point.level.value} "
                             f"for resort {resort.resort_id}: {str(e)}"
                         )
-                        stats['errors'] += 1
+                        stats["errors"] += 1
 
-                stats['resorts_processed'] += 1
+                stats["resorts_processed"] += 1
 
             except Exception as e:
                 logger.error(f"Error processing resort {resort.resort_id}: {str(e)}")
-                stats['errors'] += 1
+                stats["errors"] += 1
 
-        stats['end_time'] = datetime.now(timezone.utc).isoformat()
-        stats['duration_seconds'] = (
-            datetime.fromisoformat(stats['end_time'].replace('Z', '+00:00')) -
-            datetime.fromisoformat(stats['start_time'].replace('Z', '+00:00'))
+        stats["end_time"] = datetime.now(UTC).isoformat()
+        stats["duration_seconds"] = (
+            datetime.fromisoformat(stats["end_time"].replace("Z", "+00:00"))
+            - datetime.fromisoformat(stats["start_time"].replace("Z", "+00:00"))
         ).total_seconds()
 
         logger.info(f"Weather processing completed. Stats: {stats}")
 
         return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': 'Weather processing completed successfully',
-                'stats': stats
-            })
+            "statusCode": 200,
+            "body": json.dumps(
+                {"message": "Weather processing completed successfully", "stats": stats}
+            ),
         }
 
     except Exception as e:
         logger.error(f"Fatal error in weather processing: {str(e)}")
 
         return {
-            'statusCode': 500,
-            'body': json.dumps({
-                'message': 'Weather processing failed',
-                'error': str(e)
-            })
+            "statusCode": 500,
+            "body": json.dumps(
+                {"message": "Weather processing failed", "error": str(e)}
+            ),
         }
 
 
@@ -164,9 +166,9 @@ def save_weather_condition(table, weather_condition: WeatherCondition) -> None:
         item = weather_condition.dict()
 
         # Convert enum values to strings for DynamoDB storage
-        item['snow_quality'] = weather_condition.snow_quality.value
-        item['confidence_level'] = weather_condition.confidence_level.value
-        item['source_confidence'] = weather_condition.source_confidence.value
+        item["snow_quality"] = weather_condition.snow_quality.value
+        item["confidence_level"] = weather_condition.confidence_level.value
+        item["source_confidence"] = weather_condition.source_confidence.value
 
         table.put_item(Item=item)
 
@@ -178,7 +180,7 @@ def save_weather_condition(table, weather_condition: WeatherCondition) -> None:
         raise
 
 
-def scheduled_weather_update_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
+def scheduled_weather_update_handler(event: dict[str, Any], context) -> dict[str, Any]:
     """
     Handler specifically for CloudWatch scheduled events.
 
@@ -189,14 +191,17 @@ def scheduled_weather_update_handler(event: Dict[str, Any], context) -> Dict[str
     logger.info(f"Event: {json.dumps(event, indent=2)}")
 
     # CloudWatch events have a different structure
-    if event.get('source') == 'aws.events' and event.get('detail-type') == 'Scheduled Event':
+    if (
+        event.get("source") == "aws.events"
+        and event.get("detail-type") == "Scheduled Event"
+    ):
         # This is a scheduled trigger
         return weather_processor_handler(event, context)
     else:
         logger.warning(f"Unexpected event type: {event}")
         return {
-            'statusCode': 400,
-            'body': json.dumps({
-                'message': 'Invalid event type for scheduled weather update'
-            })
+            "statusCode": 400,
+            "body": json.dumps(
+                {"message": "Invalid event type for scheduled weather update"}
+            ),
         }

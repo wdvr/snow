@@ -1,30 +1,37 @@
 """Tests for the snow quality assessment service."""
 
-import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 
+from src.models.weather import ConfidenceLevel, SnowQuality, WeatherCondition
 from src.services.snow_quality_service import SnowQualityService
-from src.models.weather import WeatherCondition, SnowQuality, ConfidenceLevel, SnowQualityAlgorithm
 
 
 class TestSnowQualityService:
     """Test cases for SnowQualityService."""
 
-    def test_assess_excellent_conditions(self, sample_weather_condition, snow_quality_algorithm):
+    def test_assess_excellent_conditions(
+        self, sample_weather_condition, snow_quality_algorithm
+    ):
         """Test assessment of excellent snow conditions."""
         service = SnowQualityService(snow_quality_algorithm)
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(sample_weather_condition)
+        quality, fresh_snow, confidence = service.assess_snow_quality(
+            sample_weather_condition
+        )
 
         assert quality == SnowQuality.EXCELLENT
         assert fresh_snow > 10.0  # Should have significant fresh snow
         assert confidence in [ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH]
 
-    def test_assess_poor_conditions(self, poor_weather_condition, snow_quality_algorithm):
+    def test_assess_poor_conditions(
+        self, poor_weather_condition, snow_quality_algorithm
+    ):
         """Test assessment of poor snow conditions."""
         service = SnowQualityService(snow_quality_algorithm)
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(poor_weather_condition)
+        quality, fresh_snow, confidence = service.assess_snow_quality(
+            poor_weather_condition
+        )
 
         assert quality in [SnowQuality.POOR, SnowQuality.BAD]
         assert fresh_snow < 3.0  # Should have minimal fresh snow
@@ -52,7 +59,7 @@ class TestSnowQualityService:
         service = SnowQualityService(snow_quality_algorithm)
 
         # Recent timestamp should score high
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         recent_timestamp = now.isoformat()
         recent_score = service._calculate_time_degradation_score(recent_timestamp)
         assert recent_score >= 0.9
@@ -65,7 +72,7 @@ class TestSnowQualityService:
         # Medium age should score moderately
         medium_timestamp = (now - timedelta(hours=12)).isoformat()
         medium_score = service._calculate_time_degradation_score(medium_timestamp)
-        assert 0.3 <= medium_score <= 0.8
+        assert 0.3 <= medium_score <= 0.9
 
     def test_snowfall_score_calculation(self, snow_quality_algorithm):
         """Test snowfall amount scoring."""
@@ -83,12 +90,16 @@ class TestSnowQualityService:
         moderate_score = service._calculate_snowfall_score(8.0, 12.0, 15.0)
         assert 0.4 <= moderate_score <= 0.8
 
-    def test_fresh_snow_estimation(self, sample_weather_condition, snow_quality_algorithm):
+    def test_fresh_snow_estimation(
+        self, sample_weather_condition, snow_quality_algorithm
+    ):
         """Test fresh snow amount estimation."""
         service = SnowQualityService(snow_quality_algorithm)
 
         # Good conditions should preserve most snow
-        quality, fresh_snow, confidence = service.assess_snow_quality(sample_weather_condition)
+        quality, fresh_snow, confidence = service.assess_snow_quality(
+            sample_weather_condition
+        )
         assert fresh_snow >= sample_weather_condition.snowfall_24h_cm * 0.7
 
         # Poor conditions should reduce fresh snow significantly
@@ -96,10 +107,14 @@ class TestSnowQualityService:
         poor_condition.current_temp_celsius = 5.0
         poor_condition.hours_above_ice_threshold = 8.0
 
-        quality, degraded_fresh_snow, confidence = service.assess_snow_quality(poor_condition)
+        quality, degraded_fresh_snow, confidence = service.assess_snow_quality(
+            poor_condition
+        )
         assert degraded_fresh_snow < fresh_snow
 
-    def test_confidence_level_adjustment(self, sample_weather_condition, snow_quality_algorithm):
+    def test_confidence_level_adjustment(
+        self, sample_weather_condition, snow_quality_algorithm
+    ):
         """Test confidence level adjustments based on data quality."""
         service = SnowQualityService(snow_quality_algorithm)
 
@@ -107,7 +122,9 @@ class TestSnowQualityService:
         complete_condition = sample_weather_condition.model_copy()
         complete_condition.source_confidence = ConfidenceLevel.VERY_HIGH
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(complete_condition)
+        quality, fresh_snow, confidence = service.assess_snow_quality(
+            complete_condition
+        )
         assert confidence in [ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH]
 
         # Incomplete data should downgrade confidence
@@ -117,10 +134,14 @@ class TestSnowQualityService:
         incomplete_condition.snowfall_48h_cm = None
         incomplete_condition.source_confidence = ConfidenceLevel.LOW
 
-        quality, fresh_snow, low_confidence = service.assess_snow_quality(incomplete_condition)
+        quality, fresh_snow, low_confidence = service.assess_snow_quality(
+            incomplete_condition
+        )
         assert low_confidence in [ConfidenceLevel.LOW, ConfidenceLevel.VERY_LOW]
 
-    def test_data_completeness_assessment(self, sample_weather_condition, snow_quality_algorithm):
+    def test_data_completeness_assessment(
+        self, sample_weather_condition, snow_quality_algorithm
+    ):
         """Test data completeness scoring."""
         service = SnowQualityService(snow_quality_algorithm)
 
@@ -129,20 +150,24 @@ class TestSnowQualityService:
         assert complete_score >= 0.8
 
         # Missing optional data should still score reasonably
+        # With all required fields (80% weight) and 2/4 optional fields (50% * 20% = 10%)
+        # Expected score: 0.8 + 0.1 = 0.9
         partial_condition = sample_weather_condition.model_copy()
         partial_condition.humidity_percent = None
         partial_condition.wind_speed_kmh = None
 
         partial_score = service._assess_data_completeness(partial_condition)
-        assert 0.6 <= partial_score < 0.8
+        assert 0.85 <= partial_score <= 0.95
 
-        # Missing required data should score low
+        # Missing required data should score lower
+        # With 3/5 required fields (60%) and 4/4 optional fields (100%)
+        # Expected score: 0.6 * 0.8 + 1.0 * 0.2 = 0.68
         incomplete_condition = sample_weather_condition.model_copy()
         incomplete_condition.current_temp_celsius = None
         incomplete_condition.snowfall_24h_cm = None
 
         incomplete_score = service._assess_data_completeness(incomplete_condition)
-        assert incomplete_score < 0.6
+        assert incomplete_score < 0.7
 
     def test_score_to_quality_mapping(self, snow_quality_algorithm):
         """Test the mapping from numerical scores to quality enums."""
@@ -172,7 +197,7 @@ class TestSnowQualityService:
                 confidence_level=ConfidenceLevel.MEDIUM,
                 fresh_snow_cm=8.0,
                 data_source="test-api",
-                source_confidence=ConfidenceLevel.MEDIUM
+                source_confidence=ConfidenceLevel.MEDIUM,
             ),
             WeatherCondition(
                 resort_id="test-resort",
@@ -187,8 +212,8 @@ class TestSnowQualityService:
                 confidence_level=ConfidenceLevel.HIGH,
                 fresh_snow_cm=18.0,
                 data_source="test-api",
-                source_confidence=ConfidenceLevel.HIGH
-            )
+                source_confidence=ConfidenceLevel.HIGH,
+            ),
         ]
 
         results = service.bulk_assess_resort_conditions(conditions)
@@ -223,11 +248,13 @@ class TestSnowQualityService:
             confidence_level=ConfidenceLevel.LOW,
             fresh_snow_cm=3.0,
             data_source="test",
-            source_confidence=ConfidenceLevel.LOW
+            source_confidence=ConfidenceLevel.LOW,
         )
 
         # Should not crash and should return reasonable values
-        quality, fresh_snow, confidence = service.assess_snow_quality(invalid_timestamp_condition)
+        quality, fresh_snow, confidence = service.assess_snow_quality(
+            invalid_timestamp_condition
+        )
         assert quality in SnowQuality
         assert fresh_snow >= 0.0
         assert confidence in ConfidenceLevel

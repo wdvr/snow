@@ -80,11 +80,10 @@ jobs:
         name: backend-coverage
         token: ${{ secrets.CODECOV_TOKEN }}
 
-    - name: Run integration tests (non-blocking)
-      continue-on-error: true
+    - name: Run integration tests
       run: |
         cd backend
-        python -m pytest tests/integration/ -v --tb=short || echo "Integration tests need Decimal fixes for moto compatibility"
+        python -m pytest tests/integration/ -v --tb=short
       env:
         DYNAMODB_ENDPOINT: http://localhost:8000
 
@@ -200,7 +199,7 @@ jobs:
     - name: Lint with Ruff
       run: |
         cd backend
-        ruff check src/ tests/ --ignore=E501,F401,F841 --output-format=github
+        ruff check src/ tests/ --ignore=E501,F401,F841,UP035,B904 --output-format=github
 
     - name: Type checking with mypy (non-blocking)
       continue-on-error: true

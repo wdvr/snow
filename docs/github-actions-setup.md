@@ -119,6 +119,43 @@ gh secret set AWS_SECRET_ACCESS_KEY --body "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPL
 gh secret set PULUMI_CONFIG_PASSPHRASE --body "your-strong-passphrase"
 ```
 
+## Pre-commit Hooks Setup
+
+The project uses pre-commit hooks to ensure code quality before commits.
+
+### Installation
+
+```bash
+# Install pre-commit and ruff in the virtual environment
+cd backend
+source .venv/bin/activate  # or use: uv pip install pre-commit ruff
+
+# Install the git hooks
+cd ..  # Return to repo root
+pre-commit install
+```
+
+### Running Pre-commit
+
+```bash
+# Run on all files
+pre-commit run --all-files
+
+# Run on staged files only (happens automatically on commit)
+pre-commit run
+```
+
+### Configured Hooks
+
+| Hook | Description |
+|------|-------------|
+| ruff | Fast Python linter (replaces flake8, isort) |
+| ruff-format | Code formatting (replaces black) |
+| check-yaml | YAML syntax validation |
+| end-of-file-fixer | Ensures files end with newline |
+| trailing-whitespace | Removes trailing whitespace |
+| check-added-large-files | Prevents large files from being committed |
+
 ## Environment Setup
 
 ### Development Environment

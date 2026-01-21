@@ -1,9 +1,9 @@
 # Snow Quality Tracker - Progress & Tasks
 
 ## Project Status: IMPLEMENTATION PHASE
-**Last Updated**: 2026-01-20
+**Last Updated**: 2026-01-21
 
-## Current Sprint: Foundation & Initial Data
+## Current Sprint: CI/CD & Deployment Ready
 
 ### Phase 1: Project Foundation ✅ COMPLETED
 | Task | Status | Notes |
@@ -14,7 +14,7 @@
 | Create README.md | ✅ COMPLETED | Project overview |
 | Create .env template | ✅ COMPLETED | AWS credentials template |
 | Create .gitignore | ✅ COMPLETED | Swift, Python, AWS secrets |
-| Setup GitHub private repository | ✅ COMPLETED | Remote repository setup |
+| Setup GitHub private repository | ✅ COMPLETED | Remote repository at wdvr/snow |
 | Complete project scaffolding | ✅ COMPLETED | Backend, iOS, infrastructure, tests |
 
 ### Phase 2: Architecture & Research
@@ -22,59 +22,60 @@
 |------|---------|-------|
 | Research weather APIs | 🟡 PENDING | Compare weatherapi.com, Apple Weather |
 | Research ski resort data sources | 🟡 PENDING | Find comprehensive resort APIs |
-| Design snow quality algorithm | 🟡 PENDING | Temperature/snowfall correlation |
-| Design database schema | 🟡 PENDING | DynamoDB table structure |
-| Design API endpoints | 🟡 PENDING | REST API specification |
+| Design snow quality algorithm | ✅ COMPLETED | Implemented in SnowQualityService |
+| Design database schema | ✅ COMPLETED | DynamoDB tables defined in Pulumi |
+| Design API endpoints | ✅ COMPLETED | FastAPI with full REST API |
 | Create system architecture diagram | 🟡 PENDING | AWS services integration |
 
-### Phase 3: Backend Infrastructure
+### Phase 3: Backend Infrastructure ✅ COMPLETED
 | Task | Status | Notes |
 |------|---------|-------|
-| Setup Pulumi project | 🟡 PENDING | Infrastructure as Code |
-| Create DynamoDB tables | 🟡 PENDING | Resort, weather, user data |
-| Setup API Gateway | 🟡 PENDING | REST API configuration |
-| Create Lambda function skeleton | 🟡 PENDING | Weather data processor |
-| Setup CloudWatch monitoring | 🟡 PENDING | Logging and alerts |
+| Setup Pulumi project | ✅ COMPLETED | Full infrastructure as code |
+| Create DynamoDB tables | ✅ COMPLETED | Resorts, weather, user preferences |
+| Setup API Gateway | ✅ COMPLETED | REST API with Lambda integration |
+| Create Lambda function skeleton | ✅ COMPLETED | FastAPI + Mangum handler |
+| Setup CloudWatch monitoring | ✅ COMPLETED | Integrated with Pulumi |
 | Implement authentication | 🟡 PENDING | AWS Cognito integration |
 
 ### Phase 4: Weather Data Pipeline
 | Task | Status | Notes |
 |------|---------|-------|
-| Choose weather API provider | 🟡 PENDING | Based on research phase |
-| Implement weather data fetcher | 🟡 PENDING | API integration |
-| Implement snow quality algorithm | 🟡 PENDING | Fresh snow vs ice logic |
-| Create scheduled Lambda trigger | 🟡 PENDING | Daily weather updates |
-| Implement data validation | 🟡 PENDING | Error handling |
+| Choose weather API provider | 🟡 PENDING | weatherapi.com selected, needs API key |
+| Implement weather data fetcher | ✅ COMPLETED | WeatherService implemented |
+| Implement snow quality algorithm | ✅ COMPLETED | SnowQualityService with scoring |
+| Create scheduled Lambda trigger | 🟡 PENDING | CloudWatch Events rule |
+| Implement data validation | ✅ COMPLETED | Pydantic models with validation |
 | Setup retry logic | 🟡 PENDING | Fault tolerance |
 
-### Phase 5: API Development
+### Phase 5: API Development ✅ COMPLETED
 | Task | Status | Notes |
 |------|---------|-------|
-| Create resort endpoints | 🟡 PENDING | CRUD operations |
-| Create weather condition endpoints | 🟡 PENDING | Historical and current |
-| Create user preference endpoints | 🟡 PENDING | Favorite resorts |
+| Create resort endpoints | ✅ COMPLETED | GET /resorts, GET /resorts/{id} |
+| Create weather condition endpoints | ✅ COMPLETED | Full conditions API |
+| Create user preference endpoints | ✅ COMPLETED | GET/PUT preferences |
 | Implement API authentication | 🟡 PENDING | JWT tokens |
 | Add API rate limiting | 🟡 PENDING | Abuse prevention |
-| Create API documentation | 🟡 PENDING | OpenAPI spec |
+| Create API documentation | ✅ COMPLETED | FastAPI auto-generated docs |
 
-### Phase 6: iOS App Foundation
+### Phase 6: iOS App Foundation ✅ COMPLETED
 | Task | Status | Notes |
 |------|---------|-------|
-| Create Xcode project | 🟡 PENDING | SwiftUI app template |
-| Setup project structure | 🟡 PENDING | MVVM architecture |
-| Implement Sign in with Apple | 🟡 PENDING | User authentication |
-| Create networking layer | 🟡 PENDING | API client |
-| Setup dependency injection | 🟡 PENDING | SwiftUI environment |
-| Create data models | 🟡 PENDING | Resort, weather, user |
+| Create Xcode project | ✅ COMPLETED | XcodeGen project.yml |
+| Setup project structure | ✅ COMPLETED | MVVM architecture |
+| Implement Sign in with Apple | ✅ COMPLETED | AuthService implemented |
+| Create networking layer | ✅ COMPLETED | Configuration + APIClient |
+| Setup dependency injection | ✅ COMPLETED | SwiftUI @EnvironmentObject |
+| Create data models | ✅ COMPLETED | Resort, WeatherCondition, User |
+| Create app icon | ✅ COMPLETED | Snow mountain design |
 
-### Phase 7: iOS UI Development
+### Phase 7: iOS UI Development ✅ COMPLETED
 | Task | Status | Notes |
 |------|---------|-------|
-| Design app navigation | 🟡 PENDING | TabView or NavigationStack |
-| Create resort selection view | 🟡 PENDING | List/search interface |
-| Create snow conditions view | 🟡 PENDING | Multi-elevation display |
-| Create user profile view | 🟡 PENDING | Preferences and settings |
-| Implement data refresh | 🟡 PENDING | Pull to refresh |
+| Design app navigation | ✅ COMPLETED | TabView with 3 tabs |
+| Create resort selection view | ✅ COMPLETED | ResortListView |
+| Create snow conditions view | ✅ COMPLETED | ConditionsView |
+| Create user profile view | ✅ COMPLETED | SettingsView |
+| Implement data refresh | ✅ COMPLETED | Pull to refresh |
 | Add offline caching | 🟡 PENDING | CoreData or SwiftData |
 
 ### Phase 8: Initial Resorts Data ✅ COMPLETED
@@ -89,73 +90,107 @@
 | Validate weather data accuracy | 🟡 PENDING | Compare with actual conditions |
 | Test snow quality algorithm | 🟡 PENDING | Historical data validation |
 
-### Phase 9: Testing & Quality
+### Phase 9: Testing & Quality ✅ COMPLETED
 | Task | Status | Notes |
 |------|---------|-------|
-| Setup unit tests (Backend) | 🟡 PENDING | Python pytest |
-| Setup integration tests (API) | 🟡 PENDING | End-to-end testing |
-| Setup unit tests (iOS) | 🟡 PENDING | XCTest framework |
-| Setup UI tests (iOS) | 🟡 PENDING | SwiftUI testing |
+| Setup unit tests (Backend) | ✅ COMPLETED | 94 pytest tests passing |
+| Setup integration tests (API) | ✅ COMPLETED | 18 integration tests with moto |
+| Setup unit tests (iOS) | ✅ COMPLETED | 33 XCTest tests |
+| Setup UI tests (iOS) | ✅ COMPLETED | 13 UI tests |
+| Pre-commit hooks | ✅ COMPLETED | Ruff linter + formatter |
 | Performance testing | 🟡 PENDING | Load testing |
-| Security testing | 🟡 PENDING | API vulnerability scan |
+| Security testing | ✅ COMPLETED | Bandit security scanning |
 
 ### Phase 10: Deployment & Launch
 | Task | Status | Notes |
 |------|---------|-------|
-| Deploy staging environment | 🟡 PENDING | AWS staging setup |
-| Deploy production environment | 🟡 PENDING | AWS production setup |
-| Setup CI/CD pipeline | 🟡 PENDING | GitHub Actions |
+| Setup CI/CD pipeline | ✅ COMPLETED | GitHub Actions workflows |
+| Configure GitHub Secrets | ✅ COMPLETED | AWS credentials + Pulumi passphrase |
+| Deploy dev environment | 🟡 READY | Trigger via workflow_dispatch |
+| Deploy staging environment | 🟡 READY | Auto-deploys on main merge |
+| Deploy production environment | 🟡 READY | Deploys on version tag (v*) |
 | App Store preparation | 🟡 PENDING | Screenshots, metadata |
 | Beta testing | 🟡 PENDING | TestFlight distribution |
 | Production launch | 🟡 PENDING | App Store submission |
 
-## Technical Decisions Needed
+## Technical Decisions Made
 
-### Immediate Questions
+### Completed Decisions
+1. **Backend Framework**: FastAPI with Mangum for Lambda
+2. **Database**: DynamoDB with Decimal handling utilities
+3. **Infrastructure**: Pulumi (Python) for AWS IaC
+4. **iOS Architecture**: SwiftUI with MVVM pattern
+5. **Testing**: pytest + moto for backend, XCTest for iOS
+6. **Linting**: Ruff (replaces black, flake8, isort)
+7. **CI/CD**: GitHub Actions with multi-environment deployment
+
+### Pending Decisions
 1. **Weather API Selection**: Which provider offers best elevation-specific data?
-2. **AWS Deployment**: Lambda vs EKS/Fargate for backend?
+2. **Authentication**: AWS Cognito vs custom JWT implementation
 3. **Data Refresh Frequency**: How often to fetch weather updates?
-4. **Snow Quality Algorithm**: Exact temperature thresholds and time windows?
-
-### Research Required
-1. **Ski Resort APIs**: Comprehensive data source for resort expansion
-2. **User-Generated Data**: Integration with apps like Slopes
-3. **Apple Weather API**: Availability and pricing
-4. **Snow Report Integration**: Technical feasibility
+4. **Offline Caching**: CoreData vs SwiftData for iOS
 
 ## Key Metrics & Success Criteria
 - **Accuracy**: Snow quality predictions match actual conditions >80%
 - **Performance**: API response time <500ms
 - **Reliability**: 99.9% uptime for weather data updates
 - **User Experience**: App launch time <2 seconds
+- **Test Coverage**: >80% for backend code
 
-## Next Steps
-1. Complete project foundation setup
-2. Research and select weather API provider
-3. Design and validate snow quality algorithm
-4. Begin AWS infrastructure setup with Pulumi
+## Next Steps (Priority Order)
+
+### Immediate (This Week)
+1. **Deploy to AWS dev environment** - Run `gh workflow run deploy.yml -f environment=dev`
+2. **Get Weather API key** - Sign up at weatherapi.com and add to GitHub secrets
+3. **Verify iOS build** - Run `xcodegen generate` and build in Xcode
+4. **Test end-to-end flow** - Resort list → Conditions → User preferences
+
+### Short-term (This Month)
+1. Implement scheduled weather data fetching
+2. Add authentication (Sign in with Apple backend integration)
+3. Implement offline caching for iOS
+4. Add more ski resorts (Whistler, Revelstoke, etc.)
+
+### Medium-term
+1. App Store preparation and TestFlight beta
+2. Production deployment
+3. User feedback integration
+4. Performance optimization
 
 ## Notes & Learnings
 
+### Development Session (2026-01-21)
+- **Testing Complete**: 112 backend tests (94 unit + 18 integration) + 46 iOS tests
+- **Moto Decimal Issues**: Resolved by using DynamoDB Decimal utilities
+- **Pre-commit Setup**: Ruff installed and configured for all Python files
+- **GitHub Secrets**: AWS credentials and Pulumi passphrase configured
+- **App Icon**: Created snow mountain design with snowflakes
+
 ### Initial Resort Data Implementation (2026-01-20)
 - **Research Sources**: Used official resort websites and ski industry databases
-  - Big White: [Mountain Stats](https://www.bigwhite.com/explore/mountain-info/mountain-stats)
-  - Lake Louise: [Ski Louise Stats](https://www.skilouise.com/explore-winter/winter-ski-ride/mountain-stats/)
-  - Silver Star: [SilverStar Resort Info](https://www.skisilverstar.com/)
-
 - **Data Accuracy**: All coordinates and elevations verified against multiple sources
-- **Technical Implementation**:
-  - Created comprehensive seeder with validation and error handling
-  - Added 15+ test cases covering success/failure scenarios
-  - Implemented data export and summary functionality
-  - Command-line script supports dry-run mode for safety
-
-- **Key Insights**:
-  - Elevation data varies significantly between sources - used official resort data
-  - Coordinate precision important for weather API accuracy
-  - Built-in validation prevents bad data from entering system
+- **Technical Implementation**: Comprehensive seeder with validation and error handling
 
 ### Development Process Notes
 - PR-based development workflow established
 - Comprehensive testing strategy proving effective
-- Resort data forms foundation for weather integration
+- Infrastructure ready for first AWS deployment
+
+## Commands Reference
+
+```bash
+# Run backend tests
+cd backend && python -m pytest tests/ -v --cov=src
+
+# Run pre-commit hooks
+pre-commit run --all-files
+
+# Generate Xcode project
+cd ios && xcodegen generate
+
+# Deploy to dev environment
+gh workflow run deploy.yml -f environment=dev
+
+# Check deployment status
+gh run list --workflow=deploy.yml
+```

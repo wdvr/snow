@@ -32,6 +32,15 @@ class AuthenticationService: NSObject, ObservableObject {
     // MARK: - Public Methods
 
     func signInWithApple() {
+        #if DEBUG
+        // Check if Sign in with Apple is available (requires paid developer account)
+        // Fall back to debug sign-in if not
+        if !isSignInWithAppleAvailable {
+            debugSignIn()
+            return
+        }
+        #endif
+
         let request = ASAuthorizationAppleIDProvider().createRequest()
         request.requestedScopes = [.email, .fullName]
 
@@ -42,6 +51,45 @@ class AuthenticationService: NSObject, ObservableObject {
         isLoading = true
         errorMessage = nil
     }
+
+    #if DEBUG
+    /// Check if Sign in with Apple is properly configured
+    private var isSignInWithAppleAvailable: Bool {
+        // Check if the entitlement exists
+        guard let entitlements = Bundle.main.infoDictionary?["Entitlements"] as? [String: Any],
+              let signInWithApple = entitlements["com.apple.developer.applesignin"] as? [String],
+              !signInWithApple.isEmpty else {
+            return false
+        }
+        return true
+    }
+
+    /// Debug-only sign in for development without paid Apple Developer account
+    func debugSignIn(email: String = "developer@snowtracker.local", name: String = "Debug User") {
+        isLoading = true
+        errorMessage = nil
+
+        let debugUserID = "debug-user-\(UUID().uuidString.prefix(8))"
+
+        // Simulate network delay
+        Task {
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+
+            keychain.set(debugUserID, forKey: Keys.userIdentifier)
+            keychain.set(email, forKey: Keys.userEmail)
+            keychain.set(name, forKey: Keys.userName)
+            keychain.set("debug-token-\(debugUserID)", forKey: Keys.authToken)
+
+            currentUser = AuthenticatedUser(
+                id: debugUserID,
+                email: email,
+                fullName: name
+            )
+            isAuthenticated = true
+            isLoading = false
+        }
+    }
+    #endif
 
     func signOut() {
         // Clear keychain

@@ -1,12 +1,12 @@
 """Tests for the resort data seeder."""
 
-import pytest
 from unittest.mock import Mock, patch
-from datetime import datetime, timezone
 
-from src.utils.resort_seeder import ResortSeeder
+import pytest
+
+from src.models.resort import ElevationLevel, ElevationPoint, Resort
 from src.services.resort_service import ResortService
-from src.models.resort import Resort, ElevationLevel
+from src.utils.resort_seeder import ResortSeeder
 
 
 class TestResortSeeder:
@@ -57,8 +57,12 @@ class TestResortSeeder:
         resorts = seeder._get_initial_resort_data()
 
         for resort in resorts:
-            base_point = next(p for p in resort.elevation_points if p.level == ElevationLevel.BASE)
-            top_point = next(p for p in resort.elevation_points if p.level == ElevationLevel.TOP)
+            base_point = next(
+                p for p in resort.elevation_points if p.level == ElevationLevel.BASE
+            )
+            top_point = next(
+                p for p in resort.elevation_points if p.level == ElevationLevel.TOP
+            )
 
             # Top should be higher than base
             assert top_point.elevation_meters > base_point.elevation_meters
@@ -87,14 +91,15 @@ class TestResortSeeder:
         # Mock successful creation
         def mock_create_resort(resort):
             return resort
+
         mock_resort_service.create_resort.side_effect = mock_create_resort
 
         results = seeder.seed_initial_resorts()
 
-        assert results['resorts_created'] == 3
-        assert results['resorts_skipped'] == 0
-        assert len(results['errors']) == 0
-        assert len(results['created_resorts']) == 3
+        assert results["resorts_created"] == 3
+        assert results["resorts_skipped"] == 0
+        assert len(results["errors"]) == 0
+        assert len(results["created_resorts"]) == 3
 
         # Verify resort service was called correctly
         assert mock_resort_service.get_resort.call_count == 3
@@ -102,6 +107,7 @@ class TestResortSeeder:
 
     def test_seed_initial_resorts_some_exist(self, seeder, mock_resort_service):
         """Test seeding when some resorts already exist."""
+
         # Mock that Big White already exists
         def mock_get_resort(resort_id):
             if resort_id == "big-white":
@@ -112,13 +118,14 @@ class TestResortSeeder:
 
         def mock_create_resort(resort):
             return resort
+
         mock_resort_service.create_resort.side_effect = mock_create_resort
 
         results = seeder.seed_initial_resorts()
 
-        assert results['resorts_created'] == 2  # Lake Louise and Silver Star
-        assert results['resorts_skipped'] == 1  # Big White
-        assert len(results['errors']) == 0
+        assert results["resorts_created"] == 2  # Lake Louise and Silver Star
+        assert results["resorts_skipped"] == 1  # Big White
+        assert len(results["errors"]) == 0
 
         # Should create only 2 resorts
         assert mock_resort_service.create_resort.call_count == 2
@@ -138,10 +145,10 @@ class TestResortSeeder:
 
         results = seeder.seed_initial_resorts()
 
-        assert results['resorts_created'] == 2  # Big White and Silver Star
-        assert results['resorts_skipped'] == 0
-        assert len(results['errors']) == 1
-        assert "lake-louise" in results['errors'][0]
+        assert results["resorts_created"] == 2  # Big White and Silver Star
+        assert results["resorts_skipped"] == 0
+        assert len(results["errors"]) == 1
+        assert "lake-louise" in results["errors"][0]
 
     def test_get_resort_summary(self, seeder, mock_resort_service):
         """Test resort summary generation."""
@@ -155,8 +162,8 @@ class TestResortSeeder:
                 elevation_points=[
                     Mock(elevation_meters=1500),
                     Mock(elevation_meters=2000),
-                    Mock(elevation_meters=2300)
-                ]
+                    Mock(elevation_meters=2300),
+                ],
             ),
             Mock(
                 resort_id="vail",
@@ -165,94 +172,113 @@ class TestResortSeeder:
                 region="CO",
                 elevation_points=[
                     Mock(elevation_meters=2500),
-                    Mock(elevation_meters=3500)
-                ]
-            )
+                    Mock(elevation_meters=3500),
+                ],
+            ),
         ]
 
         mock_resort_service.get_all_resorts.return_value = mock_resorts
 
         summary = seeder.get_resort_summary()
 
-        assert summary['total_resorts'] == 2
-        assert summary['resorts_by_country']['CA'] == 1
-        assert summary['resorts_by_country']['US'] == 1
-        assert summary['resorts_by_region']['BC, CA'] == 1
-        assert summary['resorts_by_region']['CO, US'] == 1
+        assert summary["total_resorts"] == 2
+        assert summary["resorts_by_country"]["CA"] == 1
+        assert summary["resorts_by_country"]["US"] == 1
+        assert summary["resorts_by_region"]["BC, CA"] == 1
+        assert summary["resorts_by_region"]["CO, US"] == 1
 
         # Check elevation ranges
-        assert 'big-white' in summary['elevation_ranges']
-        assert 'vail' in summary['elevation_ranges']
+        assert "big-white" in summary["elevation_ranges"]
+        assert "vail" in summary["elevation_ranges"]
 
-        big_white_elevation = summary['elevation_ranges']['big-white']
-        assert big_white_elevation['min_elevation_m'] == 1500
-        assert big_white_elevation['max_elevation_m'] == 2300
-        assert big_white_elevation['vertical_drop_m'] == 800
-        assert big_white_elevation['elevation_points'] == 3
+        big_white_elevation = summary["elevation_ranges"]["big-white"]
+        assert big_white_elevation["min_elevation_m"] == 1500
+        assert big_white_elevation["max_elevation_m"] == 2300
+        assert big_white_elevation["vertical_drop_m"] == 800
+        assert big_white_elevation["elevation_points"] == 3
 
     def test_validate_resort_data_valid_resorts(self, seeder, mock_resort_service):
         """Test validation of valid resort data."""
-        mock_resorts = [
-            Mock(
+        valid_resorts = [
+            Resort(
                 resort_id="test-resort",
                 name="Test Resort",
                 country="CA",
                 region="BC",
                 timezone="America/Vancouver",
                 elevation_points=[
-                    Mock(level=ElevationLevel.BASE, elevation_meters=1000, latitude=49.0, longitude=-120.0),
-                    Mock(level=ElevationLevel.TOP, elevation_meters=2000, latitude=49.1, longitude=-119.9)
-                ]
+                    ElevationPoint(
+                        level=ElevationLevel.BASE,
+                        elevation_meters=1000,
+                        elevation_feet=3280,
+                        latitude=49.0,
+                        longitude=-120.0,
+                    ),
+                    ElevationPoint(
+                        level=ElevationLevel.TOP,
+                        elevation_meters=2000,
+                        elevation_feet=6562,
+                        latitude=49.1,
+                        longitude=-119.9,
+                    ),
+                ],
             )
         ]
 
-        mock_resort_service.get_all_resorts.return_value = mock_resorts
+        mock_resort_service.get_all_resorts.return_value = valid_resorts
 
         results = seeder.validate_resort_data()
 
-        assert results['total_resorts'] == 1
-        assert results['valid_resorts'] == 1
-        assert len(results['issues']) == 0
+        assert results["total_resorts"] == 1
+        assert results["valid_resorts"] == 1
+        assert len(results["issues"]) == 0
 
     def test_validate_resort_data_with_issues(self, seeder, mock_resort_service):
         """Test validation of resort data with issues."""
-        mock_resorts = [
-            Mock(
-                resort_id="bad-resort",
-                name="",  # Invalid name
-                country="XX",  # Invalid country
-                region="BC",
-                timezone="",  # Missing timezone
-                elevation_points=[
-                    Mock(level=ElevationLevel.BASE, elevation_meters=1000, latitude=200.0, longitude=-120.0),  # Invalid latitude
-                ]
-            )
-        ]
+        # Create a mock resort with invalid attributes
+        # Using spec=Resort ensures the Mock has the same attributes
+        bad_resort = Mock()
+        bad_resort.resort_id = "bad-resort"
+        bad_resort.name = "X"  # Invalid name (too short)
+        bad_resort.country = "XX"  # Invalid country
+        bad_resort.region = "BC"
+        bad_resort.timezone = ""  # Missing timezone
 
-        mock_resort_service.get_all_resorts.return_value = mock_resorts
+        # Create elevation point with invalid coordinates
+        bad_point = Mock()
+        bad_point.level = ElevationLevel.BASE
+        bad_point.elevation_meters = 1000
+        bad_point.latitude = 200.0  # Invalid latitude
+        bad_point.longitude = -120.0
+
+        bad_resort.elevation_points = [bad_point]
+
+        mock_resort_service.get_all_resorts.return_value = [bad_resort]
 
         results = seeder.validate_resort_data()
 
-        assert results['total_resorts'] == 1
-        assert results['valid_resorts'] == 0
-        assert len(results['issues']) == 1
+        assert results["total_resorts"] == 1
+        assert results["valid_resorts"] == 0
+        assert len(results["issues"]) == 1
 
-        issues = results['issues'][0]
-        assert issues['resort_id'] == 'bad-resort'
-        assert any('name' in issue for issue in issues['issues'])
-        assert any('country' in issue for issue in issues['issues'])
-        assert any('timezone' in issue for issue in issues['issues'])
-        assert any('latitude' in issue for issue in issues['issues'])
+        issues = results["issues"][0]
+        assert issues["resort_id"] == "bad-resort"
+        assert any("name" in issue.lower() for issue in issues["issues"])
+        assert any("country" in issue.lower() for issue in issues["issues"])
+        assert any("timezone" in issue.lower() for issue in issues["issues"])
+        assert any("latitude" in issue.lower() for issue in issues["issues"])
 
-    @patch('builtins.open')
-    @patch('json.dump')
-    def test_export_resort_data(self, mock_json_dump, mock_open, seeder, mock_resort_service):
+    @patch("builtins.open")
+    @patch("json.dump")
+    def test_export_resort_data(
+        self, mock_json_dump, mock_open, seeder, mock_resort_service
+    ):
         """Test resort data export functionality."""
         mock_resorts = [
             Mock(
                 resort_id="test-resort",
                 name="Test Resort",
-                dict=lambda: {"resort_id": "test-resort", "name": "Test Resort"}
+                dict=lambda: {"resort_id": "test-resort", "name": "Test Resort"},
             )
         ]
 
@@ -268,15 +294,15 @@ class TestResortSeeder:
 
         # Check the exported data structure
         export_data = mock_json_dump.call_args[0][0]
-        assert 'export_timestamp' in export_data
-        assert export_data['total_resorts'] == 1
-        assert len(export_data['resorts']) == 1
+        assert "export_timestamp" in export_data
+        assert export_data["total_resorts"] == 1
+        assert len(export_data["resorts"]) == 1
 
     def test_export_resort_data_custom_path(self, seeder, mock_resort_service):
         """Test resort data export with custom file path."""
         mock_resort_service.get_all_resorts.return_value = []
 
-        with patch('builtins.open'), patch('json.dump'):
+        with patch("builtins.open"), patch("json.dump"):
             file_path = seeder.export_resort_data("custom_export.json")
             assert file_path == "custom_export.json"
 
@@ -305,7 +331,9 @@ class TestResortSeeder:
         assert lake_louise.timezone == "America/Edmonton"
 
         # Check elevation data matches researched values
-        summit_point = next(p for p in lake_louise.elevation_points if p.level == ElevationLevel.TOP)
+        summit_point = next(
+            p for p in lake_louise.elevation_points if p.level == ElevationLevel.TOP
+        )
         assert summit_point.elevation_meters == 2637
         assert summit_point.elevation_feet == 8652
 

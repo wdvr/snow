@@ -12,23 +12,23 @@ Options:
     --dry-run     Show what would be created without actually creating
 """
 
-import os
-import sys
 import argparse
 import logging
+import os
+import sys
+
 import boto3
 from botocore.exceptions import ClientError
 
 # Add the src directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.services.resort_service import ResortService
 from src.utils.resort_seeder import ResortSeeder
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -37,10 +37,10 @@ def setup_services():
     """Setup AWS services and resort seeder."""
     try:
         # Initialize DynamoDB resource
-        dynamodb = boto3.resource('dynamodb')
+        dynamodb = boto3.resource("dynamodb")
 
         # Get table name from environment or use default
-        table_name = os.environ.get('RESORTS_TABLE', 'snow-tracker-resorts-dev')
+        table_name = os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
         logger.info(f"Using DynamoDB table: {table_name}")
 
         # Initialize services
@@ -66,8 +66,10 @@ def seed_resorts(seeder: ResortSeeder, dry_run: bool = False):
         for resort in initial_resorts:
             print(f"  - {resort.name} ({resort.resort_id})")
             print(f"    Country: {resort.country}, Region: {resort.region}")
-            print(f"    Elevation: {min(p.elevation_meters for p in resort.elevation_points)}m - "
-                  f"{max(p.elevation_meters for p in resort.elevation_points)}m")
+            print(
+                f"    Elevation: {min(p.elevation_meters for p in resort.elevation_points)}m - "
+                f"{max(p.elevation_meters for p in resort.elevation_points)}m"
+            )
             print()
         return
 
@@ -75,24 +77,24 @@ def seed_resorts(seeder: ResortSeeder, dry_run: bool = False):
         logger.info("Starting resort data seeding...")
         results = seeder.seed_initial_resorts()
 
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
         print("RESORT SEEDING RESULTS")
-        print("="*50)
+        print("=" * 50)
         print(f"Resorts created: {results['resorts_created']}")
         print(f"Resorts skipped: {results['resorts_skipped']}")
         print(f"Errors: {len(results['errors'])}")
 
-        if results['created_resorts']:
-            print(f"\nCreated resorts:")
-            for resort_id in results['created_resorts']:
+        if results["created_resorts"]:
+            print("\nCreated resorts:")
+            for resort_id in results["created_resorts"]:
                 print(f"  ✅ {resort_id}")
 
-        if results['errors']:
-            print(f"\nErrors:")
-            for error in results['errors']:
+        if results["errors"]:
+            print("\nErrors:")
+            for error in results["errors"]:
                 print(f"  ❌ {error}")
 
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
 
     except Exception as e:
         logger.error(f"Failed to seed resorts: {str(e)}")
@@ -105,30 +107,30 @@ def validate_resorts(seeder: ResortSeeder):
         logger.info("Validating resort data...")
         results = seeder.validate_resort_data()
 
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
         print("RESORT DATA VALIDATION")
-        print("="*50)
+        print("=" * 50)
         print(f"Total resorts: {results['total_resorts']}")
         print(f"Valid resorts: {results['valid_resorts']}")
         print(f"Resorts with issues: {len(results['issues'])}")
         print(f"Warnings: {len(results['warnings'])}")
 
-        if results['issues']:
-            print(f"\nIssues found:")
-            for issue in results['issues']:
+        if results["issues"]:
+            print("\nIssues found:")
+            for issue in results["issues"]:
                 print(f"\n  🔴 {issue['resort_name']} ({issue['resort_id']}):")
-                for problem in issue['issues']:
+                for problem in issue["issues"]:
                     print(f"     - {problem}")
 
-        if results['warnings']:
-            print(f"\nWarnings:")
-            for warning in results['warnings']:
+        if results["warnings"]:
+            print("\nWarnings:")
+            for warning in results["warnings"]:
                 print(f"  ⚠️  {warning}")
 
-        if not results['issues'] and not results['warnings']:
+        if not results["issues"] and not results["warnings"]:
             print("\n✅ All resort data is valid!")
 
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
 
     except Exception as e:
         logger.error(f"Failed to validate resorts: {str(e)}")
@@ -141,31 +143,39 @@ def show_summary(seeder: ResortSeeder):
         logger.info("Generating resort summary...")
         summary = seeder.get_resort_summary()
 
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
         print("RESORT DATA SUMMARY")
-        print("="*50)
+        print("=" * 50)
         print(f"Total resorts: {summary['total_resorts']}")
 
-        if summary['resorts_by_country']:
-            print(f"\nBy Country:")
-            for country, count in summary['resorts_by_country'].items():
-                country_name = "Canada" if country == "CA" else "United States" if country == "US" else country
+        if summary["resorts_by_country"]:
+            print("\nBy Country:")
+            for country, count in summary["resorts_by_country"].items():
+                country_name = (
+                    "Canada"
+                    if country == "CA"
+                    else "United States"
+                    if country == "US"
+                    else country
+                )
                 print(f"  {country_name}: {count} resort{'s' if count != 1 else ''}")
 
-        if summary['resorts_by_region']:
-            print(f"\nBy Region:")
-            for region, count in summary['resorts_by_region'].items():
+        if summary["resorts_by_region"]:
+            print("\nBy Region:")
+            for region, count in summary["resorts_by_region"].items():
                 print(f"  {region}: {count} resort{'s' if count != 1 else ''}")
 
-        if summary['elevation_ranges']:
-            print(f"\nElevation Ranges:")
-            for resort_id, data in summary['elevation_ranges'].items():
+        if summary["elevation_ranges"]:
+            print("\nElevation Ranges:")
+            for _resort_id, data in summary["elevation_ranges"].items():
                 print(f"  {data['name']}:")
-                print(f"    Range: {data['min_elevation_m']}m - {data['max_elevation_m']}m")
+                print(
+                    f"    Range: {data['min_elevation_m']}m - {data['max_elevation_m']}m"
+                )
                 print(f"    Vertical Drop: {data['vertical_drop_m']}m")
                 print(f"    Elevation Points: {data['elevation_points']}")
 
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
 
     except Exception as e:
         logger.error(f"Failed to generate summary: {str(e)}")
@@ -178,11 +188,11 @@ def export_resorts(seeder: ResortSeeder):
         logger.info("Exporting resort data...")
         file_path = seeder.export_resort_data()
 
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
         print("RESORT DATA EXPORT")
-        print("="*50)
+        print("=" * 50)
         print(f"✅ Resort data exported to: {file_path}")
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
 
     except Exception as e:
         logger.error(f"Failed to export resort data: {str(e)}")
@@ -195,24 +205,20 @@ def main():
         description="Seed initial resort data into Snow Quality Tracker database"
     )
     parser.add_argument(
-        '--validate',
-        action='store_true',
-        help='Validate existing resort data integrity'
+        "--validate",
+        action="store_true",
+        help="Validate existing resort data integrity",
     )
     parser.add_argument(
-        '--export',
-        action='store_true',
-        help='Export current resort data to JSON file'
+        "--export", action="store_true", help="Export current resort data to JSON file"
     )
     parser.add_argument(
-        '--summary',
-        action='store_true',
-        help='Show summary of current resort data'
+        "--summary", action="store_true", help="Show summary of current resort data"
     )
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Show what would be created without actually creating'
+        "--dry-run",
+        action="store_true",
+        help="Show what would be created without actually creating",
     )
 
     args = parser.parse_args()

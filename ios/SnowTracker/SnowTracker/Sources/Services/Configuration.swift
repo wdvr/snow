@@ -1,22 +1,37 @@
 import Foundation
 
-enum Environment {
-    case development
-    case staging
-    case production
+/// Environment configuration for the Snow Tracker app
+/// Maps to Pulumi stacks: dev, staging, prod
+enum AppEnvironment: String, CaseIterable {
+    case development = "dev"
+    case staging = "staging"
+    case production = "prod"
 
+    var displayName: String {
+        switch self {
+        case .development: return "Development"
+        case .staging: return "Staging"
+        case .production: return "Production"
+        }
+    }
+
+    /// API base URL for each environment
+    /// These will be populated by Pulumi outputs after deployment
     var apiBaseURL: URL {
         switch self {
         case .development:
-            // Use localhost for simulator, or ngrok URL for device testing
+            // Dev environment - use localhost for simulator, deployed dev API for device
             #if targetEnvironment(simulator)
             return URL(string: "http://localhost:8000")!
             #else
-            return URL(string: "https://api-dev.snow-tracker.com")!
+            // Replace with actual API Gateway URL from: pulumi stack output api_gateway_url --stack dev
+            return URL(string: "https://dev-api.snow-tracker.com")!
             #endif
         case .staging:
-            return URL(string: "https://api-staging.snow-tracker.com")!
+            // Replace with actual API Gateway URL from: pulumi stack output api_gateway_url --stack staging
+            return URL(string: "https://staging-api.snow-tracker.com")!
         case .production:
+            // Replace with actual API Gateway URL from: pulumi stack output api_gateway_url --stack prod
             return URL(string: "https://api.snow-tracker.com")!
         }
     }
@@ -24,18 +39,18 @@ enum Environment {
     var cognitoUserPoolId: String {
         switch self {
         case .development:
-            return "us-west-2_XXXXXXXXX" // Replace with actual dev pool ID
+            return "us-west-2_dev" // Replace with actual dev pool ID after Pulumi deployment
         case .staging:
-            return "us-west-2_YYYYYYYYY" // Replace with actual staging pool ID
+            return "us-west-2_staging" // Replace with actual staging pool ID
         case .production:
-            return "us-west-2_ZZZZZZZZZ" // Replace with actual prod pool ID
+            return "us-west-2_prod" // Replace with actual prod pool ID
         }
     }
 
     var cognitoClientId: String {
         switch self {
         case .development:
-            return "dev-client-id"
+            return "dev-client-id" // Replace after Pulumi deployment
         case .staging:
             return "staging-client-id"
         case .production:
@@ -44,33 +59,127 @@ enum Environment {
     }
 }
 
-struct AppConfiguration {
+/// App configuration singleton
+/// Handles environment selection and custom API URL overrides
+class AppConfiguration: ObservableObject {
     static var shared = AppConfiguration()
 
-    let environment: Environment
+    // UserDefaults keys
+    private let customAPIURLKey = "com.snowtracker.customAPIURL"
+    private let useCustomAPIKey = "com.snowtracker.useCustomAPI"
+    private let selectedEnvironmentKey = "com.snowtracker.selectedEnvironment"
+
+    /// The default environment based on build configuration
+    let defaultEnvironment: AppEnvironment
+
+    /// Currently selected environment (can be changed in debug builds)
+    @Published var selectedEnvironment: AppEnvironment {
+        didSet {
+            UserDefaults.standard.set(selectedEnvironment.rawValue, forKey: selectedEnvironmentKey)
+        }
+    }
+
+    /// Whether to use a custom API URL instead of the environment URL
+    @Published var useCustomAPI: Bool {
+        didSet {
+            UserDefaults.standard.set(useCustomAPI, forKey: useCustomAPIKey)
+        }
+    }
+
+    /// Custom API URL string (for local development or testing)
+    @Published var customAPIURLString: String {
+        didSet {
+            UserDefaults.standard.set(customAPIURLString, forKey: customAPIURLKey)
+        }
+    }
 
     private init() {
+        // Determine default environment based on build configuration
         #if DEBUG
-        self.environment = .development
+        self.defaultEnvironment = .development
         #else
-        // Check for staging bundle ID or use production
+        // Production builds check bundle ID for staging vs prod
         if Bundle.main.bundleIdentifier?.contains("staging") == true {
-            self.environment = .staging
+            self.defaultEnvironment = .staging
         } else {
-            self.environment = .production
+            self.defaultEnvironment = .production
         }
         #endif
+
+        // Load saved environment preference (debug builds only)
+        #if DEBUG
+        if let savedEnv = UserDefaults.standard.string(forKey: selectedEnvironmentKey),
+           let env = AppEnvironment(rawValue: savedEnv) {
+            self.selectedEnvironment = env
+        } else {
+            self.selectedEnvironment = defaultEnvironment
+        }
+        #else
+        self.selectedEnvironment = defaultEnvironment
+        #endif
+
+        // Load custom API settings
+        self.useCustomAPI = UserDefaults.standard.bool(forKey: useCustomAPIKey)
+        self.customAPIURLString = UserDefaults.standard.string(forKey: customAPIURLKey) ?? ""
     }
 
+    /// The current API base URL to use
     var apiBaseURL: URL {
-        environment.apiBaseURL
+        // Custom URL takes precedence if enabled and valid
+        if useCustomAPI, !customAPIURLString.isEmpty, let customURL = URL(string: customAPIURLString) {
+            return customURL
+        }
+        return selectedEnvironment.apiBaseURL
     }
 
+    /// Whether this is a debug build
     var isDebug: Bool {
         #if DEBUG
         return true
         #else
         return false
+        #endif
+    }
+
+    /// Whether environment switching is allowed (debug builds only)
+    var canSwitchEnvironment: Bool {
+        #if DEBUG
+        return true
+        #else
+        return false
+        #endif
+    }
+
+    /// Whether currently using a custom API URL
+    var isUsingCustomAPI: Bool {
+        useCustomAPI && !customAPIURLString.isEmpty
+    }
+
+    /// Display string for current configuration
+    var currentConfigurationDisplay: String {
+        if isUsingCustomAPI {
+            return "Custom: \(customAPIURLString)"
+        }
+        return selectedEnvironment.displayName
+    }
+
+    /// Reset to default settings
+    func resetToDefault() {
+        selectedEnvironment = defaultEnvironment
+        useCustomAPI = false
+        customAPIURLString = ""
+    }
+
+    /// Validate a URL string
+    func validateURL(_ urlString: String) -> Bool {
+        guard let url = URL(string: urlString) else { return false }
+        return url.scheme == "http" || url.scheme == "https"
+    }
+
+    /// Set environment (only works in debug builds)
+    func setEnvironment(_ environment: AppEnvironment) {
+        #if DEBUG
+        selectedEnvironment = environment
         #endif
     }
 }

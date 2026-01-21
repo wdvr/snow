@@ -20,7 +20,7 @@ def create_monitoring_stack(
     environment: str,
     tags: dict,
     vpc_id: str = None,
-    enable_eks: bool = True
+    enable_eks: bool = True,
 ):
     """
     Create the monitoring infrastructure stack.
@@ -39,7 +39,9 @@ def create_monitoring_stack(
 
     # Only create EKS for staging/prod (expensive for dev)
     if not enable_eks or environment == "dev":
-        pulumi.log.info("Skipping EKS creation for dev environment - use Lambda instead")
+        pulumi.log.info(
+            "Skipping EKS creation for dev environment - use Lambda instead"
+        )
         return resources
 
     # Create VPC for EKS if not provided
@@ -49,7 +51,7 @@ def create_monitoring_stack(
             cidr_block="10.0.0.0/16",
             enable_dns_hostnames=True,
             enable_dns_support=True,
-            tags={**tags, "Name": f"{app_name}-vpc-{environment}"}
+            tags={**tags, "Name": f"{app_name}-vpc-{environment}"},
         )
         resources["vpc"] = vpc
 
@@ -69,8 +71,8 @@ def create_monitoring_stack(
                 tags={
                     **tags,
                     "Name": f"{app_name}-public-{az}",
-                    "kubernetes.io/role/elb": "1"
-                }
+                    "kubernetes.io/role/elb": "1",
+                },
             )
             public_subnets.append(public_subnet)
 
@@ -83,8 +85,8 @@ def create_monitoring_stack(
                 tags={
                     **tags,
                     "Name": f"{app_name}-private-{az}",
-                    "kubernetes.io/role/internal-elb": "1"
-                }
+                    "kubernetes.io/role/internal-elb": "1",
+                },
             )
             private_subnets.append(private_subnet)
 
@@ -95,7 +97,7 @@ def create_monitoring_stack(
         igw = aws.ec2.InternetGateway(
             f"{app_name}-igw-{environment}",
             vpc_id=vpc.id,
-            tags={**tags, "Name": f"{app_name}-igw-{environment}"}
+            tags={**tags, "Name": f"{app_name}-igw-{environment}"},
         )
         resources["igw"] = igw
 
@@ -104,33 +106,30 @@ def create_monitoring_stack(
             f"{app_name}-public-rt-{environment}",
             vpc_id=vpc.id,
             routes=[
-                aws.ec2.RouteTableRouteArgs(
-                    cidr_block="0.0.0.0/0",
-                    gateway_id=igw.id
-                )
+                aws.ec2.RouteTableRouteArgs(cidr_block="0.0.0.0/0", gateway_id=igw.id)
             ],
-            tags={**tags, "Name": f"{app_name}-public-rt-{environment}"}
+            tags={**tags, "Name": f"{app_name}-public-rt-{environment}"},
         )
 
         for i, subnet in enumerate(public_subnets):
             aws.ec2.RouteTableAssociation(
                 f"{app_name}-public-rta-{i}-{environment}",
                 subnet_id=subnet.id,
-                route_table_id=public_rt.id
+                route_table_id=public_rt.id,
             )
 
         # NAT Gateway for private subnets
         eip = aws.ec2.Eip(
             f"{app_name}-nat-eip-{environment}",
             domain="vpc",
-            tags={**tags, "Name": f"{app_name}-nat-eip-{environment}"}
+            tags={**tags, "Name": f"{app_name}-nat-eip-{environment}"},
         )
 
         nat_gw = aws.ec2.NatGateway(
             f"{app_name}-nat-{environment}",
             subnet_id=public_subnets[0].id,
             allocation_id=eip.id,
-            tags={**tags, "Name": f"{app_name}-nat-{environment}"}
+            tags={**tags, "Name": f"{app_name}-nat-{environment}"},
         )
         resources["nat_gateway"] = nat_gw
 
@@ -140,18 +139,17 @@ def create_monitoring_stack(
             vpc_id=vpc.id,
             routes=[
                 aws.ec2.RouteTableRouteArgs(
-                    cidr_block="0.0.0.0/0",
-                    nat_gateway_id=nat_gw.id
+                    cidr_block="0.0.0.0/0", nat_gateway_id=nat_gw.id
                 )
             ],
-            tags={**tags, "Name": f"{app_name}-private-rt-{environment}"}
+            tags={**tags, "Name": f"{app_name}-private-rt-{environment}"},
         )
 
         for i, subnet in enumerate(private_subnets):
             aws.ec2.RouteTableAssociation(
                 f"{app_name}-private-rta-{i}-{environment}",
                 subnet_id=subnet.id,
-                route_table_id=private_rt.id
+                route_table_id=private_rt.id,
             )
 
         vpc_id = vpc.id
@@ -162,30 +160,27 @@ def create_monitoring_stack(
         f"{app_name}-eks-{environment}",
         name=f"{app_name}-{environment}",
         vpc_id=vpc_id if isinstance(vpc_id, str) else vpc.id,
-        subnet_ids=subnet_ids if 'subnet_ids' in dir() else None,
+        subnet_ids=subnet_ids if "subnet_ids" in dir() else None,
         instance_type="t3.medium",
         desired_capacity=2,
         min_size=1,
         max_size=4,
         node_associate_public_ip_address=False,
-        tags=tags
+        tags=tags,
     )
     resources["eks_cluster"] = cluster
 
     # Create Kubernetes provider for the cluster
     k8s_provider = k8s.Provider(
-        f"{app_name}-k8s-provider-{environment}",
-        kubeconfig=cluster.kubeconfig
+        f"{app_name}-k8s-provider-{environment}", kubeconfig=cluster.kubeconfig
     )
     resources["k8s_provider"] = k8s_provider
 
     # Create monitoring namespace
     monitoring_ns = k8s.core.v1.Namespace(
         "monitoring",
-        metadata=k8s.meta.v1.ObjectMetaArgs(
-            name="monitoring"
-        ),
-        opts=pulumi.ResourceOptions(provider=k8s_provider)
+        metadata=k8s.meta.v1.ObjectMetaArgs(name="monitoring"),
+        opts=pulumi.ResourceOptions(provider=k8s_provider),
     )
     resources["monitoring_namespace"] = monitoring_ns
 
@@ -201,29 +196,16 @@ def create_monitoring_stack(
             ),
             values={
                 "server": {
-                    "persistentVolume": {
-                        "size": "10Gi"
-                    },
+                    "persistentVolume": {"size": "10Gi"},
                     "resources": {
-                        "requests": {
-                            "cpu": "250m",
-                            "memory": "512Mi"
-                        },
-                        "limits": {
-                            "cpu": "500m",
-                            "memory": "1Gi"
-                        }
-                    }
+                        "requests": {"cpu": "250m", "memory": "512Mi"},
+                        "limits": {"cpu": "500m", "memory": "1Gi"},
+                    },
                 },
-                "alertmanager": {
-                    "enabled": True
-                }
-            }
+                "alertmanager": {"enabled": True},
+            },
         ),
-        opts=pulumi.ResourceOptions(
-            provider=k8s_provider,
-            depends_on=[monitoring_ns]
-        )
+        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[monitoring_ns]),
     )
     resources["prometheus"] = prometheus
 
@@ -234,17 +216,21 @@ def create_monitoring_stack(
             chart="grafana",
             version="7.0.0",
             namespace="monitoring",
-            fetch_opts=FetchOpts(
-                repo="https://grafana.github.io/helm-charts"
-            ),
+            fetch_opts=FetchOpts(repo="https://grafana.github.io/helm-charts"),
             values={
-                "adminPassword": pulumi.Config().get_secret("grafanaAdminPassword") or "admin",
-                "persistence": {
-                    "enabled": True,
-                    "size": "5Gi"
-                },
+                "adminPassword": pulumi.Config().get_secret("grafanaAdminPassword")
+                or "admin",
+                "persistence": {"enabled": True, "size": "5Gi"},
                 "service": {
-                    "type": "LoadBalancer"
+                    "type": "LoadBalancer",
+                    "annotations": {
+                        # AWS ELB annotations for better load balancer configuration
+                        "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+                        "service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled": "true",
+                    },
+                },
+                "ingress": {
+                    "enabled": False  # Using LoadBalancer instead of Ingress
                 },
                 "datasources": {
                     "datasources.yaml": {
@@ -255,17 +241,17 @@ def create_monitoring_stack(
                                 "type": "prometheus",
                                 "url": "http://prometheus-server.monitoring.svc.cluster.local",
                                 "access": "proxy",
-                                "isDefault": True
+                                "isDefault": True,
                             },
                             {
                                 "name": "CloudWatch",
                                 "type": "cloudwatch",
                                 "jsonData": {
                                     "authType": "default",
-                                    "defaultRegion": "us-west-2"
-                                }
-                            }
-                        ]
+                                    "defaultRegion": "us-west-2",
+                                },
+                            },
+                        ],
                     }
                 },
                 "dashboardProviders": {
@@ -281,27 +267,20 @@ def create_monitoring_stack(
                                 "editable": True,
                                 "options": {
                                     "path": "/var/lib/grafana/dashboards/default"
-                                }
+                                },
                             }
-                        ]
+                        ],
                     }
                 },
                 "resources": {
-                    "requests": {
-                        "cpu": "100m",
-                        "memory": "256Mi"
-                    },
-                    "limits": {
-                        "cpu": "200m",
-                        "memory": "512Mi"
-                    }
-                }
-            }
+                    "requests": {"cpu": "100m", "memory": "256Mi"},
+                    "limits": {"cpu": "200m", "memory": "512Mi"},
+                },
+            },
         ),
         opts=pulumi.ResourceOptions(
-            provider=k8s_provider,
-            depends_on=[monitoring_ns, prometheus]
-        )
+            provider=k8s_provider, depends_on=[monitoring_ns, prometheus]
+        ),
     )
     resources["grafana"] = grafana
 
@@ -309,10 +288,7 @@ def create_monitoring_stack(
 
 
 def create_api_gateway_monitoring(
-    app_name: str,
-    environment: str,
-    api_gateway_id: pulumi.Output,
-    tags: dict
+    app_name: str, environment: str, api_gateway_id: pulumi.Output, tags: dict
 ):
     """
     Create CloudWatch dashboards and alarms for API Gateway monitoring.
@@ -322,7 +298,8 @@ def create_api_gateway_monitoring(
     dashboard = aws.cloudwatch.Dashboard(
         f"{app_name}-api-dashboard-{environment}",
         dashboard_name=f"{app_name}-api-{environment}",
-        dashboard_body=api_gateway_id.apply(lambda api_id: f"""{{
+        dashboard_body=api_gateway_id.apply(
+            lambda api_id: f"""{{
             "widgets": [
                 {{
                     "type": "metric",
@@ -408,20 +385,21 @@ def create_api_gateway_monitoring(
                     }}
                 }}
             ]
-        }}""")
+        }}"""
+        ),
     )
 
     # SNS Topic for alarms
     alarm_topic = aws.sns.Topic(
         f"{app_name}-alarm-topic-{environment}",
         name=f"{app_name}-alarms-{environment}",
-        tags=tags
+        tags=tags,
     )
 
     # High Error Rate Alarm
     error_alarm = aws.cloudwatch.MetricAlarm(
         f"{app_name}-high-error-rate-{environment}",
-        alarm_name=f"{app_name}-high-error-rate-{environment}",
+        name=f"{app_name}-high-error-rate-{environment}",
         comparison_operator="GreaterThanThreshold",
         evaluation_periods=2,
         metric_name="5XXError",
@@ -430,18 +408,16 @@ def create_api_gateway_monitoring(
         statistic="Sum",
         threshold=10,
         alarm_description="API Gateway 5XX errors exceeded threshold",
-        dimensions={
-            "ApiName": f"{app_name}-api-{environment}"
-        },
+        dimensions={"ApiName": f"{app_name}-api-{environment}"},
         alarm_actions=[alarm_topic.arn],
         ok_actions=[alarm_topic.arn],
-        tags=tags
+        tags=tags,
     )
 
     # High Latency Alarm
     latency_alarm = aws.cloudwatch.MetricAlarm(
         f"{app_name}-high-latency-{environment}",
-        alarm_name=f"{app_name}-high-latency-{environment}",
+        name=f"{app_name}-high-latency-{environment}",
         comparison_operator="GreaterThanThreshold",
         evaluation_periods=3,
         metric_name="Latency",
@@ -450,17 +426,15 @@ def create_api_gateway_monitoring(
         statistic="Average",
         threshold=3000,  # 3 seconds
         alarm_description="API Gateway latency exceeded 3 seconds",
-        dimensions={
-            "ApiName": f"{app_name}-api-{environment}"
-        },
+        dimensions={"ApiName": f"{app_name}-api-{environment}"},
         alarm_actions=[alarm_topic.arn],
         ok_actions=[alarm_topic.arn],
-        tags=tags
+        tags=tags,
     )
 
     return {
         "dashboard": dashboard,
         "alarm_topic": alarm_topic,
         "error_alarm": error_alarm,
-        "latency_alarm": latency_alarm
+        "latency_alarm": latency_alarm,
     }
