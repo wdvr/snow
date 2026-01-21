@@ -155,21 +155,32 @@ def create_monitoring_stack(
         vpc_id = vpc.id
         subnet_ids = [s.id for s in public_subnets + private_subnets]
 
-    # Create EKS Cluster
+    # Create EKS Cluster with managed node group (uses Launch Templates)
     cluster = eks.Cluster(
         f"{app_name}-eks-{environment}",
         name=f"{app_name}-{environment}",
         version="1.31",  # Specify valid EKS version
         vpc_id=vpc_id if isinstance(vpc_id, str) else vpc.id,
         subnet_ids=subnet_ids if "subnet_ids" in dir() else None,
-        instance_type="t3.medium",
-        desired_capacity=2,
-        min_size=1,
-        max_size=4,
-        node_associate_public_ip_address=False,
+        skip_default_node_group=True,  # Don't create default node group with Launch Config
         tags=tags,
     )
     resources["eks_cluster"] = cluster
+
+    # Create managed node group (uses Launch Templates by default)
+    managed_node_group = eks.ManagedNodeGroup(
+        f"{app_name}-eks-nodegroup-{environment}",
+        cluster=cluster,
+        node_group_name=f"{app_name}-workers-{environment}",
+        instance_types=["t3.medium"],
+        scaling_config=aws.eks.NodeGroupScalingConfigArgs(
+            desired_size=2,
+            min_size=1,
+            max_size=4,
+        ),
+        tags=tags,
+    )
+    resources["managed_node_group"] = managed_node_group
 
     # Create Kubernetes provider for the cluster
     k8s_provider = k8s.Provider(
