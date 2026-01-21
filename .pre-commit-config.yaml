@@ -8,7 +8,7 @@ repos:
     rev: v0.9.6
     hooks:
       - id: ruff
-        args: [--fix, --ignore=E501,F401,F841]
+        args: ["--fix", "--extend-ignore", "E501,F401,F841,UP035,B904"]
         types_or: [python, pyi]
       - id: ruff-format
         types_or: [python, pyi]
@@ -18,6 +18,7 @@ repos:
     rev: v5.0.0
     hooks:
       - id: check-yaml
+        args: [--unsafe]  # Allow CloudFormation/SAM template tags like !Sub, !Ref
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-added-large-files

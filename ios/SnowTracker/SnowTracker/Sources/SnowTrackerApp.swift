@@ -28,6 +28,7 @@ struct SnowTrackerApp: App {
 
 struct MainTabView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @ObservedObject private var authService = AuthenticationService.shared
 
     var body: some View {
         TabView {
@@ -50,6 +51,7 @@ struct MainTabView: View {
                 }
 
             SettingsView()
+                .environmentObject(authService)
                 .tabItem {
                     Image(systemName: "gear")
                     Text("Settings")
@@ -62,105 +64,7 @@ struct MainTabView: View {
     }
 }
 
-struct SettingsView: View {
-    @State private var temperatureUnit = "celsius"
-    @State private var distanceUnit = "metric"
-    @ObservedObject private var authService = AuthenticationService.shared
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("Units") {
-                    Picker("Temperature", selection: $temperatureUnit) {
-                        Text("Celsius").tag("celsius")
-                        Text("Fahrenheit").tag("fahrenheit")
-                    }
-
-                    Picker("Distance", selection: $distanceUnit) {
-                        Text("Metric (m)").tag("metric")
-                        Text("Imperial (ft)").tag("imperial")
-                    }
-                }
-
-                if authService.isAuthenticated, let user = authService.currentUser {
-                    Section("Account") {
-                        HStack {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.blue.opacity(0.2))
-                                    .frame(width: 40, height: 40)
-
-                                Text(user.initials)
-                                    .font(.headline)
-                                    .foregroundColor(.blue)
-                            }
-
-                            VStack(alignment: .leading) {
-                                Text(user.displayName)
-                                    .font(.body)
-                                if let email = user.email {
-                                    Text(email)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                        }
-
-                        Button(role: .destructive) {
-                            authService.signOut()
-                        } label: {
-                            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                        }
-                    }
-                } else {
-                    Section("Account") {
-                        Button {
-                            authService.signInWithApple()
-                        } label: {
-                            Label("Sign in with Apple", systemImage: "apple.logo")
-                        }
-                    }
-                }
-
-                Section("About") {
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
-                            .foregroundColor(.secondary)
-                    }
-
-                    HStack {
-                        Text("Environment")
-                        Spacer()
-                        Text(AppConfiguration.shared.isDebug ? "Development" : "Production")
-                            .foregroundColor(.secondary)
-                    }
-                }
-
-                #if DEBUG
-                Section("Debug") {
-                    HStack {
-                        Text("API Base URL")
-                        Spacer()
-                        Text(AppConfiguration.shared.apiBaseURL.absoluteString)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                #endif
-            }
-            .navigationTitle("Settings")
-        }
-    }
-}
-
 #Preview("Main App") {
     MainTabView()
         .environmentObject(SnowConditionsManager())
-}
-
-#Preview("Settings") {
-    SettingsView()
 }

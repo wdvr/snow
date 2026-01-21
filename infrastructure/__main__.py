@@ -13,7 +13,6 @@ This Pulumi program defines the AWS infrastructure for the Snow Quality Tracker 
 
 import pulumi
 import pulumi_aws as aws
-import pulumi_awsx as awsx
 
 from monitoring import create_monitoring_stack, create_api_gateway_monitoring
 
@@ -27,7 +26,7 @@ aws_region = config.get("aws:region") or "us-west-2"
 tags = {
     "Project": "Snow Quality Tracker",
     "Environment": environment,
-    "ManagedBy": "Pulumi"
+    "ManagedBy": "Pulumi",
 }
 
 # S3 Bucket for Pulumi State Storage
@@ -35,9 +34,7 @@ tags = {
 pulumi_state_bucket = aws.s3.Bucket(
     f"{app_name}-pulumi-state",
     bucket=f"{app_name}-pulumi-state-{aws_region}",
-    versioning=aws.s3.BucketVersioningArgs(
-        enabled=True
-    ),
+    versioning=aws.s3.BucketVersioningArgs(enabled=True),
     server_side_encryption_configuration=aws.s3.BucketServerSideEncryptionConfigurationArgs(
         rule=aws.s3.BucketServerSideEncryptionConfigurationRuleArgs(
             apply_server_side_encryption_by_default=aws.s3.BucketServerSideEncryptionConfigurationRuleApplyServerSideEncryptionByDefaultArgs(
@@ -50,10 +47,10 @@ pulumi_state_bucket = aws.s3.Bucket(
             enabled=True,
             noncurrent_version_expiration=aws.s3.BucketLifecycleRuleNoncurrentVersionExpirationArgs(
                 days=90
-            )
+            ),
         )
     ],
-    tags=tags
+    tags=tags,
 )
 
 # Block public access on state bucket
@@ -63,7 +60,7 @@ pulumi_state_bucket_public_access_block = aws.s3.BucketPublicAccessBlock(
     block_public_acls=True,
     block_public_policy=True,
     ignore_public_acls=True,
-    restrict_public_buckets=True
+    restrict_public_buckets=True,
 )
 
 # DynamoDB Tables
@@ -72,24 +69,11 @@ resorts_table = aws.dynamodb.Table(
     name=f"{app_name}-resorts-{environment}",
     billing_mode="PAY_PER_REQUEST",
     hash_key="resort_id",
-    attributes=[
-        {
-            "name": "resort_id",
-            "type": "S"
-        },
-        {
-            "name": "country",
-            "type": "S"
-        }
-    ],
+    attributes=[{"name": "resort_id", "type": "S"}, {"name": "country", "type": "S"}],
     global_secondary_indexes=[
-        {
-            "name": "CountryIndex",
-            "hash_key": "country",
-            "projection_type": "ALL"
-        }
+        {"name": "CountryIndex", "hash_key": "country", "projection_type": "ALL"}
     ],
-    tags=tags
+    tags=tags,
 )
 
 weather_conditions_table = aws.dynamodb.Table(
@@ -99,32 +83,20 @@ weather_conditions_table = aws.dynamodb.Table(
     hash_key="resort_id",
     range_key="timestamp",
     attributes=[
-        {
-            "name": "resort_id",
-            "type": "S"
-        },
-        {
-            "name": "timestamp",
-            "type": "S"
-        },
-        {
-            "name": "elevation_level",
-            "type": "S"
-        }
+        {"name": "resort_id", "type": "S"},
+        {"name": "timestamp", "type": "S"},
+        {"name": "elevation_level", "type": "S"},
     ],
     global_secondary_indexes=[
         {
             "name": "ElevationIndex",
             "hash_key": "elevation_level",
             "range_key": "timestamp",
-            "projection_type": "ALL"
+            "projection_type": "ALL",
         }
     ],
-    ttl={
-        "attribute_name": "ttl",
-        "enabled": True
-    },
-    tags=tags
+    ttl={"attribute_name": "ttl", "enabled": True},
+    tags=tags,
 )
 
 user_preferences_table = aws.dynamodb.Table(
@@ -132,13 +104,8 @@ user_preferences_table = aws.dynamodb.Table(
     name=f"{app_name}-user-preferences-{environment}",
     billing_mode="PAY_PER_REQUEST",
     hash_key="user_id",
-    attributes=[
-        {
-            "name": "user_id",
-            "type": "S"
-        }
-    ],
-    tags=tags
+    attributes=[{"name": "user_id", "type": "S"}],
+    tags=tags,
 )
 
 # IAM Role for Lambda functions
@@ -156,7 +123,7 @@ lambda_role = aws.iam.Role(
             }
         ]
     }""",
-    tags=tags
+    tags=tags,
 )
 
 # IAM Policy for Lambda to access DynamoDB and CloudWatch
@@ -164,10 +131,9 @@ lambda_policy = aws.iam.RolePolicy(
     f"{app_name}-lambda-policy-{environment}",
     role=lambda_role.id,
     policy=pulumi.Output.all(
-        resorts_table.arn,
-        weather_conditions_table.arn,
-        user_preferences_table.arn
-    ).apply(lambda arns: f"""{{
+        resorts_table.arn, weather_conditions_table.arn, user_preferences_table.arn
+    ).apply(
+        lambda arns: f"""{{
         "Version": "2012-10-17",
         "Statement": [
             {{
@@ -199,7 +165,8 @@ lambda_policy = aws.iam.RolePolicy(
                 ]
             }}
         ]
-    }}""")
+    }}"""
+    ),
 )
 
 # CloudWatch Log Group for Lambda functions
@@ -207,7 +174,7 @@ log_group = aws.cloudwatch.LogGroup(
     f"{app_name}-lambda-logs-{environment}",
     name=f"/aws/lambda/{app_name}-{environment}",
     retention_in_days=14,
-    tags=tags
+    tags=tags,
 )
 
 # API Gateway REST API
@@ -215,7 +182,7 @@ api_gateway = aws.apigateway.RestApi(
     f"{app_name}-api-{environment}",
     name=f"{app_name}-api-{environment}",
     description=f"Snow Quality Tracker API - {environment}",
-    tags=tags
+    tags=tags,
 )
 
 # API Gateway Deployment (placeholder - will be configured with actual endpoints)
@@ -223,7 +190,7 @@ api_deployment = aws.apigateway.Deployment(
     f"{app_name}-api-deployment-{environment}",
     rest_api=api_gateway.id,
     stage_name=environment,
-    opts=pulumi.ResourceOptions(depends_on=[api_gateway])
+    opts=pulumi.ResourceOptions(depends_on=[api_gateway]),
 )
 
 # Cognito User Pool for authentication
@@ -236,10 +203,10 @@ user_pool = aws.cognito.UserPool(
         "require_lowercase": True,
         "require_numbers": True,
         "require_symbols": False,
-        "require_uppercase": True
+        "require_uppercase": True,
     },
     username_attributes=["email"],
-    tags=tags
+    tags=tags,
 )
 
 user_pool_client = aws.cognito.UserPoolClient(
@@ -247,28 +214,19 @@ user_pool_client = aws.cognito.UserPoolClient(
     name=f"{app_name}-client-{environment}",
     user_pool_id=user_pool.id,
     generate_secret=False,
-    explicit_auth_flows=[
-        "ADMIN_NO_SRP_AUTH",
-        "USER_PASSWORD_AUTH"
-    ]
+    explicit_auth_flows=["ADMIN_NO_SRP_AUTH", "USER_PASSWORD_AUTH"],
 )
 
 # API Gateway Monitoring (CloudWatch dashboards and alarms)
 api_monitoring = create_api_gateway_monitoring(
-    app_name=app_name,
-    environment=environment,
-    api_gateway_id=api_gateway.id,
-    tags=tags
+    app_name=app_name, environment=environment, api_gateway_id=api_gateway.id, tags=tags
 )
 
 # EKS with Grafana/Prometheus (only for staging/prod)
 # For dev, we use Lambda which is more cost-effective
 enable_eks = config.get_bool("enableEks") or environment in ["staging", "prod"]
 monitoring_stack = create_monitoring_stack(
-    app_name=app_name,
-    environment=environment,
-    tags=tags,
-    enable_eks=enable_eks
+    app_name=app_name, environment=environment, tags=tags, enable_eks=enable_eks
 )
 
 # Exports
@@ -292,3 +250,15 @@ pulumi.export("alarm_topic_arn", api_monitoring["alarm_topic"].arn)
 if enable_eks and "eks_cluster" in monitoring_stack:
     pulumi.export("eks_cluster_name", monitoring_stack["eks_cluster"].name)
     pulumi.export("eks_kubeconfig", monitoring_stack["eks_cluster"].kubeconfig)
+
+    # Grafana access instructions
+    pulumi.export(
+        "grafana_access_instructions",
+        pulumi.Output.concat(
+            "To access Grafana:\n",
+            "1. Get the LoadBalancer URL: kubectl get svc -n monitoring grafana -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'\n",
+            "2. Access Grafana at: http://<LoadBalancer-URL>:80\n",
+            "3. Default credentials: admin / (set via grafanaAdminPassword config or 'admin')\n",
+            "4. CloudWatch and Prometheus datasources are pre-configured",
+        ),
+    )

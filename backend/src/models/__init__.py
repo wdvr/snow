@@ -1,8 +1,8 @@
 """Data models for Snow Quality Tracker."""
 
-from .resort import Resort, ElevationPoint
-from .weather import WeatherCondition, SnowQuality, ConfidenceLevel
+from .resort import ElevationPoint, Resort
 from .user import User, UserPreferences
+from .weather import ConfidenceLevel, SnowQuality, WeatherCondition
 
 __all__ = [
     "Resort",
@@ -11,5 +11,5 @@ __all__ = [
     "SnowQuality",
     "ConfidenceLevel",
     "User",
-    "UserPreferences"
+    "UserPreferences",
 ]

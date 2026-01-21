@@ -27,6 +27,7 @@ targets:
     platform: iOS
     sources:
       - path: SnowTracker/SnowTracker/Sources
+      - path: SnowTracker/SnowTracker/Resources
     settings:
       base:
         INFOPLIST_FILE: SnowTracker/Info.plist
@@ -42,9 +43,10 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     entitlements:
       path: SnowTracker/SnowTracker.entitlements
-      properties:
-        com.apple.developer.applesignin:
-          - Default
+      # Sign in with Apple requires paid developer account - add back when ready
+      # properties:
+      #   com.apple.developer.applesignin:
+      #     - Default
     dependencies:
       - package: Alamofire
       - package: Get

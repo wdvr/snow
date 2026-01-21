@@ -1,21 +1,29 @@
 """Pytest configuration and shared fixtures."""
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from unittest.mock import Mock
 
-from src.models.weather import WeatherCondition, SnowQuality, ConfidenceLevel, SnowQualityAlgorithm
-from src.models.resort import Resort, ElevationPoint, ElevationLevel
+import pytest
+
+from src.models.resort import ElevationLevel, ElevationPoint, Resort
 from src.models.user import User, UserPreferences
+from src.models.weather import (
+    ConfidenceLevel,
+    SnowQuality,
+    SnowQualityAlgorithm,
+    WeatherCondition,
+)
 
 
 @pytest.fixture
 def sample_weather_condition():
     """Create a sample weather condition for testing."""
+    # Use a recent timestamp for testing
+    recent_timestamp = datetime.now(UTC).isoformat()
     return WeatherCondition(
         resort_id="big-white",
         elevation_level="mid",
-        timestamp="2026-01-20T10:00:00Z",
+        timestamp=recent_timestamp,
         current_temp_celsius=-5.0,
         min_temp_celsius=-8.0,
         max_temp_celsius=-2.0,
@@ -32,7 +40,7 @@ def sample_weather_condition():
         fresh_snow_cm=15.0,
         data_source="test-weather-api",
         source_confidence=ConfidenceLevel.HIGH,
-        ttl=int(datetime.now(timezone.utc).timestamp()) + 86400
+        ttl=int(datetime.now(UTC).timestamp()) + 86400,
     )
 
 
@@ -59,7 +67,7 @@ def poor_weather_condition():
         fresh_snow_cm=0.5,
         data_source="basic-weather-api",
         source_confidence=ConfidenceLevel.LOW,
-        ttl=int(datetime.now(timezone.utc).timestamp()) + 86400
+        ttl=int(datetime.now(UTC).timestamp()) + 86400,
     )
 
 
@@ -77,28 +85,28 @@ def sample_resort():
                 elevation_meters=1508,
                 elevation_feet=4947,
                 latitude=49.7167,
-                longitude=-118.9333
+                longitude=-118.9333,
             ),
             ElevationPoint(
                 level=ElevationLevel.MID,
                 elevation_meters=1800,
                 elevation_feet=5906,
                 latitude=49.7200,
-                longitude=-118.9300
+                longitude=-118.9300,
             ),
             ElevationPoint(
                 level=ElevationLevel.TOP,
                 elevation_meters=2319,
                 elevation_feet=7608,
                 latitude=49.7233,
-                longitude=-118.9267
-            )
+                longitude=-118.9267,
+            ),
         ],
         timezone="America/Vancouver",
         official_website="https://www.bigwhite.com",
         weather_sources=["weatherapi", "snow-report"],
         created_at="2026-01-20T08:00:00Z",
-        updated_at="2026-01-20T08:00:00Z"
+        updated_at="2026-01-20T08:00:00Z",
     )
 
 
@@ -112,7 +120,7 @@ def sample_user():
         last_name="Skier",
         created_at="2026-01-20T08:00:00Z",
         last_login="2026-01-20T10:00:00Z",
-        is_active=True
+        is_active=True,
     )
 
 
@@ -125,16 +133,16 @@ def sample_user_preferences():
         notification_preferences={
             "snow_alerts": True,
             "condition_updates": False,
-            "weekly_summary": True
+            "weekly_summary": True,
         },
         preferred_units={
             "temperature": "celsius",
             "distance": "metric",
-            "snow_depth": "cm"
+            "snow_depth": "cm",
         },
         quality_threshold="fair",
         created_at="2026-01-20T08:00:00Z",
-        updated_at="2026-01-20T10:00:00Z"
+        updated_at="2026-01-20T10:00:00Z",
     )
 
 
@@ -148,7 +156,7 @@ def snow_quality_algorithm():
         fresh_snow_validity_hours=48.0,
         temperature_weight=0.4,
         time_weight=0.3,
-        snowfall_weight=0.3
+        snowfall_weight=0.3,
     )
 
 

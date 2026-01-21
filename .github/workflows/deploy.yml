@@ -4,16 +4,20 @@ on:
   push:
     branches: [ main ]
     tags:
-      - 'v*'  # Trigger on version tags like v1.0.0
+      - 'v*'  # Trigger prod deployment on version tags like v1.0.0
+  pull_request:
+    types: [labeled]  # Deploy dev when PR is labeled with 'deploy-dev'
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to (dev only for manual)'
+        description: 'Environment to deploy to'
         required: true
         default: 'dev'
         type: choice
         options:
         - dev
+        - staging
+        - prod
 
 env:
   PYTHON_VERSION: '3.12'
@@ -31,17 +35,30 @@ jobs:
       - name: Set environment based on trigger
         id: set-env
         run: |
+          # Manual workflow dispatch
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
             echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "Manual deployment to ${{ github.event.inputs.environment }}"
+
+          # Version tag -> prod
           elif [ "${{ github.ref_type }}" = "tag" ]; then
             echo "environment=prod" >> $GITHUB_OUTPUT
             echo "should_deploy=true" >> $GITHUB_OUTPUT
             echo "Deploying to PROD from tag: ${{ github.ref_name }}"
+
+          # Push to main -> staging (auto-deploy)
           elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "environment=staging" >> $GITHUB_OUTPUT
             echo "should_deploy=true" >> $GITHUB_OUTPUT
             echo "Deploying to STAGING from main branch"
+
+          # PR labeled with 'deploy-dev' -> dev
+          elif [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.label.name }}" = "deploy-dev" ]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "Deploying to DEV from PR #${{ github.event.pull_request.number }}"
+
           else
             echo "environment=none" >> $GITHUB_OUTPUT
             echo "should_deploy=false" >> $GITHUB_OUTPUT
@@ -110,13 +127,8 @@ jobs:
         pulumi config set snow-tracker:env ${{ env.ENVIRONMENT }}
         pulumi config set snow-tracker:appName snow-tracker
 
-        # Deploy with automatic approval for dev/staging, require approval for prod
-        if [ "${{ env.ENVIRONMENT }}" = "prod" ]; then
-          echo "Production deployment requires manual approval in GitHub"
-          pulumi up --yes --diff
-        else
-          pulumi up --yes --diff
-        fi
+        # Deploy
+        pulumi up --yes --diff
 
     - name: Package Lambda functions with uv
       run: |
@@ -183,6 +195,6 @@ jobs:
         echo "### Deployment Strategy" >> $GITHUB_STEP_SUMMARY
         echo "| Environment | Trigger |" >> $GITHUB_STEP_SUMMARY
         echo "|-------------|---------|" >> $GITHUB_STEP_SUMMARY
-        echo "| dev | Manual workflow dispatch |" >> $GITHUB_STEP_SUMMARY
-        echo "| staging | Merge to main branch |" >> $GITHUB_STEP_SUMMARY
-        echo "| prod | Git tag (v*) |" >> $GITHUB_STEP_SUMMARY
+        echo "| dev | Manual dispatch, PR label 'deploy-dev', or localhost |" >> $GITHUB_STEP_SUMMARY
+        echo "| staging | Auto-deploy on merge to main |" >> $GITHUB_STEP_SUMMARY
+        echo "| prod | Manual dispatch or git tag (v*) |" >> $GITHUB_STEP_SUMMARY
