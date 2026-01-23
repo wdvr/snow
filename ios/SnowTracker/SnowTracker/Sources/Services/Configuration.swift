@@ -28,8 +28,8 @@ enum AppEnvironment: String, CaseIterable {
             return URL(string: "https://dev-api.snow-tracker.com")!
             #endif
         case .staging:
-            // Replace with actual API Gateway URL from: pulumi stack output api_gateway_url --stack staging
-            return URL(string: "https://staging-api.snow-tracker.com")!
+            // API Gateway URL from staging deployment
+            return URL(string: "https://1l3mgv07f1.execute-api.us-west-2.amazonaws.com/staging")!
         case .production:
             // Replace with actual API Gateway URL from: pulumi stack output api_gateway_url --stack prod
             return URL(string: "https://api.snow-tracker.com")!
