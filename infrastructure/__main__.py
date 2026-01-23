@@ -345,12 +345,255 @@ health_integration_response = aws.apigateway.IntegrationResponse(
     opts=pulumi.ResourceOptions(depends_on=[health_integration]),
 )
 
-# API Gateway Deployment
+# =============================================================================
+# API Handler Lambda and Routes
+# =============================================================================
+
+# API Handler Lambda - handles all /api/v1/* requests
+api_handler_lambda = aws.lambda_.Function(
+    f"{app_name}-api-handler-{environment}",
+    name=f"{app_name}-api-handler-{environment}",
+    role=lambda_role.arn,
+    handler="api_handler.handler",
+    runtime="python3.12",
+    timeout=30,
+    memory_size=256,
+    code=pulumi.AssetArchive(
+        {
+            "api_handler.py": pulumi.StringAsset(
+                """
+import json
+import boto3
+import os
+from decimal import Decimal
+
+dynamodb = boto3.resource('dynamodb', region_name=os.environ.get('AWS_REGION_NAME', 'us-west-2'))
+
+def decimal_default(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError
+
+def handler(event, context):
+    path = event.get('path', '')
+    method = event.get('httpMethod', 'GET')
+    path_params = event.get('pathParameters') or {}
+
+    # CORS headers
+    headers = {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+    }
+
+    try:
+        # GET /api/v1/resorts
+        if path == '/api/v1/resorts' and method == 'GET':
+            return get_resorts(headers)
+
+        # GET /api/v1/resorts/{resortId}
+        if path.startswith('/api/v1/resorts/') and '/conditions' not in path and method == 'GET':
+            resort_id = path_params.get('resortId') or path.split('/')[-1]
+            return get_resort(resort_id, headers)
+
+        # GET /api/v1/resorts/{resortId}/conditions
+        if '/conditions' in path and method == 'GET':
+            parts = path.split('/')
+            resort_id = path_params.get('resortId') or parts[-2]
+            return get_conditions(resort_id, headers)
+
+        # OPTIONS for CORS preflight
+        if method == 'OPTIONS':
+            return {'statusCode': 200, 'headers': headers, 'body': ''}
+
+        return {
+            'statusCode': 404,
+            'headers': headers,
+            'body': json.dumps({'error': 'Not found', 'path': path})
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({'error': str(e)})
+        }
+
+def get_resorts(headers):
+    table = dynamodb.Table(os.environ['RESORTS_TABLE'])
+    response = table.scan()
+    items = response.get('Items', [])
+    return {
+        'statusCode': 200,
+        'headers': headers,
+        'body': json.dumps(items, default=decimal_default)
+    }
+
+def get_resort(resort_id, headers):
+    table = dynamodb.Table(os.environ['RESORTS_TABLE'])
+    response = table.get_item(Key={'resort_id': resort_id})
+    item = response.get('Item')
+    if not item:
+        return {
+            'statusCode': 404,
+            'headers': headers,
+            'body': json.dumps({'error': 'Resort not found'})
+        }
+    return {
+        'statusCode': 200,
+        'headers': headers,
+        'body': json.dumps(item, default=decimal_default)
+    }
+
+def get_conditions(resort_id, headers):
+    table = dynamodb.Table(os.environ['WEATHER_CONDITIONS_TABLE'])
+    response = table.query(
+        KeyConditionExpression='resort_id = :rid',
+        ExpressionAttributeValues={':rid': resort_id},
+        ScanIndexForward=False,
+        Limit=10
+    )
+    items = response.get('Items', [])
+    return {
+        'statusCode': 200,
+        'headers': headers,
+        'body': json.dumps(items, default=decimal_default)
+    }
+"""
+            ),
+        }
+    ),
+    environment=aws.lambda_.FunctionEnvironmentArgs(
+        variables={
+            "ENVIRONMENT": environment,
+            "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
+            "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
+            "AWS_REGION_NAME": aws_region,
+        }
+    ),
+    tags=tags,
+    opts=pulumi.ResourceOptions(depends_on=[lambda_role, log_group]),
+)
+
+# Permission for API Gateway to invoke the API handler Lambda
+api_handler_permission = aws.lambda_.Permission(
+    f"{app_name}-api-handler-permission-{environment}",
+    action="lambda:InvokeFunction",
+    function=api_handler_lambda.name,
+    principal="apigateway.amazonaws.com",
+    source_arn=pulumi.Output.concat(api_gateway.execution_arn, "/*"),
+)
+
+# API v1 resource: /api
+api_resource = aws.apigateway.Resource(
+    f"{app_name}-api-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_gateway.root_resource_id,
+    path_part="api",
+)
+
+# API v1 resource: /api/v1
+api_v1_resource = aws.apigateway.Resource(
+    f"{app_name}-api-v1-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_resource.id,
+    path_part="v1",
+)
+
+# Resorts resource: /api/v1/resorts
+resorts_resource = aws.apigateway.Resource(
+    f"{app_name}-resorts-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="resorts",
+)
+
+# GET /api/v1/resorts
+resorts_method = aws.apigateway.Method(
+    f"{app_name}-resorts-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=resorts_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+resorts_integration = aws.apigateway.Integration(
+    f"{app_name}-resorts-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=resorts_resource.id,
+    http_method=resorts_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Single resort resource: /api/v1/resorts/{resortId}
+resort_resource = aws.apigateway.Resource(
+    f"{app_name}-resort-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=resorts_resource.id,
+    path_part="{resortId}",
+)
+
+# GET /api/v1/resorts/{resortId}
+resort_method = aws.apigateway.Method(
+    f"{app_name}-resort-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=resort_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+resort_integration = aws.apigateway.Integration(
+    f"{app_name}-resort-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=resort_resource.id,
+    http_method=resort_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Conditions resource: /api/v1/resorts/{resortId}/conditions
+conditions_resource = aws.apigateway.Resource(
+    f"{app_name}-conditions-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=resort_resource.id,
+    path_part="conditions",
+)
+
+# GET /api/v1/resorts/{resortId}/conditions
+conditions_method = aws.apigateway.Method(
+    f"{app_name}-conditions-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=conditions_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+conditions_integration = aws.apigateway.Integration(
+    f"{app_name}-conditions-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=conditions_resource.id,
+    http_method=conditions_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# API Gateway Deployment (depends on all integrations)
 api_deployment = aws.apigateway.Deployment(
     f"{app_name}-api-deployment-{environment}",
     rest_api=api_gateway.id,
     stage_name=environment,
-    opts=pulumi.ResourceOptions(depends_on=[health_integration_response]),
+    opts=pulumi.ResourceOptions(
+        depends_on=[
+            health_integration_response,
+            resorts_integration,
+            resort_integration,
+            conditions_integration,
+        ]
+    ),
 )
 
 # Cognito User Pool for authentication
@@ -405,6 +648,7 @@ pulumi.export("region", aws_region)
 pulumi.export("environment", environment)
 pulumi.export("weather_processor_lambda_name", weather_processor_lambda.name)
 pulumi.export("weather_schedule_rule_name", weather_schedule_rule.name)
+pulumi.export("api_handler_lambda_name", api_handler_lambda.name)
 
 # Monitoring exports
 pulumi.export("cloudwatch_dashboard_name", api_monitoring["dashboard"].dashboard_name)
