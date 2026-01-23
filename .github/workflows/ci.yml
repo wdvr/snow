@@ -62,7 +62,7 @@ jobs:
     - name: Run unit tests with coverage
       run: |
         cd backend
-        python -m pytest tests/ --ignore=tests/integration/ -v \
+        PYTHONPATH=src python -m pytest tests/ --ignore=tests/integration/ -v \
           --ignore=tests/test_resort_seeder.py \
           --cov=src \
           --cov-report=xml \
@@ -83,7 +83,7 @@ jobs:
     - name: Run integration tests
       run: |
         cd backend
-        python -m pytest tests/integration/ -v --tb=short
+        PYTHONPATH=src python -m pytest tests/integration/ -v --tb=short
       env:
         DYNAMODB_ENDPOINT: http://localhost:8000
 
