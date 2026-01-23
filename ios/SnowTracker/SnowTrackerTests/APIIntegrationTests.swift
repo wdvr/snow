@@ -8,7 +8,7 @@ final class APIIntegrationTests: XCTestCase {
 
     // MARK: - Staging API URL
 
-    let stagingAPIBaseURL = URL(string: "https://wjy1v4s2ka.execute-api.us-west-2.amazonaws.com/staging")!
+    let stagingAPIBaseURL = URL(string: "https://8xuyxbs6vf.execute-api.us-west-2.amazonaws.com/staging")!
 
     // MARK: - Health Check
 

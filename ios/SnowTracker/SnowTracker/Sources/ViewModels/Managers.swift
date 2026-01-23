@@ -72,11 +72,12 @@ class SnowConditionsManager: ObservableObject {
             // Try to fetch from API
             resorts = try await apiClient.getResorts()
             print("Loaded \(resorts.count) resorts from API")
+            errorMessage = nil
         } catch {
-            // Fall back to sample data if API fails
-            print("API error, using sample data: \(error.localizedDescription)")
-            resorts = Resort.sampleResorts
-            errorMessage = "Using offline data - \(error.localizedDescription)"
+            // Show error - don't fall back to fake data
+            print("API error: \(error.localizedDescription)")
+            resorts = []
+            errorMessage = "Unable to load resorts - API unavailable"
         }
     }
 
@@ -90,10 +91,9 @@ class SnowConditionsManager: ObservableObject {
                 let resortConditions = try await apiClient.getConditions(for: resort.id)
                 conditions[resort.id] = resortConditions
             } catch {
-                // Fall back to sample data if API fails
-                print("API error for \(resort.id), using sample data: \(error.localizedDescription)")
-                let resortConditions = WeatherCondition.sampleConditions.filter { $0.resortId == resort.id }
-                conditions[resort.id] = resortConditions
+                // Don't fall back to fake data - just leave empty
+                print("API error for \(resort.id): \(error.localizedDescription)")
+                conditions[resort.id] = []
             }
         }
 
