@@ -37,7 +37,16 @@ def create_monitoring_stack(
     """
     resources = {}
 
-    # Only create EKS for staging/prod (expensive for dev)
+    # Skip EKS entirely - use Amazon Managed Grafana instead (much cheaper)
+    # EKS control plane alone costs $73/month, not worth it for monitoring
+    # TODO: Add Amazon Managed Grafana when needed
+    if True:  # Disable EKS for all environments
+        pulumi.log.info(
+            "Skipping EKS creation - use CloudWatch dashboards and Managed Grafana instead"
+        )
+        return resources
+
+    # Legacy EKS code below (disabled) - kept for reference
     if not enable_eks or environment == "dev":
         pulumi.log.info(
             "Skipping EKS creation for dev environment - use Lambda instead"
