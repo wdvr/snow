@@ -237,7 +237,7 @@ weather_processor_lambda = aws.lambda_.Function(
     f"{app_name}-weather-processor-{environment}",
     name=f"{app_name}-weather-processor-{environment}",
     role=lambda_role.arn,
-    handler="index.handler",
+    handler="handlers.weather_processor.weather_processor_handler",
     runtime="python3.12",
     timeout=300,  # 5 minutes for processing all resorts
     memory_size=256,

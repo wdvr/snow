@@ -113,7 +113,7 @@ struct ResortDetailView: View {
             Picker("Elevation", selection: $selectedElevation) {
                 ForEach(ElevationLevel.allCases, id: \.self) { level in
                     if let point = resort.elevationPoint(for: level) {
-                        Text("\(level.displayName) - \(point.elevationFeet)ft")
+                        Text("\(level.displayName) - \(point.formattedFeet)")
                             .tag(level)
                     }
                 }
@@ -336,7 +336,7 @@ struct ResortDetailView: View {
                             Text(level.displayName)
                                 .font(.body)
                                 .fontWeight(.medium)
-                            Text("\(point.elevationFeet)ft")
+                            Text(point.formattedFeet)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
