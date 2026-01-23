@@ -72,6 +72,36 @@ struct ResortListView: View {
             .overlay {
                 if snowConditionsManager.isLoading && snowConditionsManager.resorts.isEmpty {
                     ProgressView("Loading resorts...")
+                } else if let errorMessage = snowConditionsManager.errorMessage, snowConditionsManager.resorts.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "wifi.exclamationmark")
+                            .font(.system(size: 50))
+                            .foregroundColor(.orange)
+                        Text("Unable to Load Resorts")
+                            .font(.headline)
+                        Text(errorMessage)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        Button("Try Again") {
+                            Task {
+                                await snowConditionsManager.fetchResorts()
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding()
+                } else if snowConditionsManager.resorts.isEmpty && !snowConditionsManager.isLoading {
+                    VStack(spacing: 16) {
+                        Image(systemName: "mountain.2")
+                            .font(.system(size: 50))
+                            .foregroundColor(.gray)
+                        Text("No Resorts Found")
+                            .font(.headline)
+                        Text("Pull to refresh")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
         }
