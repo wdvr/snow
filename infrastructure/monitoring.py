@@ -251,8 +251,16 @@ def create_monitoring_stack(
                     },
                 },
                 "alertmanager": {
-                    "enabled": True,
-                    "persistentVolume": {"enabled": False},
+                    "enabled": False,  # Disable alertmanager - StatefulSet times out without EBS CSI
+                },
+                "kube-state-metrics": {
+                    "enabled": False,  # Disable to simplify deployment
+                },
+                "prometheus-node-exporter": {
+                    "enabled": False,  # Disable to simplify deployment
+                },
+                "prometheus-pushgateway": {
+                    "enabled": False,  # Disable to simplify deployment
                 },
             },
         ),
