@@ -107,43 +107,9 @@ jobs:
         echo "ENVIRONMENT=${{ needs.determine-environment.outputs.environment }}" >> $GITHUB_ENV
         echo "PULUMI_CONFIG_PASSPHRASE=${{ secrets.PULUMI_CONFIG_PASSPHRASE }}" >> $GITHUB_ENV
 
-    - name: Clean up orphaned AWS resources
-      run: |
-        echo "Cleaning up any orphaned AWS resources for ${{ env.ENVIRONMENT }}..."
-
-        # Delete DynamoDB tables if they exist (orphaned from previous failed deployments)
-        aws dynamodb delete-table --table-name snow-tracker-resorts-${{ env.ENVIRONMENT }} --region us-west-2 2>/dev/null || true
-        aws dynamodb delete-table --table-name snow-tracker-weather-conditions-${{ env.ENVIRONMENT }} --region us-west-2 2>/dev/null || true
-        aws dynamodb delete-table --table-name snow-tracker-user-preferences-${{ env.ENVIRONMENT }} --region us-west-2 2>/dev/null || true
-
-        # Delete log groups
-        aws logs delete-log-group --log-group-name /aws/lambda/snow-tracker-${{ env.ENVIRONMENT }} --region us-west-2 2>/dev/null || true
-        aws logs delete-log-group --log-group-name /aws/lambda/snow-tracker-api-handler-${{ env.ENVIRONMENT }} --region us-west-2 2>/dev/null || true
-
-        # Delete SNS topics
-        SNS_ARN=$(aws sns list-topics --region us-west-2 --query "Topics[?contains(TopicArn, 'snow-tracker-alarms-${{ env.ENVIRONMENT }}')].TopicArn" --output text 2>/dev/null || true)
-        if [ -n "$SNS_ARN" ] && [ "$SNS_ARN" != "None" ]; then
-          aws sns delete-topic --topic-arn "$SNS_ARN" --region us-west-2 2>/dev/null || true
-        fi
-
-        # Delete Lambda functions
-        aws lambda delete-function --function-name snow-tracker-${{ env.ENVIRONMENT }} --region us-west-2 2>/dev/null || true
-        aws lambda delete-function --function-name snow-tracker-api-handler-${{ env.ENVIRONMENT }} --region us-west-2 2>/dev/null || true
-
-        # Delete API Gateway (find by name and delete)
-        API_ID=$(aws apigateway get-rest-apis --region us-west-2 --query "items[?name=='snow-tracker-api-${{ env.ENVIRONMENT }}'].id" --output text 2>/dev/null || true)
-        if [ -n "$API_ID" ] && [ "$API_ID" != "None" ]; then
-          aws apigateway delete-rest-api --rest-api-id "$API_ID" --region us-west-2 2>/dev/null || true
-        fi
-
-        # Delete IAM roles (careful - these have attached policies)
-        aws iam detach-role-policy --role-name snow-tracker-lambda-role-${{ env.ENVIRONMENT }} --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole 2>/dev/null || true
-        aws iam delete-role-policy --role-name snow-tracker-lambda-role-${{ env.ENVIRONMENT }} --policy-name snow-tracker-lambda-policy-${{ env.ENVIRONMENT }} 2>/dev/null || true
-        aws iam delete-role --role-name snow-tracker-lambda-role-${{ env.ENVIRONMENT }} --region us-west-2 2>/dev/null || true
-
-        # Wait for deletions to complete
-        sleep 15
-        echo "Cleanup complete"
+    # NOTE: Removed aggressive cleanup that was destroying all resources.
+    # API Gateway URL now stays stable across deployments.
+    # If you have orphaned resources, clean them up manually or use pulumi destroy.
 
     - name: Deploy infrastructure
       run: |
@@ -168,10 +134,7 @@ jobs:
         pulumi config set snow-tracker-infrastructure:env ${{ env.ENVIRONMENT }}
         pulumi config set snow-tracker-infrastructure:appName snow-tracker
 
-        # Refresh state to detect resources deleted by cleanup script
-        pulumi refresh --yes 2>/dev/null || true
-
-        # Deploy (fresh start after cleanup)
+        # Deploy - Pulumi will update existing resources in place
         pulumi up --yes --diff
 
     - name: Package Lambda functions with uv
