@@ -138,8 +138,15 @@ sam local invoke WeatherProcessorFunction
 cd infrastructure
 pulumi preview --diff
 
-# iOS testing (from Xcode or command line)
-xcodebuild test -scheme SnowTracker -destination 'platform=iOS Simulator,name=iPhone 15'
+# iOS Unit Tests
+cd ios
+xcodebuild test -project SnowTracker.xcodeproj -scheme SnowTracker -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -only-testing:SnowTrackerTests
+
+# iOS UI Tests
+xcodebuild test -project SnowTracker.xcodeproj -scheme SnowTracker -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -only-testing:SnowTrackerUITests
+
+# iOS API Integration Tests (requires network)
+xcodebuild test -project SnowTracker.xcodeproj -scheme SnowTracker -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -only-testing:SnowTrackerTests/APIIntegrationTests
 ```
 
 #### Deploy iOS App to Physical Device (i17pw)

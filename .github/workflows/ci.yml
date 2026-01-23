@@ -220,11 +220,60 @@ jobs:
         path: backend/bandit-report.json
         if-no-files-found: ignore
 
+  # iOS Tests (Unit + UI)
+  ios-tests:
+    name: iOS Tests
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+    - name: Show Xcode version
+      run: xcodebuild -version
+
+    - name: List available simulators
+      run: xcrun simctl list devices available | head -30
+
+    - name: Run iOS Unit Tests
+      run: |
+        cd ios
+        xcodebuild test \
+          -project SnowTracker.xcodeproj \
+          -scheme SnowTracker \
+          -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+          -only-testing:SnowTrackerTests \
+          -resultBundlePath TestResults/UnitTests.xcresult \
+          CODE_SIGNING_ALLOWED=NO \
+          | xcpretty --report junit --output TestResults/unit-tests.xml || true
+
+    - name: Run iOS UI Tests
+      run: |
+        cd ios
+        xcodebuild test \
+          -project SnowTracker.xcodeproj \
+          -scheme SnowTracker \
+          -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+          -only-testing:SnowTrackerUITests \
+          -resultBundlePath TestResults/UITests.xcresult \
+          CODE_SIGNING_ALLOWED=NO \
+          | xcpretty --report junit --output TestResults/ui-tests.xml || true
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ios-test-results
+        path: ios/TestResults/
+
   # Build and Test Results Summary
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [backend-tests, infrastructure-validation, code-quality]
+    needs: [backend-tests, infrastructure-validation, code-quality, ios-tests]
     if: always()
 
     steps:
@@ -234,10 +283,12 @@ jobs:
         echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
         echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
         echo "| Backend Tests | ${{ needs.backend-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| iOS Tests | ${{ needs.ios-tests.result }} |" >> $GITHUB_STEP_SUMMARY
         echo "| Infrastructure Validation | ${{ needs.infrastructure-validation.result }} |" >> $GITHUB_STEP_SUMMARY
         echo "| Code Quality | ${{ needs.code-quality.result }} |" >> $GITHUB_STEP_SUMMARY
 
         if [ "${{ needs.backend-tests.result }}" = "success" ] &&
+           [ "${{ needs.ios-tests.result }}" = "success" ] &&
            [ "${{ needs.infrastructure-validation.result }}" = "success" ] &&
            [ "${{ needs.code-quality.result }}" = "success" ]; then
           echo "✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
