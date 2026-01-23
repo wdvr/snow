@@ -22,10 +22,10 @@ enum AppEnvironment: String, CaseIterable {
         case .development:
             // Dev environment - use staging API until dev is deployed
             // TODO: Replace with dev API URL once deployed
-            return URL(string: "https://wjy1v4s2ka.execute-api.us-west-2.amazonaws.com/staging")!
+            return URL(string: "https://8xuyxbs6vf.execute-api.us-west-2.amazonaws.com/staging")!
         case .staging:
             // API Gateway URL from staging deployment
-            return URL(string: "https://wjy1v4s2ka.execute-api.us-west-2.amazonaws.com/staging")!
+            return URL(string: "https://8xuyxbs6vf.execute-api.us-west-2.amazonaws.com/staging")!
         case .production:
             // API Gateway URL from prod deployment
             return URL(string: "https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod")!

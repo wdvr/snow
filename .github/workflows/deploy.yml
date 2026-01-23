@@ -168,6 +168,9 @@ jobs:
         pulumi config set snow-tracker-infrastructure:env ${{ env.ENVIRONMENT }}
         pulumi config set snow-tracker-infrastructure:appName snow-tracker
 
+        # Refresh state to detect resources deleted by cleanup script
+        pulumi refresh --yes 2>/dev/null || true
+
         # Deploy (fresh start after cleanup)
         pulumi up --yes --diff
 
