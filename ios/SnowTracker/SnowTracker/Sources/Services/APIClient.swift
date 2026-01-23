@@ -14,8 +14,8 @@ class APIClient {
         self.baseURL = AppConfiguration.shared.apiBaseURL
 
         let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 30
-        configuration.timeoutIntervalForResource = 60
+        configuration.timeoutIntervalForRequest = 5
+        configuration.timeoutIntervalForResource = 15
 
         self.session = Session(configuration: configuration)
     }

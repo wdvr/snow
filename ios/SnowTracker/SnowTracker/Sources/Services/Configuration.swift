@@ -20,19 +20,15 @@ enum AppEnvironment: String, CaseIterable {
     var apiBaseURL: URL {
         switch self {
         case .development:
-            // Dev environment - use localhost for simulator, deployed dev API for device
-            #if targetEnvironment(simulator)
-            return URL(string: "http://localhost:8000")!
-            #else
-            // Replace with actual API Gateway URL from: pulumi stack output api_gateway_url --stack dev
-            return URL(string: "https://dev-api.snow-tracker.com")!
-            #endif
+            // Dev environment - use staging API until dev is deployed
+            // TODO: Replace with dev API URL once deployed
+            return URL(string: "https://wjy1v4s2ka.execute-api.us-west-2.amazonaws.com/staging")!
         case .staging:
             // API Gateway URL from staging deployment
             return URL(string: "https://wjy1v4s2ka.execute-api.us-west-2.amazonaws.com/staging")!
         case .production:
-            // Replace with actual API Gateway URL from: pulumi stack output api_gateway_url --stack prod
-            return URL(string: "https://api.snow-tracker.com")!
+            // API Gateway URL from prod deployment
+            return URL(string: "https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod")!
         }
     }
 
