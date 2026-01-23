@@ -193,8 +193,8 @@ jobs:
       run: |
         cd backend
         uv pip install --system -r requirements.txt
-        python scripts/seed_resorts.py --summary
-        python scripts/seed_resorts.py
+        PYTHONPATH=src python scripts/seed_resorts.py --summary
+        PYTHONPATH=src python scripts/seed_resorts.py
       env:
         RESORTS_TABLE: snow-tracker-resorts-${{ env.ENVIRONMENT }}
         AWS_DEFAULT_REGION: us-west-2
