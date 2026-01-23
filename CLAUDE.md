@@ -81,7 +81,13 @@ Research needed for:
    - No direct pushes to main
 6. **Merge Strategy**: Squash and merge for clean history
 
-### Testing Strategy - TEST EVERYTHING
+### Testing Strategy - TEST EVERYTHING (CRITICAL)
+
+**IMPORTANT: Add tests for EVERY change.** We need comprehensive test coverage to catch issues early. When making changes:
+1. Add unit tests for new/modified logic
+2. Add integration tests for API changes
+3. Add UI tests for any UI changes
+4. Run tests locally before pushing
 
 #### Backend Testing (Python)
 - **Unit Tests**: Test all services, models, and utilities (`pytest`)
@@ -91,9 +97,17 @@ Research needed for:
 - **Local Lambda Testing**: Use SAM CLI or localstack for local testing
 - **Coverage**: Aim for >90% code coverage
 
-#### Frontend Testing (iOS/Swift)
+#### Frontend Testing (iOS/Swift) - HEAVILY TEST UI
 - **Unit Tests**: Test ViewModels, services, and business logic (`XCTest`)
-- **UI Tests**: Test user flows and interface interactions
+- **UI Tests**: Test ALL user flows and states:
+  - Loading states
+  - Error states (API unavailable, network errors)
+  - Empty states
+  - Data display states
+  - Navigation flows
+  - Pull to refresh
+  - Tab switching
+- **API Integration Tests**: Test iOS can decode real API responses (catches model mismatches)
 - **Snapshot Tests**: Verify UI layout consistency
 - **Network Tests**: Mock API calls and test error handling
 - **Device Tests**: Test on multiple iOS versions and devices
