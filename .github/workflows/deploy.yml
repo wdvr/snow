@@ -191,6 +191,7 @@ jobs:
       if: env.ENVIRONMENT == 'dev' || env.ENVIRONMENT == 'staging'
       run: |
         cd backend
+        pip install boto3
         python scripts/seed_resorts.py --summary
         python scripts/seed_resorts.py
       env:
