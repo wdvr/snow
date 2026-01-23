@@ -159,10 +159,18 @@ jobs:
         if [ -n "$LAMBDA_NAME" ]; then
           echo "Deploying Lambda code to: $LAMBDA_NAME"
 
-          # Update Lambda function code
+          # Upload to S3 first (required for packages > 50MB)
+          S3_BUCKET="${{ env.PULUMI_STATE_BUCKET }}"
+          S3_KEY="lambda-packages/${{ env.ENVIRONMENT }}/lambda-package-$(date +%Y%m%d%H%M%S).zip"
+
+          echo "Uploading Lambda package to s3://$S3_BUCKET/$S3_KEY"
+          aws s3 cp ../backend/lambda-package.zip "s3://$S3_BUCKET/$S3_KEY"
+
+          # Update Lambda function code from S3
           aws lambda update-function-code \
             --function-name "$LAMBDA_NAME" \
-            --zip-file fileb://../backend/lambda-package.zip \
+            --s3-bucket "$S3_BUCKET" \
+            --s3-key "$S3_KEY" \
             --region us-west-2
 
           # Wait for update to complete
