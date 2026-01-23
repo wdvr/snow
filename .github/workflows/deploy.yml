@@ -153,39 +153,61 @@ jobs:
 
     - name: Deploy Lambda code and configure
       run: |
-        # Get Lambda function name from Pulumi outputs
         cd infrastructure
-        LAMBDA_NAME=$(pulumi stack output weather_processor_lambda_name 2>/dev/null || echo "")
 
-        if [ -n "$LAMBDA_NAME" ]; then
-          echo "Deploying Lambda code to: $LAMBDA_NAME"
+        # Upload Lambda package to S3 first (required for packages > 50MB)
+        S3_BUCKET="${{ env.PULUMI_STATE_BUCKET }}"
+        S3_KEY="lambda-packages/${{ env.ENVIRONMENT }}/lambda-package-$(date +%Y%m%d%H%M%S).zip"
 
-          # Upload to S3 first (required for packages > 50MB)
-          S3_BUCKET="${{ env.PULUMI_STATE_BUCKET }}"
-          S3_KEY="lambda-packages/${{ env.ENVIRONMENT }}/lambda-package-$(date +%Y%m%d%H%M%S).zip"
+        echo "Uploading Lambda package to s3://$S3_BUCKET/$S3_KEY"
+        aws s3 cp ../backend/lambda-package.zip "s3://$S3_BUCKET/$S3_KEY"
 
-          echo "Uploading Lambda package to s3://$S3_BUCKET/$S3_KEY"
-          aws s3 cp ../backend/lambda-package.zip "s3://$S3_BUCKET/$S3_KEY"
+        # Deploy to Weather Processor Lambda
+        WEATHER_LAMBDA=$(pulumi stack output weather_processor_lambda_name 2>/dev/null || echo "")
+        if [ -n "$WEATHER_LAMBDA" ]; then
+          echo "Deploying Lambda code to weather processor: $WEATHER_LAMBDA"
 
-          # Update Lambda function code from S3
           aws lambda update-function-code \
-            --function-name "$LAMBDA_NAME" \
+            --function-name "$WEATHER_LAMBDA" \
             --s3-bucket "$S3_BUCKET" \
             --s3-key "$S3_KEY" \
             --region us-west-2
 
-          # Wait for update to complete
-          aws lambda wait function-updated --function-name "$LAMBDA_NAME" --region us-west-2
+          aws lambda wait function-updated --function-name "$WEATHER_LAMBDA" --region us-west-2
 
-          # Update Lambda environment variables with Weather API key
           aws lambda update-function-configuration \
-            --function-name "$LAMBDA_NAME" \
+            --function-name "$WEATHER_LAMBDA" \
             --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,WEATHER_API_KEY=${{ secrets.WEATHER_API_KEY }}}" \
             --region us-west-2
 
-          echo "Lambda deployment complete"
+          echo "Weather processor Lambda deployment complete"
         else
-          echo "Lambda function name not available, skipping code deployment"
+          echo "Weather processor Lambda not available, skipping"
+        fi
+
+        # Deploy to API Handler Lambda
+        API_LAMBDA=$(pulumi stack output api_handler_lambda_name 2>/dev/null || echo "")
+        if [ -n "$API_LAMBDA" ]; then
+          echo "Deploying Lambda code to API handler: $API_LAMBDA"
+
+          aws lambda update-function-code \
+            --function-name "$API_LAMBDA" \
+            --s3-bucket "$S3_BUCKET" \
+            --s3-key "$S3_KEY" \
+            --region us-west-2
+
+          aws lambda wait function-updated --function-name "$API_LAMBDA" --region us-west-2
+
+          # Update API Lambda handler to use FastAPI/Mangum
+          aws lambda update-function-configuration \
+            --function-name "$API_LAMBDA" \
+            --handler "handlers.api_handler.api_handler" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},USER_PREFERENCES_TABLE=snow-tracker-user-preferences-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,WEATHER_API_KEY=${{ secrets.WEATHER_API_KEY }}}" \
+            --region us-west-2
+
+          echo "API handler Lambda deployment complete"
+        else
+          echo "API handler Lambda not available, skipping"
         fi
 
     - name: Seed resort data (dev/staging only)
