@@ -192,6 +192,43 @@ extension Resort {
             weatherSources: ["weatherapi", "snow-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-20T08:00:00Z"
+        ),
+        Resort(
+            id: "silver-star",
+            name: "Silver Star Mountain Resort",
+            country: "CA",
+            region: "BC",
+            elevationPoints: [
+                ElevationPoint(
+                    level: .base,
+                    elevationMeters: 1155,
+                    elevationFeet: 3789,
+                    latitude: 50.3608,
+                    longitude: -119.0581,
+                    weatherStationId: nil
+                ),
+                ElevationPoint(
+                    level: .mid,
+                    elevationMeters: 1609,
+                    elevationFeet: 5279,
+                    latitude: 50.3650,
+                    longitude: -119.0600,
+                    weatherStationId: nil
+                ),
+                ElevationPoint(
+                    level: .top,
+                    elevationMeters: 1915,
+                    elevationFeet: 6283,
+                    latitude: 50.3692,
+                    longitude: -119.0619,
+                    weatherStationId: nil
+                )
+            ],
+            timezone: "America/Vancouver",
+            officialWebsite: "https://www.skisilverstar.com",
+            weatherSources: ["weatherapi", "snow-report"],
+            createdAt: "2026-01-20T08:00:00Z",
+            updatedAt: "2026-01-20T08:00:00Z"
         )
     ]
 }

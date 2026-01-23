@@ -2,7 +2,7 @@ import SwiftUI
 
 struct FavoritesView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
-    @StateObject private var userPreferencesManager = UserPreferencesManager()
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
 
     private var favoriteResorts: [Resort] {
         snowConditionsManager.resorts.filter { resort in
@@ -139,4 +139,5 @@ struct FavoriteResortRow: View {
 #Preview("Favorites") {
     FavoritesView()
         .environmentObject(SnowConditionsManager())
+        .environmentObject(UserPreferencesManager.shared)
 }

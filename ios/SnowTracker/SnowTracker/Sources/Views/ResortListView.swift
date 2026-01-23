@@ -189,4 +189,5 @@ extension Resort {
 #Preview("Resort List") {
     ResortListView()
         .environmentObject(SnowConditionsManager())
+        .environmentObject(UserPreferencesManager.shared)
 }

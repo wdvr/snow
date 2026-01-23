@@ -3,8 +3,8 @@ import SwiftUI
 struct ResortDetailView: View {
     let resort: Resort
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @State private var selectedElevation: ElevationLevel = .top
-    @State private var isFavorite = false
 
     private var conditions: [WeatherCondition] {
         snowConditionsManager.conditions[resort.id] ?? []
@@ -42,10 +42,10 @@ struct ResortDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
-                    isFavorite.toggle()
+                    userPreferencesManager.toggleFavorite(resortId: resort.id)
                 } label: {
-                    Image(systemName: isFavorite ? "heart.fill" : "heart")
-                        .foregroundColor(isFavorite ? .red : .gray)
+                    Image(systemName: userPreferencesManager.isFavorite(resortId: resort.id) ? "heart.fill" : "heart")
+                        .foregroundColor(userPreferencesManager.isFavorite(resortId: resort.id) ? .red : .gray)
                 }
             }
         }
@@ -399,5 +399,6 @@ struct ResortDetailView: View {
     NavigationStack {
         ResortDetailView(resort: Resort.sampleResorts[0])
             .environmentObject(SnowConditionsManager())
+            .environmentObject(UserPreferencesManager.shared)
     }
 }

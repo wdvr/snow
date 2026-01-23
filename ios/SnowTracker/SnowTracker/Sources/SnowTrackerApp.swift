@@ -4,6 +4,7 @@ import SwiftUI
 struct SnowTrackerApp: App {
     @StateObject private var snowConditionsManager = SnowConditionsManager()
     @ObservedObject private var authService = AuthenticationService.shared
+    @ObservedObject private var userPreferencesManager = UserPreferencesManager.shared
 
     init() {
         // Configure API client
@@ -15,12 +16,14 @@ struct SnowTrackerApp: App {
             if authService.isAuthenticated {
                 MainTabView()
                     .environmentObject(snowConditionsManager)
+                    .environmentObject(userPreferencesManager)
             } else {
                 // For now, skip auth and go directly to main app
                 // Uncomment WelcomeView when ready to enable auth
                 // WelcomeView()
                 MainTabView()
                     .environmentObject(snowConditionsManager)
+                    .environmentObject(userPreferencesManager)
             }
         }
     }
@@ -67,4 +70,5 @@ struct MainTabView: View {
 #Preview("Main App") {
     MainTabView()
         .environmentObject(SnowConditionsManager())
+        .environmentObject(UserPreferencesManager.shared)
 }

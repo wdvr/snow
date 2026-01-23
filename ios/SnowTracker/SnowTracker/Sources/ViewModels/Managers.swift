@@ -69,13 +69,14 @@ class SnowConditionsManager: ObservableObject {
         defer { isLoading = false }
 
         do {
-            // TODO: Replace with actual API call
-            // resorts = try await apiClient.getResorts()
-
-            // Use sample data for now
-            resorts = Resort.sampleResorts
+            // Try to fetch from API
+            resorts = try await apiClient.getResorts()
+            print("Loaded \(resorts.count) resorts from API")
         } catch {
-            errorMessage = error.localizedDescription
+            // Fall back to sample data if API fails
+            print("API error, using sample data: \(error.localizedDescription)")
+            resorts = Resort.sampleResorts
+            errorMessage = "Using offline data - \(error.localizedDescription)"
         }
     }
 
@@ -85,14 +86,14 @@ class SnowConditionsManager: ObservableObject {
 
         for resort in resorts {
             do {
-                // TODO: Replace with actual API call
-                // let resortConditions = try await apiClient.getConditions(for: resort.id)
-
-                // Use sample data for now
-                let resortConditions = WeatherCondition.sampleConditions.filter { $0.resortId == resort.id }
+                // Try to fetch from API
+                let resortConditions = try await apiClient.getConditions(for: resort.id)
                 conditions[resort.id] = resortConditions
             } catch {
-                errorMessage = error.localizedDescription
+                // Fall back to sample data if API fails
+                print("API error for \(resort.id), using sample data: \(error.localizedDescription)")
+                let resortConditions = WeatherCondition.sampleConditions.filter { $0.resortId == resort.id }
+                conditions[resort.id] = resortConditions
             }
         }
 
@@ -112,14 +113,28 @@ class SnowConditionsManager: ObservableObject {
 
 @MainActor
 class UserPreferencesManager: ObservableObject {
+    static let shared = UserPreferencesManager()
+
     @Published var favoriteResorts: Set<String> = []
     @Published var preferredUnits: UnitPreferences = UnitPreferences()
     @Published var notificationSettings: NotificationSettings = NotificationSettings()
 
     private let apiClient = APIClient.shared
+    private let favoritesKey = "com.snowtracker.favoriteResorts"
+
+    init() {
+        loadLocalPreferences()
+    }
 
     func loadPreferences() async {
-        // TODO: Load from API and local storage
+        loadLocalPreferences()
+    }
+
+    private func loadLocalPreferences() {
+        // Load favorites from UserDefaults
+        if let savedFavorites = UserDefaults.standard.array(forKey: favoritesKey) as? [String] {
+            favoriteResorts = Set(savedFavorites)
+        }
     }
 
     func toggleFavorite(resortId: String) {
@@ -129,13 +144,20 @@ class UserPreferencesManager: ObservableObject {
             favoriteResorts.insert(resortId)
         }
 
-        Task {
-            await savePreferences()
-        }
+        saveLocalPreferences()
+    }
+
+    func isFavorite(resortId: String) -> Bool {
+        favoriteResorts.contains(resortId)
+    }
+
+    private func saveLocalPreferences() {
+        // Save favorites to UserDefaults
+        UserDefaults.standard.set(Array(favoriteResorts), forKey: favoritesKey)
     }
 
     func savePreferences() async {
-        // TODO: Save to API and local storage
+        saveLocalPreferences()
     }
 }
 
