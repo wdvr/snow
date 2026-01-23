@@ -371,6 +371,9 @@ dynamodb = boto3.resource('dynamodb', region_name=os.environ.get('AWS_REGION_NAM
 
 def decimal_default(obj):
     if isinstance(obj, Decimal):
+        # Convert to int if whole number, otherwise float
+        if obj % 1 == 0:
+            return int(obj)
         return float(obj)
     raise TypeError
 
