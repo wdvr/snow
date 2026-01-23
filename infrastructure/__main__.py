@@ -354,7 +354,7 @@ api_handler_lambda = aws.lambda_.Function(
     f"{app_name}-api-handler-{environment}",
     name=f"{app_name}-api-handler-{environment}",
     role=lambda_role.arn,
-    handler="api_handler.handler",
+    handler="handlers.api_handler.api_handler",
     runtime="python3.12",
     timeout=30,
     memory_size=256,
