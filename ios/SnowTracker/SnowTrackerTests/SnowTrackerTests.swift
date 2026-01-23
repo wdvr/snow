@@ -121,7 +121,7 @@ final class SnowTrackerTests: XCTestCase {
 
         let topElevation = bigWhite?.elevationPoint(for: .top)
         XCTAssertNotNil(topElevation)
-        XCTAssertEqual(topElevation?.elevationFeet, 7608)
+        XCTAssertEqual(topElevation?.elevationFeet, 7608, accuracy: 1)
     }
 
     // MARK: - ElevationPoint Tests

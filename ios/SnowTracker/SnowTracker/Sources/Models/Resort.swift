@@ -28,8 +28,8 @@ enum ElevationLevel: String, CaseIterable, Codable {
 struct ElevationPoint: Codable, Identifiable, Hashable {
     let id = UUID()
     let level: ElevationLevel
-    let elevationMeters: Int
-    let elevationFeet: Int
+    let elevationMeters: Double
+    let elevationFeet: Double
     let latitude: Double
     let longitude: Double
     let weatherStationId: String?
@@ -43,12 +43,22 @@ struct ElevationPoint: Codable, Identifiable, Hashable {
         case weatherStationId = "weather_station_id"
     }
 
+    // Convenience initializer for Int values (used in sample data)
+    init(level: ElevationLevel, elevationMeters: Int, elevationFeet: Int, latitude: Double, longitude: Double, weatherStationId: String?) {
+        self.level = level
+        self.elevationMeters = Double(elevationMeters)
+        self.elevationFeet = Double(elevationFeet)
+        self.latitude = latitude
+        self.longitude = longitude
+        self.weatherStationId = weatherStationId
+    }
+
     var coordinate: CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
 
     var formattedElevation: String {
-        "\(elevationFeet)ft (\(elevationMeters)m)"
+        "\(Int(elevationFeet))ft (\(Int(elevationMeters))m)"
     }
 }
 
@@ -91,7 +101,7 @@ struct Resort: Codable, Identifiable, Hashable {
     }
 
     var elevationRange: String {
-        let elevations = elevationPoints.map { $0.elevationFeet }.sorted()
+        let elevations = elevationPoints.map { Int($0.elevationFeet) }.sorted()
         guard let min = elevations.first, let max = elevations.last else {
             return "Unknown elevation"
         }

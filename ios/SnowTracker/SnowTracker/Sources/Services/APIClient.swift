@@ -33,12 +33,13 @@ class APIClient {
         return try await withCheckedThrowingContinuation { continuation in
             session.request(url)
                 .validate()
-                .responseDecodable(of: ResortsResponse.self) { response in
+                .responseDecodable(of: [Resort].self) { response in
                     switch response.result {
-                    case .success(let resortsResponse):
-                        continuation.resume(returning: resortsResponse.resorts)
+                    case .success(let resorts):
+                        print("Successfully decoded \(resorts.count) resorts from API")
+                        continuation.resume(returning: resorts)
                     case .failure(let error):
-                        print("API Error: \(error)")
+                        print("API Error decoding resorts: \(error)")
                         continuation.resume(throwing: self.mapError(error))
                     }
                 }
@@ -70,11 +71,13 @@ class APIClient {
         return try await withCheckedThrowingContinuation { continuation in
             session.request(url)
                 .validate()
-                .responseDecodable(of: ConditionsResponse.self) { response in
+                .responseDecodable(of: [WeatherCondition].self) { response in
                     switch response.result {
-                    case .success(let conditionsResponse):
-                        continuation.resume(returning: conditionsResponse.conditions)
+                    case .success(let conditions):
+                        print("Successfully decoded \(conditions.count) conditions for \(resortId)")
+                        continuation.resume(returning: conditions)
                     case .failure(let error):
+                        print("API Error decoding conditions for \(resortId): \(error)")
                         continuation.resume(throwing: self.mapError(error))
                     }
                 }
