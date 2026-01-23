@@ -139,9 +139,9 @@
 
 ## Next Steps (Priority Order)
 
-### Immediate (Today - 2026-01-23)
-1. **Fix "No Data" for resorts** - Weather processor Lambda needs to run and fetch conditions
-2. **Fix elevation display** - Shows "3790.00000" instead of "3,790 ft" - fix rounding/formatting
+### Immediate (Today - 2026-01-23) ✅ COMPLETED
+1. ~~**Fix "No Data" for resorts**~~ ✅ Fixed - CI/CD now deploys Lambda code to BOTH weather processor AND API handler
+2. ~~**Fix elevation display**~~ ✅ Fixed - Inline placeholder code now converts whole Decimals to int
 
 ### Short-term (This Week)
 1. **UI validation workflow** - Run simulator, take screenshots, analyze in Claude Code
@@ -162,6 +162,11 @@
 3. Performance optimization
 
 ## Notes & Learnings
+
+### Development Session (2026-01-23)
+- **API Handler Lambda Fix**: CI/CD was only deploying code to weather processor Lambda, not the API handler. Fixed by adding deployment step for API handler Lambda with proper handler configuration
+- **Elevation Display Fix**: Inline placeholder code converted all Decimals to float, causing "3790.000000" displays. Fixed by converting whole number Decimals to int
+- **Handler Path Fix**: Corrected the inline placeholder handler path from `handlers.api_handler.api_handler` to `api_handler.handler` to match the inline code structure
 
 ### Development Session (2026-01-21)
 - **Testing Complete**: 112 backend tests (94 unit + 18 integration) + 46 iOS tests
