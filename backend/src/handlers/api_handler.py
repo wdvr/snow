@@ -11,13 +11,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from mangum import Mangum
 
-from ..models.resort import Resort
-from ..models.user import UserPreferences
-from ..models.weather import SnowQuality
-from ..services.resort_service import ResortService
-from ..services.snow_quality_service import SnowQualityService
-from ..services.user_service import UserService
-from ..services.weather_service import WeatherService
+from models.resort import Resort
+from models.user import UserPreferences
+from models.weather import SnowQuality
+from services.resort_service import ResortService
+from services.snow_quality_service import SnowQualityService
+from services.user_service import UserService
+from services.weather_service import WeatherService
 
 # Initialize FastAPI app
 app = FastAPI(

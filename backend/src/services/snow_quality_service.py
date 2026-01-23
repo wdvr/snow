@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Dict, List
 
-from ..models.weather import (
+from models.weather import (
     ConfidenceLevel,
     SnowQuality,
     SnowQualityAlgorithm,

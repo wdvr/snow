@@ -9,10 +9,10 @@ from typing import Any, Dict
 import boto3
 from botocore.exceptions import ClientError
 
-from ..models.weather import WeatherCondition
-from ..services.resort_service import ResortService
-from ..services.snow_quality_service import SnowQualityService
-from ..services.weather_service import WeatherService
+from models.weather import WeatherCondition
+from services.resort_service import ResortService
+from services.snow_quality_service import SnowQualityService
+from services.weather_service import WeatherService
 
 # Configure logging
 logger = logging.getLogger(__name__)

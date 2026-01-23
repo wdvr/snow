@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from ..models.weather import ConfidenceLevel, WeatherCondition
+from models.weather import ConfidenceLevel, WeatherCondition
 
 
 class WeatherService:

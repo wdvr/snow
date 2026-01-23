@@ -5,8 +5,8 @@ import logging
 from datetime import UTC, datetime, timezone
 from typing import Any, Dict, List
 
-from ..models.resort import ElevationLevel, ElevationPoint, Resort
-from ..services.resort_service import ResortService
+from models.resort import ElevationLevel, ElevationPoint, Resort
+from services.resort_service import ResortService
 
 logger = logging.getLogger(__name__)
 

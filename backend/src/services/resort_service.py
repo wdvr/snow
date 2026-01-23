@@ -4,10 +4,10 @@ from typing import Any, Dict, List, Optional
 
 from botocore.exceptions import ClientError
 
-from ..models.resort import Resort
+from models.resort import Resort
 
 # Import directly from module to avoid circular import through utils/__init__.py
-from ..utils.dynamodb_utils import parse_from_dynamodb, prepare_for_dynamodb
+from utils.dynamodb_utils import parse_from_dynamodb, prepare_for_dynamodb
 
 
 class ResortService:

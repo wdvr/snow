@@ -5,8 +5,8 @@ from typing import Optional
 
 from botocore.exceptions import ClientError
 
-from ..models.user import User, UserPreferences
-from ..utils.dynamodb_utils import parse_from_dynamodb, prepare_for_dynamodb
+from models.user import User, UserPreferences
+from utils.dynamodb_utils import parse_from_dynamodb, prepare_for_dynamodb
 
 
 class UserService:
