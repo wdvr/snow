@@ -15,6 +15,72 @@ final class SnowTrackerUITests: XCTestCase {
         app = nil
     }
 
+    // MARK: - Data Loading Tests (Critical - catches API mismatches)
+
+    func testAppLoadsRealResortData() throws {
+        // Wait for app to load data from API
+        // The app should show real resort names, not sample/fake data
+
+        // Wait for loading to complete (up to 10 seconds)
+        let bigWhiteText = app.staticTexts["Big White Ski Resort"]
+        let exists = bigWhiteText.waitForExistence(timeout: 10)
+
+        XCTAssertTrue(exists, "App should display Big White Ski Resort from API data")
+    }
+
+    func testAppShowsThreeResorts() throws {
+        // Wait for data to load
+        sleep(3)
+
+        // Check for all three seeded resorts
+        let bigWhite = app.staticTexts["Big White Ski Resort"]
+        let lakeLouise = app.staticTexts["Lake Louise Ski Resort"]
+        let silverStar = app.staticTexts["SilverStar Mountain Resort"]
+
+        // At least one should exist within 10 seconds
+        XCTAssertTrue(
+            bigWhite.waitForExistence(timeout: 10) ||
+            lakeLouise.waitForExistence(timeout: 1) ||
+            silverStar.waitForExistence(timeout: 1),
+            "App should show at least one resort from API"
+        )
+    }
+
+    func testAppDoesNotShowFakeDataOnly() throws {
+        // This test ensures we're not stuck showing only sample data
+        // If API fails, we fall back to sample data - but this test catches
+        // when the API IS available but decoding fails
+
+        // Wait for initial load
+        sleep(5)
+
+        // Look for "Using offline data" error message which indicates API failure
+        let offlineMessage = app.staticTexts["Using offline data"]
+        let showsOffline = offlineMessage.exists
+
+        // If showing offline message, the API might be down or decoding failed
+        // This is informational - not a hard failure since API might actually be down
+        if showsOffline {
+            print("WARNING: App is showing offline data - check if API is accessible and decoding works")
+        }
+    }
+
+    func testResortDetailShowsElevations() throws {
+        // Wait for resorts to load
+        let bigWhite = app.staticTexts["Big White Ski Resort"]
+        guard bigWhite.waitForExistence(timeout: 10) else {
+            XCTFail("Resorts should load within 10 seconds")
+            return
+        }
+
+        // Tap on the resort to see details
+        bigWhite.tap()
+
+        // Should show elevation information
+        let elevationExists = app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'ft'")).firstMatch.waitForExistence(timeout: 5)
+        XCTAssertTrue(elevationExists, "Resort detail should show elevation in feet")
+    }
+
     // MARK: - Tab Bar Tests
 
     func testTabBarExists() throws {

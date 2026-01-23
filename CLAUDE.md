@@ -128,6 +128,17 @@ pulumi preview --diff
 xcodebuild test -scheme SnowTracker -destination 'platform=iOS Simulator,name=iPhone 15'
 ```
 
+#### Deploy iOS App to Physical Device
+```bash
+# List connected devices
+xcrun devicectl list devices
+
+# Build and install to i17pw (iPhone 17 Pro Max)
+cd ios
+xcodebuild -project SnowTracker.xcodeproj -scheme SnowTracker -destination 'id=00008150-001625E20AE2401C' -configuration Debug build
+xcrun devicectl device install app --device 00008150-001625E20AE2401C ~/Library/Developer/Xcode/DerivedData/SnowTracker-*/Build/Products/Debug-iphoneos/SnowTracker.app
+```
+
 ### Initial Ski Resorts
 - Big White (BC, Canada)
 - Lake Louise (AB, Canada)
