@@ -139,23 +139,27 @@
 
 ## Next Steps (Priority Order)
 
-### Immediate (This Week)
-1. **Deploy to AWS dev environment** - Run `gh workflow run deploy.yml -f environment=dev`
-2. **Get Weather API key** - Sign up at weatherapi.com and add to GitHub secrets
-3. **Verify iOS build** - Run `xcodegen generate` and build in Xcode
-4. **Test end-to-end flow** - Resort list → Conditions → User preferences
+### Immediate (Today - 2026-01-23)
+1. **Fix "No Data" for resorts** - Weather processor Lambda needs to run and fetch conditions
+2. **Fix elevation display** - Shows "3790.00000" instead of "3,790 ft" - fix rounding/formatting
 
-### Short-term (This Month)
-1. Implement scheduled weather data fetching
-2. Add authentication (Sign in with Apple backend integration)
-3. Implement offline caching for iOS
-4. Add more ski resorts (Whistler, Revelstoke, etc.)
+### Short-term (This Week)
+1. **UI validation workflow** - Run simulator, take screenshots, analyze in Claude Code
+2. **AWS Managed Grafana** - Monitor API backend, weather scraping, Lambda invocations
+3. **Feedback button** - Users submit feedback to DynamoDB for offline processing
+4. **Share button** - Share resort conditions with friends
 
-### Medium-term
+### Medium-term (This Month)
+1. **Populate all NA/EU/Japan resorts** - Fetch comprehensive resort list instead of hardcoded 3
+2. **Research snow-report.com scraping** - Can we fetch their data?
+3. **Research Slopes app integration** - User-submitted snow conditions
+4. Add authentication (Sign in with Apple backend integration)
+5. Implement offline caching for iOS
+
+### Later
 1. App Store preparation and TestFlight beta
 2. Production deployment
-3. User feedback integration
-4. Performance optimization
+3. Performance optimization
 
 ## Notes & Learnings
 

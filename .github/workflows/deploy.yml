@@ -199,6 +199,25 @@ jobs:
         RESORTS_TABLE: snow-tracker-resorts-${{ env.ENVIRONMENT }}
         AWS_DEFAULT_REGION: us-west-2
 
+    - name: Invoke weather processor to fetch initial data
+      run: |
+        cd infrastructure
+        WEATHER_LAMBDA=$(pulumi stack output weather_processor_lambda_name 2>/dev/null || echo "")
+
+        if [ -n "$WEATHER_LAMBDA" ]; then
+          echo "Invoking weather processor: $WEATHER_LAMBDA"
+          aws lambda invoke \
+            --function-name "$WEATHER_LAMBDA" \
+            --region us-west-2 \
+            --payload '{}' \
+            /tmp/weather-response.json
+
+          echo "Weather processor response:"
+          cat /tmp/weather-response.json
+        else
+          echo "Weather processor Lambda name not available"
+        fi
+
     - name: Run smoke tests
       run: |
         # Wait for deployment to be ready
