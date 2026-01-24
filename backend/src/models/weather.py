@@ -71,10 +71,12 @@ class WeatherCondition(BaseModel):
         None, description="General weather description"
     )
 
-    # Snow quality assessment
-    snow_quality: SnowQuality = Field(..., description="Calculated snow quality")
+    # Snow quality assessment (set after initial creation by snow quality service)
+    snow_quality: SnowQuality = Field(
+        default=SnowQuality.UNKNOWN, description="Calculated snow quality"
+    )
     confidence_level: ConfidenceLevel = Field(
-        ..., description="Confidence in the assessment"
+        default=ConfidenceLevel.LOW, description="Confidence in the assessment"
     )
     fresh_snow_cm: float = Field(
         default=0.0, description="Estimated fresh (non-iced) snow depth"
