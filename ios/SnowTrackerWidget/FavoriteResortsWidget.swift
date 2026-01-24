@@ -1,5 +1,8 @@
 import WidgetKit
 import SwiftUI
+import os.log
+
+private let logger = Logger(subsystem: "com.snowtracker.app.widget", category: "FavoriteResorts")
 
 // MARK: - Favorite Resorts Widget
 
@@ -42,14 +45,17 @@ struct FavoriteResortsProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<FavoriteResortsEntry>) -> Void) {
+        logger.info("FavoriteResortsWidget: Getting timeline...")
         Task {
             do {
                 let resorts = try await WidgetDataService.shared.fetchFavoriteResorts()
+                logger.info("FavoriteResortsWidget: Got \(resorts.count) resorts")
                 let entry = FavoriteResortsEntry(date: Date(), resorts: resorts)
                 let nextUpdate = Calendar.current.date(byAdding: .hour, value: 1, to: Date())!
                 let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
                 completion(timeline)
             } catch {
+                logger.error("FavoriteResortsWidget: Error fetching data: \(error.localizedDescription)")
                 let entry = FavoriteResortsEntry(date: Date(), resorts: [])
                 let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date())!
                 let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
