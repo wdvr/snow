@@ -9,7 +9,7 @@ class WidgetDataService {
 
     private init() {
         // Use production API for widgets
-        self.baseURL = URL(string: "https://nzp9wfv4rb.execute-api.us-west-2.amazonaws.com/prod")!
+        self.baseURL = URL(string: "https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod")!
     }
 
     // MARK: - Fetch Best Resorts
