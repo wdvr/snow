@@ -1,6 +1,68 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Raw Data Wrapper for arbitrary JSON
+
+struct RawDataWrapper: Codable, Hashable {
+    private var storage: [String: JSONValue] = [:]
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let dict = try? container.decode([String: JSONValue].self) {
+            storage = dict
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(storage)
+    }
+}
+
+enum JSONValue: Codable, Hashable {
+    case string(String)
+    case int(Int)
+    case double(Double)
+    case bool(Bool)
+    case object([String: JSONValue])
+    case array([JSONValue])
+    case null
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let value = try? container.decode(String.self) {
+            self = .string(value)
+        } else if let value = try? container.decode(Int.self) {
+            self = .int(value)
+        } else if let value = try? container.decode(Double.self) {
+            self = .double(value)
+        } else if let value = try? container.decode(Bool.self) {
+            self = .bool(value)
+        } else if let value = try? container.decode([String: JSONValue].self) {
+            self = .object(value)
+        } else if let value = try? container.decode([JSONValue].self) {
+            self = .array(value)
+        } else if container.decodeNil() {
+            self = .null
+        } else {
+            throw DecodingError.typeMismatch(JSONValue.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Unknown JSON type"))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .string(let value): try container.encode(value)
+        case .int(let value): try container.encode(value)
+        case .double(let value): try container.encode(value)
+        case .bool(let value): try container.encode(value)
+        case .object(let value): try container.encode(value)
+        case .array(let value): try container.encode(value)
+        case .null: try container.encodeNil()
+        }
+    }
+}
+
 // MARK: - Weather and Snow Quality Models
 
 enum SnowQuality: String, CaseIterable, Codable {
@@ -135,7 +197,7 @@ struct WeatherCondition: Codable, Identifiable, Hashable {
     // Data source tracking
     let dataSource: String
     let sourceConfidence: ConfidenceLevel
-    let rawData: [String: String]?
+    let rawData: RawDataWrapper?
 
     private enum CodingKeys: String, CodingKey {
         case resortId = "resort_id"
