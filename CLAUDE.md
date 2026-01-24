@@ -20,10 +20,73 @@ This is a snow quality tracking application for ski resorts, focusing on Canada 
 - **Database**: DynamoDB
 
 ### Development Workflow
-- **Version Control**: Git with GitHub (private repository)
-- **Workflow**: Pull Request based development with frequent commits
-- **Permissions**: Use dangerously disable sandbox after initial setup
+- **Version Control**: Git with GitHub (private repository at wdvr/snow)
+- **Issue Tracking**: GitHub Issues (source of truth for all tasks)
+- **Workflow**: Feature branches with Pull Requests
 - **Testing**: Comprehensive automated testing for all components
+
+## GitHub Workflow (IMPORTANT)
+
+### Using GitHub Issues
+GitHub Issues is the **source of truth** for all tasks, bugs, and feature requests.
+
+```bash
+# List open issues
+gh issue list --state open
+
+# Create a new issue
+gh issue create --title "Title" --body "Description" --label "bug"
+
+# View issue details
+gh issue view 123
+
+# Close an issue
+gh issue close 123
+
+# Add labels (bug, enhancement, research, ios, backend)
+gh issue edit 123 --add-label "enhancement"
+```
+
+### Feature Development Workflow
+1. **Create/find issue** - Every change must have an associated issue
+2. **Create feature branch** from main: `git checkout -b feature/issue-123-description`
+3. **Make changes** with frequent commits
+4. **Push branch**: `git push -u origin feature/issue-123-description`
+5. **Create PR**: `gh pr create --title "Title" --body "Closes #123"`
+6. **Wait for CI** to pass (tests + deployment preview)
+7. **Merge** after review: `gh pr merge --squash`
+
+### Branch Naming
+- `feature/issue-123-description` - New features
+- `fix/issue-123-description` - Bug fixes
+- `chore/description` - Maintenance (no issue required)
+
+### Pull Request Requirements
+- Link to GitHub issue (use "Closes #123" in PR body)
+- All tests must pass
+- Code follows project conventions
+- No direct pushes to main branch
+- **Add progress comments** on the PR for each significant step completed
+  - This helps track what the agent did and provides an audit trail
+  - Example: "Added unit tests for caching service", "Fixed linting errors", "Verified on simulator"
+
+### Common gh CLI Commands
+```bash
+# Create PR linked to issue
+gh pr create --title "Add caching #12" --body "Closes #12"
+
+# List PRs
+gh pr list
+
+# Check PR status (CI, reviews)
+gh pr view 123
+
+# Merge PR (squash)
+gh pr merge 123 --squash
+
+# Check deployment status
+gh run list --workflow=deploy.yml
+```
 
 ## iOS Development Tools & Setup (2026)
 
@@ -70,16 +133,18 @@ Research needed for:
 
 ## Development Workflow
 
-### Git Workflow - COMMIT FREQUENTLY
-1. **Frequent Commits**: Commit every logical change, don't batch work
-2. **Feature Branches**: Create branches from main for each feature/fix
-3. **Clear Messages**: Use descriptive commit messages explaining the "why"
-4. **Pull Requests**: ALL changes must go through PR review process
-5. **PR Requirements**:
+### Git Workflow - NEVER PUSH DIRECTLY TO MAIN
+1. **GitHub Issues First**: Every change must have an associated issue
+2. **Feature Branches**: Create branches from main: `feature/issue-123-description`
+3. **Frequent Commits**: Commit every logical change, don't batch work
+4. **Clear Messages**: Use descriptive commit messages explaining the "why"
+5. **Pull Requests**: ALL changes must go through PR review process
+6. **PR Requirements**:
+   - Link to GitHub issue (Closes #123)
    - All tests must pass
    - Code review approval required
-   - No direct pushes to main
-6. **Merge Strategy**: Squash and merge for clean history
+   - **NO DIRECT PUSHES TO MAIN**
+7. **Merge Strategy**: Squash and merge for clean history
 
 ### Testing Strategy - TEST EVERYTHING (CRITICAL)
 

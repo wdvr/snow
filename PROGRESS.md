@@ -21,40 +21,27 @@
 
 ## ACTIVE SPRINT: Data Quality & Caching
 
-### Priority 1: Widget Debugging
-| Task | Status | Notes |
-|------|--------|-------|
-| Debug widgets not showing data | 🔴 TODO | Widgets show empty state |
-| Check widget network requests | 🔴 TODO | May be failing silently |
-| Verify app group data sharing | 🔴 TODO | Favorites not syncing to widget |
-| Test widget timeline refresh | 🔴 TODO | Ensure data loads on schedule |
+**GitHub Issues are the source of truth for all tasks.** See: https://github.com/wdvr/snow/issues
 
-### Priority 2: Data Source Accuracy
-| Task | Status | Notes |
-|------|--------|-------|
-| Investigate weatherapi.com accuracy | 🔴 TODO | Silver Star shows 0cm but actually 1cm |
-| Compare weatherapi vs actual conditions | 🔴 TODO | Validate against resort reports |
-| Check forecast API response | 🔴 TODO | Verify totalsnow_cm field accuracy |
-| Research elevation-specific data | 🔴 TODO | Weather varies by elevation |
-| Validate data aggregation logic | 🔴 TODO | 24h/48h/72h calculations |
+### Open Issues (High Priority)
+| Issue | Title | Priority |
+|-------|-------|----------|
+| [#11](https://github.com/wdvr/snow/issues/11) | Widget not showing data - debug and fix | High |
+| [#12](https://github.com/wdvr/snow/issues/12) | Implement 60-second API caching | Medium |
 
-### Priority 3: Alternative Data Sources
-| Task | Status | Notes |
-|------|--------|-------|
-| Research snow-forecast.com API | 🔴 TODO | May have scraping or API options |
-| Research OpenSnow API | 🔴 TODO | Popular ski weather app |
-| Research resort official APIs | 🔴 TODO | Some resorts publish conditions |
-| Research Slopes app integration | 🟡 PENDING | User-submitted conditions |
-| Implement multi-source aggregation | 🔴 TODO | Combine multiple data sources |
+### Open Issues (Lower Priority)
+| Issue | Title | Priority |
+|-------|-------|----------|
+| [#13](https://github.com/wdvr/snow/issues/13) | Research alternative snow data sources | Low |
+| [#14](https://github.com/wdvr/snow/issues/14) | Implement Sign in with Apple backend | Medium |
+| [#15](https://github.com/wdvr/snow/issues/15) | Add offline caching for iOS app | Medium |
+| [#16](https://github.com/wdvr/snow/issues/16) | Push notifications for snow alerts | Low |
+| [#17](https://github.com/wdvr/snow/issues/17) | App Store preparation and TestFlight | Low |
+| [#18](https://github.com/wdvr/snow/issues/18) | Add more ski resorts | Low |
 
-### Priority 4: API Caching (Cost & Performance)
-| Task | Status | Notes |
-|------|--------|-------|
-| Evaluate caching options | 🔴 TODO | API Gateway vs CloudFront |
-| Implement 60-second cache | 🔴 TODO | All GET endpoints |
-| Add cache headers to responses | 🔴 TODO | Cache-Control headers |
-| Test cache invalidation | 🔴 TODO | Ensure fresh data when needed |
-| Monitor cache hit rates | 🔴 TODO | CloudWatch metrics |
+### Recently Completed
+- ✅ Switched from weatherapi.com to Open-Meteo for elevation-aware weather data
+- ✅ Added widget debugging logging
 
 ---
 
@@ -156,23 +143,9 @@ POST /api/v1/feedback                  - Submit feedback
 
 ## Remaining Tasks (Backlog)
 
-### High Priority
-1. Fix widgets not showing data
-2. Improve weather data accuracy
-3. Implement API caching (60s)
-4. Add snow-forecast.com or alternative data source
+**All tasks are tracked in GitHub Issues:** https://github.com/wdvr/snow/issues
 
-### Medium Priority
-1. Authentication (Sign in with Apple backend)
-2. Offline caching for iOS (SwiftData)
-3. Push notifications for snow alerts
-4. Performance testing
-
-### Low Priority
-1. App Store preparation
-2. TestFlight beta
-3. Additional resorts (more regions)
-4. User-submitted conditions
+Use `gh issue list` to see current open issues.
 
 ---
 
