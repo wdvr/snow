@@ -3,9 +3,9 @@
 import pytest
 from pydantic import ValidationError
 
-from src.models.resort import ElevationLevel, ElevationPoint, Resort
-from src.models.user import User, UserPreferences
-from src.models.weather import (
+from models.resort import ElevationLevel, ElevationPoint, Resort
+from models.user import User, UserPreferences
+from models.weather import (
     ConfidenceLevel,
     SnowQuality,
     SnowQualityAlgorithm,

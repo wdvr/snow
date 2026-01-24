@@ -4,9 +4,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from src.models.resort import ElevationLevel, ElevationPoint, Resort
-from src.services.resort_service import ResortService
-from src.utils.resort_seeder import ResortSeeder
+from models.resort import ElevationLevel, ElevationPoint, Resort
+from services.resort_service import ResortService
+from utils.resort_seeder import ResortSeeder
 
 
 class TestResortSeeder:

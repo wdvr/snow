@@ -46,6 +46,7 @@ jobs:
     - name: Install backend dependencies with uv
       run: |
         cd backend
+        uv pip install --system -e .
         uv pip install --system -r requirements.txt
         uv pip install --system pytest-cov pytest-mock moto[dynamodb] localstack-client httpx
 
@@ -62,7 +63,7 @@ jobs:
     - name: Run unit tests with coverage
       run: |
         cd backend
-        PYTHONPATH=src python -m pytest tests/ --ignore=tests/integration/ -v \
+        python -m pytest tests/ --ignore=tests/integration/ -v \
           --ignore=tests/test_resort_seeder.py \
           --cov=src \
           --cov-report=xml \
@@ -83,7 +84,7 @@ jobs:
     - name: Run integration tests
       run: |
         cd backend
-        PYTHONPATH=src python -m pytest tests/integration/ -v --tb=short
+        python -m pytest tests/integration/ -v --tb=short
       env:
         DYNAMODB_ENDPOINT: http://localhost:8000
 

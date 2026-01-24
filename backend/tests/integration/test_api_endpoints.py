@@ -104,7 +104,7 @@ def app_client(dynamodb_tables):
     # Import app after mock is active
     from fastapi.testclient import TestClient
 
-    from src.handlers.api_handler import app
+    from handlers.api_handler import app
 
     return TestClient(app)
 
@@ -359,10 +359,10 @@ class TestAPIIntegration:
         # Cleanup
         resorts_table.delete_item(Key={"resort_id": "test-resort"})
 
-    @patch("src.handlers.api_handler.user_service")
+    @patch("handlers.api_handler.user_service")
     def test_get_user_preferences(self, mock_user_service, app_client):
         """Test getting user preferences."""
-        from src.models.user import UserPreferences
+        from models.user import UserPreferences
 
         # Create actual UserPreferences object
         mock_preferences = UserPreferences(
@@ -391,7 +391,7 @@ class TestAPIIntegration:
         assert data["user_id"] == "test_user"
         assert "favorite_resorts" in data
 
-    @patch("src.services.user_service.UserService.save_user_preferences")
+    @patch("services.user_service.UserService.save_user_preferences")
     def test_update_user_preferences(self, mock_save_prefs, app_client):
         """Test updating user preferences."""
         mock_save_prefs.return_value = None

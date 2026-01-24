@@ -6,10 +6,10 @@ from unittest.mock import Mock, patch
 import pytest
 from botocore.exceptions import ClientError
 
-from src.models.weather import ConfidenceLevel
-from src.services.resort_service import ResortService
-from src.services.user_service import UserService
-from src.services.weather_service import WeatherService
+from models.weather import ConfidenceLevel
+from services.resort_service import ResortService
+from services.user_service import UserService
+from services.weather_service import WeatherService
 
 
 class TestResortService:
