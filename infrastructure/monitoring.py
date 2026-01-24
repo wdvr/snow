@@ -2,8 +2,8 @@
 Snow Quality Tracker - Monitoring Infrastructure
 
 This module sets up:
-- Amazon Managed Grafana for dashboards and visualization
-- CloudWatch dashboards and alarms
+- Amazon Managed Grafana for dashboards and visualization (single workspace for all envs)
+- CloudWatch dashboards and alarms (per environment)
 - SNS notifications for alerts
 """
 
@@ -13,38 +13,23 @@ import pulumi
 import pulumi_aws as aws
 
 
-def create_monitoring_stack(
-    app_name: str,
-    environment: str,
-    tags: dict,
-    vpc_id: str = None,
-    enable_eks: bool = False,
-):
+def create_unified_grafana_workspace(app_name: str, tags: dict):
     """
-    Create the monitoring infrastructure stack with Amazon Managed Grafana.
+    Create a single Amazon Managed Grafana workspace for all environments.
+
+    This workspace monitors dev, staging, and prod through CloudWatch,
+    with dashboards organized by environment folders.
 
     Args:
         app_name: Application name for resource naming
-        environment: Environment (dev/staging/prod)
         tags: Resource tags
-        vpc_id: Optional existing VPC ID (not used for Managed Grafana)
-        enable_eks: Deprecated - EKS is not used (kept for backward compatibility)
 
     Returns:
-        Dictionary of created resources
+        Dictionary of created resources including the workspace
     """
     resources = {}
 
-    # Only create Managed Grafana for prod environment (costs ~$9/month per editor)
-    # Dev and staging use CloudWatch dashboards only
-    if environment != "prod":
-        pulumi.log.info(
-            f"Skipping Managed Grafana for {environment} - use CloudWatch dashboards"
-        )
-        return resources
-
-    # IAM role for Amazon Managed Grafana
-    # Get account ID (synchronous call - returns actual value, not Output)
+    # Get account ID for IAM policy
     caller_identity = aws.get_caller_identity()
 
     grafana_assume_role_policy = {
@@ -61,17 +46,18 @@ def create_monitoring_stack(
         ],
     }
 
+    # Single IAM role for the unified Grafana workspace
     grafana_role = aws.iam.Role(
-        f"{app_name}-grafana-role-{environment}",
-        name=f"{app_name}-grafana-role-{environment}",
+        f"{app_name}-grafana-role",
+        name=f"{app_name}-grafana-role",
         assume_role_policy=json.dumps(grafana_assume_role_policy),
         tags=tags,
     )
     resources["grafana_role"] = grafana_role
 
-    # IAM policy for Grafana to read CloudWatch metrics and logs
+    # IAM policy for Grafana to read CloudWatch metrics and logs from ALL environments
     grafana_policy = aws.iam.RolePolicy(
-        f"{app_name}-grafana-policy-{environment}",
+        f"{app_name}-grafana-policy",
         role=grafana_role.id,
         policy=json.dumps(
             {
@@ -122,11 +108,11 @@ def create_monitoring_stack(
     )
     resources["grafana_policy"] = grafana_policy
 
-    # Amazon Managed Grafana workspace
+    # Single Amazon Managed Grafana workspace for all environments
     grafana_workspace = aws.grafana.Workspace(
-        f"{app_name}-grafana-{environment}",
-        name=f"{app_name}-grafana-{environment}",
-        description=f"Snow Quality Tracker Monitoring - {environment}",
+        f"{app_name}-grafana",
+        name=f"{app_name}-grafana",
+        description="Snow Quality Tracker - Unified Monitoring (dev/staging/prod)",
         account_access_type="CURRENT_ACCOUNT",
         authentication_providers=["AWS_SSO"],
         permission_type="SERVICE_MANAGED",
@@ -138,7 +124,47 @@ def create_monitoring_stack(
     )
     resources["grafana_workspace"] = grafana_workspace
 
-    pulumi.log.info(f"Created Amazon Managed Grafana workspace for {environment}")
+    pulumi.log.info(
+        "Created unified Amazon Managed Grafana workspace for all environments"
+    )
+
+    return resources
+
+
+def create_monitoring_stack(
+    app_name: str,
+    environment: str,
+    tags: dict,
+    vpc_id: str = None,
+    enable_eks: bool = False,
+    create_grafana: bool = False,
+):
+    """
+    Create the monitoring infrastructure stack.
+
+    Args:
+        app_name: Application name for resource naming
+        environment: Environment (dev/staging/prod)
+        tags: Resource tags
+        vpc_id: Optional existing VPC ID (not used for Managed Grafana)
+        enable_eks: Deprecated - EKS is not used (kept for backward compatibility)
+        create_grafana: If True, create the unified Grafana workspace (only set for one env)
+
+    Returns:
+        Dictionary of created resources
+    """
+    resources = {}
+
+    # Create unified Grafana workspace only when explicitly requested
+    # This should be done from only ONE environment's deployment (e.g., staging)
+    # to avoid duplicate resource creation
+    if create_grafana:
+        grafana_resources = create_unified_grafana_workspace(app_name, tags)
+        resources.update(grafana_resources)
+    else:
+        pulumi.log.info(
+            f"Skipping Grafana creation for {environment} - managed by staging deployment"
+        )
 
     return resources
 

@@ -652,10 +652,13 @@ api_monitoring = create_api_gateway_monitoring(
     app_name=app_name, environment=environment, api_gateway_id=api_gateway.id, tags=tags
 )
 
-# Amazon Managed Grafana (only for prod - ~$9/month per editor)
-# Dev and staging use CloudWatch dashboards only
+# Amazon Managed Grafana - single workspace for all environments (~$9/month per editor)
+# Created only during staging deployment to avoid duplicate resources
 monitoring_stack = create_monitoring_stack(
-    app_name=app_name, environment=environment, tags=tags
+    app_name=app_name,
+    environment=environment,
+    tags=tags,
+    create_grafana=(environment == "staging"),
 )
 
 # Exports
@@ -679,7 +682,7 @@ pulumi.export("api_handler_lambda_name", api_handler_lambda.name)
 pulumi.export("cloudwatch_dashboard_name", api_monitoring["dashboard"].dashboard_name)
 pulumi.export("alarm_topic_arn", api_monitoring["alarm_topic"].arn)
 
-# Managed Grafana exports (only for prod)
+# Managed Grafana exports (created by staging, monitors all environments)
 if "grafana_workspace" in monitoring_stack:
     pulumi.export("grafana_workspace_id", monitoring_stack["grafana_workspace"].id)
     pulumi.export(
