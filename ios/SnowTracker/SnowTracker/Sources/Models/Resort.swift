@@ -110,6 +110,17 @@ struct Resort: Codable, Identifiable, Hashable {
         switch country.uppercased() {
         case "CA": return "Canada"
         case "US": return "United States"
+        case "FR": return "France"
+        case "CH": return "Switzerland"
+        case "AT": return "Austria"
+        case "IT": return "Italy"
+        case "JP": return "Japan"
+        case "NZ": return "New Zealand"
+        case "AU": return "Australia"
+        case "CL": return "Chile"
+        case "DE": return "Germany"
+        case "NO": return "Norway"
+        case "SE": return "Sweden"
         default: return country
         }
     }
