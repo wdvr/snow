@@ -13,6 +13,7 @@ from models.weather import WeatherCondition
 from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
 from services.weather_service import WeatherService
+from utils.dynamodb_utils import prepare_for_dynamodb
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -165,6 +166,9 @@ def save_weather_condition(table, weather_condition: WeatherCondition) -> None:
         # Convert Pydantic model to DynamoDB item
         # Note: use_enum_values=True in Config already converts enums to strings
         item = weather_condition.dict()
+
+        # Convert floats to Decimal for DynamoDB compatibility
+        item = prepare_for_dynamodb(item)
 
         table.put_item(Item=item)
 
