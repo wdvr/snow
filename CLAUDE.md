@@ -66,6 +66,9 @@ gh issue edit 123 --add-label "enhancement"
 - All tests must pass
 - Code follows project conventions
 - No direct pushes to main branch
+- **Add progress comments** on the PR for each significant step completed
+  - This helps track what the agent did and provides an audit trail
+  - Example: "Added unit tests for caching service", "Fixed linting errors", "Verified on simulator"
 
 ### Common gh CLI Commands
 ```bash
