@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 
 import boto3
 from botocore.exceptions import ClientError
-from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from mangum import Mangum
@@ -19,6 +19,13 @@ from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
 from services.user_service import UserService
 from services.weather_service import WeatherService
+from utils.cache import (
+    CACHE_CONTROL_PRIVATE,
+    CACHE_CONTROL_PUBLIC,
+    cached_conditions,
+    cached_resorts,
+    cached_snow_quality,
+)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -89,14 +96,18 @@ async def health_check():
 
 @app.get("/api/v1/resorts")
 async def get_resorts(
+    response: Response,
     country: str | None = Query(None, description="Filter by country code (CA, US)"),
 ):
     """Get all ski resorts, optionally filtered by country."""
     try:
-        resorts = resort_service.get_all_resorts()
+        resorts = _get_all_resorts_cached()
 
         if country:
             resorts = [r for r in resorts if r.country.upper() == country.upper()]
+
+        # Set cache headers - resort data is public and can be cached
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
 
         return {"resorts": resorts}
 
@@ -107,16 +118,26 @@ async def get_resorts(
         )
 
 
+@cached_resorts
+def _get_all_resorts_cached():
+    """Cached wrapper for getting all resorts."""
+    return resort_service.get_all_resorts()
+
+
 @app.get("/api/v1/resorts/{resort_id}", response_model=Resort)
-async def get_resort(resort_id: str):
+async def get_resort(resort_id: str, response: Response):
     """Get details for a specific resort."""
     try:
-        resort = resort_service.get_resort(resort_id)
+        resort = _get_resort_cached(resort_id)
         if not resort:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Resort {resort_id} not found",
             )
+
+        # Set cache headers
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+
         return resort
 
     except HTTPException:
@@ -128,12 +149,19 @@ async def get_resort(resort_id: str):
         )
 
 
+@cached_resorts
+def _get_resort_cached(resort_id: str):
+    """Cached wrapper for getting a single resort."""
+    return resort_service.get_resort(resort_id)
+
+
 # MARK: - Weather Condition Endpoints
 
 
 @app.get("/api/v1/resorts/{resort_id}/conditions")
 async def get_resort_conditions(
     resort_id: str,
+    response: Response,
     hours: int | None = Query(
         24, description="Hours of historical data to retrieve", ge=1, le=168
     ),
@@ -141,17 +169,18 @@ async def get_resort_conditions(
     """Get current and recent weather conditions for all elevations at a resort."""
     try:
         # Verify resort exists
-        resort = resort_service.get_resort(resort_id)
+        resort = _get_resort_cached(resort_id)
         if not resort:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Resort {resort_id} not found",
             )
 
-        # Get conditions for the specified time range
-        conditions = weather_service.get_conditions_for_resort(
-            resort_id, hours_back=hours
-        )
+        # Get conditions for the specified time range (cached)
+        conditions = _get_conditions_cached(resort_id, hours)
+
+        # Set cache headers - conditions are updated hourly, 60s cache is safe
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
 
         return {
             "conditions": conditions,
@@ -168,8 +197,16 @@ async def get_resort_conditions(
         )
 
 
+@cached_conditions
+def _get_conditions_cached(resort_id: str, hours: int):
+    """Cached wrapper for getting resort conditions."""
+    return weather_service.get_conditions_for_resort(resort_id, hours_back=hours)
+
+
 @app.get("/api/v1/resorts/{resort_id}/conditions/{elevation_level}")
-async def get_elevation_condition(resort_id: str, elevation_level: str):
+async def get_elevation_condition(
+    resort_id: str, elevation_level: str, response: Response
+):
     """Get current weather conditions for a specific elevation at a resort."""
     try:
         # Validate elevation level
@@ -181,20 +218,23 @@ async def get_elevation_condition(resort_id: str, elevation_level: str):
             )
 
         # Verify resort exists
-        resort = resort_service.get_resort(resort_id)
+        resort = _get_resort_cached(resort_id)
         if not resort:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Resort {resort_id} not found",
             )
 
-        # Get latest condition for the specific elevation
-        condition = weather_service.get_latest_condition(resort_id, elevation_level)
+        # Get latest condition for the specific elevation (cached)
+        condition = _get_latest_condition_cached(resort_id, elevation_level)
         if not condition:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"No conditions found for {resort_id} at {elevation_level} elevation",
             )
+
+        # Set cache headers
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
 
         return condition
 
@@ -207,12 +247,18 @@ async def get_elevation_condition(resort_id: str, elevation_level: str):
         )
 
 
+@cached_conditions
+def _get_latest_condition_cached(resort_id: str, elevation_level: str):
+    """Cached wrapper for getting latest condition at elevation."""
+    return weather_service.get_latest_condition(resort_id, elevation_level)
+
+
 @app.get("/api/v1/resorts/{resort_id}/snow-quality")
-async def get_snow_quality_summary(resort_id: str):
+async def get_snow_quality_summary(resort_id: str, response: Response):
     """Get snow quality summary for all elevations at a resort."""
     try:
         # Verify resort exists
-        resort = resort_service.get_resort(resort_id)
+        resort = _get_resort_cached(resort_id)
         if not resort:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -279,6 +325,9 @@ async def get_snow_quality_summary(resort_id: str):
         else:
             overall_quality = SnowQuality.UNKNOWN
 
+        # Set cache headers
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+
         return {
             "resort_id": resort_id,
             "elevations": elevation_summaries,
@@ -301,7 +350,9 @@ async def get_snow_quality_summary(resort_id: str):
 
 
 @app.get("/api/v1/user/preferences", response_model=UserPreferences)
-async def get_user_preferences(user_id: str = Depends(get_current_user_id)):
+async def get_user_preferences(
+    response: Response, user_id: str = Depends(get_current_user_id)
+):
     """Get user preferences."""
     try:
         preferences = user_service.get_user_preferences(user_id)
@@ -324,6 +375,9 @@ async def get_user_preferences(user_id: str = Depends(get_current_user_id)):
                 created_at=datetime.now(UTC).isoformat(),
                 updated_at=datetime.now(UTC).isoformat(),
             )
+
+        # User data is private, don't cache
+        response.headers["Cache-Control"] = CACHE_CONTROL_PRIVATE
 
         return preferences
 

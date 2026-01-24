@@ -2,8 +2,8 @@
 
 from datetime import UTC, datetime, timedelta, timezone
 
-from src.models.weather import ConfidenceLevel, SnowQuality, WeatherCondition
-from src.services.snow_quality_service import SnowQualityService
+from models.weather import ConfidenceLevel, SnowQuality, WeatherCondition
+from services.snow_quality_service import SnowQualityService
 
 
 class TestSnowQualityService:
