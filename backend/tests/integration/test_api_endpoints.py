@@ -8,6 +8,7 @@ import boto3
 import pytest
 from moto import mock_aws
 
+from src.utils.cache import clear_all_caches
 from src.utils.dynamodb_utils import prepare_for_dynamodb
 
 # Set environment variables before any app imports
@@ -106,6 +107,14 @@ def app_client(dynamodb_tables):
     from src.handlers.api_handler import app
 
     return TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def clear_cache_before_test():
+    """Clear API caches before each test to ensure fresh data."""
+    clear_all_caches()
+    yield
+    clear_all_caches()
 
 
 @pytest.fixture
