@@ -10,9 +10,9 @@ import boto3
 from botocore.exceptions import ClientError
 
 from models.weather import WeatherCondition
+from services.openmeteo_service import OpenMeteoService
 from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
-from services.weather_service import WeatherService
 from utils.dynamodb_utils import prepare_for_dynamodb
 
 # Configure logging
@@ -52,7 +52,9 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
 
         # Initialize services
         resort_service = ResortService(dynamodb.Table(RESORTS_TABLE))
-        weather_service = WeatherService(api_key=WEATHER_API_KEY)
+        weather_service = (
+            OpenMeteoService()
+        )  # Open-Meteo: free, elevation-aware, no API key
         snow_quality_service = SnowQualityService()
 
         # Statistics tracking
