@@ -77,7 +77,7 @@ async def health_check():
 # MARK: - Resort Endpoints
 
 
-@app.get("/api/v1/resorts", response_model=dict[str, list[Resort]])
+@app.get("/api/v1/resorts", response_model=list[Resort])
 async def get_resorts(
     country: str | None = Query(None, description="Filter by country code (CA, US)"),
 ):
@@ -88,7 +88,7 @@ async def get_resorts(
         if country:
             resorts = [r for r in resorts if r.country.upper() == country.upper()]
 
-        return {"resorts": resorts}
+        return resorts
 
     except Exception as e:
         raise HTTPException(
