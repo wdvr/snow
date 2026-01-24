@@ -8,10 +8,18 @@ class WidgetDataService {
 
     private let baseURL: URL
     private let logger = Logger(subsystem: "com.snowtracker.app.widget", category: "DataService")
+    private let session: URLSession
 
     private init() {
         // Use production API for widgets
         self.baseURL = URL(string: "https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod")!
+
+        // Configure URLSession with shorter timeouts for widget context
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 10  // 10 seconds per request
+        config.timeoutIntervalForResource = 25 // 25 seconds total
+        self.session = URLSession(configuration: config)
+
         logger.info("WidgetDataService initialized with URL: \(self.baseURL.absoluteString)")
     }
 
@@ -78,10 +86,14 @@ class WidgetDataService {
         let resortsURL = baseURL.appendingPathComponent("api/v1/resorts")
         logger.info("Fetching resorts from: \(resortsURL.absoluteString)")
 
-        let (resortsData, response) = try await URLSession.shared.data(from: resortsURL)
+        let (resortsData, response) = try await session.data(from: resortsURL)
 
         if let httpResponse = response as? HTTPURLResponse {
             logger.info("Resorts API response status: \(httpResponse.statusCode)")
+            guard httpResponse.statusCode == 200 else {
+                logger.error("Bad status code: \(httpResponse.statusCode)")
+                throw WidgetError.networkError
+            }
         }
 
         let decoder = JSONDecoder()
@@ -89,25 +101,38 @@ class WidgetDataService {
             let resortsResponse = try decoder.decode(ResortsAPIResponse.self, from: resortsData)
             logger.info("Decoded \(resortsResponse.resorts.count) resorts")
 
-            var results: [ResortConditionData] = []
+            // Fetch conditions for each resort CONCURRENTLY (limit to 6 to reduce load)
+            let resortsToFetch = Array(resortsResponse.resorts.prefix(6))
 
-            // Fetch conditions for each resort (limit to avoid too many requests)
-            for resort in resortsResponse.resorts.prefix(10) {
-                do {
-                    let condition = try await fetchConditions(for: resort.resortId)
-                    results.append(ResortConditionData(
-                        resortId: resort.resortId,
-                        resortName: resort.name,
-                        location: "\(resort.region), \(resort.country)",
-                        snowQuality: WidgetSnowQuality(rawValue: condition.snowQuality) ?? .unknown,
-                        temperature: condition.currentTempCelsius,
-                        freshSnow: condition.freshSnowCm,
-                        predictedSnow24h: condition.predictedSnow24hCm ?? 0
-                    ))
-                    logger.info("Fetched conditions for \(resort.resortId)")
-                } catch {
-                    logger.error("Failed to fetch conditions for \(resort.resortId): \(error.localizedDescription)")
+            let results = await withTaskGroup(of: ResortConditionData?.self) { group in
+                for resort in resortsToFetch {
+                    group.addTask {
+                        do {
+                            let condition = try await self.fetchConditions(for: resort.resortId)
+                            self.logger.info("Fetched conditions for \(resort.resortId)")
+                            return ResortConditionData(
+                                resortId: resort.resortId,
+                                resortName: resort.name,
+                                location: "\(resort.region), \(resort.country)",
+                                snowQuality: WidgetSnowQuality(rawValue: condition.snowQuality) ?? .unknown,
+                                temperature: condition.currentTempCelsius,
+                                freshSnow: condition.freshSnowCm,
+                                predictedSnow24h: condition.predictedSnow24hCm ?? 0
+                            )
+                        } catch {
+                            self.logger.error("Failed to fetch conditions for \(resort.resortId): \(error.localizedDescription)")
+                            return nil
+                        }
+                    }
                 }
+
+                var collected: [ResortConditionData] = []
+                for await result in group {
+                    if let data = result {
+                        collected.append(data)
+                    }
+                }
+                return collected
             }
 
             logger.info("Total results with conditions: \(results.count)")
@@ -123,7 +148,7 @@ class WidgetDataService {
 
     private func fetchConditions(for resortId: String) async throws -> WidgetCondition {
         let url = baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/conditions")
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
 
         if let httpResponse = response as? HTTPURLResponse {
             logger.debug("Conditions API status for \(resortId): \(httpResponse.statusCode)")
