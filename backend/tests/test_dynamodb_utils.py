@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from src.utils.dynamodb_utils import (
+from utils.dynamodb_utils import (
     decimal_to_python,
     parse_from_dynamodb,
     parse_items_from_dynamodb,
