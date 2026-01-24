@@ -35,8 +35,18 @@ def create_monitoring_stack(
     """
     resources = {}
 
-    # Only create Managed Grafana for prod environment (costs ~$9/month per editor)
-    # Dev and staging use CloudWatch dashboards only
+    # Managed Grafana requires AWS SSO (IAM Identity Center) to be enabled.
+    # Since SSO is not configured, skip Grafana for all environments and use CloudWatch.
+    # To enable Grafana later:
+    # 1. Set up AWS IAM Identity Center (SSO)
+    # 2. Change the condition below back to: if environment != "prod":
+    pulumi.log.info(
+        f"Skipping Managed Grafana for {environment} - AWS SSO not configured. "
+        "Use CloudWatch dashboards instead."
+    )
+    return resources
+
+    # NOTE: Code below disabled until AWS SSO is configured
     if environment != "prod":
         pulumi.log.info(
             f"Skipping Managed Grafana for {environment} - use CloudWatch dashboards"
