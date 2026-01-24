@@ -115,10 +115,27 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
                         stats["elevation_points_processed"] += 1
                         stats["conditions_saved"] += 1
 
+                        # Get string values for logging (enums might already be strings due to use_enum_values)
+                        quality_str = (
+                            snow_quality.value
+                            if hasattr(snow_quality, "value")
+                            else snow_quality
+                        )
+                        confidence_str = (
+                            confidence.value
+                            if hasattr(confidence, "value")
+                            else confidence
+                        )
+                        level_str = (
+                            elevation_point.level.value
+                            if hasattr(elevation_point.level, "value")
+                            else elevation_point.level
+                        )
+
                         logger.info(
-                            f"Processed {resort.resort_id} {elevation_point.level.value}: "
-                            f"Quality={snow_quality.value}, Fresh Snow={fresh_snow_cm}cm, "
-                            f"Confidence={confidence.value}"
+                            f"Processed {resort.resort_id} {level_str}: "
+                            f"Quality={quality_str}, Fresh Snow={fresh_snow_cm}cm, "
+                            f"Confidence={confidence_str}"
                         )
 
                     except Exception as e:
