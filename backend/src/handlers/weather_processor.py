@@ -163,12 +163,8 @@ def save_weather_condition(table, weather_condition: WeatherCondition) -> None:
     """Save weather condition to DynamoDB table."""
     try:
         # Convert Pydantic model to DynamoDB item
+        # Note: use_enum_values=True in Config already converts enums to strings
         item = weather_condition.dict()
-
-        # Convert enum values to strings for DynamoDB storage
-        item["snow_quality"] = weather_condition.snow_quality.value
-        item["confidence_level"] = weather_condition.confidence_level.value
-        item["source_confidence"] = weather_condition.source_confidence.value
 
         table.put_item(Item=item)
 
