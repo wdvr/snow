@@ -8,8 +8,8 @@ import boto3
 import pytest
 from moto import mock_aws
 
-from src.utils.cache import clear_all_caches
-from src.utils.dynamodb_utils import prepare_for_dynamodb
+from utils.cache import clear_all_caches
+from utils.dynamodb_utils import prepare_for_dynamodb
 
 # Set environment variables before any app imports
 os.environ["AWS_ACCESS_KEY_ID"] = "testing"
