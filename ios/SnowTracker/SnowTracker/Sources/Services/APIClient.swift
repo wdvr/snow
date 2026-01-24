@@ -159,6 +159,29 @@ class APIClient {
         }
     }
 
+    // MARK: - Feedback API
+
+    func submitFeedback(_ feedback: FeedbackSubmission) async throws {
+        let url = baseURL.appendingPathComponent("api/v1/feedback")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(
+                url,
+                method: .post,
+                parameters: feedback,
+                encoder: JSONParameterEncoder.default
+            )
+            .validate()
+            .response { response in
+                if let error = response.error {
+                    continuation.resume(throwing: self.mapError(error))
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
     // MARK: - Authentication
 
     private func authHeaders() -> HTTPHeaders {
@@ -289,6 +312,28 @@ struct UserPreferences: Codable {
         case qualityThreshold = "quality_threshold"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+    }
+}
+
+// MARK: - Feedback Submission Model
+
+struct FeedbackSubmission: Codable {
+    let subject: String
+    let message: String
+    let email: String?
+    let appVersion: String
+    let buildNumber: String
+    let deviceModel: String
+    let iosVersion: String
+
+    private enum CodingKeys: String, CodingKey {
+        case subject
+        case message
+        case email
+        case appVersion = "app_version"
+        case buildNumber = "build_number"
+        case deviceModel = "device_model"
+        case iosVersion = "ios_version"
     }
 }
 

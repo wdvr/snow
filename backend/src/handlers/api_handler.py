@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from mangum import Mangum
 
+from models.feedback import Feedback, FeedbackSubmission
 from models.resort import Resort
 from models.user import UserPreferences
 from models.weather import SnowQuality
@@ -54,6 +55,9 @@ user_service = UserService(
     dynamodb.Table(
         os.environ.get("USER_PREFERENCES_TABLE", "snow-tracker-user-preferences-dev")
     )
+)
+feedback_table = dynamodb.Table(
+    os.environ.get("FEEDBACK_TABLE", "snow-tracker-feedback-dev")
 )
 
 
@@ -348,6 +352,45 @@ async def update_user_preferences(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update user preferences: {str(e)}",
+        )
+
+
+# MARK: - Feedback Endpoint
+
+
+@app.post("/api/v1/feedback")
+async def submit_feedback(submission: FeedbackSubmission):
+    """Submit user feedback."""
+    import uuid
+
+    try:
+        feedback = Feedback(
+            feedback_id=str(uuid.uuid4()),
+            user_id=None,  # Anonymous feedback supported
+            subject=submission.subject,
+            message=submission.message,
+            email=submission.email,
+            app_version=submission.app_version,
+            build_number=submission.build_number,
+            device_model=submission.device_model,
+            ios_version=submission.ios_version,
+            status="new",
+            created_at=datetime.now(UTC).isoformat(),
+        )
+
+        # Store in DynamoDB
+        feedback_table.put_item(Item=feedback.model_dump())
+
+        return {
+            "id": feedback.feedback_id,
+            "status": "received",
+            "message": "Thank you for your feedback!",
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to submit feedback: {str(e)}",
         )
 
 

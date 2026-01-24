@@ -145,6 +145,27 @@ user_preferences_table = aws.dynamodb.Table(
     tags=tags,
 )
 
+feedback_table = aws.dynamodb.Table(
+    f"{app_name}-feedback-{environment}",
+    name=f"{app_name}-feedback-{environment}",
+    billing_mode="PAY_PER_REQUEST",
+    hash_key="feedback_id",
+    attributes=[
+        {"name": "feedback_id", "type": "S"},
+        {"name": "status", "type": "S"},
+        {"name": "created_at", "type": "S"},
+    ],
+    global_secondary_indexes=[
+        {
+            "name": "StatusIndex",
+            "hash_key": "status",
+            "range_key": "created_at",
+            "projection_type": "ALL",
+        }
+    ],
+    tags=tags,
+)
+
 # IAM Role for Lambda functions
 lambda_role = aws.iam.Role(
     f"{app_name}-lambda-role-{environment}",
@@ -168,7 +189,10 @@ lambda_policy = aws.iam.RolePolicy(
     f"{app_name}-lambda-policy-{environment}",
     role=lambda_role.id,
     policy=pulumi.Output.all(
-        resorts_table.arn, weather_conditions_table.arn, user_preferences_table.arn
+        resorts_table.arn,
+        weather_conditions_table.arn,
+        user_preferences_table.arn,
+        feedback_table.arn,
     ).apply(
         lambda arns: f"""{{
         "Version": "2012-10-17",
@@ -196,9 +220,11 @@ lambda_policy = aws.iam.RolePolicy(
                     "{arns[0]}",
                     "{arns[1]}",
                     "{arns[2]}",
+                    "{arns[3]}",
                     "{arns[0]}/index/*",
                     "{arns[1]}/index/*",
-                    "{arns[2]}/index/*"
+                    "{arns[2]}/index/*",
+                    "{arns[3]}/index/*"
                 ]
             }}
         ]
@@ -468,6 +494,7 @@ def get_conditions(resort_id, headers):
             "ENVIRONMENT": environment,
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
+            "FEEDBACK_TABLE": f"{app_name}-feedback-{environment}",
             "AWS_REGION_NAME": aws_region,
         }
     ),
@@ -639,6 +666,7 @@ pulumi.export("pulumi_state_bucket", pulumi_state_bucket.bucket)
 pulumi.export("resorts_table_name", resorts_table.name)
 pulumi.export("weather_conditions_table_name", weather_conditions_table.name)
 pulumi.export("user_preferences_table_name", user_preferences_table.name)
+pulumi.export("feedback_table_name", feedback_table.name)
 pulumi.export("lambda_role_arn", lambda_role.arn)
 pulumi.export("api_gateway_id", api_gateway.id)
 pulumi.export("api_gateway_url", api_deployment.invoke_url)

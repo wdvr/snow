@@ -135,6 +135,19 @@ struct SettingsView: View {
                     Text("Preferences")
                 }
 
+                // Support Section
+                Section {
+                    NavigationLink {
+                        FeedbackView()
+                    } label: {
+                        Label("Send Feedback", systemImage: "envelope")
+                    }
+                } header: {
+                    Text("Support")
+                } footer: {
+                    Text("Help us improve by sharing your feedback, reporting bugs, or suggesting features.")
+                }
+
                 // About Section
                 Section {
                     Link(destination: URL(string: "https://snow-tracker.com/privacy")!) {
