@@ -1,200 +1,210 @@
 # Snow Quality Tracker - Progress & Tasks
 
-## Project Status: IMPLEMENTATION PHASE
-**Last Updated**: 2026-01-21
+## Project Status: LIVE IN PRODUCTION
+**Last Updated**: 2026-01-24
 
-## Current Sprint: CI/CD & Deployment Ready
+## Current Sprint: Data Accuracy & Performance
+
+### Completed Features (2026-01-24)
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Production deployment | ✅ COMPLETED | API live at z1f5zrp4l0.execute-api.us-west-2.amazonaws.com |
+| 14 ski resorts | ✅ COMPLETED | NA (8), Europe (4), Japan (2) |
+| Feedback button | ✅ COMPLETED | iOS + DynamoDB backend |
+| Share button | ✅ COMPLETED | Share resort conditions |
+| Snow predictions (24/48/72h) | ✅ COMPLETED | Future snowfall forecasts |
+| iOS Widgets | ✅ COMPLETED | Favorite Resorts + Best Snow widgets |
+| CloudWatch dashboards | ✅ COMPLETED | API monitoring in AWS Console |
+| Managed Grafana infra | ✅ COMPLETED | Infrastructure code ready (not deployed) |
+
+---
+
+## ACTIVE SPRINT: Data Quality & Caching
+
+### Priority 1: Widget Debugging
+| Task | Status | Notes |
+|------|--------|-------|
+| Debug widgets not showing data | 🔴 TODO | Widgets show empty state |
+| Check widget network requests | 🔴 TODO | May be failing silently |
+| Verify app group data sharing | 🔴 TODO | Favorites not syncing to widget |
+| Test widget timeline refresh | 🔴 TODO | Ensure data loads on schedule |
+
+### Priority 2: Data Source Accuracy
+| Task | Status | Notes |
+|------|--------|-------|
+| Investigate weatherapi.com accuracy | 🔴 TODO | Silver Star shows 0cm but actually 1cm |
+| Compare weatherapi vs actual conditions | 🔴 TODO | Validate against resort reports |
+| Check forecast API response | 🔴 TODO | Verify totalsnow_cm field accuracy |
+| Research elevation-specific data | 🔴 TODO | Weather varies by elevation |
+| Validate data aggregation logic | 🔴 TODO | 24h/48h/72h calculations |
+
+### Priority 3: Alternative Data Sources
+| Task | Status | Notes |
+|------|--------|-------|
+| Research snow-forecast.com API | 🔴 TODO | May have scraping or API options |
+| Research OpenSnow API | 🔴 TODO | Popular ski weather app |
+| Research resort official APIs | 🔴 TODO | Some resorts publish conditions |
+| Research Slopes app integration | 🟡 PENDING | User-submitted conditions |
+| Implement multi-source aggregation | 🔴 TODO | Combine multiple data sources |
+
+### Priority 4: API Caching (Cost & Performance)
+| Task | Status | Notes |
+|------|--------|-------|
+| Evaluate caching options | 🔴 TODO | API Gateway vs CloudFront |
+| Implement 60-second cache | 🔴 TODO | All GET endpoints |
+| Add cache headers to responses | 🔴 TODO | Cache-Control headers |
+| Test cache invalidation | 🔴 TODO | Ensure fresh data when needed |
+| Monitor cache hit rates | 🔴 TODO | CloudWatch metrics |
+
+---
+
+## Previous Phases (Completed)
 
 ### Phase 1: Project Foundation ✅ COMPLETED
-| Task | Status | Notes |
-|------|---------|-------|
-| Initialize git repository | ✅ COMPLETED | Git repo initialized |
-| Create CLAUDE.md with instructions | ✅ COMPLETED | Includes iOS tooling research + testing strategy |
-| Create PROGRESS.md (this file) | ✅ COMPLETED | Task tracking system |
-| Create README.md | ✅ COMPLETED | Project overview |
-| Create .env template | ✅ COMPLETED | AWS credentials template |
-| Create .gitignore | ✅ COMPLETED | Swift, Python, AWS secrets |
-| Setup GitHub private repository | ✅ COMPLETED | Remote repository at wdvr/snow |
-| Complete project scaffolding | ✅ COMPLETED | Backend, iOS, infrastructure, tests |
+- Git repository, CLAUDE.md, README.md, .env template, .gitignore
+- GitHub private repository at wdvr/snow
 
-### Phase 2: Architecture & Research
-| Task | Status | Notes |
-|------|---------|-------|
-| Research weather APIs | 🟡 PENDING | Compare weatherapi.com, Apple Weather |
-| Research ski resort data sources | 🟡 PENDING | Find comprehensive resort APIs |
-| Design snow quality algorithm | ✅ COMPLETED | Implemented in SnowQualityService |
-| Design database schema | ✅ COMPLETED | DynamoDB tables defined in Pulumi |
-| Design API endpoints | ✅ COMPLETED | FastAPI with full REST API |
-| Create system architecture diagram | 🟡 PENDING | AWS services integration |
+### Phase 2: Architecture & Research ✅ MOSTLY COMPLETED
+- Snow quality algorithm implemented
+- DynamoDB schema designed
+- API endpoints designed
+- Weather API research ongoing
 
 ### Phase 3: Backend Infrastructure ✅ COMPLETED
-| Task | Status | Notes |
-|------|---------|-------|
-| Setup Pulumi project | ✅ COMPLETED | Full infrastructure as code |
-| Create DynamoDB tables | ✅ COMPLETED | Resorts, weather, user preferences |
-| Setup API Gateway | ✅ COMPLETED | REST API with Lambda integration |
-| Create Lambda function skeleton | ✅ COMPLETED | FastAPI + Mangum handler |
-| Setup CloudWatch monitoring | ✅ COMPLETED | Integrated with Pulumi |
-| Implement authentication | 🟡 PENDING | AWS Cognito integration |
+- Pulumi infrastructure as code
+- DynamoDB tables (resorts, weather, preferences, feedback)
+- API Gateway with Lambda integration
+- CloudWatch monitoring
 
-### Phase 4: Weather Data Pipeline
-| Task | Status | Notes |
-|------|---------|-------|
-| Choose weather API provider | 🟡 PENDING | weatherapi.com selected, needs API key |
-| Implement weather data fetcher | ✅ COMPLETED | WeatherService implemented |
-| Implement snow quality algorithm | ✅ COMPLETED | SnowQualityService with scoring |
-| Create scheduled Lambda trigger | 🟡 PENDING | CloudWatch Events rule |
-| Implement data validation | ✅ COMPLETED | Pydantic models with validation |
-| Setup retry logic | 🟡 PENDING | Fault tolerance |
+### Phase 4: Weather Data Pipeline ✅ MOSTLY COMPLETED
+- Weather service implemented (weatherapi.com)
+- Snow quality algorithm implemented
+- Scheduled Lambda trigger (hourly)
+- Data validation with Pydantic
 
 ### Phase 5: API Development ✅ COMPLETED
-| Task | Status | Notes |
-|------|---------|-------|
-| Create resort endpoints | ✅ COMPLETED | GET /resorts, GET /resorts/{id} |
-| Create weather condition endpoints | ✅ COMPLETED | Full conditions API |
-| Create user preference endpoints | ✅ COMPLETED | GET/PUT preferences |
-| Implement API authentication | 🟡 PENDING | JWT tokens |
-| Add API rate limiting | 🟡 PENDING | Abuse prevention |
-| Create API documentation | ✅ COMPLETED | FastAPI auto-generated docs |
+- Resort endpoints (GET /resorts, GET /resorts/{id})
+- Weather condition endpoints
+- User preference endpoints
+- Feedback endpoint
+- API documentation (FastAPI auto-docs)
 
 ### Phase 6: iOS App Foundation ✅ COMPLETED
-| Task | Status | Notes |
-|------|---------|-------|
-| Create Xcode project | ✅ COMPLETED | XcodeGen project.yml |
-| Setup project structure | ✅ COMPLETED | MVVM architecture |
-| Implement Sign in with Apple | ✅ COMPLETED | AuthService implemented |
-| Create networking layer | ✅ COMPLETED | Configuration + APIClient |
-| Setup dependency injection | ✅ COMPLETED | SwiftUI @EnvironmentObject |
-| Create data models | ✅ COMPLETED | Resort, WeatherCondition, User |
-| Create app icon | ✅ COMPLETED | Snow mountain design |
+- XcodeGen project
+- MVVM architecture
+- Sign in with Apple (UI ready)
+- Networking layer
+- Data models
 
 ### Phase 7: iOS UI Development ✅ COMPLETED
-| Task | Status | Notes |
-|------|---------|-------|
-| Design app navigation | ✅ COMPLETED | TabView with 3 tabs |
-| Create resort selection view | ✅ COMPLETED | ResortListView |
-| Create snow conditions view | ✅ COMPLETED | ConditionsView |
-| Create user profile view | ✅ COMPLETED | SettingsView |
-| Implement data refresh | ✅ COMPLETED | Pull to refresh |
-| Add offline caching | 🟡 PENDING | CoreData or SwiftData |
+- TabView navigation
+- ResortListView, ConditionsView, SettingsView
+- ResortDetailView with share button
+- Snow predictions card
+- Pull to refresh
 
-### Phase 8: Initial Resorts Data ✅ COMPLETED
-| Task | Status | Notes |
-|------|---------|-------|
-| Research resort coordinates | ✅ COMPLETED | Accurate data from official sources |
-| Add Big White resort data | ✅ COMPLETED | Base: 1508m, Mid: 1755m, Top: 2319m |
-| Add Lake Louise resort data | ✅ COMPLETED | Base: 1646m, Mid: 2100m, Top: 2637m |
-| Add Silver Star resort data | ✅ COMPLETED | Base: 1155m, Mid: 1609m, Top: 1915m |
-| Create resort data seeder | ✅ COMPLETED | Automated seeding script with validation |
-| Add comprehensive tests | ✅ COMPLETED | Unit tests for seeder and validation |
-| Validate weather data accuracy | 🟡 PENDING | Compare with actual conditions |
-| Test snow quality algorithm | 🟡 PENDING | Historical data validation |
+### Phase 8: Initial Resorts Data ✅ EXPANDED
+- 14 resorts: Big White, Lake Louise, Silver Star, Vail, Park City, Mammoth, Jackson Hole, Aspen, Chamonix, Zermatt, St. Anton, Verbier, Niseko, Hakuba
 
 ### Phase 9: Testing & Quality ✅ COMPLETED
-| Task | Status | Notes |
-|------|---------|-------|
-| Setup unit tests (Backend) | ✅ COMPLETED | 94 pytest tests passing |
-| Setup integration tests (API) | ✅ COMPLETED | 18 integration tests with moto |
-| Setup unit tests (iOS) | ✅ COMPLETED | 33 XCTest tests |
-| Setup UI tests (iOS) | ✅ COMPLETED | 13 UI tests |
-| Pre-commit hooks | ✅ COMPLETED | Ruff linter + formatter |
-| Performance testing | 🟡 PENDING | Load testing |
-| Security testing | ✅ COMPLETED | Bandit security scanning |
+- 94 backend pytest tests
+- 18 integration tests with moto
+- 33 iOS XCTest tests
+- 13 iOS UI tests
+- Pre-commit hooks (Ruff)
+- Security scanning (Bandit)
 
-### Phase 10: Deployment & Launch
-| Task | Status | Notes |
-|------|---------|-------|
-| Setup CI/CD pipeline | ✅ COMPLETED | GitHub Actions workflows |
-| Configure GitHub Secrets | ✅ COMPLETED | AWS credentials + Pulumi passphrase |
-| Deploy dev environment | 🟡 READY | Trigger via workflow_dispatch |
-| Deploy staging environment | 🟡 READY | Auto-deploys on main merge |
-| Deploy production environment | 🟡 READY | Deploys on version tag (v*) |
-| App Store preparation | 🟡 PENDING | Screenshots, metadata |
-| Beta testing | 🟡 PENDING | TestFlight distribution |
-| Production launch | 🟡 PENDING | App Store submission |
+### Phase 10: Deployment ✅ PRODUCTION LIVE
+- GitHub Actions CI/CD
+- Dev, staging, prod environments
+- Lambda deployment with Linux targeting
+- API health checks passing
 
-## Technical Decisions Made
+---
 
-### Completed Decisions
-1. **Backend Framework**: FastAPI with Mangum for Lambda
-2. **Database**: DynamoDB with Decimal handling utilities
-3. **Infrastructure**: Pulumi (Python) for AWS IaC
-4. **iOS Architecture**: SwiftUI with MVVM pattern
-5. **Testing**: pytest + moto for backend, XCTest for iOS
-6. **Linting**: Ruff (replaces black, flake8, isort)
-7. **CI/CD**: GitHub Actions with multi-environment deployment
+## Technical Architecture
 
-### Pending Decisions
-1. **Weather API Selection**: Which provider offers best elevation-specific data?
-2. **Authentication**: AWS Cognito vs custom JWT implementation
-3. **Data Refresh Frequency**: How often to fetch weather updates?
-4. **Offline Caching**: CoreData vs SwiftData for iOS
+### Current Stack
+- **Backend**: FastAPI + Mangum on AWS Lambda (Python 3.12)
+- **Database**: DynamoDB (pay-per-request)
+- **API**: API Gateway REST API
+- **Weather Data**: weatherapi.com
+- **iOS**: SwiftUI + Swift 6, XcodeGen
+- **Infrastructure**: Pulumi (Python)
+- **CI/CD**: GitHub Actions
+- **Monitoring**: CloudWatch dashboards
 
-## Key Metrics & Success Criteria
-- **Accuracy**: Snow quality predictions match actual conditions >80%
-- **Performance**: API response time <500ms
-- **Reliability**: 99.9% uptime for weather data updates
-- **User Experience**: App launch time <2 seconds
-- **Test Coverage**: >80% for backend code
+### API Endpoints (Production)
+```
+Base URL: https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod
 
-## Next Steps (Priority Order)
+GET  /health                           - Health check
+GET  /api/v1/resorts                   - List all resorts
+GET  /api/v1/resorts/{id}              - Get resort details
+GET  /api/v1/resorts/{id}/conditions   - Get weather conditions
+GET  /api/v1/resorts/{id}/snow-quality - Get snow quality summary
+POST /api/v1/feedback                  - Submit feedback
+```
 
-### Immediate (Today - 2026-01-23)
-1. **Fix "No Data" for resorts** - Weather processor Lambda needs to run and fetch conditions
-2. **Fix elevation display** - Shows "3790.00000" instead of "3,790 ft" - fix rounding/formatting
+### DynamoDB Tables
+- `snow-tracker-resorts-prod` - Resort data
+- `snow-tracker-weather-conditions-prod` - Weather conditions (TTL: 7 days)
+- `snow-tracker-user-preferences-prod` - User preferences
+- `snow-tracker-feedback-prod` - User feedback
 
-### Short-term (This Week)
-1. **UI validation workflow** - Run simulator, take screenshots, analyze in Claude Code
-2. **AWS Managed Grafana** - Monitor API backend, weather scraping, Lambda invocations
-3. **Feedback button** - Users submit feedback to DynamoDB for offline processing
-4. **Share button** - Share resort conditions with friends
+---
 
-### Medium-term (This Month)
-1. **Populate all NA/EU/Japan resorts** - Fetch comprehensive resort list instead of hardcoded 3
-2. **Research snow-report.com scraping** - Can we fetch their data?
-3. **Research Slopes app integration** - User-submitted snow conditions
-4. Add authentication (Sign in with Apple backend integration)
-5. Implement offline caching for iOS
+## Remaining Tasks (Backlog)
 
-### Later
-1. App Store preparation and TestFlight beta
-2. Production deployment
-3. Performance optimization
+### High Priority
+1. Fix widgets not showing data
+2. Improve weather data accuracy
+3. Implement API caching (60s)
+4. Add snow-forecast.com or alternative data source
 
-## Notes & Learnings
+### Medium Priority
+1. Authentication (Sign in with Apple backend)
+2. Offline caching for iOS (SwiftData)
+3. Push notifications for snow alerts
+4. Performance testing
 
-### Development Session (2026-01-21)
-- **Testing Complete**: 112 backend tests (94 unit + 18 integration) + 46 iOS tests
-- **Moto Decimal Issues**: Resolved by using DynamoDB Decimal utilities
-- **Pre-commit Setup**: Ruff installed and configured for all Python files
-- **GitHub Secrets**: AWS credentials and Pulumi passphrase configured
-- **App Icon**: Created snow mountain design with snowflakes
+### Low Priority
+1. App Store preparation
+2. TestFlight beta
+3. Additional resorts (more regions)
+4. User-submitted conditions
 
-### Initial Resort Data Implementation (2026-01-20)
-- **Research Sources**: Used official resort websites and ski industry databases
-- **Data Accuracy**: All coordinates and elevations verified against multiple sources
-- **Technical Implementation**: Comprehensive seeder with validation and error handling
-
-### Development Process Notes
-- PR-based development workflow established
-- Comprehensive testing strategy proving effective
-- Infrastructure ready for first AWS deployment
+---
 
 ## Commands Reference
 
 ```bash
-# Run backend tests
+# Backend
 cd backend && python -m pytest tests/ -v --cov=src
+AWS_PROFILE=personal python -m src.utils.resort_seeder --env prod
 
-# Run pre-commit hooks
-pre-commit run --all-files
+# iOS
+cd ios && xcodegen generate --spec project.yml
+xcodebuild -project SnowTracker.xcodeproj -scheme SnowTracker -destination 'id=00008150-001625E20AE2401C' build
 
-# Generate Xcode project
-cd ios && xcodegen generate
-
-# Deploy to dev environment
-gh workflow run deploy.yml -f environment=dev
-
-# Check deployment status
+# Deploy
+gh workflow run deploy.yml -f environment=prod
 gh run list --workflow=deploy.yml
+
+# Lambda
+AWS_PROFILE=personal aws lambda invoke --function-name snow-tracker-weather-processor-prod --region us-west-2 --payload '{}' /tmp/out.json
+
+# API Test
+curl https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod/api/v1/resorts
 ```
+
+---
+
+## Notes
+
+### 2026-01-24
+- Deployed snow predictions, share button, iOS widgets
+- Widget URL fixed (was pointing to old API)
+- Weather data shows 0cm for Silver Star but user reports 1cm actual snow
+- Need to investigate weatherapi.com accuracy and consider alternative sources
+- Widgets not showing data - need to debug network requests and app group sharing
