@@ -73,6 +73,7 @@ class APIClient {
                 .responseDecodable(of: ConditionsResponse.self) { response in
                     switch response.result {
                     case .success(let conditionsResponse):
+                        print("Successfully decoded \(conditionsResponse.conditions.count) conditions for \(resortId)")
                         continuation.resume(returning: conditionsResponse.conditions)
                     case .failure(let error):
                         continuation.resume(throwing: self.mapError(error))
@@ -216,10 +217,12 @@ struct ResortsResponse: Codable {
 struct ConditionsResponse: Codable {
     let conditions: [WeatherCondition]
     let lastUpdated: String?
+    let resortId: String?
 
     private enum CodingKeys: String, CodingKey {
         case conditions
         case lastUpdated = "last_updated"
+        case resortId = "resort_id"
     }
 }
 
