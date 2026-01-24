@@ -39,6 +39,111 @@
 | [#17](https://github.com/wdvr/snow/issues/17) | App Store preparation and TestFlight | Low |
 | [#18](https://github.com/wdvr/snow/issues/18) | Add more ski resorts | Low |
 
+---
+
+## Planned Features (To Create as Issues)
+
+### High Priority - Core UX Improvements
+
+#### Animated Splash Screen
+**Priority**: High | **Labels**: `ios`, `enhancement`, `ux`
+
+Create an engaging animated splash screen for app launch. Should include:
+- Snow-themed animation (falling snow, mountain reveal, or logo animation)
+- Smooth transition to main app content
+- Keep duration reasonable (2-3 seconds max)
+- Support for light/dark mode
+
+#### Best Snow This Week - Location-Based Recommendations
+**Priority**: High | **Labels**: `ios`, `backend`, `enhancement`
+
+Algorithm-driven feature that recommends the best resort to visit based on:
+- User's current location (proximity/drive time)
+- Predicted snow conditions for the next 7 days
+- Fresh powder vs. icy conditions ranking
+- Optional: factor in crowd estimates if data available
+
+Backend requirements:
+- New endpoint: `GET /api/v1/recommendations?lat={lat}&lng={lng}`
+- Ranking algorithm considering distance + snow quality score
+- Cache results for performance
+
+iOS requirements:
+- Location permission request
+- "Best Snow Near You" card on home screen
+- List view showing top 5 recommendations with distance
+
+### Medium Priority - Engagement Features
+
+#### Trip Planning Mode
+**Priority**: Medium | **Labels**: `ios`, `backend`, `enhancement`
+
+Allow users to plan upcoming ski trips and get proactive updates:
+- Select resort + date range for planned trip
+- Show countdown: "5 days until your trip to Big White!"
+- Display current conditions + forecast for trip dates
+- Push notifications if conditions change significantly (new powder alert, warm spell warning)
+- Trip history for tracking past adventures
+
+Backend requirements:
+- New DynamoDB table: `snow-tracker-trips-{env}`
+- Endpoints: `POST /api/v1/trips`, `GET /api/v1/trips`, `DELETE /api/v1/trips/{id}`
+- Scheduled Lambda to check trip conditions and trigger notifications
+
+iOS requirements:
+- "Plan a Trip" button/flow
+- Trip detail view with countdown
+- Calendar integration (optional)
+- Notification handling for trip alerts
+
+#### Webcam Integration (Optional per Resort)
+**Priority**: Medium | **Labels**: `ios`, `backend`, `enhancement`, `research`
+
+Show live or recent webcam snapshots for resorts that publish them:
+- Research which resorts have public webcam feeds/APIs
+- Store webcam URLs in resort data (optional field)
+- Display webcam image in resort detail view
+- Refresh button to get latest snapshot
+- Graceful fallback if webcam unavailable
+
+Note: Many resorts publish webcams - need to verify terms of use for each.
+
+#### Push Notifications for Condition Changes
+**Priority**: Medium | **Labels**: `ios`, `backend`, `enhancement`
+
+Proactive notifications when conditions change for favorited resorts:
+- "Fresh powder alert! 15cm overnight at Big White"
+- "Warm spell warning: temperatures rising at Lake Louise"
+- "Your trip to Whistler: 20cm expected before arrival!"
+
+Backend requirements:
+- APNs integration (Apple Push Notification service)
+- Store device tokens in user preferences
+- Scheduled Lambda to detect significant condition changes
+- Notification threshold configuration (e.g., >10cm new snow, temp swing >10°C)
+
+iOS requirements:
+- Push notification permission request
+- Notification settings (per-resort toggles, quiet hours)
+- Rich notifications with snow data preview
+
+### Lower Priority - Platform Expansion
+
+#### Apple Watch App
+**Priority**: Low | **Labels**: `ios`, `enhancement`, `watch`
+
+Companion watchOS app for quick glances at conditions:
+- Complications showing favorite resort conditions
+- Simple list view of favorited resorts
+- Current conditions at a glance (temp, fresh snow, quality rating)
+- Syncs favorites from iPhone app via Watch Connectivity
+
+Considerations:
+- watchOS 11+ target
+- SwiftUI for watch UI
+- Minimal data transfer (battery efficiency)
+- Offline support for backcountry use
+
 ### Recently Completed
 - ✅ Switched from weatherapi.com to Open-Meteo for elevation-aware weather data
 - ✅ Added widget debugging logging
