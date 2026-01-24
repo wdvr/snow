@@ -42,7 +42,13 @@ dynamodb = boto3.resource("dynamodb")
 resort_service = ResortService(
     dynamodb.Table(os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev"))
 )
-weather_service = WeatherService(api_key=os.environ.get("WEATHER_API_KEY"))
+weather_conditions_table = dynamodb.Table(
+    os.environ.get("WEATHER_CONDITIONS_TABLE", "snow-tracker-weather-conditions-dev")
+)
+weather_service = WeatherService(
+    api_key=os.environ.get("WEATHER_API_KEY"),
+    conditions_table=weather_conditions_table,
+)
 snow_quality_service = SnowQualityService()
 user_service = UserService(
     dynamodb.Table(

@@ -1,19 +1,26 @@
 """Weather data service for fetching and processing weather information."""
 
+import os
+from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
+import boto3
 import requests
+from boto3.dynamodb.conditions import Key
 
 from models.weather import ConfidenceLevel, WeatherCondition
+from utils.dynamodb_utils import parse_from_dynamodb
 
 
 class WeatherService:
     """Service for fetching weather data from external APIs."""
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, conditions_table=None):
         """Initialize the weather service with API credentials."""
         self.api_key = api_key
         self.base_url = "https://api.weatherapi.com/v1"
+        self.conditions_table = conditions_table
 
     def get_current_weather(
         self, latitude: float, longitude: float, elevation_meters: int
@@ -177,17 +184,61 @@ class WeatherService:
     def get_conditions_for_resort(
         self, resort_id: str, hours_back: int = 24
     ) -> list[WeatherCondition]:
-        """Get historical conditions for a resort (placeholder for database query)."""
-        # TODO: Implement database query to fetch historical conditions
-        # This would query the weather_conditions DynamoDB table
-        return []
+        """Get historical conditions for a resort from DynamoDB."""
+        if not self.conditions_table:
+            return []
+
+        try:
+            # Calculate cutoff timestamp
+            cutoff_time = datetime.now(UTC).isoformat()
+
+            # Query by resort_id (partition key), sorted by timestamp (sort key)
+            response = self.conditions_table.query(
+                KeyConditionExpression=Key("resort_id").eq(resort_id),
+                ScanIndexForward=False,  # Most recent first
+                Limit=50,  # Reasonable limit for conditions
+            )
+
+            items = response.get("Items", [])
+            conditions = []
+
+            for item in items:
+                parsed_item = parse_from_dynamodb(item)
+                conditions.append(WeatherCondition(**parsed_item))
+
+            return conditions
+
+        except Exception as e:
+            # Log error but don't crash - return empty list
+            return []
 
     def get_latest_condition(
         self, resort_id: str, elevation_level: str
     ) -> WeatherCondition | None:
-        """Get the latest condition for a specific resort and elevation (placeholder)."""
-        # TODO: Implement database query to fetch latest condition
-        return None
+        """Get the latest condition for a specific resort and elevation from DynamoDB."""
+        if not self.conditions_table:
+            return None
+
+        try:
+            # Query by resort_id, sorted by timestamp descending, filter by elevation
+            response = self.conditions_table.query(
+                KeyConditionExpression=Key("resort_id").eq(resort_id),
+                FilterExpression="elevation_level = :level",
+                ExpressionAttributeValues={":level": elevation_level},
+                ScanIndexForward=False,  # Most recent first
+                Limit=1,
+            )
+
+            items = response.get("Items", [])
+            if not items:
+                return None
+
+            parsed_item = parse_from_dynamodb(items[0])
+            return WeatherCondition(**parsed_item)
+
+        except Exception as e:
+            # Log error but don't crash - return None
+            return None
 
     def get_weather_forecast(
         self, latitude: float, longitude: float, days: int = 7
