@@ -5,6 +5,7 @@ struct SnowTrackerApp: App {
     @StateObject private var snowConditionsManager = SnowConditionsManager()
     @ObservedObject private var authService = AuthenticationService.shared
     @ObservedObject private var userPreferencesManager = UserPreferencesManager.shared
+    @State private var showSplash = true
 
     init() {
         // Configure API client
@@ -13,17 +14,33 @@ struct SnowTrackerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if authService.isAuthenticated {
-                MainTabView()
-                    .environmentObject(snowConditionsManager)
-                    .environmentObject(userPreferencesManager)
-            } else {
-                // For now, skip auth and go directly to main app
-                // Uncomment WelcomeView when ready to enable auth
-                // WelcomeView()
-                MainTabView()
-                    .environmentObject(snowConditionsManager)
-                    .environmentObject(userPreferencesManager)
+            ZStack {
+                if authService.isAuthenticated {
+                    MainTabView()
+                        .environmentObject(snowConditionsManager)
+                        .environmentObject(userPreferencesManager)
+                } else {
+                    // For now, skip auth and go directly to main app
+                    // Uncomment WelcomeView when ready to enable auth
+                    // WelcomeView()
+                    MainTabView()
+                        .environmentObject(snowConditionsManager)
+                        .environmentObject(userPreferencesManager)
+                }
+
+                if showSplash {
+                    SplashView()
+                        .transition(.opacity)
+                        .zIndex(1)
+                }
+            }
+            .onAppear {
+                // Show splash for minimum duration while data loads
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                    withAnimation(.easeOut(duration: 0.5)) {
+                        showSplash = false
+                    }
+                }
             }
         }
     }
