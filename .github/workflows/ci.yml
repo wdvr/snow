@@ -235,8 +235,23 @@ jobs:
     - name: Show Xcode version
       run: xcodebuild -version
 
+    - name: Install XcodeGen
+      run: brew install xcodegen
+
+    - name: Generate Xcode project
+      run: |
+        cd ios
+        xcodegen generate
+
     - name: List available simulators
       run: xcrun simctl list devices available | head -30
+
+    - name: Boot simulator
+      run: |
+        DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone 16 Pro" | head -1 | grep -oE '\([A-F0-9-]+\)' | tr -d '()')
+        if [ -n "$DEVICE_ID" ]; then
+          xcrun simctl boot "$DEVICE_ID" || true
+        fi
 
     - name: Run iOS Unit Tests
       run: |
@@ -250,7 +265,7 @@ jobs:
           CODE_SIGNING_ALLOWED=NO \
           | xcpretty --report junit --output TestResults/unit-tests.xml || true
 
-    - name: Run iOS UI Tests
+    - name: Run iOS UI Tests with Screenshots
       run: |
         cd ios
         xcodebuild test \
@@ -262,12 +277,33 @@ jobs:
           CODE_SIGNING_ALLOWED=NO \
           | xcpretty --report junit --output TestResults/ui-tests.xml || true
 
+    - name: Capture Screenshots
+      if: always()
+      run: |
+        mkdir -p ios/TestResults/Screenshots
+        # Extract screenshots from test results if available
+        if [ -d "ios/TestResults/UITests.xcresult" ]; then
+          xcrun xcresulttool get --path ios/TestResults/UITests.xcresult --format json > /tmp/results.json 2>/dev/null || true
+          # Attempt to extract attachments
+          find ios/TestResults/UITests.xcresult -name "*.png" -exec cp {} ios/TestResults/Screenshots/ \; 2>/dev/null || true
+        fi
+        # Also capture simulator screenshot
+        xcrun simctl io booted screenshot ios/TestResults/Screenshots/final_state.png 2>/dev/null || true
+
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: ios-test-results
         path: ios/TestResults/
+
+    - name: Upload screenshots
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ios-screenshots
+        path: ios/TestResults/Screenshots/
+        if-no-files-found: ignore
 
   # Build and Test Results Summary
   test-summary:
