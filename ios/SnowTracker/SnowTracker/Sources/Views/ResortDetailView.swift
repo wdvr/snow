@@ -5,6 +5,7 @@ struct ResortDetailView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @State private var selectedElevation: ElevationLevel = .top
+    @State private var showingShareSheet: Bool = false
 
     private var conditions: [WeatherCondition] {
         snowConditionsManager.conditions[resort.id] ?? []
@@ -12,6 +13,24 @@ struct ResortDetailView: View {
 
     private var conditionForSelectedElevation: WeatherCondition? {
         conditions.first { $0.elevationLevel == selectedElevation.rawValue }
+    }
+
+    private var shareText: String {
+        var text = "🏔️ \(resort.name) Snow Report\n"
+        text += "📍 \(resort.displayLocation)\n\n"
+
+        if let condition = conditionForSelectedElevation {
+            text += "Current Conditions (\(selectedElevation.displayName)):\n"
+            text += "❄️ Snow Quality: \(condition.snowQuality.displayName)\n"
+            text += "🌡️ Temperature: \(Int(condition.currentTempCelsius))°C / \(Int(condition.currentTempFahrenheit))°F\n"
+            text += "🆕 Fresh Snow: \(String(format: "%.0f", condition.freshSnowCm))cm\n"
+            text += "📊 24h Snowfall: \(String(format: "%.1f", condition.snowfall24hCm))cm\n"
+        } else {
+            text += "No current conditions available.\n"
+        }
+
+        text += "\n📱 Tracked with Snow Tracker"
+        return text
     }
 
     var body: some View {
@@ -27,6 +46,7 @@ struct ResortDetailView: View {
                 if let condition = conditionForSelectedElevation {
                     currentConditionsCard(condition)
                     snowDetailsCard(condition)
+                    predictionsCard(condition)
                     weatherDetailsCard(condition)
                 } else {
                     noDataCard
@@ -41,13 +61,25 @@ struct ResortDetailView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    userPreferencesManager.toggleFavorite(resortId: resort.id)
-                } label: {
-                    Image(systemName: userPreferencesManager.isFavorite(resortId: resort.id) ? "heart.fill" : "heart")
-                        .foregroundColor(userPreferencesManager.isFavorite(resortId: resort.id) ? .red : .gray)
+                HStack(spacing: 16) {
+                    Button {
+                        showingShareSheet = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundColor(.blue)
+                    }
+
+                    Button {
+                        userPreferencesManager.toggleFavorite(resortId: resort.id)
+                    } label: {
+                        Image(systemName: userPreferencesManager.isFavorite(resortId: resort.id) ? "heart.fill" : "heart")
+                            .foregroundColor(userPreferencesManager.isFavorite(resortId: resort.id) ? .red : .gray)
+                    }
                 }
             }
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            ShareSheet(items: [shareText])
         }
         .refreshable {
             await snowConditionsManager.refreshConditions()
@@ -244,6 +276,73 @@ struct ResortDetailView: View {
         .frame(maxWidth: .infinity)
     }
 
+    // MARK: - Predictions Card
+
+    private func predictionsCard(_ condition: WeatherCondition) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .foregroundColor(.blue)
+                Text("Snow Forecast")
+                    .font(.headline)
+            }
+
+            HStack(spacing: 20) {
+                predictionItem(
+                    title: "Next 24h",
+                    value: condition.predictedSnow24hCm ?? 0.0
+                )
+                predictionItem(
+                    title: "Next 48h",
+                    value: condition.predictedSnow48hCm ?? 0.0
+                )
+                predictionItem(
+                    title: "Next 72h",
+                    value: condition.predictedSnow72hCm ?? 0.0
+                )
+            }
+
+            // Prediction insight
+            if let predicted24h = condition.predictedSnow24hCm, predicted24h > 10 {
+                HStack {
+                    Image(systemName: "snowflake.circle.fill")
+                        .foregroundColor(.blue)
+                    Text("Heavy snowfall expected!")
+                        .font(.subheadline)
+                        .foregroundColor(.blue)
+                        .fontWeight(.medium)
+                }
+                .padding(.top, 4)
+            } else if let predicted24h = condition.predictedSnow24hCm, predicted24h > 5 {
+                HStack {
+                    Image(systemName: "cloud.snow")
+                        .foregroundColor(.secondary)
+                    Text("Light snow expected")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(radius: 2)
+    }
+
+    private func predictionItem(title: String, value: Double) -> some View {
+        VStack {
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Text("\(String(format: "%.1f", value))cm")
+                .font(.title3)
+                .fontWeight(.semibold)
+                .foregroundColor(.blue)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     // MARK: - Weather Details Card
 
     private func weatherDetailsCard(_ condition: WeatherCondition) -> some View {
@@ -393,6 +492,18 @@ struct ResortDetailView: View {
         .cornerRadius(12)
         .shadow(radius: 2)
     }
+}
+
+// MARK: - Share Sheet
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview("Resort Detail") {

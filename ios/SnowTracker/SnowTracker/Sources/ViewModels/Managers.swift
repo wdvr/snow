@@ -120,7 +120,12 @@ class UserPreferencesManager: ObservableObject {
     @Published var notificationSettings: NotificationSettings = NotificationSettings()
 
     private let apiClient = APIClient.shared
-    private let favoritesKey = "com.snowtracker.favoriteResorts"
+    private let favoritesKey = "favoriteResorts"
+    private let appGroupId = "group.com.snowtracker.app"
+
+    private var sharedDefaults: UserDefaults? {
+        UserDefaults(suiteName: appGroupId)
+    }
 
     init() {
         loadLocalPreferences()
@@ -131,9 +136,15 @@ class UserPreferencesManager: ObservableObject {
     }
 
     private func loadLocalPreferences() {
-        // Load favorites from UserDefaults
-        if let savedFavorites = UserDefaults.standard.array(forKey: favoritesKey) as? [String] {
+        // Try to load from app group first (shared with widget)
+        if let sharedDefaults = sharedDefaults,
+           let savedFavorites = sharedDefaults.array(forKey: favoritesKey) as? [String] {
             favoriteResorts = Set(savedFavorites)
+        } else if let savedFavorites = UserDefaults.standard.array(forKey: favoritesKey) as? [String] {
+            // Fallback to standard UserDefaults
+            favoriteResorts = Set(savedFavorites)
+            // Migrate to shared defaults
+            saveLocalPreferences()
         }
     }
 
@@ -152,8 +163,13 @@ class UserPreferencesManager: ObservableObject {
     }
 
     private func saveLocalPreferences() {
-        // Save favorites to UserDefaults
-        UserDefaults.standard.set(Array(favoriteResorts), forKey: favoritesKey)
+        let favoritesArray = Array(favoriteResorts)
+
+        // Save to shared app group (for widget access)
+        sharedDefaults?.set(favoritesArray, forKey: favoritesKey)
+
+        // Also save to standard UserDefaults as backup
+        UserDefaults.standard.set(favoritesArray, forKey: favoritesKey)
     }
 
     func savePreferences() async {

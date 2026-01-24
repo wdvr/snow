@@ -42,7 +42,7 @@ class WeatherService:
             current = data["current"]
             location = data["location"]
 
-            # Also fetch forecast for snow data
+            # Also fetch forecast for snow data (past and future predictions)
             forecast_data = self._get_forecast_data(latitude, longitude, days=3)
 
             # Extract relevant weather information
@@ -54,9 +54,14 @@ class WeatherService:
                 "max_temp_celsius": forecast_data.get(
                     "max_temp_24h", current["temp_c"] + 2
                 ),
+                # Past snowfall
                 "snowfall_24h_cm": forecast_data.get("snowfall_24h", 0.0),
                 "snowfall_48h_cm": forecast_data.get("snowfall_48h", 0.0),
                 "snowfall_72h_cm": forecast_data.get("snowfall_72h", 0.0),
+                # Future predictions
+                "predicted_snow_24h_cm": forecast_data.get("predicted_24h", 0.0),
+                "predicted_snow_48h_cm": forecast_data.get("predicted_48h", 0.0),
+                "predicted_snow_72h_cm": forecast_data.get("predicted_72h", 0.0),
                 "hours_above_ice_threshold": self._calculate_ice_hours(forecast_data),
                 "max_consecutive_warm_hours": self._calculate_max_warm_hours(
                     forecast_data
@@ -110,6 +115,11 @@ class WeatherService:
             max_temp_24h = float("-inf")
             hourly_temps = []
 
+            # Future predictions (from forecast)
+            predicted_24h = 0.0
+            predicted_48h = 0.0
+            predicted_72h = 0.0
+
             for i, day in enumerate(forecast_days):
                 day_snow = day["day"].get("totalsnow_cm", 0.0)
 
@@ -117,20 +127,29 @@ class WeatherService:
                     snowfall_24h = day_snow
                     min_temp_24h = min(min_temp_24h, day["day"]["mintemp_c"])
                     max_temp_24h = max(max_temp_24h, day["day"]["maxtemp_c"])
+                    # Today's remaining snow is part of 24h prediction
+                    predicted_24h = day_snow
 
-                if i <= 1:  # Today + yesterday
+                if i <= 1:  # Today + tomorrow
                     snowfall_48h += day_snow
+                    predicted_48h += day_snow
 
                 snowfall_72h += day_snow
+                predicted_72h += day_snow
 
                 # Collect hourly temperatures for ice analysis
                 for hour in day.get("hour", []):
                     hourly_temps.append(hour["temp_c"])
 
             return {
+                # Past snowfall (approximated from forecast - historical data)
                 "snowfall_24h": snowfall_24h,
                 "snowfall_48h": snowfall_48h,
                 "snowfall_72h": snowfall_72h,
+                # Future predictions
+                "predicted_24h": predicted_24h,
+                "predicted_48h": predicted_48h,
+                "predicted_72h": predicted_72h,
                 "min_temp_24h": min_temp_24h if min_temp_24h != float("inf") else None,
                 "max_temp_24h": max_temp_24h if max_temp_24h != float("-inf") else None,
                 "hourly_temperatures": hourly_temps,
@@ -142,6 +161,9 @@ class WeatherService:
                 "snowfall_24h": 0.0,
                 "snowfall_48h": 0.0,
                 "snowfall_72h": 0.0,
+                "predicted_24h": 0.0,
+                "predicted_48h": 0.0,
+                "predicted_72h": 0.0,
                 "hourly_temperatures": [],
             }
 

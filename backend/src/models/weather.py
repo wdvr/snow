@@ -43,7 +43,7 @@ class WeatherCondition(BaseModel):
     min_temp_celsius: float = Field(..., description="Minimum temperature in last 24h")
     max_temp_celsius: float = Field(..., description="Maximum temperature in last 24h")
 
-    # Precipitation data
+    # Precipitation data (past snowfall)
     snowfall_24h_cm: float = Field(
         default=0.0, description="Snowfall in last 24 hours (cm)"
     )
@@ -52,6 +52,17 @@ class WeatherCondition(BaseModel):
     )
     snowfall_72h_cm: float = Field(
         default=0.0, description="Snowfall in last 72 hours (cm)"
+    )
+
+    # Snow predictions (future snowfall)
+    predicted_snow_24h_cm: float = Field(
+        default=0.0, description="Predicted snowfall in next 24 hours (cm)"
+    )
+    predicted_snow_48h_cm: float = Field(
+        default=0.0, description="Predicted snowfall in next 48 hours (cm)"
+    )
+    predicted_snow_72h_cm: float = Field(
+        default=0.0, description="Predicted snowfall in next 72 hours (cm)"
     )
 
     # Ice formation factors

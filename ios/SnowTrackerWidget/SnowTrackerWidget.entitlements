@@ -6,12 +6,5 @@
 	<array>
 		<string>group.com.snowtracker.app</string>
 	</array>
-	<!-- Sign in with Apple - requires paid Apple Developer account ($99/year)
-	     Uncomment when you have a paid account and enable the capability in developer.apple.com
-	<key>com.apple.developer.applesignin</key>
-	<array>
-		<string>Default</string>
-	</array>
-	-->
 </dict>
 </plist>

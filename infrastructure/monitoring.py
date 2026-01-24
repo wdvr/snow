@@ -2,17 +2,15 @@
 Snow Quality Tracker - Monitoring Infrastructure
 
 This module sets up:
-- EKS cluster for running the API
-- Grafana for monitoring and dashboards
-- Prometheus for metrics collection
-- CloudWatch integration
+- Amazon Managed Grafana for dashboards and visualization
+- CloudWatch dashboards and alarms
+- SNS notifications for alerts
 """
+
+import json
 
 import pulumi
 import pulumi_aws as aws
-import pulumi_eks as eks
-import pulumi_kubernetes as k8s
-from pulumi_kubernetes.helm.v3 import Chart, ChartOpts, FetchOpts
 
 
 def create_monitoring_stack(
@@ -20,339 +18,128 @@ def create_monitoring_stack(
     environment: str,
     tags: dict,
     vpc_id: str = None,
-    enable_eks: bool = True,
+    enable_eks: bool = False,
 ):
     """
-    Create the monitoring infrastructure stack.
+    Create the monitoring infrastructure stack with Amazon Managed Grafana.
 
     Args:
         app_name: Application name for resource naming
         environment: Environment (dev/staging/prod)
         tags: Resource tags
-        vpc_id: Optional existing VPC ID
-        enable_eks: Whether to create EKS cluster (can be disabled for dev)
+        vpc_id: Optional existing VPC ID (not used for Managed Grafana)
+        enable_eks: Deprecated - EKS is not used (kept for backward compatibility)
 
     Returns:
         Dictionary of created resources
     """
     resources = {}
 
-    # Skip EKS entirely - use Amazon Managed Grafana instead (much cheaper)
-    # EKS control plane alone costs $73/month, not worth it for monitoring
-    # TODO: Add Amazon Managed Grafana when needed
-    if True:  # Disable EKS for all environments
+    # Only create Managed Grafana for prod environment (costs ~$9/month per editor)
+    # Dev and staging use CloudWatch dashboards only
+    if environment != "prod":
         pulumi.log.info(
-            "Skipping EKS creation - use CloudWatch dashboards and Managed Grafana instead"
+            f"Skipping Managed Grafana for {environment} - use CloudWatch dashboards"
         )
         return resources
 
-    # Legacy EKS code below (disabled) - kept for reference
-    if not enable_eks or environment == "dev":
-        pulumi.log.info(
-            "Skipping EKS creation for dev environment - use Lambda instead"
-        )
-        return resources
-
-    # Create VPC for EKS if not provided
-    if not vpc_id:
-        vpc = aws.ec2.Vpc(
-            f"{app_name}-vpc-{environment}",
-            cidr_block="10.0.0.0/16",
-            enable_dns_hostnames=True,
-            enable_dns_support=True,
-            tags={**tags, "Name": f"{app_name}-vpc-{environment}"},
-        )
-        resources["vpc"] = vpc
-
-        # Create subnets across 2 AZs
-        azs = ["us-west-2a", "us-west-2b"]
-        public_subnets = []
-        private_subnets = []
-
-        for i, az in enumerate(azs):
-            # Public subnet
-            public_subnet = aws.ec2.Subnet(
-                f"{app_name}-public-subnet-{i}-{environment}",
-                vpc_id=vpc.id,
-                cidr_block=f"10.0.{i * 2}.0/24",
-                availability_zone=az,
-                map_public_ip_on_launch=True,
-                tags={
-                    **tags,
-                    "Name": f"{app_name}-public-{az}",
-                    "kubernetes.io/role/elb": "1",
-                },
-            )
-            public_subnets.append(public_subnet)
-
-            # Private subnet
-            private_subnet = aws.ec2.Subnet(
-                f"{app_name}-private-subnet-{i}-{environment}",
-                vpc_id=vpc.id,
-                cidr_block=f"10.0.{i * 2 + 1}.0/24",
-                availability_zone=az,
-                tags={
-                    **tags,
-                    "Name": f"{app_name}-private-{az}",
-                    "kubernetes.io/role/internal-elb": "1",
-                },
-            )
-            private_subnets.append(private_subnet)
-
-        resources["public_subnets"] = public_subnets
-        resources["private_subnets"] = private_subnets
-
-        # Internet Gateway
-        igw = aws.ec2.InternetGateway(
-            f"{app_name}-igw-{environment}",
-            vpc_id=vpc.id,
-            tags={**tags, "Name": f"{app_name}-igw-{environment}"},
-        )
-        resources["igw"] = igw
-
-        # Route table for public subnets
-        public_rt = aws.ec2.RouteTable(
-            f"{app_name}-public-rt-{environment}",
-            vpc_id=vpc.id,
-            routes=[
-                aws.ec2.RouteTableRouteArgs(cidr_block="0.0.0.0/0", gateway_id=igw.id)
-            ],
-            tags={**tags, "Name": f"{app_name}-public-rt-{environment}"},
-        )
-
-        for i, subnet in enumerate(public_subnets):
-            aws.ec2.RouteTableAssociation(
-                f"{app_name}-public-rta-{i}-{environment}",
-                subnet_id=subnet.id,
-                route_table_id=public_rt.id,
-            )
-
-        # NAT Gateway for private subnets
-        eip = aws.ec2.Eip(
-            f"{app_name}-nat-eip-{environment}",
-            domain="vpc",
-            tags={**tags, "Name": f"{app_name}-nat-eip-{environment}"},
-        )
-
-        nat_gw = aws.ec2.NatGateway(
-            f"{app_name}-nat-{environment}",
-            subnet_id=public_subnets[0].id,
-            allocation_id=eip.id,
-            tags={**tags, "Name": f"{app_name}-nat-{environment}"},
-        )
-        resources["nat_gateway"] = nat_gw
-
-        # Route table for private subnets
-        private_rt = aws.ec2.RouteTable(
-            f"{app_name}-private-rt-{environment}",
-            vpc_id=vpc.id,
-            routes=[
-                aws.ec2.RouteTableRouteArgs(
-                    cidr_block="0.0.0.0/0", nat_gateway_id=nat_gw.id
-                )
-            ],
-            tags={**tags, "Name": f"{app_name}-private-rt-{environment}"},
-        )
-
-        for i, subnet in enumerate(private_subnets):
-            aws.ec2.RouteTableAssociation(
-                f"{app_name}-private-rta-{i}-{environment}",
-                subnet_id=subnet.id,
-                route_table_id=private_rt.id,
-            )
-
-        vpc_id = vpc.id
-        subnet_ids = [s.id for s in public_subnets + private_subnets]
-
-    # Create IAM role for managed node group (must be created before cluster)
-    node_role = aws.iam.Role(
-        f"{app_name}-eks-node-role-{environment}",
-        assume_role_policy="""{
-            "Version": "2012-10-17",
-            "Statement": [{
-                "Action": "sts:AssumeRole",
+    # IAM role for Amazon Managed Grafana
+    grafana_assume_role_policy = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
                 "Effect": "Allow",
-                "Principal": {
-                    "Service": "ec2.amazonaws.com"
-                }
-            }]
-        }""",
-        tags=tags,
-    )
-
-    # Attach required policies to the node role
-    policy_attachments = []
-    for policy_arn in [
-        "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",
-        "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy",
-        "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
-    ]:
-        policy_name = policy_arn.split("/")[-1]
-        attachment = aws.iam.RolePolicyAttachment(
-            f"{app_name}-eks-node-{policy_name}-{environment}",
-            role=node_role.name,
-            policy_arn=policy_arn,
-        )
-        policy_attachments.append(attachment)
-
-    # Create EKS Cluster with managed node group (uses Launch Templates)
-    cluster = eks.Cluster(
-        f"{app_name}-eks-{environment}",
-        name=f"{app_name}-{environment}",
-        version="1.34",  # EKS version
-        vpc_id=vpc_id if isinstance(vpc_id, str) else vpc.id,
-        subnet_ids=subnet_ids if "subnet_ids" in dir() else None,
-        skip_default_node_group=True,  # Don't create default node group with Launch Config
-        instance_roles=[node_role],  # Register node role with cluster
-        tags=tags,
-        opts=pulumi.ResourceOptions(depends_on=policy_attachments),
-    )
-    resources["eks_cluster"] = cluster
-
-    # Create managed node group (uses Launch Templates by default)
-    managed_node_group = eks.ManagedNodeGroup(
-        f"{app_name}-eks-nodegroup-{environment}",
-        cluster=cluster,
-        node_group_name=f"{app_name}-workers-{environment}",
-        node_role=node_role,
-        instance_types=["t3.medium"],
-        scaling_config=aws.eks.NodeGroupScalingConfigArgs(
-            desired_size=2,
-            min_size=1,
-            max_size=4,
-        ),
-        tags=tags,
-    )
-    resources["managed_node_group"] = managed_node_group
-
-    # Create Kubernetes provider for the cluster
-    k8s_provider = k8s.Provider(
-        f"{app_name}-k8s-provider-{environment}", kubeconfig=cluster.kubeconfig
-    )
-    resources["k8s_provider"] = k8s_provider
-
-    # Create monitoring namespace
-    monitoring_ns = k8s.core.v1.Namespace(
-        "monitoring",
-        metadata=k8s.meta.v1.ObjectMetaArgs(name="monitoring"),
-        opts=pulumi.ResourceOptions(provider=k8s_provider),
-    )
-    resources["monitoring_namespace"] = monitoring_ns
-
-    # Deploy Prometheus using Helm
-    prometheus = Chart(
-        "prometheus",
-        ChartOpts(
-            chart="prometheus",
-            version="25.8.0",
-            namespace="monitoring",
-            fetch_opts=FetchOpts(
-                repo="https://prometheus-community.github.io/helm-charts"
-            ),
-            values={
-                "server": {
-                    "persistentVolume": {
-                        "enabled": False
-                    },  # Disable until EBS CSI driver configured
-                    "resources": {
-                        "requests": {"cpu": "250m", "memory": "512Mi"},
-                        "limits": {"cpu": "500m", "memory": "1Gi"},
-                    },
-                },
-                "alertmanager": {
-                    "enabled": False,  # Disable alertmanager - StatefulSet times out without EBS CSI
-                },
-                "kube-state-metrics": {
-                    "enabled": False,  # Disable to simplify deployment
-                },
-                "prometheus-node-exporter": {
-                    "enabled": False,  # Disable to simplify deployment
-                },
-                "prometheus-pushgateway": {
-                    "enabled": False,  # Disable to simplify deployment
-                },
-            },
-        ),
-        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[monitoring_ns]),
-    )
-    resources["prometheus"] = prometheus
-
-    # Deploy Grafana using Helm
-    grafana = Chart(
-        "grafana",
-        ChartOpts(
-            chart="grafana",
-            version="7.0.0",
-            namespace="monitoring",
-            fetch_opts=FetchOpts(repo="https://grafana.github.io/helm-charts"),
-            values={
-                "adminPassword": pulumi.Config().get_secret("grafanaAdminPassword")
-                or "admin",
-                "persistence": {
-                    "enabled": False
-                },  # Disable until EBS CSI driver configured
-                "service": {
-                    "type": "LoadBalancer",
-                    "annotations": {
-                        # AWS ELB annotations for better load balancer configuration
-                        "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
-                        "service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled": "true",
-                    },
-                },
-                "ingress": {
-                    "enabled": False  # Using LoadBalancer instead of Ingress
-                },
-                "datasources": {
-                    "datasources.yaml": {
-                        "apiVersion": 1,
-                        "datasources": [
-                            {
-                                "name": "Prometheus",
-                                "type": "prometheus",
-                                "url": "http://prometheus-server.monitoring.svc.cluster.local",
-                                "access": "proxy",
-                                "isDefault": True,
-                            },
-                            {
-                                "name": "CloudWatch",
-                                "type": "cloudwatch",
-                                "jsonData": {
-                                    "authType": "default",
-                                    "defaultRegion": "us-west-2",
-                                },
-                            },
-                        ],
+                "Principal": {"Service": "grafana.amazonaws.com"},
+                "Action": "sts:AssumeRole",
+                "Condition": {
+                    "StringEquals": {
+                        "aws:SourceAccount": pulumi.Output.from_input(
+                            aws.get_caller_identity().account_id
+                        )
                     }
                 },
-                "dashboardProviders": {
-                    "dashboardproviders.yaml": {
-                        "apiVersion": 1,
-                        "providers": [
-                            {
-                                "name": "default",
-                                "orgId": 1,
-                                "folder": "",
-                                "type": "file",
-                                "disableDeletion": False,
-                                "editable": True,
-                                "options": {
-                                    "path": "/var/lib/grafana/dashboards/default"
-                                },
-                            }
+            }
+        ],
+    }
+
+    grafana_role = aws.iam.Role(
+        f"{app_name}-grafana-role-{environment}",
+        name=f"{app_name}-grafana-role-{environment}",
+        assume_role_policy=json.dumps(grafana_assume_role_policy),
+        tags=tags,
+    )
+    resources["grafana_role"] = grafana_role
+
+    # IAM policy for Grafana to read CloudWatch metrics and logs
+    grafana_policy = aws.iam.RolePolicy(
+        f"{app_name}-grafana-policy-{environment}",
+        role=grafana_role.id,
+        policy=json.dumps(
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "cloudwatch:DescribeAlarmsForMetric",
+                            "cloudwatch:DescribeAlarmHistory",
+                            "cloudwatch:DescribeAlarms",
+                            "cloudwatch:ListMetrics",
+                            "cloudwatch:GetMetricData",
+                            "cloudwatch:GetMetricStatistics",
+                            "cloudwatch:GetInsightRuleReport",
                         ],
-                    }
-                },
-                "resources": {
-                    "requests": {"cpu": "100m", "memory": "256Mi"},
-                    "limits": {"cpu": "200m", "memory": "512Mi"},
-                },
-            },
-        ),
-        opts=pulumi.ResourceOptions(
-            provider=k8s_provider, depends_on=[monitoring_ns, prometheus]
+                        "Resource": "*",
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "logs:DescribeLogGroups",
+                            "logs:GetLogGroupFields",
+                            "logs:StartQuery",
+                            "logs:StopQuery",
+                            "logs:GetQueryResults",
+                            "logs:GetLogEvents",
+                        ],
+                        "Resource": "*",
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "ec2:DescribeSecurityGroups",
+                            "ec2:DescribeSubnets",
+                            "ec2:DescribeVpcs",
+                        ],
+                        "Resource": "*",
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": ["tag:GetResources"],
+                        "Resource": "*",
+                    },
+                ],
+            }
         ),
     )
-    resources["grafana"] = grafana
+    resources["grafana_policy"] = grafana_policy
+
+    # Amazon Managed Grafana workspace
+    grafana_workspace = aws.grafana.Workspace(
+        f"{app_name}-grafana-{environment}",
+        name=f"{app_name}-grafana-{environment}",
+        description=f"Snow Quality Tracker Monitoring - {environment}",
+        account_access_type="CURRENT_ACCOUNT",
+        authentication_providers=["AWS_SSO"],
+        permission_type="SERVICE_MANAGED",
+        role_arn=grafana_role.arn,
+        data_sources=["CLOUDWATCH", "PROMETHEUS"],
+        notification_destinations=["SNS"],
+        tags=tags,
+        opts=pulumi.ResourceOptions(depends_on=[grafana_policy]),
+    )
+    resources["grafana_workspace"] = grafana_workspace
+
+    pulumi.log.info(f"Created Amazon Managed Grafana workspace for {environment}")
 
     return resources
 

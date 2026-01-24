@@ -652,13 +652,10 @@ api_monitoring = create_api_gateway_monitoring(
     app_name=app_name, environment=environment, api_gateway_id=api_gateway.id, tags=tags
 )
 
-# EKS with Grafana/Prometheus (only for staging/prod)
-# For dev, we use Lambda which is more cost-effective
-# EKS with Grafana/Prometheus is enabled for staging and prod
-# For dev, Lambda-based deployment is more cost-effective
-enable_eks = config.get_bool("enableEks") or environment in ["staging", "prod"]
+# Amazon Managed Grafana (only for prod - ~$9/month per editor)
+# Dev and staging use CloudWatch dashboards only
 monitoring_stack = create_monitoring_stack(
-    app_name=app_name, environment=environment, tags=tags, enable_eks=enable_eks
+    app_name=app_name, environment=environment, tags=tags
 )
 
 # Exports
@@ -682,19 +679,19 @@ pulumi.export("api_handler_lambda_name", api_handler_lambda.name)
 pulumi.export("cloudwatch_dashboard_name", api_monitoring["dashboard"].dashboard_name)
 pulumi.export("alarm_topic_arn", api_monitoring["alarm_topic"].arn)
 
-# EKS exports (only when enabled)
-if enable_eks and "eks_cluster" in monitoring_stack:
-    pulumi.export("eks_cluster_name", monitoring_stack["eks_cluster"].name)
-    pulumi.export("eks_kubeconfig", monitoring_stack["eks_cluster"].kubeconfig)
-
-    # Grafana access instructions
+# Managed Grafana exports (only for prod)
+if "grafana_workspace" in monitoring_stack:
+    pulumi.export("grafana_workspace_id", monitoring_stack["grafana_workspace"].id)
+    pulumi.export(
+        "grafana_workspace_endpoint", monitoring_stack["grafana_workspace"].endpoint
+    )
     pulumi.export(
         "grafana_access_instructions",
         pulumi.Output.concat(
-            "To access Grafana:\n",
-            "1. Get the LoadBalancer URL: kubectl get svc -n monitoring grafana -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'\n",
-            "2. Access Grafana at: http://<LoadBalancer-URL>:80\n",
-            "3. Default credentials: admin / (set via grafanaAdminPassword config or 'admin')\n",
-            "4. CloudWatch and Prometheus datasources are pre-configured",
+            "To access Amazon Managed Grafana:\n",
+            "1. Navigate to the Grafana workspace endpoint in your browser\n",
+            "2. Sign in using AWS SSO (IAM Identity Center)\n",
+            "3. CloudWatch data source is pre-configured\n",
+            "Note: You must configure AWS SSO users/groups with Grafana permissions",
         ),
     )

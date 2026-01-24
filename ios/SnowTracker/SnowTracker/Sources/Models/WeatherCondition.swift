@@ -175,10 +175,15 @@ struct WeatherCondition: Codable, Identifiable, Hashable {
     let minTempCelsius: Double
     let maxTempCelsius: Double
 
-    // Precipitation data
+    // Precipitation data (past snowfall)
     let snowfall24hCm: Double
     let snowfall48hCm: Double
     let snowfall72hCm: Double
+
+    // Snow predictions (future snowfall) - optional for backward compatibility
+    let predictedSnow24hCm: Double?
+    let predictedSnow48hCm: Double?
+    let predictedSnow72hCm: Double?
 
     // Ice formation factors
     let hoursAboveIceThreshold: Double
@@ -209,6 +214,9 @@ struct WeatherCondition: Codable, Identifiable, Hashable {
         case snowfall24hCm = "snowfall_24h_cm"
         case snowfall48hCm = "snowfall_48h_cm"
         case snowfall72hCm = "snowfall_72h_cm"
+        case predictedSnow24hCm = "predicted_snow_24h_cm"
+        case predictedSnow48hCm = "predicted_snow_48h_cm"
+        case predictedSnow72hCm = "predicted_snow_72h_cm"
         case hoursAboveIceThreshold = "hours_above_ice_threshold"
         case maxConsecutiveWarmHours = "max_consecutive_warm_hours"
         case humidityPercent = "humidity_percent"
@@ -299,6 +307,9 @@ extension WeatherCondition {
             snowfall24hCm: 20.0,
             snowfall48hCm: 35.0,
             snowfall72hCm: 40.0,
+            predictedSnow24hCm: 15.0,
+            predictedSnow48hCm: 25.0,
+            predictedSnow72hCm: 30.0,
             hoursAboveIceThreshold: 0.0,
             maxConsecutiveWarmHours: 0.0,
             humidityPercent: 90.0,
@@ -321,6 +332,9 @@ extension WeatherCondition {
             snowfall24hCm: 12.0,
             snowfall48hCm: 20.0,
             snowfall72hCm: 25.0,
+            predictedSnow24hCm: 8.0,
+            predictedSnow48hCm: 15.0,
+            predictedSnow72hCm: 20.0,
             hoursAboveIceThreshold: 2.0,
             maxConsecutiveWarmHours: 1.5,
             humidityPercent: 80.0,
