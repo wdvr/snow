@@ -47,7 +47,7 @@ class OpenMeteoService:
                 "timezone": "auto",
             }
 
-            response = requests.get(self.base_url, params=params, timeout=30)
+            response = requests.get(self.base_url, params=params, timeout=10)
             response.raise_for_status()
 
             data = response.json()
@@ -67,8 +67,9 @@ class OpenMeteoService:
             weather_code = current.get("weather_code", 0)
             weather_description = self._weather_code_to_description(weather_code)
 
-            # Fetch ERA5 historical data for actual snow depth
-            era5_snow_depth = self._get_era5_snow_depth(latitude, longitude)
+            # Skip ERA5 for now to reduce Lambda execution time
+            # TODO: Add ERA5 snow depth fetching as a separate background job
+            era5_snow_depth = None
 
             weather_data = {
                 "current_temp_celsius": current.get("temperature_2m", 0.0),
