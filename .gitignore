@@ -132,6 +132,9 @@ tmp/
 temp/
 .tmp/
 
+# Lambda build artifacts
+lambda-package.zip
+
 # IDEs and editors
 *.swp
 *.swo

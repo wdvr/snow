@@ -137,11 +137,12 @@ jobs:
         # Deploy - Pulumi will update existing resources in place
         pulumi up --yes --diff
 
-    - name: Package Lambda functions with uv
+    - name: Package Lambda functions with pip
       run: |
         cd backend
         mkdir -p dist
-        uv pip install --system -r requirements.txt --target dist/
+        # Use requirements-lambda.txt with Linux platform for Lambda compatibility
+        pip install -q -r requirements-lambda.txt --target dist/ --platform manylinux2014_x86_64 --python-version 3.12 --only-binary :all:
         cp -r src/* dist/
         cd dist && zip -r ../lambda-package.zip . && cd ..
 
