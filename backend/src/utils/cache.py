@@ -17,7 +17,8 @@ _snow_quality_cache: TTLCache = TTLCache(maxsize=100, ttl=60)
 def get_cache_key(*args, **kwargs) -> str:
     """Generate a cache key from function arguments."""
     key_data = json.dumps({"args": args, "kwargs": kwargs}, sort_keys=True, default=str)
-    return hashlib.md5(key_data.encode()).hexdigest()
+    # MD5 is used here only for cache key generation, not for security purposes
+    return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()
 
 
 def cached_resorts(func: Callable) -> Callable:
