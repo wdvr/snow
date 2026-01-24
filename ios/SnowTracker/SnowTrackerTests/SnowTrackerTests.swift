@@ -402,4 +402,33 @@ final class SnowTrackerTests: XCTestCase {
         XCTAssertEqual(snowflake.speed, 6)
         XCTAssertEqual(snowflake.delay, 1.5)
     }
+
+    // MARK: - Cache Configuration Tests
+
+    func testCacheConfigurationDurations() {
+        // Resort cache should be 24 hours
+        XCTAssertEqual(CacheConfiguration.resortCacheDuration, 24 * 60 * 60)
+
+        // Condition cache should be 30 minutes
+        XCTAssertEqual(CacheConfiguration.conditionCacheDuration, 30 * 60)
+
+        // Stale cache should be 7 days
+        XCTAssertEqual(CacheConfiguration.staleCacheDuration, 7 * 24 * 60 * 60)
+    }
+
+    func testCachedDataAgeDescription() {
+        let recentDate = Date().addingTimeInterval(-60) // 1 minute ago
+        let cachedData = CachedData(data: "test", isStale: false, cachedAt: recentDate)
+
+        // Should produce a relative time string
+        XCTAssertFalse(cachedData.ageDescription.isEmpty)
+    }
+
+    func testCachedDataStaleFlag() {
+        let freshData = CachedData(data: [1, 2, 3], isStale: false, cachedAt: Date())
+        let staleData = CachedData(data: [1, 2, 3], isStale: true, cachedAt: Date())
+
+        XCTAssertFalse(freshData.isStale)
+        XCTAssertTrue(staleData.isStale)
+    }
 }

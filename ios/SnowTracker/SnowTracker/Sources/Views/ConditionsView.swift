@@ -42,6 +42,26 @@ struct ConditionsView: View {
 
     private var summaryHeader: some View {
         VStack(spacing: 12) {
+            // Cached data indicator
+            if snowConditionsManager.isUsingCachedData {
+                HStack {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .foregroundColor(.orange)
+                    Text("Offline mode - showing cached data")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                    if let age = snowConditionsManager.cachedDataAge {
+                        Text("(\(age))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(8)
+            }
+
             if let lastUpdated = snowConditionsManager.lastUpdated {
                 HStack {
                     Image(systemName: "clock")
