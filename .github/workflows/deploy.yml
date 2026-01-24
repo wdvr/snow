@@ -224,6 +224,10 @@ jobs:
           echo "Weather processor response:"
           cat /tmp/weather-response.json
 
+          # Wait for CloudWatch logs to propagate
+          echo "Waiting for CloudWatch logs to propagate..."
+          sleep 10
+
           # Fetch recent CloudWatch logs to see any errors
           echo ""
           echo "=== Recent Lambda Logs ==="
