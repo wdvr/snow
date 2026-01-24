@@ -44,6 +44,9 @@ def create_monitoring_stack(
         return resources
 
     # IAM role for Amazon Managed Grafana
+    # Get account ID (synchronous call - returns actual value, not Output)
+    caller_identity = aws.get_caller_identity()
+
     grafana_assume_role_policy = {
         "Version": "2012-10-17",
         "Statement": [
@@ -52,11 +55,7 @@ def create_monitoring_stack(
                 "Principal": {"Service": "grafana.amazonaws.com"},
                 "Action": "sts:AssumeRole",
                 "Condition": {
-                    "StringEquals": {
-                        "aws:SourceAccount": pulumi.Output.from_input(
-                            aws.get_caller_identity().account_id
-                        )
-                    }
+                    "StringEquals": {"aws:SourceAccount": caller_identity.account_id}
                 },
             }
         ],
