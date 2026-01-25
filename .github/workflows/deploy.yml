@@ -172,6 +172,13 @@ jobs:
             --s3-key "$S3_KEY" \
             --region us-west-2
           aws lambda wait function-updated --function-name "$API_LAMBDA" --region us-west-2
+
+          # Update API Lambda environment variables
+          aws lambda update-function-configuration \
+            --function-name "$API_LAMBDA" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2}" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$API_LAMBDA" --region us-west-2
           echo "API handler Lambda updated"
         fi
 
