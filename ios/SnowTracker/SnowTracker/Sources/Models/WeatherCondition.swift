@@ -116,6 +116,48 @@ enum SnowQuality: String, CaseIterable, Codable {
         case .unknown: return "Conditions unknown"
         }
     }
+
+    /// Detailed explanation for the info (i) indicator
+    var detailedInfo: (title: String, description: String, criteria: String) {
+        switch self {
+        case .excellent:
+            return (
+                title: "Excellent - Fresh Snow",
+                description: "Fresh, non-refrozen snow on top. No recent ice formation events. Great conditions for all types of skiing.",
+                criteria: "5+ cm of snow since last warm period (>3°C for 4+ hrs), currently cold"
+            )
+        case .good:
+            return (
+                title: "Good - Soft Surface",
+                description: "Good amount of non-refrozen snow. Surface hasn't iced over. Enjoyable skiing on and off-piste.",
+                criteria: "2-5 cm of snow since last warm period, temps staying below freezing"
+            )
+        case .fair:
+            return (
+                title: "Fair - Some Fresh",
+                description: "Some fresh snow on top of older base. May have thin crust in places. Groomed runs in good shape.",
+                criteria: "1-2 cm since last warm period, or currently warming but snow still skiable"
+            )
+        case .poor:
+            return (
+                title: "Poor - Icy Base",
+                description: "Little fresh snow since last ice event. Hard or icy surface likely. Best to stick to groomed runs.",
+                criteria: "Less than 1 cm since last warm period, or extended time above 3°C recently"
+            )
+        case .bad:
+            return (
+                title: "Icy - Refrozen",
+                description: "No fresh snow on top of icy base. Recent warm periods have created hard, refrozen surface. Challenging conditions.",
+                criteria: "No snow since last freeze-thaw cycle, surface has refrozen"
+            )
+        case .unknown:
+            return (
+                title: "Unknown",
+                description: "Insufficient data to assess conditions. Check resort reports directly.",
+                criteria: "Weather data unavailable or incomplete"
+            )
+        }
+    }
 }
 
 enum ConfidenceLevel: String, CaseIterable, Codable {

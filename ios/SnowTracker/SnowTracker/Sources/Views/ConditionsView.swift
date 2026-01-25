@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ConditionsView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @State private var showingQualityInfo = false
 
     var sortedResorts: [Resort] {
         snowConditionsManager.resorts.sorted { resort1, resort2 in
@@ -29,6 +30,13 @@ struct ConditionsView: View {
                 .padding()
             }
             .navigationTitle("Snow Conditions")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: { showingQualityInfo = true }) {
+                        Image(systemName: "info.circle")
+                    }
+                }
+            }
             .refreshable {
                 await snowConditionsManager.refreshConditions()
             }
@@ -36,6 +44,9 @@ struct ConditionsView: View {
                 if snowConditionsManager.isLoading && snowConditionsManager.resorts.isEmpty {
                     ProgressView("Loading conditions...")
                 }
+            }
+            .sheet(isPresented: $showingQualityInfo) {
+                QualityInfoSheet()
             }
         }
     }
@@ -102,6 +113,9 @@ struct ConditionsView: View {
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
+        .onTapGesture {
+            showingQualityInfo = true
+        }
     }
 }
 
@@ -223,7 +237,113 @@ extension SnowQuality {
     }
 }
 
+// MARK: - Quality Info Sheet
+
+struct QualityInfoSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Algorithm explanation
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("How Quality is Calculated")
+                            .font(.headline)
+
+                        Text("Quality ratings are based on **non-refrozen snow** — snow that fell after the last ice formation event.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+
+                        HStack(spacing: 12) {
+                            Image(systemName: "thermometer.snowflake")
+                                .foregroundColor(.blue)
+                            VStack(alignment: .leading) {
+                                Text("Ice forms when temps stay ≥ 3°C for 4+ hours")
+                                    .font(.caption)
+                                Text("Snow after such events is fresh & non-icy")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding()
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    .padding(.horizontal)
+
+                    Divider()
+
+                    // Quality levels
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Quality Levels")
+                            .font(.headline)
+                            .padding(.horizontal)
+
+                        ForEach(SnowQuality.allCases, id: \.self) { quality in
+                            QualityInfoRow(quality: quality)
+                        }
+                    }
+                }
+                .padding(.vertical)
+            }
+            .navigationTitle("Snow Quality Guide")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct QualityInfoRow: View {
+    let quality: SnowQuality
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            // Quality icon
+            VStack {
+                Image(systemName: quality.icon)
+                    .font(.title2)
+                    .foregroundColor(quality.color)
+                    .frame(width: 40, height: 40)
+                    .background(quality.color.opacity(0.15))
+                    .cornerRadius(8)
+            }
+
+            // Quality details
+            VStack(alignment: .leading, spacing: 4) {
+                Text(quality.detailedInfo.title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(quality.color)
+
+                Text(quality.detailedInfo.description)
+                    .font(.caption)
+                    .foregroundColor(.primary)
+
+                Text(quality.detailedInfo.criteria)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .italic()
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+    }
+}
+
 #Preview("Conditions") {
     ConditionsView()
         .environmentObject(SnowConditionsManager())
+}
+
+#Preview("Quality Info") {
+    QualityInfoSheet()
 }

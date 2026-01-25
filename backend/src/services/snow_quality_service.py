@@ -24,6 +24,12 @@ class SnowQualityService:
         """
         Assess snow quality based on weather conditions.
 
+        The algorithm prioritizes "fresh powder that hasn't frozen" using:
+        1. Snowfall-after-freeze: snow that fell after the last thaw event
+        2. Hours since last snowfall: fresher = better
+        3. Current temperature: colder = better preservation
+        4. Time above freezing: more warm hours = more degradation
+
         Returns:
             tuple: (snow_quality, fresh_snow_estimate_cm, confidence_level)
         """
@@ -37,10 +43,24 @@ class SnowQualityService:
         # Calculate time-based degradation
         time_score = self._calculate_time_degradation_score(weather.timestamp)
 
-        # Calculate snowfall benefit
-        snowfall_score = self._calculate_snowfall_score(
-            weather.snowfall_24h_cm, weather.snowfall_48h_cm, weather.snowfall_72h_cm
-        )
+        # Calculate snowfall benefit (using new fresh powder metrics if available)
+        snowfall_after_freeze = getattr(weather, "snowfall_after_freeze_cm", 0.0) or 0.0
+        hours_since_snowfall = getattr(weather, "hours_since_last_snowfall", None)
+
+        # Use snowfall-after-freeze for scoring if available (more accurate)
+        if snowfall_after_freeze > 0:
+            snowfall_score = self._calculate_fresh_powder_score(
+                snowfall_after_freeze,
+                hours_since_snowfall,
+                weather.current_temp_celsius,
+            )
+        else:
+            # Fallback to traditional snowfall scoring
+            snowfall_score = self._calculate_snowfall_score(
+                weather.snowfall_24h_cm,
+                weather.snowfall_48h_cm,
+                weather.snowfall_72h_cm,
+            )
 
         # Combine scores with weights
         overall_score = (
@@ -65,6 +85,74 @@ class SnowQualityService:
         confidence = self._calculate_confidence_level(weather, source_multiplier)
 
         return snow_quality, fresh_snow_cm, confidence
+
+    def _calculate_fresh_powder_score(
+        self,
+        snowfall_after_freeze: float,
+        hours_since_snowfall: float | None,
+        current_temp: float,
+    ) -> float:
+        """Calculate score based on non-refrozen snow.
+
+        This is the key metric - snow that fell AFTER the last ice formation event.
+        Ice forms when temps >= 3°C for 4+ consecutive hours.
+
+        Higher scores for:
+        - More snow since the last ice event (non-refrozen coverage)
+        - Colder current temperatures (not currently forming ice)
+        """
+        # Base score from amount of non-refrozen snow
+        # Even small amounts matter - 1cm of fresh snow on ice is still better than bare ice
+        if snowfall_after_freeze >= 10:  # 10+ cm = excellent coverage
+            amount_score = 1.0
+        elif snowfall_after_freeze >= 5:  # 5-10 cm = great coverage
+            amount_score = 0.8 + (snowfall_after_freeze - 5) * 0.04
+        elif snowfall_after_freeze >= 2:  # 2-5 cm = good coverage
+            amount_score = 0.55 + (snowfall_after_freeze - 2) * 0.083
+        elif snowfall_after_freeze >= 1:  # 1-2 cm = light but skiable layer
+            amount_score = 0.35 + (snowfall_after_freeze - 1) * 0.2
+        elif snowfall_after_freeze >= 0.5:  # 0.5-1 cm = thin dusting
+            amount_score = 0.2 + (snowfall_after_freeze - 0.5) * 0.3
+        elif snowfall_after_freeze > 0:  # trace amounts
+            amount_score = snowfall_after_freeze * 0.4
+        else:
+            # No snow since last ice event = icy base
+            return 0.0
+
+        # Temperature factor - is it currently warm enough to form ice?
+        # Ice formation threshold is 3°C for 4+ hours
+        if current_temp >= 3.0:
+            # Currently at ice-forming temps - snow is degrading NOW
+            temp_factor = max(0.3, 0.7 - (current_temp - 3.0) * 0.1)
+        elif current_temp >= 0:
+            # Above freezing but below ice threshold - slow degradation
+            temp_factor = 0.85
+        elif current_temp >= -5:
+            # Good preservation temps
+            temp_factor = 0.95
+        else:
+            # Cold - excellent preservation
+            temp_factor = 1.0
+
+        # Freshness factor - how long since last snowfall
+        # Less critical than before since we're measuring from ice event, not just snowfall
+        if hours_since_snowfall is not None:
+            if hours_since_snowfall <= 12:
+                freshness = 1.0  # Recent snow
+            elif hours_since_snowfall <= 24:
+                freshness = 0.95
+            elif hours_since_snowfall <= 48:
+                freshness = 0.9
+            elif hours_since_snowfall <= 72:
+                freshness = 0.85
+            else:
+                # Snow is old but hasn't refrozen (no ice event since)
+                freshness = 0.8
+        else:
+            freshness = 0.9  # Unknown, assume decent
+
+        final_score = amount_score * temp_factor * freshness
+        return max(0.0, min(1.0, final_score))
 
     def _calculate_temperature_score(
         self, current_temp: float, max_temp: float, hours_above_threshold: float
@@ -167,22 +255,56 @@ class SnowQualityService:
     def _estimate_fresh_snow(
         self, weather: WeatherCondition, temp_score: float, time_score: float
     ) -> float:
-        """Estimate amount of fresh (non-iced) snow in cm."""
-        base_snow = weather.snowfall_24h_cm or 0.0
-        snowfall_48h = weather.snowfall_48h_cm or 0.0
+        """Estimate amount of non-refrozen snow in cm.
 
-        # Apply degradation based on temperature and time
-        degradation_factor = temp_score * 0.6 + time_score * 0.4
+        This is snow that fell AFTER the last ice formation event
+        (4+ consecutive hours at >= 3°C). This snow hasn't had a chance
+        to form ice or crust and represents skiable, non-icy coverage.
+        """
+        # Primary metric: snow that fell after the last ice formation event
+        snowfall_after_freeze = getattr(weather, "snowfall_after_freeze_cm", 0.0) or 0.0
+        currently_warming = getattr(weather, "currently_warming", False)
 
-        # Estimate how much snow remains fresh
-        fresh_snow = base_snow * degradation_factor
+        if snowfall_after_freeze > 0:
+            fresh_snow = snowfall_after_freeze
 
-        # Add some from 48h snowfall if recent enough
-        if snowfall_48h > base_snow and time_score > 0.3:
-            additional_fresh = (snowfall_48h - base_snow) * degradation_factor * 0.5
-            fresh_snow += additional_fresh
+            # If currently at ice-forming temps (>= 3°C), apply a degradation factor
+            # but don't zero it out - snow doesn't instantly turn to ice
+            if currently_warming:
+                current_temp = weather.current_temp_celsius
+                # Gradual degradation - 10% per degree above 3°C
+                degradation = (
+                    min(0.4, (current_temp - 3.0) * 0.1) if current_temp > 3.0 else 0.0
+                )
+                fresh_snow = fresh_snow * (1.0 - degradation)
 
-        return round(max(0.0, fresh_snow), 1)
+            return round(max(0.0, fresh_snow), 1)
+        else:
+            # Fallback to traditional estimation if new metric not available
+            base_snow = weather.snowfall_24h_cm or 0.0
+            snowfall_48h = weather.snowfall_48h_cm or 0.0
+
+            # If there's been significant time above ice threshold, heavily penalize
+            hours_above = weather.hours_above_ice_threshold or 0.0
+            if hours_above >= 4:
+                # Ice likely formed - reduce fresh snow estimate significantly
+                ice_factor = max(0.1, 1.0 - (hours_above / 8.0))
+            else:
+                ice_factor = 1.0
+
+            # Apply degradation based on temperature and time
+            degradation_factor = temp_score * 0.6 + time_score * 0.4
+            degradation_factor *= ice_factor
+
+            # Estimate how much snow remains non-icy
+            fresh_snow = base_snow * degradation_factor
+
+            # Add some from 48h snowfall if conditions allow
+            if snowfall_48h > base_snow and time_score > 0.3 and hours_above < 4:
+                additional_fresh = (snowfall_48h - base_snow) * degradation_factor * 0.5
+                fresh_snow += additional_fresh
+
+            return round(max(0.0, fresh_snow), 1)
 
     def _calculate_confidence_level(
         self, weather: WeatherCondition, source_multiplier: float

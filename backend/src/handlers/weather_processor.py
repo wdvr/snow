@@ -10,6 +10,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 from models.weather import WeatherCondition
+from services.onthesnow_scraper import OnTheSnowScraper
 from services.openmeteo_service import OpenMeteoService
 from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
@@ -28,6 +29,7 @@ WEATHER_CONDITIONS_TABLE = os.environ.get(
     "WEATHER_CONDITIONS_TABLE", "snow-tracker-weather-conditions-dev"
 )
 WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY")
+ENABLE_SCRAPING = os.environ.get("ENABLE_SCRAPING", "true").lower() == "true"
 
 
 def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
@@ -37,8 +39,10 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
     This function:
     1. Fetches all active resorts from DynamoDB
     2. Retrieves current weather data for each elevation point
-    3. Processes data through snow quality algorithm
-    4. Stores results in weather conditions table
+    3. Optionally scrapes resort-reported data from OnTheSnow
+    4. Merges data sources for higher accuracy
+    5. Processes data through snow quality algorithm
+    6. Stores results in weather conditions table
 
     Args:
         event: Lambda event (scheduled CloudWatch event)
@@ -52,16 +56,21 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
 
         # Initialize services
         resort_service = ResortService(dynamodb.Table(RESORTS_TABLE))
-        weather_service = (
-            OpenMeteoService()
-        )  # Open-Meteo: free, elevation-aware, no API key
+        weather_service = OpenMeteoService()
         snow_quality_service = SnowQualityService()
+
+        # Initialize scraper if enabled
+        scraper = OnTheSnowScraper() if ENABLE_SCRAPING else None
+        if scraper:
+            logger.info("OnTheSnow scraping enabled")
 
         # Statistics tracking
         stats = {
             "resorts_processed": 0,
             "elevation_points_processed": 0,
             "conditions_saved": 0,
+            "scraper_hits": 0,
+            "scraper_misses": 0,
             "errors": 0,
             "start_time": datetime.now(UTC).isoformat(),
         }
@@ -76,15 +85,39 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
             try:
                 logger.info(f"Processing resort: {resort.name} ({resort.resort_id})")
 
+                # Try to get scraped data for this resort (once per resort, not per elevation)
+                scraped_data = None
+                if scraper and scraper.is_resort_supported(resort.resort_id):
+                    try:
+                        scraped_data = scraper.get_snow_report(resort.resort_id)
+                        if scraped_data:
+                            stats["scraper_hits"] += 1
+                            logger.info(
+                                f"Got scraped data for {resort.resort_id}: "
+                                f"24h={scraped_data.snowfall_24h_cm}cm, "
+                                f"48h={scraped_data.snowfall_48h_cm}cm"
+                            )
+                        else:
+                            stats["scraper_misses"] += 1
+                    except Exception as e:
+                        logger.warning(f"Scraper failed for {resort.resort_id}: {e}")
+                        stats["scraper_misses"] += 1
+
                 # Process each elevation point
                 for elevation_point in resort.elevation_points:
                     try:
-                        # Fetch current weather data
+                        # Fetch current weather data from Open-Meteo
                         weather_data = weather_service.get_current_weather(
                             latitude=elevation_point.latitude,
                             longitude=elevation_point.longitude,
                             elevation_meters=elevation_point.elevation_meters,
                         )
+
+                        # Merge with scraped data if available (scraped data is more accurate)
+                        if scraped_data:
+                            weather_data = scraper.merge_with_weather_data(
+                                weather_data, scraped_data
+                            )
 
                         # Create weather condition object
                         weather_condition = WeatherCondition(

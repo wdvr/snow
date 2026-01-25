@@ -29,6 +29,43 @@ class SnowQuality(str, Enum):
     UNKNOWN = "unknown"  # Insufficient data
 
 
+# Quality rating explanations for UI info indicators
+# Quality is based on "non-refrozen snow" - snow that hasn't been through a freeze-thaw cycle
+# Ice forms when temps >= 3°C for 4+ consecutive hours
+SNOW_QUALITY_EXPLANATIONS: dict[SnowQuality, dict[str, str]] = {
+    SnowQuality.EXCELLENT: {
+        "title": "Excellent - Fresh Snow",
+        "description": "Fresh, non-refrozen snow on top. No recent ice formation events. Great conditions for all types of skiing.",
+        "criteria": "5+ cm of snow since last warm period (>3°C for 4+ hrs), currently cold",
+    },
+    SnowQuality.GOOD: {
+        "title": "Good - Soft Surface",
+        "description": "Good amount of non-refrozen snow. Surface hasn't iced over. Enjoyable skiing on and off-piste.",
+        "criteria": "2-5 cm of snow since last warm period, temps staying below freezing",
+    },
+    SnowQuality.FAIR: {
+        "title": "Fair - Some Fresh",
+        "description": "Some fresh snow on top of older base. May have thin crust in places. Groomed runs in good shape.",
+        "criteria": "1-2 cm since last warm period, or currently warming but snow still skiable",
+    },
+    SnowQuality.POOR: {
+        "title": "Poor - Icy Base",
+        "description": "Little fresh snow since last ice event. Hard or icy surface likely. Best to stick to groomed runs.",
+        "criteria": "Less than 1 cm since last warm period, or extended time above 3°C recently",
+    },
+    SnowQuality.BAD: {
+        "title": "Icy - Refrozen",
+        "description": "No fresh snow on top of icy base. Recent warm periods have created hard, refrozen surface. Challenging conditions.",
+        "criteria": "No snow since last freeze-thaw cycle, surface has refrozen",
+    },
+    SnowQuality.UNKNOWN: {
+        "title": "Unknown",
+        "description": "Insufficient data to assess conditions. Check resort reports directly.",
+        "criteria": "Weather data unavailable or incomplete",
+    },
+}
+
+
 class WeatherCondition(BaseModel):
     """Weather condition data for a specific resort elevation point."""
 
@@ -71,6 +108,23 @@ class WeatherCondition(BaseModel):
     )
     max_consecutive_warm_hours: float = Field(
         default=0.0, description="Max consecutive hours above threshold"
+    )
+
+    # Fresh powder tracking (snowfall after last freeze-thaw event)
+    # Ice forms when temps >= 3°C for 4+ consecutive hours
+    snowfall_after_freeze_cm: float = Field(
+        default=0.0,
+        description="Non-refrozen snow: fell after last ice formation event",
+    )
+    hours_since_last_snowfall: float | None = Field(
+        None, description="Hours since last snowfall event"
+    )
+    last_freeze_thaw_hours_ago: float | None = Field(
+        None, description="Hours since last ice formation event (4+ hrs >= 3°C)"
+    )
+    currently_warming: bool = Field(
+        default=False,
+        description="Currently at temps that cause ice formation (>= 3°C)",
     )
 
     # Weather conditions
