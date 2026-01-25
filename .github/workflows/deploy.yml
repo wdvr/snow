@@ -281,21 +281,35 @@ jobs:
         fi
 
     - name: Import Grafana Dashboards
-      if: env.ENVIRONMENT == 'staging' && env.GRAFANA_API_KEY != ''
-      env:
-        GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}
+      if: env.ENVIRONMENT == 'staging'
       run: |
-        # Get Grafana workspace URL
-        WORKSPACE_URL=$(aws grafana list-workspaces \
-          --query "workspaces[?name=='snow-tracker-grafana'].endpoint" \
+        # Get Grafana workspace info
+        WORKSPACE_INFO=$(aws grafana list-workspaces \
+          --query "workspaces[?name=='snow-tracker-grafana'].[id,endpoint]" \
           --output text 2>/dev/null || echo "")
 
-        if [ -n "$WORKSPACE_URL" ] && [ "$WORKSPACE_URL" != "None" ]; then
-          echo "Importing dashboards to Grafana: $WORKSPACE_URL"
-          chmod +x infrastructure/scripts/import-grafana-dashboards.sh
-          GRAFANA_WORKSPACE_URL="https://$WORKSPACE_URL" \
-          GRAFANA_API_KEY="$GRAFANA_API_KEY" \
-            infrastructure/scripts/import-grafana-dashboards.sh
+        if [ -n "$WORKSPACE_INFO" ] && [ "$WORKSPACE_INFO" != "None" ]; then
+          WORKSPACE_ID=$(echo "$WORKSPACE_INFO" | awk '{print $1}')
+          WORKSPACE_URL=$(echo "$WORKSPACE_INFO" | awk '{print $2}')
+
+          echo "Creating temporary Grafana API key..."
+          # Create a short-lived API key (5 min) for dashboard import
+          API_KEY=$(aws grafana create-workspace-api-key \
+            --workspace-id "$WORKSPACE_ID" \
+            --key-name "ci-deploy-$(date +%s)" \
+            --key-role ADMIN \
+            --seconds-to-live 300 \
+            --query 'key' --output text 2>/dev/null || echo "")
+
+          if [ -n "$API_KEY" ]; then
+            echo "Importing dashboards to Grafana: $WORKSPACE_URL"
+            chmod +x infrastructure/scripts/import-grafana-dashboards.sh
+            GRAFANA_WORKSPACE_URL="https://$WORKSPACE_URL" \
+            GRAFANA_API_KEY="$API_KEY" \
+              infrastructure/scripts/import-grafana-dashboards.sh
+          else
+            echo "Could not create Grafana API key (check IAM permissions)"
+          fi
         else
           echo "Grafana workspace not found, skipping dashboard import"
         fi
