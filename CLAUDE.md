@@ -128,16 +128,15 @@ POST /api/v1/feedback                  - Submit feedback
 gh issue list --state open
 gh issue create --title "Title" --body "Description" --label "enhancement"
 gh issue view 123
-gh issue edit 123 --add-label "agent-friendly"
 
 # Pull Requests
 gh pr create --title "Add feature" --body "Closes #123"
 gh pr list
-gh pr view 123
 gh pr merge 123 --squash
 
-# Deployments
+# Deployments & Weather Processing
 gh run list --workflow=deploy.yml
+gh workflow run trigger-weather.yml -f environment=staging -f wait_for_completion=true
 ```
 
 ### Pull Request Requirements
