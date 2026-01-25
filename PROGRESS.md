@@ -37,6 +37,7 @@ gh issue list --label "complex"            # Multi-component features
 ### Complex Features (May Need Breakdown)
 | Issue | Title | Components |
 |-------|-------|------------|
+| [#36](https://github.com/wdvr/snow/issues/36) | Proximity-based resort discovery with map | iOS + Backend |
 | [#14](https://github.com/wdvr/snow/issues/14) | Sign in with Apple backend | iOS + Backend |
 | [#22](https://github.com/wdvr/snow/issues/22) | Best Snow This Week - Location Recommendations | iOS + Backend |
 | [#23](https://github.com/wdvr/snow/issues/23) | Trip Planning Mode | iOS + Backend |
@@ -49,6 +50,8 @@ gh issue list --label "complex"            # Multi-component features
 | Feature | Date |
 |---------|------|
 | Production deployment | 2026-01 |
+| 60-second API caching (21x faster) | 2026-01-24 |
+| Unified Grafana monitoring | 2026-01-24 |
 | 28+ ski resorts across 8 regions | 2026-01-24 |
 | Region-based filtering (iOS + API) | 2026-01-24 |
 | Animated splash screen | 2026-01-24 |
