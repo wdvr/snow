@@ -209,6 +209,18 @@ jobs:
         RESORTS_TABLE: snow-tracker-resorts-${{ env.ENVIRONMENT }}
         AWS_DEFAULT_REGION: us-west-2
 
+    - name: Backfill historical weather data (staging only)
+      if: env.ENVIRONMENT == 'staging'
+      run: |
+        cd backend
+        echo "Running historical data backfill (14 days)..."
+        PYTHONPATH=src python scripts/backfill_historical_data.py
+      env:
+        ENVIRONMENT: ${{ env.ENVIRONMENT }}
+        RESORTS_TABLE: snow-tracker-resorts-${{ env.ENVIRONMENT }}
+        WEATHER_CONDITIONS_TABLE: snow-tracker-weather-conditions-${{ env.ENVIRONMENT }}
+        AWS_DEFAULT_REGION: us-west-2
+
     - name: Invoke weather processor to fetch initial data (async)
       run: |
         cd infrastructure
