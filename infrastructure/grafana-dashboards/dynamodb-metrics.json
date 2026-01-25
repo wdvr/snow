@@ -1,0 +1,216 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "snow-dynamodb-metrics",
+    "title": "Snow Tracker - DynamoDB Metrics",
+    "tags": ["snow-tracker", "dynamodb", "database"],
+    "timezone": "browser",
+    "refresh": "5m",
+    "schemaVersion": 38,
+    "panels": [
+      {
+        "id": 1,
+        "title": "Resorts Table - Read/Write Capacity",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "ConsumedReadCapacityUnits",
+            "dimensions": { "TableName": "snow-tracker-resorts-staging" },
+            "statistic": "Sum",
+            "period": "300",
+            "alias": "Read"
+          },
+          {
+            "refId": "B",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "ConsumedWriteCapacityUnits",
+            "dimensions": { "TableName": "snow-tracker-resorts-staging" },
+            "statistic": "Sum",
+            "period": "300",
+            "alias": "Write"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2,
+              "fillOpacity": 20
+            }
+          },
+          "overrides": [
+            { "matcher": { "id": "byName", "options": "Read" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] },
+            { "matcher": { "id": "byName", "options": "Write" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "title": "Weather Conditions Table - Read/Write",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "ConsumedReadCapacityUnits",
+            "dimensions": { "TableName": "snow-tracker-weather-conditions-staging" },
+            "statistic": "Sum",
+            "period": "300",
+            "alias": "Read"
+          },
+          {
+            "refId": "B",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "ConsumedWriteCapacityUnits",
+            "dimensions": { "TableName": "snow-tracker-weather-conditions-staging" },
+            "statistic": "Sum",
+            "period": "300",
+            "alias": "Write"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2,
+              "fillOpacity": 20
+            }
+          },
+          "overrides": [
+            { "matcher": { "id": "byName", "options": "Read" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] },
+            { "matcher": { "id": "byName", "options": "Write" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+          ]
+        }
+      },
+      {
+        "id": 3,
+        "title": "Throttled Requests",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "ThrottledRequests",
+            "dimensions": { "TableName": "snow-tracker-resorts-staging" },
+            "statistic": "Sum",
+            "period": "300",
+            "alias": "Resorts"
+          },
+          {
+            "refId": "B",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "ThrottledRequests",
+            "dimensions": { "TableName": "snow-tracker-weather-conditions-staging" },
+            "statistic": "Sum",
+            "period": "300",
+            "alias": "Weather"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2,
+              "fillOpacity": 20
+            },
+            "color": { "fixedColor": "red", "mode": "fixed" }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Successful Requests Latency",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "SuccessfulRequestLatency",
+            "dimensions": { "TableName": "snow-tracker-resorts-staging", "Operation": "GetItem" },
+            "statistic": "Average",
+            "period": "300",
+            "alias": "Resorts GetItem"
+          },
+          {
+            "refId": "B",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "SuccessfulRequestLatency",
+            "dimensions": { "TableName": "snow-tracker-weather-conditions-staging", "Operation": "Query" },
+            "statistic": "Average",
+            "period": "300",
+            "alias": "Weather Query"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Item Count (Weather Conditions)",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "ItemCount",
+            "dimensions": { "TableName": "snow-tracker-weather-conditions-staging" },
+            "statistic": "Average",
+            "period": "86400"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "steps": [{ "color": "blue", "value": null }]
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Table Size (Weather Conditions)",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 16 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "AWS/DynamoDB",
+            "metricName": "TableSize",
+            "dimensions": { "TableName": "snow-tracker-weather-conditions-staging" },
+            "statistic": "Average",
+            "period": "86400"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "steps": [{ "color": "blue", "value": null }]
+            }
+          }
+        }
+      }
+    ],
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    }
+  },
+  "overwrite": true
+}

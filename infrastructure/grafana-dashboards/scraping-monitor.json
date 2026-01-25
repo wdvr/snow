@@ -1,0 +1,286 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "snow-scraping-monitor",
+    "title": "Snow Tracker - Scraping Monitor",
+    "tags": ["snow-tracker", "scraping", "weather"],
+    "timezone": "browser",
+    "refresh": "5m",
+    "schemaVersion": 38,
+    "panels": [
+      {
+        "id": 1,
+        "title": "Scraper Success Rate",
+        "type": "gauge",
+        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Scraping",
+            "metricName": "ScraperSuccessRate",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Average",
+            "period": "300"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "orange", "value": 50 },
+                { "color": "yellow", "value": 75 },
+                { "color": "green", "value": 90 }
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Resorts Processed",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Scraping",
+            "metricName": "ResortsProcessed",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Sum",
+            "period": "3600"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "green", "value": 1 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Processing Errors",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Scraping",
+            "metricName": "ProcessingErrors",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Sum",
+            "period": "3600"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 1 },
+                { "color": "red", "value": 5 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Processing Duration",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Scraping",
+            "metricName": "ProcessingDuration",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Average",
+            "period": "300"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 60 },
+                { "color": "red", "value": 120 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Conditions Saved Over Time",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 6, "y": 4 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Scraping",
+            "metricName": "ConditionsSaved",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Sum",
+            "period": "3600"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2,
+              "fillOpacity": 20
+            },
+            "color": { "mode": "palette-classic" }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Scraper Hits vs Misses",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Scraping",
+            "metricName": "ScraperHits",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Sum",
+            "period": "3600",
+            "alias": "Hits"
+          },
+          {
+            "refId": "B",
+            "namespace": "SnowTracker/Scraping",
+            "metricName": "ScraperMisses",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Sum",
+            "period": "3600",
+            "alias": "Misses"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "bars",
+              "fillOpacity": 80,
+              "stacking": { "mode": "normal" }
+            }
+          },
+          "overrides": [
+            { "matcher": { "id": "byName", "options": "Hits" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+            { "matcher": { "id": "byName", "options": "Misses" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
+          ]
+        }
+      },
+      {
+        "id": 7,
+        "title": "Processing Errors Over Time",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Scraping",
+            "metricName": "ProcessingErrors",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Sum",
+            "period": "3600"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2,
+              "fillOpacity": 20
+            },
+            "color": { "fixedColor": "red", "mode": "fixed" }
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Elevation Points Processed",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Scraping",
+            "metricName": "ElevationPointsProcessed",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Sum",
+            "period": "3600"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2,
+              "fillOpacity": 20
+            },
+            "color": { "mode": "palette-classic" }
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Weather Processor Lambda Invocations",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "AWS/Lambda",
+            "metricName": "Invocations",
+            "dimensions": { "FunctionName": "snow-tracker-weather-processor-staging" },
+            "statistic": "Sum",
+            "period": "3600"
+          },
+          {
+            "refId": "B",
+            "namespace": "AWS/Lambda",
+            "metricName": "Errors",
+            "dimensions": { "FunctionName": "snow-tracker-weather-processor-staging" },
+            "statistic": "Sum",
+            "period": "3600"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2
+            }
+          },
+          "overrides": [
+            { "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
+          ]
+        }
+      }
+    ],
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    }
+  },
+  "overwrite": true
+}

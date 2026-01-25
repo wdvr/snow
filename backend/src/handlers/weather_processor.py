@@ -4,7 +4,7 @@ import json
 import logging
 import os
 from datetime import UTC, datetime, timezone
-from typing import Any, Dict
+from typing import Any
 
 import boto3
 from botocore.exceptions import ClientError
@@ -22,6 +22,7 @@ logger.setLevel(logging.INFO)
 
 # Initialize AWS clients
 dynamodb = boto3.resource("dynamodb")
+cloudwatch = boto3.client("cloudwatch")
 
 # Environment variables
 RESORTS_TABLE = os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
@@ -30,6 +31,75 @@ WEATHER_CONDITIONS_TABLE = os.environ.get(
 )
 WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY")
 ENABLE_SCRAPING = os.environ.get("ENABLE_SCRAPING", "true").lower() == "true"
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
+
+
+def publish_metrics(stats: dict[str, Any]) -> None:
+    """Publish scraping metrics to CloudWatch for Grafana dashboards."""
+    try:
+        metrics = [
+            {
+                "MetricName": "ResortsProcessed",
+                "Value": stats.get("resorts_processed", 0),
+                "Unit": "Count",
+                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+            },
+            {
+                "MetricName": "ElevationPointsProcessed",
+                "Value": stats.get("elevation_points_processed", 0),
+                "Unit": "Count",
+                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+            },
+            {
+                "MetricName": "ConditionsSaved",
+                "Value": stats.get("conditions_saved", 0),
+                "Unit": "Count",
+                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+            },
+            {
+                "MetricName": "ScraperHits",
+                "Value": stats.get("scraper_hits", 0),
+                "Unit": "Count",
+                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+            },
+            {
+                "MetricName": "ScraperMisses",
+                "Value": stats.get("scraper_misses", 0),
+                "Unit": "Count",
+                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+            },
+            {
+                "MetricName": "ProcessingErrors",
+                "Value": stats.get("errors", 0),
+                "Unit": "Count",
+                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+            },
+            {
+                "MetricName": "ProcessingDuration",
+                "Value": stats.get("duration_seconds", 0),
+                "Unit": "Seconds",
+                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+            },
+        ]
+
+        # Calculate success rate
+        total_scrapes = stats.get("scraper_hits", 0) + stats.get("scraper_misses", 0)
+        if total_scrapes > 0:
+            success_rate = (stats.get("scraper_hits", 0) / total_scrapes) * 100
+            metrics.append(
+                {
+                    "MetricName": "ScraperSuccessRate",
+                    "Value": success_rate,
+                    "Unit": "Percent",
+                    "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+                }
+            )
+
+        cloudwatch.put_metric_data(Namespace="SnowTracker/Scraping", MetricData=metrics)
+        logger.info(f"Published {len(metrics)} metrics to CloudWatch")
+
+    except Exception as e:
+        logger.error(f"Failed to publish metrics to CloudWatch: {e}")
 
 
 def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
@@ -193,6 +263,9 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
         ).total_seconds()
 
         logger.info(f"Weather processing completed. Stats: {stats}")
+
+        # Publish metrics to CloudWatch for Grafana dashboards
+        publish_metrics(stats)
 
         return {
             "statusCode": 200,
