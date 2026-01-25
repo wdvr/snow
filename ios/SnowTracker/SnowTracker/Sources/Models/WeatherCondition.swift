@@ -339,12 +339,76 @@ struct WeatherCondition: Codable, Identifiable, Hashable {
             return "Unknown"
         }
         if hours >= 72 {
-            return "3+ days"
+            let days = Int(hours / 24)
+            return "\(days) days ago"
         } else if hours >= 24 {
-            return "\(Int(hours / 24))d \(Int(hours.truncatingRemainder(dividingBy: 24)))h"
+            return "\(Int(hours / 24))d \(Int(hours.truncatingRemainder(dividingBy: 24)))h ago"
         } else {
             return "\(Int(hours))h ago"
         }
+    }
+
+    /// Surface type based on fresh snow and thaw-freeze status
+    enum SurfaceType: String {
+        case freshPowder = "Fresh Powder"
+        case oldPowder = "Old Powder"
+        case icy = "Icy"
+        case unknown = "Unknown"
+
+        var icon: String {
+            switch self {
+            case .freshPowder: return "snowflake"
+            case .oldPowder: return "cloud.snow"
+            case .icy: return "thermometer.snowflake"
+            case .unknown: return "questionmark.circle"
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .freshPowder: return .cyan
+            case .oldPowder: return .blue
+            case .icy: return .orange
+            case .unknown: return .gray
+            }
+        }
+    }
+
+    /// Determine surface type based on fresh snow and time since freeze
+    var surfaceType: SurfaceType {
+        let snowCm = snowSinceFreeze
+        let hoursSinceFreeze = lastFreezeThawHoursAgo ?? 0
+
+        // If no thaw-freeze event in 72h and has snow, it's fresh or old powder
+        if hoursSinceFreeze >= 72 || snowCm >= 2.54 {  // 1 inch = 2.54cm
+            // Fresh powder: snow in last 24-48h
+            if let hoursSinceSnow = hoursSinceLastSnowfall, hoursSinceSnow < 48 {
+                return .freshPowder
+            } else if snowCm >= 2.54 {
+                return .oldPowder  // Has coverage but not recent
+            }
+        }
+
+        // Recent thaw-freeze with little snow = icy
+        if snowCm < 2.54 && hoursSinceFreeze < 72 {
+            return .icy
+        }
+
+        // Default to old powder if we have some snow
+        if snowCm > 0 {
+            return .oldPowder
+        }
+
+        return .icy
+    }
+
+    /// Formatted snow since freeze in cm
+    var formattedSnowSinceFreezeCm: String {
+        let cm = snowSinceFreeze
+        if cm < 0.1 {
+            return "0 cm"
+        }
+        return String(format: "%.1f cm", cm)
     }
 
     var formattedWindSpeed: String {

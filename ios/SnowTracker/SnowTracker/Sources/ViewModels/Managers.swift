@@ -112,51 +112,38 @@ class SnowConditionsManager: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        // Fetch all resort conditions in parallel using TaskGroup
-        let results = await withTaskGroup(
-            of: (String, Result<[WeatherCondition], Error>).self,
-            returning: [(String, Result<[WeatherCondition], Error>)].self
-        ) { group in
-            for resort in resorts {
-                group.addTask {
-                    do {
-                        let resortConditions = try await self.apiClient.getConditions(for: resort.id)
-                        return (resort.id, .success(resortConditions))
-                    } catch {
-                        return (resort.id, .failure(error))
-                    }
-                }
-            }
-
-            var results: [(String, Result<[WeatherCondition], Error>)] = []
-            for await result in group {
-                results.append(result)
-            }
-            return results
-        }
-
-        // Process results on main actor
+        let resortIds = resorts.map { $0.id }
         var anyFailed = false
         var anyFromCache = false
 
-        for (resortId, result) in results {
-            switch result {
-            case .success(let resortConditions):
-                conditions[resortId] = resortConditions
-                // Cache the fresh data
-                cacheService.cacheConditions(resortConditions, for: resortId)
+        // Batch fetch in chunks of 20 (API limit)
+        let batchSize = 20
+        for batchStart in stride(from: 0, to: resortIds.count, by: batchSize) {
+            let batchEnd = min(batchStart + batchSize, resortIds.count)
+            let batchIds = Array(resortIds[batchStart..<batchEnd])
 
-            case .failure(let error):
-                print("API error for \(resortId): \(error.localizedDescription)")
+            do {
+                // Use batch endpoint for efficiency (single request per 20 resorts)
+                let batchResults = try await apiClient.getBatchConditions(resortIds: batchIds)
+
+                for (resortId, resortConditions) in batchResults {
+                    conditions[resortId] = resortConditions
+                    // Cache the fresh data
+                    cacheService.cacheConditions(resortConditions, for: resortId)
+                }
+            } catch {
+                print("Batch API error: \(error.localizedDescription)")
                 anyFailed = true
 
-                // Try to load from cache
-                if let cachedData = cacheService.getCachedConditions(for: resortId) {
-                    conditions[resortId] = cachedData.data
-                    anyFromCache = true
-                    print("Using cached conditions for \(resortId) (stale: \(cachedData.isStale))")
-                } else {
-                    conditions[resortId] = []
+                // Fallback: try individual requests or cache for failed batch
+                for resortId in batchIds {
+                    if let cachedData = cacheService.getCachedConditions(for: resortId) {
+                        conditions[resortId] = cachedData.data
+                        anyFromCache = true
+                        print("Using cached conditions for \(resortId) (stale: \(cachedData.isStale))")
+                    } else {
+                        conditions[resortId] = []
+                    }
                 }
             }
         }

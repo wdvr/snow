@@ -75,6 +75,15 @@ class SnowQualityService:
         )
         adjusted_score = overall_score * source_multiplier
 
+        # CRITICAL: Cap quality based on fresh powder availability
+        # No fresh snow since last thaw-freeze = Poor/Bad regardless of temperature
+        if snowfall_after_freeze <= 0 and (weather.snowfall_24h_cm or 0) <= 0:
+            # No fresh snow at all - cap at Poor (0.2)
+            adjusted_score = min(adjusted_score, 0.19)
+        elif snowfall_after_freeze < 2.54:  # Less than 1 inch
+            # Very little fresh snow - cap at Fair (0.4)
+            adjusted_score = min(adjusted_score, 0.39)
+
         # Determine quality level
         snow_quality = self._score_to_quality(adjusted_score)
 

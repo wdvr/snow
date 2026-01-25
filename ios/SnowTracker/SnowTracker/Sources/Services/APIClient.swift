@@ -101,6 +101,39 @@ class APIClient {
         }
     }
 
+    /// Fetch conditions for multiple resorts in a single request (max 20)
+    func getBatchConditions(resortIds: [String]) async throws -> [String: [WeatherCondition]] {
+        // Build URL with query parameter
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/conditions/batch"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "resort_ids", value: resortIds.joined(separator: ","))
+        ]
+
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url)
+                .validate()
+                .responseDecodable(of: BatchConditionsResponse.self) { response in
+                    switch response.result {
+                    case .success(let batchResponse):
+                        // Convert response to dict of conditions
+                        var result: [String: [WeatherCondition]] = [:]
+                        for (resortId, resortResult) in batchResponse.results {
+                            result[resortId] = resortResult.conditions
+                        }
+                        print("Successfully fetched batch conditions for \(batchResponse.resortCount) resorts")
+                        continuation.resume(returning: result)
+                    case .failure(let error):
+                        print("API Error fetching batch conditions: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
     func getSnowQuality(for resortId: String) async throws -> SnowQualitySummary {
         let url = baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/snow-quality")
 
@@ -249,6 +282,23 @@ struct ConditionsResponse: Codable {
         case lastUpdated = "last_updated"
         case resortId = "resort_id"
     }
+}
+
+struct BatchConditionsResponse: Codable {
+    let results: [String: ResortConditionsResult]
+    let lastUpdated: String?
+    let resortCount: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case results
+        case lastUpdated = "last_updated"
+        case resortCount = "resort_count"
+    }
+}
+
+struct ResortConditionsResult: Codable {
+    let conditions: [WeatherCondition]
+    let error: String?
 }
 
 struct SnowQualitySummary: Codable {

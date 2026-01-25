@@ -281,6 +281,68 @@ def _get_resort_cached(resort_id: str):
 # MARK: - Weather Condition Endpoints
 
 
+@app.get("/api/v1/conditions/batch")
+async def get_batch_conditions(
+    response: Response,
+    resort_ids: str = Query(..., description="Comma-separated resort IDs (max 20)"),
+    hours: int | None = Query(
+        24, description="Hours of historical data to retrieve", ge=1, le=168
+    ),
+):
+    """Get conditions for multiple resorts in a single request.
+
+    This endpoint reduces API calls by allowing batch fetching of up to 20 resorts.
+    Returns conditions keyed by resort_id.
+    """
+    try:
+        # Parse and validate resort IDs
+        ids = [id.strip() for id in resort_ids.split(",") if id.strip()]
+
+        if not ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No resort IDs provided",
+            )
+
+        if len(ids) > 20:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Maximum 20 resorts per batch request",
+            )
+
+        # Fetch conditions for each resort
+        results = {}
+        for resort_id in ids:
+            try:
+                conditions = _get_conditions_cached(resort_id, hours)
+                results[resort_id] = {
+                    "conditions": conditions,
+                    "error": None,
+                }
+            except Exception as e:
+                results[resort_id] = {
+                    "conditions": [],
+                    "error": str(e),
+                }
+
+        # Set cache headers
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+
+        return {
+            "results": results,
+            "last_updated": datetime.now(UTC).isoformat(),
+            "resort_count": len(ids),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve batch conditions: {str(e)}",
+        )
+
+
 @app.get("/api/v1/resorts/{resort_id}/conditions")
 async def get_resort_conditions(
     resort_id: str,

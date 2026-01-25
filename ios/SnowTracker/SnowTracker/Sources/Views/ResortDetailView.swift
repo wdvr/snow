@@ -224,49 +224,63 @@ struct ResortDetailView: View {
 
     private func snowDetailsCard(_ condition: WeatherCondition) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Fresh powder since thaw-freeze (the key metric)
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Fresh Powder")
+            // Surface type badge
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: condition.surfaceType.icon)
+                        .foregroundColor(condition.surfaceType.color)
+                    Text(condition.surfaceType.rawValue)
                         .font(.headline)
-                    Spacer()
-                    if condition.currentlyWarming == true {
-                        HStack(spacing: 4) {
-                            Image(systemName: "thermometer.sun.fill")
-                                .foregroundColor(.orange)
-                            Text("Warming")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.orange)
-                        }
-                    }
+                        .foregroundColor(condition.surfaceType.color)
                 }
 
-                HStack(spacing: 20) {
-                    // Fresh snow since freeze
-                    VStack {
-                        Text(condition.formattedSnowSinceFreezeInches)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.cyan)
-                        Text("Since last thaw")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
+                Spacer()
 
-                    // Time since freeze
-                    VStack {
-                        Text(condition.formattedTimeSinceFreeze)
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                        Text("Last thaw-freeze")
+                if condition.currentlyWarming == true {
+                    HStack(spacing: 4) {
+                        Image(systemName: "thermometer.sun.fill")
+                            .foregroundColor(.orange)
+                        Text("Warming")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .fontWeight(.medium)
+                            .foregroundColor(.orange)
                     }
-                    .frame(maxWidth: .infinity)
                 }
             }
+
+            // Key metrics in a clear format
+            VStack(alignment: .leading, spacing: 8) {
+                // Last thaw/freeze
+                HStack {
+                    Text("Last thaw/freeze:")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Text(condition.formattedTimeSinceFreeze)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Button {
+                        // TODO: Show info popover about thaw-freeze
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                }
+
+                // Snow since then
+                HStack {
+                    Text("Snow since then:")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Text(condition.formattedSnowSinceFreezeCm)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Text("(\(condition.formattedSnowSinceFreezeInches))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.vertical, 4)
 
             Divider()
 
