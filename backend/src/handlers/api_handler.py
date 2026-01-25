@@ -37,9 +37,12 @@ app = FastAPI(
 )
 
 # Configure CORS
+# TODO: For production, replace "*" with specific origins like:
+# ["https://your-app-domain.com", "https://api.your-domain.com"]
+CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -105,18 +108,6 @@ VALID_REGIONS = [
     "oceania",
     "south_america",
 ]
-
-# Region to country mapping for filtering
-REGION_COUNTRIES = {
-    "na_west": {"CA", "US"},  # Filtered by longitude
-    "na_rockies": {"CA", "US"},  # Filtered by longitude
-    "na_east": {"CA", "US"},  # Filtered by longitude
-    "alps": {"FR", "CH", "AT", "IT", "DE"},
-    "scandinavia": {"NO", "SE", "FI"},
-    "japan": {"JP"},
-    "oceania": {"AU", "NZ"},
-    "south_america": {"CL", "AR"},
-}
 
 
 def infer_resort_region(resort: Resort) -> str:

@@ -1,7 +1,7 @@
 # Snow Quality Tracker - Progress
 
 ## Status: LIVE IN PRODUCTION
-**Last Updated**: 2026-01-24
+**Last Updated**: 2026-01-25
 **API**: https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod
 
 ---
@@ -10,38 +10,26 @@
 
 All tasks tracked at: https://github.com/wdvr/snow/issues
 
-```bash
-# View issues by workflow label
-gh issue list --label "agent-friendly"     # Ready for autonomous work
-gh issue list --label "needs-user-input"   # Requires user decisions
-gh issue list --label "complex"            # Multi-component features
-```
+### Open Issues
 
-### Agent-Friendly Issues (Ready to Work)
-| Issue | Title | Component | Status |
-|-------|-------|-----------|--------|
-| [#12](https://github.com/wdvr/snow/issues/12) | Implement 60-second API caching | Backend | Done |
-| [#15](https://github.com/wdvr/snow/issues/15) | Add offline caching for iOS app (SwiftData) | iOS | ✅ Done (PR #28) |
-| [#18](https://github.com/wdvr/snow/issues/18) | Add more ski resorts to database | Backend | ✅ Done (PR #28) |
-| [#21](https://github.com/wdvr/snow/issues/21) | Add pretty splash screen / launch screen | iOS | ✅ Done (PR #28) |
+| Issue | Title | Priority | Status |
+|-------|-------|----------|--------|
+| [#36](https://github.com/wdvr/snow/issues/36) | Proximity-based resort discovery with map | High | Ready |
+| [#22](https://github.com/wdvr/snow/issues/22) | Best Snow This Week - Location Recommendations | High | Ready |
+| [#14](https://github.com/wdvr/snow/issues/14) | Sign in with Apple backend | Medium | Needs planning |
+| [#16](https://github.com/wdvr/snow/issues/16) | Push notifications for snow alerts | Medium | Needs APNs setup |
+| [#23](https://github.com/wdvr/snow/issues/23) | Trip Planning Mode | Medium | Complex |
+| [#17](https://github.com/wdvr/snow/issues/17) | App Store preparation and TestFlight | Low | Needs account |
+| [#13](https://github.com/wdvr/snow/issues/13) | Research alternative snow data sources | Low | Research |
+| [#24](https://github.com/wdvr/snow/issues/24) | Webcam Integration | Low | Research |
+| [#25](https://github.com/wdvr/snow/issues/25) | Apple Watch App | Low | Needs watch |
 
-### Needs User Input
-| Issue | Title | What's Needed |
-|-------|-------|---------------|
-| [#11](https://github.com/wdvr/snow/issues/11) | Widget not showing data | Device testing/logs |
-| [#13](https://github.com/wdvr/snow/issues/13) | Research alternative snow data sources | Decision on data source |
-| [#16](https://github.com/wdvr/snow/issues/16) | Push notifications for snow alerts | APNs certificates |
-| [#17](https://github.com/wdvr/snow/issues/17) | App Store preparation and TestFlight | App Store account |
-| [#25](https://github.com/wdvr/snow/issues/25) | Apple Watch App | Watch for testing |
-
-### Complex Features (May Need Breakdown)
-| Issue | Title | Components |
-|-------|-------|------------|
-| [#36](https://github.com/wdvr/snow/issues/36) | Proximity-based resort discovery with map | iOS + Backend |
-| [#14](https://github.com/wdvr/snow/issues/14) | Sign in with Apple backend | iOS + Backend |
-| [#22](https://github.com/wdvr/snow/issues/22) | Best Snow This Week - Location Recommendations | iOS + Backend |
-| [#23](https://github.com/wdvr/snow/issues/23) | Trip Planning Mode | iOS + Backend |
-| [#24](https://github.com/wdvr/snow/issues/24) | Webcam Integration | iOS + Backend + Research |
+### Closed Issues
+- #11 Widget debugging (fixed)
+- #12 API caching (21x faster)
+- #15 Offline caching (SwiftData)
+- #18 Add more resorts (28+ resorts)
+- #21 Splash screen
 
 ---
 
@@ -49,7 +37,9 @@ gh issue list --label "complex"            # Multi-component features
 
 | Feature | Date |
 |---------|------|
-| Production deployment | 2026-01 |
+| CloudWatch custom metrics + Grafana dashboards | 2026-01-25 |
+| Conditional CI (skip iOS tests when not needed) | 2026-01-25 |
+| OnTheSnow scraper for real snow depth | 2026-01-25 |
 | 60-second API caching (21x faster) | 2026-01-24 |
 | Unified Grafana monitoring | 2026-01-24 |
 | 28+ ski resorts across 8 regions | 2026-01-24 |
@@ -59,19 +49,37 @@ gh issue list --label "complex"            # Multi-component features
 | iOS app with SwiftUI | 2026-01 |
 | Snow predictions (24/48/72h) | 2026-01 |
 | iOS Widgets (Favorites + Best Snow) | 2026-01 |
-| Feedback & Share buttons | 2026-01 |
 | Open-Meteo weather integration | 2026-01 |
-| CloudWatch monitoring | 2026-01 |
 | GitHub Actions CI/CD | 2026-01 |
-| 94 backend tests, 46 iOS tests | 2026-01 |
 
 ---
 
-## DynamoDB Tables
-- `snow-tracker-resorts-prod`
-- `snow-tracker-weather-conditions-prod` (TTL: 7 days)
-- `snow-tracker-user-preferences-prod`
-- `snow-tracker-feedback-prod`
+## Architecture
+
+### API Endpoints
+```
+Base URL: https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod
+
+GET  /health                           - Health check
+GET  /api/v1/regions                   - List ski regions
+GET  /api/v1/resorts                   - List all resorts
+GET  /api/v1/resorts?region={region}   - Filter by region
+GET  /api/v1/resorts/{id}              - Resort details
+GET  /api/v1/resorts/{id}/conditions   - Weather conditions
+GET  /api/v1/resorts/{id}/snow-quality - Snow quality summary
+POST /api/v1/feedback                  - Submit feedback
+```
+
+### DynamoDB Tables
+- `snow-tracker-resorts-{env}`
+- `snow-tracker-weather-conditions-{env}` (TTL: 7 days)
+- `snow-tracker-user-preferences-{env}`
+- `snow-tracker-feedback-{env}`
+
+### CloudWatch Metrics (SnowTracker/Scraping)
+- ResortsProcessed, ConditionsSaved, ProcessingDuration
+- ScraperHits, ScraperMisses, ScraperSuccessRate
+- ProcessingErrors
 
 ---
 
@@ -85,31 +93,28 @@ curl https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod/api/v1/resorts
 cd backend && python -m pytest tests/ -v
 
 # Deploy
-gh workflow run deploy.yml -f environment=prod
+gh workflow run deploy.yml -f environment=staging
 
-# Seed resorts
-AWS_PROFILE=personal python -m src.utils.resort_seeder --env prod
+# View issues
+gh issue list --state open
 ```
+
+---
+
+## Known Technical Debt
+
+1. **JWT authentication not implemented** - Currently returns hardcoded test user
+2. **CORS allows all origins** - Should be configured per environment
+3. **ERA5 snow depth** - Deferred to background job for performance
 
 ---
 
 ## Notes
 
 ### 2026-01-25
-- Implemented region-based filtering for ski resorts (PR #28)
-  - 8 regions: NA West, Rockies, East, Alps, Scandinavia, Japan, Oceania, South America
-  - New `/api/v1/regions` endpoint
-  - iOS filter chips with region icons
-- Added animated splash screen with snow effects (PR #28)
-- Implemented offline caching with SwiftData (PR #28)
-- Expanded to 28+ resorts including Southern Hemisphere
-- Fixed Pydantic V2 deprecation warnings
-- Created resorts.json data management system
-
-### 2026-01-24
-- Deployed snow predictions, share button, iOS widgets
-- Widget URL fixed (was pointing to old API)
-- Weather data shows 0cm for Silver Star but user reports 1cm actual
-- Switched from weatherapi.com to Open-Meteo for better elevation data
-- Created workflow labels for hybrid agent/dev workflow
-- Created issues #22-25 for planned features
+- Added CloudWatch custom metrics to weather processor
+- Created Grafana dashboard JSON files (scraping, API, DynamoDB)
+- Implemented conditional CI - iOS tests skip when not needed
+- Merged OnTheSnow scraper for real snow depth data
+- Fixed Pydantic v2 deprecation warnings (.dict() -> .model_dump())
+- Cleaned up unused code and improved CORS configuration

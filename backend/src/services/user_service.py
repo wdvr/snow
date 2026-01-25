@@ -40,7 +40,7 @@ class UserService:
         """Save or update user preferences."""
         try:
             # Convert preferences to DynamoDB item format
-            item = preferences.dict()
+            item = preferences.model_dump()
 
             # Ensure timestamps are set
             if not item.get("created_at"):
@@ -65,7 +65,7 @@ class UserService:
         """Create a new user record."""
         try:
             # Convert user to DynamoDB item format
-            item = user.dict()
+            item = user.model_dump()
 
             # Convert Python types to DynamoDB Decimal types
             item = prepare_for_dynamodb(item)
@@ -88,7 +88,7 @@ class UserService:
         """Update an existing user record."""
         try:
             # Convert user to DynamoDB item format
-            item = user.dict()
+            item = user.model_dump()
 
             # Convert Python types to DynamoDB Decimal types
             item = prepare_for_dynamodb(item)

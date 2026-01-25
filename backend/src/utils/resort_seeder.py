@@ -1266,7 +1266,7 @@ class ResortSeeder:
             export_data = {
                 "export_timestamp": datetime.now(UTC).isoformat(),
                 "total_resorts": len(resorts),
-                "resorts": [resort.dict() for resort in resorts],
+                "resorts": [resort.model_dump() for resort in resorts],
             }
 
             if not file_path:
