@@ -45,6 +45,18 @@ def publish_metrics(stats: dict[str, Any]) -> None:
                 "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
             },
             {
+                "MetricName": "ResortsSkipped",
+                "Value": stats.get("resorts_skipped", 0),
+                "Unit": "Count",
+                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+            },
+            {
+                "MetricName": "GracefulTimeout",
+                "Value": 1.0 if stats.get("timeout_graceful", False) else 0.0,
+                "Unit": "Count",
+                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+            },
+            {
                 "MetricName": "ElevationPointsProcessed",
                 "Value": stats.get("elevation_points_processed", 0),
                 "Unit": "Count",
@@ -195,6 +207,17 @@ def publish_condition_metrics(weather_condition: "WeatherCondition") -> None:
         logger.warning(f"Failed to publish condition metrics: {e}")
 
 
+def get_remaining_time_ms(context) -> int:
+    """Get remaining Lambda execution time in milliseconds."""
+    if context and hasattr(context, "get_remaining_time_in_millis"):
+        return context.get_remaining_time_in_millis()
+    return 600000  # Default 10 minutes if no context
+
+
+# Minimum time buffer before timeout (60 seconds)
+MIN_TIME_BUFFER_MS = 60000
+
+
 def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
     """
     Lambda handler for scheduled weather data processing.
@@ -206,6 +229,11 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
     4. Merges data sources for higher accuracy
     5. Processes data through snow quality algorithm
     6. Stores results in weather conditions table
+
+    Handles graceful timeout:
+    - Checks remaining time before each resort
+    - Stops processing if < 60s remaining
+    - Next cron invocation will process remaining resorts
 
     Args:
         event: Lambda event (scheduled CloudWatch event)
@@ -230,12 +258,14 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
         # Statistics tracking
         stats = {
             "resorts_processed": 0,
+            "resorts_skipped": 0,
             "elevation_points_processed": 0,
             "conditions_saved": 0,
             "scraper_hits": 0,
             "scraper_misses": 0,
             "errors": 0,
             "start_time": datetime.now(UTC).isoformat(),
+            "timeout_graceful": False,
         }
 
         # Get all active resorts
@@ -245,6 +275,17 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
         weather_conditions_table = dynamodb.Table(WEATHER_CONDITIONS_TABLE)
 
         for resort in resorts:
+            # Check remaining time before processing each resort
+            remaining_ms = get_remaining_time_ms(context)
+            if remaining_ms < MIN_TIME_BUFFER_MS:
+                logger.warning(
+                    f"Approaching timeout ({remaining_ms}ms remaining), "
+                    f"stopping gracefully after {stats['resorts_processed']} resorts. "
+                    f"Skipping {len(resorts) - stats['resorts_processed']} resorts."
+                )
+                stats["timeout_graceful"] = True
+                stats["resorts_skipped"] = len(resorts) - stats["resorts_processed"]
+                break
             try:
                 logger.info(f"Processing resort: {resort.name} ({resort.resort_id})")
 
@@ -358,16 +399,27 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
             - datetime.fromisoformat(stats["start_time"].replace("Z", "+00:00"))
         ).total_seconds()
 
-        logger.info(f"Weather processing completed. Stats: {stats}")
+        if stats["timeout_graceful"]:
+            logger.info(
+                f"Weather processing stopped gracefully due to timeout. "
+                f"Processed {stats['resorts_processed']}/{len(resorts)} resorts. "
+                f"Remaining {stats['resorts_skipped']} will be processed in next cron run."
+            )
+        else:
+            logger.info(f"Weather processing completed. Stats: {stats}")
 
         # Publish metrics to CloudWatch for Grafana dashboards
         publish_metrics(stats)
 
+        message = (
+            "Weather processing stopped gracefully (timeout)"
+            if stats["timeout_graceful"]
+            else "Weather processing completed successfully"
+        )
+
         return {
             "statusCode": 200,
-            "body": json.dumps(
-                {"message": "Weather processing completed successfully", "stats": stats}
-            ),
+            "body": json.dumps({"message": message, "stats": stats}),
         }
 
     except Exception as e:

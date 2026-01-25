@@ -209,52 +209,23 @@ jobs:
         RESORTS_TABLE: snow-tracker-resorts-${{ env.ENVIRONMENT }}
         AWS_DEFAULT_REGION: us-west-2
 
-    - name: Invoke weather processor to fetch initial data
+    - name: Invoke weather processor to fetch initial data (async)
       run: |
         cd infrastructure
         WEATHER_LAMBDA=$(pulumi stack output weather_processor_lambda_name 2>/dev/null || echo "")
 
         if [ -n "$WEATHER_LAMBDA" ]; then
-          echo "Invoking weather processor: $WEATHER_LAMBDA"
+          echo "Invoking weather processor asynchronously: $WEATHER_LAMBDA"
+          # Use --invocation-type Event for async invocation (doesn't wait for completion)
           aws lambda invoke \
             --function-name "$WEATHER_LAMBDA" \
+            --invocation-type Event \
             --region us-west-2 \
             --payload '{}' \
             /tmp/weather-response.json
 
-          echo "Weather processor response:"
-          cat /tmp/weather-response.json
-
-          # Wait for CloudWatch logs to propagate
-          echo "Waiting for CloudWatch logs to propagate..."
-          sleep 10
-
-          # Fetch recent CloudWatch logs to see any errors
-          echo ""
-          echo "=== Recent Lambda Logs ==="
-          LOG_GROUP="/aws/lambda/$WEATHER_LAMBDA"
-
-          # Get the most recent log stream
-          LATEST_STREAM=$(aws logs describe-log-streams \
-            --log-group-name "$LOG_GROUP" \
-            --order-by LastEventTime \
-            --descending \
-            --limit 1 \
-            --region us-west-2 \
-            --query 'logStreams[0].logStreamName' \
-            --output text 2>/dev/null || echo "")
-
-          if [ -n "$LATEST_STREAM" ] && [ "$LATEST_STREAM" != "None" ]; then
-            aws logs get-log-events \
-              --log-group-name "$LOG_GROUP" \
-              --log-stream-name "$LATEST_STREAM" \
-              --limit 50 \
-              --region us-west-2 \
-              --query 'events[*].message' \
-              --output text 2>/dev/null || echo "Could not fetch logs"
-          else
-            echo "No log streams found yet"
-          fi
+          echo "Weather processor triggered (running in background)"
+          echo "Check CloudWatch logs for progress: /aws/lambda/$WEATHER_LAMBDA"
         else
           echo "Weather processor Lambda name not available"
         fi
