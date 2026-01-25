@@ -110,6 +110,18 @@ enum SnowQuality: String, CaseIterable, Codable {
         }
     }
 
+    var sortOrder: Int {
+        switch self {
+        case .excellent: return 0
+        case .good: return 1
+        case .fair: return 2
+        case .poor: return 3
+        case .bad: return 4
+        case .horrible: return 5
+        case .unknown: return 6
+        }
+    }
+
     var description: String {
         switch self {
         case .excellent: return "Fresh powder, perfect conditions"
