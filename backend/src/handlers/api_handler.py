@@ -14,7 +14,7 @@ from mangum import Mangum
 from models.feedback import Feedback, FeedbackSubmission
 from models.resort import Resort
 from models.user import UserPreferences
-from models.weather import SnowQuality, SNOW_QUALITY_EXPLANATIONS
+from models.weather import SNOW_QUALITY_EXPLANATIONS, SnowQuality
 from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
 from services.user_service import UserService

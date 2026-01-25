@@ -10,8 +10,8 @@ import boto3
 from botocore.exceptions import ClientError
 
 from models.weather import WeatherCondition
-from services.openmeteo_service import OpenMeteoService
 from services.onthesnow_scraper import OnTheSnowScraper
+from services.openmeteo_service import OpenMeteoService
 from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
 from utils.dynamodb_utils import prepare_for_dynamodb

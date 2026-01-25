@@ -113,7 +113,8 @@ class WeatherCondition(BaseModel):
     # Fresh powder tracking (snowfall after last freeze-thaw event)
     # Ice forms when temps >= 3°C for 4+ consecutive hours
     snowfall_after_freeze_cm: float = Field(
-        default=0.0, description="Non-refrozen snow: fell after last ice formation event"
+        default=0.0,
+        description="Non-refrozen snow: fell after last ice formation event",
     )
     hours_since_last_snowfall: float | None = Field(
         None, description="Hours since last snowfall event"
@@ -122,7 +123,8 @@ class WeatherCondition(BaseModel):
         None, description="Hours since last ice formation event (4+ hrs >= 3°C)"
     )
     currently_warming: bool = Field(
-        default=False, description="Currently at temps that cause ice formation (>= 3°C)"
+        default=False,
+        description="Currently at temps that cause ice formation (>= 3°C)",
     )
 
     # Weather conditions

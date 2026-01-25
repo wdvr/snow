@@ -44,20 +44,22 @@ class SnowQualityService:
         time_score = self._calculate_time_degradation_score(weather.timestamp)
 
         # Calculate snowfall benefit (using new fresh powder metrics if available)
-        snowfall_after_freeze = getattr(weather, 'snowfall_after_freeze_cm', 0.0) or 0.0
-        hours_since_snowfall = getattr(weather, 'hours_since_last_snowfall', None)
+        snowfall_after_freeze = getattr(weather, "snowfall_after_freeze_cm", 0.0) or 0.0
+        hours_since_snowfall = getattr(weather, "hours_since_last_snowfall", None)
 
         # Use snowfall-after-freeze for scoring if available (more accurate)
         if snowfall_after_freeze > 0:
             snowfall_score = self._calculate_fresh_powder_score(
                 snowfall_after_freeze,
                 hours_since_snowfall,
-                weather.current_temp_celsius
+                weather.current_temp_celsius,
             )
         else:
             # Fallback to traditional snowfall scoring
             snowfall_score = self._calculate_snowfall_score(
-                weather.snowfall_24h_cm, weather.snowfall_48h_cm, weather.snowfall_72h_cm
+                weather.snowfall_24h_cm,
+                weather.snowfall_48h_cm,
+                weather.snowfall_72h_cm,
             )
 
         # Combine scores with weights
@@ -85,7 +87,10 @@ class SnowQualityService:
         return snow_quality, fresh_snow_cm, confidence
 
     def _calculate_fresh_powder_score(
-        self, snowfall_after_freeze: float, hours_since_snowfall: float | None, current_temp: float
+        self,
+        snowfall_after_freeze: float,
+        hours_since_snowfall: float | None,
+        current_temp: float,
     ) -> float:
         """Calculate score based on non-refrozen snow.
 
@@ -257,8 +262,8 @@ class SnowQualityService:
         to form ice or crust and represents skiable, non-icy coverage.
         """
         # Primary metric: snow that fell after the last ice formation event
-        snowfall_after_freeze = getattr(weather, 'snowfall_after_freeze_cm', 0.0) or 0.0
-        currently_warming = getattr(weather, 'currently_warming', False)
+        snowfall_after_freeze = getattr(weather, "snowfall_after_freeze_cm", 0.0) or 0.0
+        currently_warming = getattr(weather, "currently_warming", False)
 
         if snowfall_after_freeze > 0:
             fresh_snow = snowfall_after_freeze
@@ -268,7 +273,9 @@ class SnowQualityService:
             if currently_warming:
                 current_temp = weather.current_temp_celsius
                 # Gradual degradation - 10% per degree above 3°C
-                degradation = min(0.4, (current_temp - 3.0) * 0.1) if current_temp > 3.0 else 0.0
+                degradation = (
+                    min(0.4, (current_temp - 3.0) * 0.1) if current_temp > 3.0 else 0.0
+                )
                 fresh_snow = fresh_snow * (1.0 - degradation)
 
             return round(max(0.0, fresh_snow), 1)

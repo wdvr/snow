@@ -95,9 +95,15 @@ class OpenMeteoService:
                     "max_consecutive", 0.0
                 ),
                 # Fresh powder tracking (snowfall that occurred after last freeze-thaw)
-                "snowfall_after_freeze_cm": snowfall_data.get("snowfall_after_freeze_cm", 0.0),
-                "hours_since_last_snowfall": snowfall_data.get("hours_since_last_snowfall"),
-                "last_freeze_thaw_hours_ago": snowfall_data.get("last_freeze_thaw_hours_ago"),
+                "snowfall_after_freeze_cm": snowfall_data.get(
+                    "snowfall_after_freeze_cm", 0.0
+                ),
+                "hours_since_last_snowfall": snowfall_data.get(
+                    "hours_since_last_snowfall"
+                ),
+                "last_freeze_thaw_hours_ago": snowfall_data.get(
+                    "last_freeze_thaw_hours_ago"
+                ),
                 "currently_warming": snowfall_data.get("currently_warming", False),
                 # Weather conditions
                 "humidity_percent": current.get("relative_humidity_2m", 0.0),
@@ -210,13 +216,17 @@ class OpenMeteoService:
                         consecutive_warm += 1
                         if consecutive_warm >= ICE_FORMATION_HOURS:
                             # Found an ice formation event - mark end of warm period
-                            last_ice_event_end_index = i + consecutive_warm - ICE_FORMATION_HOURS
+                            last_ice_event_end_index = (
+                                i + consecutive_warm - ICE_FORMATION_HOURS
+                            )
                             break
                     else:
                         consecutive_warm = 0
 
             if last_ice_event_end_index is not None:
-                result["last_freeze_thaw_hours_ago"] = float(current_index - last_ice_event_end_index)
+                result["last_freeze_thaw_hours_ago"] = float(
+                    current_index - last_ice_event_end_index
+                )
                 # Sum snowfall AFTER the ice formation event (this is non-refrozen snow!)
                 for i in range(last_ice_event_end_index + 1, current_index + 1):
                     if i < len(hourly_snowfall) and hourly_snowfall[i] is not None:
@@ -229,20 +239,24 @@ class OpenMeteoService:
             # Also track if we're currently in a warming period (ice forming now)
             result["currently_warming"] = (
                 hourly_temps[current_index] >= ICE_FORMATION_TEMP
-                if current_index < len(hourly_temps) and hourly_temps[current_index] is not None
+                if current_index < len(hourly_temps)
+                and hourly_temps[current_index] is not None
                 else False
             )
 
             # Find hours since last snowfall
             for i in range(current_index, start_72h - 1, -1):
-                if i < len(hourly_snowfall) and hourly_snowfall[i] is not None and hourly_snowfall[i] > 0:
+                if (
+                    i < len(hourly_snowfall)
+                    and hourly_snowfall[i] is not None
+                    and hourly_snowfall[i] > 0
+                ):
                     result["hours_since_last_snowfall"] = float(current_index - i)
                     break
 
             # Get min/max temp from last 24 hours
             temps_24h = [
-                t for t in hourly_temps[start_24h:current_index + 1]
-                if t is not None
+                t for t in hourly_temps[start_24h : current_index + 1] if t is not None
             ]
             if temps_24h:
                 result["min_temp_24h"] = min(temps_24h)

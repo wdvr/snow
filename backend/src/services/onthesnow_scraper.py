@@ -114,11 +114,13 @@ class OnTheSnowScraper:
     def __init__(self):
         """Initialize the scraper."""
         self.session = requests.Session()
-        self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (compatible; SnowTracker/1.0; +https://github.com/snowtracker)",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": "Mozilla/5.0 (compatible; SnowTracker/1.0; +https://github.com/snowtracker)",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.5",
+            }
+        )
 
     def get_snow_report(self, resort_id: str) -> ScrapedSnowData | None:
         """
@@ -234,13 +236,17 @@ class OnTheSnowScraper:
             data.surface_conditions = conditions_match.group(1).strip()
 
         # Try to extract lifts open
-        lifts_match = re.search(r"(\d+)\s*(?:of|/)\s*(\d+)\s*(?:lifts?)", text, re.IGNORECASE)
+        lifts_match = re.search(
+            r"(\d+)\s*(?:of|/)\s*(\d+)\s*(?:lifts?)", text, re.IGNORECASE
+        )
         if lifts_match:
             data.lifts_open = int(lifts_match.group(1))
             data.lifts_total = int(lifts_match.group(2))
 
         # Try to extract runs open
-        runs_match = re.search(r"(\d+)\s*(?:of|/)\s*(\d+)\s*(?:runs?|trails?)", text, re.IGNORECASE)
+        runs_match = re.search(
+            r"(\d+)\s*(?:of|/)\s*(\d+)\s*(?:runs?|trails?)", text, re.IGNORECASE
+        )
         if runs_match:
             data.runs_open = int(runs_match.group(1))
             data.runs_total = int(runs_match.group(2))
@@ -280,7 +286,7 @@ class OnTheSnowScraper:
 
         # Upgrade confidence level since we have resort-reported data
         merged["source_confidence"] = ConfidenceLevel.HIGH
-        merged["data_source"] = f"open-meteo.com + onthesnow.com"
+        merged["data_source"] = "open-meteo.com + onthesnow.com"
 
         # Store scraped data in raw_data for debugging
         if "raw_data" not in merged:
