@@ -95,7 +95,16 @@ async def health_check():
 
 
 # Valid region codes for filtering
-VALID_REGIONS = ["na_west", "na_rockies", "na_east", "alps", "scandinavia", "japan", "oceania", "south_america"]
+VALID_REGIONS = [
+    "na_west",
+    "na_rockies",
+    "na_east",
+    "alps",
+    "scandinavia",
+    "japan",
+    "oceania",
+    "south_america",
+]
 
 # Region to country mapping for filtering
 REGION_COUNTRIES = {
@@ -152,9 +161,18 @@ async def get_regions(response: Response):
             region_counts[region] = region_counts.get(region, 0) + 1
 
         region_info = {
-            "na_west": {"name": "North America - West", "display_name": "NA West Coast"},
-            "na_rockies": {"name": "North America - Rockies", "display_name": "Rockies"},
-            "na_east": {"name": "North America - East", "display_name": "NA East Coast"},
+            "na_west": {
+                "name": "North America - West",
+                "display_name": "NA West Coast",
+            },
+            "na_rockies": {
+                "name": "North America - Rockies",
+                "display_name": "Rockies",
+            },
+            "na_east": {
+                "name": "North America - East",
+                "display_name": "NA East Coast",
+            },
             "alps": {"name": "European Alps", "display_name": "Alps"},
             "scandinavia": {"name": "Scandinavia", "display_name": "Scandinavia"},
             "japan": {"name": "Japan", "display_name": "Japan"},
@@ -166,13 +184,17 @@ async def get_regions(response: Response):
         for region_id in VALID_REGIONS:
             count = region_counts.get(region_id, 0)
             if count > 0:
-                info = region_info.get(region_id, {"name": region_id, "display_name": region_id})
-                regions.append({
-                    "id": region_id,
-                    "name": info["name"],
-                    "display_name": info["display_name"],
-                    "resort_count": count,
-                })
+                info = region_info.get(
+                    region_id, {"name": region_id, "display_name": region_id}
+                )
+                regions.append(
+                    {
+                        "id": region_id,
+                        "name": info["name"],
+                        "display_name": info["display_name"],
+                        "resort_count": count,
+                    }
+                )
 
         response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
 
@@ -188,8 +210,12 @@ async def get_regions(response: Response):
 @app.get("/api/v1/resorts")
 async def get_resorts(
     response: Response,
-    country: str | None = Query(None, description="Filter by country code (CA, US, FR, etc.)"),
-    region: str | None = Query(None, description="Filter by region (na_west, alps, japan, etc.)"),
+    country: str | None = Query(
+        None, description="Filter by country code (CA, US, FR, etc.)"
+    ),
+    region: str | None = Query(
+        None, description="Filter by region (na_west, alps, japan, etc.)"
+    ),
 ):
     """Get all ski resorts, optionally filtered by country or region."""
     try:
