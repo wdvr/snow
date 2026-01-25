@@ -11,9 +11,37 @@ env:
   NODE_VERSION: '18'
 
 jobs:
+  # Detect which components changed
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      ios: ${{ steps.filter.outputs.ios }}
+      infrastructure: ${{ steps.filter.outputs.infrastructure }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          backend:
+            - 'backend/**'
+            - '.github/workflows/ci.yml'
+          ios:
+            - 'ios/**'
+            - '.github/workflows/ci.yml'
+          infrastructure:
+            - 'infrastructure/**'
+            - '.github/workflows/ci.yml'
+            - '.github/workflows/deploy.yml'
+
   # Backend Python Tests
   backend-tests:
     name: Backend Tests
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
 
     services:
@@ -97,6 +125,8 @@ jobs:
   # Infrastructure Validation
   infrastructure-validation:
     name: Infrastructure Validation
+    needs: changes
+    if: ${{ needs.changes.outputs.infrastructure == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -159,6 +189,8 @@ jobs:
   # Code Quality Checks
   code-quality:
     name: Code Quality
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -221,9 +253,11 @@ jobs:
         path: backend/bandit-report.json
         if-no-files-found: ignore
 
-  # iOS Tests (Unit + UI)
+  # iOS Tests (Unit + UI) - Only runs when ios/ files change
   ios-tests:
     name: iOS Tests
+    needs: changes
+    if: ${{ needs.changes.outputs.ios == 'true' }}
     runs-on: macos-latest
 
     steps:
@@ -310,7 +344,7 @@ jobs:
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [backend-tests, infrastructure-validation, code-quality, ios-tests]
+    needs: [changes, backend-tests, infrastructure-validation, code-quality, ios-tests]
     if: always()
 
     steps:
@@ -319,16 +353,35 @@ jobs:
         echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
         echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
         echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-        echo "| Backend Tests | ${{ needs.backend-tests.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| iOS Tests | ${{ needs.ios-tests.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Infrastructure Validation | ${{ needs.infrastructure-validation.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Code Quality | ${{ needs.code-quality.result }} |" >> $GITHUB_STEP_SUMMARY
 
-        if [ "${{ needs.backend-tests.result }}" = "success" ] &&
-           [ "${{ needs.ios-tests.result }}" = "success" ] &&
-           [ "${{ needs.infrastructure-validation.result }}" = "success" ] &&
-           [ "${{ needs.code-quality.result }}" = "success" ]; then
-          echo "✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
-        else
+        # Show status with skip reason
+        BACKEND="${{ needs.backend-tests.result }}"
+        IOS="${{ needs.ios-tests.result }}"
+        INFRA="${{ needs.infrastructure-validation.result }}"
+        QUALITY="${{ needs.code-quality.result }}"
+
+        [ "$BACKEND" = "skipped" ] && BACKEND="⏭️ skipped (no changes)"
+        [ "$IOS" = "skipped" ] && IOS="⏭️ skipped (no changes)"
+        [ "$INFRA" = "skipped" ] && INFRA="⏭️ skipped (no changes)"
+        [ "$QUALITY" = "skipped" ] && QUALITY="⏭️ skipped (no changes)"
+
+        echo "| Backend Tests | $BACKEND |" >> $GITHUB_STEP_SUMMARY
+        echo "| iOS Tests | $IOS |" >> $GITHUB_STEP_SUMMARY
+        echo "| Infrastructure Validation | $INFRA |" >> $GITHUB_STEP_SUMMARY
+        echo "| Code Quality | $QUALITY |" >> $GITHUB_STEP_SUMMARY
+
+        # Check if any non-skipped jobs failed
+        FAILED=false
+        for result in "${{ needs.backend-tests.result }}" "${{ needs.ios-tests.result }}" "${{ needs.infrastructure-validation.result }}" "${{ needs.code-quality.result }}"; do
+          if [ "$result" = "failure" ]; then
+            FAILED=true
+            break
+          fi
+        done
+
+        if [ "$FAILED" = "true" ]; then
           echo "❌ Some checks failed. Please review the logs." >> $GITHUB_STEP_SUMMARY
+          exit 1
+        else
+          echo "✅ All relevant checks passed!" >> $GITHUB_STEP_SUMMARY
         fi
