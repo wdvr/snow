@@ -113,17 +113,18 @@ class SnowConditionsManager: ObservableObject {
         defer { isLoading = false }
 
         let resortIds = resorts.map { $0.id }
-        var anyFailed = false
         var anyFromCache = false
+        var allSucceeded = true
 
-        // Batch fetch in chunks of 20 (API limit)
+        // Try batch endpoint first, fall back to individual calls if it fails
+        // Note: The batch endpoint may not be available (requires API Gateway configuration)
         let batchSize = 20
         for batchStart in stride(from: 0, to: resortIds.count, by: batchSize) {
             let batchEnd = min(batchStart + batchSize, resortIds.count)
             let batchIds = Array(resortIds[batchStart..<batchEnd])
 
             do {
-                // Use batch endpoint for efficiency (single request per 20 resorts)
+                // Try batch endpoint for efficiency (single request per 20 resorts)
                 let batchResults = try await apiClient.getBatchConditions(resortIds: batchIds)
 
                 for (resortId, resortConditions) in batchResults {
@@ -131,18 +132,32 @@ class SnowConditionsManager: ObservableObject {
                     // Cache the fresh data
                     cacheService.cacheConditions(resortConditions, for: resortId)
                 }
+                print("Successfully fetched batch conditions for \(batchIds.count) resorts")
             } catch {
-                print("Batch API error: \(error.localizedDescription)")
-                anyFailed = true
+                // Batch endpoint failed - fall back to individual API calls
+                print("Batch API error: \(error.localizedDescription). Falling back to individual calls.")
 
-                // Fallback: try individual requests or cache for failed batch
                 for resortId in batchIds {
-                    if let cachedData = cacheService.getCachedConditions(for: resortId) {
-                        conditions[resortId] = cachedData.data
-                        anyFromCache = true
-                        print("Using cached conditions for \(resortId) (stale: \(cachedData.isStale))")
-                    } else {
-                        conditions[resortId] = []
+                    do {
+                        // Try individual API call
+                        let resortConditions = try await apiClient.getConditions(for: resortId)
+                        conditions[resortId] = resortConditions
+                        // Cache the fresh data
+                        cacheService.cacheConditions(resortConditions, for: resortId)
+                        print("Successfully fetched conditions for \(resortId) via individual call")
+                    } catch {
+                        // Individual call also failed - try cache
+                        print("Individual API error for \(resortId): \(error.localizedDescription)")
+                        allSucceeded = false
+
+                        if let cachedData = cacheService.getCachedConditions(for: resortId) {
+                            conditions[resortId] = cachedData.data
+                            anyFromCache = true
+                            print("Using cached conditions for \(resortId) (stale: \(cachedData.isStale))")
+                        } else {
+                            conditions[resortId] = []
+                            print("No cached data available for \(resortId)")
+                        }
                     }
                 }
             }
@@ -150,13 +165,20 @@ class SnowConditionsManager: ObservableObject {
 
         lastUpdated = Date()
 
-        if anyFromCache && anyFailed {
+        // Update cached data state based on results
+        if anyFromCache {
             isUsingCachedData = true
+            cachedDataAge = "some data from cache"
             if errorMessage == nil {
                 errorMessage = "Some data from cache"
             }
-        } else if !anyFailed {
+        } else {
+            // All data is fresh from API
             isUsingCachedData = false
+            cachedDataAge = nil
+            if allSucceeded {
+                errorMessage = nil
+            }
         }
     }
 
