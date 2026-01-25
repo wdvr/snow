@@ -27,10 +27,12 @@ class ResortLoader:
             if not self.data_file.exists():
                 raise FileNotFoundError(f"Resort data file not found: {self.data_file}")
 
-            with open(self.data_file, "r", encoding="utf-8") as f:
+            with open(self.data_file, encoding="utf-8") as f:
                 self._data = json.load(f)
 
-            logger.info(f"Loaded {len(self._data.get('resorts', []))} resorts from {self.data_file}")
+            logger.info(
+                f"Loaded {len(self._data.get('resorts', []))} resorts from {self.data_file}"
+            )
 
         return self._data
 
@@ -53,13 +55,15 @@ class ResortLoader:
 
         result = []
         for region_id, region_info in regions.items():
-            result.append({
-                "id": region_id,
-                "name": region_info.get("name", region_id),
-                "display_name": region_info.get("display_name", region_id),
-                "countries": region_info.get("countries", []),
-                "resort_count": region_counts.get(region_id, 0),
-            })
+            result.append(
+                {
+                    "id": region_id,
+                    "name": region_info.get("name", region_id),
+                    "display_name": region_info.get("display_name", region_id),
+                    "countries": region_info.get("countries", []),
+                    "resort_count": region_counts.get(region_id, 0),
+                }
+            )
 
         return sorted(result, key=lambda r: -r["resort_count"])
 
@@ -87,7 +91,9 @@ class ResortLoader:
                 resort = self._transform_resort(raw, now)
                 resorts.append(resort)
             except Exception as e:
-                logger.warning(f"Failed to transform resort {raw.get('resort_id', 'unknown')}: {e}")
+                logger.warning(
+                    f"Failed to transform resort {raw.get('resort_id', 'unknown')}: {e}"
+                )
 
         return resorts
 
@@ -101,7 +107,9 @@ class ResortLoader:
         lon = raw.get("longitude", 0.0)
 
         # Estimate mid and top coordinates based on typical mountain layout
-        lat_diff = 0.005 if lat > 0 else -0.005  # Slight northward movement for northern hemisphere
+        lat_diff = (
+            0.005 if lat > 0 else -0.005
+        )  # Slight northward movement for northern hemisphere
         lon_diff = 0.005
 
         elevation_points = [
@@ -159,7 +167,9 @@ class ResortLoader:
     def get_resorts_by_country(self, country_code: str) -> list[Resort]:
         """Get all resorts in a specific country."""
         data = self.load()
-        raw_resorts = [r for r in data.get("resorts", []) if r.get("country") == country_code]
+        raw_resorts = [
+            r for r in data.get("resorts", []) if r.get("country") == country_code
+        ]
 
         now = datetime.now(UTC).isoformat()
         return [self._transform_resort(raw, now) for raw in raw_resorts]
