@@ -1,4 +1,6 @@
 import XCTest
+import CoreLocation
+import MapKit
 @testable import SnowTracker
 
 final class SnowTrackerTests: XCTestCase {
@@ -430,5 +432,183 @@ final class SnowTrackerTests: XCTestCase {
 
         XCTAssertFalse(freshData.isStale)
         XCTAssertTrue(staleData.isStale)
+    }
+
+    // MARK: - Resort Coordinate Tests
+
+    func testResortPrimaryCoordinate() {
+        let bigWhite = Resort.sampleResorts.first { $0.id == "big-white" }
+        XCTAssertNotNil(bigWhite)
+
+        // Primary coordinate should come from mid elevation
+        let coordinate = bigWhite?.primaryCoordinate
+        XCTAssertNotNil(coordinate)
+        XCTAssertNotEqual(coordinate?.latitude, 0)
+        XCTAssertNotEqual(coordinate?.longitude, 0)
+    }
+
+    func testResortDistanceCalculation() {
+        let bigWhite = Resort.sampleResorts.first { $0.id == "big-white" }
+        XCTAssertNotNil(bigWhite)
+
+        // Create a test location (Vancouver)
+        let vancouver = CLLocation(latitude: 49.2827, longitude: -123.1207)
+        let distance = bigWhite?.distance(from: vancouver)
+
+        XCTAssertNotNil(distance)
+        // Big White is ~400km from Vancouver
+        XCTAssertGreaterThan(distance ?? 0, 300_000) // > 300km
+        XCTAssertLessThan(distance ?? 0, 500_000) // < 500km
+    }
+
+    // MARK: - ResortAnnotation Tests
+
+    func testResortAnnotationCreation() {
+        let resort = Resort.sampleResorts.first!
+        let condition = WeatherCondition.sampleConditions.first
+
+        let annotation = ResortAnnotation(resort: resort, condition: condition)
+
+        XCTAssertEqual(annotation.id, resort.id)
+        XCTAssertEqual(annotation.resort.id, resort.id)
+        XCTAssertEqual(annotation.snowQuality, condition?.snowQuality ?? .unknown)
+    }
+
+    func testResortAnnotationWithNilCondition() {
+        let resort = Resort.sampleResorts.first!
+
+        let annotation = ResortAnnotation(resort: resort, condition: nil)
+
+        XCTAssertEqual(annotation.snowQuality, .unknown)
+    }
+
+    func testResortAnnotationMarkerTint() {
+        let resort = Resort.sampleResorts.first!
+        let excellentCondition = WeatherCondition.sampleConditions.first { $0.snowQuality == .excellent }
+
+        let annotation = ResortAnnotation(resort: resort, condition: excellentCondition)
+
+        XCTAssertEqual(annotation.markerTint, SnowQuality.excellent.color)
+    }
+
+    // MARK: - MapFilterOption Tests
+
+    func testMapFilterOptionAll() {
+        let allFilter = MapFilterOption.all
+        XCTAssertEqual(allFilter.qualities.count, SnowQuality.allCases.count)
+    }
+
+    func testMapFilterOptionExcellent() {
+        let excellentFilter = MapFilterOption.excellent
+        XCTAssertEqual(excellentFilter.qualities, [.excellent])
+    }
+
+    func testMapFilterOptionPoor() {
+        let poorFilter = MapFilterOption.poor
+        XCTAssertTrue(poorFilter.qualities.contains(.poor))
+        XCTAssertTrue(poorFilter.qualities.contains(.bad))
+        XCTAssertTrue(poorFilter.qualities.contains(.horrible))
+    }
+
+    // MARK: - MapRegionPreset Tests
+
+    func testMapRegionPresetNARockies() {
+        let preset = MapRegionPreset.naRockies
+        let region = preset.region
+
+        // Center should be around Colorado/Utah
+        XCTAssertEqual(region.center.latitude, 40.5, accuracy: 1.0)
+        XCTAssertEqual(region.center.longitude, -106.5, accuracy: 1.0)
+    }
+
+    func testMapRegionPresetAlps() {
+        let preset = MapRegionPreset.alps
+        let region = preset.region
+
+        // Center should be around Switzerland
+        XCTAssertEqual(region.center.latitude, 46.5, accuracy: 1.0)
+        XCTAssertEqual(region.center.longitude, 8.5, accuracy: 1.0)
+    }
+
+    func testMapRegionPresetIcons() {
+        XCTAssertEqual(MapRegionPreset.userLocation.icon, "location.fill")
+        XCTAssertEqual(MapRegionPreset.naRockies.icon, "mountain.2.fill")
+        XCTAssertEqual(MapRegionPreset.alps.icon, "flag.fill")
+    }
+
+    // MARK: - MapViewModel Tests
+
+    @MainActor
+    func testMapViewModelInitialization() async {
+        let viewModel = MapViewModel()
+
+        XCTAssertTrue(viewModel.annotations.isEmpty)
+        XCTAssertNil(viewModel.selectedAnnotation)
+        XCTAssertEqual(viewModel.selectedFilter, .all)
+    }
+
+    @MainActor
+    func testMapViewModelUpdateAnnotations() async {
+        let viewModel = MapViewModel()
+        let resorts = Resort.sampleResorts
+        let conditions: [String: [WeatherCondition]] = [
+            "big-white": WeatherCondition.sampleConditions.filter { $0.resortId == "big-white" }
+        ]
+
+        viewModel.updateAnnotations(resorts: resorts, conditions: conditions)
+
+        XCTAssertEqual(viewModel.annotations.count, resorts.count)
+    }
+
+    @MainActor
+    func testMapViewModelFilterAnnotations() async {
+        let viewModel = MapViewModel()
+        let resorts = Resort.sampleResorts
+        let conditions: [String: [WeatherCondition]] = [
+            "big-white": [WeatherCondition.sampleConditions.first!]
+        ]
+
+        // Set filter to excellent
+        viewModel.selectedFilter = .excellent
+        viewModel.updateAnnotations(resorts: resorts, conditions: conditions)
+
+        // Only resorts with excellent conditions should be shown
+        let excellentCount = viewModel.annotations.filter { $0.snowQuality == .excellent }.count
+        XCTAssertEqual(viewModel.annotations.count, excellentCount)
+    }
+
+    @MainActor
+    func testMapViewModelSelectAnnotation() async {
+        let viewModel = MapViewModel()
+        let resort = Resort.sampleResorts.first!
+        let annotation = ResortAnnotation(resort: resort, condition: nil)
+
+        viewModel.selectAnnotation(annotation)
+
+        XCTAssertNotNil(viewModel.selectedAnnotation)
+        XCTAssertEqual(viewModel.selectedAnnotation?.id, annotation.id)
+    }
+
+    @MainActor
+    func testMapViewModelQualityStats() async {
+        let viewModel = MapViewModel()
+        let resorts = Resort.sampleResorts
+        let conditions: [String: [WeatherCondition]] = [
+            "big-white": [WeatherCondition.sampleConditions.first!]
+        ]
+
+        viewModel.updateAnnotations(resorts: resorts, conditions: conditions)
+
+        let stats = viewModel.qualityStats
+        XCTAssertFalse(stats.isEmpty)
+    }
+
+    @MainActor
+    func testMapViewModelSetRegion() async {
+        let viewModel = MapViewModel()
+
+        viewModel.setRegion(.alps)
+
+        XCTAssertEqual(viewModel.selectedRegionPreset, .alps)
     }
 }

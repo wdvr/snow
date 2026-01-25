@@ -134,8 +134,6 @@ class MapViewModel: ObservableObject {
     @Published var selectedFilter: MapFilterOption = .all
     @Published var selectedRegionPreset: MapRegionPreset = .naRockies
     @Published var cameraPosition: MapCameraPosition = .automatic
-    @Published var showFilters: Bool = false
-    @Published var showRegionPicker: Bool = false
     @Published var sortByDistance: Bool = false
 
     private let locationManager = LocationManager.shared
@@ -236,12 +234,7 @@ class MapViewModel: ObservableObject {
     func formattedDistance(to resort: Resort) -> String? {
         guard let userLocation = locationManager.userLocation else { return nil }
         let distance = resort.distance(from: userLocation)
-        let km = distance / 1000
-        if km < 100 {
-            return String(format: "%.0f km", km)
-        } else {
-            return String(format: "%.0f km", km)
-        }
+        return String(format: "%.0f km", distance / 1000)
     }
 
     // MARK: - Nearby Resorts
