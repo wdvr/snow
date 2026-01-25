@@ -32,6 +32,11 @@ def sample_weather_condition():
         snowfall_72h_cm=30.0,
         hours_above_ice_threshold=0.0,
         max_consecutive_warm_hours=0.0,
+        # Fresh powder tracking - 10cm (4 inches) since last thaw = excellent
+        snowfall_after_freeze_cm=10.0,
+        hours_since_last_snowfall=2.0,
+        last_freeze_thaw_hours_ago=72.0,
+        currently_warming=False,
         humidity_percent=85.0,
         wind_speed_kmh=10.0,
         weather_description="Light snow",
@@ -59,6 +64,11 @@ def poor_weather_condition():
         snowfall_72h_cm=8.0,
         hours_above_ice_threshold=8.0,  # Lots of warm hours
         max_consecutive_warm_hours=6.0,
+        # Fresh powder tracking - no snow since freeze = bad/icy
+        snowfall_after_freeze_cm=0.0,
+        hours_since_last_snowfall=48.0,
+        last_freeze_thaw_hours_ago=12.0,
+        currently_warming=True,
         humidity_percent=60.0,
         wind_speed_kmh=25.0,
         weather_description="Rain",
