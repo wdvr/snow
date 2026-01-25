@@ -112,28 +112,51 @@ class SnowConditionsManager: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
+        // Fetch all resort conditions in parallel using TaskGroup
+        let results = await withTaskGroup(
+            of: (String, Result<[WeatherCondition], Error>).self,
+            returning: [(String, Result<[WeatherCondition], Error>)].self
+        ) { group in
+            for resort in resorts {
+                group.addTask {
+                    do {
+                        let resortConditions = try await self.apiClient.getConditions(for: resort.id)
+                        return (resort.id, .success(resortConditions))
+                    } catch {
+                        return (resort.id, .failure(error))
+                    }
+                }
+            }
+
+            var results: [(String, Result<[WeatherCondition], Error>)] = []
+            for await result in group {
+                results.append(result)
+            }
+            return results
+        }
+
+        // Process results on main actor
         var anyFailed = false
         var anyFromCache = false
 
-        for resort in resorts {
-            do {
-                // Try to fetch from API
-                let resortConditions = try await apiClient.getConditions(for: resort.id)
-                conditions[resort.id] = resortConditions
-
+        for (resortId, result) in results {
+            switch result {
+            case .success(let resortConditions):
+                conditions[resortId] = resortConditions
                 // Cache the fresh data
-                cacheService.cacheConditions(resortConditions, for: resort.id)
-            } catch {
-                print("API error for \(resort.id): \(error.localizedDescription)")
+                cacheService.cacheConditions(resortConditions, for: resortId)
+
+            case .failure(let error):
+                print("API error for \(resortId): \(error.localizedDescription)")
                 anyFailed = true
 
                 // Try to load from cache
-                if let cachedData = cacheService.getCachedConditions(for: resort.id) {
-                    conditions[resort.id] = cachedData.data
+                if let cachedData = cacheService.getCachedConditions(for: resortId) {
+                    conditions[resortId] = cachedData.data
                     anyFromCache = true
-                    print("Using cached conditions for \(resort.id) (stale: \(cachedData.isStale))")
+                    print("Using cached conditions for \(resortId) (stale: \(cachedData.isStale))")
                 } else {
-                    conditions[resort.id] = []
+                    conditions[resortId] = []
                 }
             }
         }
