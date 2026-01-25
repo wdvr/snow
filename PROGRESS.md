@@ -18,12 +18,12 @@ gh issue list --label "complex"            # Multi-component features
 ```
 
 ### Agent-Friendly Issues (Ready to Work)
-| Issue | Title | Component |
-|-------|-------|-----------|
-| [#12](https://github.com/wdvr/snow/issues/12) | Implement 60-second API caching | Backend |
-| [#15](https://github.com/wdvr/snow/issues/15) | Add offline caching for iOS app (SwiftData) | iOS |
-| [#18](https://github.com/wdvr/snow/issues/18) | Add more ski resorts to database | Backend |
-| [#21](https://github.com/wdvr/snow/issues/21) | Add pretty splash screen / launch screen | iOS |
+| Issue | Title | Component | Status |
+|-------|-------|-----------|--------|
+| [#12](https://github.com/wdvr/snow/issues/12) | Implement 60-second API caching | Backend | Done |
+| [#15](https://github.com/wdvr/snow/issues/15) | Add offline caching for iOS app (SwiftData) | iOS | ✅ Done (PR #28) |
+| [#18](https://github.com/wdvr/snow/issues/18) | Add more ski resorts to database | Backend | ✅ Done (PR #28) |
+| [#21](https://github.com/wdvr/snow/issues/21) | Add pretty splash screen / launch screen | iOS | ✅ Done (PR #28) |
 
 ### Needs User Input
 | Issue | Title | What's Needed |
@@ -49,7 +49,10 @@ gh issue list --label "complex"            # Multi-component features
 | Feature | Date |
 |---------|------|
 | Production deployment | 2026-01 |
-| 14 ski resorts (NA, Europe, Japan) | 2026-01 |
+| 28+ ski resorts across 8 regions | 2026-01-24 |
+| Region-based filtering (iOS + API) | 2026-01-24 |
+| Animated splash screen | 2026-01-24 |
+| Offline caching (SwiftData) | 2026-01-24 |
 | iOS app with SwiftUI | 2026-01 |
 | Snow predictions (24/48/72h) | 2026-01 |
 | iOS Widgets (Favorites + Best Snow) | 2026-01 |
@@ -88,6 +91,17 @@ AWS_PROFILE=personal python -m src.utils.resort_seeder --env prod
 ---
 
 ## Notes
+
+### 2026-01-25
+- Implemented region-based filtering for ski resorts (PR #28)
+  - 8 regions: NA West, Rockies, East, Alps, Scandinavia, Japan, Oceania, South America
+  - New `/api/v1/regions` endpoint
+  - iOS filter chips with region icons
+- Added animated splash screen with snow effects (PR #28)
+- Implemented offline caching with SwiftData (PR #28)
+- Expanded to 28+ resorts including Southern Hemisphere
+- Fixed Pydantic V2 deprecation warnings
+- Created resorts.json data management system
 
 ### 2026-01-24
 - Deployed snow predictions, share button, iOS widgets
