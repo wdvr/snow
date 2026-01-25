@@ -20,7 +20,8 @@
             "metricName": "Count",
             "dimensions": { "ApiName": "snow-tracker-api-staging" },
             "statistic": "Sum",
-            "period": "300"
+            "period": "300",
+            "alias": "Total Requests"
           }
         ],
         "fieldConfig": {
@@ -46,7 +47,8 @@
             "metricName": "Latency",
             "dimensions": { "ApiName": "snow-tracker-api-staging" },
             "statistic": "Average",
-            "period": "300"
+            "period": "300",
+            "alias": "Avg Latency"
           }
         ],
         "fieldConfig": {
@@ -68,7 +70,8 @@
       },
       {
         "id": 3,
-        "title": "4XX Errors",
+        "title": "4XX Error Rate",
+        "description": "4XX errors as percentage of total requests (client errors like bad requests, not found)",
         "type": "stat",
         "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
         "targets": [
@@ -77,26 +80,32 @@
             "namespace": "AWS/ApiGateway",
             "metricName": "4XXError",
             "dimensions": { "ApiName": "snow-tracker-api-staging" },
-            "statistic": "Sum",
-            "period": "300"
+            "statistic": "Average",
+            "period": "300",
+            "alias": "4XX Rate"
           }
         ],
         "fieldConfig": {
           "defaults": {
+            "unit": "percentunit",
             "color": { "mode": "thresholds" },
             "thresholds": {
               "steps": [
                 { "color": "green", "value": null },
-                { "color": "yellow", "value": 1 },
-                { "color": "orange", "value": 10 }
+                { "color": "yellow", "value": 0.01 },
+                { "color": "orange", "value": 0.05 },
+                { "color": "red", "value": 0.10 }
               ]
-            }
+            },
+            "min": 0,
+            "max": 1
           }
         }
       },
       {
         "id": 4,
-        "title": "5XX Errors",
+        "title": "5XX Error Rate",
+        "description": "5XX errors as percentage of total requests (server errors)",
         "type": "stat",
         "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
         "targets": [
@@ -105,19 +114,23 @@
             "namespace": "AWS/ApiGateway",
             "metricName": "5XXError",
             "dimensions": { "ApiName": "snow-tracker-api-staging" },
-            "statistic": "Sum",
-            "period": "300"
+            "statistic": "Average",
+            "period": "300",
+            "alias": "5XX Rate"
           }
         ],
         "fieldConfig": {
           "defaults": {
+            "unit": "percentunit",
             "color": { "mode": "thresholds" },
             "thresholds": {
               "steps": [
                 { "color": "green", "value": null },
-                { "color": "red", "value": 1 }
+                { "color": "red", "value": 0.01 }
               ]
-            }
+            },
+            "min": 0,
+            "max": 1
           }
         }
       },
@@ -133,7 +146,8 @@
             "metricName": "Count",
             "dimensions": { "ApiName": "snow-tracker-api-staging" },
             "statistic": "Sum",
-            "period": "300"
+            "period": "300",
+            "alias": "Requests"
           }
         ],
         "fieldConfig": {
@@ -159,7 +173,7 @@
             "dimensions": { "ApiName": "snow-tracker-api-staging" },
             "statistic": "Average",
             "period": "300",
-            "alias": "Average"
+            "alias": "Avg Latency"
           },
           {
             "refId": "B",
@@ -168,7 +182,7 @@
             "dimensions": { "ApiName": "snow-tracker-api-staging" },
             "statistic": "p95",
             "period": "300",
-            "alias": "p95"
+            "alias": "p95 Latency"
           }
         ],
         "fieldConfig": {
@@ -183,7 +197,8 @@
       },
       {
         "id": 7,
-        "title": "Error Rate Over Time",
+        "title": "API Gateway Errors Over Time",
+        "description": "HTTP 4XX and 5XX errors from API Gateway (not Lambda execution errors)",
         "type": "timeseries",
         "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
         "targets": [
@@ -194,7 +209,7 @@
             "dimensions": { "ApiName": "snow-tracker-api-staging" },
             "statistic": "Sum",
             "period": "300",
-            "alias": "4XX Errors"
+            "alias": "4XX Client Errors"
           },
           {
             "refId": "B",
@@ -203,7 +218,7 @@
             "dimensions": { "ApiName": "snow-tracker-api-staging" },
             "statistic": "Sum",
             "period": "300",
-            "alias": "5XX Errors"
+            "alias": "5XX Server Errors"
           }
         ],
         "fieldConfig": {
@@ -215,14 +230,15 @@
             }
           },
           "overrides": [
-            { "matcher": { "id": "byName", "options": "4XX Errors" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
-            { "matcher": { "id": "byName", "options": "5XX Errors" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
+            { "matcher": { "id": "byName", "options": "4XX Client Errors" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+            { "matcher": { "id": "byName", "options": "5XX Server Errors" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
           ]
         }
       },
       {
         "id": 8,
-        "title": "Lambda Duration",
+        "title": "Lambda Execution Time",
+        "description": "Duration of Lambda function execution (not API Gateway latency)",
         "type": "timeseries",
         "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
         "targets": [
@@ -233,7 +249,7 @@
             "dimensions": { "FunctionName": "snow-tracker-api-handler-staging" },
             "statistic": "Average",
             "period": "300",
-            "alias": "Avg Duration"
+            "alias": "Avg Lambda Duration"
           },
           {
             "refId": "B",
@@ -242,7 +258,7 @@
             "dimensions": { "FunctionName": "snow-tracker-api-handler-staging" },
             "statistic": "Maximum",
             "period": "300",
-            "alias": "Max Duration"
+            "alias": "Max Lambda Duration"
           }
         ],
         "fieldConfig": {
@@ -253,6 +269,55 @@
               "lineWidth": 2
             }
           }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Lambda Errors",
+        "description": "Lambda function execution errors (crashes, timeouts, exceptions)",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 22 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "AWS/Lambda",
+            "metricName": "Invocations",
+            "dimensions": { "FunctionName": "snow-tracker-api-handler-staging" },
+            "statistic": "Sum",
+            "period": "300",
+            "alias": "Lambda Invocations"
+          },
+          {
+            "refId": "B",
+            "namespace": "AWS/Lambda",
+            "metricName": "Errors",
+            "dimensions": { "FunctionName": "snow-tracker-api-handler-staging" },
+            "statistic": "Sum",
+            "period": "300",
+            "alias": "Lambda Errors"
+          },
+          {
+            "refId": "C",
+            "namespace": "AWS/Lambda",
+            "metricName": "Throttles",
+            "dimensions": { "FunctionName": "snow-tracker-api-handler-staging" },
+            "statistic": "Sum",
+            "period": "300",
+            "alias": "Lambda Throttles"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2
+            }
+          },
+          "overrides": [
+            { "matcher": { "id": "byName", "options": "Lambda Invocations" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] },
+            { "matcher": { "id": "byName", "options": "Lambda Errors" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+            { "matcher": { "id": "byName", "options": "Lambda Throttles" }, "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }] }
+          ]
         }
       }
     ],

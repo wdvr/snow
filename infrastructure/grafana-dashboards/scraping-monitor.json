@@ -11,6 +11,7 @@
       {
         "id": 1,
         "title": "Scraper Success Rate",
+        "description": "Percentage of successful scraping operations",
         "type": "gauge",
         "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
         "targets": [
@@ -20,7 +21,8 @@
             "metricName": "ScraperSuccessRate",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Average",
-            "period": "300"
+            "period": "300",
+            "alias": "Success Rate %"
           }
         ],
         "fieldConfig": {
@@ -43,6 +45,7 @@
       {
         "id": 2,
         "title": "Resorts Processed",
+        "description": "Total number of resorts processed in the last hour",
         "type": "stat",
         "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
         "targets": [
@@ -52,7 +55,8 @@
             "metricName": "ResortsProcessed",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",
-            "period": "3600"
+            "period": "3600",
+            "alias": "Resorts Processed"
           }
         ],
         "fieldConfig": {
@@ -70,6 +74,7 @@
       {
         "id": 3,
         "title": "Processing Errors",
+        "description": "Total errors in the last hour (absolute count)",
         "type": "stat",
         "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
         "targets": [
@@ -79,7 +84,8 @@
             "metricName": "ProcessingErrors",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",
-            "period": "3600"
+            "period": "3600",
+            "alias": "Error Count"
           }
         ],
         "fieldConfig": {
@@ -97,7 +103,8 @@
       },
       {
         "id": 4,
-        "title": "Processing Duration",
+        "title": "Avg Processing Duration",
+        "description": "Average time to process all resorts (seconds)",
         "type": "stat",
         "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
         "targets": [
@@ -107,7 +114,8 @@
             "metricName": "ProcessingDuration",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Average",
-            "period": "300"
+            "period": "300",
+            "alias": "Avg Duration"
           }
         ],
         "fieldConfig": {
@@ -127,6 +135,7 @@
       {
         "id": 5,
         "title": "Conditions Saved Over Time",
+        "description": "Number of snow conditions saved to database per hour (absolute count)",
         "type": "timeseries",
         "gridPos": { "h": 8, "w": 12, "x": 6, "y": 4 },
         "targets": [
@@ -136,7 +145,8 @@
             "metricName": "ConditionsSaved",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",
-            "period": "3600"
+            "period": "3600",
+            "alias": "Conditions Saved"
           }
         ],
         "fieldConfig": {
@@ -146,15 +156,16 @@
               "lineWidth": 2,
               "fillOpacity": 20
             },
-            "color": { "mode": "palette-classic" }
+            "color": { "fixedColor": "green", "mode": "fixed" }
           }
         }
       },
       {
         "id": 6,
         "title": "Scraper Hits vs Misses",
+        "description": "Hits = successful data fetch, Misses = failed or missing data (absolute counts)",
         "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
         "targets": [
           {
             "refId": "A",
@@ -163,7 +174,7 @@
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",
             "period": "3600",
-            "alias": "Hits"
+            "alias": "Successful Scrapes"
           },
           {
             "refId": "B",
@@ -172,7 +183,7 @@
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",
             "period": "3600",
-            "alias": "Misses"
+            "alias": "Failed Scrapes"
           }
         ],
         "fieldConfig": {
@@ -184,16 +195,17 @@
             }
           },
           "overrides": [
-            { "matcher": { "id": "byName", "options": "Hits" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
-            { "matcher": { "id": "byName", "options": "Misses" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
+            { "matcher": { "id": "byName", "options": "Successful Scrapes" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+            { "matcher": { "id": "byName", "options": "Failed Scrapes" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
           ]
         }
       },
       {
         "id": 7,
         "title": "Processing Errors Over Time",
+        "description": "Error count per hour (absolute count)",
         "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
         "targets": [
           {
             "refId": "A",
@@ -201,7 +213,8 @@
             "metricName": "ProcessingErrors",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",
-            "period": "3600"
+            "period": "3600",
+            "alias": "Errors"
           }
         ],
         "fieldConfig": {
@@ -218,8 +231,9 @@
       {
         "id": 8,
         "title": "Elevation Points Processed",
+        "description": "Number of elevation data points processed (base/mid/top per resort)",
         "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
         "targets": [
           {
             "refId": "A",
@@ -227,7 +241,8 @@
             "metricName": "ElevationPointsProcessed",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",
-            "period": "3600"
+            "period": "3600",
+            "alias": "Elevation Points"
           }
         ],
         "fieldConfig": {
@@ -237,15 +252,16 @@
               "lineWidth": 2,
               "fillOpacity": 20
             },
-            "color": { "mode": "palette-classic" }
+            "color": { "fixedColor": "purple", "mode": "fixed" }
           }
         }
       },
       {
         "id": 9,
-        "title": "Weather Processor Lambda Invocations",
+        "title": "Weather Processor Lambda",
+        "description": "Lambda invocations and errors for the weather processor function",
         "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
         "targets": [
           {
             "refId": "A",
@@ -253,7 +269,8 @@
             "metricName": "Invocations",
             "dimensions": { "FunctionName": "snow-tracker-weather-processor-staging" },
             "statistic": "Sum",
-            "period": "3600"
+            "period": "3600",
+            "alias": "Lambda Invocations"
           },
           {
             "refId": "B",
@@ -261,7 +278,8 @@
             "metricName": "Errors",
             "dimensions": { "FunctionName": "snow-tracker-weather-processor-staging" },
             "statistic": "Sum",
-            "period": "3600"
+            "period": "3600",
+            "alias": "Lambda Errors"
           }
         ],
         "fieldConfig": {
@@ -272,7 +290,8 @@
             }
           },
           "overrides": [
-            { "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
+            { "matcher": { "id": "byName", "options": "Lambda Invocations" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] },
+            { "matcher": { "id": "byName", "options": "Lambda Errors" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
           ]
         }
       }
