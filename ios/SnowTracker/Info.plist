@@ -38,5 +38,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Snow Tracker uses your location to show nearby ski resorts and calculate distances to help you find the best skiing conditions close to you.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Snow Tracker uses your location to show nearby ski resorts, calculate distances, and send alerts when great snow conditions are near you.</string>
 </dict>
 </plist>

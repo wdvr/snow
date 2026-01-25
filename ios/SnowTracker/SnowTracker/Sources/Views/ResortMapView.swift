@@ -1,0 +1,626 @@
+import SwiftUI
+import MapKit
+
+struct ResortMapView: View {
+    @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @StateObject private var mapViewModel = MapViewModel()
+    @ObservedObject private var locationManager = LocationManager.shared
+
+    @State private var selectedResort: Resort?
+    @State private var showResortDetail: Bool = false
+    @State private var showLegend: Bool = false
+    @State private var mapStyle: MapStyle = .standard
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                // Map
+                mapContent
+
+                // Overlays
+                VStack {
+                    // Top bar with filters
+                    filterBar
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+
+                    Spacer()
+
+                    // Bottom overlays
+                    VStack(spacing: 12) {
+                        // Legend toggle
+                        if showLegend {
+                            qualityLegend
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+
+                        // Nearby resorts carousel (if location available)
+                        if locationManager.isLocationAvailable && !mapViewModel.nearbyResorts().isEmpty {
+                            nearbyResortsCarousel
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+                }
+            }
+            .navigationTitle("Map")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Menu {
+                        Picker("Map Style", selection: $mapStyle) {
+                            Text("Standard").tag(MapStyle.standard)
+                            Text("Satellite").tag(MapStyle.imagery)
+                            Text("Hybrid").tag(MapStyle.hybrid)
+                        }
+                    } label: {
+                        Image(systemName: "map")
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    HStack(spacing: 16) {
+                        Button {
+                            withAnimation {
+                                showLegend.toggle()
+                            }
+                        } label: {
+                            Image(systemName: showLegend ? "info.circle.fill" : "info.circle")
+                        }
+
+                        Menu {
+                            ForEach(MapRegionPreset.allCases) { preset in
+                                Button {
+                                    mapViewModel.setRegion(preset)
+                                } label: {
+                                    Label(preset.rawValue, systemImage: preset.icon)
+                                }
+                            }
+
+                            Divider()
+
+                            Button {
+                                mapViewModel.fitAllAnnotations()
+                            } label: {
+                                Label("Show All Resorts", systemImage: "rectangle.expand.vertical")
+                            }
+                        } label: {
+                            Image(systemName: "globe")
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $showResortDetail) {
+                if let resort = selectedResort {
+                    ResortMapDetailSheet(resort: resort)
+                        .environmentObject(snowConditionsManager)
+                        .environmentObject(userPreferencesManager)
+                        .presentationDetents([.medium, .large])
+                        .presentationDragIndicator(.visible)
+                }
+            }
+            .onAppear {
+                updateAnnotations()
+                locationManager.requestOneTimeLocation()
+            }
+            .onChange(of: snowConditionsManager.resorts) { _, _ in
+                updateAnnotations()
+            }
+            .onChange(of: snowConditionsManager.conditions) { _, _ in
+                updateAnnotations()
+            }
+            .onChange(of: mapViewModel.selectedFilter) { _, _ in
+                updateAnnotations()
+            }
+        }
+    }
+
+    // MARK: - Map Content
+
+    @ViewBuilder
+    private var mapContent: some View {
+        Map(position: $mapViewModel.cameraPosition, selection: $mapViewModel.selectedAnnotation) {
+            // User location
+            UserAnnotation()
+
+            // Resort annotations
+            ForEach(mapViewModel.annotations) { annotation in
+                Annotation(annotation.resort.name, coordinate: annotation.coordinate, anchor: .bottom) {
+                    ResortMapMarker(annotation: annotation)
+                        .onTapGesture {
+                            selectedResort = annotation.resort
+                            showResortDetail = true
+                        }
+                }
+                .tag(annotation)
+            }
+        }
+        .mapStyle(mapStyle)
+        .mapControls {
+            MapUserLocationButton()
+            MapCompass()
+            MapScaleView()
+        }
+    }
+
+    // MARK: - Filter Bar
+
+    private var filterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(MapFilterOption.allCases) { filter in
+                    FilterChip(
+                        title: filter.rawValue,
+                        isSelected: mapViewModel.selectedFilter == filter,
+                        color: filter.color,
+                        count: countForFilter(filter)
+                    ) {
+                        withAnimation {
+                            mapViewModel.selectedFilter = filter
+                        }
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+        }
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    // MARK: - Quality Legend
+
+    private var qualityLegend: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Snow Quality Legend")
+                .font(.headline)
+                .padding(.bottom, 4)
+
+            ForEach([SnowQuality.excellent, .good, .fair, .poor, .bad, .horrible], id: \.self) { quality in
+                HStack(spacing: 12) {
+                    Circle()
+                        .fill(quality.color)
+                        .frame(width: 16, height: 16)
+
+                    Text(quality.displayName)
+                        .font(.subheadline)
+
+                    Spacer()
+
+                    Text(quality.description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+        }
+        .padding()
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    // MARK: - Nearby Resorts Carousel
+
+    private var nearbyResortsCarousel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "location.fill")
+                    .foregroundStyle(.blue)
+                Text("Nearby")
+                    .font(.headline)
+            }
+            .padding(.horizontal, 4)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(mapViewModel.nearbyResorts(limit: 5)) { annotation in
+                        NearbyResortCard(
+                            annotation: annotation,
+                            distance: mapViewModel.formattedDistance(to: annotation.resort)
+                        ) {
+                            selectedResort = annotation.resort
+                            showResortDetail = true
+                        }
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    // MARK: - Helpers
+
+    private func updateAnnotations() {
+        mapViewModel.updateAnnotations(
+            resorts: snowConditionsManager.resorts,
+            conditions: snowConditionsManager.conditions
+        )
+    }
+
+    private func countForFilter(_ filter: MapFilterOption) -> Int {
+        let allAnnotations = snowConditionsManager.resorts.map { resort in
+            let condition = snowConditionsManager.conditions[resort.id]?.first
+            return condition?.snowQuality ?? .unknown
+        }
+        return allAnnotations.filter { filter.qualities.contains($0) }.count
+    }
+}
+
+// MARK: - Filter Chip
+
+struct FilterChip: View {
+    let title: String
+    let isSelected: Bool
+    let color: Color
+    let count: Int
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(isSelected ? .semibold : .regular)
+
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.caption)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(isSelected ? .white.opacity(0.3) : Color.secondary.opacity(0.2))
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(isSelected ? color : Color.clear)
+            .foregroundStyle(isSelected ? .white : .primary)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .strokeBorder(isSelected ? Color.clear : color.opacity(0.5), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Resort Map Marker
+
+struct ResortMapMarker: View {
+    let annotation: ResortAnnotation
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ZStack {
+                Circle()
+                    .fill(annotation.markerTint)
+                    .frame(width: 36, height: 36)
+                    .shadow(color: annotation.markerTint.opacity(0.5), radius: 4, y: 2)
+
+                Image(systemName: annotation.markerIcon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+
+            // Pin pointer
+            Triangle()
+                .fill(annotation.markerTint)
+                .frame(width: 12, height: 8)
+                .offset(y: -1)
+        }
+    }
+}
+
+struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+// MARK: - Nearby Resort Card
+
+struct NearbyResortCard: View {
+    let annotation: ResortAnnotation
+    let distance: String?
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Circle()
+                        .fill(annotation.snowQuality.color)
+                        .frame(width: 10, height: 10)
+
+                    Text(annotation.resort.name)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .lineLimit(1)
+                }
+
+                HStack {
+                    if let distance = distance {
+                        Text(distance)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Text(annotation.snowQuality.displayName)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(annotation.snowQuality.color)
+                }
+            }
+            .padding(12)
+            .frame(width: 160)
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Resort Map Detail Sheet
+
+struct ResortMapDetailSheet: View {
+    let resort: Resort
+    @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @Environment(\.dismiss) private var dismiss
+
+    private var condition: WeatherCondition? {
+        snowConditionsManager.getLatestCondition(for: resort.id)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    // Header
+                    headerSection
+
+                    Divider()
+
+                    // Current conditions
+                    if let condition = condition {
+                        conditionsSection(condition)
+                    } else {
+                        noConditionsView
+                    }
+
+                    Divider()
+
+                    // Quick actions
+                    actionsSection
+                }
+                .padding()
+            }
+            .navigationTitle(resort.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(resort.displayLocation)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    Text(resort.elevationRange)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                // Favorite button
+                Button {
+                    userPreferencesManager.toggleFavorite(resortId: resort.id)
+                } label: {
+                    Image(systemName: userPreferencesManager.isFavorite(resortId: resort.id) ? "heart.fill" : "heart")
+                        .font(.title2)
+                        .foregroundStyle(userPreferencesManager.isFavorite(resortId: resort.id) ? .red : .secondary)
+                }
+            }
+
+            if let condition = condition {
+                HStack(spacing: 12) {
+                    // Snow quality badge
+                    Label(condition.snowQuality.displayName, systemImage: condition.snowQuality.icon)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(condition.snowQuality.color, in: Capsule())
+
+                    // Temperature
+                    Label(condition.formattedCurrentTemp, systemImage: "thermometer.medium")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func conditionsSection(_ condition: WeatherCondition) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Current Conditions")
+                .font(.headline)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                ConditionCard(
+                    title: "Fresh Snow",
+                    value: condition.formattedSnowSinceFreezeInches,
+                    icon: "snowflake",
+                    color: .cyan
+                )
+
+                ConditionCard(
+                    title: "24h Snowfall",
+                    value: condition.formattedSnowfall24h,
+                    icon: "cloud.snow",
+                    color: .blue
+                )
+
+                ConditionCard(
+                    title: "Surface",
+                    value: condition.surfaceType.rawValue,
+                    icon: condition.surfaceType.icon,
+                    color: condition.surfaceType.color
+                )
+
+                ConditionCard(
+                    title: "Last Freeze",
+                    value: condition.formattedTimeSinceFreeze,
+                    icon: "thermometer.snowflake",
+                    color: .indigo
+                )
+            }
+
+            // Predictions
+            if let pred24 = condition.predictedSnow24hCm, pred24 > 0 {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Forecast")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+
+                    HStack(spacing: 16) {
+                        ForecastBadge(hours: 24, cm: pred24)
+                        if let pred48 = condition.predictedSnow48hCm, pred48 > 0 {
+                            ForecastBadge(hours: 48, cm: pred48)
+                        }
+                        if let pred72 = condition.predictedSnow72hCm, pred72 > 0 {
+                            ForecastBadge(hours: 72, cm: pred72)
+                        }
+                    }
+                }
+                .padding(.top, 8)
+            }
+        }
+    }
+
+    private var noConditionsView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "cloud.sun")
+                .font(.largeTitle)
+                .foregroundStyle(.secondary)
+            Text("No conditions data available")
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
+    }
+
+    private var actionsSection: some View {
+        VStack(spacing: 12) {
+            NavigationLink {
+                ResortDetailView(resort: resort)
+                    .environmentObject(snowConditionsManager)
+                    .environmentObject(userPreferencesManager)
+            } label: {
+                HStack {
+                    Text("View Full Details")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+
+            if let website = resort.officialWebsite, let url = URL(string: website) {
+                Link(destination: url) {
+                    HStack {
+                        Text("Visit Resort Website")
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                    }
+                    .padding()
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+// MARK: - Condition Card
+
+struct ConditionCard: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundStyle(color)
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Text(value)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+// MARK: - Forecast Badge
+
+struct ForecastBadge: View {
+    let hours: Int
+    let cm: Double
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text("\(hours)h")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text(String(format: "%.0f cm", cm))
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(.cyan)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.cyan.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    ResortMapView()
+        .environmentObject(SnowConditionsManager())
+        .environmentObject(UserPreferencesManager.shared)
+}

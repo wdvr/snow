@@ -58,6 +58,12 @@ struct MainTabView: View {
                     Text("Resorts")
                 }
 
+            ResortMapView()
+                .tabItem {
+                    Image(systemName: "map")
+                    Text("Map")
+                }
+
             ConditionsView()
                 .tabItem {
                     Image(systemName: "snowflake")
