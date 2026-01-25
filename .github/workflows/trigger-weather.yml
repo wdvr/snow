@@ -1,0 +1,106 @@
+name: Trigger Weather Processor
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run against'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - prod
+      wait_for_completion:
+        description: 'Wait for Lambda to complete (sync invocation)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  trigger:
+    name: Trigger Weather Processor (${{ github.event.inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Pulumi CLI
+      run: |
+        curl -fsSL https://get.pulumi.com | sh
+        echo "$HOME/.pulumi/bin" >> $GITHUB_PATH
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install infrastructure dependencies
+      run: |
+        cd infrastructure
+        pip install -r requirements.txt
+
+    - name: Get Lambda function name
+      id: get-lambda
+      run: |
+        cd infrastructure
+        pulumi login s3://snow-tracker-pulumi-state-us-west-2
+        pulumi stack select ${{ github.event.inputs.environment }}
+        WEATHER_LAMBDA=$(pulumi stack output weather_processor_lambda_name 2>/dev/null || echo "")
+        echo "lambda_name=$WEATHER_LAMBDA" >> $GITHUB_OUTPUT
+      env:
+        PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+
+    - name: Invoke weather processor
+      run: |
+        LAMBDA_NAME="${{ steps.get-lambda.outputs.lambda_name }}"
+
+        if [ -z "$LAMBDA_NAME" ]; then
+          echo "❌ Could not get Lambda function name"
+          exit 1
+        fi
+
+        echo "🚀 Invoking weather processor: $LAMBDA_NAME"
+
+        if [ "${{ github.event.inputs.wait_for_completion }}" = "true" ]; then
+          echo "Running synchronously (waiting for completion)..."
+          aws lambda invoke \
+            --function-name "$LAMBDA_NAME" \
+            --invocation-type RequestResponse \
+            --region us-west-2 \
+            --payload '{}' \
+            --cli-read-timeout 600 \
+            /tmp/response.json
+
+          echo ""
+          echo "📊 Response:"
+          cat /tmp/response.json | python3 -m json.tool
+        else
+          echo "Running asynchronously..."
+          aws lambda invoke \
+            --function-name "$LAMBDA_NAME" \
+            --invocation-type Event \
+            --region us-west-2 \
+            --payload '{}' \
+            /tmp/response.json
+
+          echo "✅ Weather processor triggered in background"
+          echo "📋 Check CloudWatch logs: /aws/lambda/$LAMBDA_NAME"
+        fi
+
+    - name: Summary
+      run: |
+        echo "## Weather Processor Triggered" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Lambda**: ${{ steps.get-lambda.outputs.lambda_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Mode**: ${{ github.event.inputs.wait_for_completion == 'true' && 'Synchronous' || 'Asynchronous' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Triggered at**: $(date -u)" >> $GITHUB_STEP_SUMMARY
