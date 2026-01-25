@@ -10,6 +10,11 @@ env:
   PYTHON_VERSION: '3.12'
   NODE_VERSION: '18'
 
+# Permissions for reading files and PRs
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   # Detect which components changed
   changes:
@@ -22,6 +27,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Needed for comparing branches
     - uses: dorny/paths-filter@v3
       id: filter
       with:
