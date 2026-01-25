@@ -21,11 +21,12 @@ class ConfidenceLevel(str, Enum):
 class SnowQuality(str, Enum):
     """Snow condition quality levels."""
 
-    EXCELLENT = "excellent"  # Fresh powder, no ice, <2h since snowfall
-    GOOD = "good"  # Fresh powder, minimal ice, 2-6h since snowfall
-    FAIR = "fair"  # Some ice formation, 6-12h since snowfall
-    POOR = "poor"  # Significant ice, 12-24h with warm temps
-    BAD = "bad"  # Mostly ice, >24h with sustained warm temps
+    EXCELLENT = "excellent"  # Fresh powder, 3+ inches since freeze
+    GOOD = "good"  # Good coverage, 2-3 inches since freeze
+    FAIR = "fair"  # Some fresh, 1-2 inches since freeze
+    POOR = "poor"  # Thin cover, <1 inch since freeze
+    BAD = "bad"  # Icy, no fresh snow since freeze
+    HORRIBLE = "horrible"  # Not skiable, no snow cover or actively melting
     UNKNOWN = "unknown"  # Insufficient data
 
 
@@ -57,6 +58,11 @@ SNOW_QUALITY_EXPLANATIONS: dict[SnowQuality, dict[str, str]] = {
         "title": "Icy - Refrozen",
         "description": "No fresh snow on top of icy base. Recent warm periods have created hard, refrozen surface. Challenging conditions.",
         "criteria": "No snow since last thaw-freeze cycle, surface has refrozen",
+    },
+    SnowQuality.HORRIBLE: {
+        "title": "Not Skiable",
+        "description": "Dangerous conditions. No snow cover, actively melting, or exposed rocks/grass. Resort may be closed or limited.",
+        "criteria": "No skiable snow, warm temps actively melting remaining cover",
     },
     SnowQuality.UNKNOWN: {
         "title": "Unknown",

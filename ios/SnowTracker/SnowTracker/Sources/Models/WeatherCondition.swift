@@ -71,6 +71,7 @@ enum SnowQuality: String, CaseIterable, Codable {
     case fair = "fair"
     case poor = "poor"
     case bad = "bad"
+    case horrible = "horrible"
     case unknown = "unknown"
 
     var displayName: String {
@@ -79,7 +80,8 @@ enum SnowQuality: String, CaseIterable, Codable {
         case .good: return "Good"
         case .fair: return "Fair"
         case .poor: return "Poor"
-        case .bad: return "Bad"
+        case .bad: return "Icy"
+        case .horrible: return "Not Skiable"
         case .unknown: return "Unknown"
         }
     }
@@ -91,6 +93,7 @@ enum SnowQuality: String, CaseIterable, Codable {
         case .fair: return .orange
         case .poor: return Color(.systemOrange)
         case .bad: return .red
+        case .horrible: return .black
         case .unknown: return .gray
         }
     }
@@ -102,6 +105,7 @@ enum SnowQuality: String, CaseIterable, Codable {
         case .fair: return "cloud"
         case .poor: return "sun.max"
         case .bad: return "thermometer.sun"
+        case .horrible: return "xmark.octagon.fill"
         case .unknown: return "questionmark.circle"
         }
     }
@@ -112,7 +116,8 @@ enum SnowQuality: String, CaseIterable, Codable {
         case .good: return "Good snow with minimal ice"
         case .fair: return "Some ice formation present"
         case .poor: return "Significant ice, limited fresh snow"
-        case .bad: return "Mostly iced, poor conditions"
+        case .bad: return "Icy surface, no fresh snow"
+        case .horrible: return "Not skiable, dangerous conditions"
         case .unknown: return "Conditions unknown"
         }
     }
@@ -149,6 +154,12 @@ enum SnowQuality: String, CaseIterable, Codable {
                 title: "Icy - Refrozen",
                 description: "No fresh snow on top of icy base. Recent warm periods have created hard, refrozen surface. Challenging conditions.",
                 criteria: "No snow since last thaw-freeze cycle, surface has refrozen"
+            )
+        case .horrible:
+            return (
+                title: "Not Skiable",
+                description: "Dangerous conditions. No snow cover, actively melting, or exposed rocks/grass. Resort may be closed or limited.",
+                criteria: "No skiable snow, warm temps actively melting remaining cover"
             )
         case .unknown:
             return (

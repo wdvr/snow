@@ -76,13 +76,20 @@ class SnowQualityService:
         adjusted_score = overall_score * source_multiplier
 
         # CRITICAL: Cap quality based on fresh powder availability
-        # No fresh snow since last thaw-freeze = Poor/Bad regardless of temperature
+        # Quality is determined by snow since last thaw-freeze event
+        currently_warming = getattr(weather, "currently_warming", False)
+
         if snowfall_after_freeze <= 0 and (weather.snowfall_24h_cm or 0) <= 0:
-            # No fresh snow at all - cap at Poor (0.2)
-            adjusted_score = min(adjusted_score, 0.19)
+            # No fresh snow at all = icy surface
+            if currently_warming or weather.current_temp_celsius >= 2.0:
+                # Actively melting = HORRIBLE (not skiable)
+                adjusted_score = min(adjusted_score, 0.05)
+            else:
+                # Cold but icy = BAD
+                adjusted_score = min(adjusted_score, 0.15)
         elif snowfall_after_freeze < 2.54:  # Less than 1 inch
-            # Very little fresh snow - cap at Fair (0.4)
-            adjusted_score = min(adjusted_score, 0.39)
+            # Very little fresh snow - cap at POOR
+            adjusted_score = min(adjusted_score, 0.25)
 
         # Determine quality level
         snow_quality = self._score_to_quality(adjusted_score)
@@ -269,7 +276,16 @@ class SnowQualityService:
             return 0.0
 
     def _score_to_quality(self, score: float) -> SnowQuality:
-        """Convert numerical score to snow quality enum."""
+        """Convert numerical score to snow quality enum.
+
+        Thresholds:
+        - >= 0.8: EXCELLENT (3+ inches fresh powder)
+        - >= 0.6: GOOD (2-3 inches)
+        - >= 0.4: FAIR (1-2 inches)
+        - >= 0.2: POOR (<1 inch)
+        - >= 0.1: BAD (icy, no fresh snow)
+        - < 0.1: HORRIBLE (not skiable, melting)
+        """
         if score >= 0.8:
             return SnowQuality.EXCELLENT
         elif score >= 0.6:
@@ -278,8 +294,10 @@ class SnowQualityService:
             return SnowQuality.FAIR
         elif score >= 0.2:
             return SnowQuality.POOR
-        else:
+        elif score >= 0.1:
             return SnowQuality.BAD
+        else:
+            return SnowQuality.HORRIBLE
 
     def _estimate_fresh_snow(
         self, weather: WeatherCondition, temp_score: float, time_score: float

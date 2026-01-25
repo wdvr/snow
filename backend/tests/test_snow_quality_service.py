@@ -33,7 +33,8 @@ class TestSnowQualityService:
             poor_weather_condition
         )
 
-        assert quality in [SnowQuality.POOR, SnowQuality.BAD]
+        # With no snow since freeze and currently warming, expect BAD or HORRIBLE
+        assert quality in [SnowQuality.POOR, SnowQuality.BAD, SnowQuality.HORRIBLE]
         assert fresh_snow < 3.0  # Should have minimal fresh snow
         assert confidence == ConfidenceLevel.LOW
 
@@ -179,7 +180,8 @@ class TestSnowQualityService:
         assert service._score_to_quality(0.7) == SnowQuality.GOOD
         assert service._score_to_quality(0.5) == SnowQuality.FAIR
         assert service._score_to_quality(0.3) == SnowQuality.POOR
-        assert service._score_to_quality(0.1) == SnowQuality.BAD
+        assert service._score_to_quality(0.15) == SnowQuality.BAD
+        assert service._score_to_quality(0.05) == SnowQuality.HORRIBLE
 
     def test_bulk_assessment(self, snow_quality_algorithm):
         """Test bulk assessment of multiple conditions."""
@@ -302,9 +304,9 @@ class TestQualityCappingLogic:
 
         quality, fresh_snow, confidence = service.assess_snow_quality(cold_but_icy)
 
-        # Should be capped at Poor or Bad despite cold temps
+        # Should be capped at Bad despite cold temps (no fresh snow = icy)
         quality_value = quality.value if hasattr(quality, "value") else quality
-        assert quality_value in [SnowQuality.POOR.value, SnowQuality.BAD.value]
+        assert quality_value == SnowQuality.BAD.value
 
     def test_less_than_one_inch_caps_at_fair(self, snow_quality_algorithm):
         """Test that <1 inch (2.54cm) since freeze caps quality at Fair."""
