@@ -31,32 +31,32 @@ class SnowQuality(str, Enum):
 
 # Quality rating explanations for UI info indicators
 # Quality is based on "non-refrozen snow" - snow that hasn't been through a freeze-thaw cycle
-# Ice forms when temps >= 3°C for 4+ consecutive hours
+# Ice forms when: 3h at +3°C, 6h at +2°C, or 8h at +1°C
 SNOW_QUALITY_EXPLANATIONS: dict[SnowQuality, dict[str, str]] = {
     SnowQuality.EXCELLENT: {
-        "title": "Excellent - Fresh Snow",
-        "description": "Fresh, non-refrozen snow on top. No recent ice formation events. Great conditions for all types of skiing.",
-        "criteria": "5+ cm of snow since last warm period (>3°C for 4+ hrs), currently cold",
+        "title": "Excellent - Fresh Powder",
+        "description": "3+ inches of fresh powder on top. No recent thaw-freeze events. Great conditions for all types of skiing.",
+        "criteria": "3+ inches (7.6+ cm) of snow since last thaw-freeze, currently cold",
     },
     SnowQuality.GOOD: {
         "title": "Good - Soft Surface",
-        "description": "Good amount of non-refrozen snow. Surface hasn't iced over. Enjoyable skiing on and off-piste.",
-        "criteria": "2-5 cm of snow since last warm period, temps staying below freezing",
+        "description": "2+ inches of non-refrozen snow. Surface hasn't iced over. Enjoyable skiing on and off-piste.",
+        "criteria": "2-3 inches (5-7.6 cm) of snow since last thaw-freeze, temps staying cold",
     },
     SnowQuality.FAIR: {
         "title": "Fair - Some Fresh",
-        "description": "Some fresh snow on top of older base. May have thin crust in places. Groomed runs in good shape.",
-        "criteria": "1-2 cm since last warm period, or currently warming but snow still skiable",
+        "description": "About 1 inch of fresh snow on top of older base. May have thin crust in places. Groomed runs in good shape.",
+        "criteria": "1-2 inches (2.5-5 cm) since last thaw-freeze, or currently warming",
     },
     SnowQuality.POOR: {
-        "title": "Poor - Icy Base",
-        "description": "Little fresh snow since last ice event. Hard or icy surface likely. Best to stick to groomed runs.",
-        "criteria": "Less than 1 cm since last warm period, or extended time above 3°C recently",
+        "title": "Poor - Thin Cover",
+        "description": "Less than 1 inch of fresh snow since last ice event. Harder surface with some soft spots.",
+        "criteria": "Less than 1 inch since last thaw-freeze (3h@+3°C, 6h@+2°C, or 8h@+1°C)",
     },
     SnowQuality.BAD: {
         "title": "Icy - Refrozen",
         "description": "No fresh snow on top of icy base. Recent warm periods have created hard, refrozen surface. Challenging conditions.",
-        "criteria": "No snow since last freeze-thaw cycle, surface has refrozen",
+        "criteria": "No snow since last thaw-freeze cycle, surface has refrozen",
     },
     SnowQuality.UNKNOWN: {
         "title": "Unknown",

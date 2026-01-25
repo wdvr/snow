@@ -95,38 +95,58 @@ class SnowQualityService:
         """Calculate score based on non-refrozen snow.
 
         This is the key metric - snow that fell AFTER the last ice formation event.
-        Ice forms when temps >= 3°C for 4+ consecutive hours.
+        Ice forms with multiple thresholds: 3h@+3°C, 6h@+2°C, or 8h@+1°C.
+
+        Snow quality ratings based on fresh powder depth (in inches):
+        - Excellent: 3+ inches (7.62+ cm)
+        - Good: 2+ inches (5.08+ cm)
+        - Fair: 1+ inch (2.54+ cm)
+        - Bad: <1 inch (<2.54 cm)
 
         Higher scores for:
         - More snow since the last ice event (non-refrozen coverage)
         - Colder current temperatures (not currently forming ice)
         """
+        # Convert thresholds from inches to cm
+        EXCELLENT_CM = 7.62  # 3 inches
+        GOOD_CM = 5.08  # 2 inches
+        FAIR_CM = 2.54  # 1 inch
+
         # Base score from amount of non-refrozen snow
-        # Even small amounts matter - 1cm of fresh snow on ice is still better than bare ice
-        if snowfall_after_freeze >= 10:  # 10+ cm = excellent coverage
+        if snowfall_after_freeze >= EXCELLENT_CM:  # 3+ inches = excellent
             amount_score = 1.0
-        elif snowfall_after_freeze >= 5:  # 5-10 cm = great coverage
-            amount_score = 0.8 + (snowfall_after_freeze - 5) * 0.04
-        elif snowfall_after_freeze >= 2:  # 2-5 cm = good coverage
-            amount_score = 0.55 + (snowfall_after_freeze - 2) * 0.083
-        elif snowfall_after_freeze >= 1:  # 1-2 cm = light but skiable layer
-            amount_score = 0.35 + (snowfall_after_freeze - 1) * 0.2
-        elif snowfall_after_freeze >= 0.5:  # 0.5-1 cm = thin dusting
-            amount_score = 0.2 + (snowfall_after_freeze - 0.5) * 0.3
-        elif snowfall_after_freeze > 0:  # trace amounts
-            amount_score = snowfall_after_freeze * 0.4
+        elif snowfall_after_freeze >= GOOD_CM:  # 2-3 inches = good
+            # Linear interpolation from 0.75 to 1.0
+            amount_score = (
+                0.75
+                + (snowfall_after_freeze - GOOD_CM) / (EXCELLENT_CM - GOOD_CM) * 0.25
+            )
+        elif snowfall_after_freeze >= FAIR_CM:  # 1-2 inches = fair
+            # Linear interpolation from 0.5 to 0.75
+            amount_score = (
+                0.5 + (snowfall_after_freeze - FAIR_CM) / (GOOD_CM - FAIR_CM) * 0.25
+            )
+        elif snowfall_after_freeze > 0:  # <1 inch = bad (but not zero)
+            # Linear interpolation from 0.1 to 0.5
+            amount_score = 0.1 + (snowfall_after_freeze / FAIR_CM) * 0.4
         else:
             # No snow since last ice event = icy base
             return 0.0
 
         # Temperature factor - is it currently warm enough to form ice?
-        # Ice formation threshold is 3°C for 4+ hours
+        # Ice formation thresholds: 3h@+3°C, 6h@+2°C, 8h@+1°C
         if current_temp >= 3.0:
-            # Currently at ice-forming temps - snow is degrading NOW
+            # Currently at fast ice-forming temps - snow is degrading quickly
             temp_factor = max(0.3, 0.7 - (current_temp - 3.0) * 0.1)
-        elif current_temp >= 0:
-            # Above freezing but below ice threshold - slow degradation
+        elif current_temp >= 2.0:
+            # At moderate ice-forming temps
+            temp_factor = 0.75
+        elif current_temp >= 1.0:
+            # At slow ice-forming temps
             temp_factor = 0.85
+        elif current_temp >= 0:
+            # Above freezing but below ice threshold - minimal degradation
+            temp_factor = 0.9
         elif current_temp >= -5:
             # Good preservation temps
             temp_factor = 0.95
@@ -135,7 +155,7 @@ class SnowQualityService:
             temp_factor = 1.0
 
         # Freshness factor - how long since last snowfall
-        # Less critical than before since we're measuring from ice event, not just snowfall
+        # Less critical since we're measuring from ice event
         if hours_since_snowfall is not None:
             if hours_since_snowfall <= 12:
                 freshness = 1.0  # Recent snow

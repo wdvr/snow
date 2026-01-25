@@ -1,0 +1,324 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "snow-conditions-monitor",
+    "title": "Snow Tracker - Conditions Monitor",
+    "tags": ["snow-tracker", "conditions", "quality"],
+    "timezone": "browser",
+    "refresh": "5m",
+    "schemaVersion": 38,
+    "annotations": {
+      "list": [
+        {
+          "name": "Annotations & Alerts",
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Snow Quality Ratings",
+        "description": "Quality score: 3=Excellent (3+ in), 2=Good (2-3 in), 1=Fair (1-2 in), 0=Bad (<1 in). Based on fresh powder since last thaw-freeze event.",
+        "type": "stat",
+        "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Conditions",
+            "metricName": "SnowQualityScore",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Average",
+            "period": "300",
+            "alias": "Avg Quality Score"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "orange", "value": 1 },
+                { "color": "yellow", "value": 2 },
+                { "color": "green", "value": 3 }
+              ]
+            },
+            "mappings": [
+              { "type": "value", "options": { "0": { "text": "Bad (<1 in)", "color": "red" } } },
+              { "type": "value", "options": { "1": { "text": "Fair (1-2 in)", "color": "orange" } } },
+              { "type": "value", "options": { "2": { "text": "Good (2-3 in)", "color": "yellow" } } },
+              { "type": "value", "options": { "3": { "text": "Excellent (3+ in)", "color": "green" } } }
+            ],
+            "min": 0,
+            "max": 3
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Cumulative Fresh Snow (Since Last Freeze)",
+        "description": "Total snowfall in cm since last thaw-freeze event. Thaw-freeze = 3h@+3C, 6h@+2C, or 8h@+1C",
+        "type": "gauge",
+        "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Conditions",
+            "metricName": "SnowAfterFreezeCm",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Average",
+            "period": "300",
+            "alias": "Fresh Snow (cm)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "lengthcm",
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "orange", "value": 2.54 },
+                { "color": "yellow", "value": 5.08 },
+                { "color": "green", "value": 7.62 }
+              ]
+            },
+            "min": 0,
+            "max": 30
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Hours Since Last Thaw-Freeze",
+        "description": "Time since last ice formation event (3h@+3C, 6h@+2C, or 8h@+1C). Higher = more time for snow accumulation.",
+        "type": "stat",
+        "gridPos": { "h": 6, "w": 4, "x": 16, "y": 0 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Conditions",
+            "metricName": "HoursSinceLastFreeze",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Average",
+            "period": "300",
+            "alias": "Hours"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "h",
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "orange", "value": null },
+                { "color": "yellow", "value": 12 },
+                { "color": "green", "value": 24 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Currently Warming (Ice Forming)",
+        "description": "Resorts currently at temps that form ice (>= +1C). 1 = warming, 0 = cold",
+        "type": "stat",
+        "gridPos": { "h": 6, "w": 4, "x": 20, "y": 0 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Conditions",
+            "metricName": "CurrentlyWarming",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Sum",
+            "period": "300",
+            "alias": "Warming Count"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "orange", "value": 1 },
+                { "color": "red", "value": 5 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Fresh Snow Over Time (cm since last freeze)",
+        "description": "Cumulative snowfall since last thaw-freeze event. Ratings: 7.6+ cm (3 in) = Excellent, 5+ cm (2 in) = Good, 2.5+ cm (1 in) = Fair",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Conditions",
+            "metricName": "SnowAfterFreezeCm",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Average",
+            "period": "3600",
+            "alias": "Avg Fresh Snow (cm)"
+          },
+          {
+            "refId": "B",
+            "namespace": "SnowTracker/Conditions",
+            "metricName": "SnowAfterFreezeCm",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Maximum",
+            "period": "3600",
+            "alias": "Max Fresh Snow (cm)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "lengthcm",
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2,
+              "fillOpacity": 20
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "orange", "value": 2.54 },
+                { "color": "yellow", "value": 5.08 },
+                { "color": "green", "value": 7.62 }
+              ]
+            }
+          },
+          "overrides": [
+            { "matcher": { "id": "byName", "options": "Avg Fresh Snow (cm)" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] },
+            { "matcher": { "id": "byName", "options": "Max Fresh Snow (cm)" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+          ]
+        }
+      },
+      {
+        "id": 6,
+        "title": "Snow Quality Score Over Time",
+        "description": "Quality scores: 3=Excellent, 2=Good, 1=Fair, 0=Bad. Based on inches of fresh powder since last thaw-freeze.",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Conditions",
+            "metricName": "SnowQualityScore",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Average",
+            "period": "3600",
+            "alias": "Avg Quality Score"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2,
+              "fillOpacity": 30,
+              "gradientMode": "scheme"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "orange", "value": 1 },
+                { "color": "yellow", "value": 2 },
+                { "color": "green", "value": 3 }
+              ]
+            },
+            "color": { "mode": "thresholds" },
+            "min": 0,
+            "max": 3
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Thaw-Freeze Events (Hours Since Last)",
+        "description": "Time since last ice formation. Drops = new ice event occurred. Thaw-freeze resets cumulative snow.",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Conditions",
+            "metricName": "HoursSinceLastFreeze",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Average",
+            "period": "3600",
+            "alias": "Hours Since Freeze"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "h",
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 2,
+              "fillOpacity": 20
+            },
+            "color": { "fixedColor": "purple", "mode": "fixed" }
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Currently Warming Resorts",
+        "description": "Number of resorts at temperatures causing ice formation (>= +1C). Spikes indicate warming periods.",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+        "targets": [
+          {
+            "refId": "A",
+            "namespace": "SnowTracker/Conditions",
+            "metricName": "CurrentlyWarming",
+            "dimensions": { "Environment": ["staging", "prod"] },
+            "statistic": "Sum",
+            "period": "3600",
+            "alias": "Warming Resorts"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "bars",
+              "fillOpacity": 80
+            },
+            "color": { "fixedColor": "orange", "mode": "fixed" }
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Quality Rating Legend",
+        "type": "text",
+        "gridPos": { "h": 5, "w": 24, "x": 0, "y": 22 },
+        "options": {
+          "mode": "markdown",
+          "content": "## Snow Quality Rating System\n\n**Quality is based on cumulative fresh powder since the last thaw-freeze event:**\n\n| Rating | Fresh Snow | Description |\n|--------|------------|-------------|\n| **Excellent** | 3+ inches (7.6+ cm) | Fresh powder, great for all skiing |\n| **Good** | 2-3 inches (5-7.6 cm) | Soft surface, enjoyable conditions |\n| **Fair** | 1-2 inches (2.5-5 cm) | Some fresh snow, may have crust |\n| **Bad** | <1 inch (<2.5 cm) | Icy/hard surface, limited fresh cover |\n\n**Thaw-Freeze Events (resets cumulative snow):**\n- 3 hours at +3°C or warmer\n- 6 hours at +2°C or warmer  \n- 8 hours at +1°C or warmer"
+        }
+      }
+    ],
+    "time": {
+      "from": "now-7d",
+      "to": "now"
+    }
+  },
+  "overwrite": true
+}

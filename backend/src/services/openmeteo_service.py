@@ -201,27 +201,54 @@ class OpenMeteoService:
                     result["predicted_72h"] += snow_cm
 
             # Calculate snowfall-after-freeze (key fresh powder metric)
-            # Ice formation occurs when temps >= 3°C for 4+ consecutive hours
+            # Ice formation occurs with multiple temperature/duration thresholds:
+            # - 3h at +3°C or higher (warmest = fastest ice)
+            # - 6h at +2°C or higher
+            # - 8h at +1°C or higher
             # This is the "reset" point - any snow before this is assumed icy
-            ICE_FORMATION_TEMP = 3.0  # Degrees C - temps at/above this cause ice
-            ICE_FORMATION_HOURS = 4  # Consecutive hours needed to form ice
 
-            # Find the last "ice formation event" - 4+ consecutive hours >= 3°C
+            # Thaw-freeze thresholds: (temp_celsius, required_hours)
+            ICE_THRESHOLDS = [
+                (3.0, 3),  # 3 hours at +3°C
+                (2.0, 6),  # 6 hours at +2°C
+                (1.0, 8),  # 8 hours at +1°C
+            ]
+
+            # Find the last "ice formation event" using multi-threshold detection
+            # An ice event occurs when ANY threshold is met
             last_ice_event_end_index = None
-            consecutive_warm = 0
 
+            # Track consecutive hours at each threshold level
             for i in range(current_index, start_72h - 1, -1):
-                if i < len(hourly_temps) and hourly_temps[i] is not None:
-                    if hourly_temps[i] >= ICE_FORMATION_TEMP:
-                        consecutive_warm += 1
-                        if consecutive_warm >= ICE_FORMATION_HOURS:
-                            # Found an ice formation event - mark end of warm period
-                            last_ice_event_end_index = (
-                                i + consecutive_warm - ICE_FORMATION_HOURS
-                            )
+                if i >= len(hourly_temps) or hourly_temps[i] is None:
+                    continue
+
+                temp = hourly_temps[i]
+
+                # Check each threshold - look backwards for consecutive hours
+                for threshold_temp, required_hours in ICE_THRESHOLDS:
+                    if temp >= threshold_temp:
+                        # Count consecutive hours at or above this threshold
+                        consecutive = 0
+                        for j in range(
+                            i, max(start_72h - 1, i - required_hours - 1), -1
+                        ):
+                            if (
+                                j < len(hourly_temps)
+                                and hourly_temps[j] is not None
+                                and hourly_temps[j] >= threshold_temp
+                            ):
+                                consecutive += 1
+                            else:
+                                break
+
+                        if consecutive >= required_hours:
+                            # Found an ice formation event!
+                            last_ice_event_end_index = i
                             break
-                    else:
-                        consecutive_warm = 0
+
+                if last_ice_event_end_index is not None:
+                    break
 
             if last_ice_event_end_index is not None:
                 result["last_freeze_thaw_hours_ago"] = float(
@@ -237,8 +264,10 @@ class OpenMeteoService:
                 result["last_freeze_thaw_hours_ago"] = 72.0
 
             # Also track if we're currently in a warming period (ice forming now)
+            # Use lowest threshold (1°C) - any temp >= 1°C can form ice given enough time
+            WARMING_THRESHOLD = 1.0
             result["currently_warming"] = (
-                hourly_temps[current_index] >= ICE_FORMATION_TEMP
+                hourly_temps[current_index] >= WARMING_THRESHOLD
                 if current_index < len(hourly_temps)
                 and hourly_temps[current_index] is not None
                 else False

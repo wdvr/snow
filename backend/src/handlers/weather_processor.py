@@ -102,6 +102,99 @@ def publish_metrics(stats: dict[str, Any]) -> None:
         logger.error(f"Failed to publish metrics to CloudWatch: {e}")
 
 
+def publish_condition_metrics(weather_condition: "WeatherCondition") -> None:
+    """Publish snow condition metrics to CloudWatch for monitoring."""
+    try:
+        # Convert quality to numeric score (0-3)
+        quality_scores = {
+            "excellent": 3,
+            "good": 2,
+            "fair": 1,
+            "poor": 0,
+            "bad": 0,
+            "unknown": -1,
+        }
+        quality_str = (
+            weather_condition.snow_quality.value
+            if hasattr(weather_condition.snow_quality, "value")
+            else weather_condition.snow_quality
+        )
+        quality_score = quality_scores.get(quality_str.lower(), -1)
+
+        # Get values with fallbacks
+        fresh_snow_cm = getattr(weather_condition, "fresh_snow_cm", 0.0) or 0.0
+        snowfall_after_freeze = (
+            getattr(weather_condition, "snowfall_after_freeze_cm", 0.0) or 0.0
+        )
+        last_freeze_hours = getattr(
+            weather_condition, "last_freeze_thaw_hours_ago", None
+        )
+        currently_warming = getattr(weather_condition, "currently_warming", False)
+
+        metrics = [
+            {
+                "MetricName": "SnowQualityScore",
+                "Value": quality_score,
+                "Unit": "None",
+                "Dimensions": [
+                    {"Name": "Environment", "Value": ENVIRONMENT},
+                    {"Name": "ResortId", "Value": weather_condition.resort_id},
+                    {"Name": "Elevation", "Value": weather_condition.elevation_level},
+                ],
+            },
+            {
+                "MetricName": "FreshSnowCm",
+                "Value": fresh_snow_cm,
+                "Unit": "None",
+                "Dimensions": [
+                    {"Name": "Environment", "Value": ENVIRONMENT},
+                    {"Name": "ResortId", "Value": weather_condition.resort_id},
+                    {"Name": "Elevation", "Value": weather_condition.elevation_level},
+                ],
+            },
+            {
+                "MetricName": "SnowAfterFreezeCm",
+                "Value": snowfall_after_freeze,
+                "Unit": "None",
+                "Dimensions": [
+                    {"Name": "Environment", "Value": ENVIRONMENT},
+                    {"Name": "ResortId", "Value": weather_condition.resort_id},
+                    {"Name": "Elevation", "Value": weather_condition.elevation_level},
+                ],
+            },
+            {
+                "MetricName": "CurrentlyWarming",
+                "Value": 1.0 if currently_warming else 0.0,
+                "Unit": "None",
+                "Dimensions": [
+                    {"Name": "Environment", "Value": ENVIRONMENT},
+                    {"Name": "ResortId", "Value": weather_condition.resort_id},
+                ],
+            },
+        ]
+
+        # Add hours since last freeze event if available
+        if last_freeze_hours is not None:
+            metrics.append(
+                {
+                    "MetricName": "HoursSinceLastFreeze",
+                    "Value": last_freeze_hours,
+                    "Unit": "None",
+                    "Dimensions": [
+                        {"Name": "Environment", "Value": ENVIRONMENT},
+                        {"Name": "ResortId", "Value": weather_condition.resort_id},
+                    ],
+                }
+            )
+
+        cloudwatch.put_metric_data(
+            Namespace="SnowTracker/Conditions", MetricData=metrics
+        )
+
+    except Exception as e:
+        logger.warning(f"Failed to publish condition metrics: {e}")
+
+
 def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
     """
     Lambda handler for scheduled weather data processing.
@@ -216,6 +309,9 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
                         save_weather_condition(
                             weather_conditions_table, weather_condition
                         )
+
+                        # Publish snow condition metrics for Grafana
+                        publish_condition_metrics(weather_condition)
 
                         stats["elevation_points_processed"] += 1
                         stats["conditions_saved"] += 1
