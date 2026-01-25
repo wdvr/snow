@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ElevationLevel(str, Enum):
@@ -53,10 +53,7 @@ class Resort(BaseModel):
         None, description="ISO timestamp when resort was last updated"
     )
 
-    class Config:
-        """Pydantic configuration."""
-
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
     @property
     def display_location(self) -> str:

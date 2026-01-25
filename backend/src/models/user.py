@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class User(BaseModel):
@@ -15,13 +15,6 @@ class User(BaseModel):
     created_at: str = Field(..., description="ISO timestamp when user was created")
     last_login: str | None = Field(None, description="ISO timestamp of last login")
     is_active: bool = Field(default=True, description="Whether user account is active")
-
-    class Config:
-        """Pydantic configuration."""
-
-        json_encoders = {
-            # Add custom encoders if needed
-        }
 
 
 class UserPreferences(BaseModel):
@@ -57,10 +50,3 @@ class UserPreferences(BaseModel):
     updated_at: str = Field(
         ..., description="ISO timestamp when preferences were last updated"
     )
-
-    class Config:
-        """Pydantic configuration."""
-
-        json_encoders = {
-            # Add custom encoders if needed
-        }

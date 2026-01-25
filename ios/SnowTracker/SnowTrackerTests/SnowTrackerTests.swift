@@ -381,4 +381,54 @@ final class SnowTrackerTests: XCTestCase {
         XCTAssertFalse(AppEnvironment.staging.cognitoClientId.isEmpty)
         XCTAssertFalse(AppEnvironment.production.cognitoClientId.isEmpty)
     }
+
+    // MARK: - Snowflake Tests
+
+    func testSnowflakeIdentifiable() {
+        let snowflake1 = Snowflake(x: 0.5, y: 0.5, size: 10, opacity: 0.8, speed: 5, delay: 0)
+        let snowflake2 = Snowflake(x: 0.5, y: 0.5, size: 10, opacity: 0.8, speed: 5, delay: 0)
+
+        // Each snowflake should have a unique ID
+        XCTAssertNotEqual(snowflake1.id, snowflake2.id)
+    }
+
+    func testSnowflakeProperties() {
+        let snowflake = Snowflake(x: 0.3, y: 0.7, size: 8, opacity: 0.6, speed: 6, delay: 1.5)
+
+        XCTAssertEqual(snowflake.x, 0.3)
+        XCTAssertEqual(snowflake.y, 0.7)
+        XCTAssertEqual(snowflake.size, 8)
+        XCTAssertEqual(snowflake.opacity, 0.6)
+        XCTAssertEqual(snowflake.speed, 6)
+        XCTAssertEqual(snowflake.delay, 1.5)
+    }
+
+    // MARK: - Cache Configuration Tests
+
+    func testCacheConfigurationDurations() {
+        // Resort cache should be 24 hours
+        XCTAssertEqual(CacheConfiguration.resortCacheDuration, 24 * 60 * 60)
+
+        // Condition cache should be 30 minutes
+        XCTAssertEqual(CacheConfiguration.conditionCacheDuration, 30 * 60)
+
+        // Stale cache should be 7 days
+        XCTAssertEqual(CacheConfiguration.staleCacheDuration, 7 * 24 * 60 * 60)
+    }
+
+    func testCachedDataAgeDescription() {
+        let recentDate = Date().addingTimeInterval(-60) // 1 minute ago
+        let cachedData = CachedData(data: "test", isStale: false, cachedAt: recentDate)
+
+        // Should produce a relative time string
+        XCTAssertFalse(cachedData.ageDescription.isEmpty)
+    }
+
+    func testCachedDataStaleFlag() {
+        let freshData = CachedData(data: [1, 2, 3], isStale: false, cachedAt: Date())
+        let staleData = CachedData(data: [1, 2, 3], isStale: true, cachedAt: Date())
+
+        XCTAssertFalse(freshData.isStale)
+        XCTAssertTrue(staleData.isStale)
+    }
 }

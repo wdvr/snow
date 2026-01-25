@@ -26,16 +26,25 @@ class TestResortSeeder:
         """Test that initial resort data is correctly structured."""
         resorts = seeder._get_initial_resort_data()
 
-        assert len(resorts) == 14  # Updated to reflect expanded resort list
+        assert len(resorts) == 28  # Includes original 14 plus 14 new resorts
         resort_ids = [r.resort_id for r in resorts]
         # Check core Canadian resorts
         assert "big-white" in resort_ids
         assert "lake-louise" in resort_ids
         assert "silver-star" in resort_ids
-        # Check expanded resorts
+        # Check expanded North American resorts
         assert "vail" in resort_ids
+        assert "whistler-blackcomb" in resort_ids
+        assert "revelstoke" in resort_ids
+        # Check European resorts
         assert "chamonix" in resort_ids
+        assert "val-disere" in resort_ids
+        # Check Asian resorts
         assert "niseko" in resort_ids
+        # Check Southern Hemisphere resorts
+        assert "queenstown-remarkables" in resort_ids
+        assert "thredbo" in resort_ids
+        assert "portillo" in resort_ids
 
         # Check Big White data
         big_white = next(r for r in resorts if r.resort_id == "big-white")
@@ -77,6 +86,9 @@ class TestResortSeeder:
         """Test that all coordinates are valid."""
         resorts = seeder._get_initial_resort_data()
 
+        # Southern hemisphere resorts (NZ, AU, CL)
+        southern_hemisphere_ids = {"queenstown-remarkables", "thredbo", "portillo"}
+
         for resort in resorts:
             for point in resort.elevation_points:
                 # Valid latitude range (worldwide)
@@ -84,10 +96,17 @@ class TestResortSeeder:
                 # Valid longitude range (worldwide)
                 assert -180 <= point.longitude <= 180
 
-                # All resorts should be in northern hemisphere ski areas
-                assert (
-                    30 <= point.latitude <= 70
-                )  # Northern hemisphere ski latitude range
+                # Check latitude based on hemisphere
+                if resort.resort_id in southern_hemisphere_ids:
+                    # Southern hemisphere ski areas
+                    assert (
+                        -50 <= point.latitude <= -30
+                    ), f"Invalid southern hemisphere latitude for {resort.resort_id}"
+                else:
+                    # Northern hemisphere ski areas
+                    assert (
+                        30 <= point.latitude <= 70
+                    ), f"Invalid northern hemisphere latitude for {resort.resort_id}"
 
     def test_seed_initial_resorts_success(self, seeder, mock_resort_service):
         """Test successful seeding of all resorts."""
@@ -102,14 +121,14 @@ class TestResortSeeder:
 
         results = seeder.seed_initial_resorts()
 
-        assert results["resorts_created"] == 14
+        assert results["resorts_created"] == 28
         assert results["resorts_skipped"] == 0
         assert len(results["errors"]) == 0
-        assert len(results["created_resorts"]) == 14
+        assert len(results["created_resorts"]) == 28
 
         # Verify resort service was called correctly
-        assert mock_resort_service.get_resort.call_count == 14
-        assert mock_resort_service.create_resort.call_count == 14
+        assert mock_resort_service.get_resort.call_count == 28
+        assert mock_resort_service.create_resort.call_count == 28
 
     def test_seed_initial_resorts_some_exist(self, seeder, mock_resort_service):
         """Test seeding when some resorts already exist."""
@@ -129,12 +148,12 @@ class TestResortSeeder:
 
         results = seeder.seed_initial_resorts()
 
-        assert results["resorts_created"] == 13  # All except Big White
+        assert results["resorts_created"] == 27  # All except Big White
         assert results["resorts_skipped"] == 1  # Big White
         assert len(results["errors"]) == 0
 
-        # Should create only 13 resorts
-        assert mock_resort_service.create_resort.call_count == 13
+        # Should create only 27 resorts
+        assert mock_resort_service.create_resort.call_count == 27
 
     def test_seed_initial_resorts_with_errors(self, seeder, mock_resort_service):
         """Test seeding with some creation errors."""
@@ -151,7 +170,7 @@ class TestResortSeeder:
 
         results = seeder.seed_initial_resorts()
 
-        assert results["resorts_created"] == 13  # All except Lake Louise
+        assert results["resorts_created"] == 27  # All except Lake Louise
         assert results["resorts_skipped"] == 0
         assert len(results["errors"]) == 1
         assert "lake-louise" in results["errors"][0]

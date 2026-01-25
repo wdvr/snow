@@ -3,10 +3,12 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject private var config = AppConfiguration.shared
     @EnvironmentObject var authService: AuthenticationService
+    @EnvironmentObject var snowConditionsManager: SnowConditionsManager
     @Environment(\.dismiss) private var dismiss: DismissAction
 
     @State private var showingResetAlert = false
     @State private var showingSignOutAlert = false
+    @State private var showingClearCacheAlert = false
     @State private var customURL: String = ""
     @State private var urlValidationError: String?
 
@@ -135,6 +137,24 @@ struct SettingsView: View {
                     Text("Preferences")
                 }
 
+                // Data & Storage Section
+                Section {
+                    Button {
+                        showingClearCacheAlert = true
+                    } label: {
+                        Label("Clear Offline Cache", systemImage: "trash")
+                    }
+                    .foregroundStyle(.red)
+                } header: {
+                    Text("Data & Storage")
+                } footer: {
+                    if snowConditionsManager.isUsingCachedData {
+                        Text("Currently showing cached data. Clear cache to force fresh data on next load.")
+                    } else {
+                        Text("Cached data allows the app to work offline. Clear cache to free up storage.")
+                    }
+                }
+
                 // Support Section
                 Section {
                     NavigationLink {
@@ -196,6 +216,14 @@ struct SettingsView: View {
                 }
             } message: {
                 Text("Are you sure you want to sign out?")
+            }
+            .alert("Clear Cache?", isPresented: $showingClearCacheAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Clear", role: .destructive) {
+                    snowConditionsManager.clearCache()
+                }
+            } message: {
+                Text("This will delete all cached resort and weather data. The app will need to download fresh data.")
             }
         }
     }

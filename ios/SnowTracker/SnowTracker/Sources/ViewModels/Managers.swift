@@ -46,13 +46,18 @@ class SnowConditionsManager: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var lastUpdated: Date?
+    @Published var isUsingCachedData = false
+    @Published var cachedDataAge: String?
 
     private let apiClient = APIClient.shared
+    private let cacheService = CacheService.shared
 
     func loadInitialData() {
         Task {
             await fetchResorts()
             await fetchAllConditions()
+            // Clean up old cached data periodically
+            cacheService.cleanupStaleCache()
         }
     }
 
@@ -70,14 +75,36 @@ class SnowConditionsManager: ObservableObject {
 
         do {
             // Try to fetch from API
-            resorts = try await apiClient.getResorts()
+            let fetchedResorts = try await apiClient.getResorts()
+            resorts = fetchedResorts
             print("Loaded \(resorts.count) resorts from API")
             errorMessage = nil
+            isUsingCachedData = false
+            cachedDataAge = nil
+
+            // Cache the fresh data
+            cacheService.cacheResorts(fetchedResorts)
         } catch {
-            // Show error - don't fall back to fake data
             print("API error: \(error.localizedDescription)")
-            resorts = []
-            errorMessage = "Unable to load resorts - API unavailable"
+
+            // Try to load from cache
+            if let cachedData = cacheService.getCachedResorts() {
+                resorts = cachedData.data
+                isUsingCachedData = true
+                cachedDataAge = cachedData.ageDescription
+
+                if cachedData.isStale {
+                    errorMessage = "Showing cached data (may be outdated)"
+                } else {
+                    errorMessage = nil
+                }
+                print("Loaded \(resorts.count) resorts from cache (stale: \(cachedData.isStale))")
+            } else {
+                // No cache available
+                resorts = []
+                errorMessage = "Unable to load resorts - check your connection"
+                isUsingCachedData = false
+            }
         }
     }
 
@@ -85,19 +112,42 @@ class SnowConditionsManager: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
+        var anyFailed = false
+        var anyFromCache = false
+
         for resort in resorts {
             do {
                 // Try to fetch from API
                 let resortConditions = try await apiClient.getConditions(for: resort.id)
                 conditions[resort.id] = resortConditions
+
+                // Cache the fresh data
+                cacheService.cacheConditions(resortConditions, for: resort.id)
             } catch {
-                // Don't fall back to fake data - just leave empty
                 print("API error for \(resort.id): \(error.localizedDescription)")
-                conditions[resort.id] = []
+                anyFailed = true
+
+                // Try to load from cache
+                if let cachedData = cacheService.getCachedConditions(for: resort.id) {
+                    conditions[resort.id] = cachedData.data
+                    anyFromCache = true
+                    print("Using cached conditions for \(resort.id) (stale: \(cachedData.isStale))")
+                } else {
+                    conditions[resort.id] = []
+                }
             }
         }
 
         lastUpdated = Date()
+
+        if anyFromCache && anyFailed {
+            isUsingCachedData = true
+            if errorMessage == nil {
+                errorMessage = "Some data from cache"
+            }
+        } else if !anyFailed {
+            isUsingCachedData = false
+        }
     }
 
     func getLatestCondition(for resortId: String) -> WeatherCondition? {
@@ -106,6 +156,12 @@ class SnowConditionsManager: ObservableObject {
 
     func getConditions(for resortId: String, at elevation: ElevationLevel) -> WeatherCondition? {
         conditions[resortId]?.first { $0.elevationLevel == elevation.rawValue }
+    }
+
+    func clearCache() {
+        cacheService.clearAllCache()
+        isUsingCachedData = false
+        cachedDataAge = nil
     }
 }
 

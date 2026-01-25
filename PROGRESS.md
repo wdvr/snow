@@ -1,183 +1,112 @@
-# Snow Quality Tracker - Progress & Tasks
+# Snow Quality Tracker - Progress
 
-## Project Status: LIVE IN PRODUCTION
+## Status: LIVE IN PRODUCTION
 **Last Updated**: 2026-01-24
-
-## Current Sprint: Data Accuracy & Performance
-
-### Completed Features (2026-01-24)
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Production deployment | ✅ COMPLETED | API live at z1f5zrp4l0.execute-api.us-west-2.amazonaws.com |
-| 14 ski resorts | ✅ COMPLETED | NA (8), Europe (4), Japan (2) |
-| Feedback button | ✅ COMPLETED | iOS + DynamoDB backend |
-| Share button | ✅ COMPLETED | Share resort conditions |
-| Snow predictions (24/48/72h) | ✅ COMPLETED | Future snowfall forecasts |
-| iOS Widgets | ✅ COMPLETED | Favorite Resorts + Best Snow widgets |
-| CloudWatch dashboards | ✅ COMPLETED | API monitoring in AWS Console |
-| Managed Grafana infra | ✅ COMPLETED | Infrastructure code ready (not deployed) |
+**API**: https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod
 
 ---
 
-## ACTIVE SPRINT: Data Quality & Caching
+## GitHub Issues = Source of Truth
 
-**GitHub Issues are the source of truth for all tasks.** See: https://github.com/wdvr/snow/issues
-
-### Open Issues (High Priority)
-| Issue | Title | Priority |
-|-------|-------|----------|
-| [#11](https://github.com/wdvr/snow/issues/11) | Widget not showing data - debug and fix | High |
-| [#12](https://github.com/wdvr/snow/issues/12) | Implement 60-second API caching | Medium |
-
-### Open Issues (Lower Priority)
-| Issue | Title | Priority |
-|-------|-------|----------|
-| [#13](https://github.com/wdvr/snow/issues/13) | Research alternative snow data sources | Low |
-| [#14](https://github.com/wdvr/snow/issues/14) | Implement Sign in with Apple backend | Medium |
-| [#15](https://github.com/wdvr/snow/issues/15) | Add offline caching for iOS app | Medium |
-| [#16](https://github.com/wdvr/snow/issues/16) | Push notifications for snow alerts | Low |
-| [#17](https://github.com/wdvr/snow/issues/17) | App Store preparation and TestFlight | Low |
-| [#18](https://github.com/wdvr/snow/issues/18) | Add more ski resorts | Low |
-
-### Recently Completed
-- ✅ Switched from weatherapi.com to Open-Meteo for elevation-aware weather data
-- ✅ Added widget debugging logging
-
----
-
-## Previous Phases (Completed)
-
-### Phase 1: Project Foundation ✅ COMPLETED
-- Git repository, CLAUDE.md, README.md, .env template, .gitignore
-- GitHub private repository at wdvr/snow
-
-### Phase 2: Architecture & Research ✅ MOSTLY COMPLETED
-- Snow quality algorithm implemented
-- DynamoDB schema designed
-- API endpoints designed
-- Weather API research ongoing
-
-### Phase 3: Backend Infrastructure ✅ COMPLETED
-- Pulumi infrastructure as code
-- DynamoDB tables (resorts, weather, preferences, feedback)
-- API Gateway with Lambda integration
-- CloudWatch monitoring
-
-### Phase 4: Weather Data Pipeline ✅ MOSTLY COMPLETED
-- Weather service implemented (weatherapi.com)
-- Snow quality algorithm implemented
-- Scheduled Lambda trigger (hourly)
-- Data validation with Pydantic
-
-### Phase 5: API Development ✅ COMPLETED
-- Resort endpoints (GET /resorts, GET /resorts/{id})
-- Weather condition endpoints
-- User preference endpoints
-- Feedback endpoint
-- API documentation (FastAPI auto-docs)
-
-### Phase 6: iOS App Foundation ✅ COMPLETED
-- XcodeGen project
-- MVVM architecture
-- Sign in with Apple (UI ready)
-- Networking layer
-- Data models
-
-### Phase 7: iOS UI Development ✅ COMPLETED
-- TabView navigation
-- ResortListView, ConditionsView, SettingsView
-- ResortDetailView with share button
-- Snow predictions card
-- Pull to refresh
-
-### Phase 8: Initial Resorts Data ✅ EXPANDED
-- 14 resorts: Big White, Lake Louise, Silver Star, Vail, Park City, Mammoth, Jackson Hole, Aspen, Chamonix, Zermatt, St. Anton, Verbier, Niseko, Hakuba
-
-### Phase 9: Testing & Quality ✅ COMPLETED
-- 94 backend pytest tests
-- 18 integration tests with moto
-- 33 iOS XCTest tests
-- 13 iOS UI tests
-- Pre-commit hooks (Ruff)
-- Security scanning (Bandit)
-
-### Phase 10: Deployment ✅ PRODUCTION LIVE
-- GitHub Actions CI/CD
-- Dev, staging, prod environments
-- Lambda deployment with Linux targeting
-- API health checks passing
-
----
-
-## Technical Architecture
-
-### Current Stack
-- **Backend**: FastAPI + Mangum on AWS Lambda (Python 3.12)
-- **Database**: DynamoDB (pay-per-request)
-- **API**: API Gateway REST API
-- **Weather Data**: weatherapi.com
-- **iOS**: SwiftUI + Swift 6, XcodeGen
-- **Infrastructure**: Pulumi (Python)
-- **CI/CD**: GitHub Actions
-- **Monitoring**: CloudWatch dashboards
-
-### API Endpoints (Production)
-```
-Base URL: https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod
-
-GET  /health                           - Health check
-GET  /api/v1/resorts                   - List all resorts
-GET  /api/v1/resorts/{id}              - Get resort details
-GET  /api/v1/resorts/{id}/conditions   - Get weather conditions
-GET  /api/v1/resorts/{id}/snow-quality - Get snow quality summary
-POST /api/v1/feedback                  - Submit feedback
-```
-
-### DynamoDB Tables
-- `snow-tracker-resorts-prod` - Resort data
-- `snow-tracker-weather-conditions-prod` - Weather conditions (TTL: 7 days)
-- `snow-tracker-user-preferences-prod` - User preferences
-- `snow-tracker-feedback-prod` - User feedback
-
----
-
-## Remaining Tasks (Backlog)
-
-**All tasks are tracked in GitHub Issues:** https://github.com/wdvr/snow/issues
-
-Use `gh issue list` to see current open issues.
-
----
-
-## Commands Reference
+All tasks tracked at: https://github.com/wdvr/snow/issues
 
 ```bash
-# Backend
-cd backend && python -m pytest tests/ -v --cov=src
-AWS_PROFILE=personal python -m src.utils.resort_seeder --env prod
+# View issues by workflow label
+gh issue list --label "agent-friendly"     # Ready for autonomous work
+gh issue list --label "needs-user-input"   # Requires user decisions
+gh issue list --label "complex"            # Multi-component features
+```
 
-# iOS
-cd ios && xcodegen generate --spec project.yml
-xcodebuild -project SnowTracker.xcodeproj -scheme SnowTracker -destination 'id=00008150-001625E20AE2401C' build
+### Agent-Friendly Issues (Ready to Work)
+| Issue | Title | Component | Status |
+|-------|-------|-----------|--------|
+| [#12](https://github.com/wdvr/snow/issues/12) | Implement 60-second API caching | Backend | Done |
+| [#15](https://github.com/wdvr/snow/issues/15) | Add offline caching for iOS app (SwiftData) | iOS | ✅ Done (PR #28) |
+| [#18](https://github.com/wdvr/snow/issues/18) | Add more ski resorts to database | Backend | ✅ Done (PR #28) |
+| [#21](https://github.com/wdvr/snow/issues/21) | Add pretty splash screen / launch screen | iOS | ✅ Done (PR #28) |
+
+### Needs User Input
+| Issue | Title | What's Needed |
+|-------|-------|---------------|
+| [#11](https://github.com/wdvr/snow/issues/11) | Widget not showing data | Device testing/logs |
+| [#13](https://github.com/wdvr/snow/issues/13) | Research alternative snow data sources | Decision on data source |
+| [#16](https://github.com/wdvr/snow/issues/16) | Push notifications for snow alerts | APNs certificates |
+| [#17](https://github.com/wdvr/snow/issues/17) | App Store preparation and TestFlight | App Store account |
+| [#25](https://github.com/wdvr/snow/issues/25) | Apple Watch App | Watch for testing |
+
+### Complex Features (May Need Breakdown)
+| Issue | Title | Components |
+|-------|-------|------------|
+| [#14](https://github.com/wdvr/snow/issues/14) | Sign in with Apple backend | iOS + Backend |
+| [#22](https://github.com/wdvr/snow/issues/22) | Best Snow This Week - Location Recommendations | iOS + Backend |
+| [#23](https://github.com/wdvr/snow/issues/23) | Trip Planning Mode | iOS + Backend |
+| [#24](https://github.com/wdvr/snow/issues/24) | Webcam Integration | iOS + Backend + Research |
+
+---
+
+## Completed Features
+
+| Feature | Date |
+|---------|------|
+| Production deployment | 2026-01 |
+| 28+ ski resorts across 8 regions | 2026-01-24 |
+| Region-based filtering (iOS + API) | 2026-01-24 |
+| Animated splash screen | 2026-01-24 |
+| Offline caching (SwiftData) | 2026-01-24 |
+| iOS app with SwiftUI | 2026-01 |
+| Snow predictions (24/48/72h) | 2026-01 |
+| iOS Widgets (Favorites + Best Snow) | 2026-01 |
+| Feedback & Share buttons | 2026-01 |
+| Open-Meteo weather integration | 2026-01 |
+| CloudWatch monitoring | 2026-01 |
+| GitHub Actions CI/CD | 2026-01 |
+| 94 backend tests, 46 iOS tests | 2026-01 |
+
+---
+
+## DynamoDB Tables
+- `snow-tracker-resorts-prod`
+- `snow-tracker-weather-conditions-prod` (TTL: 7 days)
+- `snow-tracker-user-preferences-prod`
+- `snow-tracker-feedback-prod`
+
+---
+
+## Quick Commands
+
+```bash
+# Test API
+curl https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod/api/v1/resorts
+
+# Run backend tests
+cd backend && python -m pytest tests/ -v
 
 # Deploy
 gh workflow run deploy.yml -f environment=prod
-gh run list --workflow=deploy.yml
 
-# Lambda
-AWS_PROFILE=personal aws lambda invoke --function-name snow-tracker-weather-processor-prod --region us-west-2 --payload '{}' /tmp/out.json
-
-# API Test
-curl https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod/api/v1/resorts
+# Seed resorts
+AWS_PROFILE=personal python -m src.utils.resort_seeder --env prod
 ```
 
 ---
 
 ## Notes
 
+### 2026-01-25
+- Implemented region-based filtering for ski resorts (PR #28)
+  - 8 regions: NA West, Rockies, East, Alps, Scandinavia, Japan, Oceania, South America
+  - New `/api/v1/regions` endpoint
+  - iOS filter chips with region icons
+- Added animated splash screen with snow effects (PR #28)
+- Implemented offline caching with SwiftData (PR #28)
+- Expanded to 28+ resorts including Southern Hemisphere
+- Fixed Pydantic V2 deprecation warnings
+- Created resorts.json data management system
+
 ### 2026-01-24
 - Deployed snow predictions, share button, iOS widgets
 - Widget URL fixed (was pointing to old API)
-- Weather data shows 0cm for Silver Star but user reports 1cm actual snow
-- Need to investigate weatherapi.com accuracy and consider alternative sources
-- Widgets not showing data - need to debug network requests and app group sharing
+- Weather data shows 0cm for Silver Star but user reports 1cm actual
+- Switched from weatherapi.com to Open-Meteo for better elevation data
+- Created workflow labels for hybrid agent/dev workflow
+- Created issues #22-25 for planned features

@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .resort import ElevationLevel
 
@@ -105,10 +105,7 @@ class WeatherCondition(BaseModel):
     # TTL for DynamoDB
     ttl: int | None = Field(None, description="Unix timestamp for record expiration")
 
-    class Config:
-        """Pydantic configuration."""
-
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
     @property
     def elevation_level_enum(self) -> ElevationLevel | None:
@@ -179,7 +176,4 @@ class SnowQualityAlgorithm(BaseModel):
         description="Multipliers for different data source confidence levels",
     )
 
-    class Config:
-        """Pydantic configuration."""
-
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
