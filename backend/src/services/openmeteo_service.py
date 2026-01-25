@@ -35,6 +35,8 @@ class OpenMeteoService:
         Returns a dictionary suitable for creating a WeatherCondition object.
         """
         try:
+            # Fetch 14 days of historical data for accurate freeze-thaw detection
+            # Ice events can occur up to 2 weeks ago but still affect current snow quality
             params = {
                 "latitude": latitude,
                 "longitude": longitude,
@@ -42,7 +44,7 @@ class OpenMeteoService:
                 "current": "temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code",
                 "hourly": "temperature_2m,snowfall,snow_depth",
                 "daily": "temperature_2m_min,temperature_2m_max,snowfall_sum",
-                "past_days": 3,
+                "past_days": 14,  # Need 14 days for freeze-thaw detection
                 "forecast_days": 3,
                 "timezone": "auto",
             }
@@ -138,7 +140,12 @@ class OpenMeteoService:
 
         Uses hourly snowfall data to calculate true rolling 24h/48h/72h windows
         instead of calendar-day sums, which is more accurate for detecting recent snowfall.
+
+        Also detects freeze-thaw events up to 14 days back for accurate fresh powder tracking.
         """
+        # Maximum hours to look back for freeze-thaw detection (14 days)
+        MAX_HISTORICAL_HOURS = 336
+
         result = {
             "snowfall_24h": 0.0,
             "snowfall_48h": 0.0,
@@ -149,7 +156,7 @@ class OpenMeteoService:
             "min_temp_24h": None,
             "max_temp_24h": None,
             "current_snow_depth": 0.0,
-            # New fields for fresh powder detection
+            # Fields for fresh powder detection (freeze-thaw tracking)
             "snowfall_after_freeze_cm": 0.0,
             "hours_since_last_snowfall": None,
             "last_freeze_thaw_hours_ago": None,
@@ -176,6 +183,8 @@ class OpenMeteoService:
             start_24h = max(0, current_index - 24)
             start_48h = max(0, current_index - 48)
             start_72h = max(0, current_index - 72)
+            # For freeze-thaw detection, look back up to 14 days
+            start_historical = max(0, current_index - MAX_HISTORICAL_HOURS)
 
             for i in range(start_72h, current_index + 1):
                 if i < len(hourly_snowfall) and hourly_snowfall[i] is not None:
@@ -216,10 +225,11 @@ class OpenMeteoService:
 
             # Find the last "ice formation event" using multi-threshold detection
             # An ice event occurs when ANY threshold is met
+            # Search up to 14 days back for accurate freeze-thaw tracking
             last_ice_event_end_index = None
 
             # Track consecutive hours at each threshold level
-            for i in range(current_index, start_72h - 1, -1):
+            for i in range(current_index, start_historical - 1, -1):
                 if i >= len(hourly_temps) or hourly_temps[i] is None:
                     continue
 
@@ -231,7 +241,7 @@ class OpenMeteoService:
                         # Count consecutive hours at or above this threshold
                         consecutive = 0
                         for j in range(
-                            i, max(start_72h - 1, i - required_hours - 1), -1
+                            i, max(start_historical - 1, i - required_hours - 1), -1
                         ):
                             if (
                                 j < len(hourly_temps)
@@ -259,9 +269,15 @@ class OpenMeteoService:
                     if i < len(hourly_snowfall) and hourly_snowfall[i] is not None:
                         result["snowfall_after_freeze_cm"] += hourly_snowfall[i]
             else:
-                # No ice formation event in last 72h - all snow is potentially fresh
-                result["snowfall_after_freeze_cm"] = result["snowfall_72h"]
-                result["last_freeze_thaw_hours_ago"] = 72.0
+                # No ice formation event in last 14 days - all historical snow is fresh
+                # Sum all available snowfall
+                total_historical_snow = sum(
+                    s
+                    for s in hourly_snowfall[start_historical : current_index + 1]
+                    if s is not None
+                )
+                result["snowfall_after_freeze_cm"] = total_historical_snow
+                result["last_freeze_thaw_hours_ago"] = float(MAX_HISTORICAL_HOURS)
 
             # Also track if we're currently in a warming period (ice forming now)
             # Use lowest threshold (1°C) - any temp >= 1°C can form ice given enough time
@@ -273,8 +289,8 @@ class OpenMeteoService:
                 else False
             )
 
-            # Find hours since last snowfall
-            for i in range(current_index, start_72h - 1, -1):
+            # Find hours since last snowfall (search up to 14 days)
+            for i in range(current_index, start_historical - 1, -1):
                 if (
                     i < len(hourly_snowfall)
                     and hourly_snowfall[i] is not None
