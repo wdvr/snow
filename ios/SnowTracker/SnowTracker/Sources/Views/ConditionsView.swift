@@ -247,7 +247,8 @@ extension SnowQuality {
         case .fair: return 2
         case .poor: return 3
         case .bad: return 4
-        case .unknown: return 5
+        case .horrible: return 5
+        case .unknown: return 6
         }
     }
 }

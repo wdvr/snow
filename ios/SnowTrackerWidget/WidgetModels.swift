@@ -21,6 +21,7 @@ enum WidgetSnowQuality: String {
     case fair = "fair"
     case poor = "poor"
     case bad = "bad"
+    case horrible = "horrible"
     case unknown = "unknown"
 
     var displayName: String {
@@ -29,7 +30,8 @@ enum WidgetSnowQuality: String {
         case .good: return "Good"
         case .fair: return "Fair"
         case .poor: return "Poor"
-        case .bad: return "Bad"
+        case .bad: return "Icy"
+        case .horrible: return "Not Skiable"
         case .unknown: return "Unknown"
         }
     }
@@ -41,6 +43,7 @@ enum WidgetSnowQuality: String {
         case .fair: return .orange
         case .poor: return Color(.systemOrange)
         case .bad: return .red
+        case .horrible: return .black
         case .unknown: return .gray
         }
     }
@@ -52,6 +55,7 @@ enum WidgetSnowQuality: String {
         case .fair: return "cloud"
         case .poor: return "sun.max"
         case .bad: return "thermometer.sun"
+        case .horrible: return "xmark.octagon.fill"
         case .unknown: return "questionmark.circle"
         }
     }
