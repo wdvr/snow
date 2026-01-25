@@ -99,14 +99,14 @@ class TestResortSeeder:
                 # Check latitude based on hemisphere
                 if resort.resort_id in southern_hemisphere_ids:
                     # Southern hemisphere ski areas
-                    assert (
-                        -50 <= point.latitude <= -30
-                    ), f"Invalid southern hemisphere latitude for {resort.resort_id}"
+                    assert -50 <= point.latitude <= -30, (
+                        f"Invalid southern hemisphere latitude for {resort.resort_id}"
+                    )
                 else:
                     # Northern hemisphere ski areas
-                    assert (
-                        30 <= point.latitude <= 70
-                    ), f"Invalid northern hemisphere latitude for {resort.resort_id}"
+                    assert 30 <= point.latitude <= 70, (
+                        f"Invalid northern hemisphere latitude for {resort.resort_id}"
+                    )
 
     def test_seed_initial_resorts_success(self, seeder, mock_resort_service):
         """Test successful seeding of all resorts."""
