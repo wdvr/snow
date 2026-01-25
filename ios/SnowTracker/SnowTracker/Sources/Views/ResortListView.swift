@@ -3,49 +3,66 @@ import SwiftUI
 struct ResortListView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @State private var searchText = ""
-    @State private var selectedCountry: String? = nil
+    @State private var selectedRegion: SkiRegion? = nil
+    @AppStorage("selectedRegionFilter") private var savedRegionFilter: String = ""
 
     var filteredResorts: [Resort] {
         let resorts = snowConditionsManager.resorts
 
-        // Apply country filter
-        let countryFiltered = selectedCountry == nil ? resorts : resorts.filter { $0.country == selectedCountry }
+        // Apply region filter
+        let regionFiltered: [Resort]
+        if let region = selectedRegion {
+            regionFiltered = resorts.filter { $0.inferredRegion == region }
+        } else {
+            regionFiltered = resorts
+        }
 
         // Apply search filter
         if searchText.isEmpty {
-            return countryFiltered
+            return regionFiltered
         } else {
-            return countryFiltered.filter { resort in
+            return regionFiltered.filter { resort in
                 resort.name.localizedCaseInsensitiveContains(searchText) ||
+                resort.countryName.localizedCaseInsensitiveContains(searchText) ||
                 resort.region.localizedCaseInsensitiveContains(searchText)
             }
         }
     }
 
-    var availableCountries: [String] {
-        Array(Set(snowConditionsManager.resorts.map { $0.country })).sorted()
+    var availableRegions: [SkiRegion] {
+        let resortRegions = Set(snowConditionsManager.resorts.map { $0.inferredRegion })
+        return SkiRegion.allCases.filter { resortRegions.contains($0) }
     }
 
     var body: some View {
         NavigationStack {
             VStack {
-                // Country filter
-                if !availableCountries.isEmpty {
+                // Region filter
+                if !availableRegions.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack {
                             FilterChip(
-                                title: "All",
-                                isSelected: selectedCountry == nil
+                                title: "All Regions",
+                                icon: "globe",
+                                isSelected: selectedRegion == nil
                             ) {
-                                selectedCountry = nil
+                                selectedRegion = nil
+                                savedRegionFilter = ""
                             }
 
-                            ForEach(availableCountries, id: \.self) { country in
+                            ForEach(availableRegions, id: \.self) { region in
                                 FilterChip(
-                                    title: Resort.countryName(for: country),
-                                    isSelected: selectedCountry == country
+                                    title: region.displayName,
+                                    icon: region.icon,
+                                    isSelected: selectedRegion == region
                                 ) {
-                                    selectedCountry = selectedCountry == country ? nil : country
+                                    if selectedRegion == region {
+                                        selectedRegion = nil
+                                        savedRegionFilter = ""
+                                    } else {
+                                        selectedRegion = region
+                                        savedRegionFilter = region.rawValue
+                                    }
                                 }
                             }
                         }
@@ -66,6 +83,12 @@ struct ResortListView: View {
                 .searchable(text: $searchText, prompt: "Search resorts...")
             }
             .navigationTitle("Snow Resorts")
+            .onAppear {
+                // Restore saved region filter
+                if !savedRegionFilter.isEmpty, let region = SkiRegion(rawValue: savedRegionFilter) {
+                    selectedRegion = region
+                }
+            }
             .refreshable {
                 await snowConditionsManager.refreshData()
             }
@@ -186,35 +209,32 @@ struct ResortRowView: View {
 
 struct FilterChip: View {
     let title: String
+    var icon: String? = nil
     let isSelected: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.caption)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? Color.blue : Color.gray.opacity(0.2))
-                )
-                .foregroundColor(isSelected ? .white : .primary)
+            HStack(spacing: 4) {
+                if let icon = icon {
+                    Image(systemName: icon)
+                        .font(.caption)
+                }
+                Text(title)
+                    .font(.caption)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(isSelected ? Color.blue : Color.gray.opacity(0.2))
+            )
+            .foregroundColor(isSelected ? .white : .primary)
         }
         .buttonStyle(PlainButtonStyle())
     }
 }
 
-// Extension for Resort model
-extension Resort {
-    static func countryName(for code: String) -> String {
-        switch code.uppercased() {
-        case "CA": return "Canada"
-        case "US": return "United States"
-        default: return code
-        }
-    }
-}
 
 #Preview("Resort List") {
     ResortListView()

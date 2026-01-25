@@ -102,7 +102,10 @@ snow/
 Base URL: https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod
 
 GET  /health                           - Health check
+GET  /api/v1/regions                   - List ski regions with resort counts
 GET  /api/v1/resorts                   - List all resorts
+GET  /api/v1/resorts?region=alps       - Filter by region (na_west, na_rockies, na_east, alps, scandinavia, japan, oceania, south_america)
+GET  /api/v1/resorts?country=CA        - Filter by country code
 GET  /api/v1/resorts/{id}              - Resort details
 GET  /api/v1/resorts/{id}/conditions   - Weather conditions
 GET  /api/v1/resorts/{id}/snow-quality - Snow quality summary
@@ -202,10 +205,13 @@ pulumi preview --diff
 
 ---
 
-## Current Resorts (14)
-**North America**: Big White, Lake Louise, Silver Star, Vail, Park City, Mammoth, Jackson Hole, Aspen
-**Europe**: Chamonix, Zermatt, St. Anton, Verbier
+## Current Resorts (28+ across 8 regions)
+**NA West Coast**: Whistler Blackcomb, Mammoth, Palisades Tahoe, Big White, Silver Star, Sun Peaks
+**NA Rockies**: Lake Louise, Revelstoke, Vail, Park City, Jackson Hole, Aspen, Telluride, Steamboat, Breckenridge
+**Alps**: Chamonix, Zermatt, St. Anton, Verbier, Val d'Isère, Courchevel, Kitzbühel, Cortina d'Ampezzo
 **Japan**: Niseko, Hakuba
+**Oceania**: The Remarkables (NZ), Thredbo (AU)
+**South America**: Portillo (CL)
 
 ---
 

@@ -252,6 +252,64 @@ class TestAPIIntegration:
         # Cleanup
         resorts_table.delete_item(Key={"resort_id": "test-resort"})
 
+    def test_get_resorts_by_region(
+        self, app_client, dynamodb_tables, sample_resort_data
+    ):
+        """Test filtering resorts by region."""
+        # Add resort to database (Canadian resort with longitude -120 = na_west)
+        resorts_table = dynamodb_tables["resorts_table"]
+        resorts_table.put_item(Item=prepare_for_dynamodb(sample_resort_data))
+
+        # Test filtering by na_west (our test resort should be in this region)
+        response = app_client.get("/api/v1/resorts?region=na_west")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["resorts"]) >= 1
+        # Verify our test resort is in the results
+        resort_ids = [r["resort_id"] for r in data["resorts"]]
+        assert "test-resort" in resort_ids
+
+        # Test filtering by a different region (should not include our test resort)
+        response = app_client.get("/api/v1/resorts?region=alps")
+        assert response.status_code == 200
+        data = response.json()
+        resort_ids = [r["resort_id"] for r in data["resorts"]]
+        assert "test-resort" not in resort_ids
+
+        # Test invalid region
+        response = app_client.get("/api/v1/resorts?region=invalid_region")
+        assert response.status_code == 400
+        data = response.json()
+        assert "Invalid region" in data["detail"]
+
+        # Cleanup
+        resorts_table.delete_item(Key={"resort_id": "test-resort"})
+
+    def test_get_regions(self, app_client, dynamodb_tables, sample_resort_data):
+        """Test getting list of regions with resort counts."""
+        # Add resort to database
+        resorts_table = dynamodb_tables["resorts_table"]
+        resorts_table.put_item(Item=prepare_for_dynamodb(sample_resort_data))
+
+        response = app_client.get("/api/v1/regions")
+        assert response.status_code == 200
+        data = response.json()
+        assert "regions" in data
+
+        # Should have at least one region (na_west from our test resort)
+        assert len(data["regions"]) >= 1
+
+        # Each region should have required fields
+        for region in data["regions"]:
+            assert "id" in region
+            assert "name" in region
+            assert "display_name" in region
+            assert "resort_count" in region
+            assert region["resort_count"] > 0
+
+        # Cleanup
+        resorts_table.delete_item(Key={"resort_id": "test-resort"})
+
     def test_get_resort_by_id_success(
         self, app_client, dynamodb_tables, sample_resort_data
     ):

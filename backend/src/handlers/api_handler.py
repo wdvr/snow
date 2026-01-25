@@ -94,15 +94,119 @@ async def health_check():
 # MARK: - Resort Endpoints
 
 
-@app.get("/api/v1/resorts")
-async def get_resorts(
-    response: Response,
-    country: str | None = Query(None, description="Filter by country code (CA, US)"),
-):
-    """Get all ski resorts, optionally filtered by country."""
+# Valid region codes for filtering
+VALID_REGIONS = ["na_west", "na_rockies", "na_east", "alps", "scandinavia", "japan", "oceania", "south_america"]
+
+# Region to country mapping for filtering
+REGION_COUNTRIES = {
+    "na_west": {"CA", "US"},  # Filtered by longitude
+    "na_rockies": {"CA", "US"},  # Filtered by longitude
+    "na_east": {"CA", "US"},  # Filtered by longitude
+    "alps": {"FR", "CH", "AT", "IT", "DE"},
+    "scandinavia": {"NO", "SE", "FI"},
+    "japan": {"JP"},
+    "oceania": {"AU", "NZ"},
+    "south_america": {"CL", "AR"},
+}
+
+
+def infer_resort_region(resort: Resort) -> str:
+    """Infer the region based on country and longitude."""
+    country = resort.country.upper()
+
+    if country in ("CA", "US"):
+        # Use longitude to distinguish NA regions
+        if resort.elevation_points:
+            lon = resort.elevation_points[0].longitude
+            if lon < -115:
+                return "na_west"
+            elif lon < -100:
+                return "na_rockies"
+            else:
+                return "na_east"
+        return "na_rockies"  # Default for NA
+    elif country in ("FR", "CH", "AT", "IT", "DE"):
+        return "alps"
+    elif country in ("NO", "SE", "FI"):
+        return "scandinavia"
+    elif country == "JP":
+        return "japan"
+    elif country in ("AU", "NZ"):
+        return "oceania"
+    elif country in ("CL", "AR"):
+        return "south_america"
+    else:
+        return "alps"  # Default
+
+
+@app.get("/api/v1/regions")
+async def get_regions(response: Response):
+    """Get list of available ski regions with resort counts."""
     try:
         resorts = _get_all_resorts_cached()
 
+        # Count resorts per region
+        region_counts = {}
+        for resort in resorts:
+            region = infer_resort_region(resort)
+            region_counts[region] = region_counts.get(region, 0) + 1
+
+        region_info = {
+            "na_west": {"name": "North America - West", "display_name": "NA West Coast"},
+            "na_rockies": {"name": "North America - Rockies", "display_name": "Rockies"},
+            "na_east": {"name": "North America - East", "display_name": "NA East Coast"},
+            "alps": {"name": "European Alps", "display_name": "Alps"},
+            "scandinavia": {"name": "Scandinavia", "display_name": "Scandinavia"},
+            "japan": {"name": "Japan", "display_name": "Japan"},
+            "oceania": {"name": "Australia & New Zealand", "display_name": "Oceania"},
+            "south_america": {"name": "South America", "display_name": "South America"},
+        }
+
+        regions = []
+        for region_id in VALID_REGIONS:
+            count = region_counts.get(region_id, 0)
+            if count > 0:
+                info = region_info.get(region_id, {"name": region_id, "display_name": region_id})
+                regions.append({
+                    "id": region_id,
+                    "name": info["name"],
+                    "display_name": info["display_name"],
+                    "resort_count": count,
+                })
+
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+
+        return {"regions": regions}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve regions: {str(e)}",
+        )
+
+
+@app.get("/api/v1/resorts")
+async def get_resorts(
+    response: Response,
+    country: str | None = Query(None, description="Filter by country code (CA, US, FR, etc.)"),
+    region: str | None = Query(None, description="Filter by region (na_west, alps, japan, etc.)"),
+):
+    """Get all ski resorts, optionally filtered by country or region."""
+    try:
+        # Validate region if provided
+        if region and region not in VALID_REGIONS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid region. Must be one of: {VALID_REGIONS}",
+            )
+
+        resorts = _get_all_resorts_cached()
+
+        # Apply region filter
+        if region:
+            resorts = [r for r in resorts if infer_resort_region(r) == region]
+
+        # Apply country filter
         if country:
             resorts = [r for r in resorts if r.country.upper() == country.upper()]
 
@@ -111,6 +215,8 @@ async def get_resorts(
 
         return {"resorts": resorts}
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
