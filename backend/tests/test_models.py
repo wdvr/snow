@@ -177,7 +177,7 @@ class TestResortModels:
         )
 
         # Serialize to dict
-        resort_dict = original_resort.dict()
+        resort_dict = original_resort.model_dump()
         assert "resort_id" in resort_dict
         assert "elevation_points" in resort_dict
 
@@ -409,7 +409,7 @@ class TestUserModels:
         )
 
         # Serialize to dict
-        prefs_dict = original_prefs.dict()
+        prefs_dict = original_prefs.model_dump()
         assert "user_id" in prefs_dict
         assert "favorite_resorts" in prefs_dict
 

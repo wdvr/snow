@@ -59,7 +59,7 @@ class ResortService:
         """Create a new resort."""
         try:
             # Convert resort to DynamoDB item format
-            item = resort.dict()
+            item = resort.model_dump()
 
             # Convert enum values to strings
             for point in item.get("elevation_points", []):
@@ -87,7 +87,7 @@ class ResortService:
         """Update an existing resort."""
         try:
             # Convert resort to DynamoDB item format
-            item = resort.dict()
+            item = resort.model_dump()
 
             # Convert enum values to strings
             for point in item.get("elevation_points", []):
