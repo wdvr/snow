@@ -20,8 +20,7 @@ enum AppEnvironment: String, CaseIterable {
     var apiBaseURL: URL {
         switch self {
         case .development:
-            // Dev environment - use staging API until dev is deployed
-            // TODO: Replace with dev API URL once deployed
+            // Dev environment - use staging API
             return URL(string: "https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging")!
         case .staging:
             // API Gateway URL from staging deployment

@@ -1,0 +1,872 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1B2C3D4E5F60001SPLASH01 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60001SPLASH01 /* SplashView.swift */; };
+		A1B2C3D4E5F60002CACHE001 /* CacheService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60002CACHE001 /* CacheService.swift */; };
+		A1B2C3D4E5F60003REGION01 /* Region.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60003REGION01 /* Region.swift */; };
+		07EDF4C27080A6ADCBD45DEE /* APIIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90D609E1A932D206877E2D88 /* APIIntegrationTests.swift */; };
+		14C97521780E220BC435156D /* FavoriteResortsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8AB00E37F5DF1C8E10BC49 /* FavoriteResortsWidget.swift */; };
+		24A3BDA567803E68B65547C7 /* AuthenticationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3612902D14F964CD974A7E /* AuthenticationViews.swift */; };
+		2699A5371F1EFF464AB8F9E9 /* FeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D94F3FDE9BBCEF47C3DC8547 /* FeedbackView.swift */; };
+		38D5CCC28385D7DC0208CB70 /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23B988BBFF873484906C493 /* AuthenticationService.swift */; };
+		44F2644C96F1520ED57401DD /* Resort.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEA5CCD0AE9EC5A936DC79E /* Resort.swift */; };
+		5017E601E16B16F2F0196F07 /* KeychainSwift in Frameworks */ = {isa = PBXBuildFile; productRef = E4B5A37AEF93111CFF3FF51E /* KeychainSwift */; };
+		5C548AAEA20DC47384E0E971 /* ConditionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E42DC701CEC0DFCAD7762C72 /* ConditionsView.swift */; };
+		5DA15732F63A651618B8C70F /* SnowTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600A8FDCB572F6C887540554 /* SnowTrackerTests.swift */; };
+		66544FD29F2B9C5D2D3C46AF /* BestResortsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ACF49F69D091989F88C684E /* BestResortsWidget.swift */; };
+		67445A37BBAF5CF523504776 /* WeatherCondition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 071051238274C7A6A1632776 /* WeatherCondition.swift */; };
+		74BA625B9E4FE88B4C6172C6 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7308D06F97AABEC540CD28 /* APIClient.swift */; };
+		75E9966D6DAC958DE49B8269 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9DA3C8E41208AE034CEF3110 /* Assets.xcassets */; };
+		846AE61CF19B698637C23B0B /* WidgetDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCFAE2F42CB31F05913BA69F /* WidgetDataService.swift */; };
+		8720BD7F787971D36BBEE343 /* Managers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4090ACDD145A707AB31C7279 /* Managers.swift */; };
+		91143F070673A22F8B3D3849 /* SnowTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1CD2C514C419D7264FB7E0D /* SnowTrackerApp.swift */; };
+		9248956B1A7E2643CB2586EF /* Get in Frameworks */ = {isa = PBXBuildFile; productRef = 5074AE9C4AA03E9E7DB9DBC6 /* Get */; };
+		93920C0EEC0AB90FBC390102 /* WidgetModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D08B0D7A69AC7F3C0A29887D /* WidgetModels.swift */; };
+		94DF580F5D036507F3A598B8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BCC6D20537615D2F10A0472 /* SettingsView.swift */; };
+		95C6406BDAC1C9697C7A8D6E /* SnowTrackerWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 827594616C43CCF87E99B50E /* SnowTrackerWidgetBundle.swift */; };
+		9D87FE6D1BD3A9D9E7B82B90 /* SnowTrackerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 00C42DA351EFF0BEC9BA422F /* SnowTrackerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A4382A7758E7EBE091690413 /* ResortListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D49E6B5DE0674E438239F0C7 /* ResortListView.swift */; };
+		B0D36B7D1D4FCE37543A6EB9 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 1B6DFD862C11C1CECA4C1636 /* Alamofire */; };
+		B2357528C3D50AC74D4E81FF /* SnowTrackerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04113168D514491AA588BD9E /* SnowTrackerUITests.swift */; };
+		B3385B8E447BED3712D2D94C /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00CFF4D3DB5912AF93B433 /* WidgetViews.swift */; };
+		C0711EC616F41F08730D790A /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */; };
+		C440EFF2F7868A9A09A525C2 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A882E15FD24B57516DE0B29E /* Configuration.swift */; };
+		C9503A1D14E11C37EBD585F7 /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = 79935C2C616889CF8FD93DEC /* Nuke */; };
+		CE8B411E66E77DAF8A7FB715 /* ResortDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22ECDCF89993D8220437C43C /* ResortDetailView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		5BAF474AB14FD5842CD97BB3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B0CCE68A4B18434989E209F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B40C90E59D97E02D211DD7AC;
+			remoteInfo = SnowTracker;
+		};
+		B3C2C9788FBD80EC299C18C3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B0CCE68A4B18434989E209F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B40C90E59D97E02D211DD7AC;
+			remoteInfo = SnowTracker;
+		};
+		F979946EE41B79863858088B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B0CCE68A4B18434989E209F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C4F12E2B0FC601ED28BDDDB4;
+			remoteInfo = SnowTrackerWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		774A1A01F4C9C0FDA96FC2C0 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				9D87FE6D1BD3A9D9E7B82B90 /* SnowTrackerWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		F1A2B3C4D5E60001SPLASH01 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		F1A2B3C4D5E60002CACHE001 /* CacheService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheService.swift; sourceTree = "<group>"; };
+		F1A2B3C4D5E60003REGION01 /* Region.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Region.swift; sourceTree = "<group>"; };
+		00C42DA351EFF0BEC9BA422F /* SnowTrackerWidgetExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = SnowTrackerWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		04113168D514491AA588BD9E /* SnowTrackerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowTrackerUITests.swift; sourceTree = "<group>"; };
+		071051238274C7A6A1632776 /* WeatherCondition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherCondition.swift; sourceTree = "<group>"; };
+		1C3612902D14F964CD974A7E /* AuthenticationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationViews.swift; sourceTree = "<group>"; };
+		1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
+		22ECDCF89993D8220437C43C /* ResortDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResortDetailView.swift; sourceTree = "<group>"; };
+		3D7308D06F97AABEC540CD28 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		4090ACDD145A707AB31C7279 /* Managers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Managers.swift; sourceTree = "<group>"; };
+		4ACF49F69D091989F88C684E /* BestResortsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BestResortsWidget.swift; sourceTree = "<group>"; };
+		5E8AB00E37F5DF1C8E10BC49 /* FavoriteResortsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteResortsWidget.swift; sourceTree = "<group>"; };
+		600A8FDCB572F6C887540554 /* SnowTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowTrackerTests.swift; sourceTree = "<group>"; };
+		788B314D9D64678AD7BBA620 /* SnowTracker.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SnowTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		827594616C43CCF87E99B50E /* SnowTrackerWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowTrackerWidgetBundle.swift; sourceTree = "<group>"; };
+		89CDB4F02FB7AB5E6113AF9C /* SnowTrackerWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SnowTrackerWidget.entitlements; sourceTree = "<group>"; };
+		8BCC6D20537615D2F10A0472 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		90D609E1A932D206877E2D88 /* APIIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIIntegrationTests.swift; sourceTree = "<group>"; };
+		9A1E1575C206C39057EA1CB8 /* SnowTrackerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SnowTrackerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9DA3C8E41208AE034CEF3110 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9EEA5CCD0AE9EC5A936DC79E /* Resort.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Resort.swift; sourceTree = "<group>"; };
+		A3AD822C6EE9824818E903AF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A882E15FD24B57516DE0B29E /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
+		B70DB3D9D6611B6FD69120E7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		BB00CFF4D3DB5912AF93B433 /* WidgetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetViews.swift; sourceTree = "<group>"; };
+		BCFAE2F42CB31F05913BA69F /* WidgetDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataService.swift; sourceTree = "<group>"; };
+		C1CD2C514C419D7264FB7E0D /* SnowTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowTrackerApp.swift; sourceTree = "<group>"; };
+		D08B0D7A69AC7F3C0A29887D /* WidgetModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetModels.swift; sourceTree = "<group>"; };
+		D23B988BBFF873484906C493 /* AuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
+		D49E6B5DE0674E438239F0C7 /* ResortListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResortListView.swift; sourceTree = "<group>"; };
+		D94F3FDE9BBCEF47C3DC8547 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
+		DD047E2A750245979D8452D8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		E32383CBDD1468C74E618025 /* SnowTrackerUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SnowTrackerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E42DC701CEC0DFCAD7762C72 /* ConditionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionsView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		75D1D61F5FD039714FBE8001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B0D36B7D1D4FCE37543A6EB9 /* Alamofire in Frameworks */,
+				9248956B1A7E2643CB2586EF /* Get in Frameworks */,
+				C9503A1D14E11C37EBD585F7 /* Nuke in Frameworks */,
+				5017E601E16B16F2F0196F07 /* KeychainSwift in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		188E4216DBE279AC93BCDD5C /* SnowTrackerTests */ = {
+			isa = PBXGroup;
+			children = (
+				90D609E1A932D206877E2D88 /* APIIntegrationTests.swift */,
+				A3AD822C6EE9824818E903AF /* Info.plist */,
+				600A8FDCB572F6C887540554 /* SnowTrackerTests.swift */,
+			);
+			name = SnowTrackerTests;
+			path = SnowTracker/SnowTrackerTests;
+			sourceTree = "<group>";
+		};
+		1E3908A7EEE6BA35E8EA44FB /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				4090ACDD145A707AB31C7279 /* Managers.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		285960ACA67185390B9A0DFC /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				3D7308D06F97AABEC540CD28 /* APIClient.swift */,
+				D23B988BBFF873484906C493 /* AuthenticationService.swift */,
+				F1A2B3C4D5E60002CACHE001 /* CacheService.swift */,
+				A882E15FD24B57516DE0B29E /* Configuration.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		2B26478395424C45EDF16B48 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				1C3612902D14F964CD974A7E /* AuthenticationViews.swift */,
+				E42DC701CEC0DFCAD7762C72 /* ConditionsView.swift */,
+				1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */,
+				D94F3FDE9BBCEF47C3DC8547 /* FeedbackView.swift */,
+				22ECDCF89993D8220437C43C /* ResortDetailView.swift */,
+				D49E6B5DE0674E438239F0C7 /* ResortListView.swift */,
+				8BCC6D20537615D2F10A0472 /* SettingsView.swift */,
+				F1A2B3C4D5E60001SPLASH01 /* SplashView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		4B34CFC995865095770F7B83 /* SnowTrackerWidget */ = {
+			isa = PBXGroup;
+			children = (
+				4ACF49F69D091989F88C684E /* BestResortsWidget.swift */,
+				5E8AB00E37F5DF1C8E10BC49 /* FavoriteResortsWidget.swift */,
+				DD047E2A750245979D8452D8 /* Info.plist */,
+				89CDB4F02FB7AB5E6113AF9C /* SnowTrackerWidget.entitlements */,
+				827594616C43CCF87E99B50E /* SnowTrackerWidgetBundle.swift */,
+				BCFAE2F42CB31F05913BA69F /* WidgetDataService.swift */,
+				D08B0D7A69AC7F3C0A29887D /* WidgetModels.swift */,
+				BB00CFF4D3DB5912AF93B433 /* WidgetViews.swift */,
+			);
+			path = SnowTrackerWidget;
+			sourceTree = "<group>";
+		};
+		531044F6FB839E9BC5D13219 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				788B314D9D64678AD7BBA620 /* SnowTracker.app */,
+				9A1E1575C206C39057EA1CB8 /* SnowTrackerTests.xctest */,
+				E32383CBDD1468C74E618025 /* SnowTrackerUITests.xctest */,
+				00C42DA351EFF0BEC9BA422F /* SnowTrackerWidgetExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7F6FEC8B9236DD13B53335F7 /* SnowTrackerUITests */ = {
+			isa = PBXGroup;
+			children = (
+				B70DB3D9D6611B6FD69120E7 /* Info.plist */,
+				04113168D514491AA588BD9E /* SnowTrackerUITests.swift */,
+			);
+			name = SnowTrackerUITests;
+			path = SnowTracker/SnowTrackerUITests;
+			sourceTree = "<group>";
+		};
+		820E7A5D0EDF60DE91187ACF /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				BE115A7AABCC32A18E3ACBF1 /* Models */,
+				285960ACA67185390B9A0DFC /* Services */,
+				AE770580F728A11A4FE34122 /* Utils */,
+				1E3908A7EEE6BA35E8EA44FB /* ViewModels */,
+				2B26478395424C45EDF16B48 /* Views */,
+				C1CD2C514C419D7264FB7E0D /* SnowTrackerApp.swift */,
+			);
+			name = Sources;
+			path = SnowTracker/SnowTracker/Sources;
+			sourceTree = "<group>";
+		};
+		9E3F63A721790ACBD48C2666 = {
+			isa = PBXGroup;
+			children = (
+				ACA95EB3BF5FEB0CD94B1C05 /* Resources */,
+				188E4216DBE279AC93BCDD5C /* SnowTrackerTests */,
+				7F6FEC8B9236DD13B53335F7 /* SnowTrackerUITests */,
+				4B34CFC995865095770F7B83 /* SnowTrackerWidget */,
+				820E7A5D0EDF60DE91187ACF /* Sources */,
+				531044F6FB839E9BC5D13219 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		ACA95EB3BF5FEB0CD94B1C05 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				9DA3C8E41208AE034CEF3110 /* Assets.xcassets */,
+			);
+			name = Resources;
+			path = SnowTracker/SnowTracker/Resources;
+			sourceTree = "<group>";
+		};
+		AE770580F728A11A4FE34122 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		BE115A7AABCC32A18E3ACBF1 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				F1A2B3C4D5E60003REGION01 /* Region.swift */,
+				9EEA5CCD0AE9EC5A936DC79E /* Resort.swift */,
+				071051238274C7A6A1632776 /* WeatherCondition.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0D26F6C59635340C4836328E /* SnowTrackerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 45FAC3F6598E0A71D179D480 /* Build configuration list for PBXNativeTarget "SnowTrackerTests" */;
+			buildPhases = (
+				E320300E7A6BF2B2430A07C1 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3241C33AC34BF80FF2AD37DE /* PBXTargetDependency */,
+			);
+			name = SnowTrackerTests;
+			packageProductDependencies = (
+			);
+			productName = SnowTrackerTests;
+			productReference = 9A1E1575C206C39057EA1CB8 /* SnowTrackerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		B40C90E59D97E02D211DD7AC /* SnowTracker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C862AC54FAD3EB331AB21051 /* Build configuration list for PBXNativeTarget "SnowTracker" */;
+			buildPhases = (
+				7444FDAF141B6354D9DE08E5 /* Sources */,
+				3630BB399D73DB44056C69F6 /* Resources */,
+				75D1D61F5FD039714FBE8001 /* Frameworks */,
+				774A1A01F4C9C0FDA96FC2C0 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AFC6E67B82F869E746C781E2 /* PBXTargetDependency */,
+			);
+			name = SnowTracker;
+			packageProductDependencies = (
+				1B6DFD862C11C1CECA4C1636 /* Alamofire */,
+				5074AE9C4AA03E9E7DB9DBC6 /* Get */,
+				79935C2C616889CF8FD93DEC /* Nuke */,
+				E4B5A37AEF93111CFF3FF51E /* KeychainSwift */,
+			);
+			productName = SnowTracker;
+			productReference = 788B314D9D64678AD7BBA620 /* SnowTracker.app */;
+			productType = "com.apple.product-type.application";
+		};
+		C4F12E2B0FC601ED28BDDDB4 /* SnowTrackerWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 001CBB563250DBE8DEDD5DF5 /* Build configuration list for PBXNativeTarget "SnowTrackerWidgetExtension" */;
+			buildPhases = (
+				87CE5D307E9E79936B71C0AE /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SnowTrackerWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = SnowTrackerWidgetExtension;
+			productReference = 00C42DA351EFF0BEC9BA422F /* SnowTrackerWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		E917D3CAF905AA4CCDE04248 /* SnowTrackerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E814B085331DC038D1818946 /* Build configuration list for PBXNativeTarget "SnowTrackerUITests" */;
+			buildPhases = (
+				8C88F922AAA63362B72EBE68 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C28D61F591EBB41C171891C0 /* PBXTargetDependency */,
+			);
+			name = SnowTrackerUITests;
+			packageProductDependencies = (
+			);
+			productName = SnowTrackerUITests;
+			productReference = E32383CBDD1468C74E618025 /* SnowTrackerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8B0CCE68A4B18434989E209F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					B40C90E59D97E02D211DD7AC = {
+						DevelopmentTeam = 9LS3VUA9NG;
+						ProvisioningStyle = Automatic;
+					};
+					C4F12E2B0FC601ED28BDDDB4 = {
+						DevelopmentTeam = 9LS3VUA9NG;
+						ProvisioningStyle = Automatic;
+					};
+					E917D3CAF905AA4CCDE04248 = {
+						TestTargetID = B40C90E59D97E02D211DD7AC;
+					};
+				};
+			};
+			buildConfigurationList = 51C51CFC1CEAA4CCCC8F1A32 /* Build configuration list for PBXProject "SnowTracker" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 9E3F63A721790ACBD48C2666;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D3D5592D47E31FD4BBDBA0BF /* XCRemoteSwiftPackageReference "Alamofire" */,
+				447A25F963AEE912B7AED931 /* XCRemoteSwiftPackageReference "Get" */,
+				432C3D5EC66C389FEFFC60F0 /* XCRemoteSwiftPackageReference "keychain-swift" */,
+				5165717C09BCFC07A1CA6896 /* XCRemoteSwiftPackageReference "Nuke" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B40C90E59D97E02D211DD7AC /* SnowTracker */,
+				0D26F6C59635340C4836328E /* SnowTrackerTests */,
+				E917D3CAF905AA4CCDE04248 /* SnowTrackerUITests */,
+				C4F12E2B0FC601ED28BDDDB4 /* SnowTrackerWidgetExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3630BB399D73DB44056C69F6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				75E9966D6DAC958DE49B8269 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7444FDAF141B6354D9DE08E5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				74BA625B9E4FE88B4C6172C6 /* APIClient.swift in Sources */,
+				38D5CCC28385D7DC0208CB70 /* AuthenticationService.swift in Sources */,
+				24A3BDA567803E68B65547C7 /* AuthenticationViews.swift in Sources */,
+				A1B2C3D4E5F60002CACHE001 /* CacheService.swift in Sources */,
+				5C548AAEA20DC47384E0E971 /* ConditionsView.swift in Sources */,
+				C440EFF2F7868A9A09A525C2 /* Configuration.swift in Sources */,
+				C0711EC616F41F08730D790A /* FavoritesView.swift in Sources */,
+				2699A5371F1EFF464AB8F9E9 /* FeedbackView.swift in Sources */,
+				8720BD7F787971D36BBEE343 /* Managers.swift in Sources */,
+				A1B2C3D4E5F60003REGION01 /* Region.swift in Sources */,
+				44F2644C96F1520ED57401DD /* Resort.swift in Sources */,
+				CE8B411E66E77DAF8A7FB715 /* ResortDetailView.swift in Sources */,
+				A4382A7758E7EBE091690413 /* ResortListView.swift in Sources */,
+				94DF580F5D036507F3A598B8 /* SettingsView.swift in Sources */,
+				91143F070673A22F8B3D3849 /* SnowTrackerApp.swift in Sources */,
+				A1B2C3D4E5F60001SPLASH01 /* SplashView.swift in Sources */,
+				67445A37BBAF5CF523504776 /* WeatherCondition.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		87CE5D307E9E79936B71C0AE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				66544FD29F2B9C5D2D3C46AF /* BestResortsWidget.swift in Sources */,
+				14C97521780E220BC435156D /* FavoriteResortsWidget.swift in Sources */,
+				95C6406BDAC1C9697C7A8D6E /* SnowTrackerWidgetBundle.swift in Sources */,
+				846AE61CF19B698637C23B0B /* WidgetDataService.swift in Sources */,
+				93920C0EEC0AB90FBC390102 /* WidgetModels.swift in Sources */,
+				B3385B8E447BED3712D2D94C /* WidgetViews.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8C88F922AAA63362B72EBE68 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B2357528C3D50AC74D4E81FF /* SnowTrackerUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E320300E7A6BF2B2430A07C1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				07EDF4C27080A6ADCBD45DEE /* APIIntegrationTests.swift in Sources */,
+				5DA15732F63A651618B8C70F /* SnowTrackerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		3241C33AC34BF80FF2AD37DE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B40C90E59D97E02D211DD7AC /* SnowTracker */;
+			targetProxy = 5BAF474AB14FD5842CD97BB3 /* PBXContainerItemProxy */;
+		};
+		AFC6E67B82F869E746C781E2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C4F12E2B0FC601ED28BDDDB4 /* SnowTrackerWidgetExtension */;
+			targetProxy = F979946EE41B79863858088B /* PBXContainerItemProxy */;
+		};
+		C28D61F591EBB41C171891C0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B40C90E59D97E02D211DD7AC /* SnowTracker */;
+			targetProxy = B3C2C9788FBD80EC299C18C3 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		13ED59746796B7AA61FE3D56 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		3A1900D56028E5319F02B92B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = SnowTracker/SnowTracker.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9LS3VUA9NG;
+				INFOPLIST_FILE = SnowTracker/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.app;
+				SDKROOT = iphoneos;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		3CAA8DF77B3DBC473AEDB519 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				INFOPLIST_FILE = SnowTracker/SnowTrackerUITests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.SnowTrackerUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = SnowTracker;
+			};
+			name = Release;
+		};
+		510B9CFD76D58F79BAFCE4BD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		7ED2DBE656CECDEB4DB033EB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				INFOPLIST_FILE = SnowTracker/SnowTrackerUITests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.SnowTrackerUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = SnowTracker;
+			};
+			name = Debug;
+		};
+		9207CB811C2868099464AD13 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				INFOPLIST_FILE = SnowTracker/SnowTrackerTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.SnowTrackerTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SnowTracker.app/SnowTracker";
+			};
+			name = Debug;
+		};
+		9C2684EEDCAD501C8A9C8ADF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				INFOPLIST_FILE = SnowTracker/SnowTrackerTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.SnowTrackerTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SnowTracker.app/SnowTracker";
+			};
+			name = Release;
+		};
+		B4CDAA1246D1716862E1CE9F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SnowTrackerWidget/SnowTrackerWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9LS3VUA9NG;
+				INFOPLIST_FILE = SnowTrackerWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.app.widget;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		CE7C09FB42014D6963C178FF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = SnowTracker/SnowTracker.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9LS3VUA9NG;
+				INFOPLIST_FILE = SnowTracker/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.app;
+				SDKROOT = iphoneos;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E3A7D1FCA342AF9428C29CD2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SnowTrackerWidget/SnowTrackerWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9LS3VUA9NG;
+				INFOPLIST_FILE = SnowTrackerWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.app.widget;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		001CBB563250DBE8DEDD5DF5 /* Build configuration list for PBXNativeTarget "SnowTrackerWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E3A7D1FCA342AF9428C29CD2 /* Debug */,
+				B4CDAA1246D1716862E1CE9F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		45FAC3F6598E0A71D179D480 /* Build configuration list for PBXNativeTarget "SnowTrackerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9207CB811C2868099464AD13 /* Debug */,
+				9C2684EEDCAD501C8A9C8ADF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		51C51CFC1CEAA4CCCC8F1A32 /* Build configuration list for PBXProject "SnowTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				510B9CFD76D58F79BAFCE4BD /* Debug */,
+				13ED59746796B7AA61FE3D56 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C862AC54FAD3EB331AB21051 /* Build configuration list for PBXNativeTarget "SnowTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CE7C09FB42014D6963C178FF /* Debug */,
+				3A1900D56028E5319F02B92B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E814B085331DC038D1818946 /* Build configuration list for PBXNativeTarget "SnowTrackerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7ED2DBE656CECDEB4DB033EB /* Debug */,
+				3CAA8DF77B3DBC473AEDB519 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		432C3D5EC66C389FEFFC60F0 /* XCRemoteSwiftPackageReference "keychain-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/evgenyneu/keychain-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 20.0.0;
+			};
+		};
+		447A25F963AEE912B7AED931 /* XCRemoteSwiftPackageReference "Get" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/CreateAPI/Get.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.1.0;
+			};
+		};
+		5165717C09BCFC07A1CA6896 /* XCRemoteSwiftPackageReference "Nuke" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kean/Nuke.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.1.0;
+			};
+		};
+		D3D5592D47E31FD4BBDBA0BF /* XCRemoteSwiftPackageReference "Alamofire" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Alamofire/Alamofire.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.8.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1B6DFD862C11C1CECA4C1636 /* Alamofire */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D3D5592D47E31FD4BBDBA0BF /* XCRemoteSwiftPackageReference "Alamofire" */;
+			productName = Alamofire;
+		};
+		5074AE9C4AA03E9E7DB9DBC6 /* Get */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 447A25F963AEE912B7AED931 /* XCRemoteSwiftPackageReference "Get" */;
+			productName = Get;
+		};
+		79935C2C616889CF8FD93DEC /* Nuke */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5165717C09BCFC07A1CA6896 /* XCRemoteSwiftPackageReference "Nuke" */;
+			productName = Nuke;
+		};
+		E4B5A37AEF93111CFF3FF51E /* KeychainSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 432C3D5EC66C389FEFFC60F0 /* XCRemoteSwiftPackageReference "keychain-swift" */;
+			productName = KeychainSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 8B0CCE68A4B18434989E209F /* Project object */;
+}
