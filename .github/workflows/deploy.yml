@@ -280,6 +280,26 @@ jobs:
           echo "API URL not available, skipping smoke tests"
         fi
 
+    - name: Import Grafana Dashboards
+      if: env.ENVIRONMENT == 'staging' && env.GRAFANA_API_KEY != ''
+      env:
+        GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}
+      run: |
+        # Get Grafana workspace URL
+        WORKSPACE_URL=$(aws grafana list-workspaces \
+          --query "workspaces[?name=='snow-tracker-grafana'].endpoint" \
+          --output text 2>/dev/null || echo "")
+
+        if [ -n "$WORKSPACE_URL" ] && [ "$WORKSPACE_URL" != "None" ]; then
+          echo "Importing dashboards to Grafana: $WORKSPACE_URL"
+          chmod +x infrastructure/scripts/import-grafana-dashboards.sh
+          GRAFANA_WORKSPACE_URL="https://$WORKSPACE_URL" \
+          GRAFANA_API_KEY="$GRAFANA_API_KEY" \
+            infrastructure/scripts/import-grafana-dashboards.sh
+        else
+          echo "Grafana workspace not found, skipping dashboard import"
+        fi
+
     - name: Deployment Summary
       run: |
         echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
