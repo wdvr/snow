@@ -35,8 +35,14 @@ for dashboard_file in "$DASHBOARD_DIR"/*.json; do
         filename=$(basename "$dashboard_file")
         echo -n "  Importing $filename... "
 
-        # Wrap dashboard in import format
-        import_payload=$(jq -c '{dashboard: ., overwrite: true, folderId: 0}' "$dashboard_file")
+        # Check if already wrapped in dashboard object, otherwise wrap it
+        if jq -e '.dashboard' "$dashboard_file" > /dev/null 2>&1; then
+            # Already has dashboard wrapper, just ensure overwrite is set
+            import_payload=$(jq -c '. + {overwrite: true, folderId: 0}' "$dashboard_file")
+        else
+            # Wrap in dashboard object
+            import_payload=$(jq -c '{dashboard: ., overwrite: true, folderId: 0}' "$dashboard_file")
+        fi
 
         # POST to Grafana API
         response=$(curl -s -w "\n%{http_code}" \
