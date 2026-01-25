@@ -122,33 +122,33 @@ enum SnowQuality: String, CaseIterable, Codable {
         switch self {
         case .excellent:
             return (
-                title: "Excellent - Fresh Snow",
-                description: "Fresh, non-refrozen snow on top. No recent ice formation events. Great conditions for all types of skiing.",
-                criteria: "5+ cm of snow since last warm period (>3°C for 4+ hrs), currently cold"
+                title: "Excellent - Fresh Powder",
+                description: "3+ inches of fresh powder on top. No recent thaw-freeze events. Great conditions for all types of skiing.",
+                criteria: "3+ inches (7.6+ cm) of snow since last thaw-freeze, currently cold"
             )
         case .good:
             return (
                 title: "Good - Soft Surface",
-                description: "Good amount of non-refrozen snow. Surface hasn't iced over. Enjoyable skiing on and off-piste.",
-                criteria: "2-5 cm of snow since last warm period, temps staying below freezing"
+                description: "2+ inches of non-refrozen snow. Surface hasn't iced over. Enjoyable skiing on and off-piste.",
+                criteria: "2-3 inches (5-7.6 cm) of snow since last thaw-freeze, temps staying cold"
             )
         case .fair:
             return (
                 title: "Fair - Some Fresh",
-                description: "Some fresh snow on top of older base. May have thin crust in places. Groomed runs in good shape.",
-                criteria: "1-2 cm since last warm period, or currently warming but snow still skiable"
+                description: "About 1 inch of fresh snow on top of older base. May have thin crust in places. Groomed runs in good shape.",
+                criteria: "1-2 inches (2.5-5 cm) since last thaw-freeze, or currently warming"
             )
         case .poor:
             return (
-                title: "Poor - Icy Base",
-                description: "Little fresh snow since last ice event. Hard or icy surface likely. Best to stick to groomed runs.",
-                criteria: "Less than 1 cm since last warm period, or extended time above 3°C recently"
+                title: "Poor - Thin Cover",
+                description: "Less than 1 inch of fresh snow since last ice event. Harder surface with some soft spots.",
+                criteria: "Less than 1 inch since last thaw-freeze (3h@+3°C, 6h@+2°C, or 8h@+1°C)"
             )
         case .bad:
             return (
                 title: "Icy - Refrozen",
                 description: "No fresh snow on top of icy base. Recent warm periods have created hard, refrozen surface. Challenging conditions.",
-                criteria: "No snow since last freeze-thaw cycle, surface has refrozen"
+                criteria: "No snow since last thaw-freeze cycle, surface has refrozen"
             )
         case .unknown:
             return (
@@ -231,6 +231,12 @@ struct WeatherCondition: Codable, Identifiable, Hashable {
     let hoursAboveIceThreshold: Double
     let maxConsecutiveWarmHours: Double
 
+    // Fresh powder tracking (snow since last thaw-freeze event)
+    let snowfallAfterFreezeCm: Double?
+    let hoursSinceLastSnowfall: Double?
+    let lastFreezeThawHoursAgo: Double?
+    let currentlyWarming: Bool?
+
     // Weather conditions
     let humidityPercent: Double?
     let windSpeedKmh: Double?
@@ -261,6 +267,10 @@ struct WeatherCondition: Codable, Identifiable, Hashable {
         case predictedSnow72hCm = "predicted_snow_72h_cm"
         case hoursAboveIceThreshold = "hours_above_ice_threshold"
         case maxConsecutiveWarmHours = "max_consecutive_warm_hours"
+        case snowfallAfterFreezeCm = "snowfall_after_freeze_cm"
+        case hoursSinceLastSnowfall = "hours_since_last_snowfall"
+        case lastFreezeThawHoursAgo = "last_freeze_thaw_hours_ago"
+        case currentlyWarming = "currently_warming"
         case humidityPercent = "humidity_percent"
         case windSpeedKmh = "wind_speed_kmh"
         case weatherDescription = "weather_description"
@@ -309,6 +319,34 @@ struct WeatherCondition: Codable, Identifiable, Hashable {
         return "\(String(format: "%.1f", freshSnowCm))cm fresh"
     }
 
+    /// Fresh snow since last thaw-freeze event (the key quality metric)
+    var snowSinceFreeze: Double {
+        snowfallAfterFreezeCm ?? freshSnowCm
+    }
+
+    /// Formatted fresh snow since freeze in inches
+    var formattedSnowSinceFreezeInches: String {
+        let inches = snowSinceFreeze / 2.54
+        if inches < 0.1 {
+            return "No fresh snow"
+        }
+        return String(format: "%.1f\" fresh", inches)
+    }
+
+    /// Hours since last thaw-freeze event
+    var formattedTimeSinceFreeze: String {
+        guard let hours = lastFreezeThawHoursAgo else {
+            return "Unknown"
+        }
+        if hours >= 72 {
+            return "3+ days"
+        } else if hours >= 24 {
+            return "\(Int(hours / 24))d \(Int(hours.truncatingRemainder(dividingBy: 24)))h"
+        } else {
+            return "\(Int(hours))h ago"
+        }
+    }
+
     var formattedWindSpeed: String {
         guard let windSpeed = windSpeedKmh else { return "No wind data" }
         let windSpeedMph = windSpeed * 0.621371
@@ -354,6 +392,10 @@ extension WeatherCondition {
             predictedSnow72hCm: 30.0,
             hoursAboveIceThreshold: 0.0,
             maxConsecutiveWarmHours: 0.0,
+            snowfallAfterFreezeCm: 18.5,
+            hoursSinceLastSnowfall: 2.0,
+            lastFreezeThawHoursAgo: 48.0,
+            currentlyWarming: false,
             humidityPercent: 90.0,
             windSpeedKmh: 15.0,
             weatherDescription: "Heavy snow",
@@ -379,6 +421,10 @@ extension WeatherCondition {
             predictedSnow72hCm: 20.0,
             hoursAboveIceThreshold: 2.0,
             maxConsecutiveWarmHours: 1.5,
+            snowfallAfterFreezeCm: 8.5,
+            hoursSinceLastSnowfall: 6.0,
+            lastFreezeThawHoursAgo: 24.0,
+            currentlyWarming: false,
             humidityPercent: 80.0,
             windSpeedKmh: 20.0,
             weatherDescription: "Light snow",

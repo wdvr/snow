@@ -224,38 +224,60 @@ struct ResortDetailView: View {
 
     private func snowDetailsCard(_ condition: WeatherCondition) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Snowfall")
-                .font(.headline)
+            // Fresh powder since thaw-freeze (the key metric)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Fresh Powder")
+                        .font(.headline)
+                    Spacer()
+                    if condition.currentlyWarming == true {
+                        HStack(spacing: 4) {
+                            Image(systemName: "thermometer.sun.fill")
+                                .foregroundColor(.orange)
+                            Text("Warming")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.orange)
+                        }
+                    }
+                }
+
+                HStack(spacing: 20) {
+                    // Fresh snow since freeze
+                    VStack {
+                        Text(condition.formattedSnowSinceFreezeInches)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.cyan)
+                        Text("Since last thaw")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    // Time since freeze
+                    VStack {
+                        Text(condition.formattedTimeSinceFreeze)
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                        Text("Last thaw-freeze")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+
+            Divider()
+
+            Text("Recent Snowfall")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
 
             HStack(spacing: 20) {
                 snowfallItem(title: "24h", value: condition.snowfall24hCm)
                 snowfallItem(title: "48h", value: condition.snowfall48hCm)
                 snowfallItem(title: "72h", value: condition.snowfall72hCm)
-            }
-
-            Divider()
-
-            // Ice formation info
-            HStack {
-                VStack(alignment: .leading) {
-                    Text("Hours Above Freezing")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("\(String(format: "%.1f", condition.hoursAboveIceThreshold))h")
-                        .font(.body)
-                        .fontWeight(.medium)
-                }
-
-                Spacer()
-
-                VStack(alignment: .trailing) {
-                    Text("Max Consecutive Warm")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("\(String(format: "%.1f", condition.maxConsecutiveWarmHours))h")
-                        .font(.body)
-                        .fontWeight(.medium)
-                }
             }
         }
         .padding()

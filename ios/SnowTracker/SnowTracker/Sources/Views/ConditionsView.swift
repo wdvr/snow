@@ -176,14 +176,29 @@ struct ResortConditionCard: View {
                 }
             }
 
-            // Fresh snow summary
-            if let top = topCondition, top.freshSnowCm > 0 {
+            // Fresh snow summary (since last thaw-freeze)
+            if let top = topCondition {
                 HStack {
-                    Image(systemName: "snowflake")
-                        .foregroundColor(.cyan)
-                    Text("\(String(format: "%.0f", top.freshSnowCm))cm fresh snow at summit")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    if top.snowSinceFreeze > 0 {
+                        Image(systemName: "snowflake")
+                            .foregroundColor(.cyan)
+                        Text("\(top.formattedSnowSinceFreezeInches) since last thaw")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+
+                    // Warming indicator
+                    if top.currentlyWarming == true {
+                        HStack(spacing: 4) {
+                            Image(systemName: "thermometer.sun.fill")
+                                .foregroundColor(.orange)
+                            Text("Warming")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
+                    }
                 }
             }
         }
@@ -251,19 +266,35 @@ struct QualityInfoSheet: View {
                         Text("How Quality is Calculated")
                             .font(.headline)
 
-                        Text("Quality ratings are based on **non-refrozen snow** — snow that fell after the last ice formation event.")
+                        Text("Quality ratings are based on **fresh powder since the last thaw-freeze event** — snow that hasn't turned to ice.")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
 
-                        HStack(spacing: 12) {
-                            Image(systemName: "thermometer.snowflake")
-                                .foregroundColor(.blue)
-                            VStack(alignment: .leading) {
-                                Text("Ice forms when temps stay ≥ 3°C for 4+ hours")
-                                    .font(.caption)
-                                Text("Snow after such events is fresh & non-icy")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "ruler")
+                                    .foregroundColor(.blue)
+                                VStack(alignment: .leading) {
+                                    Text("Fresh snow thresholds:")
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                    Text("3\"+ = Excellent, 2\"+ = Good, 1\"+ = Fair")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+
+                            HStack(spacing: 12) {
+                                Image(systemName: "thermometer.snowflake")
+                                    .foregroundColor(.orange)
+                                VStack(alignment: .leading) {
+                                    Text("Ice forms (thaw-freeze) when:")
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                    Text("3h @ +3°C, 6h @ +2°C, or 8h @ +1°C")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
                             }
                         }
                         .padding()
