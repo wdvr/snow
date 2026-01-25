@@ -255,6 +255,12 @@ class TestSnowQualityService:
         quality, fresh_snow, confidence = service.assess_snow_quality(
             invalid_timestamp_condition
         )
-        assert quality in SnowQuality
+        # Quality might be enum or string (due to use_enum_values)
+        quality_values = [q.value for q in SnowQuality]
+        quality_value = quality.value if hasattr(quality, 'value') else quality
+        assert quality_value in quality_values
         assert fresh_snow >= 0.0
-        assert confidence in ConfidenceLevel
+        # Confidence might be enum or string (due to use_enum_values)
+        confidence_values = [c.value for c in ConfidenceLevel]
+        confidence_value = confidence.value if hasattr(confidence, 'value') else confidence
+        assert confidence_value in confidence_values

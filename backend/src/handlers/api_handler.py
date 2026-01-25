@@ -14,7 +14,7 @@ from mangum import Mangum
 from models.feedback import Feedback, FeedbackSubmission
 from models.resort import Resort
 from models.user import UserPreferences
-from models.weather import SnowQuality
+from models.weather import SnowQuality, SNOW_QUALITY_EXPLANATIONS
 from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
 from services.user_service import UserService
@@ -457,6 +457,9 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
         else:
             overall_quality = SnowQuality.UNKNOWN
 
+        # Get explanation for overall quality
+        quality_explanation = SNOW_QUALITY_EXPLANATIONS.get(overall_quality, {})
+
         # Set cache headers
         response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
 
@@ -464,6 +467,11 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
             "resort_id": resort_id,
             "elevations": elevation_summaries,
             "overall_quality": overall_quality.value,
+            "quality_info": {
+                "title": quality_explanation.get("title", overall_quality.value),
+                "description": quality_explanation.get("description", ""),
+                "criteria": quality_explanation.get("criteria", ""),
+            },
             "last_updated": max(c.timestamp for c in conditions)
             if conditions
             else None,
@@ -476,6 +484,35 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve snow quality summary: {str(e)}",
         )
+
+
+@app.get("/api/v1/quality-explanations")
+async def get_quality_explanations(response: Response):
+    """Get explanations for all snow quality levels.
+
+    Returns descriptions of what each quality level means,
+    useful for displaying info tooltips in the UI.
+    """
+    response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+
+    explanations = {}
+    for quality in SnowQuality:
+        info = SNOW_QUALITY_EXPLANATIONS.get(quality, {})
+        explanations[quality.value] = {
+            "title": info.get("title", quality.value.title()),
+            "description": info.get("description", ""),
+            "criteria": info.get("criteria", ""),
+        }
+
+    return {
+        "explanations": explanations,
+        "algorithm_info": {
+            "description": "Quality is based on non-refrozen snow - snow that fell after the last ice formation event.",
+            "ice_threshold_celsius": 3.0,
+            "ice_formation_hours": 4,
+            "note": "Ice forms when temperatures stay at or above 3°C for 4+ consecutive hours. Snow that falls after such events is considered 'fresh' and non-refrozen.",
+        },
+    }
 
 
 # MARK: - User Endpoints
