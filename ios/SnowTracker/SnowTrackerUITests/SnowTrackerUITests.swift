@@ -138,14 +138,96 @@ final class SnowTrackerUITests: XCTestCase {
 
         // Check for expected tabs
         let resortsTab = tabBar.buttons["Resorts"]
+        let mapTab = tabBar.buttons["Map"]
         let conditionsTab = tabBar.buttons["Conditions"]
         let favoritesTab = tabBar.buttons["Favorites"]
         let settingsTab = tabBar.buttons["Settings"]
 
         XCTAssertTrue(resortsTab.exists)
+        XCTAssertTrue(mapTab.exists)
         XCTAssertTrue(conditionsTab.exists)
         XCTAssertTrue(favoritesTab.exists)
         XCTAssertTrue(settingsTab.exists)
+    }
+
+    func testNavigateToMapTab() throws {
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 5))
+
+        tabBar.buttons["Map"].tap()
+
+        // Verify we're on the map screen by checking for navigation title
+        let mapTitle = app.navigationBars["Map"]
+        XCTAssertTrue(mapTitle.waitForExistence(timeout: 3))
+    }
+
+    func testMapTabShowsMapView() throws {
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 5))
+
+        tabBar.buttons["Map"].tap()
+
+        // Check for map-specific UI elements
+        let mapView = app.maps.firstMatch
+        XCTAssertTrue(mapView.waitForExistence(timeout: 5), "Map view should be visible")
+    }
+
+    func testMapTabShowsFilterChips() throws {
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 5))
+
+        tabBar.buttons["Map"].tap()
+
+        // Wait for map to load
+        sleep(2)
+
+        // Check for filter chip buttons
+        let allFilter = app.buttons["All"]
+        XCTAssertTrue(allFilter.waitForExistence(timeout: 3), "All filter should be visible")
+    }
+
+    func testMapFilterChipSelection() throws {
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 5))
+
+        tabBar.buttons["Map"].tap()
+
+        // Wait for map to load
+        sleep(2)
+
+        // Tap on Excellent filter if it exists
+        let excellentFilter = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Excellent'")).firstMatch
+        if excellentFilter.waitForExistence(timeout: 3) {
+            excellentFilter.tap()
+            // App should remain responsive
+            XCTAssertTrue(tabBar.exists, "App should still be responsive after filter selection")
+        }
+    }
+
+    func testMapLegendToggle() throws {
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 5))
+
+        tabBar.buttons["Map"].tap()
+
+        // Wait for map to load
+        sleep(2)
+
+        // Find and tap the info button to toggle legend
+        let infoButton = app.buttons["info.circle"]
+        if infoButton.waitForExistence(timeout: 3) {
+            infoButton.tap()
+
+            // Legend should appear
+            let legendTitle = app.staticTexts["Snow Quality Legend"]
+            XCTAssertTrue(legendTitle.waitForExistence(timeout: 3), "Legend should appear after tapping info button")
+
+            // Tap again to hide
+            let infoButtonFilled = app.buttons["info.circle.fill"]
+            if infoButtonFilled.exists {
+                infoButtonFilled.tap()
+            }
+        }
     }
 
     func testNavigateToConditionsTab() throws {
