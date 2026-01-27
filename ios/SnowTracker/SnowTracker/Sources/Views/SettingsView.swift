@@ -98,24 +98,7 @@ struct SettingsView: View {
 
                 // Account Section
                 Section {
-                    if authService.isAuthenticated {
-                        if let email = authService.currentUser?.email {
-                            HStack {
-                                Text("Signed in as")
-                                Spacer()
-                                Text(email)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        Button("Sign Out") {
-                            showingSignOutAlert = true
-                        }
-                        .foregroundStyle(.red)
-                    } else {
-                        Text("Not signed in")
-                            .foregroundStyle(.secondary)
-                    }
+                    accountRow
                 } header: {
                     Text("Account")
                 }
@@ -254,6 +237,58 @@ struct SettingsView: View {
 
     private var buildNumber: String {
         Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
+    }
+
+    @ViewBuilder
+    private var accountRow: some View {
+        if authService.isAuthenticated, let user = authService.currentUser {
+            if user.provider == .guest {
+                HStack {
+                    Image(systemName: "person.circle")
+                        .foregroundColor(.secondary)
+
+                    Text("Guest")
+                        .font(.body)
+
+                    Spacer()
+                }
+
+                Button("Sign Out") {
+                    showingSignOutAlert = true
+                }
+                .foregroundStyle(.red)
+            } else {
+                HStack {
+                    let isApple = user.provider == .apple
+                    Image(systemName: isApple ? "apple.logo" : "g.circle.fill")
+                        .foregroundColor(isApple ? .primary : .blue)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(user.displayName)
+                            .font(.body)
+                        if let email = user.email, email != user.displayName {
+                            Text(email)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Spacer()
+
+                    Text(isApple ? "Apple" : "Google")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Button("Sign Out") {
+                    showingSignOutAlert = true
+                }
+                .foregroundStyle(.red)
+            }
+        } else {
+            Text("Not signed in")
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

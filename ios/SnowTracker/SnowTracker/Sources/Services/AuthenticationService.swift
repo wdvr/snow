@@ -9,6 +9,7 @@ import UIKit
 enum AuthProvider: String, Codable {
     case apple
     case google
+    case guest
 }
 
 // MARK: - Authentication Service
@@ -112,6 +113,21 @@ class AuthenticationService: NSObject, ObservableObject {
         }
     }
 
+    // MARK: - Continue Without Sign In
+
+    func continueWithoutSignIn() {
+        // Set as authenticated but with a guest user
+        currentUser = AuthenticatedUser(
+            id: "guest",
+            email: nil,
+            fullName: "Guest",
+            provider: .guest
+        )
+        isAuthenticated = true
+        keychain.set("guest", forKey: Keys.userIdentifier)
+        keychain.set(AuthProvider.guest.rawValue, forKey: Keys.authProvider)
+    }
+
     // MARK: - Sign Out
 
     func signOut() {
@@ -121,8 +137,8 @@ class AuthenticationService: NSObject, ObservableObject {
             switch provider {
             case .google:
                 GIDSignIn.sharedInstance.signOut()
-            case .apple:
-                // Apple doesn't have a sign out API - just clear local credentials
+            case .apple, .guest:
+                // Apple/Guest don't have a sign out API - just clear local credentials
                 break
             }
         }
@@ -160,6 +176,8 @@ class AuthenticationService: NSObject, ObservableObject {
             checkAppleCredentialState(userIdentifier: userIdentifier)
         case .google:
             checkGoogleCredentialState()
+        case .guest:
+            restoreUserSession(userIdentifier: userIdentifier, provider: .guest)
         }
     }
 
