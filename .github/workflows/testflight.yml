@@ -56,12 +56,12 @@ jobs:
       run: |
         cd ios
         # Get current build number and increment
-        CURRENT_BUILD=$(grep -A1 'CFBundleVersion' SnowTracker/SnowTracker/Info.plist | tail -1 | sed 's/[^0-9]*//g')
+        CURRENT_BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" SnowTracker/Info.plist 2>/dev/null || echo "1")
         NEW_BUILD=$((CURRENT_BUILD + ${{ github.event.inputs.build_number_increment || 1 }}))
         echo "Incrementing build number from $CURRENT_BUILD to $NEW_BUILD"
 
         # Update Info.plist
-        /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUILD" SnowTracker/SnowTracker/Info.plist
+        /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUILD" SnowTracker/Info.plist
 
         # Also update widget if exists
         if [ -f "SnowTrackerWidget/Info.plist" ]; then
@@ -71,7 +71,8 @@ jobs:
     - name: Setup App Store Connect API Key
       run: |
         mkdir -p ~/.private_keys
-        echo "${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}" > ~/.private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
+        echo "${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}" | tr -d '\r' > ~/.private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
+        chmod 600 ~/.private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
 
     - name: Archive app
       run: |
