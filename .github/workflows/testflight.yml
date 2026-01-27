@@ -16,6 +16,10 @@ on:
         default: '1'
         type: string
 
+concurrency:
+  group: testflight-deploy
+  cancel-in-progress: false
+
 env:
   SCHEME: 'SnowTracker'
   PROJECT_PATH: 'ios/SnowTracker.xcodeproj'
