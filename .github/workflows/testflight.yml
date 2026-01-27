@@ -21,11 +21,6 @@ on:
         required: false
         default: false
         type: boolean
-      use_github_runner:
-        description: 'Use GitHub-hosted runner (when self-hosted unavailable)'
-        required: false
-        default: false
-        type: boolean
 
 # Deployment strategy:
 # - Push to main: internal testers only (unlimited)
@@ -41,10 +36,25 @@ env:
   PROJECT_PATH: 'ios/SnowTracker.xcodeproj'
 
 jobs:
+  # Check if self-hosted runner is available, fallback to GitHub-hosted if not
+  check-runner:
+    name: Check Runner Availability
+    runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.check.outputs.runner }}
+    steps:
+      - name: Check for self-hosted runner
+        id: check
+        uses: mikehardy/runner-fallback-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          primary-runner: 'self-hosted,macOS,ARM64'
+          fallback-runner: 'macos-latest'
+
   build-and-upload:
     name: Build and Upload to TestFlight
-    # Self-hosted (free) by default, use GitHub runner if laptop unavailable
-    runs-on: ${{ github.event.inputs.use_github_runner == 'true' && 'macos-latest' || fromJSON('["self-hosted", "macOS", "ARM64"]') }}
+    needs: check-runner
+    runs-on: ${{ needs.check-runner.outputs.runner }}
 
     steps:
     - name: Checkout code
@@ -246,6 +256,14 @@ jobs:
           -d "{\"data\":{\"type\":\"builds\",\"id\":\"$BUILD_ID\",\"attributes\":{\"usesNonExemptEncryption\":false}}}" \
           "https://api.appstoreconnect.apple.com/v1/builds/$BUILD_ID" > /dev/null
         echo "Export compliance set!"
+
+        # Set Beta App Localization (required for TestFlight visibility)
+        echo "Setting beta app localization..."
+        curl -g -s -X POST \
+          -H "Authorization: Bearer $JWT" \
+          -H "Content-Type: application/json" \
+          -d "{\"data\":{\"type\":\"betaAppLocalizations\",\"attributes\":{\"locale\":\"en-US\",\"description\":\"Track snow conditions at ski resorts worldwide.\",\"feedbackEmail\":\"wouterdevriendt@gmail.com\"},\"relationships\":{\"app\":{\"data\":{\"type\":\"apps\",\"id\":\"$APP_ID\"}}}}}" \
+          "https://api.appstoreconnect.apple.com/v1/betaAppLocalizations" > /dev/null 2>&1 || true
 
         # Get beta groups for internal testing
         echo "Fetching beta groups..."
