@@ -177,28 +177,28 @@ jobs:
         # Generate JWT for App Store Connect API using Python (more reliable than bash/openssl)
         generate_jwt() {
           python3 << 'PYSCRIPT'
-        import jwt
-        import time
-        import os
+import jwt
+import time
+import os
 
-        key_id = os.environ['APP_STORE_CONNECT_KEY_ID']
-        issuer_id = os.environ['APP_STORE_CONNECT_ISSUER_ID']
-        key_path = os.path.expanduser(f'~/.private_keys/AuthKey_{key_id}.p8')
+key_id = os.environ['APP_STORE_CONNECT_KEY_ID']
+issuer_id = os.environ['APP_STORE_CONNECT_ISSUER_ID']
+key_path = os.path.expanduser(f'~/.private_keys/AuthKey_{key_id}.p8')
 
-        with open(key_path, 'r') as f:
-            private_key = f.read()
+with open(key_path, 'r') as f:
+    private_key = f.read()
 
-        now = int(time.time())
-        payload = {
-            'iss': issuer_id,
-            'iat': now,
-            'exp': now + 1200,
-            'aud': 'appstoreconnect-v1'
-        }
+now = int(time.time())
+payload = {
+    'iss': issuer_id,
+    'iat': now,
+    'exp': now + 1200,
+    'aud': 'appstoreconnect-v1'
+}
 
-        token = jwt.encode(payload, private_key, algorithm='ES256', headers={'kid': key_id})
-        print(token)
-        PYSCRIPT
+token = jwt.encode(payload, private_key, algorithm='ES256', headers={'kid': key_id})
+print(token)
+PYSCRIPT
         }
 
         JWT=$(generate_jwt)
