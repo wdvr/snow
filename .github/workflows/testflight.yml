@@ -58,9 +58,15 @@ jobs:
       - name: Format runner output
         id: format
         run: |
-          RUNNER="${{ steps.check.outputs.use-runner }}"
-          # Convert comma-separated labels to JSON array using jq
-          JSON=$(echo "$RUNNER" | tr ',' '\n' | jq -R . | jq -s .)
+          RUNNER='${{ steps.check.outputs.use-runner }}'
+          # Check if already JSON array (starts with [)
+          if [[ "$RUNNER" == \[* ]]; then
+            # Already JSON, compact it to single line
+            JSON=$(echo "$RUNNER" | jq -c .)
+          else
+            # Single label, wrap in array
+            JSON="[\"$RUNNER\"]"
+          fi
           echo "runner=$JSON" >> $GITHUB_OUTPUT
           echo "Using runner: $JSON"
 
