@@ -88,8 +88,16 @@ jobs:
         fi
 
         if [ -d "$XCODE_PATH" ]; then
-          echo "Using Xcode: $XCODE_PATH"
-          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          CURRENT_PATH=$(xcode-select -p 2>/dev/null || echo "")
+          TARGET_PATH="$XCODE_PATH/Contents/Developer"
+          if [ "$CURRENT_PATH" = "$TARGET_PATH" ]; then
+            echo "Xcode already set to: $XCODE_PATH"
+          else
+            echo "Switching Xcode to: $XCODE_PATH"
+            sudo xcode-select -s "$TARGET_PATH" || {
+              echo "Note: Could not switch Xcode (may require sudo). Using current selection."
+            }
+          fi
         else
           echo "ERROR: No Xcode found in /Applications"
           ls -la /Applications/ | grep -i xcode
