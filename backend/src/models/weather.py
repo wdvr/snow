@@ -167,6 +167,13 @@ class WeatherCondition(BaseModel):
 
     model_config = ConfigDict(use_enum_values=True)
 
+    def to_api_response(self) -> dict[str, Any]:
+        """Convert to API response format without heavy raw_data field."""
+        data = self.model_dump()
+        # Remove raw_data to reduce response size (can be 100KB+ per condition)
+        data.pop("raw_data", None)
+        return data
+
     @property
     def elevation_level_enum(self) -> ElevationLevel | None:
         """Get elevation level as enum."""

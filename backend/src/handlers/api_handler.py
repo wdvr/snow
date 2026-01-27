@@ -319,7 +319,9 @@ async def get_batch_conditions(
         def fetch_one(resort_id: str):
             try:
                 conditions = _get_conditions_cached(resort_id, hours)
-                return resort_id, {"conditions": conditions, "error": None}
+                # Convert to lightweight API format (excludes raw_data)
+                api_conditions = [c.to_api_response() for c in conditions]
+                return resort_id, {"conditions": api_conditions, "error": None}
             except Exception as e:
                 return resort_id, {"conditions": [], "error": str(e)}
 
@@ -369,11 +371,14 @@ async def get_resort_conditions(
         # Get conditions for the specified time range (cached)
         conditions = _get_conditions_cached(resort_id, hours)
 
+        # Convert to lightweight API format (excludes raw_data)
+        api_conditions = [c.to_api_response() for c in conditions]
+
         # Set cache headers - conditions are updated hourly, 60s cache is safe
         response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
 
         return {
-            "conditions": conditions,
+            "conditions": api_conditions,
             "last_updated": datetime.now(UTC).isoformat(),
             "resort_id": resort_id,
         }
