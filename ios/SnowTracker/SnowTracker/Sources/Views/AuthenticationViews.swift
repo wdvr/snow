@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthenticationServices
+import GoogleSignInSwift
 
 struct WelcomeView: View {
     @ObservedObject private var authService = AuthenticationService.shared
@@ -27,26 +28,46 @@ struct WelcomeView: View {
 
             Spacer()
 
-            // Sign in button
+            // Sign in buttons
             VStack(spacing: 16) {
+                // Sign in with Apple
                 SignInWithAppleButton(.signIn) { request in
                     request.requestedScopes = [.email, .fullName]
                 } onCompletion: { result in
-                    // Handled by AuthenticationService
+                    switch result {
+                    case .success(let authorization):
+                        if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
+                            // The AuthenticationService delegate handles this
+                            _ = appleIDCredential
+                        }
+                    case .failure:
+                        // Error is handled by AuthenticationService delegate
+                        break
+                    }
                 }
                 .signInWithAppleButtonStyle(.black)
                 .frame(height: 50)
                 .cornerRadius(12)
                 .padding(.horizontal, 40)
-
-                // Skip button for development
-                #if DEBUG
-                Button("Continue as Guest") {
-                    // Skip auth for testing
+                .onTapGesture {
+                    authService.signInWithApple()
                 }
-                .foregroundColor(.secondary)
-                #endif
 
+                // Sign in with Google
+                GoogleSignInButton(scheme: .dark, style: .wide, state: .normal) {
+                    authService.signInWithGoogle()
+                }
+                .frame(height: 50)
+                .cornerRadius(12)
+                .padding(.horizontal, 40)
+
+                // Loading indicator
+                if authService.isLoading {
+                    ProgressView()
+                        .padding(.top, 8)
+                }
+
+                // Error message
                 if let error = authService.errorMessage {
                     Text(error)
                         .font(.caption)
@@ -73,9 +94,6 @@ struct WelcomeView: View {
                 .font(.caption)
             }
             .padding(.bottom, 20)
-        }
-        .onTapGesture {
-            authService.signInWithApple()
         }
     }
 }
@@ -110,6 +128,15 @@ struct ProfileView: View {
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
+
+                                // Show auth provider
+                                HStack(spacing: 4) {
+                                    Image(systemName: user.provider == .apple ? "apple.logo" : "g.circle.fill")
+                                        .font(.caption2)
+                                    Text("Signed in with \(user.provider == .apple ? "Apple" : "Google")")
+                                        .font(.caption2)
+                                }
+                                .foregroundColor(.secondary)
                             }
                             .padding(.leading, 8)
                         }

@@ -19,8 +19,8 @@ let package = Package(
         // Core dependencies for networking and data handling
         .package(url: "https://github.com/Alamofire/Alamofire.git", from: "5.8.0"),
 
-        // Authentication with Apple
-        .package(url: "https://github.com/firebase/firebase-ios-sdk.git", from: "10.20.0"),
+        // Google Sign-In
+        .package(url: "https://github.com/google/GoogleSignIn-iOS.git", from: "8.0.0"),
 
         // JSON handling and API client generation
         .package(url: "https://github.com/CreateAPI/Get.git", from: "2.1.0"),
@@ -39,7 +39,8 @@ let package = Package(
             name: "SnowTracker",
             dependencies: [
                 "Alamofire",
-                .product(name: "FirebaseAuth", package: "firebase-ios-sdk"),
+                .product(name: "GoogleSignIn", package: "GoogleSignIn-iOS"),
+                .product(name: "GoogleSignInSwift", package: "GoogleSignIn-iOS"),
                 "Get",
                 "Nuke",
                 .product(name: "KeychainSwift", package: "keychain-swift")

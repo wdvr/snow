@@ -1,6 +1,15 @@
 import Foundation
 import AuthenticationServices
+import GoogleSignIn
 import KeychainSwift
+import UIKit
+
+// MARK: - Authentication Provider
+
+enum AuthProvider: String, Codable {
+    case apple
+    case google
+}
 
 // MARK: - Authentication Service
 
@@ -15,32 +24,37 @@ class AuthenticationService: NSObject, ObservableObject {
 
     private let keychain = KeychainSwift()
 
-    // Keychain keys
+    // Google Sign-In Client ID from Google Cloud Console
+    static let googleClientID = "269334695221-p2i31pdp3n7ms7o7rpf6cb3vsdmc4ohs.apps.googleusercontent.com"
+
     private enum Keys {
         static let userIdentifier = "com.snowtracker.userIdentifier"
         static let authToken = "com.snowtracker.authToken"
         static let refreshToken = "com.snowtracker.refreshToken"
         static let userEmail = "com.snowtracker.userEmail"
         static let userName = "com.snowtracker.userName"
+        static let authProvider = "com.snowtracker.authProvider"
     }
 
     private override init() {
         super.init()
+        configureGoogleSignIn()
         checkExistingCredentials()
     }
 
-    // MARK: - Public Methods
+    // MARK: - Google Sign-In Configuration
 
-    func signInWithApple() {
-        #if DEBUG
-        // Check if Sign in with Apple is available (requires paid developer account)
-        // Fall back to debug sign-in if not
-        if !isSignInWithAppleAvailable {
-            debugSignIn()
+    private func configureGoogleSignIn() {
+        guard Self.googleClientID != "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com" else {
+            print("⚠️ Google Sign-In: Client ID not configured. Update AuthenticationService.googleClientID")
             return
         }
-        #endif
+        // Google Sign-In is configured via Info.plist URL schemes
+    }
 
+    // MARK: - Sign In with Apple
+
+    func signInWithApple() {
         let request = ASAuthorizationAppleIDProvider().createRequest()
         request.requestedScopes = [.email, .fullName]
 
@@ -52,79 +66,111 @@ class AuthenticationService: NSObject, ObservableObject {
         errorMessage = nil
     }
 
-    #if DEBUG
-    /// Check if Sign in with Apple is properly configured
-    private var isSignInWithAppleAvailable: Bool {
-        // Check if the entitlement exists
-        guard let entitlements = Bundle.main.infoDictionary?["Entitlements"] as? [String: Any],
-              let signInWithApple = entitlements["com.apple.developer.applesignin"] as? [String],
-              !signInWithApple.isEmpty else {
-            return false
-        }
-        return true
-    }
+    // MARK: - Sign In with Google
 
-    /// Debug-only sign in for development without paid Apple Developer account
-    func debugSignIn(email: String = "developer@snowtracker.local", name: String = "Debug User") {
+    func signInWithGoogle() {
+        guard Self.googleClientID != "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com" else {
+            errorMessage = "Google Sign-In not configured. Please contact support."
+            return
+        }
+
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootViewController = windowScene.windows.first?.rootViewController else {
+            errorMessage = "Unable to get root view controller"
+            return
+        }
+
         isLoading = true
         errorMessage = nil
 
-        let debugUserID = "debug-user-\(UUID().uuidString.prefix(8))"
+        GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) { [weak self] result, error in
+            Task { @MainActor in
+                self?.isLoading = false
 
-        // Simulate network delay
-        Task {
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                if let error = error {
+                    if (error as NSError).code == GIDSignInError.canceled.rawValue {
+                        // User canceled, not an error
+                        return
+                    }
+                    self?.errorMessage = "Google Sign-In failed: \(error.localizedDescription)"
+                    return
+                }
 
-            keychain.set(debugUserID, forKey: Keys.userIdentifier)
-            keychain.set(email, forKey: Keys.userEmail)
-            keychain.set(name, forKey: Keys.userName)
-            keychain.set("debug-token-\(debugUserID)", forKey: Keys.authToken)
+                guard let user = result?.user,
+                      let idToken = user.idToken?.tokenString else {
+                    self?.errorMessage = "Failed to get Google user info"
+                    return
+                }
 
-            currentUser = AuthenticatedUser(
-                id: debugUserID,
-                email: email,
-                fullName: name
-            )
-            isAuthenticated = true
-            isLoading = false
+                self?.handleSuccessfulGoogleSignIn(
+                    userID: user.userID ?? UUID().uuidString,
+                    email: user.profile?.email,
+                    fullName: user.profile?.name,
+                    idToken: idToken
+                )
+            }
         }
     }
-    #endif
+
+    // MARK: - Sign Out
 
     func signOut() {
+        // Get the provider to sign out from the correct service
+        if let providerString = keychain.get(Keys.authProvider),
+           let provider = AuthProvider(rawValue: providerString) {
+            switch provider {
+            case .google:
+                GIDSignIn.sharedInstance.signOut()
+            case .apple:
+                // Apple doesn't have a sign out API - just clear local credentials
+                break
+            }
+        }
+
         // Clear keychain
         keychain.delete(Keys.userIdentifier)
         keychain.delete(Keys.authToken)
         keychain.delete(Keys.refreshToken)
         keychain.delete(Keys.userEmail)
         keychain.delete(Keys.userName)
+        keychain.delete(Keys.authProvider)
 
         currentUser = nil
         isAuthenticated = false
     }
 
-    // Nonisolated for use from APIClient
+    // MARK: - Token Access (for API calls)
+
     nonisolated func getAuthToken() -> String? {
         KeychainSwift().get(Keys.authToken)
     }
 
+    // MARK: - Credential Checking
+
     func checkExistingCredentials() {
-        guard let userIdentifier = keychain.get(Keys.userIdentifier) else {
+        guard let userIdentifier = keychain.get(Keys.userIdentifier),
+              let providerString = keychain.get(Keys.authProvider),
+              let provider = AuthProvider(rawValue: providerString) else {
             isAuthenticated = false
             return
         }
 
-        // Verify the credential is still valid
+        switch provider {
+        case .apple:
+            checkAppleCredentialState(userIdentifier: userIdentifier)
+        case .google:
+            checkGoogleCredentialState()
+        }
+    }
+
+    private func checkAppleCredentialState(userIdentifier: String) {
         let provider = ASAuthorizationAppleIDProvider()
-        provider.getCredentialState(forUserID: userIdentifier) { [weak self] state, error in
+        provider.getCredentialState(forUserID: userIdentifier) { [weak self] state, _ in
             Task { @MainActor in
                 switch state {
                 case .authorized:
-                    self?.restoreUserSession(userIdentifier: userIdentifier)
-                case .revoked, .notFound:
-                    self?.signOut()
-                case .transferred:
-                    // Handle account transfer between devices
+                    self?.restoreUserSession(userIdentifier: userIdentifier, provider: .apple)
+                case .revoked, .notFound, .transferred:
                     self?.signOut()
                 @unknown default:
                     self?.signOut()
@@ -133,25 +179,43 @@ class AuthenticationService: NSObject, ObservableObject {
         }
     }
 
+    private func checkGoogleCredentialState() {
+        // Try to restore previous Google sign-in
+        GIDSignIn.sharedInstance.restorePreviousSignIn { [weak self] user, error in
+            Task { @MainActor in
+                if let user = user, error == nil {
+                    self?.restoreUserSession(
+                        userIdentifier: user.userID ?? "",
+                        provider: .google
+                    )
+                } else {
+                    self?.signOut()
+                }
+            }
+        }
+    }
+
     // MARK: - Private Methods
 
-    private func restoreUserSession(userIdentifier: String) {
+    private func restoreUserSession(userIdentifier: String, provider: AuthProvider) {
         let email = keychain.get(Keys.userEmail)
         let name = keychain.get(Keys.userName)
 
         currentUser = AuthenticatedUser(
             id: userIdentifier,
             email: email,
-            fullName: name
+            fullName: name,
+            provider: provider
         )
         isAuthenticated = true
     }
 
-    private func handleSuccessfulSignIn(credential: ASAuthorizationAppleIDCredential) {
+    private func handleSuccessfulAppleSignIn(credential: ASAuthorizationAppleIDCredential) {
         let userIdentifier = credential.user
 
-        // Store user identifier
+        // Store user identifier and provider
         keychain.set(userIdentifier, forKey: Keys.userIdentifier)
+        keychain.set(AuthProvider.apple.rawValue, forKey: Keys.authProvider)
 
         // Store email if provided (only on first sign in)
         if let email = credential.email {
@@ -169,24 +233,46 @@ class AuthenticationService: NSObject, ObservableObject {
         // Get identity token for backend authentication
         if let identityTokenData = credential.identityToken,
            let identityToken = String(data: identityTokenData, encoding: .utf8) {
-            // Send to backend for verification and get JWT
             Task {
-                await authenticateWithBackend(appleToken: identityToken, userIdentifier: userIdentifier)
+                await authenticateWithBackend(token: identityToken, provider: .apple, userIdentifier: userIdentifier)
             }
         } else {
-            // No token, but we can still proceed with local auth
-            restoreUserSession(userIdentifier: userIdentifier)
+            restoreUserSession(userIdentifier: userIdentifier, provider: .apple)
             isLoading = false
         }
     }
 
-    private func authenticateWithBackend(appleToken: String, userIdentifier: String) async {
+    private func handleSuccessfulGoogleSignIn(userID: String, email: String?, fullName: String?, idToken: String) {
+        // Store user identifier and provider
+        keychain.set(userID, forKey: Keys.userIdentifier)
+        keychain.set(AuthProvider.google.rawValue, forKey: Keys.authProvider)
+
+        // Store email and name
+        if let email = email {
+            keychain.set(email, forKey: Keys.userEmail)
+        }
+        if let fullName = fullName {
+            keychain.set(fullName, forKey: Keys.userName)
+        }
+
+        Task {
+            await authenticateWithBackend(token: idToken, provider: .google, userIdentifier: userID)
+        }
+    }
+
+    private func authenticateWithBackend(token: String, provider: AuthProvider, userIdentifier: String) async {
         defer { isLoading = false }
 
-        // TODO: Call backend /api/v1/auth/apple endpoint
-        // For now, just store the Apple token as the auth token
-        keychain.set(appleToken, forKey: Keys.authToken)
-        restoreUserSession(userIdentifier: userIdentifier)
+        // TODO: Call backend /api/v1/auth/apple or /api/v1/auth/google endpoint
+        // For now, store the provider token as the auth token
+        keychain.set(token, forKey: Keys.authToken)
+        restoreUserSession(userIdentifier: userIdentifier, provider: provider)
+    }
+
+    // MARK: - Handle URL (for Google Sign-In callback)
+
+    func handleURL(_ url: URL) -> Bool {
+        return GIDSignIn.sharedInstance.handle(url)
     }
 }
 
@@ -202,7 +288,7 @@ extension AuthenticationService: ASAuthorizationControllerDelegate {
 
             switch authorization.credential {
             case let appleIDCredential as ASAuthorizationAppleIDCredential:
-                handleSuccessfulSignIn(credential: appleIDCredential)
+                handleSuccessfulAppleSignIn(credential: appleIDCredential)
             default:
                 errorMessage = "Unsupported credential type"
             }
@@ -247,6 +333,14 @@ struct AuthenticatedUser: Identifiable, Codable {
     let id: String
     let email: String?
     let fullName: String?
+    let provider: AuthProvider
+
+    init(id: String, email: String?, fullName: String?, provider: AuthProvider = .apple) {
+        self.id = id
+        self.email = email
+        self.fullName = fullName
+        self.provider = provider
+    }
 
     var displayName: String {
         if let name = fullName, !name.isEmpty {

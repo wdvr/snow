@@ -20,12 +20,7 @@ struct SnowTrackerApp: App {
                         .environmentObject(snowConditionsManager)
                         .environmentObject(userPreferencesManager)
                 } else {
-                    // For now, skip auth and go directly to main app
-                    // Uncomment WelcomeView when ready to enable auth
-                    // WelcomeView()
-                    MainTabView()
-                        .environmentObject(snowConditionsManager)
-                        .environmentObject(userPreferencesManager)
+                    WelcomeView()
                 }
 
                 if showSplash {
@@ -41,6 +36,10 @@ struct SnowTrackerApp: App {
                         showSplash = false
                     }
                 }
+            }
+            .onOpenURL { url in
+                // Handle Google Sign-In callback URL
+                _ = authService.handleURL(url)
             }
         }
     }
