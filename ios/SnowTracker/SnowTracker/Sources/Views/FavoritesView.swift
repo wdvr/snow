@@ -21,7 +21,11 @@ struct FavoritesView: View {
             }
             .navigationTitle("Favorites")
             .refreshable {
-                await snowConditionsManager.refreshConditions()
+                await snowConditionsManager.fetchConditionsForFavorites()
+            }
+            .task {
+                // Fetch conditions for favorites when view appears
+                await snowConditionsManager.fetchConditionsForFavorites()
             }
         }
     }

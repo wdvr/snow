@@ -83,7 +83,11 @@ struct ResortDetailView: View {
             ShareSheet(items: [shareText])
         }
         .refreshable {
-            await snowConditionsManager.refreshConditions()
+            await snowConditionsManager.fetchConditionsForResort(resort.id)
+        }
+        .task {
+            // Fetch conditions for this resort when view appears
+            await snowConditionsManager.fetchConditionsForResort(resort.id)
         }
     }
 

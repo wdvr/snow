@@ -19,18 +19,69 @@ class SnowConditionsManager: ObservableObject {
     func loadInitialData() {
         Task {
             await fetchResorts()
-            await fetchAllConditions()
+            // Only fetch conditions for favorites on startup (not all 1000+ resorts)
+            await fetchConditionsForFavorites()
             // Clean up old cached data periodically
             cacheService.cleanupStaleCache()
         }
     }
 
     func refreshData() async {
-        await fetchAllConditions()
+        await fetchConditionsForFavorites()
     }
 
     func refreshConditions() async {
-        await fetchAllConditions()
+        await fetchConditionsForFavorites()
+    }
+
+    /// Fetch conditions for favorites only - efficient for startup
+    func fetchConditionsForFavorites() async {
+        let favoriteIds = Array(UserPreferencesManager.shared.favoriteResorts)
+        guard !favoriteIds.isEmpty else { return }
+        await fetchConditionsForResorts(resortIds: favoriteIds)
+    }
+
+    /// Fetch conditions for a single resort - use when opening detail view
+    func fetchConditionsForResort(_ resortId: String) async {
+        // Check if we already have fresh conditions
+        if let existing = conditions[resortId], !existing.isEmpty {
+            // Check if cached data is still fresh (less than 5 minutes old)
+            if let cached = cacheService.getCachedConditions(for: resortId), !cached.isStale {
+                return
+            }
+        }
+        await fetchConditionsForResorts(resortIds: [resortId])
+    }
+
+    /// Fetch conditions for a list of resorts (batch API call)
+    func fetchConditionsForResorts(resortIds: [String]) async {
+        guard !resortIds.isEmpty else { return }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        // Use batch API for efficiency
+        do {
+            let batchResults = try await apiClient.getBatchConditions(resortIds: resortIds)
+            for (resortId, resortConditions) in batchResults {
+                conditions[resortId] = resortConditions
+                cacheService.cacheConditions(resortConditions, for: resortId)
+            }
+            isUsingCachedData = false
+            errorMessage = nil
+            lastUpdated = Date()
+        } catch {
+            // Fall back to cache for each resort
+            for resortId in resortIds {
+                if let cached = cacheService.getCachedConditions(for: resortId) {
+                    conditions[resortId] = cached.data
+                    isUsingCachedData = true
+                }
+            }
+            if isUsingCachedData {
+                errorMessage = "Using cached data"
+            }
+        }
     }
 
     func fetchResorts() async {

@@ -7,11 +7,12 @@ from typing import Any, Callable
 
 from cachetools import TTLCache
 
-# Global caches with 60-second TTL
+# Global caches with 5-minute TTL (weather updates hourly, so this is safe)
 # These persist across Lambda invocations (warm starts)
-_resorts_cache: TTLCache = TTLCache(maxsize=100, ttl=60)
-_conditions_cache: TTLCache = TTLCache(maxsize=500, ttl=60)
-_snow_quality_cache: TTLCache = TTLCache(maxsize=100, ttl=60)
+CACHE_TTL_SECONDS = 300  # 5 minutes
+_resorts_cache: TTLCache = TTLCache(maxsize=500, ttl=CACHE_TTL_SECONDS)
+_conditions_cache: TTLCache = TTLCache(maxsize=2000, ttl=CACHE_TTL_SECONDS)
+_snow_quality_cache: TTLCache = TTLCache(maxsize=500, ttl=CACHE_TTL_SECONDS)
 
 
 def get_cache_key(*args, **kwargs) -> str:
@@ -73,6 +74,6 @@ def clear_all_caches() -> None:
     _snow_quality_cache.clear()
 
 
-# Cache-Control header values
-CACHE_CONTROL_PUBLIC = "public, max-age=60"  # Cacheable by any cache
+# Cache-Control header values (weather updates hourly, aggressive caching is safe)
+CACHE_CONTROL_PUBLIC = "public, max-age=300"  # 5 minutes, cacheable by any cache
 CACHE_CONTROL_PRIVATE = "private, no-cache"  # User-specific data, no caching
