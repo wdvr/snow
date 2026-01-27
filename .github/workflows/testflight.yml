@@ -230,7 +230,7 @@ jobs:
 
         # Get beta groups for internal testing
         echo "Fetching beta groups..."
-        GROUPS_RESPONSE=$(curl -s -H "Authorization: Bearer $JWT" \
+        GROUPS_RESPONSE=$(curl -g -s -H "Authorization: Bearer $JWT" \
           "https://api.appstoreconnect.apple.com/v1/apps/$APP_ID/betaGroups")
 
         # Find the internal testers group (or first available group)
@@ -258,7 +258,7 @@ jobs:
         echo "Adding build to beta group $BETA_GROUP_ID..."
 
         # Add the build to the beta group
-        ADD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+        ADD_RESPONSE=$(curl -g -s -w "\n%{http_code}" -X POST \
           -H "Authorization: Bearer $JWT" \
           -H "Content-Type: application/json" \
           -d "{\"data\":[{\"type\":\"builds\",\"id\":\"$BUILD_ID\"}]}" \
