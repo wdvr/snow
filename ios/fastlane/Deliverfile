@@ -8,16 +8,8 @@ skip_binary_upload true
 
 # Metadata
 copyright "#{Time.now.year} Wouter Devriendt"
-primary_category "Weather"
-secondary_category "Sports"
-
-# Review information
-app_review_information(
-  first_name: "Wouter",
-  last_name: "Devriendt",
-  phone_number: "+32000000000",
-  email_address: "wouterdevriendt@gmail.com"
-)
+primary_category "WEATHER"
+secondary_category "SPORTS"
 
 # Pricing
 price_tier 0
