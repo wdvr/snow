@@ -4,7 +4,8 @@ import KeychainSwift
 
 // MARK: - API Client
 
-class APIClient {
+@MainActor
+final class APIClient {
     static let shared = APIClient()
 
     private let baseURL: URL

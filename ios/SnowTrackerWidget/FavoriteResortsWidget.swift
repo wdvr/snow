@@ -44,9 +44,9 @@ struct FavoriteResortsProvider: TimelineProvider {
         completion(entry)
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<FavoriteResortsEntry>) -> Void) {
+    func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<FavoriteResortsEntry>) -> Void) {
         logger.info("FavoriteResortsWidget: Getting timeline...")
-        Task {
+        Task { @MainActor in
             do {
                 let resorts = try await WidgetDataService.shared.fetchFavoriteResorts()
                 logger.info("FavoriteResortsWidget: Got \(resorts.count) resorts")

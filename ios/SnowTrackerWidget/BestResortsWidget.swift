@@ -44,9 +44,9 @@ struct BestResortsProvider: TimelineProvider {
         completion(entry)
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<BestResortsEntry>) -> Void) {
+    func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<BestResortsEntry>) -> Void) {
         logger.info("BestResortsWidget: Getting timeline...")
-        Task {
+        Task { @MainActor in
             do {
                 let resorts = try await WidgetDataService.shared.fetchBestResorts()
                 logger.info("BestResortsWidget: Got \(resorts.count) resorts")

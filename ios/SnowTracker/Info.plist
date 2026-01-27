@@ -36,6 +36,8 @@
 		<key>UIColorName</key>
 		<string>AccentColor</string>
 	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Snow Tracker uses your location to show nearby ski resorts and calculate distances to resorts.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

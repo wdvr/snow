@@ -56,8 +56,9 @@ enum AppEnvironment: String, CaseIterable {
 
 /// App configuration singleton
 /// Handles environment selection and custom API URL overrides
+@MainActor
 class AppConfiguration: ObservableObject {
-    static var shared = AppConfiguration()
+    static let shared = AppConfiguration()
 
     // UserDefaults keys
     private let customAPIURLKey = "com.snowtracker.customAPIURL"

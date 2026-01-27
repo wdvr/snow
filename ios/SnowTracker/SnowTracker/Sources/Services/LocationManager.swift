@@ -107,12 +107,13 @@ extension LocationManager: CLLocationManagerDelegate {
     }
 
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
         Task { @MainActor in
-            self.authorizationStatus = manager.authorizationStatus
+            self.authorizationStatus = status
             self.updateLocationAvailability()
 
             if self.authorizationStatus == .authorizedWhenInUse || self.authorizationStatus == .authorizedAlways {
-                manager.requestLocation()
+                self.locationManager.requestLocation()
             }
         }
     }

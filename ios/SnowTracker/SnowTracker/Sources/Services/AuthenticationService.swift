@@ -85,28 +85,35 @@ class AuthenticationService: NSObject, ObservableObject {
         errorMessage = nil
 
         GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) { [weak self] result, error in
+            // Extract values before entering Task to avoid sending non-Sendable types
+            let errorMessage = error?.localizedDescription
+            let isCanceled = (error as? NSError)?.code == GIDSignInError.canceled.rawValue
+            let userID = result?.user.userID ?? UUID().uuidString
+            let email = result?.user.profile?.email
+            let fullName = result?.user.profile?.name
+            let idToken = result?.user.idToken?.tokenString
+
             Task { @MainActor in
                 self?.isLoading = false
 
-                if let error = error {
-                    if (error as NSError).code == GIDSignInError.canceled.rawValue {
+                if let errorMessage = errorMessage {
+                    if isCanceled {
                         // User canceled, not an error
                         return
                     }
-                    self?.errorMessage = "Google Sign-In failed: \(error.localizedDescription)"
+                    self?.errorMessage = "Google Sign-In failed: \(errorMessage)"
                     return
                 }
 
-                guard let user = result?.user,
-                      let idToken = user.idToken?.tokenString else {
+                guard let idToken = idToken else {
                     self?.errorMessage = "Failed to get Google user info"
                     return
                 }
 
                 self?.handleSuccessfulGoogleSignIn(
-                    userID: user.userID ?? UUID().uuidString,
-                    email: user.profile?.email,
-                    fullName: user.profile?.name,
+                    userID: userID,
+                    email: email,
+                    fullName: fullName,
                     idToken: idToken
                 )
             }
@@ -200,10 +207,14 @@ class AuthenticationService: NSObject, ObservableObject {
     private func checkGoogleCredentialState() {
         // Try to restore previous Google sign-in
         GIDSignIn.sharedInstance.restorePreviousSignIn { [weak self] user, error in
+            // Extract values before entering Task to avoid sending non-Sendable types
+            let userID = user?.userID ?? ""
+            let hasError = error != nil || user == nil
+
             Task { @MainActor in
-                if let user = user, error == nil {
+                if !hasError && !userID.isEmpty {
                     self?.restoreUserSession(
-                        userIdentifier: user.userID ?? "",
+                        userIdentifier: userID,
                         provider: .google
                     )
                 } else {

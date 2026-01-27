@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Raw Data Wrapper for arbitrary JSON
 
-struct RawDataWrapper: Codable, Hashable {
+struct RawDataWrapper: Codable, Hashable, Sendable {
     private var storage: [String: JSONValue] = [:]
 
     init(from decoder: Decoder) throws {
@@ -19,7 +19,7 @@ struct RawDataWrapper: Codable, Hashable {
     }
 }
 
-enum JSONValue: Codable, Hashable {
+enum JSONValue: Codable, Hashable, Sendable {
     case string(String)
     case int(Int)
     case double(Double)
@@ -65,7 +65,7 @@ enum JSONValue: Codable, Hashable {
 
 // MARK: - Weather and Snow Quality Models
 
-enum SnowQuality: String, CaseIterable, Codable {
+enum SnowQuality: String, CaseIterable, Codable, Sendable {
     case excellent = "excellent"
     case good = "good"
     case fair = "fair"
@@ -171,7 +171,7 @@ enum SnowQuality: String, CaseIterable, Codable {
     }
 }
 
-enum ConfidenceLevel: String, CaseIterable, Codable {
+enum ConfidenceLevel: String, CaseIterable, Codable, Sendable {
     case veryHigh = "very_high"
     case high = "high"
     case medium = "medium"
@@ -217,7 +217,7 @@ enum ConfidenceLevel: String, CaseIterable, Codable {
     }
 }
 
-struct WeatherCondition: Codable, Identifiable, Hashable {
+struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
     let id = UUID()
     let resortId: String
     let elevationLevel: String

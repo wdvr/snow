@@ -3,7 +3,7 @@ import os.log
 
 // MARK: - Widget Data Service
 
-class WidgetDataService {
+final class WidgetDataService: @unchecked Sendable {
     static let shared = WidgetDataService()
 
     private let baseURL: URL

@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Unit Preferences for Widget
 
-struct WidgetUnitPreferences: Codable {
+struct WidgetUnitPreferences: Codable, Sendable {
     var temperature: TemperatureUnit = .celsius
     var snowDepth: SnowDepthUnit = .centimeters
 
@@ -51,7 +51,7 @@ struct WidgetUnitPreferences: Codable {
 
 // MARK: - Resort Condition Data for Widget
 
-struct ResortConditionData: Identifiable {
+struct ResortConditionData: Identifiable, Sendable {
     let id = UUID()
     let resortId: String
     let resortName: String
@@ -64,7 +64,7 @@ struct ResortConditionData: Identifiable {
 
 // MARK: - Snow Quality for Widget
 
-enum WidgetSnowQuality: String {
+enum WidgetSnowQuality: String, Sendable {
     case excellent = "excellent"
     case good = "good"
     case fair = "fair"
