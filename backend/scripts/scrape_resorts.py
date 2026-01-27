@@ -22,14 +22,19 @@ import logging
 import re
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
+from threading import Lock
 from typing import Optional
 from urllib.parse import quote, urljoin
 
 import requests
 from bs4 import BeautifulSoup
+
+# Thread-safe logging lock
+_log_lock = Lock()
 
 # Configure logging
 logging.basicConfig(
@@ -387,14 +392,20 @@ class SkiResortInfoScraper(BaseScraper):
         countries: list[str] | None = None,
         min_vertical: int = 300,
         session: requests.Session | None = None,
+        max_workers: int = 10,
+        existing_ids: set[str] | None = None,
     ):
         super().__init__(session)
         self.countries = countries or list(self.COUNTRY_URLS.keys())
         self.min_vertical = min_vertical  # Minimum vertical drop in meters
+        self.max_workers = max_workers
+        self.existing_ids = existing_ids or set()  # For delta mode
 
     def scrape(self) -> list[ScrapedResort]:
-        """Scrape resorts from all configured countries."""
-        all_resorts = []
+        """Scrape resorts from all configured countries using parallel requests."""
+        # Phase 1: Collect all resort URLs (fast, sequential)
+        logger.info("Phase 1: Collecting resort URLs from all countries...")
+        resort_urls = []  # List of (url, country) tuples
 
         for country in self.countries:
             if country not in self.COUNTRY_URLS:
@@ -402,82 +413,120 @@ class SkiResortInfoScraper(BaseScraper):
                 continue
 
             try:
-                resorts = self._scrape_country(country)
-                all_resorts.extend(resorts)
-                logger.info(f"Scraped {len(resorts)} resorts from {country}")
+                urls = self._collect_resort_urls(country)
+                # Filter out existing resorts in delta mode
+                if self.existing_ids:
+                    before = len(urls)
+                    urls = [
+                        (u, c)
+                        for u, c in urls
+                        if self._url_to_id(u) not in self.existing_ids
+                    ]
+                    skipped = before - len(urls)
+                    if skipped > 0:
+                        logger.info(
+                            f"  Skipped {skipped} existing resorts in {country}"
+                        )
+                resort_urls.extend(urls)
+                logger.info(f"  Found {len(urls)} resort URLs in {country}")
             except Exception as e:
-                logger.error(f"Failed to scrape {country}: {e}")
+                logger.error(f"Failed to collect URLs from {country}: {e}")
 
-        return all_resorts
+        logger.info(f"Total: {len(resort_urls)} resorts to scrape")
 
-    def _scrape_country(self, country: str) -> list[ScrapedResort]:
-        """Scrape all resorts from a specific country."""
-        url = urljoin(self.BASE_URL, self.COUNTRY_URLS[country])
-        resorts = []
-        page = 1
+        if not resort_urls:
+            return []
 
-        while True:
-            page_url = f"{url}/page/{page}" if page > 1 else url
-            logger.info(f"Scraping {page_url}")
+        # Phase 2: Scrape all resort detail pages in parallel
+        logger.info(
+            f"Phase 2: Scraping {len(resort_urls)} resort details with {self.max_workers} workers..."
+        )
+        all_resorts = []
+        completed = 0
 
-            try:
-                soup = self._get_soup(page_url)
-            except requests.HTTPError as e:
-                if e.response.status_code == 404:
-                    break  # No more pages
-                raise
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Submit all tasks
+            future_to_url = {
+                executor.submit(self._scrape_resort_detail, url, country): (
+                    url,
+                    country,
+                )
+                for url, country in resort_urls
+            }
 
-            # Find resort listings
-            resort_cards = soup.select(
-                ".resort-list-item, .resort-item, [data-resort-id]"
-            )
+            # Process completed tasks
+            for future in as_completed(future_to_url):
+                url, country = future_to_url[future]
+                completed += 1
 
-            if not resort_cards:
-                # Try alternative selectors
-                resort_cards = soup.select(".panel-body a[href*='/ski-resort/']")
-
-            if not resort_cards:
-                break
-
-            for card in resort_cards:
                 try:
-                    resort = self._parse_resort_card(card, country)
+                    resort = future.result()
                     if (
                         resort
                         and (resort.elevation_top_m - resort.elevation_base_m)
                         >= self.min_vertical
                     ):
-                        resorts.append(resort)
+                        all_resorts.append(resort)
+                        with _log_lock:
+                            logger.info(
+                                f"[{completed}/{len(resort_urls)}] ✓ {resort.name}"
+                            )
+                    else:
+                        with _log_lock:
+                            logger.debug(
+                                f"[{completed}/{len(resort_urls)}] Skipped (low vertical)"
+                            )
                 except Exception as e:
-                    logger.warning(f"Failed to parse resort card: {e}")
+                    with _log_lock:
+                        logger.warning(f"[{completed}/{len(resort_urls)}] ✗ {url}: {e}")
+
+        logger.info(f"Scraped {len(all_resorts)} resorts total")
+        return all_resorts
+
+    def _url_to_id(self, url: str) -> str:
+        """Convert URL to resort ID."""
+        match = re.search(r"/ski-resort/([^/]+)/?", url)
+        return match.group(1) if match else url
+
+    def _collect_resort_urls(self, country: str) -> list[tuple[str, str]]:
+        """Collect all resort URLs from a country's listing pages."""
+        url = urljoin(self.BASE_URL, self.COUNTRY_URLS[country])
+        resort_urls = []
+        page = 1
+
+        while True:
+            page_url = f"{url}/page/{page}" if page > 1 else url
+
+            try:
+                soup = self._get_soup(page_url)
+            except requests.HTTPError as e:
+                if e.response.status_code == 404:
+                    break
+                raise
+
+            # Find resort links (exclude snow-report and test-report subpages)
+            links = soup.select("a[href*='/ski-resort/']")
+            seen = set()
+            for link in links:
+                href = link.get("href", "")
+                # Skip non-resort pages
+                if any(
+                    x in href
+                    for x in ["/snow-report", "/test-report", "/reviews", "/photos"]
+                ):
+                    continue
+                full_url = urljoin(self.BASE_URL, href)
+                if "/ski-resort/" in full_url and full_url not in seen:
+                    seen.add(full_url)
+                    resort_urls.append((full_url, country))
 
             # Check for next page
             next_link = soup.select_one(".pagination .next, a[rel='next']")
-            if not next_link:
+            if not next_link or page >= 20:
                 break
-
             page += 1
 
-            # Safety limit
-            if page > 20:
-                logger.warning(f"Reached page limit for {country}")
-                break
-
-        return resorts
-
-    def _parse_resort_card(self, card, country: str) -> ScrapedResort | None:
-        """Parse a resort card/listing element."""
-        # Get resort detail URL
-        link = card.select_one("a[href*='/ski-resort/']") or card.find_parent("a")
-        if not link:
-            return None
-
-        detail_url = urljoin(self.BASE_URL, link.get("href", ""))
-        if not detail_url:
-            return None
-
-        # Scrape the detail page for full information
-        return self._scrape_resort_detail(detail_url, country)
+        return resort_urls
 
     def _scrape_resort_detail(self, url: str, country: str) -> ScrapedResort | None:
         """Scrape detailed resort information from its page."""
@@ -516,7 +565,7 @@ class SkiResortInfoScraper(BaseScraper):
         # Alternative: look for specific labeled values
         if not elevation_base or not elevation_top:
             for label in ["Base", "Valley", "Bottom"]:
-                elem = soup.find(text=re.compile(label, re.I))
+                elem = soup.find(string=re.compile(label, re.I))
                 if elem:
                     parent = elem.parent
                     if parent:
@@ -526,7 +575,7 @@ class SkiResortInfoScraper(BaseScraper):
                             break
 
             for label in ["Top", "Summit", "Peak"]:
-                elem = soup.find(text=re.compile(label, re.I))
+                elem = soup.find(string=re.compile(label, re.I))
                 if elem:
                     parent = elem.parent
                     if parent:
@@ -621,7 +670,7 @@ class SkiResortInfoScraper(BaseScraper):
 
         # Extract snowfall
         annual_snowfall_cm = None
-        snow_elem = soup.find(text=re.compile(r"snowfall|snow.*average", re.I))
+        snow_elem = soup.find(string=re.compile(r"snowfall|snow.*average", re.I))
         if snow_elem:
             parent = snow_elem.parent
             if parent:
@@ -1357,13 +1406,26 @@ class ResortScraper:
         self,
         countries: list[str] | None = None,
         min_vertical: int = 300,
+        max_workers: int = 10,
+        existing_ids: set[str] | None = None,
     ):
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": USER_AGENT})
+        # Increase connection pool for parallel requests
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=max_workers + 5,
+            pool_maxsize=max_workers + 5,
+        )
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
 
         self.scrapers = [
             SkiResortInfoScraper(
-                countries=countries, min_vertical=min_vertical, session=self.session
+                countries=countries,
+                min_vertical=min_vertical,
+                session=self.session,
+                max_workers=max_workers,
+                existing_ids=existing_ids,
             ),
             WikipediaScraper(countries=countries, session=self.session),
         ]
@@ -1546,21 +1608,47 @@ def main():
         help="Enable verbose logging",
     )
 
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Full scrape (default is delta mode which skips existing resorts)",
+    )
+
+    parser.add_argument(
+        "--workers",
+        "-w",
+        type=int,
+        default=10,
+        help="Number of parallel workers (default: 10)",
+    )
+
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    # Load existing data if merging
+    # Load existing data for delta mode or merging
     existing_data = None
-    if args.merge_existing:
+    existing_ids = set()
+
+    if args.merge_existing or not args.full:
         existing_data = load_existing_resorts(args.existing_file)
-        logger.info(f"Loaded {len(existing_data.get('resorts', []))} existing resorts")
+        if existing_data:
+            existing_ids = {
+                r.get("resort_id") for r in existing_data.get("resorts", [])
+            }
+            logger.info(f"Loaded {len(existing_ids)} existing resorts")
+            if not args.full:
+                logger.info("Delta mode: will skip existing resorts")
+        else:
+            logger.info("No existing data found, doing full scrape")
 
     # Create scraper and run
     scraper = ResortScraper(
         countries=args.countries,
         min_vertical=args.min_vertical,
+        max_workers=args.workers,
+        existing_ids=existing_ids if not args.full else None,
     )
 
     resorts = scraper.scrape()
