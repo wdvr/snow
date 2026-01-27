@@ -1,7 +1,7 @@
 # Snow Quality Tracker - Progress
 
 ## Status: LIVE
-**Last Updated**: 2026-01-25
+**Last Updated**: 2026-01-27
 
 ### API Endpoints
 - **Staging**: https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging
@@ -17,7 +17,6 @@ All tasks tracked at: https://github.com/wdvr/snow/issues
 
 | Issue | Title | Priority |
 |-------|-------|----------|
-| [#36](https://github.com/wdvr/snow/issues/36) | Proximity-based resort discovery with map | High |
 | [#22](https://github.com/wdvr/snow/issues/22) | Best Snow This Week - Location Recommendations | High |
 | [#14](https://github.com/wdvr/snow/issues/14) | Sign in with Apple backend | Medium |
 | [#16](https://github.com/wdvr/snow/issues/16) | Push notifications for snow alerts | Medium |
@@ -33,6 +32,7 @@ All tasks tracked at: https://github.com/wdvr/snow/issues
 
 | Feature | Date |
 |---------|------|
+| Proximity-based resort discovery with sorting | 2026-01-27 |
 | Freeze-thaw detection (14-day lookback) | 2026-01-25 |
 | Snow quality ratings (Excellent→Horrible) | 2026-01-25 |
 | Manual weather processor trigger workflow | 2026-01-25 |

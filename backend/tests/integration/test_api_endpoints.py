@@ -417,9 +417,11 @@ class TestAPIIntegration:
         # Cleanup
         resorts_table.delete_item(Key={"resort_id": "test-resort"})
 
-    @patch("handlers.api_handler.user_service")
-    def test_get_user_preferences(self, mock_user_service, app_client):
+    @patch("handlers.api_handler.get_user_service")
+    def test_get_user_preferences(self, mock_get_user_service, app_client):
         """Test getting user preferences."""
+        from unittest.mock import MagicMock
+
         from models.user import UserPreferences
 
         # Create actual UserPreferences object
@@ -440,7 +442,9 @@ class TestAPIIntegration:
             created_at="2026-01-20T10:00:00Z",
             updated_at="2026-01-20T10:00:00Z",
         )
-        mock_user_service.get_user_preferences.return_value = mock_preferences
+        mock_service = MagicMock()
+        mock_service.get_user_preferences.return_value = mock_preferences
+        mock_get_user_service.return_value = mock_service
 
         response = app_client.get("/api/v1/user/preferences")
 
@@ -557,3 +561,139 @@ class TestAPIIntegration:
 
         # Cleanup
         resorts_table.delete_item(Key={"resort_id": "test-resort"})
+
+    def test_get_nearby_resorts(self, app_client, dynamodb_tables):
+        """Test the nearby resorts endpoint."""
+        # Add multiple resorts at different locations
+        resorts_table = dynamodb_tables["resorts_table"]
+
+        nearby_resort = {
+            "resort_id": "nearby-resort",
+            "name": "Nearby Resort",
+            "country": "CA",
+            "region": "BC",
+            "elevation_points": [
+                {
+                    "level": "mid",
+                    "elevation_meters": 1500,
+                    "elevation_feet": 4921,
+                    "latitude": 49.3,  # Near Vancouver
+                    "longitude": -123.0,
+                },
+            ],
+            "timezone": "America/Vancouver",
+        }
+
+        far_resort = {
+            "resort_id": "far-resort",
+            "name": "Far Resort",
+            "country": "CA",
+            "region": "AB",
+            "elevation_points": [
+                {
+                    "level": "mid",
+                    "elevation_meters": 2000,
+                    "elevation_feet": 6562,
+                    "latitude": 51.4,  # Far from Vancouver
+                    "longitude": -116.0,
+                },
+            ],
+            "timezone": "America/Edmonton",
+        }
+
+        resorts_table.put_item(Item=prepare_for_dynamodb(nearby_resort))
+        resorts_table.put_item(Item=prepare_for_dynamodb(far_resort))
+
+        # Test nearby endpoint - small radius
+        response = app_client.get(
+            "/api/v1/resorts/nearby?lat=49.2827&lon=-123.1207&radius=50"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert "resorts" in data
+        assert "count" in data
+        assert "search_center" in data
+        assert "search_radius_km" in data
+
+        # Should find nearby resort only
+        assert data["count"] == 1
+        assert data["resorts"][0]["resort"]["resort_id"] == "nearby-resort"
+        assert "distance_km" in data["resorts"][0]
+        assert "distance_miles" in data["resorts"][0]
+
+        # Test with larger radius
+        response = app_client.get(
+            "/api/v1/resorts/nearby?lat=49.2827&lon=-123.1207&radius=1000"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 2
+
+        # Results should be sorted by distance
+        assert data["resorts"][0]["distance_km"] < data["resorts"][1]["distance_km"]
+
+        # Cleanup
+        resorts_table.delete_item(Key={"resort_id": "nearby-resort"})
+        resorts_table.delete_item(Key={"resort_id": "far-resort"})
+
+    def test_get_nearby_resorts_validation(self, app_client):
+        """Test validation for nearby resorts endpoint."""
+        # Missing required parameters
+        response = app_client.get("/api/v1/resorts/nearby")
+        assert response.status_code == 422
+
+        # Invalid latitude (out of range)
+        response = app_client.get("/api/v1/resorts/nearby?lat=100&lon=0")
+        assert response.status_code == 422
+
+        # Invalid longitude (out of range)
+        response = app_client.get("/api/v1/resorts/nearby?lat=0&lon=200")
+        assert response.status_code == 422
+
+        # Invalid radius (too small)
+        response = app_client.get("/api/v1/resorts/nearby?lat=49&lon=-123&radius=0")
+        assert response.status_code == 422
+
+        # Invalid radius (too large)
+        response = app_client.get("/api/v1/resorts/nearby?lat=49&lon=-123&radius=3000")
+        assert response.status_code == 422
+
+        # Invalid limit
+        response = app_client.get("/api/v1/resorts/nearby?lat=49&lon=-123&limit=0")
+        assert response.status_code == 422
+
+    def test_get_nearby_resorts_with_limit(self, app_client, dynamodb_tables):
+        """Test nearby resorts endpoint with limit parameter."""
+        resorts_table = dynamodb_tables["resorts_table"]
+
+        # Add several resorts near the search location
+        for i in range(5):
+            resort = {
+                "resort_id": f"test-resort-{i}",
+                "name": f"Test Resort {i}",
+                "country": "CA",
+                "region": "BC",
+                "elevation_points": [
+                    {
+                        "level": "mid",
+                        "elevation_meters": 1500,
+                        "elevation_feet": 4921,
+                        "latitude": 49.0 + (i * 0.01),
+                        "longitude": -120.0,
+                    },
+                ],
+                "timezone": "America/Vancouver",
+            }
+            resorts_table.put_item(Item=prepare_for_dynamodb(resort))
+
+        # Test with limit
+        response = app_client.get(
+            "/api/v1/resorts/nearby?lat=49.0&lon=-120.0&radius=100&limit=2"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 2
+
+        # Cleanup
+        for i in range(5):
+            resorts_table.delete_item(Key={"resort_id": f"test-resort-{i}"})

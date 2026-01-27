@@ -1,13 +1,11 @@
 name: Deploy to TestFlight
 
 on:
-  # Trigger after CI Pipeline completes successfully on main
-  workflow_run:
-    workflows: ["CI Pipeline"]
-    branches: [main]
-    types:
-      - completed
-  # Manual trigger for emergency deployments
+  # Trigger on version tags (e.g., v1.0.0, v1.2.3)
+  push:
+    tags:
+      - 'v*'
+  # Manual trigger for testing
   workflow_dispatch:
     inputs:
       build_number_increment:
@@ -15,6 +13,10 @@ on:
         required: false
         default: '1'
         type: string
+
+# NOTE: To release to TestFlight, create a tag:
+#   git tag v1.0.1 && git push origin v1.0.1
+# This prevents hitting Apple's daily upload limit
 
 concurrency:
   group: testflight-deploy
@@ -28,15 +30,10 @@ jobs:
   build-and-upload:
     name: Build and Upload to TestFlight
     runs-on: macos-latest
-    # Only run if CI passed (or if manually triggered)
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        # For workflow_run, we need to checkout the commit that triggered the workflow
-        ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
     - name: Select Xcode 26
       run: |
@@ -276,7 +273,7 @@ jobs:
         echo "## TestFlight Upload Summary" >> $GITHUB_STEP_SUMMARY
         echo "- **Scheme**: ${{ env.SCHEME }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Version**: $VERSION ($BUILD_NUMBER)" >> $GITHUB_STEP_SUMMARY
-        echo "- **Commit**: ${{ github.event.workflow_run.head_sha || github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Uploaded at**: $(date -u)" >> $GITHUB_STEP_SUMMARY
         echo "- **Auto-distributed**: Yes (to internal testers)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY

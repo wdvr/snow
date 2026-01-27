@@ -64,6 +64,36 @@ final class APIClient {
         }
     }
 
+    /// Fetch resorts near a given location, sorted by distance
+    func getNearbyResorts(latitude: Double, longitude: Double, radiusKm: Double = 200, limit: Int = 20) async throws -> NearbyResortsResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/resorts/nearby"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "lat", value: String(latitude)),
+            URLQueryItem(name: "lon", value: String(longitude)),
+            URLQueryItem(name: "radius", value: String(radiusKm)),
+            URLQueryItem(name: "limit", value: String(limit))
+        ]
+
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url)
+                .validate()
+                .responseDecodable(of: NearbyResortsResponse.self) { response in
+                    switch response.result {
+                    case .success(let nearbyResponse):
+                        print("Successfully fetched \(nearbyResponse.count) nearby resorts")
+                        continuation.resume(returning: nearbyResponse)
+                    case .failure(let error):
+                        print("API Error fetching nearby resorts: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
     // MARK: - Weather Conditions API
 
     func getConditions(for resortId: String) async throws -> [WeatherCondition] {
@@ -271,6 +301,60 @@ final class APIClient {
 
 struct ResortsResponse: Codable {
     let resorts: [Resort]
+}
+
+struct NearbyResortsResponse: Codable {
+    let resorts: [NearbyResortResult]
+    let count: Int
+    let searchCenter: SearchCenter
+    let searchRadiusKm: Double
+
+    private enum CodingKeys: String, CodingKey {
+        case resorts
+        case count
+        case searchCenter = "search_center"
+        case searchRadiusKm = "search_radius_km"
+    }
+}
+
+struct NearbyResortResult: Codable, Identifiable {
+    let resort: Resort
+    let distanceKm: Double
+    let distanceMiles: Double
+
+    var id: String { resort.id }
+
+    private enum CodingKeys: String, CodingKey {
+        case resort
+        case distanceKm = "distance_km"
+        case distanceMiles = "distance_miles"
+    }
+
+    /// Formatted distance string based on user preferences
+    func formattedDistance(useMetric: Bool) -> String {
+        if useMetric {
+            if distanceKm < 1 {
+                return String(format: "%.0f m", distanceKm * 1000)
+            } else if distanceKm < 10 {
+                return String(format: "%.1f km", distanceKm)
+            } else {
+                return String(format: "%.0f km", distanceKm)
+            }
+        } else {
+            if distanceMiles < 1 {
+                return String(format: "%.1f mi", distanceMiles)
+            } else if distanceMiles < 10 {
+                return String(format: "%.1f mi", distanceMiles)
+            } else {
+                return String(format: "%.0f mi", distanceMiles)
+            }
+        }
+    }
+}
+
+struct SearchCenter: Codable {
+    let latitude: Double
+    let longitude: Double
 }
 
 struct ConditionsResponse: Codable {

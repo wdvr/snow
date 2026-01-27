@@ -1,12 +1,35 @@
 import SwiftUI
+import CoreLocation
+
+enum ResortSortOption: String, CaseIterable {
+    case name = "Name"
+    case distance = "Distance"
+    case snowQuality = "Snow Quality"
+
+    var icon: String {
+        switch self {
+        case .name: return "textformat.abc"
+        case .distance: return "location"
+        case .snowQuality: return "snowflake"
+        }
+    }
+}
 
 struct ResortListView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @StateObject private var locationManager = LocationManager.shared
     @State private var searchText = ""
     @State private var selectedRegion: SkiRegion? = nil
+    @State private var sortOption: ResortSortOption = .name
     @AppStorage("selectedRegionFilter") private var savedRegionFilter: String = ""
+    @AppStorage("resortSortOption") private var savedSortOption: String = "Name"
 
-    var filteredResorts: [Resort] {
+    private var useMetricDistance: Bool {
+        userPreferencesManager.preferredUnits.distance == .metric
+    }
+
+    var filteredAndSortedResorts: [Resort] {
         let resorts = snowConditionsManager.resorts
 
         // Apply region filter
@@ -18,15 +41,44 @@ struct ResortListView: View {
         }
 
         // Apply search filter
+        let searchFiltered: [Resort]
         if searchText.isEmpty {
-            return regionFiltered
+            searchFiltered = regionFiltered
         } else {
-            return regionFiltered.filter { resort in
+            searchFiltered = regionFiltered.filter { resort in
                 resort.name.localizedCaseInsensitiveContains(searchText) ||
                 resort.countryName.localizedCaseInsensitiveContains(searchText) ||
                 resort.region.localizedCaseInsensitiveContains(searchText)
             }
         }
+
+        // Apply sorting
+        return sortResorts(searchFiltered)
+    }
+
+    private func sortResorts(_ resorts: [Resort]) -> [Resort] {
+        switch sortOption {
+        case .name:
+            return resorts.sorted { $0.name < $1.name }
+        case .distance:
+            guard let userLocation = locationManager.userLocation else {
+                return resorts.sorted { $0.name < $1.name }
+            }
+            return resorts.sorted {
+                $0.distance(from: userLocation) < $1.distance(from: userLocation)
+            }
+        case .snowQuality:
+            return resorts.sorted { resort1, resort2 in
+                let quality1 = snowConditionsManager.getLatestCondition(for: resort1.id)?.snowQuality.sortOrder ?? 99
+                let quality2 = snowConditionsManager.getLatestCondition(for: resort2.id)?.snowQuality.sortOrder ?? 99
+                return quality1 < quality2
+            }
+        }
+    }
+
+    // Legacy computed property for compatibility
+    var filteredResorts: [Resort] {
+        filteredAndSortedResorts
     }
 
     var availableRegions: [SkiRegion] {
@@ -36,46 +88,82 @@ struct ResortListView: View {
 
     var body: some View {
         NavigationStack {
-            VStack {
-                // Region filter
-                if !availableRegions.isEmpty {
+            VStack(spacing: 0) {
+                // Filter and sort controls
+                VStack(spacing: 8) {
+                    // Region filter
+                    if !availableRegions.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack {
+                                FilterChip(
+                                    title: "All Regions",
+                                    icon: "globe",
+                                    isSelected: selectedRegion == nil
+                                ) {
+                                    selectedRegion = nil
+                                    savedRegionFilter = ""
+                                }
+
+                                ForEach(availableRegions, id: \.self) { region in
+                                    FilterChip(
+                                        title: region.displayName,
+                                        icon: region.icon,
+                                        isSelected: selectedRegion == region
+                                    ) {
+                                        if selectedRegion == region {
+                                            selectedRegion = nil
+                                            savedRegionFilter = ""
+                                        } else {
+                                            selectedRegion = region
+                                            savedRegionFilter = region.rawValue
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+                    }
+
+                    // Sort options
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack {
-                            FilterChip(
-                                title: "All Regions",
-                                icon: "globe",
-                                isSelected: selectedRegion == nil
-                            ) {
-                                selectedRegion = nil
-                                savedRegionFilter = ""
-                            }
+                            Text("Sort:")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
 
-                            ForEach(availableRegions, id: \.self) { region in
-                                FilterChip(
-                                    title: region.displayName,
-                                    icon: region.icon,
-                                    isSelected: selectedRegion == region
-                                ) {
-                                    if selectedRegion == region {
-                                        selectedRegion = nil
-                                        savedRegionFilter = ""
-                                    } else {
-                                        selectedRegion = region
-                                        savedRegionFilter = region.rawValue
+                            ForEach(ResortSortOption.allCases, id: \.self) { option in
+                                // Only show distance option if location is available
+                                if option != .distance || locationManager.isLocationAvailable {
+                                    FilterChip(
+                                        title: option.rawValue,
+                                        icon: option.icon,
+                                        isSelected: sortOption == option
+                                    ) {
+                                        sortOption = option
+                                        savedSortOption = option.rawValue
+                                        // Request location when switching to distance sort
+                                        if option == .distance && locationManager.userLocation == nil {
+                                            locationManager.requestLocationPermission()
+                                        }
                                     }
                                 }
                             }
                         }
                         .padding(.horizontal)
                     }
-                    .padding(.vertical, 8)
                 }
+                .padding(.vertical, 8)
 
                 // Resort list
                 List {
                     ForEach(filteredResorts) { resort in
                         NavigationLink(destination: ResortDetailView(resort: resort)) {
-                            ResortRowView(resort: resort)
+                            ResortRowView(
+                                resort: resort,
+                                showDistance: sortOption == .distance,
+                                userLocation: locationManager.userLocation,
+                                useMetric: useMetricDistance
+                            )
                         }
                     }
                 }
@@ -87,6 +175,10 @@ struct ResortListView: View {
                 // Restore saved region filter
                 if !savedRegionFilter.isEmpty, let region = SkiRegion(rawValue: savedRegionFilter) {
                     selectedRegion = region
+                }
+                // Restore saved sort option
+                if let option = ResortSortOption(rawValue: savedSortOption) {
+                    sortOption = option
                 }
             }
             .refreshable {
@@ -133,19 +225,60 @@ struct ResortListView: View {
 
 struct ResortRowView: View {
     let resort: Resort
+    var showDistance: Bool = false
+    var userLocation: CLLocation? = nil
+    var useMetric: Bool = true
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
 
     private var latestCondition: WeatherCondition? {
         snowConditionsManager.getLatestCondition(for: resort.id)
     }
 
+    private var formattedDistance: String? {
+        guard showDistance, let location = userLocation else { return nil }
+        let distance = resort.distance(from: location)
+        if useMetric {
+            let km = distance / 1000
+            if km < 1 {
+                return String(format: "%.0f m", distance)
+            } else if km < 10 {
+                return String(format: "%.1f km", km)
+            } else {
+                return String(format: "%.0f km", km)
+            }
+        } else {
+            let miles = distance / 1609.344
+            if miles < 1 {
+                return String(format: "%.1f mi", miles)
+            } else if miles < 10 {
+                return String(format: "%.1f mi", miles)
+            } else {
+                return String(format: "%.0f mi", miles)
+            }
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 VStack(alignment: .leading) {
-                    Text(resort.name)
-                        .font(.headline)
-                        .foregroundColor(.primary)
+                    HStack {
+                        Text(resort.name)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+
+                        // Distance badge when sorting by distance
+                        if let distance = formattedDistance {
+                            Text(distance)
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.15))
+                                .foregroundColor(.blue)
+                                .cornerRadius(4)
+                        }
+                    }
 
                     Text(resort.displayLocation)
                         .font(.subheadline)

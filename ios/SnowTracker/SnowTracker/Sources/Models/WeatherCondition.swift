@@ -122,6 +122,19 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
         }
     }
 
+    /// Sort order for sorting resorts by snow quality (lower = better)
+    var sortOrder: Int {
+        switch self {
+        case .excellent: return 1
+        case .good: return 2
+        case .fair: return 3
+        case .poor: return 4
+        case .bad: return 5
+        case .horrible: return 6
+        case .unknown: return 99
+        }
+    }
+
     /// Detailed explanation for the info (i) indicator
     var detailedInfo: (title: String, description: String, criteria: String) {
         switch self {
