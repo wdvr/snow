@@ -47,6 +47,7 @@ jobs:
         working-directory: backend
         env:
           RESORTS_TABLE: snow-tracker-resorts-${{ env.ENVIRONMENT }}
+          PYTHONPATH: ${{ github.workspace }}/backend/src
         run: |
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             python scripts/seed_resorts.py --dry-run
