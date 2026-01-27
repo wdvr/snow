@@ -3,14 +3,11 @@
 import math
 from typing import Tuple
 
-
 # Earth's radius in kilometers
 EARTH_RADIUS_KM = 6371.0
 
 
-def haversine_distance(
-    lat1: float, lon1: float, lat2: float, lon2: float
-) -> float:
+def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """
     Calculate the great-circle distance between two points on Earth.
 
@@ -44,7 +41,7 @@ def haversine_distance(
 
 def bounding_box(
     lat: float, lon: float, radius_km: float
-) -> Tuple[float, float, float, float]:
+) -> tuple[float, float, float, float]:
     """
     Calculate a bounding box around a point for quick filtering.
 

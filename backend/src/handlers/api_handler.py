@@ -330,11 +330,13 @@ async def get_nearby_resorts(
         # Format response with distances
         results = []
         for resort, distance_km in nearby:
-            results.append({
-                "resort": resort,
-                "distance_km": distance_km,
-                "distance_miles": round(distance_km * 0.621371, 1),
-            })
+            results.append(
+                {
+                    "resort": resort,
+                    "distance_km": distance_km,
+                    "distance_miles": round(distance_km * 0.621371, 1),
+                }
+            )
 
         response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
 

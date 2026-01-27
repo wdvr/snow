@@ -216,7 +216,7 @@ class ResortService:
         longitude: float,
         radius_km: float = 200.0,
         limit: int = 20,
-    ) -> list[Tuple[Resort, float]]:
+    ) -> list[tuple[Resort, float]]:
         """
         Get resorts near a given location, sorted by distance.
 
@@ -270,7 +270,7 @@ class ResortService:
         except Exception as e:
             raise Exception(f"Error finding nearby resorts: {str(e)}")
 
-    def _get_resort_coordinate(self, resort: Resort) -> Optional[Tuple[float, float]]:
+    def _get_resort_coordinate(self, resort: Resort) -> tuple[float, float] | None:
         """Get the primary coordinate for a resort (mid > base > first)."""
         # Prefer mid elevation for better representation of resort location
         if resort.mid_elevation:
