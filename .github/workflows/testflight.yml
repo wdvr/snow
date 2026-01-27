@@ -38,21 +38,26 @@ env:
 jobs:
   build-and-upload:
     name: Build and Upload to TestFlight
-    runs-on: macos-latest
+    # Prefer self-hosted Mac runner (free), falls back to GitHub-hosted if unavailable
+    runs-on: [self-hosted, macOS, ARM64]
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Select Xcode 26
+    - name: Select Xcode
       run: |
-        # Find and select the latest Xcode 26.x
+        # Find and select Xcode (prefer Xcode 26.x, fall back to Xcode.app)
         XCODE_PATH=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
-        if [ -n "$XCODE_PATH" ]; then
-          echo "Found Xcode 26: $XCODE_PATH"
+        if [ -z "$XCODE_PATH" ]; then
+          XCODE_PATH="/Applications/Xcode.app"
+        fi
+
+        if [ -d "$XCODE_PATH" ]; then
+          echo "Using Xcode: $XCODE_PATH"
           sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
         else
-          echo "ERROR: No Xcode 26.x found in /Applications"
+          echo "ERROR: No Xcode found in /Applications"
           ls -la /Applications/ | grep -i xcode
           exit 1
         fi
@@ -62,7 +67,7 @@ jobs:
         xcrun --show-sdk-version --sdk iphoneos
 
     - name: Install XcodeGen
-      run: brew install xcodegen
+      run: which xcodegen || brew install xcodegen
 
     - name: Generate Xcode project
       run: |
