@@ -4,7 +4,7 @@ import Combine
 
 // MARK: - Resort Annotation
 
-struct ResortAnnotation: Identifiable {
+struct ResortAnnotation: Identifiable, Hashable {
     let id: String
     let resort: Resort
     let coordinate: CLLocationCoordinate2D
@@ -25,6 +25,15 @@ struct ResortAnnotation: Identifiable {
 
     var markerIcon: String {
         snowQuality.icon
+    }
+
+    // Hashable conformance
+    static func == (lhs: ResortAnnotation, rhs: ResortAnnotation) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 

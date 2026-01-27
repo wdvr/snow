@@ -48,47 +48,11 @@ struct ResortMapView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Menu {
-                        Picker("Map Style", selection: $mapStyle) {
-                            Text("Standard").tag(MapStyle.standard)
-                            Text("Satellite").tag(MapStyle.imagery)
-                            Text("Hybrid").tag(MapStyle.hybrid)
-                        }
-                    } label: {
-                        Image(systemName: "map")
-                    }
+                    mapStyleMenu
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 16) {
-                        Button {
-                            withAnimation {
-                                showLegend.toggle()
-                            }
-                        } label: {
-                            Image(systemName: showLegend ? "info.circle.fill" : "info.circle")
-                        }
-
-                        Menu {
-                            ForEach(MapRegionPreset.allCases) { preset in
-                                Button {
-                                    mapViewModel.setRegion(preset)
-                                } label: {
-                                    Label(preset.rawValue, systemImage: preset.icon)
-                                }
-                            }
-
-                            Divider()
-
-                            Button {
-                                mapViewModel.fitAllAnnotations()
-                            } label: {
-                                Label("Show All Resorts", systemImage: "rectangle.expand.vertical")
-                            }
-                        } label: {
-                            Image(systemName: "globe")
-                        }
-                    }
+                    trailingToolbarItems
                 }
             }
             .sheet(isPresented: $showResortDetail) {
@@ -150,7 +114,7 @@ struct ResortMapView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(MapFilterOption.allCases) { filter in
-                    FilterChip(
+                    MapFilterChip(
                         title: filter.rawValue,
                         isSelected: mapViewModel.selectedFilter == filter,
                         color: filter.color,
@@ -229,6 +193,56 @@ struct ResortMapView: View {
 
     // MARK: - Helpers
 
+    // MARK: - Toolbar Items
+
+    private var mapStyleMenu: some View {
+        Menu {
+            Button("Standard") { mapStyle = .standard }
+            Button("Satellite") { mapStyle = .imagery }
+            Button("Hybrid") { mapStyle = .hybrid }
+        } label: {
+            Image(systemName: "map")
+        }
+    }
+
+    private var trailingToolbarItems: some View {
+        HStack(spacing: 16) {
+            Button {
+                withAnimation {
+                    showLegend.toggle()
+                }
+            } label: {
+                Image(systemName: showLegend ? "info.circle.fill" : "info.circle")
+            }
+
+            regionMenu
+        }
+    }
+
+    private var regionMenu: some View {
+        Menu {
+            ForEach(MapRegionPreset.allCases) { preset in
+                Button {
+                    mapViewModel.setRegion(preset)
+                } label: {
+                    Label(preset.rawValue, systemImage: preset.icon)
+                }
+            }
+
+            Divider()
+
+            Button {
+                mapViewModel.fitAllAnnotations()
+            } label: {
+                Label("Show All Resorts", systemImage: "rectangle.expand.vertical")
+            }
+        } label: {
+            Image(systemName: "globe")
+        }
+    }
+
+    // MARK: - Private Methods
+
     private func updateAnnotations() {
         mapViewModel.updateAnnotations(
             resorts: snowConditionsManager.resorts,
@@ -247,7 +261,7 @@ struct ResortMapView: View {
 
 // MARK: - Filter Chip
 
-struct FilterChip: View {
+struct MapFilterChip: View {
     let title: String
     let isSelected: Bool
     let color: Color
