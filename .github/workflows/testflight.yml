@@ -160,7 +160,7 @@ jobs:
           -authenticationKeyIssuerID ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
 
     - name: Install PyJWT for App Store Connect API
-      run: pip3 install PyJWT cryptography
+      run: pip3 install --break-system-packages PyJWT cryptography
 
     - name: Wait for build processing and distribute to TestFlight
       env:
