@@ -284,16 +284,19 @@ def _get_resort_cached(resort_id: str):
 @app.get("/api/v1/conditions/batch")
 async def get_batch_conditions(
     response: Response,
-    resort_ids: str = Query(..., description="Comma-separated resort IDs (max 20)"),
+    resort_ids: str = Query(..., description="Comma-separated resort IDs (max 50)"),
     hours: int | None = Query(
         24, description="Hours of historical data to retrieve", ge=1, le=168
     ),
 ):
     """Get conditions for multiple resorts in a single request.
 
-    This endpoint reduces API calls by allowing batch fetching of up to 20 resorts.
+    This endpoint reduces API calls by allowing batch fetching of up to 50 resorts.
+    Fetches are done in parallel for speed.
     Returns conditions keyed by resort_id.
     """
+    import asyncio
+
     try:
         # Parse and validate resort IDs
         ids = [id.strip() for id in resort_ids.split(",") if id.strip()]
@@ -304,26 +307,26 @@ async def get_batch_conditions(
                 detail="No resort IDs provided",
             )
 
-        if len(ids) > 20:
+        if len(ids) > 50:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Maximum 20 resorts per batch request",
+                detail="Maximum 50 resorts per batch request",
             )
 
-        # Fetch conditions for each resort
-        results = {}
-        for resort_id in ids:
+        # Fetch conditions for all resorts IN PARALLEL
+        async def fetch_one(resort_id: str):
             try:
-                conditions = _get_conditions_cached(resort_id, hours)
-                results[resort_id] = {
-                    "conditions": conditions,
-                    "error": None,
-                }
+                # Run sync function in thread pool
+                conditions = await asyncio.to_thread(
+                    _get_conditions_cached, resort_id, hours
+                )
+                return resort_id, {"conditions": conditions, "error": None}
             except Exception as e:
-                results[resort_id] = {
-                    "conditions": [],
-                    "error": str(e),
-                }
+                return resort_id, {"conditions": [], "error": str(e)}
+
+        # Execute all fetches concurrently
+        fetch_results = await asyncio.gather(*[fetch_one(rid) for rid in ids])
+        results = dict(fetch_results)
 
         # Set cache headers
         response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
