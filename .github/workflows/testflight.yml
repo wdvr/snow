@@ -183,8 +183,8 @@ jobs:
         # Generate JWT for App Store Connect API using Python (single line to avoid indentation issues)
         JWT=$(python3 -c "import jwt,time,os;k=os.environ['APP_STORE_CONNECT_KEY_ID'];i=os.environ['APP_STORE_CONNECT_ISSUER_ID'];print(jwt.encode({'iss':i,'iat':int(time.time()),'exp':int(time.time())+1200,'aud':'appstoreconnect-v1'},open(os.path.expanduser(f'~/.private_keys/AuthKey_{k}.p8')).read(),algorithm='ES256',headers={'kid':k}))")
 
-        # Get the app ID
-        APP_RESPONSE=$(curl -s -H "Authorization: Bearer $JWT" \
+        # Get the app ID (use -g to disable URL globbing for square brackets)
+        APP_RESPONSE=$(curl -g -s -H "Authorization: Bearer $JWT" \
           "https://api.appstoreconnect.apple.com/v1/apps?filter[bundleId]=$APP_BUNDLE_ID")
         APP_ID=$(echo "$APP_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['data'][0]['id'])")
         echo "App ID: $APP_ID"
@@ -204,7 +204,7 @@ jobs:
           fi
 
           # Get builds for this app, filter by version
-          BUILDS_RESPONSE=$(curl -s -H "Authorization: Bearer $JWT" \
+          BUILDS_RESPONSE=$(curl -g -s -H "Authorization: Bearer $JWT" \
             "https://api.appstoreconnect.apple.com/v1/builds?filter[app]=$APP_ID&filter[version]=$BUILD_NUMBER&limit=1")
 
           BUILD_ID=$(echo "$BUILDS_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data'][0]['id'] if d.get('data') else '')" 2>/dev/null || echo "")
