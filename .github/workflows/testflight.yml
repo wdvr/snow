@@ -1,0 +1,136 @@
+name: Deploy to TestFlight
+
+on:
+  # Trigger after CI Pipeline completes successfully on main
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    branches: [main]
+    types:
+      - completed
+  # Manual trigger for emergency deployments
+  workflow_dispatch:
+    inputs:
+      build_number_increment:
+        description: 'Increment build number by'
+        required: false
+        default: '1'
+        type: string
+
+env:
+  XCODE_VERSION: '16.0'
+  SCHEME: 'SnowTracker'
+  PROJECT_PATH: 'ios/SnowTracker.xcodeproj'
+
+jobs:
+  build-and-upload:
+    name: Build and Upload to TestFlight
+    runs-on: macos-15
+    # Only run if CI passed (or if manually triggered)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        # For workflow_run, we need to checkout the commit that triggered the workflow
+        ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+
+    - name: Install XcodeGen
+      run: brew install xcodegen
+
+    - name: Generate Xcode project
+      run: |
+        cd ios
+        xcodegen generate
+
+    - name: Resolve Swift Package Dependencies
+      run: |
+        xcodebuild -resolvePackageDependencies \
+          -project ${{ env.PROJECT_PATH }} \
+          -scheme ${{ env.SCHEME }}
+
+    - name: Increment build number
+      run: |
+        cd ios
+        # Get current build number and increment
+        CURRENT_BUILD=$(grep -A1 'CFBundleVersion' SnowTracker/SnowTracker/Info.plist | tail -1 | sed 's/[^0-9]*//g')
+        NEW_BUILD=$((CURRENT_BUILD + ${{ github.event.inputs.build_number_increment || 1 }}))
+        echo "Incrementing build number from $CURRENT_BUILD to $NEW_BUILD"
+
+        # Update Info.plist
+        /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUILD" SnowTracker/SnowTracker/Info.plist
+
+        # Also update widget if exists
+        if [ -f "SnowTrackerWidget/Info.plist" ]; then
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUILD" SnowTrackerWidget/Info.plist
+        fi
+
+    - name: Setup App Store Connect API Key
+      run: |
+        mkdir -p ~/.private_keys
+        echo "${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}" > ~/.private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
+
+    - name: Archive app
+      run: |
+        xcodebuild archive \
+          -project ${{ env.PROJECT_PATH }} \
+          -scheme ${{ env.SCHEME }} \
+          -configuration Release \
+          -archivePath ~/Export/SnowTracker.xcarchive \
+          -destination 'generic/platform=iOS' \
+          -allowProvisioningUpdates \
+          -authenticationKeyPath ~/.private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8 \
+          -authenticationKeyID ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
+          -authenticationKeyIssuerID ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }} \
+          CODE_SIGN_STYLE=Automatic \
+          DEVELOPMENT_TEAM=N324UX8D9M
+
+    - name: Create ExportOptions.plist
+      run: |
+        cat > /tmp/ExportOptions.plist << 'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>N324UX8D9M</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>destination</key>
+            <string>upload</string>
+        </dict>
+        </plist>
+        EOF
+
+    - name: Export and Upload to TestFlight
+      run: |
+        xcodebuild -exportArchive \
+          -archivePath ~/Export/SnowTracker.xcarchive \
+          -exportPath ~/Export \
+          -exportOptionsPlist /tmp/ExportOptions.plist \
+          -allowProvisioningUpdates \
+          -authenticationKeyPath ~/.private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8 \
+          -authenticationKeyID ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
+          -authenticationKeyIssuerID ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+
+    - name: Upload to TestFlight Summary
+      run: |
+        echo "## TestFlight Upload Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Scheme**: ${{ env.SCHEME }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: ${{ github.event.workflow_run.head_sha || github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Uploaded at**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Check [App Store Connect](https://appstoreconnect.apple.com) for the build status." >> $GITHUB_STEP_SUMMARY
+
+    - name: Cleanup
+      if: always()
+      run: |
+        rm -rf ~/.private_keys
+        rm -rf ~/Export
