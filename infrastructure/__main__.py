@@ -717,6 +717,22 @@ pulumi.export("feedback_table_name", feedback_table.name)
 pulumi.export("lambda_role_arn", lambda_role.arn)
 pulumi.export("api_gateway_id", api_gateway.id)
 pulumi.export("api_gateway_url", api_deployment.invoke_url)
+# SNS Topic for resort updates notifications
+resort_updates_topic = aws.sns.Topic(
+    f"{app_name}-resort-updates-{environment}",
+    name=f"{app_name}-resort-updates-{environment}",
+    tags=tags,
+)
+
+# Email subscription for resort updates (only in prod)
+if environment == "prod":
+    resort_updates_subscription = aws.sns.TopicSubscription(
+        f"{app_name}-resort-updates-email-{environment}",
+        topic=resort_updates_topic.arn,
+        protocol="email",
+        endpoint="wouterdevriendt@gmail.com",
+    )
+
 pulumi.export("user_pool_id", user_pool.id)
 pulumi.export("user_pool_client_id", user_pool_client.id)
 pulumi.export("region", aws_region)
@@ -724,6 +740,7 @@ pulumi.export("environment", environment)
 pulumi.export("weather_processor_lambda_name", weather_processor_lambda.name)
 pulumi.export("weather_schedule_rule_name", weather_schedule_rule.name)
 pulumi.export("api_handler_lambda_name", api_handler_lambda.name)
+pulumi.export("resort_updates_topic_arn", resort_updates_topic.arn)
 
 # Monitoring exports
 pulumi.export("cloudwatch_dashboard_name", api_monitoring["dashboard"].dashboard_name)
