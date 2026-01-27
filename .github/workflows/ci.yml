@@ -273,19 +273,20 @@ jobs:
 
     - name: Select Xcode 26
       run: |
-        # Select Xcode 26 for iOS 26 SDK
-        if [ -d "/Applications/Xcode_26.app" ]; then
-          sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
-        elif [ -d "/Applications/Xcode-26.app" ]; then
-          sudo xcode-select -s /Applications/Xcode-26.app/Contents/Developer
+        # Find and select the latest Xcode 26.x
+        XCODE_PATH=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+        if [ -n "$XCODE_PATH" ]; then
+          echo "Found Xcode 26: $XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
         else
-          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          echo "ERROR: No Xcode 26.x found in /Applications"
+          ls -la /Applications/ | grep -i xcode
+          exit 1
         fi
 
-    - name: Show Xcode version
-      run: |
+        # Verify
         xcodebuild -version
-        xcodebuild -showsdks | grep iOS || true
+        xcrun --show-sdk-version --sdk iphoneos
 
     - name: Install XcodeGen
       run: brew install xcodegen

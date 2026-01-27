@@ -23,7 +23,7 @@ env:
 jobs:
   build-and-upload:
     name: Build and Upload to TestFlight
-    runs-on: macos-15
+    runs-on: macos-latest
     # Only run if CI passed (or if manually triggered)
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
@@ -36,25 +36,20 @@ jobs:
 
     - name: Select Xcode 26
       run: |
-        # List available Xcode versions
-        ls -la /Applications/ | grep Xcode || true
-        # Select Xcode 26 (required for iOS 26 SDK)
-        if [ -d "/Applications/Xcode_26.app" ]; then
-          sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
-        elif [ -d "/Applications/Xcode-26.app" ]; then
-          sudo xcode-select -s /Applications/Xcode-26.app/Contents/Developer
-        elif [ -d "/Applications/Xcode.app" ]; then
-          # Check if default Xcode is version 26
-          XCODE_VERSION=$(xcodebuild -version | head -1 | awk '{print $2}')
-          echo "Default Xcode version: $XCODE_VERSION"
-          if [[ ! "$XCODE_VERSION" =~ ^26 ]]; then
-            echo "Warning: Xcode 26 not found, using available version"
-          fi
+        # Find and select the latest Xcode 26.x
+        XCODE_PATH=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+        if [ -n "$XCODE_PATH" ]; then
+          echo "Found Xcode 26: $XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+        else
+          echo "ERROR: No Xcode 26.x found in /Applications"
+          ls -la /Applications/ | grep -i xcode
+          exit 1
         fi
-        xcode-select -p
+
+        # Verify
         xcodebuild -version
-        # Verify SDK version
-        xcodebuild -showsdks | grep iOS || true
+        xcrun --show-sdk-version --sdk iphoneos
 
     - name: Install XcodeGen
       run: brew install xcodegen
