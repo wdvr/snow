@@ -48,7 +48,7 @@ jobs:
         APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         APP_STORE_CONNECT_KEY_PATH: ~/.private_keys/AuthKey.p8
       run: |
-        cd ios
+        cd ios/fastlane
         bundle exec fastlane upload_icon
 
     - name: Upload metadata
@@ -58,7 +58,7 @@ jobs:
         APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         APP_STORE_CONNECT_KEY_PATH: ~/.private_keys/AuthKey.p8
       run: |
-        cd ios
+        cd ios/fastlane
         if [ "${{ github.event.inputs.upload_screenshots }}" = "true" ]; then
           bundle exec fastlane deliver_metadata
         else

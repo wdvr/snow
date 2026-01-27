@@ -41,7 +41,7 @@ platform :ios do
       skip_binary_upload: true,
       skip_screenshots: true,
       skip_metadata: true,
-      app_icon: "./fastlane/metadata/app_icon.png",
+      app_icon: "./metadata/app_icon.png",
       force: true,
       submit_for_review: false
     )
