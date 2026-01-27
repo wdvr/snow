@@ -51,11 +51,9 @@ jobs:
         id: check
         uses: mikehardy/runner-fallback-action@v1
         with:
-          # Needs PAT with repo scope to check runner status
           github-token: ${{ secrets.RUNNER_PAT }}
           primary-runner: 'self-hosted,macOS,ARM64'
           fallback-runner: 'macos-latest'
-          fallback-on-error: true
 
   build-and-upload:
     name: Build and Upload to TestFlight
