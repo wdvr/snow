@@ -126,6 +126,7 @@ struct ResortMapView: View {
                     }
                 }
             }
+            .padding(.horizontal, 12)
             .padding(.vertical, 4)
         }
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))

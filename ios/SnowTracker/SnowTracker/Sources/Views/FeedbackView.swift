@@ -69,7 +69,7 @@ struct FeedbackView: View {
 
     private var isValid: Bool {
         !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        message.trimmingCharacters(in: .whitespacesAndNewlines).count >= 10
+        !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private func submitFeedback() {

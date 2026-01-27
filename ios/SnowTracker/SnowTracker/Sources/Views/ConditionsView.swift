@@ -13,6 +13,12 @@ struct ConditionsView: View {
         }
     }
 
+    /// Only show offline indicator if data is actually stale (> 5 minutes old)
+    var isDataStale: Bool {
+        guard let lastUpdated = snowConditionsManager.lastUpdated else { return true }
+        return Date().timeIntervalSince(lastUpdated) > 300 // 5 minutes
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -54,8 +60,8 @@ struct ConditionsView: View {
 
     private var summaryHeader: some View {
         VStack(spacing: 12) {
-            // Cached data indicator
-            if snowConditionsManager.isUsingCachedData {
+            // Cached data indicator - only show if data is actually old (> 5 minutes)
+            if snowConditionsManager.isUsingCachedData && isDataStale {
                 HStack {
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .foregroundColor(.orange)

@@ -247,16 +247,17 @@ struct SettingsView: View {
                     Image(systemName: "person.circle")
                         .foregroundColor(.secondary)
 
-                    Text("Guest")
+                    Text("Not signed in")
                         .font(.body)
+                        .foregroundStyle(.secondary)
 
                     Spacer()
                 }
 
-                Button("Sign Out") {
-                    showingSignOutAlert = true
+                Button("Sign In") {
+                    authService.signOut() // This clears guest state and returns to login
                 }
-                .foregroundStyle(.red)
+                .foregroundStyle(.blue)
             } else {
                 HStack {
                     let isApple = user.provider == .apple
