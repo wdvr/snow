@@ -200,11 +200,12 @@ class TestWeatherModels:
         assert SnowQuality.FAIR == "fair"
         assert SnowQuality.POOR == "poor"
         assert SnowQuality.BAD == "bad"
+        assert SnowQuality.HORRIBLE == "horrible"
         assert SnowQuality.UNKNOWN == "unknown"
 
-        # Test all values are present
+        # Test all values are present (excellent, good, fair, poor, bad, horrible, unknown)
         all_qualities = list(SnowQuality)
-        assert len(all_qualities) == 6
+        assert len(all_qualities) == 7
 
     def test_confidence_level_enum(self):
         """Test ConfidenceLevel enum values."""

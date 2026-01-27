@@ -300,9 +300,10 @@ struct WeatherCondition: Codable, Identifiable, Hashable {
     }
 
     var formattedTimestamp: String {
-        guard let date = ISO8601DateFormatter().date(from: timestamp) else {
+        guard let date = parsedTimestamp else {
             return "Unknown time"
         }
+
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
@@ -434,17 +435,32 @@ struct WeatherCondition: Codable, Identifiable, Hashable {
     }
 
     var isRecent: Bool {
-        guard let date = ISO8601DateFormatter().date(from: timestamp) else {
+        guard let date = parsedTimestamp else {
             return false
         }
         return Date().timeIntervalSince(date) < 3600 // Less than 1 hour old
     }
 
     var ageInHours: Double {
-        guard let date = ISO8601DateFormatter().date(from: timestamp) else {
+        guard let date = parsedTimestamp else {
             return 999.0
         }
         return Date().timeIntervalSince(date) / 3600.0
+    }
+
+    /// Parse timestamp handling both fractional seconds and standard ISO8601 formats
+    private var parsedTimestamp: Date? {
+        // Try parsing with fractional seconds first (API returns timestamps like "2026-01-25T21:18:24.110234+00:00")
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        if let date = isoFormatter.date(from: timestamp) {
+            return date
+        }
+
+        // Fallback to standard ISO8601 without fractional seconds
+        let basicFormatter = ISO8601DateFormatter()
+        return basicFormatter.date(from: timestamp)
     }
 }
 
