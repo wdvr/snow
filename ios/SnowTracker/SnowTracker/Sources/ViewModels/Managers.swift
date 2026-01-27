@@ -1,42 +1,6 @@
 import SwiftUI
 import Combine
 
-// MARK: - Authentication Manager
-
-@MainActor
-class AuthenticationManager: ObservableObject {
-    @Published var isAuthenticated = false
-    @Published var currentUser: User?
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-
-    func checkAuthenticationStatus() {
-        // TODO: Implement Firebase Auth check
-        isLoading = true
-        // Simulate auth check
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            self.isAuthenticated = false // Set to true when implementing
-            self.isLoading = false
-        }
-    }
-
-    func signInWithApple() async {
-        // TODO: Implement Apple Sign In
-        isLoading = true
-        defer { isLoading = false }
-
-        // Simulate sign in
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-        isAuthenticated = true
-    }
-
-    func signOut() {
-        // TODO: Implement sign out
-        isAuthenticated = false
-        currentUser = nil
-    }
-}
-
 // MARK: - Snow Conditions Manager
 
 @MainActor
@@ -244,14 +208,6 @@ class UserPreferencesManager: ObservableObject {
 }
 
 // MARK: - Supporting Types
-
-struct User: Codable {
-    let id: String
-    let email: String?
-    let firstName: String?
-    let lastName: String?
-    let createdAt: String
-}
 
 struct UnitPreferences: Codable {
     var temperature: TemperatureUnit = .celsius

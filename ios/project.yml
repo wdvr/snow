@@ -11,6 +11,9 @@ packages:
   Alamofire:
     url: https://github.com/Alamofire/Alamofire.git
     from: 5.8.0
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS.git
+    from: 8.0.0
   Get:
     url: https://github.com/CreateAPI/Get.git
     from: 2.1.0
@@ -46,8 +49,14 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.com.snowtracker.app
+        com.apple.developer.applesignin:
+          - Default
     dependencies:
       - package: Alamofire
+      - package: GoogleSignIn
+        product: GoogleSignIn
+      - package: GoogleSignIn
+        product: GoogleSignInSwift
       - package: Get
       - package: Nuke
       - package: KeychainSwift
@@ -70,6 +79,14 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
+        # Google Sign-In configuration
+        # Replace YOUR_GOOGLE_CLIENT_ID with your actual client ID from Google Cloud Console
+        GIDClientID: YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              # Reversed client ID for Google Sign-In callback
+              # Format: com.googleusercontent.apps.YOUR_GOOGLE_CLIENT_ID
+              - com.googleusercontent.apps.YOUR_GOOGLE_CLIENT_ID
 
   SnowTrackerWidgetExtension:
     type: app-extension
