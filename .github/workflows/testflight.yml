@@ -174,34 +174,16 @@ jobs:
 
         echo "Waiting for build $VERSION ($BUILD_NUMBER) to finish processing..."
 
-        # Generate JWT for App Store Connect API using Python (more reliable than bash/openssl)
-        generate_jwt() {
-          python3 << 'PYSCRIPT'
-import jwt
-import time
-import os
-
-key_id = os.environ['APP_STORE_CONNECT_KEY_ID']
-issuer_id = os.environ['APP_STORE_CONNECT_ISSUER_ID']
-key_path = os.path.expanduser(f'~/.private_keys/AuthKey_{key_id}.p8')
-
-with open(key_path, 'r') as f:
-    private_key = f.read()
-
-now = int(time.time())
-payload = {
-    'iss': issuer_id,
-    'iat': now,
-    'exp': now + 1200,
-    'aud': 'appstoreconnect-v1'
-}
-
-token = jwt.encode(payload, private_key, algorithm='ES256', headers={'kid': key_id})
-print(token)
-PYSCRIPT
-        }
-
-        JWT=$(generate_jwt)
+        # Generate JWT for App Store Connect API using Python
+        JWT=$(python3 -c "
+        import jwt, time, os
+        key_id = os.environ['APP_STORE_CONNECT_KEY_ID']
+        issuer_id = os.environ['APP_STORE_CONNECT_ISSUER_ID']
+        with open(os.path.expanduser(f'~/.private_keys/AuthKey_{key_id}.p8')) as f:
+            key = f.read()
+        token = jwt.encode({'iss': issuer_id, 'iat': int(time.time()), 'exp': int(time.time()) + 1200, 'aud': 'appstoreconnect-v1'}, key, algorithm='ES256', headers={'kid': key_id})
+        print(token)
+        ")
 
         # Get the app ID
         APP_RESPONSE=$(curl -s -H "Authorization: Bearer $JWT" \
@@ -220,7 +202,15 @@ PYSCRIPT
 
           # Regenerate JWT periodically (they expire)
           if [ $((ATTEMPT % 20)) -eq 0 ]; then
-            JWT=$(generate_jwt)
+            JWT=$(python3 -c "
+            import jwt, time, os
+            key_id = os.environ['APP_STORE_CONNECT_KEY_ID']
+            issuer_id = os.environ['APP_STORE_CONNECT_ISSUER_ID']
+            with open(os.path.expanduser(f'~/.private_keys/AuthKey_{key_id}.p8')) as f:
+                key = f.read()
+            token = jwt.encode({'iss': issuer_id, 'iat': int(time.time()), 'exp': int(time.time()) + 1200, 'aud': 'appstoreconnect-v1'}, key, algorithm='ES256', headers={'kid': key_id})
+            print(token)
+            ")
           fi
 
           # Get builds for this app, filter by version
