@@ -3,13 +3,10 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A1B2C3D4E5F60001SPLASH01 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60001SPLASH01 /* SplashView.swift */; };
-		A1B2C3D4E5F60002CACHE001 /* CacheService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60002CACHE001 /* CacheService.swift */; };
-		A1B2C3D4E5F60003REGION01 /* Region.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60003REGION01 /* Region.swift */; };
 		07EDF4C27080A6ADCBD45DEE /* APIIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90D609E1A932D206877E2D88 /* APIIntegrationTests.swift */; };
 		14C97521780E220BC435156D /* FavoriteResortsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8AB00E37F5DF1C8E10BC49 /* FavoriteResortsWidget.swift */; };
 		24A3BDA567803E68B65547C7 /* AuthenticationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3612902D14F964CD974A7E /* AuthenticationViews.swift */; };
@@ -31,6 +28,9 @@
 		94DF580F5D036507F3A598B8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BCC6D20537615D2F10A0472 /* SettingsView.swift */; };
 		95C6406BDAC1C9697C7A8D6E /* SnowTrackerWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 827594616C43CCF87E99B50E /* SnowTrackerWidgetBundle.swift */; };
 		9D87FE6D1BD3A9D9E7B82B90 /* SnowTrackerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 00C42DA351EFF0BEC9BA422F /* SnowTrackerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A1B2C3D4E5F60001SPLASH01 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60001SPLASH01 /* SplashView.swift */; };
+		A1B2C3D4E5F60002CACHE001 /* CacheService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60002CACHE001 /* CacheService.swift */; };
+		A1B2C3D4E5F60003REGION01 /* Region.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E60003REGION01 /* Region.swift */; };
 		A4382A7758E7EBE091690413 /* ResortListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D49E6B5DE0674E438239F0C7 /* ResortListView.swift */; };
 		B0D36B7D1D4FCE37543A6EB9 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 1B6DFD862C11C1CECA4C1636 /* Alamofire */; };
 		B2357528C3D50AC74D4E81FF /* SnowTrackerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04113168D514491AA588BD9E /* SnowTrackerUITests.swift */; };
@@ -80,9 +80,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		F1A2B3C4D5E60001SPLASH01 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
-		F1A2B3C4D5E60002CACHE001 /* CacheService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheService.swift; sourceTree = "<group>"; };
-		F1A2B3C4D5E60003REGION01 /* Region.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Region.swift; sourceTree = "<group>"; };
 		00C42DA351EFF0BEC9BA422F /* SnowTrackerWidgetExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = SnowTrackerWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		04113168D514491AA588BD9E /* SnowTrackerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowTrackerUITests.swift; sourceTree = "<group>"; };
 		071051238274C7A6A1632776 /* WeatherCondition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherCondition.swift; sourceTree = "<group>"; };
@@ -94,7 +91,7 @@
 		4ACF49F69D091989F88C684E /* BestResortsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BestResortsWidget.swift; sourceTree = "<group>"; };
 		5E8AB00E37F5DF1C8E10BC49 /* FavoriteResortsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteResortsWidget.swift; sourceTree = "<group>"; };
 		600A8FDCB572F6C887540554 /* SnowTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowTrackerTests.swift; sourceTree = "<group>"; };
-		788B314D9D64678AD7BBA620 /* SnowTracker.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SnowTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		788B314D9D64678AD7BBA620 /* SnowTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SnowTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		827594616C43CCF87E99B50E /* SnowTrackerWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowTrackerWidgetBundle.swift; sourceTree = "<group>"; };
 		89CDB4F02FB7AB5E6113AF9C /* SnowTrackerWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SnowTrackerWidget.entitlements; sourceTree = "<group>"; };
 		8BCC6D20537615D2F10A0472 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -115,6 +112,9 @@
 		DD047E2A750245979D8452D8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		E32383CBDD1468C74E618025 /* SnowTrackerUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SnowTrackerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E42DC701CEC0DFCAD7762C72 /* ConditionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionsView.swift; sourceTree = "<group>"; };
+		F1A2B3C4D5E60001SPLASH01 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		F1A2B3C4D5E60002CACHE001 /* CacheService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheService.swift; sourceTree = "<group>"; };
+		F1A2B3C4D5E60003REGION01 /* Region.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Region.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -356,7 +356,6 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					B40C90E59D97E02D211DD7AC = {
-						DevelopmentTeam = 9LS3VUA9NG;
 						ProvisioningStyle = Automatic;
 					};
 					C4F12E2B0FC601ED28BDDDB4 = {
@@ -384,7 +383,6 @@
 				432C3D5EC66C389FEFFC60F0 /* XCRemoteSwiftPackageReference "keychain-swift" */,
 				5165717C09BCFC07A1CA6896 /* XCRemoteSwiftPackageReference "Nuke" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -548,7 +546,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9LS3VUA9NG;
+				DEVELOPMENT_TEAM = N324UX8D9M;
 				INFOPLIST_FILE = SnowTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -724,7 +722,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9LS3VUA9NG;
+				DEVELOPMENT_TEAM = N324UX8D9M;
 				INFOPLIST_FILE = SnowTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

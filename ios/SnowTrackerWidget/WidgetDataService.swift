@@ -174,7 +174,7 @@ class WidgetDataService {
 
     private func loadFavorites() -> Set<String> {
         // Try to load from App Group UserDefaults
-        if let defaults = UserDefaults(suiteName: "group.com.snowtracker.app") {
+        if let defaults = UserDefaults(suiteName: "group.com.wouterdevriendt.snowtracker") {
             let favorites = defaults.stringArray(forKey: "favoriteResorts") ?? []
             logger.info("Loaded \(favorites.count) favorites from app group")
             return Set(favorites)

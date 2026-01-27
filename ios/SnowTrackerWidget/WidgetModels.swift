@@ -18,7 +18,7 @@ struct WidgetUnitPreferences: Codable {
 
     /// Load preferences from shared UserDefaults
     static func load() -> WidgetUnitPreferences {
-        guard let defaults = UserDefaults(suiteName: "group.com.snowtracker.app"),
+        guard let defaults = UserDefaults(suiteName: "group.com.wouterdevriendt.snowtracker"),
               let data = defaults.data(forKey: "unitPreferences"),
               let decoded = try? JSONDecoder().decode(WidgetUnitPreferences.self, from: data) else {
             return WidgetUnitPreferences()
