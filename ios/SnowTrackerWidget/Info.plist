@@ -25,5 +25,7 @@
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.widgetkit-extension</string>
 	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Snow Tracker uses your location to show nearby ski resorts and calculate distances.</string>
 </dict>
 </plist>
