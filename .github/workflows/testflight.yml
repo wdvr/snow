@@ -21,6 +21,11 @@ on:
         required: false
         default: false
         type: boolean
+      use_github_runner:
+        description: 'Use GitHub-hosted runner (when self-hosted unavailable)'
+        required: false
+        default: false
+        type: boolean
 
 # Deployment strategy:
 # - Push to main: internal testers only (unlimited)
@@ -38,8 +43,8 @@ env:
 jobs:
   build-and-upload:
     name: Build and Upload to TestFlight
-    # Prefer self-hosted Mac runner (free), falls back to GitHub-hosted if unavailable
-    runs-on: [self-hosted, macOS, ARM64]
+    # Self-hosted (free) by default, use GitHub runner if laptop unavailable
+    runs-on: ${{ github.event.inputs.use_github_runner == 'true' && 'macos-latest' || fromJSON('["self-hosted", "macOS", "ARM64"]') }}
 
     steps:
     - name: Checkout code
