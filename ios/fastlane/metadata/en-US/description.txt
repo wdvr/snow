@@ -1,0 +1,18 @@
+Track real-time snow conditions at ski resorts worldwide. Powder Chaser helps you find the best skiing conditions with accurate snow quality ratings.
+
+FEATURES:
+• Real-time snow conditions for 28+ resorts across 8 regions
+• Snow quality ratings based on fresh powder since last thaw
+• Temperature and snowfall data at multiple elevations
+• Beautiful map view with resort locations
+• Offline support with cached data
+
+REGIONS COVERED:
+• North America West Coast (Whistler, Mammoth, Tahoe)
+• North America Rockies (Vail, Park City, Jackson Hole)
+• Alps (Chamonix, Zermatt, St. Anton, Verbier)
+• Japan (Niseko, Hakuba)
+• Oceania (Remarkables NZ, Thredbo AU)
+• South America (Portillo)
+
+Perfect for planning your next ski trip or checking conditions before heading to the mountain.

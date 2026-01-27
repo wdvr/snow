@@ -1,0 +1,87 @@
+# Fastlane configuration for Snow Tracker (Powder Chaser)
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Upload metadata, screenshots, and app icon to App Store Connect"
+  lane :deliver_metadata do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+      key_filepath: ENV["APP_STORE_CONNECT_KEY_PATH"],
+      in_house: false
+    )
+
+    deliver(
+      api_key: api_key,
+      app_identifier: "com.wouterdevriendt.snowtracker",
+      skip_binary_upload: true,
+      skip_screenshots: false,
+      skip_metadata: false,
+      force: true,
+      precheck_include_in_app_purchases: false,
+      submit_for_review: false,
+      automatic_release: false,
+      run_precheck_before_submit: false
+    )
+  end
+
+  desc "Upload only the app icon"
+  lane :upload_icon do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+      key_filepath: ENV["APP_STORE_CONNECT_KEY_PATH"],
+      in_house: false
+    )
+
+    deliver(
+      api_key: api_key,
+      app_identifier: "com.wouterdevriendt.snowtracker",
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: true,
+      app_icon: "./fastlane/metadata/app_icon.png",
+      force: true,
+      submit_for_review: false
+    )
+  end
+
+  desc "Generate App Store screenshots"
+  lane :screenshots do
+    capture_screenshots(
+      project: "../SnowTracker.xcodeproj",
+      scheme: "SnowTrackerUITests",
+      devices: [
+        "iPhone 17 Pro Max",
+        "iPhone 17 Pro",
+        "iPhone SE (3rd generation)",
+        "iPad Pro (12.9-inch) (6th generation)"
+      ],
+      languages: ["en-US"],
+      output_directory: "./fastlane/screenshots",
+      clear_previous_screenshots: true
+    )
+  end
+
+  desc "Download existing metadata from App Store Connect"
+  lane :download_metadata do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+      key_filepath: ENV["APP_STORE_CONNECT_KEY_PATH"],
+      in_house: false
+    )
+
+    deliver(
+      api_key: api_key,
+      app_identifier: "com.wouterdevriendt.snowtracker",
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: false,
+      force: true,
+      run_precheck_before_submit: false,
+      download_metadata: true
+    )
+  end
+end

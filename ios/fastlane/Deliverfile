@@ -1,0 +1,29 @@
+# Deliverfile for Powder Chaser (Snow Tracker)
+
+# App identifier
+app_identifier "com.wouterdevriendt.snowtracker"
+
+# Skip binary upload (handled by TestFlight workflow)
+skip_binary_upload true
+
+# Metadata
+copyright "#{Time.now.year} Wouter Devriendt"
+primary_category "Weather"
+secondary_category "Sports"
+
+# Review information
+app_review_information(
+  first_name: "Wouter",
+  last_name: "Devriendt",
+  phone_number: "+32000000000",
+  email_address: "wouterdevriendt@gmail.com"
+)
+
+# Pricing
+price_tier 0
+
+# Availability
+available_in_all_territories true
+
+# Automatic release
+automatic_release false
