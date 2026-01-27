@@ -918,65 +918,422 @@ class WikipediaScraper(BaseScraper):
         )
 
 
-class OpenMeteoGeocodingScraper(BaseScraper):
-    """Use Open-Meteo's geocoding API to enrich resort data with coordinates."""
+class MultiSourceGeocoder(BaseScraper):
+    """
+    Robust geocoding using multiple sources in priority order:
+    1. Known ski resorts database (hardcoded major resorts)
+    2. Nominatim/OpenStreetMap (has ski resort POIs)
+    3. Wikipedia API (many resorts have wiki pages with coordinates)
+    4. Open-Meteo (city/town names as fallback)
+    """
 
-    GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
+    NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+    WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
+    OPEN_METEO_URL = "https://geocoding-api.open-meteo.com/v1/search"
+
+    # Country code to bounding box (approximate) for filtering
+    COUNTRY_BOUNDS = {
+        "US": {"min_lat": 24, "max_lat": 72, "min_lon": -180, "max_lon": -66},
+        "CA": {"min_lat": 41, "max_lat": 84, "min_lon": -141, "max_lon": -52},
+        "FR": {"min_lat": 41, "max_lat": 51, "min_lon": -5, "max_lon": 10},
+        "CH": {"min_lat": 45.8, "max_lat": 47.8, "min_lon": 5.9, "max_lon": 10.5},
+        "AT": {"min_lat": 46.4, "max_lat": 49.0, "min_lon": 9.5, "max_lon": 17.2},
+        "IT": {"min_lat": 35.5, "max_lat": 47.1, "min_lon": 6.6, "max_lon": 18.5},
+        "DE": {"min_lat": 47.3, "max_lat": 55.1, "min_lon": 5.9, "max_lon": 15.0},
+        "JP": {"min_lat": 24, "max_lat": 46, "min_lon": 122, "max_lon": 154},
+        "NZ": {"min_lat": -47, "max_lat": -34, "min_lon": 166, "max_lon": 179},
+        "AU": {"min_lat": -44, "max_lat": -10, "min_lon": 112, "max_lon": 154},
+        "CL": {"min_lat": -56, "max_lat": -17, "min_lon": -76, "max_lon": -66},
+        "AR": {"min_lat": -55, "max_lat": -21, "min_lon": -74, "max_lon": -53},
+        "NO": {"min_lat": 57, "max_lat": 71, "min_lon": 4, "max_lon": 31},
+        "SE": {"min_lat": 55, "max_lat": 69, "min_lon": 11, "max_lon": 24},
+    }
+
+    # Hardcoded coordinates for well-known resorts that geocoding often misses
+    KNOWN_RESORTS = {
+        # North America - West
+        "whistler blackcomb": (50.1163, -122.9574),
+        "whistler": (50.1163, -122.9574),
+        "big white": (49.7236, -118.929),
+        "sun peaks": (50.8833, -119.9),
+        "silver star": (50.3617, -119.0608),
+        "revelstoke": (51.0, -118.2),
+        "revelstoke mountain resort": (51.0, -118.2),
+        "red mountain": (49.1047, -117.8464),
+        "apex mountain": (49.3903, -119.9017),
+        "cypress mountain": (49.3967, -123.2046),
+        "grouse mountain": (49.3807, -123.0815),
+        "mammoth mountain": (37.6308, -119.0326),
+        "palisades tahoe": (39.1969, -120.2358),
+        "squaw valley": (39.1969, -120.2358),
+        "heavenly": (38.9353, -119.9400),
+        "northstar": (39.2746, -120.1210),
+        "kirkwood": (38.6850, -120.0653),
+        "mt bachelor": (43.9792, -121.6889),
+        "mt hood meadows": (45.3314, -121.6650),
+        "crystal mountain": (46.9281, -121.5044),
+        "stevens pass": (47.7453, -121.0889),
+        # North America - Rockies
+        "vail": (39.6403, -106.3742),
+        "breckenridge": (39.4817, -106.0384),
+        "keystone": (39.6069, -105.9497),
+        "copper mountain": (39.5022, -106.1497),
+        "winter park": (39.8841, -105.7627),
+        "arapahoe basin": (39.6425, -105.8719),
+        "aspen": (39.1911, -106.8175),
+        "aspen mountain": (39.1875, -106.8186),
+        "aspen highlands": (39.1822, -106.8556),
+        "snowmass": (39.2130, -106.9378),
+        "buttermilk": (39.2030, -106.8600),
+        "steamboat": (40.4572, -106.8045),
+        "telluride": (37.9375, -107.8123),
+        "crested butte": (38.8986, -106.9650),
+        "park city": (40.6514, -111.5080),
+        "deer valley": (40.6375, -111.4783),
+        "snowbird": (40.5830, -111.6508),
+        "alta": (40.5884, -111.6386),
+        "brighton": (40.5980, -111.5833),
+        "solitude": (40.6197, -111.5919),
+        "snowbasin": (41.2161, -111.8569),
+        "jackson hole": (43.5875, -110.8278),
+        "grand targhee": (43.7892, -110.9583),
+        "big sky": (45.2858, -111.4019),
+        "lake louise": (51.4254, -116.1773),
+        "sunshine village": (51.0783, -115.7711),
+        "banff sunshine": (51.0783, -115.7711),
+        "kicking horse": (51.2975, -117.0478),
+        "fernie": (49.4628, -115.0869),
+        "panorama": (50.4603, -116.2389),
+        "marmot basin": (52.7978, -118.0825),
+        "nakiska": (50.9425, -115.1500),
+        "castle mountain": (49.3167, -114.4000),
+        # North America - East
+        "killington": (43.6045, -72.8201),
+        "stowe": (44.5303, -72.7814),
+        "sugarbush": (44.1358, -72.9033),
+        "jay peak": (44.9267, -72.5053),
+        "stratton": (43.1136, -72.9083),
+        "okemo": (43.4019, -72.7172),
+        "sunday river": (44.4736, -70.8567),
+        "sugarloaf": (45.0314, -70.3131),
+        "mont tremblant": (46.2119, -74.5850),
+        "tremblant": (46.2119, -74.5850),
+        "mont sainte anne": (47.0750, -70.9069),
+        "le massif": (47.2833, -70.6000),
+        "bromont": (45.3167, -72.6500),
+        "whiteface": (44.3656, -73.9028),
+        "gore mountain": (43.6728, -74.0056),
+        "hunter mountain": (42.2003, -74.2258),
+        # Europe - Alps
+        "chamonix": (45.9237, 6.8694),
+        "val disere": (45.4481, 6.9800),
+        "val d'isere": (45.4481, 6.9800),
+        "tignes": (45.4683, 6.9056),
+        "courchevel": (45.4153, 6.6347),
+        "meribel": (45.3967, 6.5656),
+        "les arcs": (45.5703, 6.8278),
+        "la plagne": (45.5053, 6.6778),
+        "les deux alpes": (45.0167, 6.1222),
+        "alpe d'huez": (45.0908, 6.0681),
+        "zermatt": (46.0207, 7.7491),
+        "verbier": (46.0967, 7.2286),
+        "st moritz": (46.4908, 9.8353),
+        "davos": (46.8003, 9.8367),
+        "laax": (46.8075, 9.2586),
+        "st anton": (47.1297, 10.2686),
+        "lech": (47.2069, 10.1419),
+        "kitzbuhel": (47.4492, 12.3925),
+        "ischgl": (46.9697, 10.2933),
+        "solden": (46.9650, 10.8750),
+        "cortina": (46.5369, 12.1358),
+        "cervinia": (45.9333, 7.6333),
+        "courmayeur": (45.7967, 6.9689),
+        "madonna di campiglio": (46.2294, 10.8264),
+        "garmisch partenkirchen": (47.5000, 11.0833),
+        # Japan
+        "niseko": (42.8048, 140.6874),
+        "hakuba": (36.6983, 137.8617),
+        "nozawa onsen": (36.9219, 138.4406),
+        "myoko kogen": (36.8894, 138.1856),
+        "shiga kogen": (36.7000, 138.5167),
+        "furano": (43.3406, 142.3828),
+        "rusutsu": (42.7500, 140.8833),
+        # Oceania
+        "thredbo": (-36.5042, 148.3069),
+        "perisher": (-36.4000, 148.4167),
+        "falls creek": (-36.8667, 147.2833),
+        "mt buller": (-37.1456, 146.4386),
+        "coronet peak": (-45.0833, 168.7167),
+        "the remarkables": (-45.0333, 168.8167),
+        "treble cone": (-44.6167, 168.9000),
+        "cardrona": (-44.8667, 169.0333),
+        "mt hutt": (-43.4833, 171.5333),
+        # South America
+        "portillo": (-32.8333, -70.1333),
+        "valle nevado": (-33.3667, -70.2500),
+        "el colorado": (-33.3500, -70.2833),
+        "la parva": (-33.3333, -70.2833),
+        "cerro catedral": (-41.1667, -71.4500),
+        "las lenas": (-35.0667, -70.0667),
+        "chapelco": (-40.1333, -71.2500),
+    }
+
+    def _clean_name(self, name: str) -> str:
+        """Clean resort name for searching."""
+        clean = name.lower()
+        clean = clean.replace("ski resort ", "").replace("ski area ", "")
+        clean = re.sub(r"\s*–\s*", " ", clean)  # Em dash to space
+        clean = re.sub(r"\s*-\s*", " ", clean)  # Hyphen to space
+        clean = re.sub(r"\s+", " ", clean).strip()
+        return clean
+
+    def _in_country_bounds(self, lat: float, lon: float, country: str) -> bool:
+        """Check if coordinates are within country bounds."""
+        bounds = self.COUNTRY_BOUNDS.get(country)
+        if not bounds:
+            return True  # No bounds defined, accept
+        return (
+            bounds["min_lat"] <= lat <= bounds["max_lat"]
+            and bounds["min_lon"] <= lon <= bounds["max_lon"]
+        )
+
+    def _geocode_known(self, name: str, country: str) -> tuple[float, float] | None:
+        """Check hardcoded known resorts."""
+        clean = self._clean_name(name)
+        for known_name, coords in self.KNOWN_RESORTS.items():
+            if known_name in clean or clean in known_name:
+                lat, lon = coords
+                if self._in_country_bounds(lat, lon, country):
+                    logger.debug(f"Found in known resorts: {name} -> {coords}")
+                    return coords
+        return None
+
+    def _geocode_nominatim(
+        self, name: str, country: str, state_province: str = ""
+    ) -> tuple[float, float] | None:
+        """Search OpenStreetMap/Nominatim for ski resort POIs."""
+        clean = self._clean_name(name)
+
+        # Try multiple search queries
+        queries = [
+            f"{clean} ski resort",
+            f"{clean} ski area",
+            clean,
+        ]
+
+        if state_province:
+            queries.insert(0, f"{clean} {state_province}")
+
+        for query in queries:
+            try:
+                params = {
+                    "q": query,
+                    "format": "json",
+                    "limit": 10,
+                    "addressdetails": 1,
+                }
+                # Add country filter
+                country_map = {
+                    "US": "United States",
+                    "CA": "Canada",
+                    "FR": "France",
+                    "CH": "Switzerland",
+                    "AT": "Austria",
+                    "IT": "Italy",
+                    "DE": "Germany",
+                    "JP": "Japan",
+                    "NZ": "New Zealand",
+                    "AU": "Australia",
+                    "CL": "Chile",
+                    "AR": "Argentina",
+                    "NO": "Norway",
+                    "SE": "Sweden",
+                }
+                if country in country_map:
+                    params["countrycodes"] = country.lower()
+
+                response = self._get(self.NOMINATIM_URL, params=params)
+                results = response.json()
+
+                for result in results:
+                    lat = float(result.get("lat", 0))
+                    lon = float(result.get("lon", 0))
+
+                    # Verify country matches
+                    addr = result.get("address", {})
+                    result_country = addr.get("country_code", "").upper()
+
+                    if result_country == country or self._in_country_bounds(
+                        lat, lon, country
+                    ):
+                        # Check if it's likely a ski resort
+                        result_type = result.get("type", "")
+                        result_class = result.get("class", "")
+                        display = result.get("display_name", "").lower()
+
+                        is_ski = (
+                            "ski" in display
+                            or "mountain" in display
+                            or "resort" in display
+                            or result_type in ["ski", "winter_sports"]
+                            or result_class in ["leisure", "tourism", "natural"]
+                        )
+
+                        if is_ski or clean in display:
+                            logger.debug(f"Nominatim found {name}: {lat}, {lon}")
+                            return (lat, lon)
+
+                time.sleep(1.1)  # Nominatim rate limit: 1 req/sec
+
+            except Exception as e:
+                logger.debug(f"Nominatim error for {name}: {e}")
+
+        return None
+
+    def _geocode_wikipedia(self, name: str, country: str) -> tuple[float, float] | None:
+        """Search Wikipedia for resort page and extract coordinates."""
+        clean = self._clean_name(name)
+
+        # Try different search terms
+        search_terms = [
+            f"{clean} ski resort",
+            f"{clean} ski area",
+            clean,
+        ]
+
+        for search_term in search_terms:
+            try:
+                # Search Wikipedia
+                params = {
+                    "action": "query",
+                    "list": "search",
+                    "srsearch": search_term,
+                    "format": "json",
+                    "srlimit": 5,
+                }
+                response = self._get(self.WIKIPEDIA_API, params=params)
+                data = response.json()
+
+                search_results = data.get("query", {}).get("search", [])
+
+                for result in search_results:
+                    page_title = result.get("title", "")
+
+                    # Get coordinates for this page
+                    coord_params = {
+                        "action": "query",
+                        "titles": page_title,
+                        "prop": "coordinates",
+                        "format": "json",
+                    }
+                    coord_response = self._get(self.WIKIPEDIA_API, params=coord_params)
+                    coord_data = coord_response.json()
+
+                    pages = coord_data.get("query", {}).get("pages", {})
+                    for _page_id, page_info in pages.items():
+                        coords = page_info.get("coordinates", [])
+                        if coords:
+                            lat = coords[0].get("lat")
+                            lon = coords[0].get("lon")
+                            if (
+                                lat
+                                and lon
+                                and self._in_country_bounds(lat, lon, country)
+                            ):
+                                logger.debug(f"Wikipedia found {name}: {lat}, {lon}")
+                                return (lat, lon)
+
+                time.sleep(0.5)  # Be nice to Wikipedia
+
+            except Exception as e:
+                logger.debug(f"Wikipedia error for {name}: {e}")
+
+        return None
+
+    def _geocode_openmeteo(
+        self, name: str, country: str, state_province: str = ""
+    ) -> tuple[float, float] | None:
+        """Fallback to Open-Meteo geocoding (city names)."""
+        clean = self._clean_name(name)
+        # Also try just the first part of the name
+        simple_name = clean.split()[0] if clean else clean
+
+        for search_name in [clean, simple_name]:
+            try:
+                params = {
+                    "name": search_name,
+                    "count": 20,
+                    "language": "en",
+                    "format": "json",
+                }
+                response = self._get(self.OPEN_METEO_URL, params=params)
+                data = response.json()
+
+                results = data.get("results", [])
+                country_matches = [
+                    r for r in results if r.get("country_code", "").upper() == country
+                ]
+
+                if not country_matches:
+                    continue
+
+                # Filter by state if available
+                if state_province and len(country_matches) > 1:
+                    state_matches = [
+                        r
+                        for r in country_matches
+                        if state_province.lower() in (r.get("admin1", "") or "").lower()
+                    ]
+                    if state_matches:
+                        country_matches = state_matches
+
+                best = country_matches[0]
+                lat, lon = best["latitude"], best["longitude"]
+                logger.debug(f"Open-Meteo found {name}: {lat}, {lon}")
+                return (lat, lon)
+
+            except Exception as e:
+                logger.debug(f"Open-Meteo error for {name}: {e}")
+
+        return None
 
     def geocode(
         self, resort_name: str, country: str, state_province: str = ""
     ) -> tuple[float, float] | None:
-        """Get coordinates for a resort by name with country/state filtering."""
-        # Clean up the resort name
-        clean_name = resort_name.replace("Ski resort ", "").replace(" – ", " ")
-        clean_name = clean_name.split(" - ")[0]
+        """
+        Try multiple geocoding sources in priority order.
+        Returns coordinates or None if all sources fail.
+        """
+        # 1. Check known resorts first (instant, most reliable)
+        coords = self._geocode_known(resort_name, country)
+        if coords:
+            return coords
 
-        params = {
-            "name": clean_name,
-            "count": 20,  # Get more results for better filtering
-            "language": "en",
-            "format": "json",
-        }
+        # 2. Try Nominatim/OpenStreetMap (has ski resort POIs)
+        coords = self._geocode_nominatim(resort_name, country, state_province)
+        if coords:
+            return coords
 
-        try:
-            response = self._get(self.GEOCODING_URL, params=params)
-            data = response.json()
+        # 3. Try Wikipedia (many resorts have wiki pages)
+        coords = self._geocode_wikipedia(resort_name, country)
+        if coords:
+            return coords
 
-            results = data.get("results", [])
-            if not results:
-                return None
+        # 4. Fallback to Open-Meteo (city names)
+        coords = self._geocode_openmeteo(resort_name, country, state_province)
+        if coords:
+            return coords
 
-            # Filter by country first
-            country_matches = [
-                r for r in results if r.get("country_code", "").upper() == country
-            ]
-
-            if not country_matches:
-                # No match for this country - don't fall back to wrong country!
-                logger.debug(f"No results in country {country} for {clean_name}")
-                return None
-
-            # If we have a state/province hint, try to match it
-            if state_province and len(country_matches) > 1:
-                state_matches = [
-                    r
-                    for r in country_matches
-                    if state_province.lower() in (r.get("admin1", "") or "").lower()
-                ]
-                if state_matches:
-                    country_matches = state_matches
-
-            # Return the first matching result
-            best = country_matches[0]
-            return (best["latitude"], best["longitude"])
-
-        except Exception as e:
-            logger.warning(f"Geocoding failed for {resort_name}: {e}")
-
+        logger.warning(f"All geocoding sources failed for: {resort_name}")
         return None
 
     def enrich_resorts(self, resorts: list[ScrapedResort]) -> list[ScrapedResort]:
         """Add coordinates to resorts that don't have them."""
+        total = len([r for r in resorts if r.latitude == 0.0])
+        geocoded = 0
+
+        logger.info(f"Geocoding {total} resorts without coordinates...")
+
         for resort in resorts:
             if resort.latitude == 0.0 and resort.longitude == 0.0:
                 coords = self.geocode(
@@ -984,8 +1341,12 @@ class OpenMeteoGeocodingScraper(BaseScraper):
                 )
                 if coords:
                     resort.latitude, resort.longitude = coords
-                    logger.info(f"Geocoded {resort.name}: {coords}")
+                    geocoded += 1
+                    logger.info(
+                        f"[{geocoded}/{total}] Geocoded {resort.name}: {coords}"
+                    )
 
+        logger.info(f"Geocoding complete: {geocoded}/{total} successful")
         return resorts
 
 
@@ -1006,7 +1367,7 @@ class ResortScraper:
             ),
             WikipediaScraper(countries=countries, session=self.session),
         ]
-        self.geocoder = OpenMeteoGeocodingScraper(session=self.session)
+        self.geocoder = MultiSourceGeocoder(session=self.session)
 
     def scrape(self) -> list[ScrapedResort]:
         """Scrape from all sources and deduplicate."""
