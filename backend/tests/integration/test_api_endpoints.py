@@ -417,9 +417,11 @@ class TestAPIIntegration:
         # Cleanup
         resorts_table.delete_item(Key={"resort_id": "test-resort"})
 
-    @patch("handlers.api_handler.user_service")
-    def test_get_user_preferences(self, mock_user_service, app_client):
+    @patch("handlers.api_handler.get_user_service")
+    def test_get_user_preferences(self, mock_get_user_service, app_client):
         """Test getting user preferences."""
+        from unittest.mock import MagicMock
+
         from models.user import UserPreferences
 
         # Create actual UserPreferences object
@@ -440,7 +442,9 @@ class TestAPIIntegration:
             created_at="2026-01-20T10:00:00Z",
             updated_at="2026-01-20T10:00:00Z",
         )
-        mock_user_service.get_user_preferences.return_value = mock_preferences
+        mock_service = MagicMock()
+        mock_service.get_user_preferences.return_value = mock_preferences
+        mock_get_user_service.return_value = mock_service
 
         response = app_client.get("/api/v1/user/preferences")
 
