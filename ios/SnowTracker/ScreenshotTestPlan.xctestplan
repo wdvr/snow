@@ -1,0 +1,58 @@
+{
+  "configurations" : [
+    {
+      "id" : "1C4F5A7A-4D45-4B9F-8E7D-3A2B1C9D8F6E",
+      "name" : "Screenshot Configuration",
+      "options" : {
+        "defaultTestExecutionTimeAllowance" : 120,
+        "testExecutionOrdering" : "random",
+        "maximumTestRepetitions" : 1,
+        "testTimeoutsEnabled" : true,
+        "testRepetitionMode" : "none"
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "commandLineArgumentEntries" : [
+      {
+        "argument" : "UI_TESTING"
+      },
+      {
+        "argument" : "SCREENSHOT_MODE"
+      },
+      {
+        "argument" : "DEMO_DATA"
+      }
+    ],
+    "environmentVariableEntries" : [
+      {
+        "key" : "SCREENSHOT_MODE",
+        "value" : "1"
+      }
+    ],
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:SnowTracker.xcodeproj",
+      "identifier" : "SnowTracker",
+      "name" : "SnowTracker"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "skippedTests" : [
+        "SnowTrackerUITests/testAppDoesNotShowFakeDataOnly()",
+        "SnowTrackerUITests/testAppLoadsRealResortData()",
+        "SnowTrackerUITests/testAppShowsThreeResorts()",
+        "SnowTrackerUITests/testErrorStateShowsMessage()",
+        "SnowTrackerUITests/testPullToRefreshWorks()",
+        "SnowTrackerUITests/testResortDetailShowsElevations()"
+      ],
+      "target" : {
+        "containerPath" : "container:SnowTracker.xcodeproj",
+        "identifier" : "SnowTrackerUITests",
+        "name" : "SnowTrackerUITests"
+      }
+    }
+  ],
+  "version" : 1
+}
