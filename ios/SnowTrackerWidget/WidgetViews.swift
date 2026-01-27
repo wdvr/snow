@@ -4,6 +4,7 @@ import SwiftUI
 
 struct ResortConditionRow: View {
     let resort: ResortConditionData
+    let unitPreferences: WidgetUnitPreferences
 
     var body: some View {
         HStack(spacing: 12) {
@@ -38,7 +39,7 @@ struct ResortConditionRow: View {
                         Image(systemName: "thermometer")
                             .font(.caption2)
                             .foregroundColor(.secondary)
-                        Text("\(Int(resort.temperature))°")
+                        Text(unitPreferences.formatTemperature(resort.temperature))
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
@@ -48,7 +49,7 @@ struct ResortConditionRow: View {
                         Image(systemName: "snowflake")
                             .font(.caption2)
                             .foregroundColor(.cyan)
-                        Text("\(Int(resort.freshSnow))cm")
+                        Text(unitPreferences.formatSnow(resort.freshSnow))
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
@@ -61,7 +62,7 @@ struct ResortConditionRow: View {
 // MARK: - Preview
 
 #Preview {
-    ResortConditionRow(resort: .sample)
+    ResortConditionRow(resort: .sample, unitPreferences: WidgetUnitPreferences())
         .padding()
         .background(Color(.systemBackground))
 }

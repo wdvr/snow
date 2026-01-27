@@ -4,6 +4,7 @@ struct SettingsView: View {
     @ObservedObject private var config = AppConfiguration.shared
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var snowConditionsManager: SnowConditionsManager
+    @EnvironmentObject var userPreferencesManager: UserPreferencesManager
     @Environment(\.dismiss) private var dismiss: DismissAction
 
     @State private var showingResetAlert = false
@@ -259,26 +260,24 @@ struct SettingsView: View {
 // MARK: - Units Settings
 
 struct UnitsSettingsView: View {
-    @State private var temperatureUnit = "celsius"
-    @State private var distanceUnit = "metric"
-    @State private var snowDepthUnit = "cm"
+    @EnvironmentObject var userPreferencesManager: UserPreferencesManager
 
     var body: some View {
         Form {
             Section {
-                Picker("Temperature", selection: $temperatureUnit) {
-                    Text("Celsius").tag("celsius")
-                    Text("Fahrenheit").tag("fahrenheit")
+                Picker("Temperature", selection: $userPreferencesManager.preferredUnits.temperature) {
+                    Text("Celsius").tag(UnitPreferences.TemperatureUnit.celsius)
+                    Text("Fahrenheit").tag(UnitPreferences.TemperatureUnit.fahrenheit)
                 }
 
-                Picker("Distance", selection: $distanceUnit) {
-                    Text("Metric (km)").tag("metric")
-                    Text("Imperial (mi)").tag("imperial")
+                Picker("Distance", selection: $userPreferencesManager.preferredUnits.distance) {
+                    Text("Metric (km)").tag(UnitPreferences.DistanceUnit.metric)
+                    Text("Imperial (mi)").tag(UnitPreferences.DistanceUnit.imperial)
                 }
 
-                Picker("Snow Depth", selection: $snowDepthUnit) {
-                    Text("Centimeters").tag("cm")
-                    Text("Inches").tag("in")
+                Picker("Snow Depth", selection: $userPreferencesManager.preferredUnits.snowDepth) {
+                    Text("Centimeters").tag(UnitPreferences.SnowDepthUnit.centimeters)
+                    Text("Inches").tag(UnitPreferences.SnowDepthUnit.inches)
                 }
             }
         }
@@ -328,4 +327,6 @@ struct AboutView: View {
 #Preview {
     SettingsView()
         .environmentObject(AuthenticationService.shared)
+        .environmentObject(SnowConditionsManager())
+        .environmentObject(UserPreferencesManager.shared)
 }

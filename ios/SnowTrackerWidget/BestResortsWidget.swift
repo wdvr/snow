@@ -76,6 +76,7 @@ struct BestResortsEntry: TimelineEntry {
 
 struct BestResortsWidgetView: View {
     var entry: BestResortsEntry
+    private let unitPreferences = WidgetUnitPreferences.load()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -119,7 +120,7 @@ struct BestResortsWidgetView: View {
                                 .foregroundColor(index == 0 ? .black : .primary)
                         }
 
-                        ResortConditionRow(resort: resort)
+                        ResortConditionRow(resort: resort, unitPreferences: unitPreferences)
                     }
 
                     if index < entry.resorts.prefix(2).count - 1 {

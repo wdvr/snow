@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ConditionsView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @State private var showingQualityInfo = false
 
     var sortedResorts: [Resort] {
@@ -122,6 +123,7 @@ struct ConditionsView: View {
 struct ResortConditionCard: View {
     let resort: Resort
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
 
     private var conditions: [WeatherCondition] {
         snowConditionsManager.conditions[resort.id] ?? []
@@ -182,7 +184,7 @@ struct ResortConditionCard: View {
                     if top.snowSinceFreeze > 0 {
                         Image(systemName: "snowflake")
                             .foregroundColor(.cyan)
-                        Text("\(top.formattedSnowSinceFreezeInches) since last thaw")
+                        Text("\(top.formattedSnowSinceFreezeWithPrefs(userPreferencesManager.preferredUnits)) since last thaw")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -219,7 +221,7 @@ struct ResortConditionCard: View {
             }
 
             HStack {
-                Text("\(Int(condition.currentTempCelsius))°C")
+                Text(condition.formattedTemperature(userPreferencesManager.preferredUnits))
                     .font(.body)
                     .fontWeight(.medium)
 
@@ -230,7 +232,7 @@ struct ResortConditionCard: View {
                     .font(.caption)
             }
 
-            Text(condition.formattedSnowfall24h)
+            Text(condition.formattedSnowfall24hWithPrefs(userPreferencesManager.preferredUnits))
                 .font(.caption)
                 .foregroundColor(.blue)
         }
@@ -374,6 +376,7 @@ struct QualityInfoRow: View {
 #Preview("Conditions") {
     ConditionsView()
         .environmentObject(SnowConditionsManager())
+        .environmentObject(UserPreferencesManager.shared)
 }
 
 #Preview("Quality Info") {

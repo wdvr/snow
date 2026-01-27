@@ -76,6 +76,7 @@ struct FavoriteResortsEntry: TimelineEntry {
 
 struct FavoriteResortsWidgetView: View {
     var entry: FavoriteResortsEntry
+    private let unitPreferences = WidgetUnitPreferences.load()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -107,7 +108,7 @@ struct FavoriteResortsWidgetView: View {
                 Spacer()
             } else {
                 ForEach(entry.resorts.prefix(2), id: \.resortId) { resort in
-                    ResortConditionRow(resort: resort)
+                    ResortConditionRow(resort: resort, unitPreferences: unitPreferences)
                     if resort.resortId != entry.resorts.prefix(2).last?.resortId {
                         Divider()
                     }

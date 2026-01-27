@@ -555,7 +555,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wouterdevriendt.snowtracker;
 				SDKROOT = iphoneos;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_VERSION = 5.9;
@@ -573,7 +573,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.SnowTrackerUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wouterdevriendt.snowtracker.uitests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = SnowTracker;
@@ -653,7 +653,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.SnowTrackerUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wouterdevriendt.snowtracker.uitests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = SnowTracker;
@@ -670,7 +670,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.SnowTrackerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wouterdevriendt.snowtracker.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SnowTracker.app/SnowTracker";
@@ -687,7 +687,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.SnowTrackerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wouterdevriendt.snowtracker.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SnowTracker.app/SnowTracker";
@@ -708,7 +708,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.app.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wouterdevriendt.snowtracker.widget;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -731,7 +731,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wouterdevriendt.snowtracker;
 				SDKROOT = iphoneos;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_VERSION = 5.9;
@@ -753,7 +753,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.snowtracker.app.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wouterdevriendt.snowtracker.widget;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = "1,2";

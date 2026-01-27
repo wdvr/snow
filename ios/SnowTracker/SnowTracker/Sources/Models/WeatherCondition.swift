@@ -448,6 +448,95 @@ struct WeatherCondition: Codable, Identifiable, Hashable {
     }
 }
 
+// MARK: - Unit-Aware Formatting
+
+extension WeatherCondition {
+    /// Format temperature according to user preferences
+    func formattedTemperature(_ prefs: UnitPreferences) -> String {
+        switch prefs.temperature {
+        case .celsius:
+            return "\(Int(currentTempCelsius))°C"
+        case .fahrenheit:
+            return "\(Int(currentTempFahrenheit))°F"
+        }
+    }
+
+    /// Format min temperature according to user preferences
+    func formattedMinTemp(_ prefs: UnitPreferences) -> String {
+        switch prefs.temperature {
+        case .celsius:
+            return "\(Int(minTempCelsius))°C"
+        case .fahrenheit:
+            let fahrenheit = minTempCelsius * 9.0/5.0 + 32.0
+            return "\(Int(fahrenheit))°F"
+        }
+    }
+
+    /// Format max temperature according to user preferences
+    func formattedMaxTemp(_ prefs: UnitPreferences) -> String {
+        switch prefs.temperature {
+        case .celsius:
+            return "\(Int(maxTempCelsius))°C"
+        case .fahrenheit:
+            let fahrenheit = maxTempCelsius * 9.0/5.0 + 32.0
+            return "\(Int(fahrenheit))°F"
+        }
+    }
+
+    /// Format snow depth in cm according to user preferences
+    static func formatSnow(_ cm: Double, prefs: UnitPreferences) -> String {
+        switch prefs.snowDepth {
+        case .centimeters:
+            if cm < 0.1 {
+                return "0 cm"
+            }
+            return String(format: "%.1f cm", cm)
+        case .inches:
+            let inches = cm / 2.54
+            if inches < 0.1 {
+                return "0\""
+            }
+            return String(format: "%.1f\"", inches)
+        }
+    }
+
+    /// Format snow depth in cm according to user preferences (short form without unit for tight spaces)
+    static func formatSnowShort(_ cm: Double, prefs: UnitPreferences) -> String {
+        switch prefs.snowDepth {
+        case .centimeters:
+            return String(format: "%.0fcm", cm)
+        case .inches:
+            let inches = cm / 2.54
+            return String(format: "%.1f\"", inches)
+        }
+    }
+
+    /// Format fresh snow according to user preferences
+    func formattedFreshSnowWithPrefs(_ prefs: UnitPreferences) -> String {
+        if freshSnowCm < 0.1 {
+            return "No fresh snow"
+        }
+        return "\(Self.formatSnow(freshSnowCm, prefs: prefs)) fresh"
+    }
+
+    /// Format snow since freeze according to user preferences
+    func formattedSnowSinceFreezeWithPrefs(_ prefs: UnitPreferences) -> String {
+        let cm = snowSinceFreeze
+        if cm < 0.1 {
+            return "No fresh snow"
+        }
+        return "\(Self.formatSnow(cm, prefs: prefs)) fresh"
+    }
+
+    /// Format 24h snowfall according to user preferences
+    func formattedSnowfall24hWithPrefs(_ prefs: UnitPreferences) -> String {
+        if snowfall24hCm < 0.1 {
+            return "No new snow"
+        }
+        return Self.formatSnow(snowfall24hCm, prefs: prefs)
+    }
+}
+
 // MARK: - Sample Data
 
 extension WeatherCondition {

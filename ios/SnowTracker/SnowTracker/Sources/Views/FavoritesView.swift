@@ -76,6 +76,7 @@ struct FavoritesView: View {
 struct FavoriteResortRow: View {
     let resort: Resort
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
 
     private var topCondition: WeatherCondition? {
         snowConditionsManager.conditions[resort.id]?.first { $0.elevationLevel == "top" }
@@ -117,8 +118,8 @@ struct FavoriteResortRow: View {
 
                 if let condition = topCondition {
                     HStack(spacing: 8) {
-                        Label("\(Int(condition.currentTempCelsius))°C", systemImage: "thermometer")
-                        Label(condition.formattedFreshSnow, systemImage: "snowflake")
+                        Label(condition.formattedTemperature(userPreferencesManager.preferredUnits), systemImage: "thermometer")
+                        Label(condition.formattedFreshSnowWithPrefs(userPreferencesManager.preferredUnits), systemImage: "snowflake")
                     }
                     .font(.caption)
                     .foregroundColor(.secondary)

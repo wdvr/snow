@@ -1,5 +1,54 @@
 import SwiftUI
 
+// MARK: - Unit Preferences for Widget
+
+struct WidgetUnitPreferences: Codable {
+    var temperature: TemperatureUnit = .celsius
+    var snowDepth: SnowDepthUnit = .centimeters
+
+    enum TemperatureUnit: String, Codable {
+        case celsius = "celsius"
+        case fahrenheit = "fahrenheit"
+    }
+
+    enum SnowDepthUnit: String, Codable {
+        case centimeters = "cm"
+        case inches = "inches"
+    }
+
+    /// Load preferences from shared UserDefaults
+    static func load() -> WidgetUnitPreferences {
+        guard let defaults = UserDefaults(suiteName: "group.com.snowtracker.app"),
+              let data = defaults.data(forKey: "unitPreferences"),
+              let decoded = try? JSONDecoder().decode(WidgetUnitPreferences.self, from: data) else {
+            return WidgetUnitPreferences()
+        }
+        return decoded
+    }
+
+    /// Format temperature according to preferences
+    func formatTemperature(_ celsius: Double) -> String {
+        switch temperature {
+        case .celsius:
+            return "\(Int(celsius))°"
+        case .fahrenheit:
+            let fahrenheit = celsius * 9.0/5.0 + 32.0
+            return "\(Int(fahrenheit))°"
+        }
+    }
+
+    /// Format snow depth according to preferences
+    func formatSnow(_ cm: Double) -> String {
+        switch snowDepth {
+        case .centimeters:
+            return "\(Int(cm))cm"
+        case .inches:
+            let inches = cm / 2.54
+            return String(format: "%.1f\"", inches)
+        }
+    }
+}
+
 // MARK: - Resort Condition Data for Widget
 
 struct ResortConditionData: Identifiable {

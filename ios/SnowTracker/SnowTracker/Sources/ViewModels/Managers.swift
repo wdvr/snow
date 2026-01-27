@@ -182,12 +182,17 @@ class UserPreferencesManager: ObservableObject {
     static let shared = UserPreferencesManager()
 
     @Published var favoriteResorts: Set<String> = []
-    @Published var preferredUnits: UnitPreferences = UnitPreferences()
+    @Published var preferredUnits: UnitPreferences = UnitPreferences() {
+        didSet {
+            saveUnitPreferences()
+        }
+    }
     @Published var notificationSettings: NotificationSettings = NotificationSettings()
 
     private let apiClient = APIClient.shared
     private let favoritesKey = "favoriteResorts"
-    private let appGroupId = "group.com.snowtracker.app"
+    private let unitPreferencesKey = "unitPreferences"
+    private let appGroupId = "group.com.wouterdevriendt.snowtracker"
 
     private var sharedDefaults: UserDefaults? {
         UserDefaults(suiteName: appGroupId)
@@ -212,6 +217,29 @@ class UserPreferencesManager: ObservableObject {
             // Migrate to shared defaults
             saveLocalPreferences()
         }
+
+        // Load unit preferences
+        loadUnitPreferences()
+    }
+
+    private func loadUnitPreferences() {
+        let defaults = sharedDefaults ?? UserDefaults.standard
+
+        if let data = defaults.data(forKey: unitPreferencesKey),
+           let decoded = try? JSONDecoder().decode(UnitPreferences.self, from: data) {
+            // Temporarily disable didSet to avoid re-saving during load
+            preferredUnits = decoded
+        }
+    }
+
+    private func saveUnitPreferences() {
+        guard let encoded = try? JSONEncoder().encode(preferredUnits) else { return }
+
+        // Save to shared app group (for widget access)
+        sharedDefaults?.set(encoded, forKey: unitPreferencesKey)
+
+        // Also save to standard UserDefaults as backup
+        UserDefaults.standard.set(encoded, forKey: unitPreferencesKey)
     }
 
     func toggleFavorite(resortId: String) {

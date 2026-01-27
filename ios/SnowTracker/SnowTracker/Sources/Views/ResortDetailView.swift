@@ -20,11 +20,12 @@ struct ResortDetailView: View {
         text += "📍 \(resort.displayLocation)\n\n"
 
         if let condition = conditionForSelectedElevation {
+            let prefs = userPreferencesManager.preferredUnits
             text += "Current Conditions (\(selectedElevation.displayName)):\n"
             text += "❄️ Snow Quality: \(condition.snowQuality.displayName)\n"
-            text += "🌡️ Temperature: \(Int(condition.currentTempCelsius))°C / \(Int(condition.currentTempFahrenheit))°F\n"
-            text += "🆕 Fresh Snow: \(String(format: "%.0f", condition.freshSnowCm))cm\n"
-            text += "📊 24h Snowfall: \(String(format: "%.1f", condition.snowfall24hCm))cm\n"
+            text += "🌡️ Temperature: \(condition.formattedTemperature(prefs))\n"
+            text += "🆕 Fresh Snow: \(WeatherCondition.formatSnow(condition.freshSnowCm, prefs: prefs))\n"
+            text += "📊 24h Snowfall: \(WeatherCondition.formatSnow(condition.snowfall24hCm, prefs: prefs))\n"
         } else {
             text += "No current conditions available.\n"
         }
@@ -175,12 +176,9 @@ struct ResortDetailView: View {
                     Image(systemName: "thermometer")
                         .font(.title2)
                         .foregroundColor(.blue)
-                    Text("\(Int(condition.currentTempCelsius))°C")
+                    Text(condition.formattedTemperature(userPreferencesManager.preferredUnits))
                         .font(.title2)
                         .fontWeight(.bold)
-                    Text("\(Int(condition.currentTempFahrenheit))°F")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
                 .frame(maxWidth: .infinity)
 
@@ -204,7 +202,7 @@ struct ResortDetailView: View {
                     Image(systemName: "snowflake")
                         .font(.title2)
                         .foregroundColor(.cyan)
-                    Text("\(String(format: "%.0f", condition.freshSnowCm))cm")
+                    Text(WeatherCondition.formatSnowShort(condition.freshSnowCm, prefs: userPreferencesManager.preferredUnits))
                         .font(.title2)
                         .fontWeight(.bold)
                     Text("Fresh")
@@ -272,12 +270,9 @@ struct ResortDetailView: View {
                     Text("Snow since then:")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    Text(condition.formattedSnowSinceFreezeCm)
+                    Text(WeatherCondition.formatSnow(condition.snowSinceFreeze, prefs: userPreferencesManager.preferredUnits))
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                    Text("(\(condition.formattedSnowSinceFreezeInches))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
             }
             .padding(.vertical, 4)
@@ -305,7 +300,7 @@ struct ResortDetailView: View {
             Text(title)
                 .font(.caption)
                 .foregroundColor(.secondary)
-            Text("\(String(format: "%.1f", value))cm")
+            Text(WeatherCondition.formatSnow(value, prefs: userPreferencesManager.preferredUnits))
                 .font(.title3)
                 .fontWeight(.semibold)
         }
@@ -371,7 +366,7 @@ struct ResortDetailView: View {
             Text(title)
                 .font(.caption)
                 .foregroundColor(.secondary)
-            Text("\(String(format: "%.1f", value))cm")
+            Text(WeatherCondition.formatSnow(value, prefs: userPreferencesManager.preferredUnits))
                 .font(.title3)
                 .fontWeight(.semibold)
                 .foregroundColor(.blue)
@@ -390,13 +385,13 @@ struct ResortDetailView: View {
                 weatherDetailItem(
                     icon: "thermometer.low",
                     title: "Min Temp",
-                    value: "\(Int(condition.minTempCelsius))°C"
+                    value: condition.formattedMinTemp(userPreferencesManager.preferredUnits)
                 )
 
                 weatherDetailItem(
                     icon: "thermometer.high",
                     title: "Max Temp",
-                    value: "\(Int(condition.maxTempCelsius))°C"
+                    value: condition.formattedMaxTemp(userPreferencesManager.preferredUnits)
                 )
 
                 if let humidity = condition.humidityPercent {
@@ -487,7 +482,7 @@ struct ResortDetailView: View {
                             }
                             .font(.subheadline)
 
-                            Text("\(Int(condition.currentTempCelsius))°C")
+                            Text(condition.formattedTemperature(userPreferencesManager.preferredUnits))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
