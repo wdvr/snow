@@ -59,15 +59,10 @@ jobs:
         id: format
         run: |
           RUNNER="${{ steps.check.outputs.use-runner }}"
-          if [[ "$RUNNER" == *","* ]]; then
-            # Convert comma-separated to JSON array
-            JSON=$(echo "$RUNNER" | sed 's/,/","/g' | sed 's/^/["/' | sed 's/$/"]/')
-            echo "runner=$JSON" >> $GITHUB_OUTPUT
-          else
-            # Single runner, wrap in JSON array
-            echo "runner=[\"$RUNNER\"]" >> $GITHUB_OUTPUT
-          fi
-          echo "Using runner: $(cat $GITHUB_OUTPUT)"
+          # Convert comma-separated labels to JSON array using jq
+          JSON=$(echo "$RUNNER" | tr ',' '\n' | jq -R . | jq -s .)
+          echo "runner=$JSON" >> $GITHUB_OUTPUT
+          echo "Using runner: $JSON"
 
   build-and-upload:
     name: Build and Upload to TestFlight
