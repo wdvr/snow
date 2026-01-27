@@ -292,10 +292,10 @@ async def get_batch_conditions(
     """Get conditions for multiple resorts in a single request.
 
     This endpoint reduces API calls by allowing batch fetching of up to 50 resorts.
-    Fetches are done in parallel for speed.
+    Fetches are done in parallel using ThreadPoolExecutor.
     Returns conditions keyed by resort_id.
     """
-    import asyncio
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
     try:
         # Parse and validate resort IDs
@@ -313,20 +313,22 @@ async def get_batch_conditions(
                 detail="Maximum 50 resorts per batch request",
             )
 
-        # Fetch conditions for all resorts IN PARALLEL
-        async def fetch_one(resort_id: str):
+        # Fetch conditions for all resorts IN PARALLEL using ThreadPoolExecutor
+        results = {}
+
+        def fetch_one(resort_id: str):
             try:
-                # Run sync function in thread pool
-                conditions = await asyncio.to_thread(
-                    _get_conditions_cached, resort_id, hours
-                )
+                conditions = _get_conditions_cached(resort_id, hours)
                 return resort_id, {"conditions": conditions, "error": None}
             except Exception as e:
                 return resort_id, {"conditions": [], "error": str(e)}
 
-        # Execute all fetches concurrently
-        fetch_results = await asyncio.gather(*[fetch_one(rid) for rid in ids])
-        results = dict(fetch_results)
+        # Use ThreadPoolExecutor for true parallel execution
+        with ThreadPoolExecutor(max_workers=min(len(ids), 20)) as executor:
+            futures = {executor.submit(fetch_one, rid): rid for rid in ids}
+            for future in as_completed(futures):
+                resort_id, result = future.result()
+                results[resort_id] = result
 
         # Set cache headers
         response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
