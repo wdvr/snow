@@ -28,8 +28,8 @@ on:
 # - Manual: choose internal or external
 
 concurrency:
-  group: testflight-deploy
-  cancel-in-progress: false
+  group: testflight-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
