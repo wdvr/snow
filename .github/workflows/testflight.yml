@@ -45,7 +45,7 @@ jobs:
     name: Check Runner Availability
     runs-on: ubuntu-latest
     outputs:
-      runner: ${{ steps.check.outputs.runner }}
+      runner: ${{ steps.check.outputs.use-runner }}
     steps:
       - name: Check for self-hosted runner
         id: check
