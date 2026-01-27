@@ -384,6 +384,10 @@ api_handler_lambda = aws.lambda_.Function(
     runtime="python3.12",
     timeout=30,
     memory_size=256,
+    publish=True,  # Required for SnapStart
+    snap_start=aws.lambda_.FunctionSnapStartArgs(
+        apply_on="PublishedVersions"  # Enable SnapStart for faster cold starts
+    ),
     code=pulumi.AssetArchive(
         {
             "api_handler.py": pulumi.StringAsset(

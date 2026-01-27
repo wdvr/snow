@@ -48,27 +48,82 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize AWS clients and services
-dynamodb = boto3.resource("dynamodb")
-resort_service = ResortService(
-    dynamodb.Table(os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev"))
-)
-weather_conditions_table = dynamodb.Table(
-    os.environ.get("WEATHER_CONDITIONS_TABLE", "snow-tracker-weather-conditions-dev")
-)
-weather_service = WeatherService(
-    api_key=os.environ.get("WEATHER_API_KEY"),
-    conditions_table=weather_conditions_table,
-)
-snow_quality_service = SnowQualityService()
-user_service = UserService(
-    dynamodb.Table(
-        os.environ.get("USER_PREFERENCES_TABLE", "snow-tracker-user-preferences-dev")
-    )
-)
-feedback_table = dynamodb.Table(
-    os.environ.get("FEEDBACK_TABLE", "snow-tracker-feedback-dev")
-)
+# Lazy-initialized AWS clients and services
+# Required for Lambda SnapStart - connections must be re-established after restore
+_dynamodb = None
+_resort_service = None
+_weather_service = None
+_snow_quality_service = None
+_user_service = None
+_feedback_table = None
+
+
+def get_dynamodb():
+    """Get or create DynamoDB resource (lazy init for SnapStart)."""
+    global _dynamodb
+    if _dynamodb is None:
+        _dynamodb = boto3.resource("dynamodb")
+    return _dynamodb
+
+
+def get_resort_service():
+    """Get or create ResortService (lazy init for SnapStart)."""
+    global _resort_service
+    if _resort_service is None:
+        _resort_service = ResortService(
+            get_dynamodb().Table(
+                os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
+            )
+        )
+    return _resort_service
+
+
+def get_weather_service():
+    """Get or create WeatherService (lazy init for SnapStart)."""
+    global _weather_service
+    if _weather_service is None:
+        weather_conditions_table = get_dynamodb().Table(
+            os.environ.get(
+                "WEATHER_CONDITIONS_TABLE", "snow-tracker-weather-conditions-dev"
+            )
+        )
+        _weather_service = WeatherService(
+            api_key=os.environ.get("WEATHER_API_KEY"),
+            conditions_table=weather_conditions_table,
+        )
+    return _weather_service
+
+
+def get_snow_quality_service():
+    """Get or create SnowQualityService (lazy init for SnapStart)."""
+    global _snow_quality_service
+    if _snow_quality_service is None:
+        _snow_quality_service = SnowQualityService()
+    return _snow_quality_service
+
+
+def get_user_service():
+    """Get or create UserService (lazy init for SnapStart)."""
+    global _user_service
+    if _user_service is None:
+        _user_service = UserService(
+            get_dynamodb().Table(
+                os.environ.get(
+                    "USER_PREFERENCES_TABLE", "snow-tracker-user-preferences-dev"
+                )
+            )
+        )
+    return _user_service
+
+
+def get_feedback_table():
+    """Get or create feedback table (lazy init for SnapStart)."""
+    global _feedback_table
+    if _feedback_table is None:
+        _feedback_table = get_dynamodb().Table(
+            os.environ.get("FEEDBACK_TABLE", "snow-tracker-feedback-dev")
+        )
+    return _feedback_table
 
 
 # MARK: - Authentication Dependency
@@ -244,7 +299,7 @@ async def get_resorts(
 @cached_resorts
 def _get_all_resorts_cached():
     """Cached wrapper for getting all resorts."""
-    return resort_service.get_all_resorts()
+    return get_resort_service().get_all_resorts()
 
 
 @app.get("/api/v1/resorts/{resort_id}", response_model=Resort)
@@ -275,7 +330,7 @@ async def get_resort(resort_id: str, response: Response):
 @cached_resorts
 def _get_resort_cached(resort_id: str):
     """Cached wrapper for getting a single resort."""
-    return resort_service.get_resort(resort_id)
+    return get_resort_service().get_resort(resort_id)
 
 
 # MARK: - Weather Condition Endpoints
@@ -395,7 +450,7 @@ async def get_resort_conditions(
 @cached_conditions
 def _get_conditions_cached(resort_id: str, hours: int):
     """Cached wrapper for getting resort conditions."""
-    return weather_service.get_conditions_for_resort(resort_id, hours_back=hours)
+    return get_weather_service().get_conditions_for_resort(resort_id, hours_back=hours)
 
 
 @app.get("/api/v1/resorts/{resort_id}/conditions/{elevation_level}")
@@ -445,7 +500,7 @@ async def get_elevation_condition(
 @cached_conditions
 def _get_latest_condition_cached(resort_id: str, elevation_level: str):
     """Cached wrapper for getting latest condition at elevation."""
-    return weather_service.get_latest_condition(resort_id, elevation_level)
+    return get_weather_service().get_latest_condition(resort_id, elevation_level)
 
 
 @app.get("/api/v1/resorts/{resort_id}/snow-quality")
@@ -463,7 +518,7 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
         # Get latest conditions for all elevations
         conditions = []
         for elevation_point in resort.elevation_points:
-            condition = weather_service.get_latest_condition(
+            condition = get_weather_service().get_latest_condition(
                 resort_id, elevation_point.level.value
             )
             if condition:
@@ -587,7 +642,7 @@ async def get_user_preferences(
 ):
     """Get user preferences."""
     try:
-        preferences = user_service.get_user_preferences(user_id)
+        preferences = get_user_service().get_user_preferences(user_id)
         if not preferences:
             # Return default preferences for new users
             preferences = UserPreferences(
@@ -630,7 +685,7 @@ async def update_user_preferences(
         preferences.user_id = user_id
         preferences.updated_at = datetime.now(UTC).isoformat()
 
-        user_service.save_user_preferences(preferences)
+        get_user_service().save_user_preferences(preferences)
 
         return {"message": "Preferences updated successfully"}
 
@@ -665,7 +720,7 @@ async def submit_feedback(submission: FeedbackSubmission):
         )
 
         # Store in DynamoDB
-        feedback_table.put_item(Item=feedback.model_dump())
+        get_feedback_table().put_item(Item=feedback.model_dump())
 
         return {
             "id": feedback.feedback_id,
