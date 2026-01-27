@@ -80,13 +80,10 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         # Google Sign-In configuration
-        # Replace YOUR_GOOGLE_CLIENT_ID with your actual client ID from Google Cloud Console
-        GIDClientID: YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com
+        GIDClientID: 269334695221-p2i31pdp3n7ms7o7rpf6cb3vsdmc4ohs.apps.googleusercontent.com
         CFBundleURLTypes:
           - CFBundleURLSchemes:
-              # Reversed client ID for Google Sign-In callback
-              # Format: com.googleusercontent.apps.YOUR_GOOGLE_CLIENT_ID
-              - com.googleusercontent.apps.YOUR_GOOGLE_CLIENT_ID
+              - com.googleusercontent.apps.269334695221-p2i31pdp3n7ms7o7rpf6cb3vsdmc4ohs
 
   SnowTrackerWidgetExtension:
     type: app-extension

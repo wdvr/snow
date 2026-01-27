@@ -24,9 +24,8 @@ class AuthenticationService: NSObject, ObservableObject {
 
     private let keychain = KeychainSwift()
 
-    // Google Sign-In Client ID - Replace with your actual client ID from Google Cloud Console
-    // Format: XXXXXXXXXXXX-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
-    static let googleClientID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+    // Google Sign-In Client ID from Google Cloud Console
+    static let googleClientID = "269334695221-p2i31pdp3n7ms7o7rpf6cb3vsdmc4ohs.apps.googleusercontent.com"
 
     private enum Keys {
         static let userIdentifier = "com.snowtracker.userIdentifier"
