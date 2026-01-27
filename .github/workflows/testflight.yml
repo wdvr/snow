@@ -228,6 +228,15 @@ jobs:
           exit 1
         fi
 
+        # Set export compliance (required for TestFlight distribution)
+        echo "Setting export compliance (usesNonExemptEncryption: false)..."
+        curl -g -s -X PATCH \
+          -H "Authorization: Bearer $JWT" \
+          -H "Content-Type: application/json" \
+          -d "{\"data\":{\"type\":\"builds\",\"id\":\"$BUILD_ID\",\"attributes\":{\"usesNonExemptEncryption\":false}}}" \
+          "https://api.appstoreconnect.apple.com/v1/builds/$BUILD_ID" > /dev/null
+        echo "Export compliance set!"
+
         # Get beta groups for internal testing
         echo "Fetching beta groups..."
         GROUPS_RESPONSE=$(curl -g -s -H "Authorization: Bearer $JWT" \
