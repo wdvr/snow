@@ -22,8 +22,5 @@ app_review_information(
 # Pricing
 price_tier 0
 
-# Availability
-available_in_all_territories true
-
 # Automatic release
 automatic_release false
