@@ -243,41 +243,45 @@ struct SettingsView: View {
     private var accountRow: some View {
         if authService.isAuthenticated, let user = authService.currentUser {
             if user.provider == .guest {
+                // Guest mode - show "Not logged in" and option to sign in
                 HStack {
                     Image(systemName: "person.circle")
                         .foregroundColor(.secondary)
 
-                    Text("Guest")
+                    Text("Not logged in")
                         .font(.body)
+                        .foregroundStyle(.secondary)
 
                     Spacer()
                 }
 
-                Button("Sign Out") {
-                    showingSignOutAlert = true
+                Button("Sign In") {
+                    authService.signOut()  // This will return to login screen
                 }
-                .foregroundStyle(.red)
+                .foregroundStyle(.blue)
             } else {
+                // Signed in with Apple or Google
                 HStack {
                     let isApple = user.provider == .apple
                     Image(systemName: isApple ? "apple.logo" : "g.circle.fill")
                         .foregroundColor(isApple ? .primary : .blue)
+                        .font(.title3)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(user.displayName)
-                            .font(.body)
-                        if let email = user.email, email != user.displayName {
+                        if let email = user.email {
                             Text(email)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .font(.body)
+                        } else {
+                            Text(user.displayName)
+                                .font(.body)
                         }
+
+                        Text("Signed in with \(isApple ? "Apple" : "Google")")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
 
                     Spacer()
-
-                    Text(isApple ? "Apple" : "Google")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
 
                 Button("Sign Out") {
