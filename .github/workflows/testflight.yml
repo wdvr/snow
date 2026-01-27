@@ -1,8 +1,11 @@
 name: Deploy to TestFlight
 
 on:
-  # Trigger on version tags (e.g., v1.0.0, v1.2.3)
+  # Internal testing: every push to main (no daily limit for internal testers)
   push:
+    branches:
+      - main
+    # Also trigger on version tags for external beta release
     tags:
       - 'v*'
   # Manual trigger for testing
@@ -13,10 +16,16 @@ on:
         required: false
         default: '1'
         type: string
+      external_release:
+        description: 'Submit for external beta review'
+        required: false
+        default: false
+        type: boolean
 
-# NOTE: To release to TestFlight, create a tag:
-#   git tag v1.0.1 && git push origin v1.0.1
-# This prevents hitting Apple's daily upload limit
+# Deployment strategy:
+# - Push to main: internal testers only (unlimited)
+# - Version tags (v*): internal + external beta review (6/day limit)
+# - Manual: choose internal or external
 
 concurrency:
   group: testflight-deploy
@@ -266,6 +275,34 @@ jobs:
           # Don't fail the workflow - the build is still uploaded
         fi
 
+        # Submit for external beta review only on tag push or manual request
+        if [[ "${{ github.ref }}" == refs/tags/v* ]] || [[ "${{ github.event.inputs.external_release }}" == "true" ]]; then
+          echo "Submitting build for external beta review..."
+
+          # Add beta build localization (required for external testing)
+          curl -s -X POST \
+            -H "Authorization: Bearer $JWT" \
+            -H "Content-Type: application/json" \
+            -d "{\"data\":{\"type\":\"betaBuildLocalizations\",\"attributes\":{\"locale\":\"en-US\",\"whatsNew\":\"Bug fixes and improvements.\"},\"relationships\":{\"build\":{\"data\":{\"type\":\"builds\",\"id\":\"$BUILD_ID\"}}}}}" \
+            "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations"
+
+          # Submit for beta review
+          REVIEW_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer $JWT" \
+            -H "Content-Type: application/json" \
+            -d "{\"data\":{\"type\":\"betaAppReviewSubmissions\",\"relationships\":{\"build\":{\"data\":{\"type\":\"builds\",\"id\":\"$BUILD_ID\"}}}}}" \
+            "https://api.appstoreconnect.apple.com/v1/betaAppReviewSubmissions")
+
+          HTTP_CODE=$(echo "$REVIEW_RESPONSE" | tail -n1)
+          if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "409" ]; then
+            echo "Build submitted for external beta review!"
+          else
+            echo "Note: External beta review submission returned HTTP $HTTP_CODE (may already be submitted)"
+          fi
+        else
+          echo "Skipping external beta review (internal-only deployment)"
+        fi
+
     - name: Upload to TestFlight Summary
       run: |
         BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" ios/SnowTracker/Info.plist)
@@ -275,9 +312,14 @@ jobs:
         echo "- **Version**: $VERSION ($BUILD_NUMBER)" >> $GITHUB_STEP_SUMMARY
         echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Uploaded at**: $(date -u)" >> $GITHUB_STEP_SUMMARY
-        echo "- **Auto-distributed**: Yes (to internal testers)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "The build should now be available in TestFlight for internal testers." >> $GITHUB_STEP_SUMMARY
+        echo "### Distribution" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Internal testers: immediate access" >> $GITHUB_STEP_SUMMARY
+        if [[ "${{ github.ref }}" == refs/tags/v* ]] || [[ "${{ github.event.inputs.external_release }}" == "true" ]]; then
+          echo "- ✅ External testers: submitted for beta review" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- ⏭️ External testers: skipped (push to main)" >> $GITHUB_STEP_SUMMARY
+        fi
 
     - name: Cleanup
       if: always()

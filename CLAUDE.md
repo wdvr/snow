@@ -62,8 +62,12 @@ gh issue list --state open
 3. **Implement with tests** - Always add tests for changes
 4. **Commit frequently** with clear messages
 5. **Push branch**: `git push -u origin feature/issue-123-description`
-6. **Create PR**: `gh pr create --title "Title" --body "Closes #123"`
+6. **Create DRAFT PR**: `gh pr create --draft --title "Title" --body "Closes #123"`
 7. **Add progress comments** on PR for audit trail
+8. **Mark ready when complete**: `gh pr ready` (triggers auto-merge if CI passes)
+
+> **IMPORTANT**: Always create PRs as drafts (`--draft`). This prevents auto-merge from merging
+> half-baked work. Only mark ready (`gh pr ready`) when implementation is complete and tested.
 
 ### When Blocked
 - If `needs-user-input`: Flag to user and explain what's needed
@@ -130,10 +134,11 @@ gh issue list --state open
 gh issue create --title "Title" --body "Description" --label "enhancement"
 gh issue view 123
 
-# Pull Requests
-gh pr create --title "Add feature" --body "Closes #123"
+# Pull Requests (always use --draft, mark ready when done)
+gh pr create --draft --title "Add feature" --body "Closes #123"
+gh pr ready           # Mark PR ready for review/merge
 gh pr list
-gh pr merge 123 --squash
+gh pr merge 123 --squash --auto  # Auto-merge when CI passes
 
 # Deployments & Weather Processing
 gh run list --workflow=deploy.yml
