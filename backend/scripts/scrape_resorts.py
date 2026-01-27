@@ -504,16 +504,28 @@ class SkiResortInfoScraper(BaseScraper):
                     break
                 raise
 
-            # Find resort links (exclude snow-report and test-report subpages)
+            # Find resort links (exclude non-resort subpages)
             links = soup.select("a[href*='/ski-resort/']")
             seen = set()
+            skip_patterns = [
+                "/snow-report",
+                "/test-report",
+                "/test-result",
+                "/reviews",
+                "/photos",
+                "/events",
+                "/webcams",
+                "/trail-map",
+                "/video",
+                "/ski-lifts",
+                "/ski-schools",
+                "/apres-ski",
+                "/accommodation",
+            ]
             for link in links:
                 href = link.get("href", "")
-                # Skip non-resort pages
-                if any(
-                    x in href
-                    for x in ["/snow-report", "/test-report", "/reviews", "/photos"]
-                ):
+                # Skip non-resort pages (subpages of resort detail pages)
+                if any(pattern in href for pattern in skip_patterns):
                     continue
                 full_url = urljoin(self.BASE_URL, href)
                 if "/ski-resort/" in full_url and full_url not in seen:
@@ -545,6 +557,26 @@ class SkiResortInfoScraper(BaseScraper):
         # Remove common suffixes
         name = re.sub(r"\s*[-–]\s*Ski Resort.*$", "", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*Ski Area.*$", "", name, flags=re.IGNORECASE)
+
+        # Skip non-resort pages based on name
+        skip_prefixes = [
+            "Snow report",
+            "Test report",
+            "Trail map",
+            "Events",
+            "Webcams",
+            "Ski lifts",
+            "Slope offering",
+            "Mountain restaurants",
+            "Advanced skiers",
+            "Beginners",
+            "Experts",
+            "Families",
+            "Snow reliability",
+        ]
+        if any(name.lower().startswith(prefix.lower()) for prefix in skip_prefixes):
+            logger.debug(f"Skipping non-resort page: {name}")
+            return None
 
         # Extract elevation data
         elevation_base = None
