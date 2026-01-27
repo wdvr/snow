@@ -608,6 +608,41 @@ conditions_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# Batch conditions resource: /api/v1/conditions
+batch_conditions_parent_resource = aws.apigateway.Resource(
+    f"{app_name}-batch-conditions-parent-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="conditions",
+)
+
+# Batch conditions resource: /api/v1/conditions/batch
+batch_conditions_resource = aws.apigateway.Resource(
+    f"{app_name}-batch-conditions-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=batch_conditions_parent_resource.id,
+    path_part="batch",
+)
+
+# GET /api/v1/conditions/batch
+batch_conditions_method = aws.apigateway.Method(
+    f"{app_name}-batch-conditions-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=batch_conditions_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+batch_conditions_integration = aws.apigateway.Integration(
+    f"{app_name}-batch-conditions-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=batch_conditions_resource.id,
+    http_method=batch_conditions_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # API Gateway Deployment (depends on all integrations)
 api_deployment = aws.apigateway.Deployment(
     f"{app_name}-api-deployment-{environment}",
@@ -619,6 +654,7 @@ api_deployment = aws.apigateway.Deployment(
             resorts_integration,
             resort_integration,
             conditions_integration,
+            batch_conditions_integration,
         ]
     ),
 )
