@@ -16,18 +16,18 @@ enum AppEnvironment: String, CaseIterable {
     }
 
     /// API base URL for each environment
-    /// These will be populated by Pulumi outputs after deployment
+    /// Using custom subdomains of powderchaserapp.com
     var apiBaseURL: URL {
         switch self {
         case .development:
-            // Dev environment - use staging API
-            return URL(string: "https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging")!
+            // Dev environment - use dev subdomain
+            return URL(string: "https://dev.api.powderchaserapp.com")!
         case .staging:
-            // API Gateway URL from staging deployment
-            return URL(string: "https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging")!
+            // Staging subdomain
+            return URL(string: "https://staging.api.powderchaserapp.com")!
         case .production:
-            // API Gateway URL from prod deployment
-            return URL(string: "https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod")!
+            // Production API
+            return URL(string: "https://api.powderchaserapp.com")!
         }
     }
 

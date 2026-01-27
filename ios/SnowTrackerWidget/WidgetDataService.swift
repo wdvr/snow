@@ -12,7 +12,7 @@ final class WidgetDataService: @unchecked Sendable {
 
     private init() {
         // Use production API for widgets
-        self.baseURL = URL(string: "https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod")!
+        self.baseURL = URL(string: "https://api.powderchaserapp.com")!
 
         // Configure URLSession with shorter timeouts for widget context
         let config = URLSessionConfiguration.default

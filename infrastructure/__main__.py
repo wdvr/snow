@@ -713,14 +713,22 @@ monitoring_stack = create_monitoring_stack(
 )
 
 # =============================================================================
-# Custom Domain (powderchaserapp.com) - Production Only
+# Custom Domain (powderchaserapp.com) - All Environments
 # =============================================================================
 
 # Domain was registered via Route53 in the [personal] account
-# Enable custom domain for production environment
-enable_custom_domain = environment == "prod"
+# All environments use subdomains:
+#   prod:    api.powderchaserapp.com
+#   staging: staging.api.powderchaserapp.com
+#   dev:     dev.api.powderchaserapp.com
+enable_custom_domain = True
 domain_name = "powderchaserapp.com"
-api_subdomain = f"api.{domain_name}"
+
+# API subdomain varies by environment
+if environment == "prod":
+    api_subdomain = f"api.{domain_name}"
+else:
+    api_subdomain = f"{environment}.api.{domain_name}"
 
 # Get the hosted zone (created automatically by Route53 domain registration)
 hosted_zone = None
@@ -815,7 +823,8 @@ website_oac = aws.cloudfront.OriginAccessControl(
     signing_protocol="sigv4",
 )
 
-if enable_custom_domain and cert_validation:
+# Website with CloudFront - prod only (powderchaserapp.com)
+if environment == "prod" and cert_validation:
     # CloudFront distribution for marketing website with custom domain
     website_distribution = aws.cloudfront.Distribution(
         f"{app_name}-website-cdn-{environment}",
@@ -906,8 +915,19 @@ if enable_custom_domain and cert_validation:
         ],
     )
 
-    # Route53 record for API (api.powderchaserapp.com -> API Gateway)
-    # Note: API Gateway custom domain requires regional certificate (us-west-2)
+# =============================================================================
+# API Custom Domain (all environments)
+# - prod:    api.powderchaserapp.com
+# - staging: staging.api.powderchaserapp.com
+# - dev:     dev.api.powderchaserapp.com
+# =============================================================================
+
+if enable_custom_domain:
+    # Get the hosted zone for the domain
+    if hosted_zone is None:
+        hosted_zone = aws.route53.get_zone(name=domain_name)
+
+    # API Gateway custom domain requires regional certificate (us-west-2)
     api_regional_cert = aws.acm.Certificate(
         f"{app_name}-api-certificate-{environment}",
         domain_name=api_subdomain,
@@ -1019,11 +1039,16 @@ if "grafana_workspace" in monitoring_stack:
         ),
     )
 
-# Website exports
+# Website and API exports
 pulumi.export("website_bucket_name", website_bucket.bucket)
-if enable_custom_domain and website_distribution:
-    pulumi.export("website_url", f"https://{domain_name}")
+
+# API custom URL (all environments have subdomains)
+if enable_custom_domain:
     pulumi.export("api_url_custom", f"https://{api_subdomain}")
+
+# Website URL and CloudFront (prod only)
+if environment == "prod" and website_distribution:
+    pulumi.export("website_url", f"https://{domain_name}")
     pulumi.export("cloudfront_distribution_id", website_distribution.id)
 else:
     pulumi.export("website_url", website_bucket.website_endpoint)
