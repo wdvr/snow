@@ -176,7 +176,7 @@ jobs:
         # Get the build number we just uploaded
         BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" ios/SnowTracker/Info.plist)
         VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" ios/SnowTracker/Info.plist)
-        APP_BUNDLE_ID="com.snowtracker.app"
+        APP_BUNDLE_ID="com.wouterdevriendt.snowtracker"
 
         echo "Waiting for build $VERSION ($BUILD_NUMBER) to finish processing..."
 
