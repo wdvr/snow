@@ -45,7 +45,7 @@ jobs:
     name: Check Runner Availability
     runs-on: ubuntu-latest
     outputs:
-      runner: ${{ steps.check.outputs.use-runner }}
+      runner: ${{ steps.format.outputs.runner }}
     steps:
       - name: Check for self-hosted runner
         id: check
@@ -55,10 +55,24 @@ jobs:
           primary-runner: 'self-hosted,macOS,ARM64'
           fallback-runner: 'macos-latest'
 
+      - name: Format runner output
+        id: format
+        run: |
+          RUNNER="${{ steps.check.outputs.use-runner }}"
+          if [[ "$RUNNER" == *","* ]]; then
+            # Convert comma-separated to JSON array
+            JSON=$(echo "$RUNNER" | sed 's/,/","/g' | sed 's/^/["/' | sed 's/$/"]/')
+            echo "runner=$JSON" >> $GITHUB_OUTPUT
+          else
+            # Single runner, wrap in JSON array
+            echo "runner=[\"$RUNNER\"]" >> $GITHUB_OUTPUT
+          fi
+          echo "Using runner: $(cat $GITHUB_OUTPUT)"
+
   build-and-upload:
     name: Build and Upload to TestFlight
     needs: check-runner
-    runs-on: ${{ needs.check-runner.outputs.runner }}
+    runs-on: ${{ fromJSON(needs.check-runner.outputs.runner) }}
 
     steps:
     - name: Checkout code
