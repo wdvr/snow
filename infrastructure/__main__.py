@@ -712,6 +712,258 @@ monitoring_stack = create_monitoring_stack(
     create_grafana=(environment == "staging"),
 )
 
+# =============================================================================
+# Custom Domain (powderchaserapp.com) - Production Only
+# =============================================================================
+
+# Domain was registered via Route53 in the [personal] account
+# Enable custom domain for production environment
+enable_custom_domain = environment == "prod"
+domain_name = "powderchaserapp.com"
+api_subdomain = f"api.{domain_name}"
+
+# Get the hosted zone (created automatically by Route53 domain registration)
+hosted_zone = None
+certificate = None
+cert_validation = None
+api_domain = None
+website_distribution = None
+
+if enable_custom_domain:
+    # Get the hosted zone for the domain
+    hosted_zone = aws.route53.get_zone(name=domain_name)
+
+    # ACM Certificate for the domain (must be in us-east-1 for CloudFront)
+    us_east_1 = aws.Provider("us-east-1", region="us-east-1")
+
+    certificate = aws.acm.Certificate(
+        f"{app_name}-certificate-{environment}",
+        domain_name=domain_name,
+        subject_alternative_names=[f"*.{domain_name}"],
+        validation_method="DNS",
+        tags=tags,
+        opts=pulumi.ResourceOptions(provider=us_east_1),
+    )
+
+    # DNS validation records
+    cert_validation_records = []
+    for i in range(2):  # Main domain + wildcard
+        cert_validation_records.append(
+            aws.route53.Record(
+                f"{app_name}-cert-validation-{i}-{environment}",
+                zone_id=hosted_zone.zone_id,
+                name=certificate.domain_validation_options[i].resource_record_name,
+                type=certificate.domain_validation_options[i].resource_record_type,
+                records=[
+                    certificate.domain_validation_options[i].resource_record_value
+                ],
+                ttl=300,
+                opts=pulumi.ResourceOptions(provider=us_east_1),
+            )
+        )
+
+    # Wait for certificate validation
+    cert_validation = aws.acm.CertificateValidation(
+        f"{app_name}-cert-validation-{environment}",
+        certificate_arn=certificate.arn,
+        validation_record_fqdns=[r.fqdn for r in cert_validation_records],
+        opts=pulumi.ResourceOptions(provider=us_east_1),
+    )
+
+# =============================================================================
+# Marketing Website (powderchaserapp.com) - S3 + CloudFront
+# =============================================================================
+
+# Get AWS account ID for unique bucket names
+caller_identity = aws.get_caller_identity()
+
+# S3 bucket for website static files
+website_bucket = aws.s3.BucketV2(
+    f"{app_name}-website-{environment}",
+    bucket=f"{app_name}-website-{environment}-{caller_identity.account_id}",
+    tags=tags,
+)
+
+# Block public access - CloudFront will use OAC
+website_bucket_public_access_block = aws.s3.BucketPublicAccessBlock(
+    f"{app_name}-website-pab-{environment}",
+    bucket=website_bucket.id,
+    block_public_acls=True,
+    block_public_policy=True,
+    ignore_public_acls=True,
+    restrict_public_buckets=True,
+)
+
+# Website bucket configuration (for S3 website hosting fallback)
+website_bucket_website = aws.s3.BucketWebsiteConfigurationV2(
+    f"{app_name}-website-config-{environment}",
+    bucket=website_bucket.id,
+    index_document=aws.s3.BucketWebsiteConfigurationV2IndexDocumentArgs(
+        suffix="index.html",
+    ),
+    error_document=aws.s3.BucketWebsiteConfigurationV2ErrorDocumentArgs(
+        key="index.html",  # SPA fallback
+    ),
+)
+
+# CloudFront Origin Access Control
+website_oac = aws.cloudfront.OriginAccessControl(
+    f"{app_name}-website-oac-{environment}",
+    name=f"{app_name}-website-oac-{environment}",
+    origin_access_control_origin_type="s3",
+    signing_behavior="always",
+    signing_protocol="sigv4",
+)
+
+if enable_custom_domain and cert_validation:
+    # CloudFront distribution for marketing website with custom domain
+    website_distribution = aws.cloudfront.Distribution(
+        f"{app_name}-website-cdn-{environment}",
+        enabled=True,
+        is_ipv6_enabled=True,
+        default_root_object="index.html",
+        aliases=[domain_name],
+        origins=[
+            aws.cloudfront.DistributionOriginArgs(
+                domain_name=website_bucket.bucket_regional_domain_name,
+                origin_id="S3Origin",
+                origin_access_control_id=website_oac.id,
+            ),
+        ],
+        default_cache_behavior=aws.cloudfront.DistributionDefaultCacheBehaviorArgs(
+            allowed_methods=["GET", "HEAD", "OPTIONS"],
+            cached_methods=["GET", "HEAD"],
+            target_origin_id="S3Origin",
+            viewer_protocol_policy="redirect-to-https",
+            compress=True,
+            forwarded_values=aws.cloudfront.DistributionDefaultCacheBehaviorForwardedValuesArgs(
+                query_string=False,
+                cookies=aws.cloudfront.DistributionDefaultCacheBehaviorForwardedValuesCookiesArgs(
+                    forward="none",
+                ),
+            ),
+            min_ttl=0,
+            default_ttl=86400,
+            max_ttl=31536000,
+        ),
+        custom_error_responses=[
+            # SPA routing - return index.html for 404s
+            aws.cloudfront.DistributionCustomErrorResponseArgs(
+                error_code=404,
+                response_code=200,
+                response_page_path="/index.html",
+            ),
+            aws.cloudfront.DistributionCustomErrorResponseArgs(
+                error_code=403,
+                response_code=200,
+                response_page_path="/index.html",
+            ),
+        ],
+        restrictions=aws.cloudfront.DistributionRestrictionsArgs(
+            geo_restriction=aws.cloudfront.DistributionRestrictionsGeoRestrictionArgs(
+                restriction_type="none",
+            ),
+        ),
+        viewer_certificate=aws.cloudfront.DistributionViewerCertificateArgs(
+            acm_certificate_arn=cert_validation.certificate_arn,
+            ssl_support_method="sni-only",
+            minimum_protocol_version="TLSv1.2_2021",
+        ),
+        tags=tags,
+    )
+
+    # S3 bucket policy to allow CloudFront access
+    website_bucket_policy = aws.s3.BucketPolicy(
+        f"{app_name}-website-policy-{environment}",
+        bucket=website_bucket.id,
+        policy=pulumi.Output.all(website_bucket.arn, website_distribution.arn).apply(
+            lambda args: f"""{{
+                "Version": "2012-10-17",
+                "Statement": [{{
+                    "Sid": "AllowCloudFrontServicePrincipal",
+                    "Effect": "Allow",
+                    "Principal": {{"Service": "cloudfront.amazonaws.com"}},
+                    "Action": "s3:GetObject",
+                    "Resource": "{args[0]}/*",
+                    "Condition": {{"StringEquals": {{"AWS:SourceArn": "{args[1]}"}}}}
+                }}]
+            }}"""
+        ),
+    )
+
+    # Route53 record for website (powderchaserapp.com -> CloudFront)
+    website_dns_record = aws.route53.Record(
+        f"{app_name}-website-dns-{environment}",
+        zone_id=hosted_zone.zone_id,
+        name=domain_name,
+        type="A",
+        aliases=[
+            aws.route53.RecordAliasArgs(
+                name=website_distribution.domain_name,
+                zone_id=website_distribution.hosted_zone_id,
+                evaluate_target_health=False,
+            )
+        ],
+    )
+
+    # Route53 record for API (api.powderchaserapp.com -> API Gateway)
+    # Note: API Gateway custom domain requires regional certificate (us-west-2)
+    api_regional_cert = aws.acm.Certificate(
+        f"{app_name}-api-certificate-{environment}",
+        domain_name=api_subdomain,
+        validation_method="DNS",
+        tags=tags,
+    )
+
+    api_cert_validation_record = aws.route53.Record(
+        f"{app_name}-api-cert-validation-{environment}",
+        zone_id=hosted_zone.zone_id,
+        name=api_regional_cert.domain_validation_options[0].resource_record_name,
+        type=api_regional_cert.domain_validation_options[0].resource_record_type,
+        records=[api_regional_cert.domain_validation_options[0].resource_record_value],
+        ttl=300,
+    )
+
+    api_cert_validation = aws.acm.CertificateValidation(
+        f"{app_name}-api-cert-validation-wait-{environment}",
+        certificate_arn=api_regional_cert.arn,
+        validation_record_fqdns=[api_cert_validation_record.fqdn],
+    )
+
+    # API Gateway custom domain
+    api_domain = aws.apigateway.DomainName(
+        f"{app_name}-api-domain-{environment}",
+        domain_name=api_subdomain,
+        regional_certificate_arn=api_cert_validation.certificate_arn,
+        endpoint_configuration=aws.apigateway.DomainNameEndpointConfigurationArgs(
+            types="REGIONAL",
+        ),
+        tags=tags,
+    )
+
+    # API Gateway base path mapping
+    api_mapping = aws.apigateway.BasePathMapping(
+        f"{app_name}-api-mapping-{environment}",
+        rest_api=api_gateway.id,
+        stage_name=api_deployment.stage_name,
+        domain_name=api_domain.domain_name,
+    )
+
+    # Route53 record for API
+    api_dns_record = aws.route53.Record(
+        f"{app_name}-api-dns-{environment}",
+        zone_id=hosted_zone.zone_id,
+        name=api_subdomain,
+        type="A",
+        aliases=[
+            aws.route53.RecordAliasArgs(
+                name=api_domain.regional_domain_name,
+                zone_id=api_domain.regional_zone_id,
+                evaluate_target_health=False,
+            )
+        ],
+    )
+
 # Exports
 pulumi.export("pulumi_state_bucket", pulumi_state_bucket.bucket)
 pulumi.export("resorts_table_name", resorts_table.name)
@@ -766,3 +1018,12 @@ if "grafana_workspace" in monitoring_stack:
             "Note: You must configure AWS SSO users/groups with Grafana permissions",
         ),
     )
+
+# Website exports
+pulumi.export("website_bucket_name", website_bucket.bucket)
+if enable_custom_domain and website_distribution:
+    pulumi.export("website_url", f"https://{domain_name}")
+    pulumi.export("api_url_custom", f"https://{api_subdomain}")
+    pulumi.export("cloudfront_distribution_id", website_distribution.id)
+else:
+    pulumi.export("website_url", website_bucket.website_endpoint)
