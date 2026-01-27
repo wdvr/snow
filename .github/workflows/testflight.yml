@@ -159,6 +159,9 @@ jobs:
           -authenticationKeyID ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
           -authenticationKeyIssuerID ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
 
+    - name: Install PyJWT for App Store Connect API
+      run: pip3 install PyJWT cryptography
+
     - name: Wait for build processing and distribute to TestFlight
       env:
         APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
@@ -171,15 +174,31 @@ jobs:
 
         echo "Waiting for build $VERSION ($BUILD_NUMBER) to finish processing..."
 
-        # Generate JWT for App Store Connect API
+        # Generate JWT for App Store Connect API using Python (more reliable than bash/openssl)
         generate_jwt() {
-          local header=$(echo -n '{"alg":"ES256","kid":"'$APP_STORE_CONNECT_KEY_ID'","typ":"JWT"}' | base64 | tr -d '=' | tr '/+' '_-' | tr -d '\n')
-          local now=$(date +%s)
-          local exp=$((now + 1200))
-          local payload=$(echo -n '{"iss":"'$APP_STORE_CONNECT_ISSUER_ID'","iat":'$now',"exp":'$exp',"aud":"appstoreconnect-v1"}' | base64 | tr -d '=' | tr '/+' '_-' | tr -d '\n')
-          local unsigned="$header.$payload"
-          local signature=$(echo -n "$unsigned" | openssl dgst -sha256 -sign ~/.private_keys/AuthKey_$APP_STORE_CONNECT_KEY_ID.p8 | base64 | tr -d '=' | tr '/+' '_-' | tr -d '\n')
-          echo "$unsigned.$signature"
+          python3 << 'PYSCRIPT'
+        import jwt
+        import time
+        import os
+
+        key_id = os.environ['APP_STORE_CONNECT_KEY_ID']
+        issuer_id = os.environ['APP_STORE_CONNECT_ISSUER_ID']
+        key_path = os.path.expanduser(f'~/.private_keys/AuthKey_{key_id}.p8')
+
+        with open(key_path, 'r') as f:
+            private_key = f.read()
+
+        now = int(time.time())
+        payload = {
+            'iss': issuer_id,
+            'iat': now,
+            'exp': now + 1200,
+            'aud': 'appstoreconnect-v1'
+        }
+
+        token = jwt.encode(payload, private_key, algorithm='ES256', headers={'kid': key_id})
+        print(token)
+        PYSCRIPT
         }
 
         JWT=$(generate_jwt)
