@@ -107,6 +107,7 @@ GET  /api/v1/regions                   - List ski regions with resort counts
 GET  /api/v1/resorts                   - List all resorts
 GET  /api/v1/resorts?region=alps       - Filter by region (na_west, na_rockies, na_east, alps, scandinavia, japan, oceania, south_america)
 GET  /api/v1/resorts?country=CA        - Filter by country code
+GET  /api/v1/resorts/nearby?lat=X&lon=Y&radius=200&limit=20 - Find resorts near location
 GET  /api/v1/resorts/{id}              - Resort details
 GET  /api/v1/resorts/{id}/conditions   - Weather conditions
 GET  /api/v1/resorts/{id}/snow-quality - Snow quality summary

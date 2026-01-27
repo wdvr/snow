@@ -302,6 +302,56 @@ def _get_all_resorts_cached():
     return get_resort_service().get_all_resorts()
 
 
+@app.get("/api/v1/resorts/nearby")
+async def get_nearby_resorts(
+    response: Response,
+    lat: float = Query(..., ge=-90, le=90, description="User's latitude"),
+    lon: float = Query(..., ge=-180, le=180, description="User's longitude"),
+    radius: float = Query(
+        200, ge=1, le=2000, description="Search radius in kilometers (default 200km)"
+    ),
+    limit: int = Query(20, ge=1, le=50, description="Maximum results (default 20)"),
+):
+    """
+    Find ski resorts near a given location.
+
+    Returns resorts sorted by distance from the provided coordinates,
+    within the specified radius. Each resort includes its distance in
+    both kilometers and miles.
+    """
+    try:
+        nearby = get_resort_service().get_nearby_resorts(
+            latitude=lat,
+            longitude=lon,
+            radius_km=radius,
+            limit=limit,
+        )
+
+        # Format response with distances
+        results = []
+        for resort, distance_km in nearby:
+            results.append({
+                "resort": resort,
+                "distance_km": distance_km,
+                "distance_miles": round(distance_km * 0.621371, 1),
+            })
+
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+
+        return {
+            "resorts": results,
+            "count": len(results),
+            "search_center": {"latitude": lat, "longitude": lon},
+            "search_radius_km": radius,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to find nearby resorts: {str(e)}",
+        )
+
+
 @app.get("/api/v1/resorts/{resort_id}", response_model=Resort)
 async def get_resort(resort_id: str, response: Response):
     """Get details for a specific resort."""

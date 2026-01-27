@@ -1,6 +1,6 @@
 """Resort management service."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from botocore.exceptions import ClientError
 
@@ -8,6 +8,7 @@ from models.resort import Resort
 
 # Import directly from module to avoid circular import through utils/__init__.py
 from utils.dynamodb_utils import parse_from_dynamodb, prepare_for_dynamodb
+from utils.geo_utils import bounding_box, haversine_distance
 
 
 class ResortService:
@@ -208,3 +209,75 @@ class ResortService:
 
         except Exception as e:
             raise Exception(f"Error calculating resort statistics: {str(e)}")
+
+    def get_nearby_resorts(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_km: float = 200.0,
+        limit: int = 20,
+    ) -> list[Tuple[Resort, float]]:
+        """
+        Get resorts near a given location, sorted by distance.
+
+        Args:
+            latitude: User's latitude in degrees
+            longitude: User's longitude in degrees
+            radius_km: Search radius in kilometers (default 200km)
+            limit: Maximum number of results to return (default 20)
+
+        Returns:
+            List of tuples containing (Resort, distance_km), sorted by distance
+        """
+        try:
+            # Get all resorts
+            all_resorts = self.get_all_resorts()
+
+            # Calculate bounding box for quick pre-filtering
+            min_lat, max_lat, min_lon, max_lon = bounding_box(
+                latitude, longitude, radius_km
+            )
+
+            nearby = []
+            for resort in all_resorts:
+                # Get primary coordinate (prefer mid, then base, then first)
+                coord = self._get_resort_coordinate(resort)
+                if not coord:
+                    continue
+
+                resort_lat, resort_lon = coord
+
+                # Quick bounding box check
+                if not (
+                    min_lat <= resort_lat <= max_lat
+                    and min_lon <= resort_lon <= max_lon
+                ):
+                    continue
+
+                # Calculate exact distance
+                distance = haversine_distance(
+                    latitude, longitude, resort_lat, resort_lon
+                )
+
+                # Check if within radius
+                if distance <= radius_km:
+                    nearby.append((resort, round(distance, 1)))
+
+            # Sort by distance and limit results
+            nearby.sort(key=lambda x: x[1])
+            return nearby[:limit]
+
+        except Exception as e:
+            raise Exception(f"Error finding nearby resorts: {str(e)}")
+
+    def _get_resort_coordinate(self, resort: Resort) -> Optional[Tuple[float, float]]:
+        """Get the primary coordinate for a resort (mid > base > first)."""
+        # Prefer mid elevation for better representation of resort location
+        if resort.mid_elevation:
+            return (resort.mid_elevation.latitude, resort.mid_elevation.longitude)
+        if resort.base_elevation:
+            return (resort.base_elevation.latitude, resort.base_elevation.longitude)
+        if resort.elevation_points:
+            point = resort.elevation_points[0]
+            return (point.latitude, point.longitude)
+        return None

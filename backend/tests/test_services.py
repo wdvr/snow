@@ -297,6 +297,226 @@ class TestResortService:
         assert stats["total_elevation_points"] == 7  # 2 + 3 + 2
         assert abs(stats["average_elevation_points_per_resort"] - 7 / 3) < 0.1
 
+    def test_get_nearby_resorts_success(self, resort_service, mock_table):
+        """Test finding nearby resorts."""
+        # Mock resorts at different distances from Vancouver (49.28, -123.12)
+        mock_resorts_data = [
+            {
+                "resort_id": "whistler",
+                "name": "Whistler",
+                "country": "CA",
+                "region": "BC",
+                "elevation_points": [
+                    {
+                        "level": "mid",
+                        "elevation_meters": 1500,
+                        "elevation_feet": 4921,
+                        "latitude": 50.1163,  # ~95km from Vancouver
+                        "longitude": -122.9574,
+                    },
+                ],
+                "timezone": "America/Vancouver",
+            },
+            {
+                "resort_id": "big-white",
+                "name": "Big White",
+                "country": "CA",
+                "region": "BC",
+                "elevation_points": [
+                    {
+                        "level": "mid",
+                        "elevation_meters": 1800,
+                        "elevation_feet": 5905,
+                        "latitude": 49.7167,  # ~350km from Vancouver
+                        "longitude": -118.9333,
+                    },
+                ],
+                "timezone": "America/Vancouver",
+            },
+            {
+                "resort_id": "lake-louise",
+                "name": "Lake Louise",
+                "country": "CA",
+                "region": "AB",
+                "elevation_points": [
+                    {
+                        "level": "mid",
+                        "elevation_meters": 2100,
+                        "elevation_feet": 6889,
+                        "latitude": 51.4200,  # ~650km from Vancouver
+                        "longitude": -116.1650,
+                    },
+                ],
+                "timezone": "America/Edmonton",
+            },
+        ]
+        mock_table.scan.return_value = {"Items": mock_resorts_data}
+
+        # Search from Vancouver with 200km radius
+        nearby = resort_service.get_nearby_resorts(
+            latitude=49.2827, longitude=-123.1207, radius_km=200.0
+        )
+
+        # Should only find Whistler (within 200km)
+        assert len(nearby) == 1
+        assert nearby[0][0].resort_id == "whistler"
+        assert 90 < nearby[0][1] < 100  # Distance should be ~95km
+
+    def test_get_nearby_resorts_larger_radius(self, resort_service, mock_table):
+        """Test finding nearby resorts with larger radius."""
+        mock_resorts_data = [
+            {
+                "resort_id": "whistler",
+                "name": "Whistler",
+                "country": "CA",
+                "region": "BC",
+                "elevation_points": [
+                    {
+                        "level": "mid",
+                        "elevation_meters": 1500,
+                        "elevation_feet": 4921,
+                        "latitude": 50.1163,
+                        "longitude": -122.9574,
+                    },
+                ],
+                "timezone": "America/Vancouver",
+            },
+            {
+                "resort_id": "big-white",
+                "name": "Big White",
+                "country": "CA",
+                "region": "BC",
+                "elevation_points": [
+                    {
+                        "level": "mid",
+                        "elevation_meters": 1800,
+                        "elevation_feet": 5905,
+                        "latitude": 49.7167,
+                        "longitude": -118.9333,
+                    },
+                ],
+                "timezone": "America/Vancouver",
+            },
+        ]
+        mock_table.scan.return_value = {"Items": mock_resorts_data}
+
+        # Search with 500km radius - should find both
+        nearby = resort_service.get_nearby_resorts(
+            latitude=49.2827, longitude=-123.1207, radius_km=500.0
+        )
+
+        assert len(nearby) == 2
+        # Results should be sorted by distance (Whistler first)
+        assert nearby[0][0].resort_id == "whistler"
+        assert nearby[1][0].resort_id == "big-white"
+
+    def test_get_nearby_resorts_limit(self, resort_service, mock_table):
+        """Test that limit parameter works correctly."""
+        # Create multiple nearby resorts
+        mock_resorts_data = [
+            {
+                "resort_id": f"resort-{i}",
+                "name": f"Resort {i}",
+                "country": "CA",
+                "region": "BC",
+                "elevation_points": [
+                    {
+                        "level": "base",
+                        "elevation_meters": 1500,
+                        "elevation_feet": 4921,
+                        "latitude": 49.0 + (i * 0.01),
+                        "longitude": -120.0,
+                    },
+                ],
+                "timezone": "America/Vancouver",
+            }
+            for i in range(10)
+        ]
+        mock_table.scan.return_value = {"Items": mock_resorts_data}
+
+        nearby = resort_service.get_nearby_resorts(
+            latitude=49.0, longitude=-120.0, radius_km=100.0, limit=3
+        )
+
+        assert len(nearby) == 3
+
+    def test_get_nearby_resorts_empty(self, resort_service, mock_table):
+        """Test finding nearby resorts when none are within radius."""
+        mock_resorts_data = [
+            {
+                "resort_id": "far-resort",
+                "name": "Far Resort",
+                "country": "JP",
+                "region": "Hokkaido",
+                "elevation_points": [
+                    {
+                        "level": "base",
+                        "elevation_meters": 1000,
+                        "elevation_feet": 3280,
+                        "latitude": 43.0,  # Very far from Vancouver
+                        "longitude": 141.0,
+                    },
+                ],
+                "timezone": "Asia/Tokyo",
+            },
+        ]
+        mock_table.scan.return_value = {"Items": mock_resorts_data}
+
+        nearby = resort_service.get_nearby_resorts(
+            latitude=49.2827, longitude=-123.1207, radius_km=100.0
+        )
+
+        assert len(nearby) == 0
+
+    def test_get_nearby_resorts_sorted_by_distance(self, resort_service, mock_table):
+        """Test that results are sorted by distance ascending."""
+        mock_resorts_data = [
+            {
+                "resort_id": "far",
+                "name": "Far Resort",
+                "country": "CA",
+                "region": "BC",
+                "elevation_points": [
+                    {
+                        "level": "mid",
+                        "elevation_meters": 1500,
+                        "elevation_feet": 4921,
+                        "latitude": 50.0,  # Further
+                        "longitude": -120.0,
+                    },
+                ],
+                "timezone": "America/Vancouver",
+            },
+            {
+                "resort_id": "near",
+                "name": "Near Resort",
+                "country": "CA",
+                "region": "BC",
+                "elevation_points": [
+                    {
+                        "level": "mid",
+                        "elevation_meters": 1500,
+                        "elevation_feet": 4921,
+                        "latitude": 49.1,  # Closer
+                        "longitude": -120.0,
+                    },
+                ],
+                "timezone": "America/Vancouver",
+            },
+        ]
+        mock_table.scan.return_value = {"Items": mock_resorts_data}
+
+        nearby = resort_service.get_nearby_resorts(
+            latitude=49.0, longitude=-120.0, radius_km=200.0
+        )
+
+        assert len(nearby) == 2
+        # Should be sorted by distance - near resort first
+        assert nearby[0][0].resort_id == "near"
+        assert nearby[1][0].resort_id == "far"
+        # Distances should be in ascending order
+        assert nearby[0][1] < nearby[1][1]
+
 
 class TestWeatherService:
     """Test cases for WeatherService."""
