@@ -31,6 +31,10 @@ concurrency:
   group: testflight-deploy
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  actions: read
+
 env:
   SCHEME: 'SnowTracker'
   PROJECT_PATH: 'ios/SnowTracker.xcodeproj'
