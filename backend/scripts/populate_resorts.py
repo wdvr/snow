@@ -17,6 +17,12 @@ Usage:
 
     # Update existing resorts (instead of skip)
     python populate_resorts.py --source data.json --update-existing
+
+    # Send SNS notification with changes
+    python populate_resorts.py --source data.json --notify --sns-topic arn:aws:sns:...
+
+    # Incremental mode - only add new, don't update existing
+    python populate_resorts.py --source data.json --incremental
 """
 
 import argparse
@@ -38,6 +44,91 @@ from src.models.resort import ElevationLevel, ElevationPoint, Resort
 from src.services.resort_service import ResortService
 
 # Configure logging
+
+
+class SNSNotifier:
+    """Send notifications about resort changes via SNS."""
+
+    def __init__(self, topic_arn: str | None = None, email: str | None = None):
+        self.sns = boto3.client("sns")
+        self.topic_arn = topic_arn or os.environ.get("SNS_TOPIC_ARN")
+        self.email = email or os.environ.get(
+            "NOTIFICATION_EMAIL", "wouterdevriendt@gmail.com"
+        )
+
+    def send_notification(
+        self,
+        results: dict[str, Any],
+        removed_resorts: list[str],
+        environment: str = "prod",
+    ) -> bool:
+        """Send SNS notification about resort changes."""
+        if not self.topic_arn:
+            logger.warning("No SNS topic ARN configured, skipping notification")
+            return False
+
+        new_count = results.get("created", 0)
+        removed_count = len(removed_resorts)
+
+        if new_count == 0 and removed_count == 0:
+            logger.info("No changes to report, skipping notification")
+            return True
+
+        subject = (
+            f"[Snow Tracker] Resort Changes: +{new_count} new, -{removed_count} removed"
+        )
+
+        # Build message body
+        lines = [
+            f"Snow Tracker Resort Update ({environment})",
+            "=" * 50,
+            "",
+            f"New resorts added: {new_count}",
+            f"Resorts removed: {removed_count}",
+            f"Total processed: {results.get('total_processed', 0)}",
+            f"Skipped (existing): {results.get('skipped', 0)}",
+            f"Failed: {results.get('failed', 0)}",
+            "",
+        ]
+
+        if results.get("created_ids"):
+            lines.append(f"NEW RESORTS ({new_count}):")
+            lines.append("-" * 30)
+            for resort_id in results["created_ids"]:
+                lines.append(f"  + {resort_id}")
+            lines.append("")
+
+        if removed_resorts:
+            lines.append(f"REMOVED RESORTS ({removed_count}):")
+            lines.append("-" * 30)
+            for resort_id in removed_resorts:
+                lines.append(f"  - {resort_id}")
+            lines.append("")
+
+        if results.get("errors"):
+            lines.append(f"ERRORS ({len(results['errors'])}):")
+            lines.append("-" * 30)
+            for error in results["errors"][:20]:
+                lines.append(
+                    f"  ! {error['resort_id']}: {', '.join(error['errors'][:2])}"
+                )
+            lines.append("")
+
+        message = "\n".join(lines)
+
+        try:
+            self.sns.publish(
+                TopicArn=self.topic_arn,
+                Subject=subject[:100],  # SNS subject limit
+                Message=message,
+            )
+            logger.info(f"Sent notification to SNS topic: {self.topic_arn}")
+            return True
+        except ClientError as e:
+            logger.error(f"Failed to send SNS notification: {e}")
+            return False
+
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -453,6 +544,31 @@ def main():
         help="Only process resorts from this country (e.g., US, CA, FR)",
     )
 
+    parser.add_argument(
+        "--notify",
+        action="store_true",
+        help="Send SNS notification about changes",
+    )
+
+    parser.add_argument(
+        "--sns-topic",
+        type=str,
+        help="SNS topic ARN for notifications (default: from SNS_TOPIC_ARN env)",
+    )
+
+    parser.add_argument(
+        "--detect-removed",
+        action="store_true",
+        help="Detect resorts that exist in DB but not in source file",
+    )
+
+    parser.add_argument(
+        "--environment",
+        type=str,
+        default="prod",
+        help="Environment name for notifications (default: prod)",
+    )
+
     args = parser.parse_args()
 
     if args.verbose:
@@ -534,6 +650,31 @@ def main():
     # Setup AWS services
     resort_service = setup_services(args.table)
 
+    # Detect removed resorts if requested
+    removed_resorts = []
+    if args.detect_removed:
+        logger.info("Detecting removed resorts...")
+        try:
+            # Get all existing resort IDs from database
+            existing_resorts = resort_service.list_resorts()
+            existing_ids = {r.resort_id for r in existing_resorts}
+
+            # Get IDs from source file
+            source_ids = {r.get("resort_id") for r in resorts if r.get("resort_id")}
+
+            # Find resorts in DB but not in source
+            removed_resorts = list(existing_ids - source_ids)
+            if removed_resorts:
+                logger.warning(
+                    f"Found {len(removed_resorts)} resorts in DB not in source file"
+                )
+                for rid in removed_resorts[:10]:
+                    logger.warning(f"  - {rid}")
+                if len(removed_resorts) > 10:
+                    logger.warning(f"  ... and {len(removed_resorts) - 10} more")
+        except Exception as e:
+            logger.error(f"Failed to detect removed resorts: {e}")
+
     # Create populator and run
     populator = ResortPopulator(
         resort_service=resort_service,
@@ -543,6 +684,21 @@ def main():
 
     results = populator.populate(resorts)
     print_results(results)
+
+    # Print removed resorts
+    if removed_resorts:
+        print(f"\nREMOVED (in DB but not in source): {len(removed_resorts)}")
+        for rid in removed_resorts:
+            print(f"  - {rid}")
+
+    # Send SNS notification if requested
+    if args.notify:
+        notifier = SNSNotifier(topic_arn=args.sns_topic)
+        notifier.send_notification(
+            results=results,
+            removed_resorts=removed_resorts,
+            environment=args.environment,
+        )
 
 
 if __name__ == "__main__":
