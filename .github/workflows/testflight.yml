@@ -264,6 +264,14 @@ jobs:
           exit 0
         fi
 
+        # Ensure default tester is in the beta group
+        echo "Ensuring default tester is in beta group..."
+        curl -g -s -X POST \
+          -H "Authorization: Bearer $JWT" \
+          -H "Content-Type: application/json" \
+          -d '{"data":{"type":"betaTesters","attributes":{"email":"wouterdevriendt@gmail.com","firstName":"Wouter","lastName":"Devriendt"},"relationships":{"betaGroups":{"data":[{"type":"betaGroups","id":"'"$BETA_GROUP_ID"'"}]}}}}' \
+          "https://api.appstoreconnect.apple.com/v1/betaTesters" > /dev/null 2>&1 || true
+
         echo "Adding build to beta group $BETA_GROUP_ID..."
 
         # Add the build to the beta group
