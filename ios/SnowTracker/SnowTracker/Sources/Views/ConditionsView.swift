@@ -246,21 +246,6 @@ struct ResortConditionCard: View {
     }
 }
 
-// Extension for sorting
-extension SnowQuality {
-    var sortOrder: Int {
-        switch self {
-        case .excellent: return 0
-        case .good: return 1
-        case .fair: return 2
-        case .poor: return 3
-        case .bad: return 4
-        case .horrible: return 5
-        case .unknown: return 6
-        }
-    }
-}
-
 // MARK: - Quality Info Sheet
 
 struct QualityInfoSheet: View {
