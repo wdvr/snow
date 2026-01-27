@@ -644,10 +644,21 @@ batch_conditions_integration = aws.apigateway.Integration(
 )
 
 # API Gateway Deployment (depends on all integrations)
+# Note: triggers parameter forces recreation when routes change
 api_deployment = aws.apigateway.Deployment(
     f"{app_name}-api-deployment-{environment}",
     rest_api=api_gateway.id,
     stage_name=environment,
+    triggers={
+        # Force redeployment when any integration changes
+        "redeployment": pulumi.Output.all(
+            health_integration_response.id,
+            resorts_integration.id,
+            resort_integration.id,
+            conditions_integration.id,
+            batch_conditions_integration.id,
+        ).apply(lambda ids: ",".join(ids)),
+    },
     opts=pulumi.ResourceOptions(
         depends_on=[
             health_integration_response,
