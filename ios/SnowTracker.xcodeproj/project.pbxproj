@@ -16,6 +16,7 @@
 		44F2644C96F1520ED57401DD /* Resort.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEA5CCD0AE9EC5A936DC79E /* Resort.swift */; };
 		5017E601E16B16F2F0196F07 /* Get in Frameworks */ = {isa = PBXBuildFile; productRef = 5074AE9C4AA03E9E7DB9DBC6 /* Get */; };
 		583A1EF95BA90FA045E5D0E0 /* ResortMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D2E198287C4AD2358752184 /* ResortMapView.swift */; };
+		A1B2C3D4E5F678901234ABCD /* ClusteredMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6789012345ABCDE /* ClusteredMapView.swift */; };
 		5C548AAEA20DC47384E0E971 /* ConditionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E42DC701CEC0DFCAD7762C72 /* ConditionsView.swift */; };
 		5DA15732F63A651618B8C70F /* SnowTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600A8FDCB572F6C887540554 /* SnowTrackerTests.swift */; };
 		66544FD29F2B9C5D2D3C46AF /* BestResortsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ACF49F69D091989F88C684E /* BestResortsWidget.swift */; };
@@ -121,6 +122,7 @@
 		D94F3FDE9BBCEF47C3DC8547 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
 		DD047E2A750245979D8452D8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		E32383CBDD1468C74E618025 /* SnowTrackerUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SnowTrackerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B2C3D4E5F6789012345ABCDE /* ClusteredMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClusteredMapView.swift; sourceTree = "<group>"; };
 		E42DC701CEC0DFCAD7762C72 /* ConditionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionsView.swift; sourceTree = "<group>"; };
 		F6DA2B806F38369F0414AA36 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -178,6 +180,7 @@
 			isa = PBXGroup;
 			children = (
 				1C3612902D14F964CD974A7E /* AuthenticationViews.swift */,
+				B2C3D4E5F6789012345ABCDE /* ClusteredMapView.swift */,
 				E42DC701CEC0DFCAD7762C72 /* ConditionsView.swift */,
 				1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */,
 				D94F3FDE9BBCEF47C3DC8547 /* FeedbackView.swift */,
@@ -432,6 +435,7 @@
 				38D5CCC28385D7DC0208CB70 /* AuthenticationService.swift in Sources */,
 				24A3BDA567803E68B65547C7 /* AuthenticationViews.swift in Sources */,
 				7AB63FA94855BFFC3BC3D96D /* CacheService.swift in Sources */,
+				A1B2C3D4E5F678901234ABCD /* ClusteredMapView.swift in Sources */,
 				5C548AAEA20DC47384E0E971 /* ConditionsView.swift in Sources */,
 				C440EFF2F7868A9A09A525C2 /* Configuration.swift in Sources */,
 				C0711EC616F41F08730D790A /* FavoritesView.swift in Sources */,

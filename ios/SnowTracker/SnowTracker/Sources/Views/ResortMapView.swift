@@ -11,6 +11,8 @@ struct ResortMapView: View {
     @State private var showResortDetail: Bool = false
     @State private var showLegend: Bool = false
     @State private var mapStyle: MapStyle = .standard
+    @State private var clusterResorts: [Resort] = []
+    @State private var showClusterList: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -64,6 +66,20 @@ struct ResortMapView: View {
                         .presentationDragIndicator(.visible)
                 }
             }
+            .sheet(isPresented: $showClusterList) {
+                ClusterResortListSheet(
+                    resorts: clusterResorts,
+                    onResortSelected: { resort in
+                        showClusterList = false
+                        selectedResort = resort
+                        showResortDetail = true
+                    }
+                )
+                .environmentObject(snowConditionsManager)
+                .environmentObject(userPreferencesManager)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
             .onAppear {
                 updateAnnotations()
                 locationManager.requestOneTimeLocation()
@@ -84,28 +100,22 @@ struct ResortMapView: View {
 
     @ViewBuilder
     private var mapContent: some View {
-        Map(position: $mapViewModel.cameraPosition, selection: $mapViewModel.selectedAnnotation) {
-            // User location
-            UserAnnotation()
-
-            // Resort annotations
-            ForEach(mapViewModel.annotations) { annotation in
-                Annotation(annotation.resort.name, coordinate: annotation.coordinate, anchor: .bottom) {
-                    ResortMapMarker(annotation: annotation)
-                        .onTapGesture {
-                            selectedResort = annotation.resort
-                            showResortDetail = true
-                        }
-                }
-                .tag(annotation)
+        ClusteredMapView(
+            cameraPosition: $mapViewModel.cameraPosition,
+            annotations: mapViewModel.annotations,
+            mapStyle: mapStyle,
+            showUserLocation: true,
+            onAnnotationTap: { resort in
+                selectedResort = resort
+                showResortDetail = true
+            },
+            onClusterTap: { resorts in
+                // Show a list of resorts in the cluster
+                clusterResorts = resorts
+                showClusterList = true
             }
-        }
-        .mapStyle(mapStyle)
-        .mapControls {
-            MapUserLocationButton()
-            MapCompass()
-            MapScaleView()
-        }
+        )
+        .ignoresSafeArea(edges: .bottom)
     }
 
     // MARK: - Filter Bar
@@ -629,6 +639,99 @@ struct ForecastBadge: View {
         .padding(.vertical, 4)
         .background(Color.cyan.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+}
+
+// MARK: - Cluster Resort List Sheet
+
+struct ClusterResortListSheet: View {
+    let resorts: [Resort]
+    let onResortSelected: (Resort) -> Void
+    @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(sortedResorts) { resort in
+                    ClusterResortRow(resort: resort, condition: snowConditionsManager.getLatestCondition(for: resort.id))
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            onResortSelected(resort)
+                        }
+                }
+            }
+            .listStyle(.plain)
+            .navigationTitle("\(resorts.count) Resorts")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private var sortedResorts: [Resort] {
+        resorts.sorted { resort1, resort2 in
+            let quality1 = snowConditionsManager.getLatestCondition(for: resort1.id)?.snowQuality ?? .unknown
+            let quality2 = snowConditionsManager.getLatestCondition(for: resort2.id)?.snowQuality ?? .unknown
+            if quality1.sortOrder != quality2.sortOrder {
+                return quality1.sortOrder < quality2.sortOrder
+            }
+            return resort1.name < resort2.name
+        }
+    }
+}
+
+struct ClusterResortRow: View {
+    let resort: Resort
+    let condition: WeatherCondition?
+
+    private var snowQuality: SnowQuality {
+        condition?.snowQuality ?? .unknown
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Quality indicator
+            Circle()
+                .fill(snowQuality.color)
+                .frame(width: 12, height: 12)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(resort.name)
+                    .font(.body)
+                    .fontWeight(.medium)
+
+                Text(resort.displayLocation)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(snowQuality.displayName)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(snowQuality.color)
+
+                if let temp = condition?.formattedCurrentTemp {
+                    Text(temp)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.vertical, 4)
     }
 }
 

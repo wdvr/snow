@@ -547,11 +547,8 @@ class SkiResortInfoScraper(BaseScraper):
             logger.warning(f"Could not extract elevation for {name}")
             return None
 
-        # Extract location/region within country
-        state_province = ""
-        location_elem = soup.select_one(".region, .location, [class*='region']")
-        if location_elem:
-            state_province = location_elem.get_text(strip=True)
+        # Extract location/region within country (state/province)
+        state_province = self._extract_state_province(soup, country)
 
         # Extract coordinates
         latitude = None
@@ -652,6 +649,81 @@ class SkiResortInfoScraper(BaseScraper):
             source="skiresort.info",
             source_url=url,
         )
+
+    def _extract_state_province(self, soup: BeautifulSoup, country: str) -> str:
+        """Extract state/province from the page's region selector."""
+        # Method 1: Parse the mobile header which has the full path
+        # Format: "VailWorldwideNorth AmericaUSAColoradoVail"
+        # or "Whistler BlackcombWorldwideNorth AmericaCanadaBritish ColumbiaWhistler"
+        mobile_header = soup.select_one(".mobile-header-regionselector")
+        if mobile_header:
+            text = mobile_header.get_text()
+
+            # For USA - look for pattern USAStateName
+            match = re.search(
+                r"USA([A-Z][a-z]+(?:\s[A-Z][a-z]+)*?)(?=[A-Z][a-z]|$)", text
+            )
+            if match:
+                state = match.group(1).strip()
+                if state and state not in ["Worldwide", "North", "Search", "Tips"]:
+                    return state
+
+            # For Canada - look for pattern CanadaProvinceName
+            match = re.search(
+                r"Canada([A-Z][a-z]+(?:\s[A-Z][a-z]+)*?)(?=[A-Z][a-z]|$)", text
+            )
+            if match:
+                province = match.group(1).strip()
+                if province and province not in [
+                    "Worldwide",
+                    "North",
+                    "Search",
+                    "Tips",
+                ]:
+                    return province
+
+        # Method 2: Look for state/province in region-select text
+        region_select = soup.select_one(".region-select")
+        if region_select:
+            text = region_select.get_text()
+            for pattern in [
+                r"([A-Z][a-z]+(?:\s[A-Z][a-z]+)*?)States",
+                r"([A-Z][a-z]+(?:\s[A-Z][a-z]+)*?)Provinces",
+            ]:
+                match = re.search(pattern, text)
+                if match:
+                    return match.group(1).strip()
+
+        # Method 3: Check links for state/province pages
+        province_map = {
+            "british-columbia": "British Columbia",
+            "alberta": "Alberta",
+            "ontario": "Ontario",
+            "quebec": "Quebec",
+            "colorado": "Colorado",
+            "california": "California",
+            "utah": "Utah",
+            "vermont": "Vermont",
+            "wyoming": "Wyoming",
+            "montana": "Montana",
+            "idaho": "Idaho",
+            "washington": "Washington",
+            "oregon": "Oregon",
+            "new-york": "New York",
+            "new-hampshire": "New Hampshire",
+            "maine": "Maine",
+            "new-mexico": "New Mexico",
+            "nevada": "Nevada",
+            "arizona": "Arizona",
+            "alaska": "Alaska",
+        }
+        for a in soup.select('a[href*="/ski-resorts/"]'):
+            href = a.get("href", "")
+            for slug, name in province_map.items():
+                if f"/{slug}/" in href:
+                    return name
+
+        return ""
 
 
 class WikipediaScraper(BaseScraper):
@@ -851,11 +923,17 @@ class OpenMeteoGeocodingScraper(BaseScraper):
 
     GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 
-    def geocode(self, resort_name: str, country: str) -> tuple[float, float] | None:
-        """Get coordinates for a resort by name."""
+    def geocode(
+        self, resort_name: str, country: str, state_province: str = ""
+    ) -> tuple[float, float] | None:
+        """Get coordinates for a resort by name with country/state filtering."""
+        # Clean up the resort name
+        clean_name = resort_name.replace("Ski resort ", "").replace(" – ", " ")
+        clean_name = clean_name.split(" - ")[0]
+
         params = {
-            "name": resort_name,
-            "count": 5,
+            "name": clean_name,
+            "count": 20,  # Get more results for better filtering
             "language": "en",
             "format": "json",
         }
@@ -865,15 +943,32 @@ class OpenMeteoGeocodingScraper(BaseScraper):
             data = response.json()
 
             results = data.get("results", [])
+            if not results:
+                return None
 
-            # Find best match for the country
-            for result in results:
-                if result.get("country_code", "").upper() == country:
-                    return (result["latitude"], result["longitude"])
+            # Filter by country first
+            country_matches = [
+                r for r in results if r.get("country_code", "").upper() == country
+            ]
 
-            # Fall back to first result
-            if results:
-                return (results[0]["latitude"], results[0]["longitude"])
+            if not country_matches:
+                # No match for this country - don't fall back to wrong country!
+                logger.debug(f"No results in country {country} for {clean_name}")
+                return None
+
+            # If we have a state/province hint, try to match it
+            if state_province and len(country_matches) > 1:
+                state_matches = [
+                    r
+                    for r in country_matches
+                    if state_province.lower() in (r.get("admin1", "") or "").lower()
+                ]
+                if state_matches:
+                    country_matches = state_matches
+
+            # Return the first matching result
+            best = country_matches[0]
+            return (best["latitude"], best["longitude"])
 
         except Exception as e:
             logger.warning(f"Geocoding failed for {resort_name}: {e}")
@@ -884,7 +979,9 @@ class OpenMeteoGeocodingScraper(BaseScraper):
         """Add coordinates to resorts that don't have them."""
         for resort in resorts:
             if resort.latitude == 0.0 and resort.longitude == 0.0:
-                coords = self.geocode(resort.name, resort.country)
+                coords = self.geocode(
+                    resort.name, resort.country, resort.state_province
+                )
                 if coords:
                     resort.latitude, resort.longitude = coords
                     logger.info(f"Geocoded {resort.name}: {coords}")
