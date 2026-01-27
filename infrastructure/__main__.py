@@ -741,42 +741,44 @@ if enable_custom_domain:
     # Get the hosted zone for the domain
     hosted_zone = aws.route53.get_zone(name=domain_name)
 
-    # ACM Certificate for the domain (must be in us-east-1 for CloudFront)
+    # CloudFront certificate (for main website) - prod only
+    # Must be in us-east-1 for CloudFront
     us_east_1 = aws.Provider("us-east-1", region="us-east-1")
 
-    certificate = aws.acm.Certificate(
-        f"{app_name}-certificate-{environment}",
-        domain_name=domain_name,
-        subject_alternative_names=[f"*.{domain_name}"],
-        validation_method="DNS",
-        tags=tags,
-        opts=pulumi.ResourceOptions(provider=us_east_1),
-    )
-
-    # DNS validation records
-    cert_validation_records = []
-    for i in range(2):  # Main domain + wildcard
-        cert_validation_records.append(
-            aws.route53.Record(
-                f"{app_name}-cert-validation-{i}-{environment}",
-                zone_id=hosted_zone.zone_id,
-                name=certificate.domain_validation_options[i].resource_record_name,
-                type=certificate.domain_validation_options[i].resource_record_type,
-                records=[
-                    certificate.domain_validation_options[i].resource_record_value
-                ],
-                ttl=300,
-                opts=pulumi.ResourceOptions(provider=us_east_1),
-            )
+    if environment == "prod":
+        certificate = aws.acm.Certificate(
+            f"{app_name}-certificate-{environment}",
+            domain_name=domain_name,
+            subject_alternative_names=[f"*.{domain_name}"],
+            validation_method="DNS",
+            tags=tags,
+            opts=pulumi.ResourceOptions(provider=us_east_1),
         )
 
-    # Wait for certificate validation
-    cert_validation = aws.acm.CertificateValidation(
-        f"{app_name}-cert-validation-{environment}",
-        certificate_arn=certificate.arn,
-        validation_record_fqdns=[r.fqdn for r in cert_validation_records],
-        opts=pulumi.ResourceOptions(provider=us_east_1),
-    )
+        # DNS validation records for wildcard cert
+        cert_validation_records = []
+        for i in range(2):  # Main domain + wildcard
+            cert_validation_records.append(
+                aws.route53.Record(
+                    f"{app_name}-cert-validation-{i}-{environment}",
+                    zone_id=hosted_zone.zone_id,
+                    name=certificate.domain_validation_options[i].resource_record_name,
+                    type=certificate.domain_validation_options[i].resource_record_type,
+                    records=[
+                        certificate.domain_validation_options[i].resource_record_value
+                    ],
+                    ttl=300,
+                    opts=pulumi.ResourceOptions(provider=us_east_1),
+                )
+            )
+
+        # Wait for certificate validation
+        cert_validation = aws.acm.CertificateValidation(
+            f"{app_name}-cert-validation-{environment}",
+            certificate_arn=certificate.arn,
+            validation_record_fqdns=[r.fqdn for r in cert_validation_records],
+            opts=pulumi.ResourceOptions(provider=us_east_1),
+        )
 
 # =============================================================================
 # Marketing Website (powderchaserapp.com) - S3 + CloudFront
