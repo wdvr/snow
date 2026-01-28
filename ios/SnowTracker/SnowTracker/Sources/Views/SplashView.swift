@@ -213,18 +213,18 @@ struct SnowCapShape: Shape {
         let leftSlope = (rect.height - peakY) / peakX
         let rightSlope = (rect.height - peakY) / (rect.width - peakX)
 
-        let leftX = (snowLineY - peakY) / leftSlope + peakX - (snowLineY - peakY) / leftSlope
+        let leftIntersectX = peakX - (snowLineY - peakY) / leftSlope
         let rightX = peakX + (snowLineY - peakY) / rightSlope
 
-        path.move(to: CGPoint(x: peakX - (snowLineY - peakY) / leftSlope, y: snowLineY))
+        path.move(to: CGPoint(x: leftIntersectX, y: snowLineY))
         path.addLine(to: CGPoint(x: peakX, y: peakY))
         path.addLine(to: CGPoint(x: rightX, y: snowLineY))
 
         // Jagged snow line
         let steps = 8
-        let stepWidth = (rightX - (peakX - (snowLineY - peakY) / leftSlope)) / CGFloat(steps)
+        let stepWidth = (rightX - leftIntersectX) / CGFloat(steps)
         for i in stride(from: steps - 1, through: 0, by: -1) {
-            let x = (peakX - (snowLineY - peakY) / leftSlope) + CGFloat(i) * stepWidth
+            let x = leftIntersectX + CGFloat(i) * stepWidth
             let yVariation = CGFloat.random(in: -5...5)
             path.addLine(to: CGPoint(x: x, y: snowLineY + yVariation))
         }

@@ -29,9 +29,6 @@ final class SnowTrackerUITests: XCTestCase {
     }
 
     func testAppShowsThreeResorts() throws {
-        // Wait for data to load
-        sleep(3)
-
         // Check for all three seeded resorts
         let bigWhite = app.staticTexts["Big White Ski Resort"]
         let lakeLouise = app.staticTexts["Lake Louise Ski Resort"]
@@ -51,8 +48,9 @@ final class SnowTrackerUITests: XCTestCase {
         // If API fails, we fall back to sample data - but this test catches
         // when the API IS available but decoding fails
 
-        // Wait for initial load
-        sleep(5)
+        // Wait for initial load by checking for tab bar
+        let tabBar = app.tabBars.firstMatch
+        _ = tabBar.waitForExistence(timeout: 10)
 
         // Look for "Using offline data" error message which indicates API failure
         let offlineMessage = app.staticTexts["Using offline data"]
@@ -119,8 +117,8 @@ final class SnowTrackerUITests: XCTestCase {
         let firstCell = app.cells.firstMatch
         if firstCell.waitForExistence(timeout: 5) {
             firstCell.swipeDown()
-            // Verify app doesn't crash and refreshes
-            sleep(2)
+            // Verify app doesn't crash and refreshes - wait for cell to reappear
+            _ = firstCell.waitForExistence(timeout: 5)
             XCTAssertTrue(tabBar.exists, "App should still be responsive after refresh")
         }
     }
@@ -179,7 +177,8 @@ final class SnowTrackerUITests: XCTestCase {
         tabBar.buttons["Map"].tap()
 
         // Wait for map to load
-        sleep(2)
+        let mapView = app.maps.firstMatch
+        _ = mapView.waitForExistence(timeout: 5)
 
         // Check for filter chip buttons
         let allFilter = app.buttons["All"]
@@ -193,7 +192,8 @@ final class SnowTrackerUITests: XCTestCase {
         tabBar.buttons["Map"].tap()
 
         // Wait for map to load
-        sleep(2)
+        let mapView = app.maps.firstMatch
+        _ = mapView.waitForExistence(timeout: 5)
 
         // Tap on Excellent filter if it exists
         let excellentFilter = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Excellent'")).firstMatch
@@ -211,7 +211,8 @@ final class SnowTrackerUITests: XCTestCase {
         tabBar.buttons["Map"].tap()
 
         // Wait for map to load
-        sleep(2)
+        let mapView = app.maps.firstMatch
+        _ = mapView.waitForExistence(timeout: 5)
 
         // Find and tap the info button to toggle legend
         let infoButton = app.buttons["info.circle"]
