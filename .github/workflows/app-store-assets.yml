@@ -1,0 +1,288 @@
+name: App Store Assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      generate_icons:
+        description: 'Generate app icons'
+        required: false
+        default: true
+        type: boolean
+      generate_description:
+        description: 'Generate app description with Claude'
+        required: false
+        default: false
+        type: boolean
+      generate_release_notes:
+        description: 'Generate release notes with Claude'
+        required: false
+        default: false
+        type: boolean
+      generate_screenshots:
+        description: 'Generate screenshots (requires self-hosted runner)'
+        required: false
+        default: false
+        type: boolean
+      upload_to_app_store:
+        description: 'Upload to App Store Connect'
+        required: false
+        default: true
+        type: boolean
+      upload_what:
+        description: 'What to upload'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - icon_only
+          - metadata_only
+          - screenshots_only
+
+jobs:
+  # Job 1: Generate icons (can run on any runner)
+  generate-icons:
+    name: Generate App Icons
+    if: ${{ github.event.inputs.generate_icons == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install Pillow
+
+    - name: Generate icons
+      run: python scripts/generate_icons.py
+
+    - name: Upload icon artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-icons
+        path: ios/fastlane/metadata/app_icon.png
+
+  # Job 2: Generate description with Claude
+  generate-description:
+    name: Generate App Description
+    if: ${{ github.event.inputs.generate_description == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install anthropic
+
+    - name: Generate description
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      run: python scripts/generate_description.py snow
+
+    - name: Upload metadata artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: generated-description
+        path: ios/fastlane/metadata/en-US/description.txt
+
+  # Job 3: Generate release notes with Claude
+  generate-release-notes:
+    name: Generate Release Notes
+    if: ${{ github.event.inputs.generate_release_notes == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install anthropic
+
+    - name: Generate release notes
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      run: python scripts/generate_release_notes.py snow
+
+    - name: Upload release notes artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: generated-release-notes
+        path: ios/fastlane/metadata/en-US/release_notes.txt
+
+  # Job 4: Generate screenshots (requires self-hosted Mac with Xcode)
+  generate-screenshots:
+    name: Generate Screenshots
+    if: ${{ github.event.inputs.generate_screenshots == 'true' }}
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 60
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Xcode
+      run: |
+        XCODE_PATH="/Applications/Xcode-16.2.0.app"
+        CURRENT_XCODE=$(xcode-select -p 2>/dev/null || echo "")
+        if [ "$CURRENT_XCODE" != "$XCODE_PATH/Contents/Developer" ]; then
+          sudo xcode-select -s "$XCODE_PATH" || echo "Could not switch Xcode"
+        fi
+        xcodebuild -version
+
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.2'
+        bundler-cache: true
+        working-directory: ios/fastlane
+
+    - name: Install Fastlane
+      run: |
+        cd ios/fastlane
+        bundle install
+
+    - name: Boot simulators
+      run: |
+        # Boot required simulators
+        xcrun simctl boot "iPhone 16 Pro Max" 2>/dev/null || true
+        sleep 5
+
+    - name: Generate screenshots
+      run: |
+        cd ios/fastlane
+        bundle exec fastlane screenshots_iphone
+
+    - name: Upload screenshot artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: screenshots
+        path: ios/fastlane/screenshots/
+
+  # Job 5: Upload to App Store Connect
+  upload-to-app-store:
+    name: Upload to App Store Connect
+    needs: [generate-icons, generate-description, generate-release-notes, generate-screenshots]
+    # Run even if generate jobs were skipped
+    if: |
+      always() &&
+      github.event.inputs.upload_to_app_store == 'true' &&
+      !contains(needs.*.result, 'failure')
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download icon artifact
+      if: ${{ github.event.inputs.generate_icons == 'true' }}
+      uses: actions/download-artifact@v4
+      with:
+        name: app-icons
+        path: ios/fastlane/metadata/
+      continue-on-error: true
+
+    - name: Download description artifact
+      if: ${{ github.event.inputs.generate_description == 'true' }}
+      uses: actions/download-artifact@v4
+      with:
+        name: generated-description
+        path: ios/fastlane/metadata/en-US/
+      continue-on-error: true
+
+    - name: Download release notes artifact
+      if: ${{ github.event.inputs.generate_release_notes == 'true' }}
+      uses: actions/download-artifact@v4
+      with:
+        name: generated-release-notes
+        path: ios/fastlane/metadata/en-US/
+      continue-on-error: true
+
+    - name: Download screenshot artifacts
+      if: ${{ github.event.inputs.generate_screenshots == 'true' }}
+      uses: actions/download-artifact@v4
+      with:
+        name: screenshots
+        path: ios/fastlane/screenshots/
+      continue-on-error: true
+
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.2'
+        bundler-cache: true
+        working-directory: ios/fastlane
+
+    - name: Install Fastlane
+      run: |
+        cd ios/fastlane
+        bundle install
+
+    - name: Setup App Store Connect API Key
+      run: |
+        mkdir -p ~/.private_keys
+        echo "${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}" > ~/.private_keys/AuthKey.p8
+        chmod 600 ~/.private_keys/AuthKey.p8
+
+    - name: Upload icon only
+      if: ${{ github.event.inputs.upload_what == 'icon_only' }}
+      env:
+        APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+        APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        APP_STORE_CONNECT_KEY_PATH: ~/.private_keys/AuthKey.p8
+      run: |
+        cd ios/fastlane
+        bundle exec fastlane upload_icon
+
+    - name: Upload metadata only
+      if: ${{ github.event.inputs.upload_what == 'metadata_only' }}
+      env:
+        APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+        APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        APP_STORE_CONNECT_KEY_PATH: ~/.private_keys/AuthKey.p8
+      run: |
+        cd ios/fastlane
+        bundle exec fastlane upload_metadata_only
+
+    - name: Upload screenshots only
+      if: ${{ github.event.inputs.upload_what == 'screenshots_only' }}
+      env:
+        APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+        APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        APP_STORE_CONNECT_KEY_PATH: ~/.private_keys/AuthKey.p8
+      run: |
+        cd ios/fastlane
+        bundle exec fastlane upload_screenshots
+
+    - name: Upload all (metadata + screenshots + icon)
+      if: ${{ github.event.inputs.upload_what == 'all' }}
+      env:
+        APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+        APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        APP_STORE_CONNECT_KEY_PATH: ~/.private_keys/AuthKey.p8
+      run: |
+        cd ios/fastlane
+        bundle exec fastlane deliver_metadata
+
+    - name: Cleanup
+      if: always()
+      run: rm -rf ~/.private_keys

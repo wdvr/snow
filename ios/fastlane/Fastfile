@@ -3,14 +3,55 @@
 default_platform(:ios)
 
 platform :ios do
+  # ============================================
+  # Screenshot Generation
+  # ============================================
+
+  desc "Generate App Store screenshots on all required device sizes"
+  lane :screenshots do
+    # Ensure we have the UI tests scheme
+    capture_screenshots(
+      project: "../SnowTracker.xcodeproj",
+      scheme: "SnowTracker",
+      testplan: "ScreenshotTestPlan",
+      devices: [
+        "iPhone 16 Pro Max",      # 6.9" display (required)
+        "iPhone 16 Pro",          # 6.3" display
+        "iPhone SE (3rd generation)", # 4.7" display
+        "iPad Pro 13-inch (M4)"   # 13" iPad Pro
+      ],
+      languages: ["en-US"],
+      output_directory: "./screenshots",
+      clear_previous_screenshots: true,
+      override_status_bar: true,
+      concurrent_simulators: false,
+      stop_after_first_error: false,
+      skip_open_summary: true
+    )
+  end
+
+  desc "Generate screenshots for iPhone only (faster)"
+  lane :screenshots_iphone do
+    capture_screenshots(
+      project: "../SnowTracker.xcodeproj",
+      scheme: "SnowTracker",
+      testplan: "ScreenshotTestPlan",
+      devices: ["iPhone 16 Pro Max"],
+      languages: ["en-US"],
+      output_directory: "./screenshots",
+      clear_previous_screenshots: true,
+      override_status_bar: true,
+      skip_open_summary: true
+    )
+  end
+
+  # ============================================
+  # App Store Connect Upload
+  # ============================================
+
   desc "Upload metadata, screenshots, and app icon to App Store Connect"
   lane :deliver_metadata do
-    api_key = app_store_connect_api_key(
-      key_id: ENV["APP_STORE_CONNECT_KEY_ID"],
-      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
-      key_filepath: ENV["APP_STORE_CONNECT_KEY_PATH"],
-      in_house: false
-    )
+    api_key = get_api_key
 
     deliver(
       api_key: api_key,
@@ -22,18 +63,31 @@ platform :ios do
       precheck_include_in_app_purchases: false,
       submit_for_review: false,
       automatic_release: false,
-      run_precheck_before_submit: false
+      run_precheck_before_submit: false,
+      overwrite_screenshots: true
+    )
+  end
+
+  desc "Upload only screenshots"
+  lane :upload_screenshots do
+    api_key = get_api_key
+
+    deliver(
+      api_key: api_key,
+      app_identifier: "com.wouterdevriendt.snowtracker",
+      skip_binary_upload: true,
+      skip_metadata: true,
+      skip_screenshots: false,
+      skip_app_version_update: true,
+      force: true,
+      run_precheck_before_submit: false,
+      overwrite_screenshots: true
     )
   end
 
   desc "Upload only the app icon"
   lane :upload_icon do
-    api_key = app_store_connect_api_key(
-      key_id: ENV["APP_STORE_CONNECT_KEY_ID"],
-      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
-      key_filepath: ENV["APP_STORE_CONNECT_KEY_PATH"],
-      in_house: false
-    )
+    api_key = get_api_key
 
     deliver(
       api_key: api_key,
@@ -48,31 +102,24 @@ platform :ios do
     )
   end
 
-  desc "Generate App Store screenshots"
-  lane :screenshots do
-    capture_screenshots(
-      project: "../SnowTracker.xcodeproj",
-      scheme: "SnowTrackerUITests",
-      devices: [
-        "iPhone 17 Pro Max",
-        "iPhone 17 Pro",
-        "iPhone SE (3rd generation)",
-        "iPad Pro (12.9-inch) (6th generation)"
-      ],
-      languages: ["en-US"],
-      output_directory: "./fastlane/screenshots",
-      clear_previous_screenshots: true
+  desc "Upload only metadata (no screenshots)"
+  lane :upload_metadata_only do
+    api_key = get_api_key
+
+    deliver(
+      api_key: api_key,
+      app_identifier: "com.wouterdevriendt.snowtracker",
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: false,
+      force: true,
+      run_precheck_before_submit: false
     )
   end
 
   desc "Download existing metadata from App Store Connect"
   lane :download_metadata do
-    api_key = app_store_connect_api_key(
-      key_id: ENV["APP_STORE_CONNECT_KEY_ID"],
-      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
-      key_filepath: ENV["APP_STORE_CONNECT_KEY_PATH"],
-      in_house: false
-    )
+    api_key = get_api_key
 
     deliver(
       api_key: api_key,
@@ -85,4 +132,46 @@ platform :ios do
       download_metadata: true
     )
   end
+
+  # ============================================
+  # Combined Workflows
+  # ============================================
+
+  desc "Generate screenshots and upload everything"
+  lane :prepare_and_upload do
+    screenshots
+    deliver_metadata
+  end
+
+  desc "Full App Store preparation: icons, screenshots, metadata"
+  lane :full_app_store_prep do |options|
+    # Generate icons using Python script
+    Dir.chdir("../..") do
+      sh("python3 scripts/generate_icons.py")
+    end
+
+    # Generate screenshots
+    screenshots unless options[:skip_screenshots]
+
+    # Upload everything
+    deliver_metadata
+  end
+
+  # ============================================
+  # Helpers
+  # ============================================
+
+  private_lane :get_api_key do
+    app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+      key_filepath: ENV["APP_STORE_CONNECT_KEY_PATH"],
+      in_house: false
+    )
+  end
+end
+
+# Error handling
+error do |lane, exception|
+  UI.error("Error in lane '#{lane}': #{exception.message}")
 end

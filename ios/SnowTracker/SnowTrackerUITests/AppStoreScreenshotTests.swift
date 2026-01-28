@@ -8,31 +8,25 @@ final class AppStoreScreenshotTests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments = ["UI_TESTING", "SCREENSHOT_MODE", "DEMO_DATA"]
+
+        // Setup fastlane snapshot
+        setupSnapshot(app)
+
         app.launch()
 
-        // Configure screenshot settings
-        setupSnapshot()
+        // Wait for app to fully launch
+        sleep(2)
     }
 
     override func tearDownWithError() throws {
         app = nil
     }
 
-    // MARK: - Screenshot Configuration
-
-    private func setupSnapshot() {
-        // Configure for high-quality screenshots
-        // Wait longer for animations and data loading
-        XCUIApplication.shared.statusBarFrame = .zero
-    }
+    // MARK: - Screenshot Helper
 
     private func takeScreenshot(name: String, delay: Double = 2.0) {
         sleep(UInt32(delay))
-        let screenshot = app.screenshot()
-        let attachment = XCTAttachment(screenshot: screenshot)
-        attachment.name = name
-        attachment.lifetime = .keepAlways
-        add(attachment)
+        snapshot(name)
     }
 
     // MARK: - iPhone Screenshots (Required sizes: 6.7", 6.5", 5.5")
