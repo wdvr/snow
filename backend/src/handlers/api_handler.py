@@ -1,7 +1,7 @@
 """Main FastAPI application handler for Lambda deployment."""
 
 import os
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from typing import Dict, List, Optional
 
 import boto3

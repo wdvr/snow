@@ -112,10 +112,14 @@ struct WelcomeView: View {
                     .foregroundColor(.secondary)
 
                 HStack {
-                    Link("Terms of Service", destination: URL(string: "https://snow-tracker.com/terms")!)
+                    if let termsURL = URL(string: "https://snow-tracker.com/terms") {
+                        Link("Terms of Service", destination: termsURL)
+                    }
                     Text("and")
                         .foregroundColor(.secondary)
-                    Link("Privacy Policy", destination: URL(string: "https://snow-tracker.com/privacy")!)
+                    if let privacyURL = URL(string: "https://snow-tracker.com/privacy") {
+                        Link("Privacy Policy", destination: privacyURL)
+                    }
                 }
                 .font(.caption)
             }
