@@ -611,4 +611,608 @@ final class SnowTrackerTests: XCTestCase {
 
         XCTAssertEqual(viewModel.selectedRegionPreset, .alps)
     }
+
+    // MARK: - TripStatus Tests
+
+    func testTripStatusRawValues() {
+        XCTAssertEqual(TripStatus.planned.rawValue, "planned")
+        XCTAssertEqual(TripStatus.active.rawValue, "active")
+        XCTAssertEqual(TripStatus.completed.rawValue, "completed")
+        XCTAssertEqual(TripStatus.cancelled.rawValue, "cancelled")
+    }
+
+    func testTripStatusFromRawValue() {
+        XCTAssertEqual(TripStatus(rawValue: "planned"), .planned)
+        XCTAssertEqual(TripStatus(rawValue: "active"), .active)
+        XCTAssertEqual(TripStatus(rawValue: "completed"), .completed)
+        XCTAssertEqual(TripStatus(rawValue: "cancelled"), .cancelled)
+        XCTAssertNil(TripStatus(rawValue: "invalid"))
+    }
+
+    // MARK: - TripAlertType Tests
+
+    func testTripAlertTypeRawValues() {
+        XCTAssertEqual(TripAlertType.powderAlert.rawValue, "powder_alert")
+        XCTAssertEqual(TripAlertType.warmSpell.rawValue, "warm_spell")
+        XCTAssertEqual(TripAlertType.conditionsImproved.rawValue, "conditions_improved")
+        XCTAssertEqual(TripAlertType.conditionsDegraded.rawValue, "conditions_degraded")
+        XCTAssertEqual(TripAlertType.tripReminder.rawValue, "trip_reminder")
+    }
+
+    func testTripAlertTypeDisplayName() {
+        XCTAssertEqual(TripAlertType.powderAlert.displayName, "Powder Alert")
+        XCTAssertEqual(TripAlertType.warmSpell.displayName, "Warm Spell Warning")
+        XCTAssertEqual(TripAlertType.conditionsImproved.displayName, "Conditions Improved")
+        XCTAssertEqual(TripAlertType.conditionsDegraded.displayName, "Conditions Degraded")
+        XCTAssertEqual(TripAlertType.tripReminder.displayName, "Trip Reminder")
+    }
+
+    func testTripAlertTypeIcon() {
+        XCTAssertEqual(TripAlertType.powderAlert.icon, "snowflake")
+        XCTAssertEqual(TripAlertType.warmSpell.icon, "sun.max.fill")
+        XCTAssertEqual(TripAlertType.conditionsImproved.icon, "arrow.up.circle.fill")
+        XCTAssertEqual(TripAlertType.conditionsDegraded.icon, "arrow.down.circle.fill")
+        XCTAssertEqual(TripAlertType.tripReminder.icon, "bell.fill")
+    }
+
+    // MARK: - TripConditionSnapshot Tests
+
+    func testTripConditionSnapshotQuality() throws {
+        let json = """
+        {
+            "timestamp": "2026-01-20T10:00:00Z",
+            "snow_quality": "excellent",
+            "fresh_snow_cm": 25.0,
+            "predicted_snow_cm": 15.0,
+            "temperature_celsius": -8.0
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let snapshot = try JSONDecoder().decode(TripConditionSnapshot.self, from: data)
+
+        XCTAssertEqual(snapshot.quality, .excellent)
+        XCTAssertEqual(snapshot.freshSnowCm, 25.0)
+        XCTAssertEqual(snapshot.predictedSnowCm, 15.0)
+        XCTAssertEqual(snapshot.temperatureCelsius, -8.0)
+    }
+
+    func testTripConditionSnapshotUnknownQuality() throws {
+        let json = """
+        {
+            "timestamp": "2026-01-20T10:00:00Z",
+            "snow_quality": "invalid_quality",
+            "fresh_snow_cm": 0.0,
+            "predicted_snow_cm": 0.0,
+            "temperature_celsius": null
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let snapshot = try JSONDecoder().decode(TripConditionSnapshot.self, from: data)
+
+        XCTAssertEqual(snapshot.quality, .unknown)
+        XCTAssertNil(snapshot.temperatureCelsius)
+    }
+
+    // MARK: - TripAlert Tests
+
+    func testTripAlertDecoding() throws {
+        let json = """
+        {
+            "alert_id": "alert-123",
+            "alert_type": "powder_alert",
+            "message": "20cm fresh powder expected!",
+            "created_at": "2026-01-20T08:00:00Z",
+            "is_read": false,
+            "data": {"snow_cm": 20}
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let alert = try JSONDecoder().decode(TripAlert.self, from: data)
+
+        XCTAssertEqual(alert.id, "alert-123")
+        XCTAssertEqual(alert.alertId, "alert-123")
+        XCTAssertEqual(alert.type, .powderAlert)
+        XCTAssertEqual(alert.message, "20cm fresh powder expected!")
+        XCTAssertFalse(alert.isRead)
+    }
+
+    func testTripAlertUnknownType() throws {
+        let json = """
+        {
+            "alert_id": "alert-456",
+            "alert_type": "unknown_type",
+            "message": "Test message",
+            "created_at": "2026-01-20T08:00:00Z",
+            "is_read": true,
+            "data": {}
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let alert = try JSONDecoder().decode(TripAlert.self, from: data)
+
+        XCTAssertEqual(alert.type, .tripReminder) // Default fallback
+        XCTAssertTrue(alert.isRead)
+    }
+
+    // MARK: - Trip Tests
+
+    func testTripDecoding() throws {
+        let json = """
+        {
+            "trip_id": "trip-123",
+            "user_id": "user-456",
+            "resort_id": "big-white",
+            "resort_name": "Big White",
+            "start_date": "2026-02-15",
+            "end_date": "2026-02-20",
+            "status": "planned",
+            "notes": "Family ski trip",
+            "party_size": 4,
+            "conditions_at_creation": {
+                "timestamp": "2026-01-20T10:00:00Z",
+                "snow_quality": "good",
+                "fresh_snow_cm": 10.0,
+                "predicted_snow_cm": 20.0,
+                "temperature_celsius": -5.0
+            },
+            "latest_conditions": null,
+            "alerts": [],
+            "alert_preferences": {"powder_alert": true, "warm_spell": false},
+            "created_at": "2026-01-20T08:00:00Z",
+            "updated_at": "2026-01-20T08:00:00Z"
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let trip = try JSONDecoder().decode(Trip.self, from: data)
+
+        XCTAssertEqual(trip.id, "trip-123")
+        XCTAssertEqual(trip.tripId, "trip-123")
+        XCTAssertEqual(trip.userId, "user-456")
+        XCTAssertEqual(trip.resortId, "big-white")
+        XCTAssertEqual(trip.resortName, "Big White")
+        XCTAssertEqual(trip.startDate, "2026-02-15")
+        XCTAssertEqual(trip.endDate, "2026-02-20")
+        XCTAssertEqual(trip.status, "planned")
+        XCTAssertEqual(trip.notes, "Family ski trip")
+        XCTAssertEqual(trip.partySize, 4)
+        XCTAssertNotNil(trip.conditionsAtCreation)
+        XCTAssertNil(trip.latestConditions)
+        XCTAssertTrue(trip.alerts.isEmpty)
+    }
+
+    func testTripTripStatus() throws {
+        let jsonPlanned = """
+        {
+            "trip_id": "trip-1", "user_id": "user-1", "resort_id": "r1", "resort_name": "R1",
+            "start_date": "2026-02-15", "end_date": "2026-02-20", "status": "planned",
+            "notes": null, "party_size": 2, "conditions_at_creation": null, "latest_conditions": null,
+            "alerts": [], "alert_preferences": {}, "created_at": "2026-01-20T08:00:00Z", "updated_at": "2026-01-20T08:00:00Z"
+        }
+        """
+
+        let data = jsonPlanned.data(using: .utf8)!
+        let trip = try JSONDecoder().decode(Trip.self, from: data)
+
+        XCTAssertEqual(trip.tripStatus, .planned)
+    }
+
+    func testTripWithAlerts() throws {
+        let json = """
+        {
+            "trip_id": "trip-123",
+            "user_id": "user-456",
+            "resort_id": "big-white",
+            "resort_name": "Big White",
+            "start_date": "2026-02-15",
+            "end_date": "2026-02-20",
+            "status": "active",
+            "notes": null,
+            "party_size": 2,
+            "conditions_at_creation": null,
+            "latest_conditions": null,
+            "alerts": [
+                {
+                    "alert_id": "alert-1",
+                    "alert_type": "powder_alert",
+                    "message": "Fresh powder!",
+                    "created_at": "2026-01-20T08:00:00Z",
+                    "is_read": false,
+                    "data": {}
+                },
+                {
+                    "alert_id": "alert-2",
+                    "alert_type": "warm_spell",
+                    "message": "Warming expected",
+                    "created_at": "2026-01-20T09:00:00Z",
+                    "is_read": true,
+                    "data": {}
+                }
+            ],
+            "alert_preferences": {},
+            "created_at": "2026-01-20T08:00:00Z",
+            "updated_at": "2026-01-20T08:00:00Z"
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let trip = try JSONDecoder().decode(Trip.self, from: data)
+
+        XCTAssertEqual(trip.alerts.count, 2)
+        XCTAssertEqual(trip.alerts[0].type, .powderAlert)
+        XCTAssertEqual(trip.alerts[1].type, .warmSpell)
+        XCTAssertEqual(trip.tripStatus, .active)
+    }
+
+    // MARK: - TripCreateRequest Tests
+
+    func testTripCreateRequestEncoding() throws {
+        let request = TripCreateRequest(
+            resortId: "big-white",
+            startDate: "2026-02-15",
+            endDate: "2026-02-20",
+            notes: "Family trip",
+            partySize: 4,
+            alertPreferences: ["powder_alert": true, "warm_spell": false]
+        )
+
+        let data = try JSONEncoder().encode(request)
+        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+
+        XCTAssertEqual(json["resort_id"] as? String, "big-white")
+        XCTAssertEqual(json["start_date"] as? String, "2026-02-15")
+        XCTAssertEqual(json["end_date"] as? String, "2026-02-20")
+        XCTAssertEqual(json["notes"] as? String, "Family trip")
+        XCTAssertEqual(json["party_size"] as? Int, 4)
+    }
+
+    // MARK: - TripUpdateRequest Tests
+
+    func testTripUpdateRequestPartialEncoding() throws {
+        let request = TripUpdateRequest(
+            startDate: nil,
+            endDate: nil,
+            notes: "Updated notes",
+            partySize: 6,
+            status: "completed",
+            alertPreferences: nil
+        )
+
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(request)
+        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+
+        XCTAssertEqual(json["notes"] as? String, "Updated notes")
+        XCTAssertEqual(json["party_size"] as? Int, 6)
+        XCTAssertEqual(json["status"] as? String, "completed")
+    }
+
+    // MARK: - ResortRecommendation Tests
+
+    func testResortRecommendationDecoding() throws {
+        let json = """
+        {
+            "resort": {
+                "resort_id": "big-white",
+                "name": "Big White",
+                "country": "CA",
+                "region": "BC",
+                "elevation_points": [],
+                "timezone": "America/Vancouver",
+                "official_website": "https://bigwhite.com",
+                "weather_sources": ["weatherapi"],
+                "created_at": "2026-01-01T00:00:00Z",
+                "updated_at": "2026-01-01T00:00:00Z"
+            },
+            "distance_km": 450.5,
+            "distance_miles": 280.0,
+            "snow_quality": "excellent",
+            "quality_score": 0.95,
+            "distance_score": 0.7,
+            "combined_score": 0.85,
+            "fresh_snow_cm": 25.0,
+            "predicted_snow_72h_cm": 40.0,
+            "current_temp_celsius": -8.0,
+            "confidence_level": "high",
+            "reason": "25cm fresh powder with more on the way!",
+            "elevation_conditions": {}
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let recommendation = try JSONDecoder().decode(ResortRecommendation.self, from: data)
+
+        XCTAssertEqual(recommendation.id, "big-white")
+        XCTAssertEqual(recommendation.resort.name, "Big White")
+        XCTAssertEqual(recommendation.distanceKm, 450.5)
+        XCTAssertEqual(recommendation.distanceMiles, 280.0)
+        XCTAssertEqual(recommendation.quality, .excellent)
+        XCTAssertEqual(recommendation.qualityScore, 0.95)
+        XCTAssertEqual(recommendation.combinedScore, 0.85)
+        XCTAssertEqual(recommendation.freshSnowCm, 25.0)
+        XCTAssertEqual(recommendation.predictedSnow72hCm, 40.0)
+        XCTAssertEqual(recommendation.currentTempCelsius, -8.0)
+        XCTAssertEqual(recommendation.confidence, .high)
+        XCTAssertEqual(recommendation.reason, "25cm fresh powder with more on the way!")
+    }
+
+    func testResortRecommendationQualityUnknown() throws {
+        let json = """
+        {
+            "resort": {
+                "resort_id": "test-resort",
+                "name": "Test Resort",
+                "country": "US",
+                "region": "CO",
+                "elevation_points": [],
+                "timezone": "America/Denver",
+                "official_website": null,
+                "weather_sources": [],
+                "created_at": "2026-01-01T00:00:00Z",
+                "updated_at": "2026-01-01T00:00:00Z"
+            },
+            "distance_km": 100.0,
+            "distance_miles": 62.0,
+            "snow_quality": "invalid_quality",
+            "quality_score": 0.5,
+            "distance_score": 0.8,
+            "combined_score": 0.6,
+            "fresh_snow_cm": 0.0,
+            "predicted_snow_72h_cm": 0.0,
+            "current_temp_celsius": 2.0,
+            "confidence_level": "low",
+            "reason": "No recent data available",
+            "elevation_conditions": {}
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let recommendation = try JSONDecoder().decode(ResortRecommendation.self, from: data)
+
+        XCTAssertEqual(recommendation.quality, .unknown)
+        XCTAssertEqual(recommendation.confidence, .low)
+    }
+
+    func testResortRecommendationFormattedDistanceMetric() throws {
+        let json = """
+        {
+            "resort": {
+                "resort_id": "test",
+                "name": "Test",
+                "country": "CA",
+                "region": "BC",
+                "elevation_points": [],
+                "timezone": "America/Vancouver",
+                "official_website": null,
+                "weather_sources": [],
+                "created_at": "2026-01-01T00:00:00Z",
+                "updated_at": "2026-01-01T00:00:00Z"
+            },
+            "distance_km": 0.5,
+            "distance_miles": 0.31,
+            "snow_quality": "good",
+            "quality_score": 0.8,
+            "distance_score": 0.95,
+            "combined_score": 0.85,
+            "fresh_snow_cm": 10.0,
+            "predicted_snow_72h_cm": 5.0,
+            "current_temp_celsius": -3.0,
+            "confidence_level": "medium",
+            "reason": "Good conditions nearby",
+            "elevation_conditions": {}
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let recommendation = try JSONDecoder().decode(ResortRecommendation.self, from: data)
+
+        // Test metric formatting for short distance
+        XCTAssertEqual(recommendation.formattedDistance(useMetric: true), "500 m")
+    }
+
+    func testResortRecommendationFormattedDistanceLongMetric() throws {
+        let json = """
+        {
+            "resort": {
+                "resort_id": "test",
+                "name": "Test",
+                "country": "CA",
+                "region": "BC",
+                "elevation_points": [],
+                "timezone": "America/Vancouver",
+                "official_website": null,
+                "weather_sources": [],
+                "created_at": "2026-01-01T00:00:00Z",
+                "updated_at": "2026-01-01T00:00:00Z"
+            },
+            "distance_km": 150.0,
+            "distance_miles": 93.2,
+            "snow_quality": "good",
+            "quality_score": 0.8,
+            "distance_score": 0.6,
+            "combined_score": 0.7,
+            "fresh_snow_cm": 10.0,
+            "predicted_snow_72h_cm": 5.0,
+            "current_temp_celsius": -3.0,
+            "confidence_level": "medium",
+            "reason": "Good conditions",
+            "elevation_conditions": {}
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let recommendation = try JSONDecoder().decode(ResortRecommendation.self, from: data)
+
+        // Test metric formatting for long distance
+        XCTAssertEqual(recommendation.formattedDistance(useMetric: true), "150 km")
+    }
+
+    func testResortRecommendationFormattedDistanceImperial() throws {
+        let json = """
+        {
+            "resort": {
+                "resort_id": "test",
+                "name": "Test",
+                "country": "CA",
+                "region": "BC",
+                "elevation_points": [],
+                "timezone": "America/Vancouver",
+                "official_website": null,
+                "weather_sources": [],
+                "created_at": "2026-01-01T00:00:00Z",
+                "updated_at": "2026-01-01T00:00:00Z"
+            },
+            "distance_km": 80.0,
+            "distance_miles": 50.0,
+            "snow_quality": "good",
+            "quality_score": 0.8,
+            "distance_score": 0.7,
+            "combined_score": 0.75,
+            "fresh_snow_cm": 10.0,
+            "predicted_snow_72h_cm": 5.0,
+            "current_temp_celsius": -3.0,
+            "confidence_level": "medium",
+            "reason": "Good conditions",
+            "elevation_conditions": {}
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let recommendation = try JSONDecoder().decode(ResortRecommendation.self, from: data)
+
+        // Test imperial formatting
+        XCTAssertEqual(recommendation.formattedDistance(useMetric: false), "50 mi")
+    }
+
+    // MARK: - RecommendationsResponse Tests
+
+    func testRecommendationsResponseDecoding() throws {
+        let json = """
+        {
+            "recommendations": [
+                {
+                    "resort": {
+                        "resort_id": "big-white",
+                        "name": "Big White",
+                        "country": "CA",
+                        "region": "BC",
+                        "elevation_points": [],
+                        "timezone": "America/Vancouver",
+                        "official_website": null,
+                        "weather_sources": [],
+                        "created_at": "2026-01-01T00:00:00Z",
+                        "updated_at": "2026-01-01T00:00:00Z"
+                    },
+                    "distance_km": 100.0,
+                    "distance_miles": 62.0,
+                    "snow_quality": "excellent",
+                    "quality_score": 0.95,
+                    "distance_score": 0.8,
+                    "combined_score": 0.9,
+                    "fresh_snow_cm": 30.0,
+                    "predicted_snow_72h_cm": 20.0,
+                    "current_temp_celsius": -10.0,
+                    "confidence_level": "high",
+                    "reason": "Epic powder day!",
+                    "elevation_conditions": {}
+                }
+            ],
+            "count": 1,
+            "user_latitude": 49.28,
+            "user_longitude": -123.12,
+            "radius_km": 500,
+            "generated_at": "2026-01-20T10:00:00Z"
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let response = try JSONDecoder().decode(RecommendationsResponse.self, from: data)
+
+        XCTAssertEqual(response.count, 1)
+        XCTAssertEqual(response.recommendations.count, 1)
+        XCTAssertEqual(response.recommendations[0].resort.name, "Big White")
+        XCTAssertEqual(response.userLatitude, 49.28)
+        XCTAssertEqual(response.userLongitude, -123.12)
+        XCTAssertEqual(response.radiusKm, 500)
+    }
+
+    // MARK: - TripsResponse Tests
+
+    func testTripsResponseDecoding() throws {
+        let json = """
+        {
+            "trips": [
+                {
+                    "trip_id": "trip-1",
+                    "user_id": "user-1",
+                    "resort_id": "big-white",
+                    "resort_name": "Big White",
+                    "start_date": "2026-02-15",
+                    "end_date": "2026-02-20",
+                    "status": "planned",
+                    "notes": null,
+                    "party_size": 2,
+                    "conditions_at_creation": null,
+                    "latest_conditions": null,
+                    "alerts": [],
+                    "alert_preferences": {},
+                    "created_at": "2026-01-20T08:00:00Z",
+                    "updated_at": "2026-01-20T08:00:00Z"
+                }
+            ],
+            "count": 1
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let response = try JSONDecoder().decode(TripsResponse.self, from: data)
+
+        XCTAssertEqual(response.count, 1)
+        XCTAssertEqual(response.trips.count, 1)
+        XCTAssertEqual(response.trips[0].resortName, "Big White")
+    }
+
+    // MARK: - ElevationConditionSummary Tests
+
+    func testElevationConditionSummaryDecoding() throws {
+        let json = """
+        {
+            "snow_quality": "good",
+            "fresh_snow_cm": 15.0,
+            "temperature_celsius": -5.0,
+            "wind_speed_kmh": 20.0
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let summary = try JSONDecoder().decode(ElevationConditionSummary.self, from: data)
+
+        XCTAssertEqual(summary.snowQuality, "good")
+        XCTAssertEqual(summary.freshSnowCm, 15.0)
+        XCTAssertEqual(summary.temperatureCelsius, -5.0)
+        XCTAssertEqual(summary.windSpeedKmh, 20.0)
+    }
+
+    func testElevationConditionSummaryOptionalFields() throws {
+        let json = """
+        {
+            "snow_quality": "fair",
+            "fresh_snow_cm": 0.0,
+            "temperature_celsius": null,
+            "wind_speed_kmh": null
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let summary = try JSONDecoder().decode(ElevationConditionSummary.self, from: data)
+
+        XCTAssertEqual(summary.snowQuality, "fair")
+        XCTAssertEqual(summary.freshSnowCm, 0.0)
+        XCTAssertNil(summary.temperatureCelsius)
+        XCTAssertNil(summary.windSpeedKmh)
+    }
 }
