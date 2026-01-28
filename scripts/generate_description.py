@@ -5,6 +5,7 @@ Analyzes the codebase to understand all features and generates compelling copy.
 """
 
 import os
+import re
 import sys
 import json
 import subprocess
@@ -129,7 +130,7 @@ Write an App Store description that:
 2. Lists key features with bullet points or short paragraphs
 3. Highlights what makes this app unique
 4. Is between 200-400 words
-5. Uses appropriate emojis sparingly (1-2 per section max)
+5. DO NOT USE ANY EMOJIS - App Store Connect rejects them
 6. Ends with a call to action
 
 Output ONLY the description text, no additional commentary."""
@@ -140,7 +141,28 @@ Output ONLY the description text, no additional commentary."""
         messages=[{"role": "user", "content": prompt}],
     )
 
-    return response.content[0].text
+    description = response.content[0].text
+
+    # Strip emojis - App Store Connect rejects them
+    emoji_pattern = re.compile(
+        "["
+        "\U0001f600-\U0001f64f"  # emoticons
+        "\U0001f300-\U0001f5ff"  # symbols & pictographs
+        "\U0001f680-\U0001f6ff"  # transport & map symbols
+        "\U0001f700-\U0001f77f"  # alchemical symbols
+        "\U0001f780-\U0001f7ff"  # Geometric Shapes
+        "\U0001f800-\U0001f8ff"  # Supplemental Arrows-C
+        "\U0001f900-\U0001f9ff"  # Supplemental Symbols and Pictographs
+        "\U0001fa00-\U0001fa6f"  # Chess Symbols
+        "\U0001fa70-\U0001faff"  # Symbols and Pictographs Extended-A
+        "\U00002702-\U000027b0"  # Dingbats
+        "\U0001f1e0-\U0001f1ff"  # Flags
+        "]+",
+        flags=re.UNICODE,
+    )
+    description = emoji_pattern.sub("", description)
+
+    return description.strip()
 
 
 def main():
