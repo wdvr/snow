@@ -50,12 +50,16 @@ platform :ios do
   # ============================================
 
   desc "Upload metadata, screenshots, and app icon to App Store Connect"
-  lane :deliver_metadata do
+  lane :deliver_metadata do |options|
     api_key = get_api_key
+
+    # Get version from options or default to 1.0.0
+    version = options[:app_version] || ENV["APP_VERSION"] || "1.0.0"
 
     deliver(
       api_key: api_key,
       app_identifier: "com.wouterdevriendt.snowtracker",
+      app_version: version,
       skip_binary_upload: true,
       skip_screenshots: false,
       skip_metadata: false,
@@ -103,12 +107,15 @@ platform :ios do
   end
 
   desc "Upload only metadata (no screenshots)"
-  lane :upload_metadata_only do
+  lane :upload_metadata_only do |options|
     api_key = get_api_key
+
+    version = options[:app_version] || ENV["APP_VERSION"] || "1.0.0"
 
     deliver(
       api_key: api_key,
       app_identifier: "com.wouterdevriendt.snowtracker",
+      app_version: version,
       skip_binary_upload: true,
       skip_screenshots: true,
       skip_metadata: false,
