@@ -11,8 +11,5 @@ copyright "#{Time.now.year} Wouter Devriendt"
 primary_category "WEATHER"
 secondary_category "SPORTS"
 
-# Pricing
-price_tier 0
-
 # Automatic release
 automatic_release false
