@@ -1,11 +1,12 @@
 """Integration tests for API endpoints."""
 
 import os
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from unittest.mock import patch
 
 import boto3
 import pytest
+from jose import jwt
 from moto import mock_aws
 
 from utils.cache import clear_all_caches
@@ -21,6 +22,21 @@ os.environ["RESORTS_TABLE"] = "snow-tracker-resorts-test"
 os.environ["WEATHER_CONDITIONS_TABLE"] = "snow-tracker-weather-conditions-test"
 os.environ["USER_PREFERENCES_TABLE"] = "snow-tracker-user-preferences-test"
 os.environ["WEATHER_API_KEY"] = "test-key"
+os.environ["JWT_SECRET_KEY"] = "test-jwt-secret-key-for-testing"
+
+# Test JWT secret (must match the one in environment)
+TEST_JWT_SECRET = "test-jwt-secret-key-for-testing"
+
+
+def create_test_token(user_id: str = "test_user") -> str:
+    """Create a valid JWT token for testing."""
+    payload = {
+        "sub": user_id,
+        "type": "access",
+        "iat": datetime.now(UTC),
+        "exp": datetime.now(UTC) + timedelta(hours=1),
+    }
+    return jwt.encode(payload, TEST_JWT_SECRET, algorithm="HS256")
 
 
 @pytest.fixture(scope="module")
@@ -446,7 +462,11 @@ class TestAPIIntegration:
         mock_service.get_user_preferences.return_value = mock_preferences
         mock_get_user_service.return_value = mock_service
 
-        response = app_client.get("/api/v1/user/preferences")
+        token = create_test_token("test_user")
+        response = app_client.get(
+            "/api/v1/user/preferences",
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -476,7 +496,12 @@ class TestAPIIntegration:
             "updated_at": "2026-01-20T10:00:00Z",
         }
 
-        response = app_client.put("/api/v1/user/preferences", json=preferences_data)
+        token = create_test_token("test_user")
+        response = app_client.put(
+            "/api/v1/user/preferences",
+            json=preferences_data,
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -485,11 +510,15 @@ class TestAPIIntegration:
 
     def test_api_error_handling(self, app_client):
         """Test API error handling for various scenarios."""
-        # Test with invalid JSON
+        # Test with invalid JSON (with auth to get past 401)
+        token = create_test_token("test_user")
         response = app_client.put(
             "/api/v1/user/preferences",
             content="invalid json",
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            },
         )
         assert response.status_code == 422  # Unprocessable Entity
 
