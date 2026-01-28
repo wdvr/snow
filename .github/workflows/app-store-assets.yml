@@ -119,17 +119,10 @@ jobs:
         fi
         xcodebuild -version
 
-    - name: Setup Ruby
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: '3.2'
-        bundler-cache: true
-        working-directory: ios/fastlane
-
     - name: Install Fastlane
       run: |
         cd ios/fastlane
-        bundle install
+        bundle install --path vendor/bundle
 
     - name: Generate screenshots
       if: ${{ github.event.inputs.generate_screenshots == 'true' }}
