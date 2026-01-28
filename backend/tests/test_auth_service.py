@@ -481,6 +481,6 @@ class TestAuthService:
 
         try:
             auth_service.verify_access_token(expired_token)
-            assert False, "Should have raised AuthenticationError"
+            pytest.fail("Should have raised AuthenticationError")
         except AuthenticationError as e:
             assert "expired" in str(e).lower()

@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from mangum import Mangum
+from pydantic import BaseModel, Field
 
 from models.feedback import Feedback, FeedbackSubmission
 from models.resort import Resort
@@ -191,7 +192,7 @@ def get_trip_service():
 
 
 async def get_current_user_id(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),  # noqa: B008
 ) -> str:
     """Extract user ID from JWT token.
 
@@ -223,7 +224,7 @@ async def get_current_user_id(
 
 
 async def get_optional_user_id(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),  # noqa: B008
 ) -> str | None:
     """Extract user ID from JWT token if present (optional auth).
 
@@ -892,9 +893,6 @@ async def submit_feedback(submission: FeedbackSubmission):
 # MARK: - Authentication Endpoints
 
 
-from pydantic import BaseModel, Field
-
-
 class AppleSignInRequest(BaseModel):
     """Request body for Apple Sign In."""
 
@@ -1105,7 +1103,7 @@ async def get_best_conditions(
             except ValueError:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid quality filter.",
+                    detail="Invalid quality filter.",
                 )
 
         recommendations = get_recommendation_service().get_best_conditions_globally(
