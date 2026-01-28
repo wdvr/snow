@@ -43,7 +43,8 @@ platform :ios do
       skip_metadata: true,
       app_icon: "./metadata/app_icon.png",
       force: true,
-      submit_for_review: false
+      submit_for_review: false,
+      run_precheck_before_submit: false
     )
   end
 
