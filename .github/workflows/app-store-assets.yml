@@ -119,14 +119,34 @@ jobs:
         fi
         xcodebuild -version
 
+    - name: Setup Ruby
+      run: |
+        # Check current Ruby version
+        echo "Current Ruby: $(ruby --version)"
+
+        # If Ruby is too old, use Homebrew Ruby
+        RUBY_VERSION=$(ruby -e 'puts RUBY_VERSION')
+        if [[ "$RUBY_VERSION" < "3.0" ]]; then
+          echo "Ruby $RUBY_VERSION is too old, installing via Homebrew..."
+          brew install ruby@3.2 || true
+          echo 'export PATH="/opt/homebrew/opt/ruby@3.2/bin:$PATH"' >> $GITHUB_ENV
+          export PATH="/opt/homebrew/opt/ruby@3.2/bin:$PATH"
+          echo "New Ruby: $(ruby --version)"
+        fi
+
     - name: Install Fastlane
       run: |
+        # Ensure Homebrew Ruby is in path if installed
+        export PATH="/opt/homebrew/opt/ruby@3.2/bin:$PATH"
         cd ios/fastlane
-        bundle install --path vendor/bundle
+        gem install bundler --no-document || true
+        bundle config set --local path vendor/bundle
+        bundle install
 
     - name: Generate screenshots
       if: ${{ github.event.inputs.generate_screenshots == 'true' }}
       run: |
+        export PATH="/opt/homebrew/opt/ruby@3.2/bin:$PATH"
         # Boot simulator
         xcrun simctl boot "iPhone 16 Pro Max" 2>/dev/null || true
         sleep 5
@@ -148,6 +168,7 @@ jobs:
         APP_STORE_CONNECT_KEY_PATH: ~/.private_keys/AuthKey.p8
         APP_VERSION: ${{ github.event.inputs.app_version }}
       run: |
+        export PATH="/opt/homebrew/opt/ruby@3.2/bin:$PATH"
         cd ios/fastlane
         bundle exec fastlane deliver_metadata app_version:${{ github.event.inputs.app_version }}
 
