@@ -92,7 +92,8 @@ class AppConfiguration: ObservableObject {
     private init() {
         // Determine default environment based on build configuration
         #if DEBUG
-        self.defaultEnvironment = .development
+        // Use staging for debug builds since dev environment is not deployed
+        self.defaultEnvironment = .staging
         #else
         // Production builds check bundle ID for staging vs prod
         if Bundle.main.bundleIdentifier?.contains("staging") == true {
