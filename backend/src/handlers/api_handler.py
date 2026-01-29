@@ -154,13 +154,17 @@ def get_auth_service():
     global _auth_service
     if _auth_service is None:
         user_table = get_dynamodb().Table(
-            os.environ.get("USER_PREFERENCES_TABLE", "snow-tracker-user-preferences-dev")
+            os.environ.get(
+                "USER_PREFERENCES_TABLE", "snow-tracker-user-preferences-dev"
+            )
         )
         _auth_service = AuthService(
             user_table=user_table,
             jwt_secret=os.environ.get("JWT_SECRET_KEY"),
             apple_team_id=os.environ.get("APPLE_SIGNIN_TEAM_ID"),
-            apple_client_id=os.environ.get("APPLE_SIGNIN_CLIENT_ID", "com.snowtracker.app"),
+            apple_client_id=os.environ.get(
+                "APPLE_SIGNIN_CLIENT_ID", "com.snowtracker.app"
+            ),
         )
     return _auth_service
 
@@ -1162,7 +1166,9 @@ async def create_trip(
 async def get_user_trips(
     response: Response,
     user_id: str = Depends(get_current_user_id),
-    status_filter: str | None = Query(None, alias="status", description="Filter by status"),
+    status_filter: str | None = Query(
+        None, alias="status", description="Filter by status"
+    ),
     include_past: bool = Query(True, description="Include past trips"),
 ):
     """Get all trips for the authenticated user.
@@ -1292,7 +1298,9 @@ async def refresh_trip_conditions(
         trip = get_trip_service().update_trip_conditions(trip_id, user_id)
         return {
             "trip_id": trip.trip_id,
-            "latest_conditions": trip.latest_conditions.model_dump() if trip.latest_conditions else None,
+            "latest_conditions": trip.latest_conditions.model_dump()
+            if trip.latest_conditions
+            else None,
             "unread_alerts": trip.unread_alert_count,
         }
 

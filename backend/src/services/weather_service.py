@@ -211,9 +211,6 @@ class WeatherService:
             return []
 
         try:
-            # Calculate cutoff timestamp
-            cutoff_time = datetime.now(UTC).isoformat()
-
             # Query by resort_id (partition key), sorted by timestamp (sort key)
             response = self.conditions_table.query(
                 KeyConditionExpression=Key("resort_id").eq(resort_id),
@@ -232,6 +229,8 @@ class WeatherService:
 
         except Exception as e:
             # Log error but don't crash - return empty list
+            import logging
+            logging.getLogger(__name__).error(f"Error fetching conditions for resort {resort_id}: {e}")
             return []
 
     def get_latest_condition(
@@ -260,6 +259,8 @@ class WeatherService:
 
         except Exception as e:
             # Log error but don't crash - return None
+            import logging
+            logging.getLogger(__name__).error(f"Error fetching latest condition for {resort_id}/{elevation_level}: {e}")
             return None
 
     def get_weather_forecast(

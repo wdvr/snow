@@ -3,7 +3,7 @@
 import json
 import logging
 import os
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import boto3
@@ -29,7 +29,6 @@ RESORTS_TABLE = os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
 WEATHER_CONDITIONS_TABLE = os.environ.get(
     "WEATHER_CONDITIONS_TABLE", "snow-tracker-weather-conditions-dev"
 )
-WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY")
 ENABLE_SCRAPING = os.environ.get("ENABLE_SCRAPING", "true").lower() == "true"
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
 
