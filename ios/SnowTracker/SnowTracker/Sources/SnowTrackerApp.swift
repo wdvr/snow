@@ -57,16 +57,16 @@ struct MainTabView: View {
                     Text("Resorts")
                 }
 
-            ResortMapView()
+            BestSnowNearYouView()
                 .tabItem {
-                    Image(systemName: "map")
-                    Text("Map")
+                    Image(systemName: "star.fill")
+                    Text("Best Snow")
                 }
 
-            ConditionsView()
+            TripsListView()
                 .tabItem {
-                    Image(systemName: "snowflake")
-                    Text("Conditions")
+                    Image(systemName: "calendar")
+                    Text("Trips")
                 }
 
             FavoritesView()

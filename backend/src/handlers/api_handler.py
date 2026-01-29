@@ -1,22 +1,28 @@
 """Main FastAPI application handler for Lambda deployment."""
 
 import os
-from datetime import UTC, datetime
-from typing import Dict, List, Optional
+from datetime import UTC, datetime, timezone
+from typing import Annotated, Dict, List, Optional
 
 import boto3
 from botocore.exceptions import ClientError
-from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from mangum import Mangum
+from pydantic import BaseModel, Field
 
 from models.feedback import Feedback, FeedbackSubmission
 from models.resort import Resort
+from models.trip import Trip, TripCreate, TripStatus, TripUpdate
 from models.user import UserPreferences
 from models.weather import SNOW_QUALITY_EXPLANATIONS, SnowQuality
+from services.auth_service import AuthenticationError, AuthProvider, AuthService
+from services.recommendation_service import RecommendationService
 from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
+from services.trip_service import TripService
 from services.user_service import UserService
 from services.weather_service import WeatherService
 from utils.cache import (
@@ -56,6 +62,13 @@ _weather_service = None
 _snow_quality_service = None
 _user_service = None
 _feedback_table = None
+_auth_service = None
+_recommendation_service = None
+_trip_service = None
+_trips_table = None
+
+# Security scheme for bearer token authentication
+security = HTTPBearer(auto_error=False)
 
 
 def get_dynamodb():
@@ -126,14 +139,108 @@ def get_feedback_table():
     return _feedback_table
 
 
+def get_trips_table():
+    """Get or create trips table (lazy init for SnapStart)."""
+    global _trips_table
+    if _trips_table is None:
+        _trips_table = get_dynamodb().Table(
+            os.environ.get("TRIPS_TABLE", "snow-tracker-trips-dev")
+        )
+    return _trips_table
+
+
+def get_auth_service():
+    """Get or create AuthService (lazy init for SnapStart)."""
+    global _auth_service
+    if _auth_service is None:
+        user_table = get_dynamodb().Table(
+            os.environ.get(
+                "USER_PREFERENCES_TABLE", "snow-tracker-user-preferences-dev"
+            )
+        )
+        _auth_service = AuthService(
+            user_table=user_table,
+            jwt_secret=os.environ.get("JWT_SECRET_KEY"),
+            apple_team_id=os.environ.get("APPLE_SIGNIN_TEAM_ID"),
+            apple_client_id=os.environ.get(
+                "APPLE_SIGNIN_CLIENT_ID", "com.snowtracker.app"
+            ),
+        )
+    return _auth_service
+
+
+def get_recommendation_service():
+    """Get or create RecommendationService (lazy init for SnapStart)."""
+    global _recommendation_service
+    if _recommendation_service is None:
+        _recommendation_service = RecommendationService(
+            resort_service=get_resort_service(),
+            weather_service=get_weather_service(),
+        )
+    return _recommendation_service
+
+
+def get_trip_service():
+    """Get or create TripService (lazy init for SnapStart)."""
+    global _trip_service
+    if _trip_service is None:
+        _trip_service = TripService(
+            table=get_trips_table(),
+            resort_service=get_resort_service(),
+            weather_service=get_weather_service(),
+        )
+    return _trip_service
+
+
 # MARK: - Authentication Dependency
 
 
-def get_current_user_id() -> str:
-    """Extract user ID from JWT token."""
-    # TODO: Implement JWT token validation
-    # For now, return a placeholder
-    return "test_user_123"
+async def get_current_user_id(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),  # noqa: B008
+) -> str:
+    """Extract user ID from JWT token.
+
+    Args:
+        credentials: Bearer token from Authorization header
+
+    Returns:
+        User ID from the token
+
+    Raises:
+        HTTPException: If token is missing or invalid
+    """
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        user_id = get_auth_service().verify_access_token(credentials.credentials)
+        return user_id
+    except AuthenticationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+async def get_optional_user_id(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),  # noqa: B008
+) -> str | None:
+    """Extract user ID from JWT token if present (optional auth).
+
+    Returns None if no token provided, raises error if token is invalid.
+    """
+    if not credentials:
+        return None
+
+    try:
+        return get_auth_service().verify_access_token(credentials.credentials)
+    except AuthenticationError:
+        return None
 
 
 # MARK: - Health Check
@@ -784,6 +891,454 @@ async def submit_feedback(submission: FeedbackSubmission):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to submit feedback: {str(e)}",
+        )
+
+
+# MARK: - Authentication Endpoints
+
+
+class AppleSignInRequest(BaseModel):
+    """Request body for Apple Sign In."""
+
+    identity_token: str = Field(..., description="JWT from Apple Sign In")
+    authorization_code: str | None = Field(None, description="Authorization code")
+    first_name: str | None = Field(None, description="User's first name")
+    last_name: str | None = Field(None, description="User's last name")
+
+
+class GuestAuthRequest(BaseModel):
+    """Request body for guest authentication."""
+
+    device_id: str = Field(..., description="Unique device identifier")
+
+
+class RefreshTokenRequest(BaseModel):
+    """Request body for token refresh."""
+
+    refresh_token: str = Field(..., description="Refresh token")
+
+
+@app.post("/api/v1/auth/apple")
+async def sign_in_with_apple(request: AppleSignInRequest):
+    """Authenticate with Apple Sign In.
+
+    Verifies the Apple identity token, creates or updates the user,
+    and returns session tokens.
+    """
+    try:
+        auth_service = get_auth_service()
+
+        # Verify Apple token and get/create user
+        user = auth_service.verify_apple_token(
+            identity_token=request.identity_token,
+            authorization_code=request.authorization_code,
+            first_name=request.first_name,
+            last_name=request.last_name,
+        )
+
+        # Create session tokens
+        tokens = auth_service.create_session_tokens(user.user_id)
+
+        return {
+            "user": user.to_dict(),
+            "tokens": tokens,
+            "is_new_user": user.is_new_user,
+        }
+
+    except AuthenticationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Authentication failed: {str(e)}",
+        )
+
+
+@app.post("/api/v1/auth/guest")
+async def sign_in_as_guest(request: GuestAuthRequest):
+    """Create a guest session.
+
+    Guest users have limited functionality but can still use the app.
+    """
+    try:
+        auth_service = get_auth_service()
+
+        # Create guest user/session
+        user = auth_service.create_guest_session(request.device_id)
+
+        # Create session tokens
+        tokens = auth_service.create_session_tokens(user.user_id)
+
+        return {
+            "user": user.to_dict(),
+            "tokens": tokens,
+            "is_new_user": user.is_new_user,
+        }
+
+    except AuthenticationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Guest authentication failed: {str(e)}",
+        )
+
+
+@app.post("/api/v1/auth/refresh")
+async def refresh_token(request: RefreshTokenRequest):
+    """Refresh access token using refresh token."""
+    try:
+        auth_service = get_auth_service()
+        tokens = auth_service.refresh_tokens(request.refresh_token)
+        return {"tokens": tokens}
+
+    except AuthenticationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
+
+
+@app.get("/api/v1/auth/me")
+async def get_current_user(user_id: str = Depends(get_current_user_id)):
+    """Get current authenticated user info."""
+    try:
+        # Get user from database
+        user_service = get_user_service()
+        prefs = user_service.get_user_preferences(user_id)
+
+        return {
+            "user_id": user_id,
+            "preferences": prefs.model_dump() if prefs else None,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get user info: {str(e)}",
+        )
+
+
+# MARK: - Recommendations Endpoints
+
+
+@app.get("/api/v1/recommendations")
+async def get_recommendations(
+    response: Response,
+    lat: float = Query(..., ge=-90, le=90, description="User's latitude"),
+    lng: float = Query(..., ge=-180, le=180, description="User's longitude"),
+    radius: float = Query(500, ge=10, le=2000, description="Search radius in km"),
+    limit: int = Query(10, ge=1, le=50, description="Number of recommendations"),
+    min_quality: str | None = Query(None, description="Minimum snow quality filter"),
+):
+    """Get resort recommendations based on location and snow conditions.
+
+    This endpoint combines proximity and snow quality to recommend
+    the best resorts for the user to visit.
+
+    The ranking algorithm considers:
+    - Distance from user (closer is better, with diminishing returns)
+    - Current snow quality (excellent > good > fair > poor)
+    - Fresh/predicted snowfall (more snow = higher score)
+    """
+    try:
+        # Parse min_quality if provided
+        quality_filter = None
+        if min_quality:
+            try:
+                quality_filter = SnowQuality(min_quality.lower())
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid quality filter. Must be one of: {[q.value for q in SnowQuality]}",
+                )
+
+        # Get recommendations
+        recommendations = get_recommendation_service().get_recommendations(
+            latitude=lat,
+            longitude=lng,
+            radius_km=radius,
+            limit=limit,
+            min_quality=quality_filter,
+        )
+
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+
+        return {
+            "recommendations": [r.to_dict() for r in recommendations],
+            "count": len(recommendations),
+            "search_center": {"latitude": lat, "longitude": lng},
+            "search_radius_km": radius,
+            "generated_at": datetime.now(UTC).isoformat(),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate recommendations: {str(e)}",
+        )
+
+
+@app.get("/api/v1/recommendations/best")
+async def get_best_conditions(
+    response: Response,
+    limit: int = Query(10, ge=1, le=50, description="Number of results"),
+    min_quality: str | None = Query(None, description="Minimum snow quality filter"),
+):
+    """Get resorts with the best snow conditions globally.
+
+    This endpoint returns the top resorts by snow quality,
+    regardless of user location. Useful for planning trips
+    to wherever the snow is best.
+    """
+    try:
+        quality_filter = None
+        if min_quality:
+            try:
+                quality_filter = SnowQuality(min_quality.lower())
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid quality filter.",
+                )
+
+        recommendations = get_recommendation_service().get_best_conditions_globally(
+            limit=limit,
+            min_quality=quality_filter,
+        )
+
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+
+        return {
+            "recommendations": [r.to_dict() for r in recommendations],
+            "count": len(recommendations),
+            "generated_at": datetime.now(UTC).isoformat(),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get best conditions: {str(e)}",
+        )
+
+
+# MARK: - Trip Planning Endpoints
+
+
+@app.post("/api/v1/trips", status_code=status.HTTP_201_CREATED)
+async def create_trip(
+    trip_data: TripCreate,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Create a new ski trip.
+
+    Creates a planned trip for the authenticated user with
+    the specified resort and dates. Automatically captures
+    current conditions at the resort.
+    """
+    try:
+        trip = get_trip_service().create_trip(user_id, trip_data)
+        return trip.model_dump()
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create trip: {str(e)}",
+        )
+
+
+@app.get("/api/v1/trips")
+async def get_user_trips(
+    response: Response,
+    user_id: str = Depends(get_current_user_id),
+    status_filter: str | None = Query(
+        None, alias="status", description="Filter by status"
+    ),
+    include_past: bool = Query(True, description="Include past trips"),
+):
+    """Get all trips for the authenticated user.
+
+    Returns trips sorted by start date (upcoming first).
+    """
+    try:
+        # Parse status filter
+        trip_status = None
+        if status_filter:
+            try:
+                trip_status = TripStatus(status_filter.lower())
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid status. Must be one of: {[s.value for s in TripStatus]}",
+                )
+
+        trips = get_trip_service().get_user_trips(
+            user_id=user_id,
+            status=trip_status,
+            include_past=include_past,
+        )
+
+        response.headers["Cache-Control"] = CACHE_CONTROL_PRIVATE
+
+        return {
+            "trips": [t.model_dump() for t in trips],
+            "count": len(trips),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get trips: {str(e)}",
+        )
+
+
+@app.get("/api/v1/trips/{trip_id}")
+async def get_trip(
+    trip_id: str,
+    response: Response,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Get a specific trip by ID."""
+    try:
+        trip = get_trip_service().get_trip(trip_id, user_id)
+        if not trip:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Trip {trip_id} not found",
+            )
+
+        response.headers["Cache-Control"] = CACHE_CONTROL_PRIVATE
+
+        return trip.model_dump()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get trip: {str(e)}",
+        )
+
+
+@app.put("/api/v1/trips/{trip_id}")
+async def update_trip(
+    trip_id: str,
+    update_data: TripUpdate,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Update a trip."""
+    try:
+        trip = get_trip_service().update_trip(trip_id, user_id, update_data)
+        return trip.model_dump()
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update trip: {str(e)}",
+        )
+
+
+@app.delete("/api/v1/trips/{trip_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_trip(
+    trip_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Delete a trip."""
+    try:
+        deleted = get_trip_service().delete_trip(trip_id, user_id)
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Trip {trip_id} not found",
+            )
+        return None
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete trip: {str(e)}",
+        )
+
+
+@app.post("/api/v1/trips/{trip_id}/refresh-conditions")
+async def refresh_trip_conditions(
+    trip_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Refresh the conditions for a trip.
+
+    Updates the latest conditions snapshot and checks for
+    significant changes that warrant alerts.
+    """
+    try:
+        trip = get_trip_service().update_trip_conditions(trip_id, user_id)
+        return {
+            "trip_id": trip.trip_id,
+            "latest_conditions": trip.latest_conditions.model_dump()
+            if trip.latest_conditions
+            else None,
+            "unread_alerts": trip.unread_alert_count,
+        }
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to refresh conditions: {str(e)}",
+        )
+
+
+@app.post("/api/v1/trips/{trip_id}/alerts/read")
+async def mark_trip_alerts_read(
+    trip_id: str,
+    user_id: str = Depends(get_current_user_id),
+    alert_ids: list[str] | None = None,
+):
+    """Mark trip alerts as read.
+
+    If alert_ids is not provided, marks all alerts as read.
+    """
+    try:
+        count = get_trip_service().mark_alerts_read(trip_id, user_id, alert_ids)
+        return {"marked_read": count}
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to mark alerts read: {str(e)}",
         )
 
 
