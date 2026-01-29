@@ -291,7 +291,7 @@ struct TripDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     var useMetric: Bool {
-        userPreferencesManager.preferredUnits.distance == "metric"
+        userPreferencesManager.preferredUnits.distance == .metric
     }
 
     var body: some View {

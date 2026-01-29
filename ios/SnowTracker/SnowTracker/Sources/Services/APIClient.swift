@@ -182,6 +182,29 @@ final class APIClient {
         }
     }
 
+    func getBatchSnowQuality(for resortIds: [String]) async throws -> [String: SnowQualitySummaryLight] {
+        guard !resortIds.isEmpty else { return [:] }
+
+        // Limit to 50 resorts per batch
+        let ids = Array(resortIds.prefix(50))
+        let idsParam = ids.joined(separator: ",")
+        let url = baseURL.appendingPathComponent("api/v1/snow-quality/batch")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, parameters: ["resort_ids": idsParam])
+                .validate()
+                .responseDecodable(of: BatchSnowQualityResponse.self) { response in
+                    switch response.result {
+                    case .success(let batchResponse):
+                        continuation.resume(returning: batchResponse.results)
+                    case .failure(let error):
+                        print("API Error fetching batch snow quality: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
     // MARK: - User API
 
     func getUserPreferences() async throws -> UserPreferences {
@@ -749,6 +772,34 @@ struct SnowQualitySummary: Codable {
     }
 }
 
+struct SnowQualitySummaryLight: Codable {
+    let resortId: String
+    let overallQuality: String
+    let lastUpdated: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case resortId = "resort_id"
+        case overallQuality = "overall_quality"
+        case lastUpdated = "last_updated"
+    }
+
+    var overallSnowQuality: SnowQuality {
+        SnowQuality(rawValue: overallQuality) ?? .unknown
+    }
+}
+
+struct BatchSnowQualityResponse: Codable {
+    let results: [String: SnowQualitySummaryLight]
+    let lastUpdated: String
+    let resortCount: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case results
+        case lastUpdated = "last_updated"
+        case resortCount = "resort_count"
+    }
+}
+
 struct ElevationSummary: Codable {
     let quality: String
     let freshSnowCm: Double
@@ -1000,7 +1051,7 @@ struct AuthenticatedUserInfo: Codable {
 
 // MARK: - Trip Models
 
-struct Trip: Codable, Identifiable {
+struct Trip: Codable, Identifiable, Sendable {
     let tripId: String
     let userId: String
     let resortId: String
@@ -1074,7 +1125,7 @@ struct Trip: Codable, Identifiable {
     }
 }
 
-struct TripConditionSnapshot: Codable {
+struct TripConditionSnapshot: Codable, Sendable {
     let timestamp: String
     let snowQuality: String
     let freshSnowCm: Double
@@ -1094,7 +1145,7 @@ struct TripConditionSnapshot: Codable {
     }
 }
 
-struct TripAlert: Codable, Identifiable {
+struct TripAlert: Codable, Identifiable, @unchecked Sendable {
     let alertId: String
     let alertType: String
     let message: String
@@ -1166,7 +1217,7 @@ struct AnyCodable: Codable {
     }
 }
 
-enum TripStatus: String, Codable {
+enum TripStatus: String, Codable, Sendable {
     case planned
     case active
     case completed
@@ -1201,7 +1252,7 @@ enum TripAlertType: String, Codable {
     }
 }
 
-struct TripCreateRequest: Codable {
+struct TripCreateRequest: Codable, Sendable {
     let resortId: String
     let startDate: String
     let endDate: String
@@ -1219,7 +1270,7 @@ struct TripCreateRequest: Codable {
     }
 }
 
-struct TripUpdateRequest: Codable {
+struct TripUpdateRequest: Codable, Sendable {
     let startDate: String?
     let endDate: String?
     let notes: String?
@@ -1245,7 +1296,7 @@ struct MarkAlertsReadRequest: Codable {
     }
 }
 
-struct TripsResponse: Codable {
+struct TripsResponse: Codable, Sendable {
     let trips: [Trip]
     let count: Int
 }

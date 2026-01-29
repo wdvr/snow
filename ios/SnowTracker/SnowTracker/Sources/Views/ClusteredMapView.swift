@@ -143,10 +143,34 @@ struct ClusteredMapView: UIViewRepresentable {
             latitude: (minLat + maxLat) / 2,
             longitude: (minLon + maxLon) / 2
         )
-        let span = MKCoordinateSpan(
-            latitudeDelta: (maxLat - minLat) * 1.3 + 2,
-            longitudeDelta: (maxLon - minLon) * 1.3 + 2
-        )
+
+        // Calculate span with bounds validation to prevent crash
+        var latDelta = (maxLat - minLat) * 1.3 + 2
+        var lonDelta = (maxLon - minLon) * 1.3 + 2
+
+        // Clamp to valid MapKit region bounds (max 180 lat, 360 lon)
+        // Use slightly smaller values to avoid edge case issues
+        latDelta = min(latDelta, 170.0)
+        lonDelta = min(lonDelta, 350.0)
+
+        // Ensure minimum reasonable zoom level
+        latDelta = max(latDelta, 0.01)
+        lonDelta = max(lonDelta, 0.01)
+
+        // Validate center coordinates
+        guard center.latitude.isFinite && center.longitude.isFinite &&
+              center.latitude >= -90 && center.latitude <= 90 &&
+              center.longitude >= -180 && center.longitude <= 180 else {
+            // Fallback to a safe default region (North America)
+            let defaultRegion = MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: 45.0, longitude: -110.0),
+                span: MKCoordinateSpan(latitudeDelta: 30, longitudeDelta: 40)
+            )
+            mapView.setRegion(defaultRegion, animated: false)
+            return
+        }
+
+        let span = MKCoordinateSpan(latitudeDelta: latDelta, longitudeDelta: lonDelta)
 
         mapView.setRegion(MKCoordinateRegion(center: center, span: span), animated: false)
     }

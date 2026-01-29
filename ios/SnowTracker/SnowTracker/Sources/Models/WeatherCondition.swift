@@ -461,8 +461,11 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         return Date().timeIntervalSince(date) / 3600.0
     }
 
-    /// Parse timestamp handling both fractional seconds and standard ISO8601 formats
+    /// Parse timestamp handling multiple ISO8601 formats
     private var parsedTimestamp: Date? {
+        // Guard against empty timestamp
+        guard !timestamp.isEmpty else { return nil }
+
         // Try parsing with fractional seconds first (API returns timestamps like "2026-01-25T21:18:24.110234+00:00")
         let isoFormatter = ISO8601DateFormatter()
         isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -473,7 +476,40 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
 
         // Fallback to standard ISO8601 without fractional seconds
         let basicFormatter = ISO8601DateFormatter()
-        return basicFormatter.date(from: timestamp)
+        if let date = basicFormatter.date(from: timestamp) {
+            return date
+        }
+
+        // Try with timezone designator variations
+        let flexFormatter = ISO8601DateFormatter()
+        flexFormatter.formatOptions = [.withInternetDateTime, .withTimeZone]
+        if let date = flexFormatter.date(from: timestamp) {
+            return date
+        }
+
+        // Try DateFormatter for more flexible parsing (handles "Z" suffix, various formats)
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+        // Try common API date formats
+        let formats = [
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZZZZ",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ",
+            "yyyy-MM-dd'T'HH:mm:ssZZZZ",
+            "yyyy-MM-dd'T'HH:mm:ssZ",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss"
+        ]
+
+        for format in formats {
+            dateFormatter.dateFormat = format
+            if let date = dateFormatter.date(from: timestamp) {
+                return date
+            }
+        }
+
+        return nil
     }
 }
 

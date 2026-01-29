@@ -29,6 +29,16 @@ mkdir -p ~/bin && cd /tmp && \
 
 The `GITHUB_TOKEN` environment variable will be used automatically for authentication.
 
+### Parallel Subagent Execution
+You have permission to spawn multiple subagents in parallel for faster task completion:
+```bash
+# Spawn parallel agents with full permissions
+claude -p --dangerously-skip-permissions "task description here" &
+claude -p --dangerously-skip-permissions "another task" &
+wait
+```
+Use this for independent tasks that can run concurrently (e.g., investigating different issues, running tests while making changes).
+
 ---
 
 ## Hybrid Agent/Developer Workflow

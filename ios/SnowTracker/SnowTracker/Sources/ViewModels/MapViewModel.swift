@@ -226,11 +226,25 @@ class MapViewModel: ObservableObject {
             latitude: (minLat + maxLat) / 2,
             longitude: (minLon + maxLon) / 2
         )
-        let span = MKCoordinateSpan(
-            latitudeDelta: (maxLat - minLat) * 1.3 + 2,
-            longitudeDelta: (maxLon - minLon) * 1.3 + 2
-        )
 
+        // Calculate span with bounds validation to prevent crash
+        var latDelta = (maxLat - minLat) * 1.3 + 2
+        var lonDelta = (maxLon - minLon) * 1.3 + 2
+
+        // Clamp to valid MapKit region bounds
+        latDelta = min(max(latDelta, 0.01), 170.0)
+        lonDelta = min(max(lonDelta, 0.01), 350.0)
+
+        // Validate center coordinates
+        guard center.latitude.isFinite && center.longitude.isFinite &&
+              center.latitude >= -90 && center.latitude <= 90 &&
+              center.longitude >= -180 && center.longitude <= 180 else {
+            // Fallback to default region
+            cameraPosition = .region(MapRegionPreset.naRockies.region)
+            return
+        }
+
+        let span = MKCoordinateSpan(latitudeDelta: latDelta, longitudeDelta: lonDelta)
         cameraPosition = .region(MKCoordinateRegion(center: center, span: span))
     }
 

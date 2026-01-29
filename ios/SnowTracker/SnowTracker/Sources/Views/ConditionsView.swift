@@ -7,8 +7,8 @@ struct ConditionsView: View {
 
     var sortedResorts: [Resort] {
         snowConditionsManager.resorts.sorted { resort1, resort2 in
-            let quality1 = snowConditionsManager.getLatestCondition(for: resort1.id)?.snowQuality ?? .unknown
-            let quality2 = snowConditionsManager.getLatestCondition(for: resort2.id)?.snowQuality ?? .unknown
+            let quality1 = snowConditionsManager.getSnowQuality(for: resort1.id)
+            let quality2 = snowConditionsManager.getSnowQuality(for: resort2.id)
             return quality1.sortOrder < quality2.sortOrder
         }
     }
@@ -106,7 +106,7 @@ struct ConditionsView: View {
 
     private func qualityCountBadge(quality: SnowQuality) -> some View {
         let count = snowConditionsManager.resorts.filter { resort in
-            snowConditionsManager.getLatestCondition(for: resort.id)?.snowQuality == quality
+            snowConditionsManager.getSnowQuality(for: resort.id) == quality
         }.count
 
         return VStack {

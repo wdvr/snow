@@ -45,6 +45,8 @@
 		CE8B411E66E77DAF8A7FB715 /* ResortDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22ECDCF89993D8220437C43C /* ResortDetailView.swift */; };
 		DBA4D59F60EA8E60D3D11FF2 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B59B0D2F334DE813DE1268D1 /* SplashView.swift */; };
 		EA531D55CCE208840DBD24CA /* Region.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C040FB3169E04F140636D1 /* Region.swift */; };
+		TRIP1234567890ABCDEF0002 /* TripPlanningViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = TRIP1234567890ABCDEF0001 /* TripPlanningViews.swift */; };
+		RECO1234567890ABCDEF0002 /* RecommendationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RECO1234567890ABCDEF0001 /* RecommendationsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -125,6 +127,8 @@
 		B2C3D4E5F6789012345ABCDE /* ClusteredMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClusteredMapView.swift; sourceTree = "<group>"; };
 		E42DC701CEC0DFCAD7762C72 /* ConditionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionsView.swift; sourceTree = "<group>"; };
 		F6DA2B806F38369F0414AA36 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		TRIP1234567890ABCDEF0001 /* TripPlanningViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripPlanningViews.swift; sourceTree = "<group>"; };
+		RECO1234567890ABCDEF0001 /* RecommendationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -189,6 +193,8 @@
 				9D2E198287C4AD2358752184 /* ResortMapView.swift */,
 				8BCC6D20537615D2F10A0472 /* SettingsView.swift */,
 				B59B0D2F334DE813DE1268D1 /* SplashView.swift */,
+				TRIP1234567890ABCDEF0001 /* TripPlanningViews.swift */,
+				RECO1234567890ABCDEF0001 /* RecommendationsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -452,6 +458,8 @@
 				91143F070673A22F8B3D3849 /* SnowTrackerApp.swift in Sources */,
 				DBA4D59F60EA8E60D3D11FF2 /* SplashView.swift in Sources */,
 				67445A37BBAF5CF523504776 /* WeatherCondition.swift in Sources */,
+				TRIP1234567890ABCDEF0002 /* TripPlanningViews.swift in Sources */,
+				RECO1234567890ABCDEF0002 /* RecommendationsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

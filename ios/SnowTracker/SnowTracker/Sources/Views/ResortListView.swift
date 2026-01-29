@@ -69,8 +69,8 @@ struct ResortListView: View {
             }
         case .snowQuality:
             return resorts.sorted { resort1, resort2 in
-                let quality1 = snowConditionsManager.getLatestCondition(for: resort1.id)?.snowQuality.sortOrder ?? 99
-                let quality2 = snowConditionsManager.getLatestCondition(for: resort2.id)?.snowQuality.sortOrder ?? 99
+                let quality1 = snowConditionsManager.getSnowQuality(for: resort1.id).sortOrder
+                let quality2 = snowConditionsManager.getSnowQuality(for: resort2.id).sortOrder
                 return quality1 < quality2
             }
         }
@@ -291,16 +291,26 @@ struct ResortRowView: View {
 
                 Spacer()
 
-                // Snow quality indicator
-                if let condition = latestCondition {
+                // Snow quality indicator - use condition if available, else check summary
+                let displayQuality = latestCondition?.snowQuality ?? snowConditionsManager.getSnowQuality(for: resort.id)
+                if displayQuality != .unknown {
                     VStack {
-                        Image(systemName: condition.snowQuality.icon)
-                            .foregroundColor(condition.snowQuality.color)
+                        Image(systemName: displayQuality.icon)
+                            .foregroundColor(displayQuality.color)
                             .font(.title2)
 
-                        Text(condition.snowQuality.displayName)
+                        Text(displayQuality.displayName)
                             .font(.caption)
-                            .foregroundColor(condition.snowQuality.color)
+                            .foregroundColor(displayQuality.color)
+                    }
+                } else if snowConditionsManager.isLoadingSnowQuality {
+                    VStack {
+                        ProgressView()
+                            .scaleEffect(0.8)
+
+                        Text("Loading")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 } else {
                     VStack {

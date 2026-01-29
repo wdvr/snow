@@ -62,7 +62,7 @@ struct BestSnowNearYouView: View {
     @State private var searchRadius: Double = 500
 
     var useMetric: Bool {
-        userPreferencesManager.preferredUnits.distance == "metric"
+        userPreferencesManager.preferredUnits.distance == .metric
     }
 
     var body: some View {
@@ -236,8 +236,8 @@ struct BestSnowNearYouView: View {
         if recommendationsManager.recommendations.isEmpty,
            let location = locationManager.userLocation {
             await recommendationsManager.loadRecommendations(
-                latitude: location.latitude,
-                longitude: location.longitude,
+                latitude: location.coordinate.latitude,
+                longitude: location.coordinate.longitude,
                 radiusKm: searchRadius
             )
         }
@@ -246,8 +246,8 @@ struct BestSnowNearYouView: View {
     private func refreshNearby() async {
         if let location = locationManager.userLocation {
             await recommendationsManager.loadRecommendations(
-                latitude: location.latitude,
-                longitude: location.longitude,
+                latitude: location.coordinate.latitude,
+                longitude: location.coordinate.longitude,
                 radiusKm: searchRadius
             )
         }
@@ -437,7 +437,7 @@ struct BestSnowNearYouCard: View {
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
 
     var useMetric: Bool {
-        userPreferencesManager.preferredUnits.distance == "metric"
+        userPreferencesManager.preferredUnits.distance == .metric
     }
 
     var body: some View {
@@ -517,8 +517,8 @@ struct BestSnowNearYouCard: View {
     private func loadRecommendations() async {
         if let location = locationManager.userLocation {
             await recommendationsManager.loadRecommendations(
-                latitude: location.latitude,
-                longitude: location.longitude,
+                latitude: location.coordinate.latitude,
+                longitude: location.coordinate.longitude,
                 radiusKm: 300
             )
         }

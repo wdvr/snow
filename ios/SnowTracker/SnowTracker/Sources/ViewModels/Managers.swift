@@ -7,7 +7,9 @@ import Combine
 class SnowConditionsManager: ObservableObject {
     @Published var resorts: [Resort] = []
     @Published var conditions: [String: [WeatherCondition]] = [:]
+    @Published var snowQualitySummaries: [String: SnowQualitySummaryLight] = [:]
     @Published var isLoading = false
+    @Published var isLoadingSnowQuality = false
     @Published var errorMessage: String?
     @Published var lastUpdated: Date?
     @Published var isUsingCachedData = false
@@ -19,11 +21,53 @@ class SnowConditionsManager: ObservableObject {
     func loadInitialData() {
         Task {
             await fetchResorts()
-            // Only fetch conditions for favorites on startup (not all 1000+ resorts)
+            // Fetch snow quality summaries for all resorts (lightweight, fast)
+            await fetchAllSnowQualitySummaries()
+            // Also fetch full conditions for favorites
             await fetchConditionsForFavorites()
             // Clean up old cached data periodically
             cacheService.cleanupStaleCache()
         }
+    }
+
+    /// Fetch lightweight snow quality summaries for all resorts (for main list display)
+    func fetchAllSnowQualitySummaries() async {
+        guard !resorts.isEmpty else { return }
+
+        isLoadingSnowQuality = true
+        defer { isLoadingSnowQuality = false }
+
+        let resortIds = resorts.map { $0.id }
+
+        // Batch fetch in chunks of 50
+        let batchSize = 50
+        for batchStart in stride(from: 0, to: resortIds.count, by: batchSize) {
+            let batchEnd = min(batchStart + batchSize, resortIds.count)
+            let batchIds = Array(resortIds[batchStart..<batchEnd])
+
+            do {
+                let batchResults = try await apiClient.getBatchSnowQuality(for: batchIds)
+                for (resortId, summary) in batchResults {
+                    snowQualitySummaries[resortId] = summary
+                }
+            } catch {
+                print("Failed to fetch batch snow quality: \(error.localizedDescription)")
+                // Continue with next batch rather than failing completely
+            }
+        }
+    }
+
+    /// Get cached snow quality for a resort (from summary or conditions)
+    func getSnowQuality(for resortId: String) -> SnowQuality {
+        // First check if we have a lightweight summary
+        if let summary = snowQualitySummaries[resortId] {
+            return summary.overallSnowQuality
+        }
+        // Fall back to full condition data if available
+        if let condition = conditions[resortId]?.first {
+            return condition.snowQuality
+        }
+        return .unknown
     }
 
     func refreshData() async {

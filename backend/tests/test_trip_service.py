@@ -180,9 +180,7 @@ class TestTripService:
         with pytest.raises(ValueError, match="not found"):
             trip_service.create_trip("test-user", sample_trip_create)
 
-    def test_create_trip_db_error(
-        self, trip_service, mock_table, sample_trip_create
-    ):
+    def test_create_trip_db_error(self, trip_service, mock_table, sample_trip_create):
         """Test handling of database errors during trip creation."""
         mock_table.put_item.side_effect = ClientError(
             {"Error": {"Code": "InternalServerError", "Message": "Error"}},
@@ -260,9 +258,7 @@ class TestTripService:
 
         assert len(trips) == 0
 
-    def test_update_trip_success(
-        self, trip_service, mock_table, sample_trip_data
-    ):
+    def test_update_trip_success(self, trip_service, mock_table, sample_trip_data):
         """Test successful trip update."""
         mock_table.get_item.return_value = {"Item": sample_trip_data}
 
@@ -303,7 +299,12 @@ class TestTripService:
     def test_delete_trip_not_found(self, trip_service, mock_table):
         """Test deleting non-existent trip."""
         mock_table.delete_item.side_effect = ClientError(
-            {"Error": {"Code": "ConditionalCheckFailedException", "Message": "Not found"}},
+            {
+                "Error": {
+                    "Code": "ConditionalCheckFailedException",
+                    "Message": "Not found",
+                }
+            },
             "delete_item",
         )
 
@@ -311,9 +312,7 @@ class TestTripService:
 
         assert result is False
 
-    def test_add_alert_success(
-        self, trip_service, mock_table, sample_trip_data
-    ):
+    def test_add_alert_success(self, trip_service, mock_table, sample_trip_data):
         """Test adding an alert to a trip."""
         mock_table.get_item.return_value = {"Item": sample_trip_data}
 
@@ -402,8 +401,9 @@ class TestTripService:
 
     def test_trip_properties(self):
         """Test Trip model computed properties."""
-        future_date = (datetime.now(UTC) + timedelta(days=5)).strftime("%Y-%m-%d")
-        end_date = (datetime.now(UTC) + timedelta(days=7)).strftime("%Y-%m-%d")
+        # Use local time to match days_until_trip property calculation
+        future_date = (datetime.now() + timedelta(days=5)).strftime("%Y-%m-%d")
+        end_date = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
 
         trip = Trip(
             trip_id="test",
@@ -485,12 +485,13 @@ class TestTripService:
 
         # Should have generated a warm spell alert
         has_warm_alert = any(
-            alert.alert_type == TripAlertType.WARM_SPELL
-            for alert in trip.alerts
+            alert.alert_type == TripAlertType.WARM_SPELL for alert in trip.alerts
         )
         assert has_warm_alert or trip.latest_conditions.temperature_celsius > 3
 
-    def test_get_upcoming_trips_for_alerts(self, trip_service, mock_table, sample_trip_data):
+    def test_get_upcoming_trips_for_alerts(
+        self, trip_service, mock_table, sample_trip_data
+    ):
         """Test retrieving trips for alert processing."""
         mock_table.scan.return_value = {"Items": [sample_trip_data]}
 

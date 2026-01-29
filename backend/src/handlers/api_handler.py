@@ -674,14 +674,27 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
                 detail=f"Resort {resort_id} not found",
             )
 
-        # Get latest conditions for all elevations
+        # Get latest conditions for all elevations IN PARALLEL using cached lookups
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
         conditions = []
-        for elevation_point in resort.elevation_points:
-            condition = get_weather_service().get_latest_condition(
-                resort_id, elevation_point.level.value
-            )
-            if condition:
-                conditions.append(condition)
+        elevation_levels = [ep.level.value for ep in resort.elevation_points]
+
+        def fetch_condition(level: str):
+            return _get_latest_condition_cached(resort_id, level)
+
+        # Fetch all elevations in parallel
+        with ThreadPoolExecutor(max_workers=min(len(elevation_levels), 5)) as executor:
+            futures = [
+                executor.submit(fetch_condition, level) for level in elevation_levels
+            ]
+            for future in as_completed(futures):
+                try:
+                    condition = future.result()
+                    if condition:
+                        conditions.append(condition)
+                except Exception:
+                    pass  # Skip failed elevations
 
         if not conditions:
             return {
@@ -760,6 +773,131 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve snow quality summary: {str(e)}",
+        )
+
+
+@cached_snow_quality
+def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
+    """Cached helper to get snow quality summary for a single resort."""
+    resort = _get_resort_cached(resort_id)
+    if not resort:
+        return None
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    conditions = []
+    elevation_levels = [ep.level.value for ep in resort.elevation_points]
+
+    def fetch_condition(level: str):
+        return _get_latest_condition_cached(resort_id, level)
+
+    with ThreadPoolExecutor(max_workers=min(len(elevation_levels), 5)) as executor:
+        futures = [
+            executor.submit(fetch_condition, level) for level in elevation_levels
+        ]
+        for future in as_completed(futures):
+            try:
+                condition = future.result()
+                if condition:
+                    conditions.append(condition)
+            except Exception:
+                pass
+
+    if not conditions:
+        return {
+            "resort_id": resort_id,
+            "overall_quality": SnowQuality.UNKNOWN.value,
+            "last_updated": None,
+        }
+
+    # Calculate overall quality
+    quality_scores = {
+        SnowQuality.EXCELLENT: 5,
+        SnowQuality.GOOD: 4,
+        SnowQuality.FAIR: 3,
+        SnowQuality.POOR: 2,
+        SnowQuality.BAD: 1,
+        SnowQuality.UNKNOWN: 0,
+    }
+    overall_scores = [quality_scores.get(c.snow_quality, 0) for c in conditions]
+    avg_score = sum(overall_scores) / len(overall_scores) if overall_scores else 0
+
+    if avg_score >= 4.5:
+        overall_quality = SnowQuality.EXCELLENT
+    elif avg_score >= 3.5:
+        overall_quality = SnowQuality.GOOD
+    elif avg_score >= 2.5:
+        overall_quality = SnowQuality.FAIR
+    elif avg_score >= 1.5:
+        overall_quality = SnowQuality.POOR
+    else:
+        overall_quality = SnowQuality.BAD
+
+    return {
+        "resort_id": resort_id,
+        "overall_quality": overall_quality.value,
+        "last_updated": max(c.timestamp for c in conditions) if conditions else None,
+    }
+
+
+@app.get("/api/v1/snow-quality/batch")
+async def get_batch_snow_quality(
+    response: Response,
+    resort_ids: str = Query(..., description="Comma-separated list of resort IDs"),
+):
+    """Get snow quality summaries for multiple resorts in a single request.
+
+    This is optimized for the resort list view where we need quality indicators
+    for many resorts at once. Returns lightweight summaries (just overall quality).
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    try:
+        ids = [id.strip() for id in resort_ids.split(",") if id.strip()]
+
+        if not ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No resort IDs provided",
+            )
+
+        if len(ids) > 50:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Maximum 50 resorts per batch request",
+            )
+
+        results = {}
+
+        def fetch_quality(resort_id: str):
+            try:
+                summary = _get_snow_quality_for_resort(resort_id)
+                return resort_id, summary
+            except Exception as e:
+                return resort_id, {"error": str(e)}
+
+        # Fetch all in parallel
+        with ThreadPoolExecutor(max_workers=min(len(ids), 20)) as executor:
+            futures = {executor.submit(fetch_quality, rid): rid for rid in ids}
+            for future in as_completed(futures):
+                resort_id, result = future.result()
+                if result:
+                    results[resort_id] = result
+
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+
+        return {
+            "results": results,
+            "last_updated": datetime.now(UTC).isoformat(),
+            "resort_count": len(ids),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve batch snow quality: {str(e)}",
         )
 
 
