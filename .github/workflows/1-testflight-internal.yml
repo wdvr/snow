@@ -90,6 +90,8 @@ jobs:
         chmod 600 $RUNNER_TEMP/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
 
     - name: Upload to App Store Connect
+      env:
+        API_PRIVATE_KEYS_DIR: ${{ runner.temp }}/private_keys
       run: |
         IPA_PATH=$(find $RUNNER_TEMP/Download -name "*.ipa" | head -1)
 
