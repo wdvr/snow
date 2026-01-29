@@ -1,8 +1,59 @@
 import WidgetKit
 import SwiftUI
+import AppIntents
 import os.log
 
 private let logger = Logger(subsystem: "com.snowtracker.app.widget", category: "BestResorts")
+
+// MARK: - Region Selection Intent
+
+enum WidgetRegion: String, CaseIterable, AppEnum {
+    case all = "all"
+    case naWest = "na_west"
+    case naRockies = "na_rockies"
+    case naEast = "na_east"
+    case alps = "alps"
+    case scandinavia = "scandinavia"
+    case japan = "japan"
+    case oceania = "oceania"
+    case southAmerica = "south_america"
+
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Region"
+
+    static let caseDisplayRepresentations: [WidgetRegion: DisplayRepresentation] = [
+        .all: "All Regions",
+        .naWest: "NA West Coast",
+        .naRockies: "NA Rockies",
+        .naEast: "NA East Coast",
+        .alps: "Alps",
+        .scandinavia: "Scandinavia",
+        .japan: "Japan",
+        .oceania: "Oceania",
+        .southAmerica: "South America"
+    ]
+
+    var displayName: String {
+        switch self {
+        case .all: return "All Regions"
+        case .naWest: return "NA West Coast"
+        case .naRockies: return "NA Rockies"
+        case .naEast: return "NA East Coast"
+        case .alps: return "Alps"
+        case .scandinavia: return "Scandinavia"
+        case .japan: return "Japan"
+        case .oceania: return "Oceania"
+        case .southAmerica: return "South America"
+        }
+    }
+}
+
+struct BestResortsIntent: WidgetConfigurationIntent {
+    static let title: LocalizedStringResource = "Best Snow Resorts"
+    static let description = IntentDescription("Shows the top resorts with best snow conditions in your selected region.")
+
+    @Parameter(title: "Region", default: .all)
+    var region: WidgetRegion
+}
 
 // MARK: - Best Resorts Widget
 
@@ -10,57 +61,56 @@ struct BestResortsWidget: Widget {
     let kind: String = "BestResortsWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: BestResortsProvider()) { entry in
+        AppIntentConfiguration(kind: kind, intent: BestResortsIntent.self, provider: BestResortsProvider()) { entry in
             BestResortsWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Best Snow Right Now")
-        .description("Top 2 resorts with the best snow conditions.")
+        .description("Top resorts with the best snow conditions. Configure to filter by region.")
         .supportedFamilies([.systemMedium, .systemLarge])
     }
 }
 
 // MARK: - Timeline Provider
 
-struct BestResortsProvider: TimelineProvider {
+struct BestResortsProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> BestResortsEntry {
         BestResortsEntry(
             date: Date(),
             resorts: [
                 ResortConditionData.sample,
                 ResortConditionData.sample2
-            ]
+            ],
+            region: .all
         )
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (BestResortsEntry) -> Void) {
-        let entry = BestResortsEntry(
+    func snapshot(for configuration: BestResortsIntent, in context: Context) async -> BestResortsEntry {
+        BestResortsEntry(
             date: Date(),
             resorts: [
                 ResortConditionData.sample,
                 ResortConditionData.sample2
-            ]
+            ],
+            region: configuration.region
         )
-        completion(entry)
     }
 
-    func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<BestResortsEntry>) -> Void) {
-        logger.info("BestResortsWidget: Getting timeline...")
-        Task { @MainActor in
-            do {
-                let resorts = try await WidgetDataService.shared.fetchBestResorts()
-                logger.info("BestResortsWidget: Got \(resorts.count) resorts")
-                let entry = BestResortsEntry(date: Date(), resorts: resorts)
-                let nextUpdate = Calendar.current.date(byAdding: .hour, value: 1, to: Date())!
-                let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
-                completion(timeline)
-            } catch {
-                logger.error("BestResortsWidget: Error fetching data: \(error.localizedDescription)")
-                let entry = BestResortsEntry(date: Date(), resorts: [])
-                let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date())!
-                let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
-                completion(timeline)
-            }
+    func timeline(for configuration: BestResortsIntent, in context: Context) async -> Timeline<BestResortsEntry> {
+        logger.info("BestResortsWidget: Getting timeline for region: \(configuration.region.rawValue)")
+
+        do {
+            let regionParam = configuration.region == .all ? nil : configuration.region.rawValue
+            let resorts = try await WidgetDataService.shared.fetchBestResorts(region: regionParam)
+            logger.info("BestResortsWidget: Got \(resorts.count) resorts")
+            let entry = BestResortsEntry(date: Date(), resorts: resorts, region: configuration.region)
+            let nextUpdate = Calendar.current.date(byAdding: .hour, value: 1, to: Date())!
+            return Timeline(entries: [entry], policy: .after(nextUpdate))
+        } catch {
+            logger.error("BestResortsWidget: Error fetching data: \(error.localizedDescription)")
+            let entry = BestResortsEntry(date: Date(), resorts: [], region: configuration.region)
+            let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date())!
+            return Timeline(entries: [entry], policy: .after(nextUpdate))
         }
     }
 }
@@ -70,6 +120,7 @@ struct BestResortsProvider: TimelineProvider {
 struct BestResortsEntry: TimelineEntry {
     let date: Date
     let resorts: [ResortConditionData]
+    let region: WidgetRegion
 }
 
 // MARK: - Widget View
@@ -78,13 +129,21 @@ struct BestResortsWidgetView: View {
     var entry: BestResortsEntry
     private let unitPreferences = WidgetUnitPreferences.load()
 
+    private var regionTitle: String {
+        if entry.region == .all {
+            return "Best Snow Right Now"
+        } else {
+            return "Best in \(entry.region.displayName)"
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "trophy.fill")
                     .foregroundColor(.yellow)
                     .font(.caption)
-                Text("Best Snow Right Now")
+                Text(regionTitle)
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.secondary)
@@ -143,5 +202,5 @@ struct BestResortsWidgetView: View {
     BestResortsEntry(date: .now, resorts: [
         ResortConditionData.sample,
         ResortConditionData.sample2
-    ])
+    ], region: .all)
 }

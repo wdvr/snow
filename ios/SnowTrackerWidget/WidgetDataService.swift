@@ -25,11 +25,15 @@ final class WidgetDataService: @unchecked Sendable {
 
     // MARK: - Fetch Best Resorts
 
-    func fetchBestResorts() async throws -> [ResortConditionData] {
-        logger.info("Fetching best resorts...")
+    func fetchBestResorts(region: String? = nil) async throws -> [ResortConditionData] {
+        if let region = region {
+            logger.info("Fetching best resorts for region: \(region)")
+        } else {
+            logger.info("Fetching best resorts (all regions)...")
+        }
 
-        // Fetch all resorts and their conditions, then sort by snow quality
-        let resorts = try await fetchAllResortsWithConditions()
+        // Fetch resorts (optionally filtered by region) and their conditions, then sort by snow quality
+        let resorts = try await fetchAllResortsWithConditions(region: region)
         logger.info("Fetched \(resorts.count) resorts with conditions")
 
         // Sort by snow quality (excellent first) and fresh snow
@@ -81,9 +85,13 @@ final class WidgetDataService: @unchecked Sendable {
 
     // MARK: - Private Methods
 
-    private func fetchAllResortsWithConditions() async throws -> [ResortConditionData] {
-        // Fetch resorts
-        let resortsURL = baseURL.appendingPathComponent("api/v1/resorts")
+    private func fetchAllResortsWithConditions(region: String? = nil) async throws -> [ResortConditionData] {
+        // Fetch resorts (optionally filtered by region)
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/resorts"), resolvingAgainstBaseURL: false)!
+        if let region = region {
+            components.queryItems = [URLQueryItem(name: "region", value: region)]
+        }
+        let resortsURL = components.url!
         logger.info("Fetching resorts from: \(resortsURL.absoluteString)")
 
         let (resortsData, response) = try await session.data(from: resortsURL)
