@@ -647,6 +647,41 @@ batch_conditions_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# Snow quality batch resource: /api/v1/snow-quality
+snow_quality_parent_resource = aws.apigateway.Resource(
+    f"{app_name}-snow-quality-parent-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="snow-quality",
+)
+
+# Snow quality batch resource: /api/v1/snow-quality/batch
+snow_quality_batch_resource = aws.apigateway.Resource(
+    f"{app_name}-snow-quality-batch-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=snow_quality_parent_resource.id,
+    path_part="batch",
+)
+
+# GET /api/v1/snow-quality/batch
+snow_quality_batch_method = aws.apigateway.Method(
+    f"{app_name}-snow-quality-batch-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=snow_quality_batch_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+snow_quality_batch_integration = aws.apigateway.Integration(
+    f"{app_name}-snow-quality-batch-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=snow_quality_batch_resource.id,
+    http_method=snow_quality_batch_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # API Gateway Deployment (depends on all integrations)
 # Note: triggers parameter forces recreation when routes change
 api_deployment = aws.apigateway.Deployment(
@@ -661,6 +696,7 @@ api_deployment = aws.apigateway.Deployment(
             resort_integration.id,
             conditions_integration.id,
             batch_conditions_integration.id,
+            snow_quality_batch_integration.id,
         ).apply(lambda ids: ",".join(ids)),
     },
     opts=pulumi.ResourceOptions(
@@ -670,6 +706,7 @@ api_deployment = aws.apigateway.Deployment(
             resort_integration,
             conditions_integration,
             batch_conditions_integration,
+            snow_quality_batch_integration,
         ]
     ),
 )
