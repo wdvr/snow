@@ -28,9 +28,12 @@ from services.weather_service import WeatherService
 from utils.cache import (
     CACHE_CONTROL_PRIVATE,
     CACHE_CONTROL_PUBLIC,
+    CACHE_CONTROL_PUBLIC_LONG,
     cached_conditions,
+    cached_recommendations,
     cached_resorts,
     cached_snow_quality,
+    get_recommendations_cache,
 )
 
 # Initialize FastAPI app
@@ -1236,6 +1239,8 @@ async def get_best_conditions(
     This endpoint returns the top resorts by snow quality,
     regardless of user location. Useful for planning trips
     to wherever the snow is best.
+
+    Results are cached for 1 hour since snow quality doesn't change frequently.
     """
     try:
         quality_filter = None
@@ -1248,18 +1253,34 @@ async def get_best_conditions(
                     detail="Invalid quality filter.",
                 )
 
+        # Check in-memory cache first (1-hour TTL)
+        cache_key = f"best_conditions_{limit}_{min_quality or 'none'}"
+        cache = get_recommendations_cache()
+        if cache_key in cache:
+            cached_result = cache[cache_key]
+            response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC_LONG
+            response.headers["X-Cache"] = "HIT"
+            return cached_result
+
+        # Cache miss - compute recommendations
         recommendations = get_recommendation_service().get_best_conditions_globally(
             limit=limit,
             min_quality=quality_filter,
         )
 
-        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
-
-        return {
+        result = {
             "recommendations": [r.to_dict() for r in recommendations],
             "count": len(recommendations),
             "generated_at": datetime.now(UTC).isoformat(),
         }
+
+        # Cache the result
+        cache[cache_key] = result
+
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC_LONG
+        response.headers["X-Cache"] = "MISS"
+
+        return result
 
     except HTTPException:
         raise

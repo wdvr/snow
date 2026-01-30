@@ -192,6 +192,9 @@ class RecommendationService:
         """
         Get resorts with the best snow conditions globally (no location bias).
 
+        Optimized to fetch all conditions in a single batch query instead of
+        making individual queries per resort.
+
         Args:
             limit: Maximum number of results
             min_quality: Minimum snow quality filter
@@ -201,13 +204,16 @@ class RecommendationService:
         """
         # Get all resorts
         all_resorts = self.resort_service.get_all_resorts()
+        resort_map = {r.resort_id: r for r in all_resorts}
+
+        # Fetch ALL conditions in a single batch query (much faster than N queries)
+        all_conditions = self.weather_service.get_all_latest_conditions()
 
         recommendations = []
 
-        for resort in all_resorts:
-            conditions = self._get_resort_conditions(resort.resort_id)
-
-            if not conditions:
+        for resort_id, conditions in all_conditions.items():
+            resort = resort_map.get(resort_id)
+            if not resort or not conditions:
                 continue
 
             best_quality = self._get_best_quality(conditions)
