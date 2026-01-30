@@ -192,8 +192,7 @@ class RecommendationService:
         """
         Get resorts with the best snow conditions globally (no location bias).
 
-        Optimized to fetch all conditions in a single batch query instead of
-        making individual queries per resort.
+        Uses parallel queries to fetch conditions for all resorts efficiently.
 
         Args:
             limit: Maximum number of results
@@ -202,16 +201,31 @@ class RecommendationService:
         Returns:
             List of recommendations sorted by snow quality
         """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
         # Get all resorts
         all_resorts = self.resort_service.get_all_resorts()
-        resort_map = {r.resort_id: r for r in all_resorts}
 
-        # Fetch ALL conditions in a single batch query (much faster than N queries)
-        all_conditions = self.weather_service.get_all_latest_conditions()
+        # Fetch conditions for all resorts in parallel
+        conditions_map: dict[str, list[WeatherCondition]] = {}
+
+        def fetch_conditions(resort_id: str):
+            return resort_id, self._get_resort_conditions(resort_id)
+
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            futures = {executor.submit(fetch_conditions, r.resort_id): r for r in all_resorts}
+            for future in as_completed(futures):
+                try:
+                    resort_id, conditions = future.result()
+                    if conditions:
+                        conditions_map[resort_id] = conditions
+                except Exception:
+                    pass
 
         recommendations = []
+        resort_map = {r.resort_id: r for r in all_resorts}
 
-        for resort_id, conditions in all_conditions.items():
+        for resort_id, conditions in conditions_map.items():
             resort = resort_map.get(resort_id)
             if not resort or not conditions:
                 continue
