@@ -121,6 +121,20 @@ struct BestSnowNearYouView: View {
         .task {
             await loadNearbyIfNeeded()
         }
+        .onChange(of: locationManager.userLocation) { _, newLocation in
+            // Reload when location becomes available (e.g., after permission granted)
+            if newLocation != nil && recommendationsManager.recommendations.isEmpty {
+                Task {
+                    await refreshNearby()
+                }
+            }
+        }
+        .onChange(of: locationManager.authorizationStatus) { _, newStatus in
+            // Request location when permission is granted
+            if newStatus == .authorizedWhenInUse || newStatus == .authorizedAlways {
+                locationManager.requestOneTimeLocation()
+            }
+        }
     }
 
     private var bestGloballyContent: some View {

@@ -682,6 +682,60 @@ snow_quality_batch_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# Recommendations resource: /api/v1/recommendations
+recommendations_resource = aws.apigateway.Resource(
+    f"{app_name}-recommendations-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="recommendations",
+)
+
+# GET /api/v1/recommendations
+recommendations_method = aws.apigateway.Method(
+    f"{app_name}-recommendations-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=recommendations_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+recommendations_integration = aws.apigateway.Integration(
+    f"{app_name}-recommendations-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=recommendations_resource.id,
+    http_method=recommendations_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Recommendations best resource: /api/v1/recommendations/best
+recommendations_best_resource = aws.apigateway.Resource(
+    f"{app_name}-recommendations-best-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=recommendations_resource.id,
+    path_part="best",
+)
+
+# GET /api/v1/recommendations/best
+recommendations_best_method = aws.apigateway.Method(
+    f"{app_name}-recommendations-best-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=recommendations_best_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+recommendations_best_integration = aws.apigateway.Integration(
+    f"{app_name}-recommendations-best-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=recommendations_best_resource.id,
+    http_method=recommendations_best_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # API Gateway Deployment (depends on all integrations)
 # Note: triggers parameter forces recreation when routes change
 api_deployment = aws.apigateway.Deployment(
@@ -697,6 +751,8 @@ api_deployment = aws.apigateway.Deployment(
             conditions_integration.id,
             batch_conditions_integration.id,
             snow_quality_batch_integration.id,
+            recommendations_integration.id,
+            recommendations_best_integration.id,
         ).apply(lambda ids: ",".join(ids)),
     },
     opts=pulumi.ResourceOptions(
@@ -707,6 +763,8 @@ api_deployment = aws.apigateway.Deployment(
             conditions_integration,
             batch_conditions_integration,
             snow_quality_batch_integration,
+            recommendations_integration,
+            recommendations_best_integration,
         ]
     ),
 )
