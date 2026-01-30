@@ -145,6 +145,58 @@ CA_PROVINCE_REGIONS = {
     "NT": "na_west",
 }
 
+# Full name to abbreviation mappings for US states
+US_STATE_ABBREV = {
+    "california": "CA",
+    "oregon": "OR",
+    "washington": "WA",
+    "colorado": "CO",
+    "utah": "UT",
+    "wyoming": "WY",
+    "montana": "MT",
+    "idaho": "ID",
+    "new mexico": "NM",
+    "arizona": "AZ",
+    "nevada": "NV",
+    "vermont": "VT",
+    "new hampshire": "NH",
+    "maine": "ME",
+    "new york": "NY",
+    "pennsylvania": "PA",
+    "massachusetts": "MA",
+    "connecticut": "CT",
+    "new jersey": "NJ",
+    "west virginia": "WV",
+    "virginia": "VA",
+    "north carolina": "NC",
+    "maryland": "MD",
+    "michigan": "MI",
+    "wisconsin": "WI",
+    "minnesota": "MN",
+    "ohio": "OH",
+    "iowa": "IA",
+    "south dakota": "SD",
+    "north dakota": "ND",
+    "alaska": "AK",
+}
+
+# Full name to abbreviation mappings for Canadian provinces
+CA_PROVINCE_ABBREV = {
+    "british columbia": "BC",
+    "alberta": "AB",
+    "ontario": "ON",
+    "quebec": "QC",
+    "nova scotia": "NS",
+    "new brunswick": "NB",
+    "newfoundland": "NL",
+    "newfoundland and labrador": "NL",
+    "saskatchewan": "SK",
+    "manitoba": "MB",
+    "yukon": "YT",
+    "northwest territories": "NT",
+    "nunavut": "NU",
+}
+
 # Timezone mappings by country and region
 TIMEZONE_MAPPINGS = {
     # North America
@@ -224,10 +276,24 @@ class ScrapedResort:
     resort_id: str = ""
     source: str = ""
     source_url: str = ""
+    scraped_at: str = ""  # ISO timestamp when this resort was scraped
 
     def __post_init__(self):
+        # Clean up name (remove common prefixes)
+        self.name = self._clean_name(self.name)
         if not self.resort_id:
             self.resort_id = self._generate_id()
+        if not self.scraped_at:
+            self.scraped_at = datetime.now().isoformat()
+
+    def _clean_name(self, name: str) -> str:
+        """Remove common prefixes and clean up resort name."""
+        # Remove "Ski resort " prefix from skiresort.info
+        if name.lower().startswith("ski resort "):
+            name = name[11:]  # len("Ski resort ")
+        # Remove other common prefixes
+        name = re.sub(r"^(?:Ski Area |Ski Resort )", "", name, flags=re.IGNORECASE)
+        return name.strip()
 
     def _generate_id(self) -> str:
         """Generate a URL-friendly resort ID from the name."""
@@ -267,6 +333,8 @@ class ScrapedResort:
             "website": self.website,
             "features": self.features,
             "annual_snowfall_cm": self.annual_snowfall_cm,
+            "source": self.source,
+            "scraped_at": self.scraped_at,
         }
 
 
@@ -310,24 +378,48 @@ class BaseScraper:
         response = self._get(url, **kwargs)
         return BeautifulSoup(response.text, "html.parser")
 
+    def normalize_state_province(self, country: str, state_province: str) -> str:
+        """Convert full state/province name to abbreviation."""
+        if not state_province:
+            return ""
+
+        # Already an abbreviation?
+        if len(state_province) <= 3 and state_province.isupper():
+            return state_province
+
+        normalized = state_province.lower().strip()
+
+        if country == "US":
+            return US_STATE_ABBREV.get(normalized, state_province)
+        elif country == "CA":
+            return CA_PROVINCE_ABBREV.get(normalized, state_province)
+
+        return state_province
+
     def get_region(self, country: str, state_province: str = "") -> str:
         """Determine the region based on country and state/province."""
+        # Normalize state/province to abbreviation
+        abbrev = self.normalize_state_province(country, state_province)
+
         # Check US-specific mapping
-        if country == "US" and state_province in US_STATE_REGIONS:
-            return US_STATE_REGIONS[state_province]
+        if country == "US" and abbrev in US_STATE_REGIONS:
+            return US_STATE_REGIONS[abbrev]
 
         # Check Canada-specific mapping
-        if country == "CA" and state_province in CA_PROVINCE_REGIONS:
-            return CA_PROVINCE_REGIONS[state_province]
+        if country == "CA" and abbrev in CA_PROVINCE_REGIONS:
+            return CA_PROVINCE_REGIONS[abbrev]
 
         # Fall back to country mapping
         return REGION_MAPPINGS.get(country, "other")
 
     def get_timezone(self, country: str, state_province: str = "") -> str:
         """Get timezone for a resort based on country and state/province."""
+        # Normalize state/province to abbreviation
+        abbrev = self.normalize_state_province(country, state_province)
+
         # Try specific state/province first
-        if state_province:
-            tz = TIMEZONE_MAPPINGS.get((country, state_province))
+        if abbrev:
+            tz = TIMEZONE_MAPPINGS.get((country, abbrev))
             if tz:
                 return tz
 
