@@ -259,9 +259,11 @@ class ResortValidator:
         if not isinstance(lon, int | float) or not (-180 <= lon <= 180):
             errors.append(f"Invalid longitude: {lon}")
 
-        # Check for placeholder coordinates
+        # Check for placeholder coordinates - warn but don't reject
+        # Some resorts may need manual coordinate addition later
         if lat == 0 and lon == 0:
-            errors.append("Coordinates are placeholder (0, 0)")
+            logger.warning(f"Resort has placeholder (0, 0) coordinates: {data.get('name', 'unknown')}")
+            # Don't add to errors - just warn
 
         # Validate timezone
         timezone = data.get("timezone", "")
@@ -340,6 +342,8 @@ class ResortPopulator:
             weather_sources=["weatherapi"],
             created_at=now,
             updated_at=now,
+            source=data.get("source"),
+            scraped_at=data.get("scraped_at"),
         )
 
     def populate(self, resorts_data: list[dict[str, Any]]) -> dict[str, Any]:

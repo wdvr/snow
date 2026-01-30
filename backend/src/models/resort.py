@@ -52,6 +52,13 @@ class Resort(BaseModel):
     updated_at: str | None = Field(
         None, description="ISO timestamp when resort was last updated"
     )
+    # Scraper metadata
+    source: str | None = Field(
+        None, description="Data source (manual, skiresort.info, wikipedia)"
+    )
+    scraped_at: str | None = Field(
+        None, description="ISO timestamp when resort was last scraped"
+    )
 
     model_config = ConfigDict(use_enum_values=True)
 
