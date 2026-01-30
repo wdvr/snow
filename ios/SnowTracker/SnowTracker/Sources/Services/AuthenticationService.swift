@@ -246,24 +246,30 @@ class AuthenticationService: NSObject, ObservableObject {
         keychain.set(userIdentifier, forKey: Keys.userIdentifier)
         keychain.set(AuthProvider.apple.rawValue, forKey: Keys.authProvider)
 
-        // Store email if provided (only on first sign in)
-        if let email = credential.email {
-            keychain.set(email, forKey: Keys.userEmail)
-        }
-
-        // Store full name if provided (only on first sign in)
+        // Extract name components (only provided on first sign in)
+        var firstName: String?
+        var lastName: String?
         if let fullName = credential.fullName {
+            firstName = fullName.givenName
+            lastName = fullName.familyName
             let name = PersonNameComponentsFormatter().string(from: fullName)
             if !name.isEmpty {
                 keychain.set(name, forKey: Keys.userName)
             }
         }
 
-        // Get identity token for backend authentication
+        // Get identity token and authorization code for backend authentication
         if let identityTokenData = credential.identityToken,
            let identityToken = String(data: identityTokenData, encoding: .utf8) {
+            let authCode = credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
             Task {
-                await authenticateWithBackend(token: identityToken, provider: .apple, userIdentifier: userIdentifier)
+                await authenticateWithAppleBackend(
+                    identityToken: identityToken,
+                    authorizationCode: authCode,
+                    firstName: firstName,
+                    lastName: lastName,
+                    userIdentifier: userIdentifier
+                )
             }
         } else {
             restoreUserSession(userIdentifier: userIdentifier, provider: .apple)
@@ -289,11 +295,61 @@ class AuthenticationService: NSObject, ObservableObject {
         }
     }
 
+    private func authenticateWithAppleBackend(
+        identityToken: String,
+        authorizationCode: String?,
+        firstName: String?,
+        lastName: String?,
+        userIdentifier: String
+    ) async {
+        defer { isLoading = false }
+
+        do {
+            let response = try await APIClient.shared.authenticateWithApple(
+                identityToken: identityToken,
+                authorizationCode: authorizationCode,
+                firstName: firstName,
+                lastName: lastName
+            )
+
+            // Store tokens from backend
+            keychain.set(response.accessToken, forKey: Keys.authToken)
+            keychain.set(response.refreshToken, forKey: Keys.refreshToken)
+
+            // Store user info from backend (includes private relay email!)
+            if let email = response.user.email {
+                keychain.set(email, forKey: Keys.userEmail)
+            }
+            if let name = [response.user.firstName, response.user.lastName]
+                .compactMap({ $0 })
+                .joined(separator: " ") as String?,
+               !name.isEmpty {
+                keychain.set(name, forKey: Keys.userName)
+            }
+
+            // Create user from backend response
+            currentUser = AuthenticatedUser(
+                id: response.user.userId,
+                email: response.user.email,
+                fullName: [response.user.firstName, response.user.lastName].compactMap { $0 }.joined(separator: " "),
+                provider: .apple
+            )
+            isAuthenticated = true
+
+        } catch {
+            print("Backend authentication failed: \(error). Falling back to local auth.")
+            errorMessage = "Sign in succeeded but backend sync failed. Some features may be limited."
+            // Fallback to local-only authentication
+            keychain.set(identityToken, forKey: Keys.authToken)
+            restoreUserSession(userIdentifier: userIdentifier, provider: .apple)
+        }
+    }
+
     private func authenticateWithBackend(token: String, provider: AuthProvider, userIdentifier: String) async {
         defer { isLoading = false }
 
-        // TODO: Call backend /api/v1/auth/apple or /api/v1/auth/google endpoint
-        // For now, store the provider token as the auth token
+        // For Google, just store the token locally for now
+        // TODO: Implement Google backend auth when needed
         keychain.set(token, forKey: Keys.authToken)
         restoreUserSession(userIdentifier: userIdentifier, provider: provider)
     }

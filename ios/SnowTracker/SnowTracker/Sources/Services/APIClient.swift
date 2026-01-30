@@ -887,15 +887,15 @@ struct FeedbackSubmission: Codable {
 
 struct RecommendationsResponse: Codable {
     let recommendations: [ResortRecommendation]
-    let searchLocation: SearchLocation?
+    let searchCenter: SearchLocation?
     let searchRadiusKm: Double?
-    let timestamp: String
+    let generatedAt: String
 
     private enum CodingKeys: String, CodingKey {
         case recommendations
-        case searchLocation = "search_location"
+        case searchCenter = "search_center"
         case searchRadiusKm = "search_radius_km"
-        case timestamp
+        case generatedAt = "generated_at"
     }
 }
 
