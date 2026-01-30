@@ -111,42 +111,49 @@ class RecommendationService:
         Returns:
             List of ResortRecommendation objects sorted by combined score
         """
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+        import logging
+        import time
+
+        logger = logging.getLogger(__name__)
+        start_time = time.time()
 
         # Get nearby resorts
+        nearby_start = time.time()
         nearby_resorts = self.resort_service.get_nearby_resorts(
             latitude=latitude,
             longitude=longitude,
             radius_km=radius_km,
             limit=100,  # Get more than needed for filtering
         )
+        logger.info(
+            f"[PERF] get_nearby_resorts took {time.time() - nearby_start:.2f}s, found {len(nearby_resorts)} resorts"
+        )
 
         if not nearby_resorts:
             return []
 
-        # Fetch conditions for all nearby resorts in parallel
-        conditions_map: dict[str, list[WeatherCondition]] = {}
+        # Build lookup maps for nearby resorts
         resort_distances: dict[str, float] = {}
+        resort_map: dict[str, any] = {}
+        for resort, distance_km in nearby_resorts:
+            resort_distances[resort.resort_id] = distance_km
+            resort_map[resort.resort_id] = resort
 
-        def fetch_conditions(resort_id: str):
-            return resort_id, self._get_resort_conditions(resort_id)
+        # Fetch ALL conditions in a single batch query (optimized)
+        conditions_start = time.time()
+        all_conditions = self.weather_service.get_all_latest_conditions()
+        logger.info(
+            f"[PERF] get_all_latest_conditions took {time.time() - conditions_start:.2f}s, got conditions for {len(all_conditions)} resorts"
+        )
 
-        with ThreadPoolExecutor(max_workers=20) as executor:
-            futures = {}
-            for resort, distance_km in nearby_resorts:
-                resort_distances[resort.resort_id] = distance_km
-                futures[executor.submit(fetch_conditions, resort.resort_id)] = resort
-
-            for future in as_completed(futures):
-                try:
-                    resort_id, conditions = future.result()
-                    if conditions:
-                        conditions_map[resort_id] = conditions
-                except Exception:
-                    pass
+        # Filter to only nearby resorts
+        conditions_map = {
+            resort_id: conditions
+            for resort_id, conditions in all_conditions.items()
+            if resort_id in resort_map
+        }
 
         recommendations = []
-        resort_map = {r.resort_id: r for r, _ in nearby_resorts}
 
         for resort_id, conditions in conditions_map.items():
             resort = resort_map.get(resort_id)
@@ -215,6 +222,9 @@ class RecommendationService:
         # Sort by combined score (descending)
         recommendations.sort(key=lambda r: r.combined_score, reverse=True)
 
+        logger.info(
+            f"[PERF] get_recommendations total took {time.time() - start_time:.2f}s, returning {min(limit, len(recommendations))} recommendations"
+        )
         return recommendations[:limit]
 
     def get_best_conditions_globally(
@@ -225,7 +235,7 @@ class RecommendationService:
         """
         Get resorts with the best snow conditions globally (no location bias).
 
-        Uses parallel queries to fetch conditions for all resorts efficiently.
+        Uses a single batch query to fetch all conditions efficiently.
 
         Args:
             limit: Maximum number of results
@@ -234,28 +244,25 @@ class RecommendationService:
         Returns:
             List of recommendations sorted by snow quality
         """
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+        import logging
+        import time
+
+        logger = logging.getLogger(__name__)
+        start_time = time.time()
 
         # Get all resorts
+        resorts_start = time.time()
         all_resorts = self.resort_service.get_all_resorts()
+        logger.info(
+            f"[PERF] get_all_resorts took {time.time() - resorts_start:.2f}s, found {len(all_resorts)} resorts"
+        )
 
-        # Fetch conditions for all resorts in parallel
-        conditions_map: dict[str, list[WeatherCondition]] = {}
-
-        def fetch_conditions(resort_id: str):
-            return resort_id, self._get_resort_conditions(resort_id)
-
-        with ThreadPoolExecutor(max_workers=20) as executor:
-            futures = {
-                executor.submit(fetch_conditions, r.resort_id): r for r in all_resorts
-            }
-            for future in as_completed(futures):
-                try:
-                    resort_id, conditions = future.result()
-                    if conditions:
-                        conditions_map[resort_id] = conditions
-                except Exception:
-                    pass
+        # Fetch ALL conditions in a single batch query (optimized)
+        conditions_start = time.time()
+        conditions_map = self.weather_service.get_all_latest_conditions()
+        logger.info(
+            f"[PERF] get_all_latest_conditions took {time.time() - conditions_start:.2f}s, got conditions for {len(conditions_map)} resorts"
+        )
 
         recommendations = []
         resort_map = {r.resort_id: r for r in all_resorts}
@@ -313,6 +320,9 @@ class RecommendationService:
             )
 
         recommendations.sort(key=lambda r: r.combined_score, reverse=True)
+        logger.info(
+            f"[PERF] get_best_conditions_globally total took {time.time() - start_time:.2f}s, returning {min(limit, len(recommendations))} recommendations"
+        )
         return recommendations[:limit]
 
     def _get_resort_conditions(self, resort_id: str) -> list[WeatherCondition]:
