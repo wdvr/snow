@@ -17,8 +17,19 @@ class SnowConditionsManager: ObservableObject {
 
     private let apiClient = APIClient.shared
     private let cacheService = CacheService.shared
+    private var hasLoadedInitialData = false
+
+    /// Set to true to enable frontend caching of snow quality summaries
+    private let useSnowQualityCache = true
 
     func loadInitialData() {
+        // Prevent multiple calls (can happen with tab switching)
+        guard !hasLoadedInitialData else {
+            print("loadInitialData already called, skipping")
+            return
+        }
+        hasLoadedInitialData = true
+
         Task {
             await fetchResorts()
             // Fetch snow quality summaries for all resorts (lightweight, fast)
@@ -32,29 +43,54 @@ class SnowConditionsManager: ObservableObject {
 
     /// Fetch lightweight snow quality summaries for all resorts (for main list display)
     func fetchAllSnowQualitySummaries() async {
-        guard !resorts.isEmpty else { return }
+        guard !resorts.isEmpty else {
+            print("fetchAllSnowQualitySummaries: No resorts loaded, skipping")
+            return
+        }
+
+        // Check cache first - use if not stale (controlled by useSnowQualityCache flag)
+        if useSnowQualityCache, let cached = cacheService.getCachedSnowQualitySummaries(), !cached.isStale {
+            print("fetchAllSnowQualitySummaries: Using cached data (\(cached.data.count) summaries, age: \(cached.ageDescription))")
+            snowQualitySummaries = cached.data
+            return
+        }
 
         isLoadingSnowQuality = true
         defer { isLoadingSnowQuality = false }
 
         let resortIds = resorts.map { $0.id }
+        print("fetchAllSnowQualitySummaries: Fetching summaries for \(resortIds.count) resorts from API")
 
         // Batch fetch in chunks of 50
         let batchSize = 50
+        var totalLoaded = 0
+        var allResults: [String: SnowQualitySummaryLight] = [:]
+
         for batchStart in stride(from: 0, to: resortIds.count, by: batchSize) {
             let batchEnd = min(batchStart + batchSize, resortIds.count)
             let batchIds = Array(resortIds[batchStart..<batchEnd])
+            print("fetchAllSnowQualitySummaries: Fetching batch \(batchStart/batchSize + 1) with \(batchIds.count) resorts")
 
             do {
                 let batchResults = try await apiClient.getBatchSnowQuality(for: batchIds)
                 for (resortId, summary) in batchResults {
                     snowQualitySummaries[resortId] = summary
+                    allResults[resortId] = summary
                 }
+                totalLoaded += batchResults.count
+                print("fetchAllSnowQualitySummaries: Batch \(batchStart/batchSize + 1) loaded \(batchResults.count) summaries")
             } catch {
-                print("Failed to fetch batch snow quality: \(error.localizedDescription)")
+                print("fetchAllSnowQualitySummaries: Batch \(batchStart/batchSize + 1) failed: \(error.localizedDescription)")
                 // Continue with next batch rather than failing completely
             }
         }
+
+        // Cache the results
+        if !allResults.isEmpty {
+            cacheService.cacheSnowQualitySummaries(allResults)
+        }
+
+        print("fetchAllSnowQualitySummaries: Complete. Loaded \(totalLoaded) summaries total")
     }
 
     /// Get cached snow quality for a resort (from summary or conditions)

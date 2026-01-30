@@ -230,7 +230,10 @@ class WeatherService:
         except Exception as e:
             # Log error but don't crash - return empty list
             import logging
-            logging.getLogger(__name__).error(f"Error fetching conditions for resort {resort_id}: {e}")
+
+            logging.getLogger(__name__).error(
+                f"Error fetching conditions for resort {resort_id}: {e}"
+            )
             return []
 
     def get_latest_condition(
@@ -260,62 +263,101 @@ class WeatherService:
         except Exception as e:
             # Log error but don't crash - return None
             import logging
-            logging.getLogger(__name__).error(f"Error fetching latest condition for {resort_id}/{elevation_level}: {e}")
+
+            logging.getLogger(__name__).error(
+                f"Error fetching latest condition for {resort_id}/{elevation_level}: {e}"
+            )
             return None
 
     def get_all_latest_conditions(self) -> dict[str, list[WeatherCondition]]:
-        """Get latest conditions for ALL resorts in a single DynamoDB scan.
+        """Get latest conditions for ALL resorts using GSI queries.
 
         This is optimized for bulk operations like recommendations.
         Returns a dictionary mapping resort_id to list of conditions.
+        Uses in-memory caching to avoid repeated queries.
         """
+        import logging
+        import time
+        from collections import defaultdict
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        from datetime import timedelta
+
+        from utils.cache import get_all_conditions_cache
+
+        logger = logging.getLogger(__name__)
+        cache = get_all_conditions_cache()
+
+        # Check cache first
+        cache_key = "all_conditions"
+        if cache_key in cache:
+            logger.info("[PERF] get_all_latest_conditions: cache HIT")
+            return cache[cache_key]
+
         if not self.conditions_table:
             return {}
 
-        import logging
-        from collections import defaultdict
-        from datetime import timedelta
-
-        logger = logging.getLogger(__name__)
+        start_time = time.time()
 
         try:
             # Calculate timestamp cutoff (last 6 hours)
             cutoff = datetime.now(UTC) - timedelta(hours=6)
             cutoff_str = cutoff.isoformat()
 
-            # Scan with timestamp filter - only get recent conditions
-            # Project only fields we need to reduce data transfer
             conditions_by_resort: dict[str, list[WeatherCondition]] = defaultdict(list)
 
-            # Use table scan directly (boto3 resource) which returns parsed items
-            scan_kwargs = {
-                "FilterExpression": Key("timestamp").gte(cutoff_str),
-            }
+            # Query each elevation level using the ElevationIndex GSI
+            # This is more efficient than scanning the entire table
+            elevation_levels = ["base", "mid", "top"]
 
-            done = False
-            start_key = None
-            while not done:
-                if start_key:
-                    scan_kwargs["ExclusiveStartKey"] = start_key
-                response = self.conditions_table.scan(**scan_kwargs)
+            def query_elevation(elevation_level: str):
+                """Query conditions for a specific elevation level."""
+                results = []
+                try:
+                    response = self.conditions_table.query(
+                        IndexName="ElevationIndex",
+                        KeyConditionExpression=Key("elevation_level").eq(
+                            elevation_level
+                        )
+                        & Key("timestamp").gte(cutoff_str),
+                        ScanIndexForward=False,  # Most recent first
+                    )
+                    results = response.get("Items", [])
+                except Exception as e:
+                    logger.warning(f"Error querying elevation {elevation_level}: {e}")
+                return results
 
-                for item in response.get("Items", []):
+            # Query all elevation levels in parallel
+            all_items = []
+            with ThreadPoolExecutor(max_workers=3) as executor:
+                futures = {
+                    executor.submit(query_elevation, level): level
+                    for level in elevation_levels
+                }
+                for future in as_completed(futures):
                     try:
-                        # Table scan returns already-parsed items
-                        parsed_item = parse_from_dynamodb(item)
-                        resort_id = parsed_item.get("resort_id")
-                        if resort_id:
-                            condition = WeatherCondition(**parsed_item)
-                            conditions_by_resort[resort_id].append(condition)
-                    except Exception as parse_error:
-                        logger.debug(f"Skipping item due to parse error: {parse_error}")
-                        continue
+                        items = future.result()
+                        all_items.extend(items)
+                    except Exception:
+                        pass
 
-                start_key = response.get("LastEvaluatedKey")
-                done = start_key is None
+            # Parse and group by resort
+            for item in all_items:
+                try:
+                    parsed_item = parse_from_dynamodb(item)
+                    resort_id = parsed_item.get("resort_id")
+                    if resort_id:
+                        condition = WeatherCondition(**parsed_item)
+                        conditions_by_resort[resort_id].append(condition)
+                except Exception as parse_error:
+                    logger.debug(f"Skipping item due to parse error: {parse_error}")
+                    continue
 
-            logger.info(f"Fetched conditions for {len(conditions_by_resort)} resorts in batch")
-            return dict(conditions_by_resort)
+            result = dict(conditions_by_resort)
+            cache[cache_key] = result
+            logger.info(
+                f"[PERF] get_all_latest_conditions: cache MISS, GSI queries took {time.time() - start_time:.2f}s, fetched {len(result)} resorts"
+            )
+            return result
 
         except Exception as e:
             logger.error(f"Error in batch conditions fetch: {e}")

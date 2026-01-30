@@ -163,4 +163,271 @@ final class APIIntegrationTests: XCTestCase {
         // Check CORS headers are present
         XCTAssertNotNil(headers["Access-Control-Allow-Origin"], "CORS header should be present")
     }
+
+    // MARK: - Batch Endpoint Tests
+
+    func testBatchSnowQualityEndpoint() async throws {
+        // Test with a few known resort IDs
+        let resortIds = ["big-white", "lake-louise", "whistler-blackcomb"]
+        let idsParam = resortIds.joined(separator: ",")
+
+        var components = URLComponents(url: stagingAPIBaseURL.appendingPathComponent("api/v1/snow-quality/batch"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "resort_ids", value: idsParam)]
+
+        guard let url = components.url else {
+            XCTFail("Failed to construct URL")
+            return
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        let httpResponse = response as! HTTPURLResponse
+        XCTAssertEqual(httpResponse.statusCode, 200, "Batch snow quality endpoint should return 200")
+
+        // Verify we can decode the response
+        let decoder = JSONDecoder()
+        let batchResponse = try decoder.decode(BatchSnowQualityResponse.self, from: data)
+
+        XCTAssertEqual(batchResponse.resortCount, resortIds.count, "Should return count matching requested resorts")
+        XCTAssertGreaterThan(batchResponse.results.count, 0, "Should return at least one result")
+
+        // Verify each result has the expected structure
+        for (resortId, summary) in batchResponse.results {
+            XCTAssertFalse(resortId.isEmpty, "Resort ID should not be empty")
+            XCTAssertEqual(summary.resortId, resortId, "Summary resort_id should match key")
+            XCTAssertFalse(summary.overallQuality.isEmpty, "Overall quality should not be empty")
+        }
+    }
+
+    func testBatchSnowQualityURLConstruction() async throws {
+        // This test verifies the URL is constructed correctly with URLComponents
+        // This was the root cause of a bug where Alamofire's parameter encoding
+        // differed from manual URL construction
+        let resortIds = ["big-white", "lake-louise", "whistler-blackcomb"]
+        let idsParam = resortIds.joined(separator: ",")
+
+        var components = URLComponents(url: stagingAPIBaseURL.appendingPathComponent("api/v1/snow-quality/batch"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "resort_ids", value: idsParam)]
+
+        guard let url = components.url else {
+            XCTFail("Failed to construct URL")
+            return
+        }
+
+        // Verify URL structure
+        XCTAssertTrue(url.absoluteString.contains("snow-quality/batch"), "URL should contain endpoint path")
+        XCTAssertTrue(url.absoluteString.contains("resort_ids="), "URL should contain resort_ids parameter")
+        XCTAssertTrue(url.absoluteString.contains("big-white"), "URL should contain resort ID")
+
+        // The commas should be percent-encoded by URLComponents
+        // Verify the API handles this correctly
+        let (_, response) = try await URLSession.shared.data(from: url)
+        let httpResponse = response as! HTTPURLResponse
+        XCTAssertEqual(httpResponse.statusCode, 200, "API should handle URL-encoded commas")
+    }
+
+    func testBatchSnowQualityMax50Limit() async throws {
+        // The batch endpoint has a max limit of 50 resorts
+        // Requesting more should return 400 error
+        let url = stagingAPIBaseURL.appendingPathComponent("api/v1/resorts")
+        let (resortsData, _) = try await URLSession.shared.data(from: url)
+
+        let resortsResponse = try JSONDecoder().decode(ResortsResponse.self, from: resortsData)
+
+        // Try to request more than 50 resorts
+        if resortsResponse.resorts.count > 50 {
+            let resortIds = resortsResponse.resorts.prefix(55).map { $0.id }
+            let idsParam = resortIds.joined(separator: ",")
+
+            var components = URLComponents(url: stagingAPIBaseURL.appendingPathComponent("api/v1/snow-quality/batch"), resolvingAgainstBaseURL: false)!
+            components.queryItems = [URLQueryItem(name: "resort_ids", value: idsParam)]
+
+            let (_, response) = try await URLSession.shared.data(from: components.url!)
+            let httpResponse = response as! HTTPURLResponse
+            XCTAssertEqual(httpResponse.statusCode, 400, "Requesting > 50 resorts should return 400")
+        } else {
+            print("Skipping test: not enough resorts to test 50+ limit")
+        }
+    }
+
+    func testBatchConditionsEndpoint() async throws {
+        // Test with a few known resort IDs
+        let resortIds = ["big-white", "lake-louise"]
+        let idsParam = resortIds.joined(separator: ",")
+
+        var components = URLComponents(url: stagingAPIBaseURL.appendingPathComponent("api/v1/conditions/batch"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "resort_ids", value: idsParam)]
+
+        guard let url = components.url else {
+            XCTFail("Failed to construct URL")
+            return
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        let httpResponse = response as! HTTPURLResponse
+        XCTAssertEqual(httpResponse.statusCode, 200, "Batch conditions endpoint should return 200")
+
+        // Verify we can decode the response
+        let decoder = JSONDecoder()
+        let batchResponse = try decoder.decode(BatchConditionsResponse.self, from: data)
+
+        XCTAssertEqual(batchResponse.resortCount, resortIds.count, "Should return count matching requested resorts")
+        // Note: results might be empty if weather data hasn't been processed
+        print("Batch conditions returned \(batchResponse.results.count) resorts with data")
+    }
+
+    func testBatchConditionsURLConstruction() async throws {
+        // Verify URL construction for batch conditions matches batch snow quality
+        let resortIds = ["big-white", "lake-louise"]
+        let idsParam = resortIds.joined(separator: ",")
+
+        var components = URLComponents(url: stagingAPIBaseURL.appendingPathComponent("api/v1/conditions/batch"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "resort_ids", value: idsParam)]
+
+        guard let url = components.url else {
+            XCTFail("Failed to construct URL")
+            return
+        }
+
+        // Verify URL structure
+        XCTAssertTrue(url.absoluteString.contains("conditions/batch"), "URL should contain endpoint path")
+        XCTAssertTrue(url.absoluteString.contains("resort_ids="), "URL should contain resort_ids parameter")
+
+        // Verify the API handles this correctly
+        let (_, response) = try await URLSession.shared.data(from: url)
+        let httpResponse = response as! HTTPURLResponse
+        XCTAssertEqual(httpResponse.statusCode, 200, "API should handle URL-encoded commas")
+    }
+
+    // MARK: - Recommendations Endpoint Tests
+
+    func testRecommendationsEndpoint() async throws {
+        // Test with coordinates near Whistler
+        var components = URLComponents(url: stagingAPIBaseURL.appendingPathComponent("api/v1/recommendations"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "lat", value: "50.1163"),
+            URLQueryItem(name: "lng", value: "-122.9574"),
+            URLQueryItem(name: "radius", value: "500"),
+            URLQueryItem(name: "limit", value: "10")
+        ]
+
+        guard let url = components.url else {
+            XCTFail("Failed to construct URL")
+            return
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        let httpResponse = response as! HTTPURLResponse
+        XCTAssertEqual(httpResponse.statusCode, 200, "Recommendations endpoint should return 200")
+
+        // Verify we can decode the response
+        let decoder = JSONDecoder()
+        let recommendationsResponse = try decoder.decode(RecommendationsResponse.self, from: data)
+
+        XCTAssertNotNil(recommendationsResponse.timestamp)
+        print("Recommendations returned \(recommendationsResponse.recommendations.count) results")
+    }
+
+    func testRecommendationsParameterNames() async throws {
+        // This test verifies the exact parameter names expected by the API
+        // lat, lng, radius, limit - NOT latitude, longitude, radius_km
+        var components = URLComponents(url: stagingAPIBaseURL.appendingPathComponent("api/v1/recommendations"), resolvingAgainstBaseURL: false)!
+
+        // Use WRONG parameter names (latitude/longitude instead of lat/lng)
+        // This should fail with 422 if parameter validation is strict
+        components.queryItems = [
+            URLQueryItem(name: "latitude", value: "50.1163"),
+            URLQueryItem(name: "longitude", value: "-122.9574")
+        ]
+
+        guard let url = components.url else {
+            XCTFail("Failed to construct URL")
+            return
+        }
+
+        let (_, response) = try await URLSession.shared.data(from: url)
+        let httpResponse = response as! HTTPURLResponse
+
+        // Should fail because lat/lng are required (not latitude/longitude)
+        XCTAssertEqual(httpResponse.statusCode, 422, "Using wrong parameter names should return 422")
+    }
+
+    func testBestConditionsEndpoint() async throws {
+        // Test the global best conditions endpoint (no location required)
+        var components = URLComponents(url: stagingAPIBaseURL.appendingPathComponent("api/v1/recommendations/best"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "limit", value: "10")
+        ]
+
+        guard let url = components.url else {
+            XCTFail("Failed to construct URL")
+            return
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        let httpResponse = response as! HTTPURLResponse
+        XCTAssertEqual(httpResponse.statusCode, 200, "Best conditions endpoint should return 200")
+
+        // Verify we can decode the response
+        let decoder = JSONDecoder()
+        let recommendationsResponse = try decoder.decode(RecommendationsResponse.self, from: data)
+
+        XCTAssertNotNil(recommendationsResponse.timestamp)
+        print("Best conditions returned \(recommendationsResponse.recommendations.count) results")
+    }
+
+    // MARK: - Response Model Decoding Tests
+
+    func testSnowQualitySummaryLightDecoding() throws {
+        // Test that SnowQualitySummaryLight can decode API response format
+        let json = """
+        {
+            "resort_id": "big-white",
+            "overall_quality": "excellent",
+            "last_updated": "2026-01-30T18:19:17.906493+00:00"
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let summary = try JSONDecoder().decode(SnowQualitySummaryLight.self, from: data)
+
+        XCTAssertEqual(summary.resortId, "big-white")
+        XCTAssertEqual(summary.overallQuality, "excellent")
+        XCTAssertEqual(summary.overallSnowQuality, .excellent)
+        XCTAssertNotNil(summary.lastUpdated)
+    }
+
+    func testBatchSnowQualityResponseDecoding() throws {
+        // Test full batch response decoding
+        let json = """
+        {
+            "results": {
+                "big-white": {
+                    "resort_id": "big-white",
+                    "overall_quality": "excellent",
+                    "last_updated": "2026-01-30T18:19:17.906493+00:00"
+                },
+                "lake-louise": {
+                    "resort_id": "lake-louise",
+                    "overall_quality": "good",
+                    "last_updated": "2026-01-30T18:19:17.906493+00:00"
+                }
+            },
+            "last_updated": "2026-01-30T18:55:05.522823+00:00",
+            "resort_count": 2
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let response = try JSONDecoder().decode(BatchSnowQualityResponse.self, from: data)
+
+        XCTAssertEqual(response.resortCount, 2)
+        XCTAssertNotNil(response.lastUpdated)
+        XCTAssertEqual(response.results.count, 2)
+        XCTAssertNotNil(response.results["big-white"])
+        XCTAssertNotNil(response.results["lake-louise"])
+    }
 }

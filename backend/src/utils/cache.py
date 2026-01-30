@@ -12,6 +12,8 @@ CACHE_TTL_SECONDS = 300  # 5 minutes for frequently changing data
 CACHE_TTL_LONG_SECONDS = 3600  # 1 hour for expensive aggregate queries
 _resorts_cache: TTLCache = TTLCache(maxsize=500, ttl=CACHE_TTL_SECONDS)
 _conditions_cache: TTLCache = TTLCache(maxsize=2000, ttl=CACHE_TTL_SECONDS)
+# Batch conditions cache - used by recommendations, 5-min TTL
+_all_conditions_cache: TTLCache = TTLCache(maxsize=1, ttl=CACHE_TTL_SECONDS)
 # Snow quality uses 1-hour TTL since weather updates hourly
 _snow_quality_cache: TTLCache = TTLCache(maxsize=500, ttl=CACHE_TTL_LONG_SECONDS)
 _recommendations_cache: TTLCache = TTLCache(maxsize=50, ttl=CACHE_TTL_LONG_SECONDS)
@@ -89,10 +91,16 @@ def get_recommendations_cache():
     return _recommendations_cache
 
 
+def get_all_conditions_cache():
+    """Get the all_conditions cache for batch conditions fetch."""
+    return _all_conditions_cache
+
+
 def clear_all_caches() -> None:
     """Clear all caches. Useful for testing."""
     _resorts_cache.clear()
     _conditions_cache.clear()
+    _all_conditions_cache.clear()
     _snow_quality_cache.clear()
     _recommendations_cache.clear()
 

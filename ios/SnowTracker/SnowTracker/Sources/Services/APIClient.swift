@@ -187,11 +187,19 @@ final class APIClient {
 
         // Limit to 50 resorts per batch
         let ids = Array(resortIds.prefix(50))
-        let idsParam = ids.joined(separator: ",")
-        let url = baseURL.appendingPathComponent("api/v1/snow-quality/batch")
+
+        // Build URL with query parameter (same pattern as getBatchConditions)
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/snow-quality/batch"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "resort_ids", value: ids.joined(separator: ","))
+        ]
+
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
 
         return try await withCheckedThrowingContinuation { continuation in
-            session.request(url, parameters: ["resort_ids": idsParam])
+            session.request(url)
                 .validate()
                 .responseDecodable(of: BatchSnowQualityResponse.self) { response in
                     switch response.result {
@@ -258,9 +266,9 @@ final class APIClient {
     ) async throws -> RecommendationsResponse {
         var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/recommendations"), resolvingAgainstBaseURL: false)!
         var queryItems = [
-            URLQueryItem(name: "latitude", value: String(latitude)),
-            URLQueryItem(name: "longitude", value: String(longitude)),
-            URLQueryItem(name: "radius_km", value: String(radiusKm)),
+            URLQueryItem(name: "lat", value: String(latitude)),
+            URLQueryItem(name: "lng", value: String(longitude)),
+            URLQueryItem(name: "radius", value: String(radiusKm)),
             URLQueryItem(name: "limit", value: String(limit))
         ]
         if let minQuality = minQuality {
@@ -781,6 +789,13 @@ struct SnowQualitySummaryLight: Codable {
         case resortId = "resort_id"
         case overallQuality = "overall_quality"
         case lastUpdated = "last_updated"
+    }
+
+    // Explicit initializer for cache reconstruction
+    init(resortId: String, overallQuality: String, lastUpdated: String?) {
+        self.resortId = resortId
+        self.overallQuality = overallQuality
+        self.lastUpdated = lastUpdated
     }
 
     var overallSnowQuality: SnowQuality {

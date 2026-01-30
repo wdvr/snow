@@ -123,7 +123,7 @@ final class SnowTrackerTests: XCTestCase {
 
         let topElevation = bigWhite?.elevationPoint(for: .top)
         XCTAssertNotNil(topElevation)
-        XCTAssertEqual(topElevation?.elevationFeet, 7608, accuracy: 1)
+        XCTAssertEqual(topElevation?.elevationFeet ?? 0, 7608.0, accuracy: 1.0)
     }
 
     // MARK: - ElevationPoint Tests
@@ -188,8 +188,15 @@ final class SnowTrackerTests: XCTestCase {
             snowfall24hCm: 0.0,
             snowfall48hCm: 0.0,
             snowfall72hCm: 0.0,
+            predictedSnow24hCm: nil,
+            predictedSnow48hCm: nil,
+            predictedSnow72hCm: nil,
             hoursAboveIceThreshold: 0.0,
             maxConsecutiveWarmHours: 0.0,
+            snowfallAfterFreezeCm: nil,
+            hoursSinceLastSnowfall: nil,
+            lastFreezeThawHoursAgo: nil,
+            currentlyWarming: nil,
             humidityPercent: nil,
             windSpeedKmh: nil,
             weatherDescription: nil,
@@ -236,8 +243,15 @@ final class SnowTrackerTests: XCTestCase {
             snowfall24hCm: 10.0,
             snowfall48hCm: 20.0,
             snowfall72hCm: 30.0,
+            predictedSnow24hCm: nil,
+            predictedSnow48hCm: nil,
+            predictedSnow72hCm: nil,
             hoursAboveIceThreshold: 0.0,
             maxConsecutiveWarmHours: 0.0,
+            snowfallAfterFreezeCm: nil,
+            hoursSinceLastSnowfall: nil,
+            lastFreezeThawHoursAgo: nil,
+            currentlyWarming: nil,
             humidityPercent: nil,
             windSpeedKmh: nil,
             weatherDescription: nil,
@@ -333,12 +347,14 @@ final class SnowTrackerTests: XCTestCase {
 
     // MARK: - AppConfiguration Tests
 
+    @MainActor
     func testAppConfigurationSharedInstance() {
         let config1 = AppConfiguration.shared
         let config2 = AppConfiguration.shared
         XCTAssertTrue(config1 === config2)
     }
 
+    @MainActor
     func testAppConfigurationURLValidation() {
         let config = AppConfiguration.shared
 
@@ -353,6 +369,7 @@ final class SnowTrackerTests: XCTestCase {
         XCTAssertFalse(config.validateURL(""))
     }
 
+    @MainActor
     func testAppConfigurationDefaultAPIURL() {
         let config = AppConfiguration.shared
 
@@ -1121,23 +1138,23 @@ final class SnowTrackerTests: XCTestCase {
                     "elevation_conditions": {}
                 }
             ],
-            "count": 1,
-            "user_latitude": 49.28,
-            "user_longitude": -123.12,
-            "radius_km": 500,
-            "generated_at": "2026-01-20T10:00:00Z"
+            "search_location": {
+                "latitude": 49.28,
+                "longitude": -123.12
+            },
+            "search_radius_km": 500,
+            "timestamp": "2026-01-20T10:00:00Z"
         }
         """
 
         let data = json.data(using: .utf8)!
         let response = try JSONDecoder().decode(RecommendationsResponse.self, from: data)
 
-        XCTAssertEqual(response.count, 1)
         XCTAssertEqual(response.recommendations.count, 1)
         XCTAssertEqual(response.recommendations[0].resort.name, "Big White")
-        XCTAssertEqual(response.userLatitude, 49.28)
-        XCTAssertEqual(response.userLongitude, -123.12)
-        XCTAssertEqual(response.radiusKm, 500)
+        XCTAssertEqual(response.searchLocation?.latitude, 49.28)
+        XCTAssertEqual(response.searchLocation?.longitude, -123.12)
+        XCTAssertEqual(response.searchRadiusKm, 500)
     }
 
     // MARK: - TripsResponse Tests
@@ -1181,38 +1198,41 @@ final class SnowTrackerTests: XCTestCase {
     func testElevationConditionSummaryDecoding() throws {
         let json = """
         {
-            "snow_quality": "good",
+            "quality": "good",
+            "temp_celsius": -5.0,
             "fresh_snow_cm": 15.0,
-            "temperature_celsius": -5.0,
-            "wind_speed_kmh": 20.0
+            "snowfall_24h_cm": 10.0,
+            "predicted_24h_cm": 5.0
         }
         """
 
         let data = json.data(using: .utf8)!
         let summary = try JSONDecoder().decode(ElevationConditionSummary.self, from: data)
 
-        XCTAssertEqual(summary.snowQuality, "good")
+        XCTAssertEqual(summary.quality, "good")
+        XCTAssertEqual(summary.snowQuality, .good)
         XCTAssertEqual(summary.freshSnowCm, 15.0)
-        XCTAssertEqual(summary.temperatureCelsius, -5.0)
-        XCTAssertEqual(summary.windSpeedKmh, 20.0)
+        XCTAssertEqual(summary.tempCelsius, -5.0)
+        XCTAssertEqual(summary.snowfall24hCm, 10.0)
+        XCTAssertEqual(summary.predicted24hCm, 5.0)
     }
 
-    func testElevationConditionSummaryOptionalFields() throws {
+    func testElevationConditionSummarySnowQuality() throws {
         let json = """
         {
-            "snow_quality": "fair",
+            "quality": "fair",
+            "temp_celsius": 0.0,
             "fresh_snow_cm": 0.0,
-            "temperature_celsius": null,
-            "wind_speed_kmh": null
+            "snowfall_24h_cm": 0.0,
+            "predicted_24h_cm": 0.0
         }
         """
 
         let data = json.data(using: .utf8)!
         let summary = try JSONDecoder().decode(ElevationConditionSummary.self, from: data)
 
-        XCTAssertEqual(summary.snowQuality, "fair")
+        XCTAssertEqual(summary.quality, "fair")
+        XCTAssertEqual(summary.snowQuality, .fair)
         XCTAssertEqual(summary.freshSnowCm, 0.0)
-        XCTAssertNil(summary.temperatureCelsius)
-        XCTAssertNil(summary.windSpeedKmh)
     }
 }
