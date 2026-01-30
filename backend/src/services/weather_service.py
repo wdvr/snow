@@ -263,6 +263,70 @@ class WeatherService:
             logging.getLogger(__name__).error(f"Error fetching latest condition for {resort_id}/{elevation_level}: {e}")
             return None
 
+    def get_all_latest_conditions(self) -> dict[str, list[WeatherCondition]]:
+        """Get latest conditions for ALL resorts in a single DynamoDB scan.
+
+        This is optimized for bulk operations like recommendations.
+        Returns a dictionary mapping resort_id to list of conditions.
+        """
+        if not self.conditions_table:
+            return {}
+
+        import logging
+        from collections import defaultdict
+        from datetime import timedelta
+
+        logger = logging.getLogger(__name__)
+
+        try:
+            # Calculate timestamp cutoff (last 6 hours)
+            cutoff = datetime.now(UTC) - timedelta(hours=6)
+            cutoff_str = cutoff.isoformat()
+
+            # Scan with timestamp filter - only get recent conditions
+            # Project only fields we need to reduce data transfer
+            conditions_by_resort: dict[str, list[WeatherCondition]] = defaultdict(list)
+
+            paginator = self.conditions_table.meta.client.get_paginator("scan")
+            page_iterator = paginator.paginate(
+                TableName=self.conditions_table.name,
+                FilterExpression="#ts >= :cutoff",
+                ExpressionAttributeNames={"#ts": "timestamp"},
+                ExpressionAttributeValues={":cutoff": {"S": cutoff_str}},
+                ProjectionExpression="resort_id, elevation_level, #ts, snow_quality, "
+                "current_temp_celsius, snowfall_24h_cm, predicted_snow_72h_cm, "
+                "source_confidence",
+            )
+
+            for page in page_iterator:
+                for item in page.get("Items", []):
+                    try:
+                        # Parse DynamoDB item format
+                        parsed = {}
+                        for key, value in item.items():
+                            # DynamoDB returns {"S": "string"} format in scan
+                            if "S" in value:
+                                parsed[key] = value["S"]
+                            elif "N" in value:
+                                parsed[key] = float(value["N"])
+                            elif "BOOL" in value:
+                                parsed[key] = value["BOOL"]
+
+                        resort_id = parsed.get("resort_id")
+                        if resort_id:
+                            condition = WeatherCondition(**parsed)
+                            conditions_by_resort[resort_id].append(condition)
+                    except Exception as parse_error:
+                        logger.debug(f"Skipping item due to parse error: {parse_error}")
+                        continue
+
+            logger.info(f"Fetched conditions for {len(conditions_by_resort)} resorts in batch")
+            return dict(conditions_by_resort)
+
+        except Exception as e:
+            logger.error(f"Error in batch conditions fetch: {e}")
+            return {}
+
     def get_weather_forecast(
         self, latitude: float, longitude: float, days: int = 7
     ) -> dict[str, Any]:
