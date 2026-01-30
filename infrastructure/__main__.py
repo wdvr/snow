@@ -792,28 +792,26 @@ if enable_custom_domain:
             opts=pulumi.ResourceOptions(provider=us_east_1),
         )
 
-        # DNS validation records for wildcard cert
-        cert_validation_records = []
-        for i in range(2):  # Main domain + wildcard
-            cert_validation_records.append(
-                aws.route53.Record(
-                    f"{app_name}-cert-validation-{i}-{environment}",
-                    zone_id=hosted_zone.zone_id,
-                    name=certificate.domain_validation_options[i].resource_record_name,
-                    type=certificate.domain_validation_options[i].resource_record_type,
-                    records=[
-                        certificate.domain_validation_options[i].resource_record_value
-                    ],
-                    ttl=300,
-                    opts=pulumi.ResourceOptions(provider=us_east_1),
-                )
-            )
+        # DNS validation record for wildcard cert
+        # Note: ACM uses the same DNS record for both main domain and wildcard
+        # so we only need to create one record (not two)
+        cert_validation_record = aws.route53.Record(
+            f"{app_name}-cert-validation-{environment}",
+            zone_id=hosted_zone.zone_id,
+            name=certificate.domain_validation_options[0].resource_record_name,
+            type=certificate.domain_validation_options[0].resource_record_type,
+            records=[
+                certificate.domain_validation_options[0].resource_record_value
+            ],
+            ttl=300,
+            opts=pulumi.ResourceOptions(provider=us_east_1),
+        )
 
         # Wait for certificate validation
         cert_validation = aws.acm.CertificateValidation(
             f"{app_name}-cert-validation-{environment}",
             certificate_arn=certificate.arn,
-            validation_record_fqdns=[r.fqdn for r in cert_validation_records],
+            validation_record_fqdns=[cert_validation_record.fqdn],
             opts=pulumi.ResourceOptions(provider=us_east_1),
         )
 
