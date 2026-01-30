@@ -795,6 +795,7 @@ if enable_custom_domain:
         # DNS validation record for wildcard cert
         # Note: ACM uses the same DNS record for both main domain and wildcard
         # so we only need to create one record (not two)
+        # allow_overwrite handles cases where the record already exists
         cert_validation_record = aws.route53.Record(
             f"{app_name}-cert-validation-{environment}",
             zone_id=hosted_zone.zone_id,
@@ -804,6 +805,7 @@ if enable_custom_domain:
                 certificate.domain_validation_options[0].resource_record_value
             ],
             ttl=300,
+            allow_overwrite=True,
             opts=pulumi.ResourceOptions(provider=us_east_1),
         )
 
