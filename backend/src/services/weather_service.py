@@ -230,7 +230,10 @@ class WeatherService:
         except Exception as e:
             # Log error but don't crash - return empty list
             import logging
-            logging.getLogger(__name__).error(f"Error fetching conditions for resort {resort_id}: {e}")
+
+            logging.getLogger(__name__).error(
+                f"Error fetching conditions for resort {resort_id}: {e}"
+            )
             return []
 
     def get_latest_condition(
@@ -260,7 +263,10 @@ class WeatherService:
         except Exception as e:
             # Log error but don't crash - return None
             import logging
-            logging.getLogger(__name__).error(f"Error fetching latest condition for {resort_id}/{elevation_level}: {e}")
+
+            logging.getLogger(__name__).error(
+                f"Error fetching latest condition for {resort_id}/{elevation_level}: {e}"
+            )
             return None
 
     def get_all_latest_conditions(self) -> dict[str, list[WeatherCondition]]:
@@ -268,15 +274,28 @@ class WeatherService:
 
         This is optimized for bulk operations like recommendations.
         Returns a dictionary mapping resort_id to list of conditions.
+        Uses in-memory caching to avoid repeated scans.
         """
-        if not self.conditions_table:
-            return {}
-
         import logging
+        import time
         from collections import defaultdict
         from datetime import timedelta
 
+        from utils.cache import get_all_conditions_cache
+
         logger = logging.getLogger(__name__)
+        cache = get_all_conditions_cache()
+
+        # Check cache first
+        cache_key = "all_conditions"
+        if cache_key in cache:
+            logger.info("[PERF] get_all_latest_conditions: cache HIT")
+            return cache[cache_key]
+
+        if not self.conditions_table:
+            return {}
+
+        start_time = time.time()
 
         try:
             # Calculate timestamp cutoff (last 6 hours)
@@ -314,8 +333,12 @@ class WeatherService:
                 start_key = response.get("LastEvaluatedKey")
                 done = start_key is None
 
-            logger.info(f"Fetched conditions for {len(conditions_by_resort)} resorts in batch")
-            return dict(conditions_by_resort)
+            result = dict(conditions_by_resort)
+            cache[cache_key] = result
+            logger.info(
+                f"[PERF] get_all_latest_conditions: cache MISS, scan took {time.time() - start_time:.2f}s, fetched {len(result)} resorts"
+            )
+            return result
 
         except Exception as e:
             logger.error(f"Error in batch conditions fetch: {e}")
