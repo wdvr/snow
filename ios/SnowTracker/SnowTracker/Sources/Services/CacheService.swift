@@ -76,11 +76,35 @@ final class CachedWeatherCondition {
     }
 }
 
+@Model
+final class CachedSnowQualitySummary {
+    @Attribute(.unique) var resortId: String
+    var overallQuality: String
+    var lastUpdated: String?
+    var cachedAt: Date
+
+    init(resortId: String, summary: SnowQualitySummaryLight) {
+        self.resortId = resortId
+        self.overallQuality = summary.overallQuality
+        self.lastUpdated = summary.lastUpdated
+        self.cachedAt = Date()
+    }
+
+    func toSnowQualitySummaryLight() -> SnowQualitySummaryLight {
+        SnowQualitySummaryLight(
+            resortId: resortId,
+            overallQuality: overallQuality,
+            lastUpdated: lastUpdated
+        )
+    }
+}
+
 // MARK: - Cache Configuration
 
 enum CacheConfiguration {
     static let resortCacheDuration: TimeInterval = 24 * 60 * 60  // 24 hours
     static let conditionCacheDuration: TimeInterval = 30 * 60    // 30 minutes
+    static let snowQualityCacheDuration: TimeInterval = 60 * 60  // 1 hour
     static let staleCacheDuration: TimeInterval = 7 * 24 * 60 * 60 // 7 days (max age for stale data)
 }
 
@@ -115,7 +139,8 @@ class CacheService {
         do {
             let schema = Schema([
                 CachedResort.self,
-                CachedWeatherCondition.self
+                CachedWeatherCondition.self,
+                CachedSnowQualitySummary.self
             ])
             let modelConfiguration = ModelConfiguration(
                 schema: schema,
@@ -234,6 +259,53 @@ class CacheService {
         return CachedData(data: conditions, isStale: isStale, cachedAt: oldestCache)
     }
 
+    // MARK: - Snow Quality Summary Caching
+
+    func cacheSnowQualitySummaries(_ summaries: [String: SnowQualitySummaryLight]) {
+        guard let context = modelContext else { return }
+
+        for (resortId, summary) in summaries {
+            let descriptor = FetchDescriptor<CachedSnowQualitySummary>(
+                predicate: #Predicate { $0.resortId == resortId }
+            )
+
+            if let existing = try? context.fetch(descriptor).first {
+                // Update existing
+                existing.overallQuality = summary.overallQuality
+                existing.lastUpdated = summary.lastUpdated
+                existing.cachedAt = Date()
+            } else {
+                // Insert new
+                context.insert(CachedSnowQualitySummary(resortId: resortId, summary: summary))
+            }
+        }
+
+        try? context.save()
+        print("CacheService: Cached \(summaries.count) snow quality summaries")
+    }
+
+    func getCachedSnowQualitySummaries() -> CachedData<[String: SnowQualitySummaryLight]>? {
+        guard let context = modelContext else { return nil }
+
+        let descriptor = FetchDescriptor<CachedSnowQualitySummary>()
+
+        guard let cachedSummaries = try? context.fetch(descriptor),
+              !cachedSummaries.isEmpty else {
+            return nil
+        }
+
+        var summaries: [String: SnowQualitySummaryLight] = [:]
+        for cached in cachedSummaries {
+            summaries[cached.resortId] = cached.toSnowQualitySummaryLight()
+        }
+
+        // Find oldest cache time
+        let oldestCache = cachedSummaries.min(by: { $0.cachedAt < $1.cachedAt })?.cachedAt ?? Date()
+        let isStale = Date().timeIntervalSince(oldestCache) > CacheConfiguration.snowQualityCacheDuration
+
+        return CachedData(data: summaries, isStale: isStale, cachedAt: oldestCache)
+    }
+
     // MARK: - Cache Cleanup
 
     func cleanupStaleCache() {
@@ -263,6 +335,17 @@ class CacheService {
             print("CacheService: Deleted \(staleConditions.count) stale condition entries")
         }
 
+        // Delete stale snow quality summaries
+        let summaryDescriptor = FetchDescriptor<CachedSnowQualitySummary>(
+            predicate: #Predicate { $0.cachedAt < staleDate }
+        )
+        if let staleSummaries = try? context.fetch(summaryDescriptor) {
+            for summary in staleSummaries {
+                context.delete(summary)
+            }
+            print("CacheService: Deleted \(staleSummaries.count) stale snow quality entries")
+        }
+
         try? context.save()
     }
 
@@ -282,6 +365,14 @@ class CacheService {
         if let allConditions = try? context.fetch(conditionDescriptor) {
             for condition in allConditions {
                 context.delete(condition)
+            }
+        }
+
+        // Delete all cached snow quality summaries
+        let summaryDescriptor = FetchDescriptor<CachedSnowQualitySummary>()
+        if let allSummaries = try? context.fetch(summaryDescriptor) {
+            for summary in allSummaries {
+                context.delete(summary)
             }
         }
 

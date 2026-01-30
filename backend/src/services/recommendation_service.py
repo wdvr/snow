@@ -30,17 +30,23 @@ class ResortRecommendation:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for API response."""
         return {
-            "resort": self.resort.model_dump() if hasattr(self.resort, "model_dump") else self.resort,
+            "resort": self.resort.model_dump()
+            if hasattr(self.resort, "model_dump")
+            else self.resort,
             "distance_km": self.distance_km,
             "distance_miles": self.distance_miles,
-            "snow_quality": self.snow_quality.value if isinstance(self.snow_quality, SnowQuality) else self.snow_quality,
+            "snow_quality": self.snow_quality.value
+            if isinstance(self.snow_quality, SnowQuality)
+            else self.snow_quality,
             "quality_score": self.quality_score,
             "distance_score": self.distance_score,
             "combined_score": self.combined_score,
             "fresh_snow_cm": self.fresh_snow_cm,
             "predicted_snow_72h_cm": self.predicted_snow_72h_cm,
             "current_temp_celsius": self.current_temp_celsius,
-            "confidence_level": self.confidence_level.value if isinstance(self.confidence_level, ConfidenceLevel) else self.confidence_level,
+            "confidence_level": self.confidence_level.value
+            if isinstance(self.confidence_level, ConfidenceLevel)
+            else self.confidence_level,
             "reason": self.reason,
             "elevation_conditions": self.elevation_conditions,
         }
@@ -105,6 +111,8 @@ class RecommendationService:
         Returns:
             List of ResortRecommendation objects sorted by combined score
         """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
         # Get nearby resorts
         nearby_resorts = self.resort_service.get_nearby_resorts(
             latitude=latitude,
@@ -116,14 +124,35 @@ class RecommendationService:
         if not nearby_resorts:
             return []
 
+        # Fetch conditions for all nearby resorts in parallel
+        conditions_map: dict[str, list[WeatherCondition]] = {}
+        resort_distances: dict[str, float] = {}
+
+        def fetch_conditions(resort_id: str):
+            return resort_id, self._get_resort_conditions(resort_id)
+
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            futures = {}
+            for resort, distance_km in nearby_resorts:
+                resort_distances[resort.resort_id] = distance_km
+                futures[executor.submit(fetch_conditions, resort.resort_id)] = resort
+
+            for future in as_completed(futures):
+                try:
+                    resort_id, conditions = future.result()
+                    if conditions:
+                        conditions_map[resort_id] = conditions
+                except Exception:
+                    pass
+
         recommendations = []
+        resort_map = {r.resort_id: r for r, _ in nearby_resorts}
 
-        for resort, distance_km in nearby_resorts:
-            # Get latest conditions for all elevations
-            conditions = self._get_resort_conditions(resort.resort_id)
+        for resort_id, conditions in conditions_map.items():
+            resort = resort_map.get(resort_id)
+            distance_km = resort_distances.get(resort_id, 0)
 
-            if not conditions:
-                # Skip resorts with no condition data
+            if not resort or not conditions:
                 continue
 
             # Calculate aggregate metrics across elevations
@@ -134,13 +163,17 @@ class RecommendationService:
             best_confidence = self._get_best_confidence(conditions)
 
             # Apply minimum quality filter
-            if min_quality and self._quality_rank(best_quality) < self._quality_rank(min_quality):
+            if min_quality and self._quality_rank(best_quality) < self._quality_rank(
+                min_quality
+            ):
                 continue
 
             # Calculate scores
             quality_score = self._calculate_quality_score(best_quality)
             distance_score = self._calculate_distance_score(distance_km)
-            fresh_snow_score = self._calculate_fresh_snow_score(avg_fresh_snow, total_predicted_snow)
+            fresh_snow_score = self._calculate_fresh_snow_score(
+                avg_fresh_snow, total_predicted_snow
+            )
 
             # Combined score (weighted average)
             combined_score = (
@@ -213,7 +246,9 @@ class RecommendationService:
             return resort_id, self._get_resort_conditions(resort_id)
 
         with ThreadPoolExecutor(max_workers=20) as executor:
-            futures = {executor.submit(fetch_conditions, r.resort_id): r for r in all_resorts}
+            futures = {
+                executor.submit(fetch_conditions, r.resort_id): r for r in all_resorts
+            }
             for future in as_completed(futures):
                 try:
                     resort_id, conditions = future.result()
@@ -232,7 +267,9 @@ class RecommendationService:
 
             best_quality = self._get_best_quality(conditions)
 
-            if min_quality and self._quality_rank(best_quality) < self._quality_rank(min_quality):
+            if min_quality and self._quality_rank(best_quality) < self._quality_rank(
+                min_quality
+            ):
                 continue
 
             avg_fresh_snow = self._get_average_fresh_snow(conditions)
@@ -241,7 +278,9 @@ class RecommendationService:
             best_confidence = self._get_best_confidence(conditions)
 
             quality_score = self._calculate_quality_score(best_quality)
-            fresh_snow_score = self._calculate_fresh_snow_score(avg_fresh_snow, total_predicted_snow)
+            fresh_snow_score = self._calculate_fresh_snow_score(
+                avg_fresh_snow, total_predicted_snow
+            )
 
             # For global ranking, only quality matters
             combined_score = 0.7 * quality_score + 0.3 * fresh_snow_score
@@ -279,7 +318,9 @@ class RecommendationService:
     def _get_resort_conditions(self, resort_id: str) -> list[WeatherCondition]:
         """Get latest conditions for a resort."""
         try:
-            return self.weather_service.get_conditions_for_resort(resort_id, hours_back=6)
+            return self.weather_service.get_conditions_for_resort(
+                resort_id, hours_back=6
+            )
         except Exception:
             return []
 
@@ -326,7 +367,9 @@ class RecommendationService:
 
         # Use snowfall_after_freeze_cm if available, otherwise fresh_snow_cm
         total = sum(
-            c.snowfall_after_freeze_cm if c.snowfall_after_freeze_cm else c.fresh_snow_cm
+            c.snowfall_after_freeze_cm
+            if c.snowfall_after_freeze_cm
+            else c.fresh_snow_cm
             for c in conditions
         )
         return total / len(conditions)
@@ -336,9 +379,7 @@ class RecommendationService:
         if not conditions:
             return 0.0
 
-        return max(
-            (c.predicted_snow_72h_cm or 0) for c in conditions
-        )
+        return max((c.predicted_snow_72h_cm or 0) for c in conditions)
 
     def _get_average_temperature(self, conditions: list[WeatherCondition]) -> float:
         """Get average temperature across elevations."""
@@ -347,7 +388,9 @@ class RecommendationService:
 
         return sum(c.current_temp_celsius for c in conditions) / len(conditions)
 
-    def _get_best_confidence(self, conditions: list[WeatherCondition]) -> ConfidenceLevel:
+    def _get_best_confidence(
+        self, conditions: list[WeatherCondition]
+    ) -> ConfidenceLevel:
         """Get the best confidence level from conditions."""
         if not conditions:
             return ConfidenceLevel.VERY_LOW
@@ -389,11 +432,16 @@ class RecommendationService:
 
         # Exponential decay
         import math
-        decay_rate = math.log(2) / (self.MAX_PRACTICAL_DISTANCE_KM - self.IDEAL_DISTANCE_KM)
+
+        decay_rate = math.log(2) / (
+            self.MAX_PRACTICAL_DISTANCE_KM - self.IDEAL_DISTANCE_KM
+        )
         adjusted_distance = distance_km - self.IDEAL_DISTANCE_KM
         return math.exp(-decay_rate * adjusted_distance)
 
-    def _calculate_fresh_snow_score(self, fresh_cm: float, predicted_cm: float) -> float:
+    def _calculate_fresh_snow_score(
+        self, fresh_cm: float, predicted_cm: float
+    ) -> float:
         """
         Calculate fresh/predicted snow score (0-1).
 
@@ -412,14 +460,19 @@ class RecommendationService:
         else:
             return combined_cm / 20.0
 
-    def _build_elevation_summary(self, conditions: list[WeatherCondition]) -> dict[str, dict[str, Any]]:
+    def _build_elevation_summary(
+        self, conditions: list[WeatherCondition]
+    ) -> dict[str, dict[str, Any]]:
         """Build elevation conditions summary."""
         summary = {}
         for condition in conditions:
             summary[condition.elevation_level] = {
-                "quality": condition.snow_quality.value if isinstance(condition.snow_quality, SnowQuality) else condition.snow_quality,
+                "quality": condition.snow_quality.value
+                if isinstance(condition.snow_quality, SnowQuality)
+                else condition.snow_quality,
                 "temp_celsius": condition.current_temp_celsius,
-                "fresh_snow_cm": condition.snowfall_after_freeze_cm or condition.fresh_snow_cm,
+                "fresh_snow_cm": condition.snowfall_after_freeze_cm
+                or condition.fresh_snow_cm,
                 "snowfall_24h_cm": condition.snowfall_24h_cm,
                 "predicted_24h_cm": condition.predicted_snow_24h_cm or 0,
             }
@@ -437,7 +490,9 @@ class RecommendationService:
         parts = []
 
         # Quality - handle both enum and string values
-        quality_value = best_quality.value if hasattr(best_quality, "value") else str(best_quality)
+        quality_value = (
+            best_quality.value if hasattr(best_quality, "value") else str(best_quality)
+        )
 
         if quality_value == "excellent":
             parts.append("Excellent powder conditions")

@@ -49,6 +49,8 @@ struct ResortDetailView: View {
                     snowDetailsCard(condition)
                     predictionsCard(condition)
                     weatherDetailsCard(condition)
+                } else if snowConditionsManager.isLoading {
+                    loadingCard
                 } else {
                     noDataCard
                 }
@@ -500,6 +502,28 @@ struct ResortDetailView: View {
             }
         }
         .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(radius: 2)
+    }
+
+    // MARK: - Loading Card
+
+    private var loadingCard: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .scaleEffect(1.2)
+
+            Text("Loading Conditions...")
+                .font(.headline)
+
+            Text("Fetching the latest weather data for this resort.")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(radius: 2)
