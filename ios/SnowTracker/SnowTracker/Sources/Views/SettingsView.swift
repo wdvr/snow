@@ -265,9 +265,25 @@ struct SettingsView: View {
                         .foregroundColor(isApple ? .primary : .blue)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(user.displayName)
-                            .font(.body)
-                        if let email = user.email, email != user.displayName {
+                        // Show name if available, otherwise show email
+                        if let name = user.fullName, !name.isEmpty {
+                            Text(name)
+                                .font(.body)
+                        } else if let email = user.email {
+                            // For Apple relay emails, show the full email so users know how they logged in
+                            Text(email)
+                                .font(.body)
+                        } else if isApple {
+                            // No email/name available (Apple hides this after first sign-in)
+                            Text("Signed in with Apple")
+                                .font(.body)
+                        } else {
+                            Text(user.displayName)
+                                .font(.body)
+                        }
+
+                        // Show email below name if both are available
+                        if let name = user.fullName, !name.isEmpty, let email = user.email {
                             Text(email)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
