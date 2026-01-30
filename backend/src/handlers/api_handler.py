@@ -753,8 +753,8 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
         # Get explanation for overall quality
         quality_explanation = SNOW_QUALITY_EXPLANATIONS.get(overall_quality, {})
 
-        # Set cache headers
-        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+        # Set cache headers - 1 hour since weather updates hourly
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC_LONG
 
         return {
             "resort_id": resort_id,
@@ -887,7 +887,8 @@ async def get_batch_snow_quality(
                 if result:
                     results[resort_id] = result
 
-        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+        # Use 1-hour cache since weather data updates hourly
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC_LONG
 
         return {
             "results": results,

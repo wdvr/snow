@@ -7,13 +7,13 @@ from typing import Any, Callable
 
 from cachetools import TTLCache
 
-# Global caches with 5-minute TTL (weather updates hourly, so this is safe)
-# These persist across Lambda invocations (warm starts)
-CACHE_TTL_SECONDS = 300  # 5 minutes
+# Global caches - persist across Lambda invocations (warm starts)
+CACHE_TTL_SECONDS = 300  # 5 minutes for frequently changing data
 CACHE_TTL_LONG_SECONDS = 3600  # 1 hour for expensive aggregate queries
 _resorts_cache: TTLCache = TTLCache(maxsize=500, ttl=CACHE_TTL_SECONDS)
 _conditions_cache: TTLCache = TTLCache(maxsize=2000, ttl=CACHE_TTL_SECONDS)
-_snow_quality_cache: TTLCache = TTLCache(maxsize=500, ttl=CACHE_TTL_SECONDS)
+# Snow quality uses 1-hour TTL since weather updates hourly
+_snow_quality_cache: TTLCache = TTLCache(maxsize=500, ttl=CACHE_TTL_LONG_SECONDS)
 _recommendations_cache: TTLCache = TTLCache(maxsize=50, ttl=CACHE_TTL_LONG_SECONDS)
 
 
