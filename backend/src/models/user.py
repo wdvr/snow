@@ -4,6 +4,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from models.notification import UserNotificationPreferences
+
 
 class User(BaseModel):
     """User data model."""
@@ -30,7 +32,12 @@ class UserPreferences(BaseModel):
             "condition_updates": True,
             "weekly_summary": False,
         },
-        description="User notification preferences",
+        description="Legacy notification preferences (deprecated, use notification_settings)",
+    )
+    # New detailed notification settings
+    notification_settings: UserNotificationPreferences | None = Field(
+        default=None,
+        description="Detailed notification settings with per-resort configuration",
     )
     preferred_units: dict = Field(
         default_factory=lambda: {
@@ -50,3 +57,17 @@ class UserPreferences(BaseModel):
     updated_at: str = Field(
         ..., description="ISO timestamp when preferences were last updated"
     )
+
+    def get_notification_settings(self) -> UserNotificationPreferences:
+        """Get notification settings, initializing from legacy if needed."""
+        if self.notification_settings is not None:
+            return self.notification_settings
+
+        # Convert legacy notification_preferences to new format
+        legacy = self.notification_preferences or {}
+        return UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=legacy.get("snow_alerts", True),
+            event_alerts=legacy.get("condition_updates", True),
+            weekly_summary=legacy.get("weekly_summary", False),
+        )

@@ -1,11 +1,41 @@
 import SwiftUI
+import UserNotifications
 #if canImport(FirebaseCore)
 import FirebaseCore
 #endif
 
+// MARK: - App Delegate for Push Notifications
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        // Set up push notification delegate
+        UNUserNotificationCenter.current().delegate = PushNotificationService.shared
+        return true
+    }
+
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        PushNotificationService.shared.didRegisterForRemoteNotifications(withDeviceToken: deviceToken)
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        PushNotificationService.shared.didFailToRegisterForRemoteNotifications(withError: error)
+    }
+}
+
 @main
 struct SnowTrackerApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var snowConditionsManager = SnowConditionsManager()
+    @StateObject private var pushNotificationService = PushNotificationService.shared
     @ObservedObject private var authService = AuthenticationService.shared
     @ObservedObject private var userPreferencesManager = UserPreferencesManager.shared
     @State private var showSplash = true
@@ -25,6 +55,7 @@ struct SnowTrackerApp: App {
                     MainTabView()
                         .environmentObject(snowConditionsManager)
                         .environmentObject(userPreferencesManager)
+                        .environmentObject(pushNotificationService)
                 } else {
                     WelcomeView()
                 }
@@ -46,6 +77,14 @@ struct SnowTrackerApp: App {
             .onOpenURL { url in
                 // Handle Google Sign-In callback URL
                 _ = authService.handleURL(url)
+            }
+            .onChange(of: authService.isAuthenticated) { _, isAuthenticated in
+                if isAuthenticated {
+                    // Request notification permissions when user is authenticated
+                    Task {
+                        await pushNotificationService.requestAuthorization()
+                    }
+                }
             }
         }
     }

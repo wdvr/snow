@@ -622,6 +622,121 @@ final class APIClient {
         }
     }
 
+    // MARK: - Device Token API
+
+    /// Register a device token for push notifications
+    func registerDeviceToken(deviceId: String, token: String, platform: String, appVersion: String?) async throws {
+        let url = baseURL.appendingPathComponent("api/v1/user/device-tokens")
+
+        let request = DeviceTokenRequest(
+            deviceId: deviceId,
+            token: token,
+            platform: platform,
+            appVersion: appVersion
+        )
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(
+                url,
+                method: .post,
+                parameters: request,
+                encoder: JSONParameterEncoder.default,
+                headers: authHeaders()
+            )
+            .validate()
+            .response { response in
+                if let error = response.error {
+                    continuation.resume(throwing: self.mapError(error))
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
+    /// Unregister a device token
+    func unregisterDeviceToken(deviceId: String) async throws {
+        let url = baseURL.appendingPathComponent("api/v1/user/device-tokens/\(deviceId)")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, method: .delete, headers: authHeaders())
+                .validate()
+                .response { response in
+                    if let error = response.error {
+                        continuation.resume(throwing: self.mapError(error))
+                    } else {
+                        continuation.resume()
+                    }
+                }
+        }
+    }
+
+    // MARK: - Notification Settings API
+
+    /// Get notification settings
+    func getNotificationSettings() async throws -> NotificationSettings {
+        let url = baseURL.appendingPathComponent("api/v1/user/notification-settings")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, headers: authHeaders())
+                .validate()
+                .responseDecodable(of: NotificationSettings.self) { response in
+                    switch response.result {
+                    case .success(let settings):
+                        continuation.resume(returning: settings)
+                    case .failure(let error):
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
+    /// Update notification settings
+    func updateNotificationSettings(_ settings: NotificationSettingsUpdate) async throws {
+        let url = baseURL.appendingPathComponent("api/v1/user/notification-settings")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(
+                url,
+                method: .put,
+                parameters: settings,
+                encoder: JSONParameterEncoder.default,
+                headers: authHeaders()
+            )
+            .validate()
+            .response { response in
+                if let error = response.error {
+                    continuation.resume(throwing: self.mapError(error))
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
+    /// Update resort-specific notification settings
+    func updateResortNotificationSettings(resortId: String, settings: ResortNotificationSettingsUpdate) async throws {
+        let url = baseURL.appendingPathComponent("api/v1/user/notification-settings/resorts/\(resortId)")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(
+                url,
+                method: .put,
+                parameters: settings,
+                encoder: JSONParameterEncoder.default,
+                headers: authHeaders()
+            )
+            .validate()
+            .response { response in
+                if let error = response.error {
+                    continuation.resume(throwing: self.mapError(error))
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
     // MARK: - Authentication
 
     private func authHeaders() -> HTTPHeaders {
@@ -1314,6 +1429,54 @@ struct MarkAlertsReadRequest: Codable {
 struct TripsResponse: Codable, Sendable {
     let trips: [Trip]
     let count: Int
+}
+
+// MARK: - Device Token Models
+
+struct DeviceTokenRequest: Codable {
+    let deviceId: String
+    let token: String
+    let platform: String
+    let appVersion: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+        case token
+        case platform
+        case appVersion = "app_version"
+    }
+}
+
+// MARK: - Notification Settings Models
+
+struct NotificationSettingsUpdate: Codable {
+    var notificationsEnabled: Bool?
+    var freshSnowAlerts: Bool?
+    var eventAlerts: Bool?
+    var weeklySummary: Bool?
+    var defaultSnowThresholdCm: Double?
+    var gracePeriodHours: Int?
+
+    private enum CodingKeys: String, CodingKey {
+        case notificationsEnabled = "notifications_enabled"
+        case freshSnowAlerts = "fresh_snow_alerts"
+        case eventAlerts = "event_alerts"
+        case weeklySummary = "weekly_summary"
+        case defaultSnowThresholdCm = "default_snow_threshold_cm"
+        case gracePeriodHours = "grace_period_hours"
+    }
+}
+
+struct ResortNotificationSettingsUpdate: Codable {
+    var freshSnowEnabled: Bool?
+    var freshSnowThresholdCm: Double?
+    var eventNotificationsEnabled: Bool?
+
+    private enum CodingKeys: String, CodingKey {
+        case freshSnowEnabled = "fresh_snow_enabled"
+        case freshSnowThresholdCm = "fresh_snow_threshold_cm"
+        case eventNotificationsEnabled = "event_notifications_enabled"
+    }
 }
 
 // MARK: - API Errors

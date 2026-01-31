@@ -106,8 +106,7 @@ struct SettingsView: View {
                 // Preferences Section
                 Section {
                     NavigationLink {
-                        Text("Notification settings coming soon")
-                            .navigationTitle("Notifications")
+                        NotificationSettingsView()
                     } label: {
                         Label("Notifications", systemImage: "bell")
                     }
