@@ -14,6 +14,10 @@ concurrency:
   group: ios-testflight-internal
   cancel-in-progress: false
 
+permissions:
+  actions: read
+  contents: write
+
 jobs:
   upload:
     uses: wdvr/ios-infra/.github/workflows/ios-testflight-internal.yml@main
