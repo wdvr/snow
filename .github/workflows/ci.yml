@@ -37,7 +37,7 @@ jobs:
 
         if [ "${{ env.USE_SELF_HOSTED }}" != "true" ]; then
           echo "Self-hosted disabled by configuration"
-          echo "runner=macos-15" >> $GITHUB_OUTPUT
+          echo "runner=macos-26" >> $GITHUB_OUTPUT
           echo "runner-label=github-hosted" >> $GITHUB_OUTPUT
           exit 0
         fi
@@ -53,7 +53,7 @@ jobs:
           echo "⚠️ No self-hosted runners available"
           if [ "${{ env.ENABLE_FALLBACK }}" == "true" ]; then
             echo "Falling back to GitHub-hosted runner"
-            echo "runner=macos-15" >> $GITHUB_OUTPUT
+            echo "runner=macos-26" >> $GITHUB_OUTPUT
             echo "runner-label=github-hosted-fallback" >> $GITHUB_OUTPUT
           else
             echo "Fallback disabled - will attempt self-hosted anyway"
@@ -309,7 +309,7 @@ jobs:
     name: iOS Tests (${{ needs.runner-strategy.outputs.runner-label }})
     needs: [changes, runner-strategy]
     if: ${{ needs.changes.outputs.ios == 'true' }}
-    runs-on: ${{ needs.runner-strategy.outputs.runner == 'self-hosted' && fromJSON('["self-hosted", "macOS", "ARM64"]') || 'macos-15' }}
+    runs-on: ${{ needs.runner-strategy.outputs.runner == 'self-hosted' && fromJSON('["self-hosted", "macOS", "ARM64"]') || 'macos-26' }}
     timeout-minutes: 30
 
     steps:
