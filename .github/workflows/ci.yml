@@ -9,13 +9,59 @@ on:
 env:
   PYTHON_VERSION: '3.12'
   NODE_VERSION: '18'
+  # Runner Configuration - Easy switches
+  USE_SELF_HOSTED: 'true'
+  ENABLE_FALLBACK: 'true'
 
-# Permissions for reading files and PRs
+# Permissions for reading files, PRs, and checking runners
 permissions:
   contents: read
   pull-requests: read
+  actions: read
 
 jobs:
+  # Check runner availability and determine strategy
+  runner-strategy:
+    name: Check Runner Availability
+    runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.check.outputs.runner }}
+      runner-label: ${{ steps.check.outputs.runner-label }}
+    steps:
+    - name: Check self-hosted runner availability
+      id: check
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Configuration: USE_SELF_HOSTED=${{ env.USE_SELF_HOSTED }}, ENABLE_FALLBACK=${{ env.ENABLE_FALLBACK }}"
+
+        if [ "${{ env.USE_SELF_HOSTED }}" != "true" ]; then
+          echo "Self-hosted disabled by configuration"
+          echo "runner=macos-15" >> $GITHUB_OUTPUT
+          echo "runner-label=github-hosted" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        echo "Checking for self-hosted runners..."
+        RUNNERS=$(gh api repos/${{ github.repository }}/actions/runners --jq '.runners[] | select(.status=="online") | select(.labels[].name=="macOS" or .labels[].name=="self-hosted") | .name' 2>/dev/null || echo "")
+
+        if [ -n "$RUNNERS" ]; then
+          echo "✅ Found online self-hosted runner(s): $RUNNERS"
+          echo "runner=self-hosted" >> $GITHUB_OUTPUT
+          echo "runner-label=self-hosted" >> $GITHUB_OUTPUT
+        else
+          echo "⚠️ No self-hosted runners available"
+          if [ "${{ env.ENABLE_FALLBACK }}" == "true" ]; then
+            echo "Falling back to GitHub-hosted runner"
+            echo "runner=macos-15" >> $GITHUB_OUTPUT
+            echo "runner-label=github-hosted-fallback" >> $GITHUB_OUTPUT
+          else
+            echo "Fallback disabled - will attempt self-hosted anyway"
+            echo "runner=self-hosted" >> $GITHUB_OUTPUT
+            echo "runner-label=self-hosted-required" >> $GITHUB_OUTPUT
+          fi
+        fi
+
   # Detect which components changed
   changes:
     name: Detect Changes
@@ -28,7 +74,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Needed for comparing branches
+        fetch-depth: 0
     - uses: dorny/paths-filter@v3
       id: filter
       with:
@@ -52,7 +98,6 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      # DynamoDB Local for integration tests
       dynamodb:
         image: amazon/dynamodb-local:latest
         ports:
@@ -166,7 +211,6 @@ jobs:
         python -m py_compile __main__.py
         echo "✅ Infrastructure code syntax is valid"
 
-    # AWS credentials validation is optional - skip preview if not configured
     - name: Configure AWS credentials (optional)
       uses: aws-actions/configure-aws-credentials@v4
       continue-on-error: true
@@ -222,13 +266,13 @@ jobs:
       continue-on-error: true
       run: |
         cd backend
-        black --check --diff src/ tests/ || echo "⚠️ Code formatting issues found - run 'black src/ tests/' to fix"
+        black --check --diff src/ tests/ || echo "⚠️ Code formatting issues found"
 
     - name: Check import sorting with isort (non-blocking)
       continue-on-error: true
       run: |
         cd backend
-        isort --check-only --diff src/ tests/ || echo "⚠️ Import sorting issues found - run 'isort src/ tests/' to fix"
+        isort --check-only --diff src/ tests/ || echo "⚠️ Import sorting issues found"
 
     - name: Lint with flake8
       continue-on-error: true
@@ -260,48 +304,77 @@ jobs:
         path: backend/bandit-report.json
         if-no-files-found: ignore
 
-  # iOS Tests (Unit + UI) - Only runs when ios/ files change
+  # iOS Tests with intelligent runner selection
   ios-tests:
-    name: iOS Tests
-    needs: changes
+    name: iOS Tests (${{ needs.runner-strategy.outputs.runner-label }})
+    needs: [changes, runner-strategy]
     if: ${{ needs.changes.outputs.ios == 'true' }}
-    runs-on: macos-latest
+    runs-on: ${{ needs.runner-strategy.outputs.runner == 'self-hosted' && fromJSON('["self-hosted", "macOS", "ARM64"]') || 'macos-15' }}
+    timeout-minutes: 30
 
     steps:
+    - name: Runner Info
+      run: |
+        echo "🖥️ Runner: ${{ needs.runner-strategy.outputs.runner-label }}"
+        echo "OS: $(uname -s) $(uname -r)"
+        echo "Arch: $(uname -m)"
+        echo "Host: $(hostname)"
+
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Select Xcode 26
+    - name: Select Xcode
       run: |
-        # Find and select the latest Xcode 26.x
+        # Find and select Xcode (prefer Xcode 26.x, fall back to latest)
         XCODE_PATH=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
-        if [ -n "$XCODE_PATH" ]; then
-          echo "Found Xcode 26: $XCODE_PATH"
-          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
-        else
-          echo "ERROR: No Xcode 26.x found in /Applications"
-          ls -la /Applications/ | grep -i xcode
-          exit 1
+        if [ -z "$XCODE_PATH" ]; then
+          XCODE_PATH=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
+        fi
+        if [ -z "$XCODE_PATH" ]; then
+          XCODE_PATH="/Applications/Xcode.app"
         fi
 
-        # Verify
+        if [ -d "$XCODE_PATH" ]; then
+          echo "Using Xcode: $XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer" || true
+          export DEVELOPER_DIR="$XCODE_PATH/Contents/Developer"
+        else
+          echo "WARNING: No Xcode found, using default"
+        fi
+
         xcodebuild -version
-        xcrun --show-sdk-version --sdk iphoneos
+        xcrun --show-sdk-version --sdk iphoneos || true
 
     - name: Install XcodeGen
-      run: brew install xcodegen
+      run: |
+        if ! command -v xcodegen &> /dev/null; then
+          brew install xcodegen
+        fi
 
     - name: Generate Xcode project
       run: |
         cd ios
-        xcodegen generate
+        if [ -f "project.yml" ]; then
+          xcodegen generate
+        fi
 
-    - name: List available simulators
-      run: xcrun simctl list devices available | head -30
+    - name: Find Available Simulator
+      id: simulator
+      run: |
+        for SIM in "iPhone 17" "iPhone 17 Pro" "iPhone 16" "iPhone 16 Pro" "iPhone 15" "iPhone 15 Pro"; do
+          if xcrun simctl list devices available | grep -q "$SIM"; then
+            echo "simulator=$SIM" >> $GITHUB_OUTPUT
+            echo "Found simulator: $SIM"
+            exit 0
+          fi
+        done
+        SIM=$(xcrun simctl list devices available | grep "iPhone" | head -1 | sed 's/^[[:space:]]*//' | cut -d'(' -f1 | xargs)
+        echo "simulator=$SIM" >> $GITHUB_OUTPUT
+        echo "Using fallback simulator: $SIM"
 
     - name: Boot simulator
       run: |
-        DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone 16 Pro" | head -1 | grep -oE '\([A-F0-9-]+\)' | tr -d '()')
+        DEVICE_ID=$(xcrun simctl list devices available | grep "${{ steps.simulator.outputs.simulator }}" | head -1 | grep -oE '\([A-F0-9-]+\)' | tr -d '()')
         if [ -n "$DEVICE_ID" ]; then
           xcrun simctl boot "$DEVICE_ID" || true
         fi
@@ -309,54 +382,47 @@ jobs:
     - name: Run iOS Unit Tests
       run: |
         cd ios
+        set -o pipefail
         xcodebuild test \
           -project SnowTracker.xcodeproj \
           -scheme SnowTracker \
-          -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+          -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.simulator }}" \
           -only-testing:SnowTrackerTests \
           -resultBundlePath TestResults/UnitTests.xcresult \
           CODE_SIGNING_ALLOWED=NO \
-          | xcpretty --report junit --output TestResults/unit-tests.xml || true
+          2>&1 | tee build.log | head -500
+      continue-on-error: true
 
-    - name: Run iOS UI Tests with Screenshots
+    - name: Run iOS UI Tests
       run: |
         cd ios
         xcodebuild test \
           -project SnowTracker.xcodeproj \
           -scheme SnowTracker \
-          -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+          -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.simulator }}" \
           -only-testing:SnowTrackerUITests \
           -resultBundlePath TestResults/UITests.xcresult \
           CODE_SIGNING_ALLOWED=NO \
-          | xcpretty --report junit --output TestResults/ui-tests.xml || true
+          2>&1 | tee -a build.log | head -500
+      continue-on-error: true
 
     - name: Capture Screenshots
       if: always()
       run: |
         mkdir -p ios/TestResults/Screenshots
-        # Extract screenshots from test results if available
         if [ -d "ios/TestResults/UITests.xcresult" ]; then
-          xcrun xcresulttool get --path ios/TestResults/UITests.xcresult --format json > /tmp/results.json 2>/dev/null || true
-          # Attempt to extract attachments
           find ios/TestResults/UITests.xcresult -name "*.png" -exec cp {} ios/TestResults/Screenshots/ \; 2>/dev/null || true
         fi
-        # Also capture simulator screenshot
         xcrun simctl io booted screenshot ios/TestResults/Screenshots/final_state.png 2>/dev/null || true
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: ios-test-results
-        path: ios/TestResults/
-
-    - name: Upload screenshots
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: ios-screenshots
-        path: ios/TestResults/Screenshots/
-        if-no-files-found: ignore
+        name: ios-test-results-${{ needs.runner-strategy.outputs.runner-label }}
+        path: |
+          ios/TestResults/
+          ios/build.log
 
   # Build and Test Results Summary
   test-summary:
@@ -372,7 +438,6 @@ jobs:
         echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
         echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
 
-        # Show status with skip reason
         BACKEND="${{ needs.backend-tests.result }}"
         IOS="${{ needs.ios-tests.result }}"
         INFRA="${{ needs.infrastructure-validation.result }}"
@@ -388,7 +453,6 @@ jobs:
         echo "| Infrastructure Validation | $INFRA |" >> $GITHUB_STEP_SUMMARY
         echo "| Code Quality | $QUALITY |" >> $GITHUB_STEP_SUMMARY
 
-        # Check if any non-skipped jobs failed
         FAILED=false
         for result in "${{ needs.backend-tests.result }}" "${{ needs.ios-tests.result }}" "${{ needs.infrastructure-validation.result }}" "${{ needs.code-quality.result }}"; do
           if [ "$result" = "failure" ]; then
@@ -398,8 +462,8 @@ jobs:
         done
 
         if [ "$FAILED" = "true" ]; then
-          echo "❌ Some checks failed. Please review the logs." >> $GITHUB_STEP_SUMMARY
+          echo "❌ Some checks failed." >> $GITHUB_STEP_SUMMARY
           exit 1
         else
-          echo "✅ All relevant checks passed!" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
         fi
