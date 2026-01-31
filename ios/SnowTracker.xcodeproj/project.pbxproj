@@ -25,6 +25,8 @@
 		74BA625B9E4FE88B4C6172C6 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7308D06F97AABEC540CD28 /* APIClient.swift */; };
 		75E9966D6DAC958DE49B8269 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9DA3C8E41208AE034CEF3110 /* Assets.xcassets */; };
 		7AB63FA94855BFFC3BC3D96D /* CacheService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8480267002B460788F226295 /* CacheService.swift */; };
+		ANALYTICS0SERVICE0BUILD01 /* AnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = ANALYTICS0SERVICE0FILE001 /* AnalyticsService.swift */; };
+		GOOGLESERVICE0PLIST0BUILD /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = GOOGLESERVICE0PLIST0FILE1 /* GoogleService-Info.plist */; };
 		846AE61CF19B698637C23B0B /* WidgetDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCFAE2F42CB31F05913BA69F /* WidgetDataService.swift */; };
 		8720BD7F787971D36BBEE343 /* Managers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4090ACDD145A707AB31C7279 /* Managers.swift */; };
 		91143F070673A22F8B3D3849 /* SnowTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1CD2C514C419D7264FB7E0D /* SnowTrackerApp.swift */; };
@@ -104,6 +106,8 @@
 		788B314D9D64678AD7BBA620 /* SnowTracker.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SnowTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		827594616C43CCF87E99B50E /* SnowTrackerWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowTrackerWidgetBundle.swift; sourceTree = "<group>"; };
 		8480267002B460788F226295 /* CacheService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheService.swift; sourceTree = "<group>"; };
+		ANALYTICS0SERVICE0FILE001 /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
+		GOOGLESERVICE0PLIST0FILE1 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		89CDB4F02FB7AB5E6113AF9C /* SnowTrackerWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SnowTrackerWidget.entitlements; sourceTree = "<group>"; };
 		8BCC6D20537615D2F10A0472 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		90D609E1A932D206877E2D88 /* APIIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIIntegrationTests.swift; sourceTree = "<group>"; };
@@ -171,6 +175,7 @@
 		285960ACA67185390B9A0DFC /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				ANALYTICS0SERVICE0FILE001 /* AnalyticsService.swift */,
 				3D7308D06F97AABEC540CD28 /* APIClient.swift */,
 				D23B988BBFF873484906C493 /* AuthenticationService.swift */,
 				8480267002B460788F226295 /* CacheService.swift */,
@@ -265,6 +270,7 @@
 			isa = PBXGroup;
 			children = (
 				9DA3C8E41208AE034CEF3110 /* Assets.xcassets */,
+				GOOGLESERVICE0PLIST0FILE1 /* GoogleService-Info.plist */,
 			);
 			name = Resources;
 			path = SnowTracker/SnowTracker/Resources;
@@ -330,6 +336,8 @@
 				5074AE9C4AA03E9E7DB9DBC6 /* Get */,
 				79935C2C616889CF8FD93DEC /* Nuke */,
 				E4B5A37AEF93111CFF3FF51E /* KeychainSwift */,
+				FIREBASE0ANALYTICS0000001 /* FirebaseAnalytics */,
+				FIREBASE0CRASHLYTICS00001 /* FirebaseCrashlytics */,
 			);
 			productName = SnowTracker;
 			productReference = 788B314D9D64678AD7BBA620 /* SnowTracker.app */;
@@ -408,6 +416,7 @@
 				53427B1287F4F24C8ADC943B /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				432C3D5EC66C389FEFFC60F0 /* XCRemoteSwiftPackageReference "keychain-swift" */,
 				5165717C09BCFC07A1CA6896 /* XCRemoteSwiftPackageReference "Nuke" */,
+				FIREBASE0PKG0REF000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
@@ -427,6 +436,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				75E9966D6DAC958DE49B8269 /* Assets.xcassets in Resources */,
+				GOOGLESERVICE0PLIST0BUILD /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -440,6 +450,7 @@
 				74BA625B9E4FE88B4C6172C6 /* APIClient.swift in Sources */,
 				38D5CCC28385D7DC0208CB70 /* AuthenticationService.swift in Sources */,
 				24A3BDA567803E68B65547C7 /* AuthenticationViews.swift in Sources */,
+				ANALYTICS0SERVICE0BUILD01 /* AnalyticsService.swift in Sources */,
 				7AB63FA94855BFFC3BC3D96D /* CacheService.swift in Sources */,
 				A1B2C3D4E5F678901234ABCD /* ClusteredMapView.swift in Sources */,
 				5C548AAEA20DC47384E0E971 /* ConditionsView.swift in Sources */,
@@ -882,6 +893,14 @@
 				minimumVersion = 5.8.0;
 			};
 		};
+		FIREBASE0PKG0REF000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -914,6 +933,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 432C3D5EC66C389FEFFC60F0 /* XCRemoteSwiftPackageReference "keychain-swift" */;
 			productName = KeychainSwift;
+		};
+		FIREBASE0ANALYTICS0000001 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FIREBASE0PKG0REF000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		FIREBASE0CRASHLYTICS00001 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FIREBASE0PKG0REF000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

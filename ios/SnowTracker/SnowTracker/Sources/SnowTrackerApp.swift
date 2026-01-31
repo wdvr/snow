@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(FirebaseCore)
+import FirebaseCore
+#endif
 
 @main
 struct SnowTrackerApp: App {
@@ -8,6 +11,9 @@ struct SnowTrackerApp: App {
     @State private var showSplash = true
 
     init() {
+        // Initialize Firebase Analytics & Crashlytics
+        AnalyticsService.shared.configure()
+
         // Configure API client
         APIClient.configure()
     }
