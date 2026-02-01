@@ -208,6 +208,27 @@ jobs:
           echo "Weather processor Lambda updated"
         fi
 
+        # Deploy Notification Processor Lambda
+        NOTIFICATION_LAMBDA=$(pulumi stack output notification_processor_lambda_name 2>/dev/null || echo "")
+        APNS_PLATFORM_ARN=$(pulumi stack output apns_platform_app_arn 2>/dev/null || echo "")
+        if [ -n "$NOTIFICATION_LAMBDA" ]; then
+          echo "Deploying Notification processor Lambda: $NOTIFICATION_LAMBDA"
+          aws lambda update-function-code \
+            --function-name "$NOTIFICATION_LAMBDA" \
+            --s3-bucket "$S3_BUCKET" \
+            --s3-key "$S3_KEY" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$NOTIFICATION_LAMBDA" --region us-west-2
+
+          # Update Notification Lambda environment variables
+          aws lambda update-function-configuration \
+            --function-name "$NOTIFICATION_LAMBDA" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},USER_PREFERENCES_TABLE=snow-tracker-user-preferences-${{ env.ENVIRONMENT }},DEVICE_TOKENS_TABLE=snow-tracker-device-tokens-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},RESORT_EVENTS_TABLE=snow-tracker-resort-events-${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,APNS_PLATFORM_APP_ARN=$APNS_PLATFORM_ARN}" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$NOTIFICATION_LAMBDA" --region us-west-2
+          echo "Notification processor Lambda updated"
+        fi
+
         echo "Lambda deployment complete"
 
     - name: Seed resort data (dev/staging only)

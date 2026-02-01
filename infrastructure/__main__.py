@@ -166,6 +166,45 @@ feedback_table = aws.dynamodb.Table(
     tags=tags,
 )
 
+# Device tokens table for push notifications (APNs)
+device_tokens_table = aws.dynamodb.Table(
+    f"{app_name}-device-tokens-{environment}",
+    name=f"{app_name}-device-tokens-{environment}",
+    billing_mode="PAY_PER_REQUEST",
+    hash_key="user_id",
+    range_key="device_id",
+    attributes=[
+        {"name": "user_id", "type": "S"},
+        {"name": "device_id", "type": "S"},
+    ],
+    ttl={"attribute_name": "ttl", "enabled": True},
+    tags=tags,
+)
+
+# Resort events table for tracking events at resorts
+resort_events_table = aws.dynamodb.Table(
+    f"{app_name}-resort-events-{environment}",
+    name=f"{app_name}-resort-events-{environment}",
+    billing_mode="PAY_PER_REQUEST",
+    hash_key="resort_id",
+    range_key="event_id",
+    attributes=[
+        {"name": "resort_id", "type": "S"},
+        {"name": "event_id", "type": "S"},
+        {"name": "event_date", "type": "S"},
+    ],
+    global_secondary_indexes=[
+        {
+            "name": "EventDateIndex",
+            "hash_key": "resort_id",
+            "range_key": "event_date",
+            "projection_type": "ALL",
+        }
+    ],
+    ttl={"attribute_name": "ttl", "enabled": True},
+    tags=tags,
+)
+
 # IAM Role for Lambda functions
 lambda_role = aws.iam.Role(
     f"{app_name}-lambda-role-{environment}",
@@ -193,6 +232,8 @@ lambda_policy = aws.iam.RolePolicy(
         weather_conditions_table.arn,
         user_preferences_table.arn,
         feedback_table.arn,
+        device_tokens_table.arn,
+        resort_events_table.arn,
     ).apply(
         lambda arns: f"""{{
         "Version": "2012-10-17",
@@ -214,17 +255,22 @@ lambda_policy = aws.iam.RolePolicy(
                     "dynamodb:UpdateItem",
                     "dynamodb:DeleteItem",
                     "dynamodb:Query",
-                    "dynamodb:Scan"
+                    "dynamodb:Scan",
+                    "dynamodb:BatchGetItem"
                 ],
                 "Resource": [
                     "{arns[0]}",
                     "{arns[1]}",
                     "{arns[2]}",
                     "{arns[3]}",
+                    "{arns[4]}",
+                    "{arns[5]}",
                     "{arns[0]}/index/*",
                     "{arns[1]}/index/*",
                     "{arns[2]}/index/*",
-                    "{arns[3]}/index/*"
+                    "{arns[3]}/index/*",
+                    "{arns[4]}/index/*",
+                    "{arns[5]}/index/*"
                 ]
             }}
         ]
@@ -309,6 +355,102 @@ weather_schedule_target = aws.cloudwatch.EventTarget(
     f"{app_name}-weather-schedule-target-{environment}",
     rule=weather_schedule_rule.name,
     arn=weather_processor_lambda.arn,
+)
+
+# =============================================================================
+# Notification Processor Lambda - Sends push notifications for snow/events
+# =============================================================================
+
+# Log group for notification processor
+notification_processor_log_group = aws.cloudwatch.LogGroup(
+    f"{app_name}-notification-processor-logs-{environment}",
+    name=f"/aws/lambda/{app_name}-notification-processor-{environment}",
+    retention_in_days=14,
+    tags=tags,
+)
+
+# SNS Platform Application for APNs (iOS push notifications)
+# APNs uses token-based authentication (.p8 key file)
+# Required config:
+#   pulumi config set --secret apnsPrivateKey "$(cat AuthKey_XXXXXX.p8)"
+#   pulumi config set apnsKeyId "XXXXXXXXXX"
+#   pulumi config set apnsTeamId "XXXXXXXXXX"
+#   pulumi config set apnsBundleId "com.wouterdevriendt.snowtracker"
+
+# Get APNs configuration (optional - will use placeholders if not set)
+apns_private_key = config.get_secret("apnsPrivateKey") or "placeholder-configure-via-pulumi-config"
+apns_key_id = config.get("apnsKeyId") or "PLACEHOLDER"
+apns_team_id = config.get("apnsTeamId") or "N324UX8D9M"  # Default to existing team ID
+apns_bundle_id = config.get("apnsBundleId") or "com.wouterdevriendt.snowtracker"
+
+apns_platform_app = aws.sns.PlatformApplication(
+    f"{app_name}-apns-{environment}",
+    name=f"{app_name}-apns-{environment}",
+    platform="APNS_SANDBOX" if environment != "prod" else "APNS",
+    # Token-based authentication credentials
+    platform_credential=apns_private_key,
+    platform_principal=apns_key_id,
+    # Additional attributes for token-based auth
+    attributes={
+        "ApplePlatformTeamID": apns_team_id,
+        "ApplePlatformBundleID": apns_bundle_id,
+    },
+    tags=tags,
+)
+
+# Lambda function for notification processing
+notification_processor_lambda = aws.lambda_.Function(
+    f"{app_name}-notification-processor-{environment}",
+    name=f"{app_name}-notification-processor-{environment}",
+    role=lambda_role.arn,
+    handler="handlers.notification_processor.notification_handler",
+    runtime="python3.12",
+    timeout=300,  # 5 minutes for processing all users
+    memory_size=256,
+    code=pulumi.AssetArchive(
+        {
+            "index.py": pulumi.StringAsset(placeholder_lambda_code),
+        }
+    ),
+    environment=aws.lambda_.FunctionEnvironmentArgs(
+        variables={
+            "ENVIRONMENT": environment,
+            "USER_PREFERENCES_TABLE": f"{app_name}-user-preferences-{environment}",
+            "DEVICE_TOKENS_TABLE": f"{app_name}-device-tokens-{environment}",
+            "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
+            "RESORT_EVENTS_TABLE": f"{app_name}-resort-events-{environment}",
+            "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
+            "AWS_REGION_NAME": aws_region,
+            "APNS_PLATFORM_APP_ARN": apns_platform_app.arn,
+        }
+    ),
+    tags=tags,
+    opts=pulumi.ResourceOptions(depends_on=[lambda_role, notification_processor_log_group]),
+)
+
+# CloudWatch Events rule to trigger notification processor every hour
+notification_schedule_rule = aws.cloudwatch.EventRule(
+    f"{app_name}-notification-schedule-{environment}",
+    name=f"{app_name}-notification-schedule-{environment}",
+    description="Trigger notification processor every hour",
+    schedule_expression="rate(1 hour)",
+    tags=tags,
+)
+
+# Permission for CloudWatch Events to invoke the notification Lambda
+notification_schedule_permission = aws.lambda_.Permission(
+    f"{app_name}-notification-schedule-permission-{environment}",
+    action="lambda:InvokeFunction",
+    function=notification_processor_lambda.name,
+    principal="events.amazonaws.com",
+    source_arn=notification_schedule_rule.arn,
+)
+
+# CloudWatch Events target to invoke the notification processor Lambda
+notification_schedule_target = aws.cloudwatch.EventTarget(
+    f"{app_name}-notification-schedule-target-{environment}",
+    rule=notification_schedule_rule.name,
+    arn=notification_processor_lambda.arn,
 )
 
 # API Gateway REST API
@@ -1087,6 +1229,8 @@ pulumi.export("resorts_table_name", resorts_table.name)
 pulumi.export("weather_conditions_table_name", weather_conditions_table.name)
 pulumi.export("user_preferences_table_name", user_preferences_table.name)
 pulumi.export("feedback_table_name", feedback_table.name)
+pulumi.export("device_tokens_table_name", device_tokens_table.name)
+pulumi.export("resort_events_table_name", resort_events_table.name)
 pulumi.export("lambda_role_arn", lambda_role.arn)
 pulumi.export("api_gateway_id", api_gateway.id)
 pulumi.export("api_gateway_url", api_deployment.invoke_url)
@@ -1113,6 +1257,9 @@ pulumi.export("environment", environment)
 pulumi.export("weather_processor_lambda_name", weather_processor_lambda.name)
 pulumi.export("weather_schedule_rule_name", weather_schedule_rule.name)
 pulumi.export("api_handler_lambda_name", api_handler_lambda.name)
+pulumi.export("notification_processor_lambda_name", notification_processor_lambda.name)
+pulumi.export("notification_schedule_rule_name", notification_schedule_rule.name)
+pulumi.export("apns_platform_app_arn", apns_platform_app.arn)
 pulumi.export("resort_updates_topic_arn", resort_updates_topic.arn)
 
 # Monitoring exports

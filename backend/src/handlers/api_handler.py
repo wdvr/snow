@@ -997,6 +997,482 @@ async def update_user_preferences(
         )
 
 
+# MARK: - Device Token Endpoints
+
+
+class DeviceTokenRequest(BaseModel):
+    """Request body for registering a device token."""
+
+    device_id: str = Field(..., description="Unique device identifier")
+    token: str = Field(..., description="APNs device token")
+    platform: str = Field(default="ios", description="Platform (ios, android)")
+    app_version: str | None = Field(None, description="App version")
+
+
+_notification_service = None
+_device_tokens_table = None
+
+
+def get_device_tokens_table():
+    """Get or create device tokens table (lazy init for SnapStart)."""
+    global _device_tokens_table
+    if _device_tokens_table is None:
+        _device_tokens_table = get_dynamodb().Table(
+            os.environ.get("DEVICE_TOKENS_TABLE", "snow-tracker-device-tokens-dev")
+        )
+    return _device_tokens_table
+
+
+def get_notification_service():
+    """Get or create NotificationService (lazy init for SnapStart)."""
+    global _notification_service
+    if _notification_service is None:
+        from services.notification_service import NotificationService
+
+        dynamodb = get_dynamodb()
+        _notification_service = NotificationService(
+            device_tokens_table=get_device_tokens_table(),
+            user_preferences_table=dynamodb.Table(
+                os.environ.get(
+                    "USER_PREFERENCES_TABLE", "snow-tracker-user-preferences-dev"
+                )
+            ),
+            resort_events_table=dynamodb.Table(
+                os.environ.get("RESORT_EVENTS_TABLE", "snow-tracker-resort-events-dev")
+            ),
+            weather_conditions_table=dynamodb.Table(
+                os.environ.get(
+                    "WEATHER_CONDITIONS_TABLE", "snow-tracker-weather-conditions-dev"
+                )
+            ),
+            resorts_table=dynamodb.Table(
+                os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
+            ),
+        )
+    return _notification_service
+
+
+@app.post("/api/v1/user/device-tokens", status_code=status.HTTP_201_CREATED)
+async def register_device_token(
+    request: DeviceTokenRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Register a device token for push notifications.
+
+    This endpoint should be called when the app receives an APNs token.
+    Tokens are automatically expired after 90 days if not refreshed.
+    """
+    try:
+        device_token = get_notification_service().register_device_token(
+            user_id=user_id,
+            device_id=request.device_id,
+            token=request.token,
+            platform=request.platform,
+            app_version=request.app_version,
+        )
+
+        return {
+            "message": "Device token registered successfully",
+            "device_id": device_token.device_id,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to register device token: {str(e)}",
+        )
+
+
+@app.delete(
+    "/api/v1/user/device-tokens/{device_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+async def unregister_device_token(
+    device_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Unregister a device token.
+
+    Call this when the user signs out or disables notifications.
+    """
+    try:
+        get_notification_service().unregister_device_token(user_id, device_id)
+        return None
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to unregister device token: {str(e)}",
+        )
+
+
+@app.get("/api/v1/user/device-tokens")
+async def get_device_tokens(
+    response: Response,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Get all registered device tokens for the current user."""
+    try:
+        tokens = get_notification_service().get_user_device_tokens(user_id)
+
+        response.headers["Cache-Control"] = CACHE_CONTROL_PRIVATE
+
+        return {
+            "tokens": [
+                {
+                    "device_id": t.device_id,
+                    "platform": t.platform,
+                    "app_version": t.app_version,
+                    "created_at": t.created_at,
+                }
+                for t in tokens
+            ],
+            "count": len(tokens),
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve device tokens: {str(e)}",
+        )
+
+
+# MARK: - Notification Settings Endpoints
+
+
+class NotificationSettingsRequest(BaseModel):
+    """Request body for updating notification settings."""
+
+    notifications_enabled: bool | None = Field(
+        None, description="Master switch for all notifications"
+    )
+    fresh_snow_alerts: bool | None = Field(
+        None, description="Enable fresh snow notifications"
+    )
+    event_alerts: bool | None = Field(
+        None, description="Enable resort event notifications"
+    )
+    weekly_summary: bool | None = Field(None, description="Enable weekly summary")
+    default_snow_threshold_cm: float | None = Field(
+        None, description="Default minimum snow in cm to trigger notification"
+    )
+    grace_period_hours: int | None = Field(
+        None, description="Minimum hours between notifications for same resort"
+    )
+
+
+class ResortNotificationSettingsRequest(BaseModel):
+    """Request body for resort-specific notification settings."""
+
+    fresh_snow_enabled: bool | None = Field(
+        None, description="Enable fresh snow notifications for this resort"
+    )
+    fresh_snow_threshold_cm: float | None = Field(
+        None, description="Minimum fresh snow in cm to trigger notification"
+    )
+    event_notifications_enabled: bool | None = Field(
+        None, description="Enable event notifications for this resort"
+    )
+
+
+@app.get("/api/v1/user/notification-settings")
+async def get_notification_settings(
+    response: Response,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Get the current user's notification settings."""
+    try:
+        prefs = get_user_service().get_user_preferences(user_id)
+        if not prefs:
+            # Return default settings
+            from models.notification import UserNotificationPreferences
+
+            settings = UserNotificationPreferences()
+        else:
+            settings = prefs.get_notification_settings()
+
+        response.headers["Cache-Control"] = CACHE_CONTROL_PRIVATE
+
+        return settings.model_dump()
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve notification settings: {str(e)}",
+        )
+
+
+@app.put("/api/v1/user/notification-settings")
+async def update_notification_settings(
+    request: NotificationSettingsRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Update the current user's notification settings."""
+    try:
+        from models.notification import UserNotificationPreferences
+
+        prefs = get_user_service().get_user_preferences(user_id)
+        if not prefs:
+            # Create new preferences
+            prefs = UserPreferences(
+                user_id=user_id,
+                created_at=datetime.now(UTC).isoformat(),
+                updated_at=datetime.now(UTC).isoformat(),
+            )
+
+        # Get or create notification settings
+        settings = prefs.get_notification_settings()
+
+        # Update only provided fields
+        if request.notifications_enabled is not None:
+            settings.notifications_enabled = request.notifications_enabled
+        if request.fresh_snow_alerts is not None:
+            settings.fresh_snow_alerts = request.fresh_snow_alerts
+        if request.event_alerts is not None:
+            settings.event_alerts = request.event_alerts
+        if request.weekly_summary is not None:
+            settings.weekly_summary = request.weekly_summary
+        if request.default_snow_threshold_cm is not None:
+            settings.default_snow_threshold_cm = request.default_snow_threshold_cm
+        if request.grace_period_hours is not None:
+            settings.grace_period_hours = request.grace_period_hours
+
+        # Save updated settings
+        prefs.notification_settings = settings
+        prefs.updated_at = datetime.now(UTC).isoformat()
+        get_user_service().save_user_preferences(prefs)
+
+        return {"message": "Notification settings updated successfully"}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update notification settings: {str(e)}",
+        )
+
+
+@app.put("/api/v1/user/notification-settings/resorts/{resort_id}")
+async def update_resort_notification_settings(
+    resort_id: str,
+    request: ResortNotificationSettingsRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Update notification settings for a specific resort.
+
+    This allows users to customize notification thresholds per resort.
+    """
+    try:
+        from models.notification import ResortNotificationSettings
+
+        prefs = get_user_service().get_user_preferences(user_id)
+        if not prefs:
+            prefs = UserPreferences(
+                user_id=user_id,
+                created_at=datetime.now(UTC).isoformat(),
+                updated_at=datetime.now(UTC).isoformat(),
+            )
+
+        settings = prefs.get_notification_settings()
+
+        # Get or create resort-specific settings
+        resort_settings = settings.resort_settings.get(resort_id)
+        if resort_settings is None:
+            resort_settings = ResortNotificationSettings(
+                resort_id=resort_id,
+                fresh_snow_enabled=settings.fresh_snow_alerts,
+                fresh_snow_threshold_cm=settings.default_snow_threshold_cm,
+                event_notifications_enabled=settings.event_alerts,
+            )
+
+        # Update only provided fields
+        if request.fresh_snow_enabled is not None:
+            resort_settings.fresh_snow_enabled = request.fresh_snow_enabled
+        if request.fresh_snow_threshold_cm is not None:
+            resort_settings.fresh_snow_threshold_cm = request.fresh_snow_threshold_cm
+        if request.event_notifications_enabled is not None:
+            resort_settings.event_notifications_enabled = (
+                request.event_notifications_enabled
+            )
+
+        # Save updated settings
+        settings.resort_settings[resort_id] = resort_settings
+        prefs.notification_settings = settings
+        prefs.updated_at = datetime.now(UTC).isoformat()
+        get_user_service().save_user_preferences(prefs)
+
+        return {
+            "message": f"Notification settings for {resort_id} updated successfully"
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update resort notification settings: {str(e)}",
+        )
+
+
+@app.delete("/api/v1/user/notification-settings/resorts/{resort_id}")
+async def delete_resort_notification_settings(
+    resort_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Remove resort-specific notification settings (revert to defaults)."""
+    try:
+        prefs = get_user_service().get_user_preferences(user_id)
+        if not prefs:
+            return {"message": "No settings to delete"}
+
+        settings = prefs.get_notification_settings()
+
+        # Remove resort-specific settings
+        if resort_id in settings.resort_settings:
+            del settings.resort_settings[resort_id]
+            prefs.notification_settings = settings
+            prefs.updated_at = datetime.now(UTC).isoformat()
+            get_user_service().save_user_preferences(prefs)
+
+        return {"message": f"Resort-specific settings for {resort_id} removed"}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete resort notification settings: {str(e)}",
+        )
+
+
+# MARK: - Resort Events Endpoints
+
+_resort_events_table = None
+
+
+def get_resort_events_table():
+    """Get or create resort events table (lazy init for SnapStart)."""
+    global _resort_events_table
+    if _resort_events_table is None:
+        _resort_events_table = get_dynamodb().Table(
+            os.environ.get("RESORT_EVENTS_TABLE", "snow-tracker-resort-events-dev")
+        )
+    return _resort_events_table
+
+
+class CreateResortEventRequest(BaseModel):
+    """Request body for creating a resort event."""
+
+    event_type: str = Field(..., description="Type of event (e.g., 'free_store', 'special_offer', 'competition')")
+    title: str = Field(..., description="Event title")
+    description: str | None = Field(None, description="Event description")
+    event_date: str = Field(..., description="Date of the event (YYYY-MM-DD)")
+    start_time: str | None = Field(None, description="Start time (HH:MM)")
+    end_time: str | None = Field(None, description="End time (HH:MM)")
+    location: str | None = Field(None, description="Location within resort")
+    url: str | None = Field(None, description="URL for more information")
+
+
+@app.get("/api/v1/resorts/{resort_id}/events")
+async def get_resort_events(
+    resort_id: str,
+    response: Response,
+    days_ahead: int = Query(default=30, ge=1, le=90, description="Days to look ahead"),
+):
+    """Get upcoming events for a resort."""
+    try:
+        from datetime import timedelta
+
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        future_date = (datetime.now(UTC) + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+
+        result = get_resort_events_table().query(
+            IndexName="EventDateIndex",
+            KeyConditionExpression="resort_id = :rid AND event_date BETWEEN :start AND :end",
+            ExpressionAttributeValues={
+                ":rid": resort_id,
+                ":start": today,
+                ":end": future_date,
+            },
+        )
+
+        events = result.get("Items", [])
+        response.headers["Cache-Control"] = CACHE_CONTROL_SHORT
+
+        return {
+            "resort_id": resort_id,
+            "events": events,
+            "count": len(events),
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve resort events: {str(e)}",
+        )
+
+
+@app.post("/api/v1/resorts/{resort_id}/events", status_code=status.HTTP_201_CREATED)
+async def create_resort_event(
+    resort_id: str,
+    request: CreateResortEventRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Create a new event for a resort.
+
+    Note: In production, this should be restricted to admin users.
+    For now, any authenticated user can create events.
+    """
+    import uuid
+
+    from models.notification import ResortEvent
+
+    try:
+        event = ResortEvent.create(
+            resort_id=resort_id,
+            event_id=str(uuid.uuid4()),
+            event_type=request.event_type,
+            title=request.title,
+            event_date=request.event_date,
+            description=request.description,
+            start_time=request.start_time,
+            end_time=request.end_time,
+            location=request.location,
+            url=request.url,
+        )
+
+        get_resort_events_table().put_item(Item=event.model_dump())
+
+        return {
+            "message": "Event created successfully",
+            "event_id": event.event_id,
+            "resort_id": resort_id,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create resort event: {str(e)}",
+        )
+
+
+@app.delete("/api/v1/resorts/{resort_id}/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_resort_event(
+    resort_id: str,
+    event_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Delete a resort event.
+
+    Note: In production, this should be restricted to admin users.
+    """
+    try:
+        get_resort_events_table().delete_item(
+            Key={"resort_id": resort_id, "event_id": event_id}
+        )
+        return None
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete resort event: {str(e)}",
+        )
+
+
 # MARK: - Feedback Endpoint
 
 

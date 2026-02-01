@@ -47,6 +47,7 @@ targets:
     entitlements:
       path: SnowTracker/SnowTracker.entitlements
       properties:
+        aps-environment: development
         com.apple.security.application-groups:
           - group.com.wouterdevriendt.snowtracker
         com.apple.developer.applesignin:
