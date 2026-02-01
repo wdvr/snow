@@ -807,6 +807,8 @@ final class APIClient {
                 switch code {
                 case 401:
                     return .unauthorized
+                case 403:
+                    return .forbidden
                 case 404:
                     return .notFound
                 case 500...599:
@@ -1563,6 +1565,7 @@ enum APIError: Error, LocalizedError {
     case decodingError
     case networkError(String)
     case unauthorized
+    case forbidden
     case notFound
     case serverError(Int)
     case noConnection
@@ -1579,7 +1582,9 @@ enum APIError: Error, LocalizedError {
         case .networkError(let message):
             return "Network error: \(message)"
         case .unauthorized:
-            return "Please sign in to continue"
+            return "Session expired. Please sign out and sign in again."
+        case .forbidden:
+            return "This feature is not available"
         case .notFound:
             return "Resource not found"
         case .serverError(let code):
