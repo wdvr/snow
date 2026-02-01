@@ -80,12 +80,18 @@ struct NotificationSettingsView: View {
                         .onChange(of: viewModel.eventAlerts) { _, _ in
                             viewModel.saveSettings()
                         }
+
+                    Toggle("Thaw/Freeze Alerts", isOn: $viewModel.thawFreezeAlerts)
+                        .onChange(of: viewModel.thawFreezeAlerts) { _, _ in
+                            viewModel.saveSettings()
+                        }
                 } header: {
                     Text("Alert Types")
                 } footer: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Fresh Snow Alerts: Get notified when fresh snow falls at your favorite resorts.")
                         Text("Resort Events: Get notified about special events and offers at your favorite resorts.")
+                        Text("Thaw/Freeze Alerts: Get notified when temperatures rise above 0°C for 4+ hours (thawing) or drop below 0°C (freezing) - indicates icy conditions ahead.")
                     }
                 }
 
@@ -299,6 +305,7 @@ class NotificationSettingsViewModel: ObservableObject {
     @Published var notificationsEnabled = true
     @Published var freshSnowAlerts = true
     @Published var eventAlerts = true
+    @Published var thawFreezeAlerts = true
     @Published var weeklySummary = false
     @Published var snowThresholdCm: Double = 1.0
     @Published var gracePeriodHours = 24
@@ -338,6 +345,7 @@ class NotificationSettingsViewModel: ObservableObject {
             notificationsEnabled = settings.notificationsEnabled
             freshSnowAlerts = settings.freshSnowAlerts
             eventAlerts = settings.eventAlerts
+            thawFreezeAlerts = settings.thawFreezeAlerts
             weeklySummary = settings.weeklySummary
             snowThresholdCm = settings.defaultSnowThresholdCm
             gracePeriodHours = settings.gracePeriodHours
@@ -355,6 +363,7 @@ class NotificationSettingsViewModel: ObservableObject {
                     notificationsEnabled: notificationsEnabled,
                     freshSnowAlerts: freshSnowAlerts,
                     eventAlerts: eventAlerts,
+                    thawFreezeAlerts: thawFreezeAlerts,
                     weeklySummary: weeklySummary,
                     defaultSnowThresholdCm: snowThresholdCm,
                     gracePeriodHours: gracePeriodHours
