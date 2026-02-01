@@ -80,6 +80,10 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
+        # Privacy - Location Usage
+        NSLocationWhenInUseUsageDescription: "Snow Tracker uses your location to show nearby ski resorts and calculate distances to resorts."
+        # App Store compliance
+        ITSAppUsesNonExemptEncryption: false
         # Google Sign-In configuration
         GIDClientID: 269334695221-p2i31pdp3n7ms7o7rpf6cb3vsdmc4ohs.apps.googleusercontent.com
         CFBundleURLTypes:
