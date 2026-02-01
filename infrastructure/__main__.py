@@ -649,7 +649,10 @@ def get_conditions(resort_id, headers):
             "ENVIRONMENT": environment,
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
+            "USER_PREFERENCES_TABLE": f"{app_name}-user-preferences-{environment}",
             "FEEDBACK_TABLE": f"{app_name}-feedback-{environment}",
+            "DEVICE_TOKENS_TABLE": f"{app_name}-device-tokens-{environment}",
+            "RESORT_EVENTS_TABLE": f"{app_name}-resort-events-{environment}",
             "AWS_REGION_NAME": aws_region,
         }
     ),
