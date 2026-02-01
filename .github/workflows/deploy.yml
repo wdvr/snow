@@ -139,6 +139,18 @@ jobs:
         pulumi config set snow-tracker-infrastructure:env ${{ env.ENVIRONMENT }}
         pulumi config set snow-tracker-infrastructure:appName snow-tracker
 
+        # Configure APNs if credentials are available
+        if [ -n "${{ secrets.APNS_KEY_ID }}" ] && [ -n "${{ secrets.APNS_PRIVATE_KEY }}" ]; then
+          echo "Configuring APNs credentials..."
+          pulumi config set snow-tracker-infrastructure:apnsKeyId "${{ secrets.APNS_KEY_ID }}"
+          pulumi config set --secret snow-tracker-infrastructure:apnsPrivateKey "${{ secrets.APNS_PRIVATE_KEY }}"
+          pulumi config set snow-tracker-infrastructure:apnsTeamId "${APNS_TEAM_ID:-N324UX8D9M}"
+          pulumi config set snow-tracker-infrastructure:apnsBundleId "com.wouterdevriendt.snowtracker"
+          echo "APNs credentials configured"
+        else
+          echo "APNs credentials not set - push notifications will not be available"
+        fi
+
         # Deploy - Pulumi will update existing resources in place
         pulumi up --yes --diff
 
