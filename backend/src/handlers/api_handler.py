@@ -1978,6 +1978,173 @@ async def mark_trip_alerts_read(
         )
 
 
+# =============================================================================
+# MARK: - Test/Debug Endpoints (for development only)
+# =============================================================================
+
+
+@app.post("/api/v1/debug/trigger-notifications")
+async def trigger_notifications(
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    Manually trigger the notification processor for testing.
+    This invokes the notification Lambda asynchronously.
+    Only available in staging environment.
+    """
+    import boto3
+
+    environment = os.environ.get("ENVIRONMENT", "dev")
+
+    # Only allow in staging for testing
+    if environment == "prod":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This endpoint is not available in production",
+        )
+
+    try:
+        lambda_client = boto3.client("lambda", region_name=os.environ.get("AWS_REGION_NAME", "us-west-2"))
+
+        # Get the notification processor Lambda name
+        notification_lambda_name = f"snow-tracker-notification-processor-{environment}"
+
+        # Invoke asynchronously with a test payload
+        response = lambda_client.invoke(
+            FunctionName=notification_lambda_name,
+            InvocationType="Event",  # Async invocation
+            Payload=json.dumps({
+                "source": "manual_trigger",
+                "user_id": user_id,
+                "test_mode": True,
+            }),
+        )
+
+        return {
+            "message": "Notification processor triggered",
+            "status_code": response.get("StatusCode"),
+            "environment": environment,
+            "lambda_name": notification_lambda_name,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to trigger notification processor: {str(e)}",
+        )
+
+
+@app.post("/api/v1/debug/test-push-notification")
+async def test_push_notification(
+    user_id: str = Depends(get_current_user_id),
+    title: str = "Test Notification",
+    body: str = "This is a test push notification from Snow Tracker",
+):
+    """
+    Send a test push notification to all devices registered for this user.
+    Only available in staging environment.
+    """
+    import boto3
+
+    environment = os.environ.get("ENVIRONMENT", "dev")
+
+    # Only allow in staging for testing
+    if environment == "prod":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This endpoint is not available in production",
+        )
+
+    try:
+        # Get user's device tokens
+        device_tokens_table = get_dynamodb().Table(
+            os.environ.get("DEVICE_TOKENS_TABLE", f"snow-tracker-device-tokens-{environment}")
+        )
+
+        result = device_tokens_table.query(
+            KeyConditionExpression="user_id = :uid",
+            ExpressionAttributeValues={":uid": user_id},
+        )
+
+        tokens = result.get("Items", [])
+
+        if not tokens:
+            return {
+                "message": "No device tokens registered for this user",
+                "user_id": user_id,
+                "tokens_found": 0,
+            }
+
+        # Send notification via SNS
+        sns_client = boto3.client("sns", region_name=os.environ.get("AWS_REGION_NAME", "us-west-2"))
+
+        apns_arn = os.environ.get("APNS_PLATFORM_APP_ARN", "")
+        if not apns_arn or apns_arn == "not-configured":
+            return {
+                "message": "APNs not configured - push notifications unavailable",
+                "user_id": user_id,
+                "tokens_found": len(tokens),
+            }
+
+        results = []
+        for token_record in tokens:
+            device_token = token_record.get("device_token")
+            if not device_token:
+                continue
+
+            try:
+                # Create endpoint for this device
+                endpoint_response = sns_client.create_platform_endpoint(
+                    PlatformApplicationArn=apns_arn,
+                    Token=device_token,
+                )
+                endpoint_arn = endpoint_response["EndpointArn"]
+
+                # Send the notification
+                apns_payload = {
+                    "aps": {
+                        "alert": {
+                            "title": title,
+                            "body": body,
+                        },
+                        "sound": "default",
+                        "badge": 1,
+                    },
+                    "test": True,
+                }
+
+                sns_client.publish(
+                    TargetArn=endpoint_arn,
+                    Message=json.dumps({"APNS_SANDBOX": json.dumps(apns_payload)}),
+                    MessageStructure="json",
+                )
+
+                results.append({
+                    "device_id": token_record.get("device_id"),
+                    "status": "sent",
+                })
+
+            except Exception as e:
+                results.append({
+                    "device_id": token_record.get("device_id"),
+                    "status": "failed",
+                    "error": str(e),
+                })
+
+        return {
+            "message": "Test notification sent",
+            "user_id": user_id,
+            "tokens_found": len(tokens),
+            "results": results,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send test notification: {str(e)}",
+        )
+
+
 # MARK: - Error Handlers
 
 

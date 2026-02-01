@@ -737,6 +737,52 @@ final class APIClient {
         }
     }
 
+    // MARK: - Debug/Test Endpoints
+
+    /// Send a test push notification (staging only)
+    func sendTestPushNotification() async throws -> DebugResponse {
+        let url = baseURL.appendingPathComponent("api/v1/debug/test-push-notification")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(
+                url,
+                method: .post,
+                headers: authHeaders()
+            )
+            .validate()
+            .responseDecodable(of: DebugResponse.self) { response in
+                switch response.result {
+                case .success(let result):
+                    continuation.resume(returning: result)
+                case .failure(let error):
+                    continuation.resume(throwing: self.mapError(error))
+                }
+            }
+        }
+    }
+
+    /// Trigger the notification processor Lambda (staging only)
+    func triggerNotificationProcessor() async throws -> DebugResponse {
+        let url = baseURL.appendingPathComponent("api/v1/debug/trigger-notifications")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(
+                url,
+                method: .post,
+                headers: authHeaders()
+            )
+            .validate()
+            .responseDecodable(of: DebugResponse.self) { response in
+                switch response.result {
+                case .success(let result):
+                    continuation.resume(returning: result)
+                case .failure(let error):
+                    continuation.resume(throwing: self.mapError(error))
+                }
+            }
+        }
+    }
+
     // MARK: - Authentication
 
     private func authHeaders() -> HTTPHeaders {
@@ -1476,6 +1522,34 @@ struct ResortNotificationSettingsUpdate: Codable {
         case freshSnowEnabled = "fresh_snow_enabled"
         case freshSnowThresholdCm = "fresh_snow_threshold_cm"
         case eventNotificationsEnabled = "event_notifications_enabled"
+    }
+}
+
+struct DebugResponse: Codable {
+    let message: String
+    let statusCode: Int?
+    let environment: String?
+    let tokensFound: Int?
+    let results: [DebugNotificationResult]?
+
+    private enum CodingKeys: String, CodingKey {
+        case message
+        case statusCode = "status_code"
+        case environment
+        case tokensFound = "tokens_found"
+        case results
+    }
+}
+
+struct DebugNotificationResult: Codable {
+    let deviceId: String?
+    let status: String
+    let error: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+        case status
+        case error
     }
 }
 
