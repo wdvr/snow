@@ -153,11 +153,10 @@ struct ProfileView: View {
                                 Text(user.displayName)
                                     .font(.headline)
 
-                                if let email = user.email {
-                                    Text(email)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
+                                // Always show email or a placeholder
+                                Text(user.emailDisplay)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
 
                                 // Show auth provider
                                 HStack(spacing: 4) {
@@ -216,43 +215,22 @@ struct ProfileView: View {
 
 struct GoogleLogoView: View {
     var body: some View {
-        GeometryReader { geometry in
-            let size = min(geometry.size.width, geometry.size.height)
-            let lineWidth = size * 0.15
-
-            ZStack {
-                // Blue arc (top-right)
-                Circle()
-                    .trim(from: 0.0, to: 0.25)
-                    .stroke(Color(red: 66/255, green: 133/255, blue: 244/255), lineWidth: lineWidth)
-                    .rotationEffect(.degrees(-45))
-
-                // Green arc (bottom-right)
-                Circle()
-                    .trim(from: 0.0, to: 0.25)
-                    .stroke(Color(red: 52/255, green: 168/255, blue: 83/255), lineWidth: lineWidth)
-                    .rotationEffect(.degrees(45))
-
-                // Yellow arc (bottom-left)
-                Circle()
-                    .trim(from: 0.0, to: 0.25)
-                    .stroke(Color(red: 251/255, green: 188/255, blue: 5/255), lineWidth: lineWidth)
-                    .rotationEffect(.degrees(135))
-
-                // Red arc (top-left)
-                Circle()
-                    .trim(from: 0.0, to: 0.25)
-                    .stroke(Color(red: 234/255, green: 67/255, blue: 53/255), lineWidth: lineWidth)
-                    .rotationEffect(.degrees(225))
-
-                // Blue bar extending right
-                Rectangle()
-                    .fill(Color(red: 66/255, green: 133/255, blue: 244/255))
-                    .frame(width: size * 0.45, height: lineWidth)
-                    .offset(x: size * 0.15)
-            }
-            .frame(width: size, height: size)
-        }
+        // Use the official Google "G" as a simple colored letter
+        // This renders reliably at all sizes
+        Text("G")
+            .font(.system(size: 18, weight: .bold, design: .rounded))
+            .foregroundStyle(
+                LinearGradient(
+                    colors: [
+                        Color(red: 66/255, green: 133/255, blue: 244/255),  // Google Blue
+                        Color(red: 234/255, green: 67/255, blue: 53/255),   // Google Red
+                        Color(red: 251/255, green: 188/255, blue: 5/255),   // Google Yellow
+                        Color(red: 52/255, green: 168/255, blue: 83/255)    // Google Green
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
     }
 }
 

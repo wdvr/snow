@@ -7,6 +7,18 @@ enum AppEnvironment: String, CaseIterable {
     case staging = "staging"
     case production = "prod"
 
+    /// Whether this is a debug or TestFlight build (for showing debug UI)
+    /// TestFlight builds have a sandbox receipt, App Store builds have a production receipt
+    static var isDebugOrTestFlight: Bool {
+        #if DEBUG
+        return true
+        #else
+        // TestFlight builds have a receipt file named "sandboxReceipt"
+        // App Store builds have a receipt file named "receipt"
+        return Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+        #endif
+    }
+
     var displayName: String {
         switch self {
         case .development: return "Development"
@@ -95,8 +107,8 @@ class AppConfiguration: ObservableObject {
         // Use staging for debug builds since dev environment is not deployed
         self.defaultEnvironment = .staging
         #else
-        // Production builds check bundle ID for staging vs prod
-        if Bundle.main.bundleIdentifier?.contains("staging") == true {
+        // TestFlight builds use staging, App Store builds use production
+        if AppEnvironment.isDebugOrTestFlight {
             self.defaultEnvironment = .staging
         } else {
             self.defaultEnvironment = .production

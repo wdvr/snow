@@ -807,6 +807,8 @@ final class APIClient {
                 switch code {
                 case 401:
                     return .unauthorized
+                case 403:
+                    return .forbidden
                 case 404:
                     return .notFound
                 case 500...599:
@@ -1499,6 +1501,7 @@ struct NotificationSettingsUpdate: Codable {
     var notificationsEnabled: Bool?
     var freshSnowAlerts: Bool?
     var eventAlerts: Bool?
+    var thawFreezeAlerts: Bool?
     var weeklySummary: Bool?
     var defaultSnowThresholdCm: Double?
     var gracePeriodHours: Int?
@@ -1507,6 +1510,7 @@ struct NotificationSettingsUpdate: Codable {
         case notificationsEnabled = "notifications_enabled"
         case freshSnowAlerts = "fresh_snow_alerts"
         case eventAlerts = "event_alerts"
+        case thawFreezeAlerts = "thaw_freeze_alerts"
         case weeklySummary = "weekly_summary"
         case defaultSnowThresholdCm = "default_snow_threshold_cm"
         case gracePeriodHours = "grace_period_hours"
@@ -1561,6 +1565,7 @@ enum APIError: Error, LocalizedError {
     case decodingError
     case networkError(String)
     case unauthorized
+    case forbidden
     case notFound
     case serverError(Int)
     case noConnection
@@ -1577,7 +1582,9 @@ enum APIError: Error, LocalizedError {
         case .networkError(let message):
             return "Network error: \(message)"
         case .unauthorized:
-            return "Please sign in to continue"
+            return "Session expired. Please sign out and sign in again."
+        case .forbidden:
+            return "This feature is not available"
         case .notFound:
             return "Resource not found"
         case .serverError(let code):

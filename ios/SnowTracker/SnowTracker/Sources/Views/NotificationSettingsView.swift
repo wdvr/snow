@@ -80,12 +80,18 @@ struct NotificationSettingsView: View {
                         .onChange(of: viewModel.eventAlerts) { _, _ in
                             viewModel.saveSettings()
                         }
+
+                    Toggle("Thaw/Freeze Alerts", isOn: $viewModel.thawFreezeAlerts)
+                        .onChange(of: viewModel.thawFreezeAlerts) { _, _ in
+                            viewModel.saveSettings()
+                        }
                 } header: {
                     Text("Alert Types")
                 } footer: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Fresh Snow Alerts: Get notified when fresh snow falls at your favorite resorts.")
                         Text("Resort Events: Get notified about special events and offers at your favorite resorts.")
+                        Text("Thaw/Freeze Alerts: Get notified when temperatures rise above 0°C for 4+ hours (thawing) or drop below 0°C (freezing) - indicates icy conditions ahead.")
                     }
                 }
 
@@ -128,44 +134,44 @@ struct NotificationSettingsView: View {
                     }
                 }
 
-                // Debug Section (only in staging/debug builds)
-                #if DEBUG
-                Section {
-                    Button {
-                        viewModel.sendTestNotification()
-                    } label: {
-                        HStack {
-                            Image(systemName: "bell.badge")
-                            Text("Send Test Notification")
+                // Debug Section (only in staging/debug/TestFlight builds)
+                if AppEnvironment.isDebugOrTestFlight {
+                    Section {
+                        Button {
+                            viewModel.sendTestNotification()
+                        } label: {
+                            HStack {
+                                Image(systemName: "bell.badge")
+                                Text("Send Test Notification")
+                            }
                         }
-                    }
-                    .disabled(viewModel.isSendingTest)
+                        .disabled(viewModel.isSendingTest)
 
-                    Button {
-                        viewModel.triggerNotificationProcessor()
-                    } label: {
-                        HStack {
-                            Image(systemName: "arrow.clockwise")
-                            Text("Trigger Notification Check")
+                        Button {
+                            viewModel.triggerNotificationProcessor()
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.clockwise")
+                                Text("Trigger Notification Check")
+                            }
                         }
-                    }
-                    .disabled(viewModel.isSendingTest)
+                        .disabled(viewModel.isSendingTest)
 
-                    if let testResult = viewModel.testResult {
-                        HStack {
-                            Image(systemName: testResult.success ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                .foregroundStyle(testResult.success ? .green : .red)
-                            Text(testResult.message)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        if let testResult = viewModel.testResult {
+                            HStack {
+                                Image(systemName: testResult.success ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundStyle(testResult.success ? .green : .red)
+                                Text(testResult.message)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
+                    } header: {
+                        Text("Debug")
+                    } footer: {
+                        Text("Test notification features. Only visible in debug/TestFlight builds.")
                     }
-                } header: {
-                    Text("Debug")
-                } footer: {
-                    Text("Test notification features. Only visible in debug/TestFlight builds.")
                 }
-                #endif
             }
         }
         .navigationTitle("Notifications")
@@ -299,6 +305,7 @@ class NotificationSettingsViewModel: ObservableObject {
     @Published var notificationsEnabled = true
     @Published var freshSnowAlerts = true
     @Published var eventAlerts = true
+    @Published var thawFreezeAlerts = true
     @Published var weeklySummary = false
     @Published var snowThresholdCm: Double = 1.0
     @Published var gracePeriodHours = 24
@@ -338,6 +345,7 @@ class NotificationSettingsViewModel: ObservableObject {
             notificationsEnabled = settings.notificationsEnabled
             freshSnowAlerts = settings.freshSnowAlerts
             eventAlerts = settings.eventAlerts
+            thawFreezeAlerts = settings.thawFreezeAlerts
             weeklySummary = settings.weeklySummary
             snowThresholdCm = settings.defaultSnowThresholdCm
             gracePeriodHours = settings.gracePeriodHours
@@ -355,6 +363,7 @@ class NotificationSettingsViewModel: ObservableObject {
                     notificationsEnabled: notificationsEnabled,
                     freshSnowAlerts: freshSnowAlerts,
                     eventAlerts: eventAlerts,
+                    thawFreezeAlerts: thawFreezeAlerts,
                     weeklySummary: weeklySummary,
                     defaultSnowThresholdCm: snowThresholdCm,
                     gracePeriodHours: gracePeriodHours
@@ -418,6 +427,19 @@ class NotificationSettingsViewModel: ObservableObject {
 
     func sendTestNotification() {
         guard !isSendingTest else { return }
+
+        // Check authentication first
+        let authService = AuthenticationService.shared
+        guard authService.isAuthenticated else {
+            testResult = TestResult(success: false, message: "Please sign in first")
+            return
+        }
+
+        if authService.currentUser?.provider == .guest {
+            testResult = TestResult(success: false, message: "Debug features require signing in with Apple or Google")
+            return
+        }
+
         isSendingTest = true
         testResult = nil
 
@@ -425,6 +447,8 @@ class NotificationSettingsViewModel: ObservableObject {
             do {
                 let result = try await apiClient.sendTestPushNotification()
                 testResult = TestResult(success: true, message: result.message)
+            } catch let error as APIError {
+                testResult = TestResult(success: false, message: formatAuthError(error))
             } catch {
                 testResult = TestResult(success: false, message: error.localizedDescription)
             }
@@ -434,6 +458,19 @@ class NotificationSettingsViewModel: ObservableObject {
 
     func triggerNotificationProcessor() {
         guard !isSendingTest else { return }
+
+        // Check authentication first
+        let authService = AuthenticationService.shared
+        guard authService.isAuthenticated else {
+            testResult = TestResult(success: false, message: "Please sign in first")
+            return
+        }
+
+        if authService.currentUser?.provider == .guest {
+            testResult = TestResult(success: false, message: "Debug features require signing in with Apple or Google")
+            return
+        }
+
         isSendingTest = true
         testResult = nil
 
@@ -441,10 +478,23 @@ class NotificationSettingsViewModel: ObservableObject {
             do {
                 let result = try await apiClient.triggerNotificationProcessor()
                 testResult = TestResult(success: true, message: result.message)
+            } catch let error as APIError {
+                testResult = TestResult(success: false, message: formatAuthError(error))
             } catch {
                 testResult = TestResult(success: false, message: error.localizedDescription)
             }
             isSendingTest = false
+        }
+    }
+
+    private func formatAuthError(_ error: APIError) -> String {
+        switch error {
+        case .unauthorized:
+            return "Session expired. Please sign out and sign in again."
+        case .forbidden:
+            return "Debug features not available in this environment."
+        default:
+            return error.localizedDescription ?? "An error occurred"
         }
     }
 }

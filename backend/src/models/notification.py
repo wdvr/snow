@@ -14,6 +14,37 @@ class NotificationType(str, Enum):
     RESORT_EVENT = "resort_event"
     POWDER_ALERT = "powder_alert"
     CONDITIONS_IMPROVED = "conditions_improved"
+    THAW_ALERT = "thaw_alert"  # Temperature went from minus to plus for 4+ hours
+    FREEZE_ALERT = "freeze_alert"  # Temperature went from plus to minus
+
+
+# Funny messages for thaw alerts (rotate through these)
+THAW_MESSAGES = [
+    "Skating rink incoming! 🎿 Thaw cycle detected - expect icy patches later.",
+    "The mountain's having a hot flash! Thawing has begun, brace for ice.",
+    "Sun's out, slush is forming! Thaw alert - afternoon skiing may get crunchy.",
+    "Meltdown mode activated! Time to practice your ice dance moves.",
+    "Spring vibes detected! Thawing underway - grab those wider skis.",
+    "The snow is sweating! Expect slush by noon and ice by sunset.",
+    "Warm spell warning! The mountain is melting - corn snow ahead.",
+    "Temperature rising! Get ready for the refreeze rollercoaster.",
+    "Thaw cycle engaged! Today's powder becomes tomorrow's skating rink.",
+    "Heat wave on the slopes! Enjoy the slush before it turns to ice.",
+]
+
+# Funny messages for freeze alerts (rotate through these)
+FREEZE_MESSAGES = [
+    "Skating on ice ahead! 🥶 Freeze cycle started - sharpen those edges!",
+    "Brrr! The mountain's gone into deep freeze mode. Ice rink conditions incoming.",
+    "Jack Frost is back! Everything's refreezing - careful on those hard-packed runs.",
+    "The big chill has arrived! Yesterday's slush is today's bobsled track.",
+    "Freezing temps locked in! Time to channel your inner figure skater.",
+    "Winter's revenge! The thaw is over, bulletproof ice now forming.",
+    "Ice age begins! Better bring those freshly sharpened edges.",
+    "Frost alert! The mountain is hardening up - ski with caution.",
+    "Sub-zero lockdown! The slush has turned to survival mode skiing.",
+    "Deep freeze engaged! Those groomed runs are now Olympic luge tracks.",
+]
 
 
 class DeviceToken(BaseModel):
@@ -80,6 +111,9 @@ class UserNotificationPreferences(BaseModel):
     event_alerts: bool = Field(
         default=True, description="Enable resort event notifications globally"
     )
+    thaw_freeze_alerts: bool = Field(
+        default=True, description="Enable thaw/freeze cycle notifications"
+    )
     weekly_summary: bool = Field(
         default=False, description="Enable weekly snow summary"
     )
@@ -111,6 +145,20 @@ class UserNotificationPreferences(BaseModel):
     # Grace period in hours (minimum time between notifications for same resort)
     grace_period_hours: int = Field(
         default=24, description="Minimum hours between notifications for same resort"
+    )
+
+    # Temperature state tracking per resort for thaw/freeze alerts
+    # Key: resort_id, Value: "frozen" (below 0), "thawed" (above 0), or "unknown"
+    temperature_state: dict[str, str] = Field(
+        default_factory=dict,
+        description="Last known temperature state per resort (frozen/thawed)",
+    )
+
+    # Timestamp when positive temps started per resort (for 4-hour thaw detection)
+    # Key: resort_id, Value: ISO timestamp when temp went positive
+    thaw_started_at: dict[str, str] = Field(
+        default_factory=dict,
+        description="When temperature went positive per resort",
     )
 
     def can_notify_for_resort(self, resort_id: str) -> bool:
