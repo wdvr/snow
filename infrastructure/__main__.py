@@ -763,6 +763,79 @@ conditions_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# Events resource: /api/v1/resorts/{resortId}/events
+events_resource = aws.apigateway.Resource(
+    f"{app_name}-events-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=resort_resource.id,
+    path_part="events",
+)
+
+# GET /api/v1/resorts/{resortId}/events
+events_get_method = aws.apigateway.Method(
+    f"{app_name}-events-get-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=events_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+events_get_integration = aws.apigateway.Integration(
+    f"{app_name}-events-get-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=events_resource.id,
+    http_method=events_get_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# POST /api/v1/resorts/{resortId}/events
+events_post_method = aws.apigateway.Method(
+    f"{app_name}-events-post-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=events_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+events_post_integration = aws.apigateway.Integration(
+    f"{app_name}-events-post-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=events_resource.id,
+    http_method=events_post_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Single event resource: /api/v1/resorts/{resortId}/events/{eventId}
+event_resource = aws.apigateway.Resource(
+    f"{app_name}-event-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=events_resource.id,
+    path_part="{eventId}",
+)
+
+# DELETE /api/v1/resorts/{resortId}/events/{eventId}
+event_delete_method = aws.apigateway.Method(
+    f"{app_name}-event-delete-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=event_resource.id,
+    http_method="DELETE",
+    authorization="NONE",
+)
+
+event_delete_integration = aws.apigateway.Integration(
+    f"{app_name}-event-delete-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=event_resource.id,
+    http_method=event_delete_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # Batch conditions resource: /api/v1/conditions
 batch_conditions_parent_resource = aws.apigateway.Resource(
     f"{app_name}-batch-conditions-parent-resource-{environment}",
@@ -887,6 +960,210 @@ recommendations_best_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# =============================================================================
+# User API Routes (preferences, device tokens, notification settings)
+# =============================================================================
+
+# User resource: /api/v1/user
+user_resource = aws.apigateway.Resource(
+    f"{app_name}-user-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="user",
+)
+
+# Preferences resource: /api/v1/user/preferences
+user_preferences_resource = aws.apigateway.Resource(
+    f"{app_name}-user-preferences-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=user_resource.id,
+    path_part="preferences",
+)
+
+# GET /api/v1/user/preferences
+user_preferences_get_method = aws.apigateway.Method(
+    f"{app_name}-user-preferences-get-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=user_preferences_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+user_preferences_get_integration = aws.apigateway.Integration(
+    f"{app_name}-user-preferences-get-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=user_preferences_resource.id,
+    http_method=user_preferences_get_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# PUT /api/v1/user/preferences
+user_preferences_put_method = aws.apigateway.Method(
+    f"{app_name}-user-preferences-put-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=user_preferences_resource.id,
+    http_method="PUT",
+    authorization="NONE",
+)
+
+user_preferences_put_integration = aws.apigateway.Integration(
+    f"{app_name}-user-preferences-put-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=user_preferences_resource.id,
+    http_method=user_preferences_put_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Device tokens resource: /api/v1/user/device-tokens
+device_tokens_resource = aws.apigateway.Resource(
+    f"{app_name}-device-tokens-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=user_resource.id,
+    path_part="device-tokens",
+)
+
+# POST /api/v1/user/device-tokens
+device_tokens_post_method = aws.apigateway.Method(
+    f"{app_name}-device-tokens-post-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=device_tokens_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+device_tokens_post_integration = aws.apigateway.Integration(
+    f"{app_name}-device-tokens-post-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=device_tokens_resource.id,
+    http_method=device_tokens_post_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# GET /api/v1/user/device-tokens
+device_tokens_get_method = aws.apigateway.Method(
+    f"{app_name}-device-tokens-get-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=device_tokens_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+device_tokens_get_integration = aws.apigateway.Integration(
+    f"{app_name}-device-tokens-get-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=device_tokens_resource.id,
+    http_method=device_tokens_get_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Notification settings resource: /api/v1/user/notification-settings
+notification_settings_resource = aws.apigateway.Resource(
+    f"{app_name}-notification-settings-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=user_resource.id,
+    path_part="notification-settings",
+)
+
+# GET /api/v1/user/notification-settings
+notification_settings_get_method = aws.apigateway.Method(
+    f"{app_name}-notification-settings-get-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notification_settings_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+notification_settings_get_integration = aws.apigateway.Integration(
+    f"{app_name}-notification-settings-get-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notification_settings_resource.id,
+    http_method=notification_settings_get_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# PUT /api/v1/user/notification-settings
+notification_settings_put_method = aws.apigateway.Method(
+    f"{app_name}-notification-settings-put-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notification_settings_resource.id,
+    http_method="PUT",
+    authorization="NONE",
+)
+
+notification_settings_put_integration = aws.apigateway.Integration(
+    f"{app_name}-notification-settings-put-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notification_settings_resource.id,
+    http_method=notification_settings_put_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Resort notification settings: /api/v1/user/notification-settings/resorts
+resort_notification_settings_resource = aws.apigateway.Resource(
+    f"{app_name}-resort-notification-settings-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=notification_settings_resource.id,
+    path_part="resorts",
+)
+
+# Single resort notification settings: /api/v1/user/notification-settings/resorts/{resortId}
+resort_notification_setting_resource = aws.apigateway.Resource(
+    f"{app_name}-resort-notification-setting-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=resort_notification_settings_resource.id,
+    path_part="{resortId}",
+)
+
+# PUT /api/v1/user/notification-settings/resorts/{resortId}
+resort_notification_setting_put_method = aws.apigateway.Method(
+    f"{app_name}-resort-notification-setting-put-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=resort_notification_setting_resource.id,
+    http_method="PUT",
+    authorization="NONE",
+)
+
+resort_notification_setting_put_integration = aws.apigateway.Integration(
+    f"{app_name}-resort-notification-setting-put-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=resort_notification_setting_resource.id,
+    http_method=resort_notification_setting_put_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# DELETE /api/v1/user/notification-settings/resorts/{resortId}
+resort_notification_setting_delete_method = aws.apigateway.Method(
+    f"{app_name}-resort-notification-setting-delete-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=resort_notification_setting_resource.id,
+    http_method="DELETE",
+    authorization="NONE",
+)
+
+resort_notification_setting_delete_integration = aws.apigateway.Integration(
+    f"{app_name}-resort-notification-setting-delete-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=resort_notification_setting_resource.id,
+    http_method=resort_notification_setting_delete_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # API Gateway Deployment (depends on all integrations)
 # Note: triggers parameter forces recreation when routes change
 api_deployment = aws.apigateway.Deployment(
@@ -900,10 +1177,21 @@ api_deployment = aws.apigateway.Deployment(
             resorts_integration.id,
             resort_integration.id,
             conditions_integration.id,
+            events_get_integration.id,
+            events_post_integration.id,
+            event_delete_integration.id,
             batch_conditions_integration.id,
             snow_quality_batch_integration.id,
             recommendations_integration.id,
             recommendations_best_integration.id,
+            user_preferences_get_integration.id,
+            user_preferences_put_integration.id,
+            device_tokens_post_integration.id,
+            device_tokens_get_integration.id,
+            notification_settings_get_integration.id,
+            notification_settings_put_integration.id,
+            resort_notification_setting_put_integration.id,
+            resort_notification_setting_delete_integration.id,
         ).apply(lambda ids: ",".join(ids)),
     },
     opts=pulumi.ResourceOptions(
@@ -912,10 +1200,21 @@ api_deployment = aws.apigateway.Deployment(
             resorts_integration,
             resort_integration,
             conditions_integration,
+            events_get_integration,
+            events_post_integration,
+            event_delete_integration,
             batch_conditions_integration,
             snow_quality_batch_integration,
             recommendations_integration,
             recommendations_best_integration,
+            user_preferences_get_integration,
+            user_preferences_put_integration,
+            device_tokens_post_integration,
+            device_tokens_get_integration,
+            notification_settings_get_integration,
+            notification_settings_put_integration,
+            resort_notification_setting_put_integration,
+            resort_notification_setting_delete_integration,
         ]
     ),
 )
