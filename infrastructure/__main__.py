@@ -272,6 +272,23 @@ lambda_policy = aws.iam.RolePolicy(
                     "{arns[4]}/index/*",
                     "{arns[5]}/index/*"
                 ]
+            }},
+            {{
+                "Effect": "Allow",
+                "Action": [
+                    "lambda:InvokeFunction"
+                ],
+                "Resource": "arn:aws:lambda:*:*:function:snow-tracker-*"
+            }},
+            {{
+                "Effect": "Allow",
+                "Action": [
+                    "sns:CreatePlatformEndpoint",
+                    "sns:Publish",
+                    "sns:GetEndpointAttributes",
+                    "sns:SetEndpointAttributes"
+                ],
+                "Resource": "*"
             }}
         ]
     }}"""
@@ -1167,6 +1184,72 @@ resort_notification_setting_delete_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# =============================================================================
+# Debug API Routes (for testing notifications)
+# =============================================================================
+
+# Debug resource: /api/v1/debug
+debug_resource = aws.apigateway.Resource(
+    f"{app_name}-debug-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="debug",
+)
+
+# Trigger notifications resource: /api/v1/debug/trigger-notifications
+debug_trigger_notifications_resource = aws.apigateway.Resource(
+    f"{app_name}-debug-trigger-notifications-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=debug_resource.id,
+    path_part="trigger-notifications",
+)
+
+# POST /api/v1/debug/trigger-notifications
+debug_trigger_notifications_method = aws.apigateway.Method(
+    f"{app_name}-debug-trigger-notifications-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=debug_trigger_notifications_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+debug_trigger_notifications_integration = aws.apigateway.Integration(
+    f"{app_name}-debug-trigger-notifications-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=debug_trigger_notifications_resource.id,
+    http_method=debug_trigger_notifications_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Test push notification resource: /api/v1/debug/test-push-notification
+debug_test_push_resource = aws.apigateway.Resource(
+    f"{app_name}-debug-test-push-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=debug_resource.id,
+    path_part="test-push-notification",
+)
+
+# POST /api/v1/debug/test-push-notification
+debug_test_push_method = aws.apigateway.Method(
+    f"{app_name}-debug-test-push-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=debug_test_push_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+debug_test_push_integration = aws.apigateway.Integration(
+    f"{app_name}-debug-test-push-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=debug_test_push_resource.id,
+    http_method=debug_test_push_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # API Gateway Deployment (depends on all integrations)
 # Note: triggers parameter forces recreation when routes change
 api_deployment = aws.apigateway.Deployment(
@@ -1195,6 +1278,8 @@ api_deployment = aws.apigateway.Deployment(
             notification_settings_put_integration.id,
             resort_notification_setting_put_integration.id,
             resort_notification_setting_delete_integration.id,
+            debug_trigger_notifications_integration.id,
+            debug_test_push_integration.id,
         ).apply(lambda ids: ",".join(ids)),
     },
     opts=pulumi.ResourceOptions(
@@ -1218,6 +1303,8 @@ api_deployment = aws.apigateway.Deployment(
             notification_settings_put_integration,
             resort_notification_setting_put_integration,
             resort_notification_setting_delete_integration,
+            debug_trigger_notifications_integration,
+            debug_test_push_integration,
         ]
     ),
 )
