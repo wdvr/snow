@@ -181,7 +181,7 @@ jobs:
           # Update API Lambda environment variables
           aws lambda update-function-configuration \
             --function-name "$API_LAMBDA" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2}" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},USER_PREFERENCES_TABLE=snow-tracker-user-preferences-${{ env.ENVIRONMENT }},FEEDBACK_TABLE=snow-tracker-feedback-${{ env.ENVIRONMENT }},DEVICE_TOKENS_TABLE=snow-tracker-device-tokens-${{ env.ENVIRONMENT }},RESORT_EVENTS_TABLE=snow-tracker-resort-events-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2}" \
             --region us-west-2
           aws lambda wait function-updated --function-name "$API_LAMBDA" --region us-west-2
           echo "API handler Lambda updated"
