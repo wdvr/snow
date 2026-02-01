@@ -210,29 +210,7 @@ struct ProfileView: View {
     }
 }
 
-struct NotificationSettingsView: View {
-    @State private var snowAlerts = true
-    @State private var conditionUpdates = true
-    @State private var weeklySummary = false
-
-    var body: some View {
-        List {
-            Section("Alerts") {
-                Toggle("Snow Alerts", isOn: $snowAlerts)
-                Toggle("Condition Updates", isOn: $conditionUpdates)
-            }
-
-            Section("Summaries") {
-                Toggle("Weekly Summary", isOn: $weeklySummary)
-            }
-
-            Section(footer: Text("Snow alerts notify you when conditions at your favorite resorts improve. Condition updates provide real-time information about snow quality changes.")) {
-                EmptyView()
-            }
-        }
-        .navigationTitle("Notifications")
-    }
-}
+// NotificationSettingsView moved to NotificationSettingsView.swift
 
 // MARK: - Google Logo View
 

@@ -411,8 +411,4 @@ struct UnitPreferences: Codable {
     }
 }
 
-struct NotificationSettings: Codable {
-    var snowAlerts: Bool = true
-    var conditionUpdates: Bool = true
-    var weeklySummary: Bool = false
-}
+// NotificationSettings moved to PushNotificationService.swift
