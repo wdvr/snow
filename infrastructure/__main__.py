@@ -377,24 +377,34 @@ notification_processor_log_group = aws.cloudwatch.LogGroup(
 #   pulumi config set apnsTeamId "XXXXXXXXXX"
 #   pulumi config set apnsBundleId "com.wouterdevriendt.snowtracker"
 
-# Get APNs configuration (optional - will use placeholders if not set)
-apns_private_key = config.get_secret("apnsPrivateKey") or "placeholder-configure-via-pulumi-config"
-apns_key_id = config.get("apnsKeyId") or "PLACEHOLDER"
+# Get APNs configuration (optional - only create platform app if credentials are set)
+apns_private_key = config.get_secret("apnsPrivateKey")
+apns_key_id = config.get("apnsKeyId")
 apns_team_id = config.get("apnsTeamId") or "N324UX8D9M"  # Default to existing team ID
 apns_bundle_id = config.get("apnsBundleId") or "com.wouterdevriendt.snowtracker"
 
-apns_platform_app = aws.sns.PlatformApplication(
-    f"{app_name}-apns-{environment}",
-    name=f"{app_name}-apns-{environment}",
-    platform="APNS_SANDBOX" if environment != "prod" else "APNS",
-    # Token-based authentication credentials
-    platform_credential=apns_private_key,
-    platform_principal=apns_key_id,
-    # Token-based auth attributes
-    apple_platform_team_id=apns_team_id,
-    apple_platform_bundle_id=apns_bundle_id,
-    # Note: SNS PlatformApplication does not support tags
-)
+# Only create APNs platform application if valid credentials are configured
+# To configure: pulumi config set --secret apnsPrivateKey "$(cat AuthKey_XXXXXX.p8)"
+#              pulumi config set apnsKeyId "XXXXXXXXXX"
+apns_platform_app = None
+apns_platform_app_arn = None
+
+if apns_private_key and apns_key_id:
+    apns_platform_app = aws.sns.PlatformApplication(
+        f"{app_name}-apns-{environment}",
+        name=f"{app_name}-apns-{environment}",
+        platform="APNS_SANDBOX" if environment != "prod" else "APNS",
+        # Token-based authentication credentials
+        platform_credential=apns_private_key,
+        platform_principal=apns_key_id,
+        # Token-based auth attributes
+        apple_platform_team_id=apns_team_id,
+        apple_platform_bundle_id=apns_bundle_id,
+        # Note: SNS PlatformApplication does not support tags
+    )
+    apns_platform_app_arn = apns_platform_app.arn
+else:
+    pulumi.log.warn("APNs credentials not configured. Push notifications will not work until configured.")
 
 # Lambda function for notification processing
 notification_processor_lambda = aws.lambda_.Function(
@@ -419,7 +429,8 @@ notification_processor_lambda = aws.lambda_.Function(
             "RESORT_EVENTS_TABLE": f"{app_name}-resort-events-{environment}",
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "AWS_REGION_NAME": aws_region,
-            "APNS_PLATFORM_APP_ARN": apns_platform_app.arn,
+            # APNs platform ARN is optional - notifications will be skipped if not configured
+            "APNS_PLATFORM_APP_ARN": apns_platform_app_arn if apns_platform_app_arn else "",
         }
     ),
     tags=tags,
@@ -1257,7 +1268,10 @@ pulumi.export("weather_schedule_rule_name", weather_schedule_rule.name)
 pulumi.export("api_handler_lambda_name", api_handler_lambda.name)
 pulumi.export("notification_processor_lambda_name", notification_processor_lambda.name)
 pulumi.export("notification_schedule_rule_name", notification_schedule_rule.name)
-pulumi.export("apns_platform_app_arn", apns_platform_app.arn)
+if apns_platform_app:
+    pulumi.export("apns_platform_app_arn", apns_platform_app.arn)
+else:
+    pulumi.export("apns_platform_app_arn", "not-configured")
 pulumi.export("resort_updates_topic_arn", resort_updates_topic.arn)
 
 # Monitoring exports
