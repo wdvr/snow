@@ -1391,7 +1391,7 @@ async def get_resort_events(
         )
 
         events = result.get("Items", [])
-        response.headers["Cache-Control"] = CACHE_CONTROL_SHORT
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
 
         return {
             "resort_id": resort_id,
