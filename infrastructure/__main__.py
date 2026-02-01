@@ -393,7 +393,7 @@ apns_platform_app = aws.sns.PlatformApplication(
     # Token-based auth attributes
     apple_platform_team_id=apns_team_id,
     apple_platform_bundle_id=apns_bundle_id,
-    tags=tags,
+    # Note: SNS PlatformApplication does not support tags
 )
 
 # Lambda function for notification processing
