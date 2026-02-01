@@ -370,15 +370,31 @@ notification_processor_log_group = aws.cloudwatch.LogGroup(
 )
 
 # SNS Platform Application for APNs (iOS push notifications)
-# Note: APNs credentials must be configured via AWS Console or CI/CD
-# This creates the platform application resource
+# APNs uses token-based authentication (.p8 key file)
+# Required config:
+#   pulumi config set --secret apnsPrivateKey "$(cat AuthKey_XXXXXX.p8)"
+#   pulumi config set apnsKeyId "XXXXXXXXXX"
+#   pulumi config set apnsTeamId "XXXXXXXXXX"
+#   pulumi config set apnsBundleId "com.wouterdevriendt.snowtracker"
+
+# Get APNs configuration (optional - will use placeholders if not set)
+apns_private_key = config.get_secret("apnsPrivateKey") or "placeholder-configure-via-pulumi-config"
+apns_key_id = config.get("apnsKeyId") or "PLACEHOLDER"
+apns_team_id = config.get("apnsTeamId") or "N324UX8D9M"  # Default to existing team ID
+apns_bundle_id = config.get("apnsBundleId") or "com.wouterdevriendt.snowtracker"
+
 apns_platform_app = aws.sns.PlatformApplication(
     f"{app_name}-apns-{environment}",
     name=f"{app_name}-apns-{environment}",
     platform="APNS_SANDBOX" if environment != "prod" else "APNS",
-    # Platform credentials will be set via environment variables or AWS Secrets Manager
-    # For now, use placeholder values that will be updated via CI/CD
-    platform_credential="placeholder-will-be-set-via-cicd",
+    # Token-based authentication credentials
+    platform_credential=apns_private_key,
+    platform_principal=apns_key_id,
+    # Additional attributes for token-based auth
+    attributes={
+        "ApplePlatformTeamID": apns_team_id,
+        "ApplePlatformBundleID": apns_bundle_id,
+    },
     tags=tags,
 )
 

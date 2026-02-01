@@ -1339,6 +1339,140 @@ async def delete_resort_notification_settings(
         )
 
 
+# MARK: - Resort Events Endpoints
+
+_resort_events_table = None
+
+
+def get_resort_events_table():
+    """Get or create resort events table (lazy init for SnapStart)."""
+    global _resort_events_table
+    if _resort_events_table is None:
+        _resort_events_table = get_dynamodb().Table(
+            os.environ.get("RESORT_EVENTS_TABLE", "snow-tracker-resort-events-dev")
+        )
+    return _resort_events_table
+
+
+class CreateResortEventRequest(BaseModel):
+    """Request body for creating a resort event."""
+
+    event_type: str = Field(..., description="Type of event (e.g., 'free_store', 'special_offer', 'competition')")
+    title: str = Field(..., description="Event title")
+    description: str | None = Field(None, description="Event description")
+    event_date: str = Field(..., description="Date of the event (YYYY-MM-DD)")
+    start_time: str | None = Field(None, description="Start time (HH:MM)")
+    end_time: str | None = Field(None, description="End time (HH:MM)")
+    location: str | None = Field(None, description="Location within resort")
+    url: str | None = Field(None, description="URL for more information")
+
+
+@app.get("/api/v1/resorts/{resort_id}/events")
+async def get_resort_events(
+    resort_id: str,
+    response: Response,
+    days_ahead: int = Query(default=30, ge=1, le=90, description="Days to look ahead"),
+):
+    """Get upcoming events for a resort."""
+    try:
+        from datetime import timedelta
+
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        future_date = (datetime.now(UTC) + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+
+        result = get_resort_events_table().query(
+            IndexName="EventDateIndex",
+            KeyConditionExpression="resort_id = :rid AND event_date BETWEEN :start AND :end",
+            ExpressionAttributeValues={
+                ":rid": resort_id,
+                ":start": today,
+                ":end": future_date,
+            },
+        )
+
+        events = result.get("Items", [])
+        response.headers["Cache-Control"] = CACHE_CONTROL_SHORT
+
+        return {
+            "resort_id": resort_id,
+            "events": events,
+            "count": len(events),
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve resort events: {str(e)}",
+        )
+
+
+@app.post("/api/v1/resorts/{resort_id}/events", status_code=status.HTTP_201_CREATED)
+async def create_resort_event(
+    resort_id: str,
+    request: CreateResortEventRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Create a new event for a resort.
+
+    Note: In production, this should be restricted to admin users.
+    For now, any authenticated user can create events.
+    """
+    import uuid
+
+    from models.notification import ResortEvent
+
+    try:
+        event = ResortEvent.create(
+            resort_id=resort_id,
+            event_id=str(uuid.uuid4()),
+            event_type=request.event_type,
+            title=request.title,
+            event_date=request.event_date,
+            description=request.description,
+            start_time=request.start_time,
+            end_time=request.end_time,
+            location=request.location,
+            url=request.url,
+        )
+
+        get_resort_events_table().put_item(Item=event.model_dump())
+
+        return {
+            "message": "Event created successfully",
+            "event_id": event.event_id,
+            "resort_id": resort_id,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create resort event: {str(e)}",
+        )
+
+
+@app.delete("/api/v1/resorts/{resort_id}/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_resort_event(
+    resort_id: str,
+    event_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Delete a resort event.
+
+    Note: In production, this should be restricted to admin users.
+    """
+    try:
+        get_resort_events_table().delete_item(
+            Key={"resort_id": resort_id, "event_id": event_id}
+        )
+        return None
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete resort event: {str(e)}",
+        )
+
+
 # MARK: - Feedback Endpoint
 
 
