@@ -155,7 +155,9 @@ extension PushNotificationService: UNUserNotificationCenterDelegate {
 
         // Handle notification tap based on type
         if let notificationType = userInfo["notification_type"] as? String {
-            handleNotificationTap(type: notificationType, userInfo: userInfo)
+            Task { @MainActor in
+                self.handleNotificationTap(type: notificationType, userInfo: userInfo)
+            }
         }
 
         completionHandler()
