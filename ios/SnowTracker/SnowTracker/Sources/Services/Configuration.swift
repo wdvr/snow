@@ -107,8 +107,8 @@ class AppConfiguration: ObservableObject {
         // Use staging for debug builds since dev environment is not deployed
         self.defaultEnvironment = .staging
         #else
-        // Production builds check bundle ID for staging vs prod
-        if Bundle.main.bundleIdentifier?.contains("staging") == true {
+        // TestFlight builds use staging, App Store builds use production
+        if AppEnvironment.isDebugOrTestFlight {
             self.defaultEnvironment = .staging
         } else {
             self.defaultEnvironment = .production
