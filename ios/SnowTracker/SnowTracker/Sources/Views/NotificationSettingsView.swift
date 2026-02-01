@@ -127,6 +127,45 @@ struct NotificationSettingsView: View {
                         Text("Customize notification settings for individual resorts. These override the global settings above.")
                     }
                 }
+
+                // Debug Section (only in staging/debug/TestFlight builds)
+                if AppEnvironment.isDebugOrTestFlight {
+                    Section {
+                        Button {
+                            viewModel.sendTestNotification()
+                        } label: {
+                            HStack {
+                                Image(systemName: "bell.badge")
+                                Text("Send Test Notification")
+                            }
+                        }
+                        .disabled(viewModel.isSendingTest)
+
+                        Button {
+                            viewModel.triggerNotificationProcessor()
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.clockwise")
+                                Text("Trigger Notification Check")
+                            }
+                        }
+                        .disabled(viewModel.isSendingTest)
+
+                        if let testResult = viewModel.testResult {
+                            HStack {
+                                Image(systemName: testResult.success ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundStyle(testResult.success ? .green : .red)
+                                Text(testResult.message)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    } header: {
+                        Text("Debug")
+                    } footer: {
+                        Text("Test notification features. Only visible in debug/TestFlight builds.")
+                    }
+                }
             }
         }
         .navigationTitle("Notifications")

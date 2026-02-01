@@ -7,6 +7,18 @@ enum AppEnvironment: String, CaseIterable {
     case staging = "staging"
     case production = "prod"
 
+    /// Whether this is a debug or TestFlight build (for showing debug UI)
+    /// TestFlight builds have a sandbox receipt, App Store builds have a production receipt
+    static var isDebugOrTestFlight: Bool {
+        #if DEBUG
+        return true
+        #else
+        // TestFlight builds have a receipt file named "sandboxReceipt"
+        // App Store builds have a receipt file named "receipt"
+        return Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+        #endif
+    }
+
     var displayName: String {
         switch self {
         case .development: return "Development"
