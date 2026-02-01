@@ -9,7 +9,11 @@ from typing import Optional
 import boto3
 from botocore.exceptions import ClientError
 
+import random
+
 from models.notification import (
+    FREEZE_MESSAGES,
+    THAW_MESSAGES,
     DeviceToken,
     NotificationPayload,
     NotificationType,
@@ -302,6 +306,122 @@ class NotificationService:
             logger.error(f"Error getting fresh snow for {resort_id}: {e}")
             return 0.0
 
+    def get_current_temperature(self, resort_id: str) -> float | None:
+        """Get the current temperature for a resort.
+
+        Args:
+            resort_id: Resort ID
+
+        Returns:
+            Current temperature in Celsius or None if not available
+        """
+        try:
+            response = self.weather_conditions_table.query(
+                KeyConditionExpression="resort_id = :rid",
+                ExpressionAttributeValues={":rid": resort_id},
+                ScanIndexForward=False,
+                Limit=1,
+            )
+
+            items = response.get("Items", [])
+            if not items:
+                return None
+
+            return items[0].get("current_temp_celsius")
+
+        except Exception as e:
+            logger.error(f"Error getting temperature for {resort_id}: {e}")
+            return None
+
+    def check_thaw_freeze_cycle(
+        self,
+        resort_id: str,
+        resort_name: str,
+        current_temp: float,
+        notification_settings: UserNotificationPreferences,
+    ) -> NotificationPayload | None:
+        """Check for thaw/freeze cycle transitions and return notification if warranted.
+
+        Logic:
+        - Thaw alert: Temp was below 0, now above 0 for 4+ consecutive hours
+        - Freeze alert: Temp was above 0, now below 0
+
+        Args:
+            resort_id: Resort ID
+            resort_name: Resort name for display
+            current_temp: Current temperature in Celsius
+            notification_settings: User's notification preferences
+
+        Returns:
+            NotificationPayload if a thaw/freeze alert should be sent, None otherwise
+        """
+        now = datetime.utcnow()
+        prev_state = notification_settings.temperature_state.get(resort_id, "unknown")
+        current_state = "thawed" if current_temp >= 0 else "frozen"
+
+        # Case 1: Temperature just went positive (potential thaw starting)
+        if current_temp >= 0 and prev_state == "frozen":
+            # Record when the thaw started
+            notification_settings.thaw_started_at[resort_id] = now.isoformat()
+            notification_settings.temperature_state[resort_id] = "thawed"
+            logger.info(f"Thaw started at {resort_name}, waiting for 4 hours")
+            return None
+
+        # Case 2: Temperature has been positive, check if 4 hours passed
+        if current_temp >= 0 and prev_state == "thawed":
+            thaw_start_str = notification_settings.thaw_started_at.get(resort_id)
+            if thaw_start_str:
+                try:
+                    thaw_start = datetime.fromisoformat(thaw_start_str.replace("Z", "+00:00"))
+                    hours_thawed = (now - thaw_start.replace(tzinfo=None)).total_seconds() / 3600
+
+                    # Check if we've been thawing for 4+ hours and haven't sent notification
+                    if hours_thawed >= 4:
+                        # Clear thaw_started_at so we don't re-notify
+                        del notification_settings.thaw_started_at[resort_id]
+
+                        # Pick a random funny message
+                        message = random.choice(THAW_MESSAGES)
+
+                        return NotificationPayload(
+                            notification_type=NotificationType.THAW_ALERT,
+                            title=f"Thaw Alert at {resort_name}!",
+                            body=message,
+                            resort_id=resort_id,
+                            resort_name=resort_name,
+                            data={
+                                "current_temp_celsius": current_temp,
+                                "hours_thawed": round(hours_thawed, 1),
+                            },
+                        )
+                except (ValueError, TypeError):
+                    pass
+
+        # Case 3: Temperature just went negative (freeze started)
+        if current_temp < 0 and prev_state == "thawed":
+            notification_settings.temperature_state[resort_id] = "frozen"
+            # Clear any thaw tracking
+            notification_settings.thaw_started_at.pop(resort_id, None)
+
+            # Pick a random funny message
+            message = random.choice(FREEZE_MESSAGES)
+
+            return NotificationPayload(
+                notification_type=NotificationType.FREEZE_ALERT,
+                title=f"Freeze Alert at {resort_name}!",
+                body=message,
+                resort_id=resort_id,
+                resort_name=resort_name,
+                data={"current_temp_celsius": current_temp},
+            )
+
+        # Case 4: Still frozen, just update state
+        if current_temp < 0 and prev_state != "frozen":
+            notification_settings.temperature_state[resort_id] = "frozen"
+            notification_settings.thaw_started_at.pop(resort_id, None)
+
+        return None
+
     def get_resort_name(self, resort_id: str) -> str:
         """Get resort name from resort ID.
 
@@ -412,10 +532,24 @@ class NotificationService:
                     # Mark as notified for this resort
                     notification_settings.mark_notified(resort_id)
 
-        # Save updated notification settings (with last_notified times)
-        if notifications:
-            prefs.notification_settings = notification_settings
-            self._save_user_preferences(prefs)
+            # Check for thaw/freeze cycles
+            if notification_settings.thaw_freeze_alerts:
+                current_temp = self.get_current_temperature(resort_id)
+                if current_temp is not None:
+                    thaw_freeze_notification = self.check_thaw_freeze_cycle(
+                        resort_id=resort_id,
+                        resort_name=resort_name,
+                        current_temp=current_temp,
+                        notification_settings=notification_settings,
+                    )
+                    if thaw_freeze_notification:
+                        notifications.append(thaw_freeze_notification)
+                        notification_settings.mark_notified(resort_id)
+
+        # Save updated notification settings (with last_notified times and temp state)
+        # Always save to persist temperature state tracking
+        prefs.notification_settings = notification_settings
+        self._save_user_preferences(prefs)
 
         return notifications
 

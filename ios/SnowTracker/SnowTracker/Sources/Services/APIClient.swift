@@ -1453,6 +1453,7 @@ struct NotificationSettingsUpdate: Codable {
     var notificationsEnabled: Bool?
     var freshSnowAlerts: Bool?
     var eventAlerts: Bool?
+    var thawFreezeAlerts: Bool?
     var weeklySummary: Bool?
     var defaultSnowThresholdCm: Double?
     var gracePeriodHours: Int?
@@ -1461,6 +1462,7 @@ struct NotificationSettingsUpdate: Codable {
         case notificationsEnabled = "notifications_enabled"
         case freshSnowAlerts = "fresh_snow_alerts"
         case eventAlerts = "event_alerts"
+        case thawFreezeAlerts = "thaw_freeze_alerts"
         case weeklySummary = "weekly_summary"
         case defaultSnowThresholdCm = "default_snow_threshold_cm"
         case gracePeriodHours = "grace_period_hours"
