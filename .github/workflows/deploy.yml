@@ -143,7 +143,10 @@ jobs:
         if [ -n "${{ secrets.APNS_KEY_ID }}" ] && [ -n "${{ secrets.APNS_PRIVATE_KEY }}" ]; then
           echo "Configuring APNs credentials..."
           pulumi config set snow-tracker-infrastructure:apnsKeyId "${{ secrets.APNS_KEY_ID }}"
-          pulumi config set --secret snow-tracker-infrastructure:apnsPrivateKey "${{ secrets.APNS_PRIVATE_KEY }}"
+          # Use environment variable and printf to handle multiline content
+          export APNS_KEY='${{ secrets.APNS_PRIVATE_KEY }}'
+          printf '%s' "$APNS_KEY" | pulumi config set --secret snow-tracker-infrastructure:apnsPrivateKey --
+          unset APNS_KEY
           pulumi config set snow-tracker-infrastructure:apnsTeamId "${APNS_TEAM_ID:-N324UX8D9M}"
           pulumi config set snow-tracker-infrastructure:apnsBundleId "com.wouterdevriendt.snowtracker"
           echo "APNs credentials configured"
