@@ -390,11 +390,9 @@ apns_platform_app = aws.sns.PlatformApplication(
     # Token-based authentication credentials
     platform_credential=apns_private_key,
     platform_principal=apns_key_id,
-    # Additional attributes for token-based auth
-    attributes={
-        "ApplePlatformTeamID": apns_team_id,
-        "ApplePlatformBundleID": apns_bundle_id,
-    },
+    # Token-based auth attributes
+    apple_platform_team_id=apns_team_id,
+    apple_platform_bundle_id=apns_bundle_id,
     tags=tags,
 )
 
