@@ -102,6 +102,12 @@ struct MainTabView: View {
                     Text("Resorts")
                 }
 
+            ResortMapView()
+                .tabItem {
+                    Image(systemName: "map.fill")
+                    Text("Map")
+                }
+
             BestSnowNearYouView()
                 .tabItem {
                     Image(systemName: "star.fill")
