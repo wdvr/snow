@@ -1185,6 +1185,37 @@ resort_notification_setting_delete_integration = aws.apigateway.Integration(
 )
 
 # =============================================================================
+# Feedback API Route
+# =============================================================================
+
+# Feedback resource: /api/v1/feedback
+feedback_resource = aws.apigateway.Resource(
+    f"{app_name}-feedback-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="feedback",
+)
+
+# POST /api/v1/feedback
+feedback_post_method = aws.apigateway.Method(
+    f"{app_name}-feedback-post-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=feedback_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+feedback_post_integration = aws.apigateway.Integration(
+    f"{app_name}-feedback-post-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=feedback_resource.id,
+    http_method=feedback_post_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# =============================================================================
 # Debug API Routes (for testing notifications)
 # =============================================================================
 
@@ -1278,6 +1309,7 @@ api_deployment = aws.apigateway.Deployment(
             notification_settings_put_integration.id,
             resort_notification_setting_put_integration.id,
             resort_notification_setting_delete_integration.id,
+            feedback_post_integration.id,
             debug_trigger_notifications_integration.id,
             debug_test_push_integration.id,
         ).apply(lambda ids: ",".join(ids)),
@@ -1303,6 +1335,7 @@ api_deployment = aws.apigateway.Deployment(
             notification_settings_put_integration,
             resort_notification_setting_put_integration,
             resort_notification_setting_delete_integration,
+            feedback_post_integration,
             debug_trigger_notifications_integration,
             debug_test_push_integration,
         ]
