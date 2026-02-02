@@ -246,6 +246,12 @@ class AuthenticationService: NSObject, ObservableObject {
         keychain.set(userIdentifier, forKey: Keys.userIdentifier)
         keychain.set(AuthProvider.apple.rawValue, forKey: Keys.authProvider)
 
+        // Store email from credential (only provided on first sign in)
+        // This is critical - Apple only sends email once!
+        if let email = credential.email, !email.isEmpty {
+            keychain.set(email, forKey: Keys.userEmail)
+        }
+
         // Extract name components (only provided on first sign in)
         var firstName: String?
         var lastName: String?
@@ -337,9 +343,8 @@ class AuthenticationService: NSObject, ObservableObject {
             isAuthenticated = true
 
         } catch {
-            print("Backend authentication failed: \(error). Falling back to local auth.")
-            errorMessage = "Sign in succeeded but backend sync failed. Some features may be limited."
-            // Fallback to local-only authentication
+            print("Backend authentication failed: \(error). Using local auth.")
+            // Fallback to local-only authentication - notifications still work without backend auth
             keychain.set(identityToken, forKey: Keys.authToken)
             restoreUserSession(userIdentifier: userIdentifier, provider: .apple)
         }
