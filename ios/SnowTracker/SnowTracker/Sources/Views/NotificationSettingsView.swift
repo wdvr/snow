@@ -137,6 +137,23 @@ struct NotificationSettingsView: View {
                 // Debug Section (only in staging/debug/TestFlight builds)
                 if AppEnvironment.isDebugOrTestFlight {
                     Section {
+                        // Auth status
+                        HStack {
+                            Text("Auth Status")
+                            Spacer()
+                            if AuthenticationService.shared.currentUser?.provider == .guest {
+                                Text("Guest")
+                                    .foregroundStyle(.orange)
+                            } else if AuthenticationService.shared.isAuthenticated {
+                                Text("Signed In")
+                                    .foregroundStyle(.green)
+                            } else {
+                                Text("Not Signed In")
+                                    .foregroundStyle(.red)
+                            }
+                        }
+                        .font(.subheadline)
+
                         Button {
                             viewModel.sendTestNotification()
                         } label: {
@@ -158,12 +175,22 @@ struct NotificationSettingsView: View {
                         .disabled(viewModel.isSendingTest)
 
                         if let testResult = viewModel.testResult {
-                            HStack {
-                                Image(systemName: testResult.success ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                    .foregroundStyle(testResult.success ? .green : .red)
-                                Text(testResult.message)
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Image(systemName: testResult.success ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                        .foregroundStyle(testResult.success ? .green : .red)
+                                    Text(testResult.message)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                if !testResult.success && testResult.message.contains("Session expired") {
+                                    Button("Sign out and re-authenticate") {
+                                        AuthenticationService.shared.signOut()
+                                    }
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(.blue)
+                                }
                             }
                         }
                     } header: {
