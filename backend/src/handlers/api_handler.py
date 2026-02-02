@@ -1055,16 +1055,20 @@ def get_notification_service():
 @app.post("/api/v1/user/device-tokens", status_code=status.HTTP_201_CREATED)
 async def register_device_token(
     request: DeviceTokenRequest,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str | None = Depends(get_optional_user_id),
 ):
     """Register a device token for push notifications.
 
     This endpoint should be called when the app receives an APNs token.
     Tokens are automatically expired after 90 days if not refreshed.
+    Auth is optional - if not authenticated, device_id is used as the user identifier.
     """
     try:
+        # Use device_id as fallback user identifier if not authenticated
+        effective_user_id = user_id or f"device:{request.device_id}"
+
         device_token = get_notification_service().register_device_token(
-            user_id=user_id,
+            user_id=effective_user_id,
             device_id=request.device_id,
             token=request.token,
             platform=request.platform,
@@ -1985,12 +1989,12 @@ async def mark_trip_alerts_read(
 
 @app.post("/api/v1/debug/trigger-notifications")
 async def trigger_notifications(
-    user_id: str = Depends(get_current_user_id),
+    user_id: str | None = Depends(get_optional_user_id),
 ):
     """
     Manually trigger the notification processor for testing.
     This invokes the notification Lambda asynchronously.
-    Only available in staging environment.
+    Only available in staging environment. Auth is optional.
     """
     import boto3
 
@@ -2015,7 +2019,7 @@ async def trigger_notifications(
             InvocationType="Event",  # Async invocation
             Payload=json.dumps({
                 "source": "manual_trigger",
-                "user_id": user_id,
+                "user_id": user_id or "anonymous",
                 "test_mode": True,
             }),
         )
@@ -2036,13 +2040,14 @@ async def trigger_notifications(
 
 @app.post("/api/v1/debug/test-push-notification")
 async def test_push_notification(
-    user_id: str = Depends(get_current_user_id),
+    user_id: str | None = Depends(get_optional_user_id),
     title: str = "Test Notification",
     body: str = "This is a test push notification from Snow Tracker",
 ):
     """
-    Send a test push notification to all devices registered for this user.
-    Only available in staging environment.
+    Send a test push notification to devices.
+    If authenticated, sends to user's devices. Otherwise, sends to all devices.
+    Only available in staging environment. Auth is optional.
     """
     import boto3
 
@@ -2056,22 +2061,27 @@ async def test_push_notification(
         )
 
     try:
-        # Get user's device tokens
+        # Get device tokens
         device_tokens_table = get_dynamodb().Table(
             os.environ.get("DEVICE_TOKENS_TABLE", f"snow-tracker-device-tokens-{environment}")
         )
 
-        result = device_tokens_table.query(
-            KeyConditionExpression="user_id = :uid",
-            ExpressionAttributeValues={":uid": user_id},
-        )
-
-        tokens = result.get("Items", [])
+        if user_id:
+            # Query for specific user's tokens
+            result = device_tokens_table.query(
+                KeyConditionExpression="user_id = :uid",
+                ExpressionAttributeValues={":uid": user_id},
+            )
+            tokens = result.get("Items", [])
+        else:
+            # Scan for all tokens (for testing without auth)
+            result = device_tokens_table.scan(Limit=10)  # Limit to 10 for safety
+            tokens = result.get("Items", [])
 
         if not tokens:
             return {
-                "message": "No device tokens registered for this user",
-                "user_id": user_id,
+                "message": "No device tokens found",
+                "user_id": user_id or "anonymous",
                 "tokens_found": 0,
             }
 
@@ -2133,7 +2143,7 @@ async def test_push_notification(
 
         return {
             "message": "Test notification sent",
-            "user_id": user_id,
+            "user_id": user_id or "anonymous",
             "tokens_found": len(tokens),
             "results": results,
         }
