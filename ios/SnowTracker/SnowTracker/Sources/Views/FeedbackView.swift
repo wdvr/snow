@@ -21,7 +21,12 @@ struct FeedbackView: View {
             } header: {
                 Text("Your Feedback")
             } footer: {
-                Text("Please describe your feedback, bug report, or feature request in detail.")
+                if message.trimmingCharacters(in: .whitespacesAndNewlines).count < 10 && !message.isEmpty {
+                    Text("Message must be at least 10 characters")
+                        .foregroundStyle(.red)
+                } else {
+                    Text("Please describe your feedback, bug report, or feature request in detail.")
+                }
             }
 
             Section {
@@ -69,7 +74,7 @@ struct FeedbackView: View {
 
     private var isValid: Bool {
         !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        message.trimmingCharacters(in: .whitespacesAndNewlines).count >= 10
     }
 
     private func submitFeedback() {
