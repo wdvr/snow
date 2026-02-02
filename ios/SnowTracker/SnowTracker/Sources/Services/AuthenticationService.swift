@@ -354,6 +354,52 @@ class AuthenticationService: NSObject, ObservableObject {
         restoreUserSession(userIdentifier: userIdentifier, provider: provider)
     }
 
+    // MARK: - Refresh User Info
+
+    /// Fetch current user info from backend and update local state
+    /// Call this to refresh email and validate token
+    func refreshUserInfo() async -> Bool {
+        guard isAuthenticated else { return false }
+
+        do {
+            let userInfo = try await APIClient.shared.getCurrentUser()
+
+            // Update stored email if available
+            if let email = userInfo.email {
+                keychain.set(email, forKey: Keys.userEmail)
+            }
+            if let firstName = userInfo.firstName {
+                let fullName = [firstName, userInfo.lastName].compactMap { $0 }.joined(separator: " ")
+                if !fullName.isEmpty {
+                    keychain.set(fullName, forKey: Keys.userName)
+                }
+            }
+
+            // Update current user
+            currentUser = AuthenticatedUser(
+                id: userInfo.userId,
+                email: userInfo.email,
+                fullName: [userInfo.firstName, userInfo.lastName].compactMap { $0 }.joined(separator: " "),
+                provider: currentUser?.provider ?? .apple
+            )
+
+            return true
+        } catch {
+            print("Failed to refresh user info: \(error)")
+            return false
+        }
+    }
+
+    /// Check if the current auth token is valid
+    var hasValidToken: Bool {
+        guard let token = keychain.get(Keys.authToken), !token.isEmpty else {
+            return false
+        }
+        // Check if it looks like a JWT (has 3 parts separated by dots)
+        // Apple identity tokens and Google ID tokens are JWTs but may not be valid for our API
+        return true
+    }
+
     // MARK: - Handle URL (for Google Sign-In callback)
 
     func handleURL(_ url: URL) -> Bool {
