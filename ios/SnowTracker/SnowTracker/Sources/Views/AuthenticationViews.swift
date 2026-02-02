@@ -231,40 +231,40 @@ struct GoogleLogoView: View {
             let strokeWidth = radius * 0.35
             let innerRadius = radius - strokeWidth / 2
 
-            // Blue arc (right side, from -45° to 45°)
-            var bluePath = Path()
-            bluePath.addArc(center: center, radius: innerRadius,
-                           startAngle: .degrees(-45), endAngle: .degrees(45),
-                           clockwise: false)
-            context.stroke(bluePath, with: .color(googleBlue), lineWidth: strokeWidth)
-
-            // Green arc (bottom right, from 45° to 135°)
+            // Green arc (bottom, from 45° to 135°)
             var greenPath = Path()
             greenPath.addArc(center: center, radius: innerRadius,
                             startAngle: .degrees(45), endAngle: .degrees(135),
                             clockwise: false)
             context.stroke(greenPath, with: .color(googleGreen), lineWidth: strokeWidth)
 
-            // Yellow arc (bottom left, from 135° to 180°)
+            // Yellow arc (bottom left, from 135° to 225°)
             var yellowPath = Path()
             yellowPath.addArc(center: center, radius: innerRadius,
-                             startAngle: .degrees(135), endAngle: .degrees(180),
+                             startAngle: .degrees(135), endAngle: .degrees(225),
                              clockwise: false)
             context.stroke(yellowPath, with: .color(googleYellow), lineWidth: strokeWidth)
 
-            // Red arc (top, from 180° to 315°)
+            // Red arc (top left, from 225° to 315° - stops before horizontal bar)
             var redPath = Path()
             redPath.addArc(center: center, radius: innerRadius,
-                          startAngle: .degrees(180), endAngle: .degrees(315),
+                          startAngle: .degrees(225), endAngle: .degrees(315),
                           clockwise: false)
             context.stroke(redPath, with: .color(googleRed), lineWidth: strokeWidth)
 
-            // Blue horizontal bar extending from center to right
+            // Blue arc (right side only, from -45° to 45°)
+            var bluePath = Path()
+            bluePath.addArc(center: center, radius: innerRadius,
+                           startAngle: .degrees(-45), endAngle: .degrees(45),
+                           clockwise: false)
+            context.stroke(bluePath, with: .color(googleBlue), lineWidth: strokeWidth)
+
+            // Blue horizontal bar extending from center to right (the G opening)
             let barHeight = strokeWidth
             let barRect = CGRect(
-                x: center.x - strokeWidth * 0.1,
+                x: center.x,
                 y: center.y - barHeight / 2,
-                width: radius,
+                width: radius * 0.6,
                 height: barHeight
             )
             context.fill(Path(barRect), with: .color(googleBlue))
