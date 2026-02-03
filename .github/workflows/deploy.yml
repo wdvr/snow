@@ -265,6 +265,46 @@ jobs:
           echo "Notification processor Lambda updated"
         fi
 
+        # Deploy Scraper Orchestrator Lambda
+        SCRAPER_ORCHESTRATOR=$(pulumi stack output scraper_orchestrator_lambda_name 2>/dev/null || echo "")
+        if [ -n "$SCRAPER_ORCHESTRATOR" ]; then
+          echo "Deploying Scraper orchestrator Lambda: $SCRAPER_ORCHESTRATOR"
+          aws lambda update-function-code \
+            --function-name "$SCRAPER_ORCHESTRATOR" \
+            --s3-bucket "$S3_BUCKET" \
+            --s3-key "$S3_KEY" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$SCRAPER_ORCHESTRATOR" --region us-west-2
+
+          # Update Scraper Orchestrator Lambda environment variables
+          aws lambda update-function-configuration \
+            --function-name "$SCRAPER_ORCHESTRATOR" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},SCRAPER_WORKER_LAMBDA=snow-tracker-scraper-worker-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2}" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$SCRAPER_ORCHESTRATOR" --region us-west-2
+          echo "Scraper orchestrator Lambda updated"
+        fi
+
+        # Deploy Scraper Worker Lambda
+        SCRAPER_WORKER=$(pulumi stack output scraper_worker_lambda_name 2>/dev/null || echo "")
+        if [ -n "$SCRAPER_WORKER" ]; then
+          echo "Deploying Scraper worker Lambda: $SCRAPER_WORKER"
+          aws lambda update-function-code \
+            --function-name "$SCRAPER_WORKER" \
+            --s3-bucket "$S3_BUCKET" \
+            --s3-key "$S3_KEY" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$SCRAPER_WORKER" --region us-west-2
+
+          # Update Scraper Worker Lambda environment variables
+          aws lambda update-function-configuration \
+            --function-name "$SCRAPER_WORKER" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2}" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$SCRAPER_WORKER" --region us-west-2
+          echo "Scraper worker Lambda updated"
+        fi
+
         echo "Lambda deployment complete"
 
     - name: Seed resort data (dev/staging only)
