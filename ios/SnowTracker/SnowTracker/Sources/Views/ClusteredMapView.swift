@@ -9,10 +9,11 @@ final class ResortPointAnnotation: MKPointAnnotation {
     let condition: WeatherCondition?
     let snowQuality: SnowQuality
 
-    init(resort: Resort, condition: WeatherCondition?) {
+    /// Initialize with a pre-computed snow quality (from ResortAnnotation which may have fallback from summary)
+    init(resort: Resort, condition: WeatherCondition?, snowQuality: SnowQuality) {
         self.resort = resort
         self.condition = condition
-        self.snowQuality = condition?.snowQuality ?? .unknown
+        self.snowQuality = snowQuality
         super.init()
         self.coordinate = resort.primaryCoordinate
         self.title = resort.name
@@ -112,7 +113,7 @@ struct ClusteredMapView: UIViewRepresentable {
         let existingIds = Set(currentAnnotations.map { $0.resort.id })
         let toAdd = annotations.filter { !existingIds.contains($0.id) }
             .map { annotation in
-                ResortPointAnnotation(resort: annotation.resort, condition: annotation.condition)
+                ResortPointAnnotation(resort: annotation.resort, condition: annotation.condition, snowQuality: annotation.snowQuality)
             }
         mapView.addAnnotations(toAdd)
 
@@ -123,7 +124,7 @@ struct ClusteredMapView: UIViewRepresentable {
                     // Need to remove and re-add to update the view
                     mapView.removeAnnotation(annotation)
                     mapView.addAnnotation(
-                        ResortPointAnnotation(resort: updatedData.resort, condition: updatedData.condition)
+                        ResortPointAnnotation(resort: updatedData.resort, condition: updatedData.condition, snowQuality: updatedData.snowQuality)
                     )
                 }
             }

@@ -234,6 +234,10 @@ struct ResortRowView: View {
         snowConditionsManager.getLatestCondition(for: resort.id)
     }
 
+    private var snowQualitySummary: SnowQualitySummaryLight? {
+        snowConditionsManager.snowQualitySummaries[resort.id]
+    }
+
     private var formattedDistance: String? {
         guard showDistance, let location = userLocation else { return nil }
         let distance = resort.distance(from: location)
@@ -325,7 +329,7 @@ struct ResortRowView: View {
                 }
             }
 
-            // Quick stats
+            // Quick stats - prefer full condition, fall back to summary
             if let condition = latestCondition {
                 HStack {
                     Label(condition.formattedCurrentTemp, systemImage: "thermometer")
@@ -334,7 +338,8 @@ struct ResortRowView: View {
 
                     Spacer()
 
-                    Label(condition.formattedSnowfall24h, systemImage: "snowflake")
+                    // Use fresh snow (snowfall_after_freeze) which is more meaningful than 24h
+                    Label(condition.formattedFreshSnow, systemImage: "snowflake")
                         .font(.caption)
                         .foregroundColor(.blue)
 
@@ -343,6 +348,31 @@ struct ResortRowView: View {
                     Label(condition.formattedTimestamp, systemImage: "clock")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                }
+            } else if let summary = snowQualitySummary,
+                      summary.temperatureC != nil || summary.snowfallFreshCm != nil {
+                HStack {
+                    if let temp = summary.formattedTemperature {
+                        Label(temp, systemImage: "thermometer")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+
+                    if let snow = summary.formattedFreshSnow {
+                        Label(snow, systemImage: "snowflake")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+
+                    Spacer()
+
+                    if let timestamp = summary.formattedTimestamp {
+                        Label(timestamp, systemImage: "clock")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
         }

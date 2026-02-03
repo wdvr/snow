@@ -947,22 +947,75 @@ struct SnowQualitySummaryLight: Codable {
     let resortId: String
     let overallQuality: String
     let lastUpdated: String?
+    let temperatureC: Double?
+    let snowfallFreshCm: Double?
+    let snowfall24hCm: Double?
 
     private enum CodingKeys: String, CodingKey {
         case resortId = "resort_id"
         case overallQuality = "overall_quality"
         case lastUpdated = "last_updated"
+        case temperatureC = "temperature_c"
+        case snowfallFreshCm = "snowfall_fresh_cm"
+        case snowfall24hCm = "snowfall_24h_cm"
     }
 
     // Explicit initializer for cache reconstruction
-    init(resortId: String, overallQuality: String, lastUpdated: String?) {
+    init(resortId: String, overallQuality: String, lastUpdated: String?,
+         temperatureC: Double? = nil, snowfallFreshCm: Double? = nil, snowfall24hCm: Double? = nil) {
         self.resortId = resortId
         self.overallQuality = overallQuality
         self.lastUpdated = lastUpdated
+        self.temperatureC = temperatureC
+        self.snowfallFreshCm = snowfallFreshCm
+        self.snowfall24hCm = snowfall24hCm
     }
 
     var overallSnowQuality: SnowQuality {
         SnowQuality(rawValue: overallQuality) ?? .unknown
+    }
+
+    /// Formatted temperature string (e.g., "-5°C (21°F)")
+    var formattedTemperature: String? {
+        guard let temp = temperatureC else { return nil }
+        let fahrenheit = temp * 9 / 5 + 32
+        return String(format: "%.0f°C (%.0f°F)", temp, fahrenheit)
+    }
+
+    /// Formatted fresh snow depth - shows the meaningful "fresh snow on ice" metric
+    var formattedFreshSnow: String? {
+        guard let snow = snowfallFreshCm else { return nil }
+        return String(format: "%.1fcm", snow)
+    }
+
+    /// Formatted timestamp relative to now
+    var formattedTimestamp: String? {
+        guard let lastUpdated = lastUpdated else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        guard let date = formatter.date(from: lastUpdated) else {
+            // Try without fractional seconds
+            formatter.formatOptions = [.withInternetDateTime]
+            guard let date = formatter.date(from: lastUpdated) else { return nil }
+            return formatRelativeTime(date)
+        }
+        return formatRelativeTime(date)
+    }
+
+    private func formatRelativeTime(_ date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        if interval < 60 {
+            return "Just now"
+        } else if interval < 3600 {
+            let minutes = Int(interval / 60)
+            return "\(minutes)m ago"
+        } else if interval < 86400 {
+            let hours = Int(interval / 3600)
+            return "\(hours)h ago"
+        } else {
+            let days = Int(interval / 86400)
+            return "\(days)d ago"
+        }
     }
 }
 

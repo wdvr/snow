@@ -812,6 +812,9 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
             "resort_id": resort_id,
             "overall_quality": SnowQuality.UNKNOWN.value,
             "last_updated": None,
+            "temperature_c": None,
+            "snowfall_fresh_cm": None,
+            "snowfall_24h_cm": None,
         }
 
     # Calculate overall quality
@@ -837,10 +840,24 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
     else:
         overall_quality = SnowQuality.BAD
 
+    # Get representative condition data (prefer mid elevation, then first available)
+    representative = None
+    for c in conditions:
+        if c.elevation_level == "mid":
+            representative = c
+            break
+    if not representative:
+        representative = conditions[0]
+
     return {
         "resort_id": resort_id,
         "overall_quality": overall_quality.value,
         "last_updated": max(c.timestamp for c in conditions) if conditions else None,
+        "temperature_c": representative.current_temp if representative else None,
+        "snowfall_fresh_cm": representative.snowfall_after_freeze_cm
+        if representative
+        else None,
+        "snowfall_24h_cm": representative.snowfall_24h if representative else None,
     }
 
 
