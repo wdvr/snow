@@ -1,5 +1,6 @@
 """Main FastAPI application handler for Lambda deployment."""
 
+import json
 import os
 from datetime import UTC, datetime, timezone
 from typing import Annotated, Dict, List, Optional
@@ -1361,7 +1362,10 @@ def get_resort_events_table():
 class CreateResortEventRequest(BaseModel):
     """Request body for creating a resort event."""
 
-    event_type: str = Field(..., description="Type of event (e.g., 'free_store', 'special_offer', 'competition')")
+    event_type: str = Field(
+        ...,
+        description="Type of event (e.g., 'free_store', 'special_offer', 'competition')",
+    )
     title: str = Field(..., description="Event title")
     description: str | None = Field(None, description="Event description")
     event_date: str = Field(..., description="Date of the event (YYYY-MM-DD)")
@@ -1382,7 +1386,9 @@ async def get_resort_events(
         from datetime import timedelta
 
         today = datetime.now(UTC).strftime("%Y-%m-%d")
-        future_date = (datetime.now(UTC) + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+        future_date = (datetime.now(UTC) + timedelta(days=days_ahead)).strftime(
+            "%Y-%m-%d"
+        )
 
         result = get_resort_events_table().query(
             IndexName="EventDateIndex",
@@ -1454,7 +1460,10 @@ async def create_resort_event(
         )
 
 
-@app.delete("/api/v1/resorts/{resort_id}/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete(
+    "/api/v1/resorts/{resort_id}/events/{event_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def delete_resort_event(
     resort_id: str,
     event_id: str,
@@ -2008,7 +2017,9 @@ async def trigger_notifications(
         )
 
     try:
-        lambda_client = boto3.client("lambda", region_name=os.environ.get("AWS_REGION_NAME", "us-west-2"))
+        lambda_client = boto3.client(
+            "lambda", region_name=os.environ.get("AWS_REGION_NAME", "us-west-2")
+        )
 
         # Get the notification processor Lambda name
         notification_lambda_name = f"snow-tracker-notification-processor-{environment}"
@@ -2017,11 +2028,13 @@ async def trigger_notifications(
         response = lambda_client.invoke(
             FunctionName=notification_lambda_name,
             InvocationType="Event",  # Async invocation
-            Payload=json.dumps({
-                "source": "manual_trigger",
-                "user_id": user_id or "anonymous",
-                "test_mode": True,
-            }),
+            Payload=json.dumps(
+                {
+                    "source": "manual_trigger",
+                    "user_id": user_id or "anonymous",
+                    "test_mode": True,
+                }
+            ),
         )
 
         return {
@@ -2063,7 +2076,9 @@ async def test_push_notification(
     try:
         # Get device tokens
         device_tokens_table = get_dynamodb().Table(
-            os.environ.get("DEVICE_TOKENS_TABLE", f"snow-tracker-device-tokens-{environment}")
+            os.environ.get(
+                "DEVICE_TOKENS_TABLE", f"snow-tracker-device-tokens-{environment}"
+            )
         )
 
         if user_id:
@@ -2086,7 +2101,9 @@ async def test_push_notification(
             }
 
         # Send notification via SNS
-        sns_client = boto3.client("sns", region_name=os.environ.get("AWS_REGION_NAME", "us-west-2"))
+        sns_client = boto3.client(
+            "sns", region_name=os.environ.get("AWS_REGION_NAME", "us-west-2")
+        )
 
         apns_arn = os.environ.get("APNS_PLATFORM_APP_ARN", "")
         if not apns_arn or apns_arn == "not-configured":
@@ -2098,7 +2115,7 @@ async def test_push_notification(
 
         results = []
         for token_record in tokens:
-            device_token = token_record.get("device_token")
+            device_token = token_record.get("token")
             if not device_token:
                 continue
 
@@ -2129,17 +2146,21 @@ async def test_push_notification(
                     MessageStructure="json",
                 )
 
-                results.append({
-                    "device_id": token_record.get("device_id"),
-                    "status": "sent",
-                })
+                results.append(
+                    {
+                        "device_id": token_record.get("device_id"),
+                        "status": "sent",
+                    }
+                )
 
             except Exception as e:
-                results.append({
-                    "device_id": token_record.get("device_id"),
-                    "status": "failed",
-                    "error": str(e),
-                })
+                results.append(
+                    {
+                        "device_id": token_record.get("device_id"),
+                        "status": "failed",
+                        "error": str(e),
+                    }
+                )
 
         return {
             "message": "Test notification sent",

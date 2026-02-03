@@ -218,58 +218,11 @@ struct ProfileView: View {
 // MARK: - Google Logo View
 
 struct GoogleLogoView: View {
-    // Official Google brand colors
-    private let googleBlue = Color(red: 66/255, green: 133/255, blue: 244/255)
-    private let googleGreen = Color(red: 52/255, green: 168/255, blue: 83/255)
-    private let googleYellow = Color(red: 251/255, green: 188/255, blue: 5/255)
-    private let googleRed = Color(red: 234/255, green: 67/255, blue: 53/255)
-
     var body: some View {
-        Canvas { context, size in
-            let center = CGPoint(x: size.width / 2, y: size.height / 2)
-            let radius = min(size.width, size.height) / 2
-            let strokeWidth = radius * 0.35
-            let innerRadius = radius - strokeWidth / 2
-
-            // Green arc (bottom, from 45° to 135°)
-            var greenPath = Path()
-            greenPath.addArc(center: center, radius: innerRadius,
-                            startAngle: .degrees(45), endAngle: .degrees(135),
-                            clockwise: false)
-            context.stroke(greenPath, with: .color(googleGreen), lineWidth: strokeWidth)
-
-            // Yellow arc (bottom left, from 135° to 225°)
-            var yellowPath = Path()
-            yellowPath.addArc(center: center, radius: innerRadius,
-                             startAngle: .degrees(135), endAngle: .degrees(225),
-                             clockwise: false)
-            context.stroke(yellowPath, with: .color(googleYellow), lineWidth: strokeWidth)
-
-            // Red arc (top left, from 225° to 315° - stops before horizontal bar)
-            var redPath = Path()
-            redPath.addArc(center: center, radius: innerRadius,
-                          startAngle: .degrees(225), endAngle: .degrees(315),
-                          clockwise: false)
-            context.stroke(redPath, with: .color(googleRed), lineWidth: strokeWidth)
-
-            // Blue arc (right side only, from -45° to 45°)
-            var bluePath = Path()
-            bluePath.addArc(center: center, radius: innerRadius,
-                           startAngle: .degrees(-45), endAngle: .degrees(45),
-                           clockwise: false)
-            context.stroke(bluePath, with: .color(googleBlue), lineWidth: strokeWidth)
-
-            // Blue horizontal bar extending from center to right (the G opening)
-            let barHeight = strokeWidth
-            let barRect = CGRect(
-                x: center.x,
-                y: center.y - barHeight / 2,
-                width: radius * 0.6,
-                height: barHeight
-            )
-            context.fill(Path(barRect), with: .color(googleBlue))
-        }
-        .frame(width: 20, height: 20)
+        Image("GoogleLogo")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 20, height: 20)
     }
 }
 
