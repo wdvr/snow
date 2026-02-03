@@ -2195,6 +2195,42 @@ async def test_push_notification(
         )
 
 
+# MARK: - Admin Endpoints
+
+
+@app.post("/api/v1/admin/backfill-geohashes")
+async def backfill_geohashes():
+    """
+    Backfill geohashes for resorts that don't have them.
+    Only available in staging/dev environments.
+    """
+    environment = os.environ.get("ENVIRONMENT", "dev")
+
+    # Only allow in staging/dev for admin operations
+    if environment == "prod":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This endpoint is not available in production",
+        )
+
+    try:
+        resort_service = get_resort_service()
+        result = resort_service.backfill_geohashes()
+        return {
+            "message": "Geohash backfill completed",
+            "total_resorts": result.get("total_resorts", 0),
+            "updated": result.get("updated", 0),
+            "already_has_geohash": result.get("already_has_geohash", 0),
+            "skipped_no_coords": result.get("skipped_no_coords", 0),
+            "errors": result.get("errors", 0),
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to backfill geohashes: {str(e)}",
+        )
+
+
 # MARK: - Error Handlers
 
 
