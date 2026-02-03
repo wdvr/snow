@@ -25,7 +25,7 @@
 ### 🟠 In Progress
 | Issue | Description | Status |
 |-------|-------------|--------|
-| [#95](https://github.com/wdvr/snow/issues/95) | S3 → DynamoDB pipeline for scraped resorts | **In Progress** |
+| (none) | | |
 
 ### 🟢 Low / Monitoring
 | Issue | Description | Status |
@@ -55,6 +55,10 @@ All tasks tracked at: https://github.com/wdvr/snow/issues
 
 | Feature | Date |
 |---------|------|
+| iOS notification sync fix (preferences now sync to backend) | 2026-02-03 |
+| Resort database versioning system (manifests, GitHub workflow) | 2026-02-03 |
+| 13 language translations (EN, FR, DE, ES, IT, JA, NO, SV, NL, PL, KO, ZH, PT) | 2026-02-03 |
+| S3 → DynamoDB pipeline for scraped resorts (#95) | 2026-02-03 |
 | SNS notifications for new resorts discovered by scraper | 2026-02-03 |
 | S3 storage for scraper results | 2026-02-03 |
 | East Coast resorts (VT, NH, ME - 8 resorts) | 2026-02-03 |
@@ -147,6 +151,8 @@ Sign in via AWS SSO (IAM Identity Center)
 | Notification Processor | Every 1 hour | Processes and sends push notifications |
 | Scraper Orchestrator | Daily at 06:00 UTC | Fans out to 23 country-specific worker Lambdas |
 | Scraper Workers | On-demand | Scrapes resorts from skiresort.info per country |
+| Version Consolidator | Daily at 07:00 UTC | Aggregates scraper results into versioned snapshots |
+| Scraper Results Processor | Daily at 07:00 UTC (staging) | Auto-deploys new resorts to staging DynamoDB |
 
 ---
 
@@ -170,6 +176,11 @@ gh workflow run daily-scrape.yml
 
 # View issues
 gh issue list --state open
+
+# Resort version management
+gh workflow run manage-resort-versions.yml -f action=list
+gh workflow run manage-resort-versions.yml -f action=show -f version=v20260203060000
+gh workflow run manage-resort-versions.yml -f action=deploy -f version=v20260203060000 -f environment=staging -f dry_run=true
 ```
 
 ---
