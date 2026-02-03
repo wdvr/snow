@@ -1,8 +1,16 @@
-"""Lambda handler for processing weather data."""
+"""Lambda handler for processing weather data.
+
+Supports two modes:
+1. Sequential mode (default): Processes all resorts in a single Lambda
+2. Parallel mode: Orchestrates multiple worker Lambdas by region
+
+Set PARALLEL_PROCESSING=true to enable parallel mode.
+"""
 
 import json
 import logging
 import os
+from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Any
 
@@ -23,6 +31,7 @@ logger.setLevel(logging.INFO)
 # Initialize AWS clients
 dynamodb = boto3.resource("dynamodb")
 cloudwatch = boto3.client("cloudwatch")
+lambda_client = boto3.client("lambda")
 
 # Environment variables
 RESORTS_TABLE = os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
@@ -31,6 +40,10 @@ WEATHER_CONDITIONS_TABLE = os.environ.get(
 )
 ENABLE_SCRAPING = os.environ.get("ENABLE_SCRAPING", "true").lower() == "true"
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
+PARALLEL_PROCESSING = os.environ.get("PARALLEL_PROCESSING", "false").lower() == "true"
+WEATHER_WORKER_LAMBDA = os.environ.get(
+    "WEATHER_WORKER_LAMBDA", f"snow-tracker-weather-worker-{ENVIRONMENT}"
+)
 
 
 def publish_metrics(stats: dict[str, Any]) -> None:
@@ -217,6 +230,137 @@ def get_remaining_time_ms(context) -> int:
 MIN_TIME_BUFFER_MS = 60000
 
 
+def orchestrate_parallel_processing(context) -> dict[str, Any]:
+    """
+    Orchestrate parallel weather processing by invoking worker Lambdas.
+
+    Groups resorts by region and invokes a separate Lambda for each region.
+    This allows processing all resorts in parallel, avoiding timeout issues.
+
+    Returns:
+        Dict with orchestration results
+    """
+    start_time = datetime.now(UTC)
+    logger.info("Starting parallel weather processing orchestration")
+
+    # Get all resorts
+    resort_service = ResortService(dynamodb.Table(RESORTS_TABLE))
+    resorts = resort_service.get_all_resorts()
+
+    if not resorts:
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"message": "No resorts to process"}),
+        }
+
+    # Group resorts by region
+    resorts_by_region: dict[str, list[str]] = defaultdict(list)
+    for resort in resorts:
+        region = getattr(resort, "region", "unknown")
+        resorts_by_region[region].append(resort.resort_id)
+
+    logger.info(f"Grouped {len(resorts)} resorts into {len(resorts_by_region)} regions")
+
+    # Invoke worker Lambda for each region (asynchronously)
+    invocations = []
+    for region, resort_ids in resorts_by_region.items():
+        try:
+            payload = {
+                "resort_ids": resort_ids,
+                "region": region,
+            }
+
+            logger.info(
+                f"Invoking worker for region {region} with {len(resort_ids)} resorts"
+            )
+
+            response = lambda_client.invoke(
+                FunctionName=WEATHER_WORKER_LAMBDA,
+                InvocationType="Event",  # Async invocation
+                Payload=json.dumps(payload),
+            )
+
+            invocations.append(
+                {
+                    "region": region,
+                    "resort_count": len(resort_ids),
+                    "status_code": response.get("StatusCode"),
+                    "success": response.get("StatusCode") == 202,
+                }
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to invoke worker for region {region}: {e}")
+            invocations.append(
+                {
+                    "region": region,
+                    "resort_count": len(resort_ids),
+                    "error": str(e),
+                    "success": False,
+                }
+            )
+
+    # Calculate results
+    successful = sum(1 for i in invocations if i.get("success"))
+    failed = len(invocations) - successful
+    duration = (datetime.now(UTC) - start_time).total_seconds()
+
+    # Publish orchestrator metrics
+    try:
+        cloudwatch.put_metric_data(
+            Namespace="SnowTracker/Orchestrator",
+            MetricData=[
+                {
+                    "MetricName": "WorkersInvoked",
+                    "Value": successful,
+                    "Unit": "Count",
+                    "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+                },
+                {
+                    "MetricName": "WorkerInvocationsFailed",
+                    "Value": failed,
+                    "Unit": "Count",
+                    "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+                },
+                {
+                    "MetricName": "TotalResortsDispatched",
+                    "Value": len(resorts),
+                    "Unit": "Count",
+                    "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+                },
+                {
+                    "MetricName": "OrchestrationDuration",
+                    "Value": duration,
+                    "Unit": "Seconds",
+                    "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
+                },
+            ],
+        )
+    except Exception as e:
+        logger.error(f"Failed to publish orchestrator metrics: {e}")
+
+    logger.info(
+        f"Orchestration complete: {successful}/{len(invocations)} workers invoked, "
+        f"{len(resorts)} resorts dispatched in {duration:.2f}s"
+    )
+
+    return {
+        "statusCode": 200,
+        "body": json.dumps(
+            {
+                "message": f"Dispatched {len(resorts)} resorts to {successful} workers",
+                "mode": "parallel",
+                "workers_invoked": successful,
+                "workers_failed": failed,
+                "total_resorts": len(resorts),
+                "regions": list(resorts_by_region.keys()),
+                "duration_seconds": duration,
+                "invocations": invocations,
+            }
+        ),
+    }
+
+
 def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
     """
     Lambda handler for scheduled weather data processing.
@@ -243,6 +387,15 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
     """
     try:
         logger.info(f"Starting weather processing at {datetime.now(UTC).isoformat()}")
+
+        # Check if parallel processing is enabled
+        if PARALLEL_PROCESSING:
+            logger.info("Parallel processing mode enabled - orchestrating workers")
+            return orchestrate_parallel_processing(context)
+
+        logger.info(
+            "Sequential processing mode (set PARALLEL_PROCESSING=true for parallel)"
+        )
 
         # Initialize services
         resort_service = ResortService(dynamodb.Table(RESORTS_TABLE))

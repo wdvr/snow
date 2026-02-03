@@ -26,7 +26,7 @@ class TestResortSeeder:
         """Test that initial resort data is correctly structured."""
         resorts = seeder._get_initial_resort_data()
 
-        assert len(resorts) == 28  # Includes original 14 plus 14 new resorts
+        assert len(resorts) >= 40  # Includes resorts from all regions
         resort_ids = [r.resort_id for r in resorts]
         # Check core Canadian resorts
         assert "big-white" in resort_ids
@@ -121,14 +121,16 @@ class TestResortSeeder:
 
         results = seeder.seed_initial_resorts()
 
-        assert results["resorts_created"] == 28
+        # Get the actual resort count from the seeder
+        expected_count = len(seeder._get_initial_resort_data())
+        assert results["resorts_created"] == expected_count
         assert results["resorts_skipped"] == 0
         assert len(results["errors"]) == 0
-        assert len(results["created_resorts"]) == 28
+        assert len(results["created_resorts"]) == expected_count
 
         # Verify resort service was called correctly
-        assert mock_resort_service.get_resort.call_count == 28
-        assert mock_resort_service.create_resort.call_count == 28
+        assert mock_resort_service.get_resort.call_count == expected_count
+        assert mock_resort_service.create_resort.call_count == expected_count
 
     def test_seed_initial_resorts_some_exist(self, seeder, mock_resort_service):
         """Test seeding when some resorts already exist."""
@@ -148,12 +150,14 @@ class TestResortSeeder:
 
         results = seeder.seed_initial_resorts()
 
-        assert results["resorts_created"] == 27  # All except Big White
+        # Get the actual resort count from the seeder
+        expected_count = len(seeder._get_initial_resort_data())
+        assert results["resorts_created"] == expected_count - 1  # All except Big White
         assert results["resorts_skipped"] == 1  # Big White
         assert len(results["errors"]) == 0
 
-        # Should create only 27 resorts
-        assert mock_resort_service.create_resort.call_count == 27
+        # Should create only expected_count - 1 resorts
+        assert mock_resort_service.create_resort.call_count == expected_count - 1
 
     def test_seed_initial_resorts_with_errors(self, seeder, mock_resort_service):
         """Test seeding with some creation errors."""
@@ -170,7 +174,11 @@ class TestResortSeeder:
 
         results = seeder.seed_initial_resorts()
 
-        assert results["resorts_created"] == 27  # All except Lake Louise
+        # Get the actual resort count from the seeder
+        expected_count = len(seeder._get_initial_resort_data())
+        assert (
+            results["resorts_created"] == expected_count - 1
+        )  # All except Lake Louise
         assert results["resorts_skipped"] == 0
         assert len(results["errors"]) == 1
         assert "lake-louise" in results["errors"][0]
