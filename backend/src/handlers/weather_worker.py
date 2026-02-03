@@ -7,6 +7,7 @@ a batch of resorts in parallel. Each worker handles one region's resorts.
 import json
 import logging
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from typing import Any
@@ -36,7 +37,9 @@ WEATHER_CONDITIONS_TABLE = os.environ.get(
 ENABLE_SCRAPING = os.environ.get("ENABLE_SCRAPING", "true").lower() == "true"
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
 # Number of elevation points to process concurrently
-ELEVATION_CONCURRENCY = int(os.environ.get("ELEVATION_CONCURRENCY", "5"))
+ELEVATION_CONCURRENCY = int(os.environ.get("ELEVATION_CONCURRENCY", "3"))
+# Delay between resorts to avoid overwhelming external APIs (seconds)
+INTER_RESORT_DELAY = float(os.environ.get("INTER_RESORT_DELAY", "0.5"))
 
 
 def publish_worker_metrics(stats: dict[str, Any], region: str) -> None:
@@ -300,6 +303,10 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
                             stats["errors"] += 1
 
                 stats["resorts_processed"] += 1
+
+                # Rate limit: small delay between resorts to avoid overwhelming APIs
+                if INTER_RESORT_DELAY > 0:
+                    time.sleep(INTER_RESORT_DELAY)
 
             except Exception as e:
                 logger.error(f"Error processing resort {resort_id}: {str(e)}")
