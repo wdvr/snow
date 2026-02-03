@@ -1,0 +1,146 @@
+/*
+  Localizable.strings
+  SnowTracker
+
+  Simplified Chinese (简体中文)
+*/
+
+/* Common */
+"Done" = "完成";
+"Cancel" = "取消";
+"Delete" = "删除";
+"Save" = "保存";
+"OK" = "确定";
+"Error" = "错误";
+"Loading" = "加载中";
+"Refresh" = "刷新";
+"Settings" = "设置";
+"Search" = "搜索";
+
+/* Tabs */
+"Favorites" = "收藏";
+"Map" = "地图";
+"Best Snow" = "最佳雪况";
+"Nearby" = "附近";
+
+/* FavoritesView */
+"No Favorites Yet" = "暂无收藏";
+"Tap the heart icon on any resort to add it to your favorites." = "点击任意滑雪场的爱心图标即可添加到收藏。";
+"Browse Resorts" = "浏览滑雪场";
+
+/* SplashView */
+"Snow Tracker" = "雪况追踪";
+"Fresh powder awaits" = "新鲜粉雪等你来";
+"Loading conditions..." = "正在加载雪况...";
+
+/* ConditionsView */
+"Snow Conditions" = "雪况";
+"Offline mode - showing cached data" = "离线模式 - 显示缓存数据";
+"Last updated: %@" = "最后更新：%@";
+"Snow Quality Guide" = "雪质指南";
+"Quality Levels" = "雪质等级";
+"Warming" = "回暖中";
+"since last thaw" = "距上次融雪";
+
+/* Quality Ratings */
+"Excellent" = "极佳";
+"Good" = "良好";
+"Fair" = "一般";
+"Poor" = "较差";
+"Icy" = "结冰";
+
+/* ResortDetailView */
+"Select Elevation" = "选择海拔";
+"Loading Conditions..." = "正在加载雪况...";
+"No Data Available" = "暂无数据";
+"All Elevations" = "全部海拔";
+"Visit Website" = "访问官网";
+"Recent Snowfall" = "近期降雪";
+"Snow Forecast" = "降雪预报";
+"Weather Details" = "天气详情";
+"Min Temp" = "最低温度";
+"Max Temp" = "最高温度";
+"Humidity" = "湿度";
+"Wind" = "风速";
+"24h" = "24小时";
+"48h" = "48小时";
+"72h" = "72小时";
+"Next 24h" = "未来24小时";
+"Next 48h" = "未来48小时";
+"Next 72h" = "未来72小时";
+"Heavy snowfall expected!" = "预计有大雪！";
+"Light snow expected" = "预计有小雪";
+"Fresh" = "新雪";
+"Temp" = "温度";
+
+/* FeedbackView */
+"Send Feedback" = "发送反馈";
+"Subject" = "主题";
+"Your Feedback" = "您的反馈";
+"Submit Feedback" = "提交反馈";
+"Feedback Sent!" = "反馈已发送！";
+"Thank you for your feedback!" = "感谢您的反馈！";
+"Email (optional)" = "邮箱（选填）";
+
+/* NotificationSettingsView */
+"Notifications" = "通知";
+"All Notifications" = "全部通知";
+"Fresh Snow Alerts" = "新雪提醒";
+"Snow Threshold" = "降雪阈值";
+"Event Alerts" = "活动提醒";
+"Thaw/Freeze Alerts" = "融雪/结冰提醒";
+"Enable" = "启用";
+"%d cm" = "%d 厘米";
+
+/* SettingsView */
+"Account" = "账户";
+"Sign In" = "登录";
+"Sign Out" = "退出登录";
+"Preferences" = "偏好设置";
+"Units" = "单位";
+"Celsius" = "摄氏度";
+"Fahrenheit" = "华氏度";
+"Metric (km)" = "公制（公里）";
+"Imperial (mi)" = "英制（英里）";
+"Centimeters" = "厘米";
+"Inches" = "英寸";
+"Data & Storage" = "数据与存储";
+"Clear Offline Cache" = "清除离线缓存";
+"Support" = "支持";
+"Privacy Policy" = "隐私政策";
+"Terms of Service" = "服务条款";
+"About" = "关于";
+"App Version" = "应用版本";
+
+/* AuthenticationViews */
+"Sign in with Google" = "使用 Google 登录";
+"Continue without signing in" = "不登录继续使用";
+"Profile" = "个人资料";
+
+/* RecommendationsView */
+"Near You" = "附近推荐";
+"Best Globally" = "全球最佳";
+"Search Radius" = "搜索半径";
+"Location Access" = "位置访问";
+"Enable location to see nearby recommendations" = "启用位置服务以查看附近推荐";
+"Open Settings" = "打开设置";
+"No Recommendations" = "暂无推荐";
+
+/* ResortMapView */
+"Snow Quality Legend" = "雪质图例";
+"Standard" = "标准";
+"Satellite" = "卫星";
+"Hybrid" = "混合";
+"Show All Resorts" = "显示全部滑雪场";
+"View Full Details" = "查看详情";
+"Forecast" = "预报";
+"%d Resorts" = "%d 个滑雪场";
+
+/* ResortListView */
+"Snow Resorts" = "滑雪场";
+"All Regions" = "全部区域";
+"Search resorts..." = "搜索滑雪场...";
+"Loading resorts..." = "正在加载滑雪场...";
+"No Resorts Found" = "未找到滑雪场";
+"Pull to refresh" = "下拉刷新";
+"Try Again" = "重试";

@@ -1,0 +1,146 @@
+/*
+  Localizable.strings
+  SnowTracker
+
+  Korean
+*/
+
+/* Common */
+"Done" = "완료";
+"Cancel" = "취소";
+"Delete" = "삭제";
+"Save" = "저장";
+"OK" = "확인";
+"Error" = "오류";
+"Loading" = "로딩 중";
+"Refresh" = "새로고침";
+"Settings" = "설정";
+"Search" = "검색";
+
+/* Tabs */
+"Favorites" = "즐겨찾기";
+"Map" = "지도";
+"Best Snow" = "최고의 설질";
+"Nearby" = "주변";
+
+/* FavoritesView */
+"No Favorites Yet" = "즐겨찾기 없음";
+"Tap the heart icon on any resort to add it to your favorites." = "리조트의 하트 아이콘을 탭하여 즐겨찾기에 추가하세요.";
+"Browse Resorts" = "리조트 둘러보기";
+
+/* SplashView */
+"Snow Tracker" = "스노우 트래커";
+"Fresh powder awaits" = "신선한 파우더가 기다립니다";
+"Loading conditions..." = "상태 로딩 중...";
+
+/* ConditionsView */
+"Snow Conditions" = "설질 상태";
+"Offline mode - showing cached data" = "오프라인 모드 - 캐시된 데이터 표시 중";
+"Last updated: %@" = "최종 업데이트: %@";
+"Snow Quality Guide" = "설질 가이드";
+"Quality Levels" = "품질 등급";
+"Warming" = "기온 상승 중";
+"since last thaw" = "마지막 해빙 이후";
+
+/* Quality Ratings */
+"Excellent" = "최상";
+"Good" = "양호";
+"Fair" = "보통";
+"Poor" = "나쁨";
+"Icy" = "빙판";
+
+/* ResortDetailView */
+"Select Elevation" = "고도 선택";
+"Loading Conditions..." = "상태 로딩 중...";
+"No Data Available" = "데이터 없음";
+"All Elevations" = "전체 고도";
+"Visit Website" = "웹사이트 방문";
+"Recent Snowfall" = "최근 강설량";
+"Snow Forecast" = "적설 예보";
+"Weather Details" = "날씨 상세";
+"Min Temp" = "최저 기온";
+"Max Temp" = "최고 기온";
+"Humidity" = "습도";
+"Wind" = "바람";
+"24h" = "24시간";
+"48h" = "48시간";
+"72h" = "72시간";
+"Next 24h" = "향후 24시간";
+"Next 48h" = "향후 48시간";
+"Next 72h" = "향후 72시간";
+"Heavy snowfall expected!" = "폭설 예상!";
+"Light snow expected" = "약한 눈 예상";
+"Fresh" = "신설";
+"Temp" = "기온";
+
+/* FeedbackView */
+"Send Feedback" = "피드백 보내기";
+"Subject" = "제목";
+"Your Feedback" = "피드백 내용";
+"Submit Feedback" = "피드백 제출";
+"Feedback Sent!" = "피드백 전송 완료!";
+"Thank you for your feedback!" = "피드백 감사합니다!";
+"Email (optional)" = "이메일 (선택사항)";
+
+/* NotificationSettingsView */
+"Notifications" = "알림";
+"All Notifications" = "모든 알림";
+"Fresh Snow Alerts" = "신설 알림";
+"Snow Threshold" = "적설량 기준";
+"Event Alerts" = "이벤트 알림";
+"Thaw/Freeze Alerts" = "해빙/결빙 알림";
+"Enable" = "활성화";
+"%d cm" = "%d cm";
+
+/* SettingsView */
+"Account" = "계정";
+"Sign In" = "로그인";
+"Sign Out" = "로그아웃";
+"Preferences" = "환경설정";
+"Units" = "단위";
+"Celsius" = "섭씨";
+"Fahrenheit" = "화씨";
+"Metric (km)" = "미터법 (km)";
+"Imperial (mi)" = "야드파운드법 (mi)";
+"Centimeters" = "센티미터";
+"Inches" = "인치";
+"Data & Storage" = "데이터 및 저장공간";
+"Clear Offline Cache" = "오프라인 캐시 삭제";
+"Support" = "지원";
+"Privacy Policy" = "개인정보 처리방침";
+"Terms of Service" = "서비스 이용약관";
+"About" = "정보";
+"App Version" = "앱 버전";
+
+/* AuthenticationViews */
+"Sign in with Google" = "Google로 로그인";
+"Continue without signing in" = "로그인 없이 계속";
+"Profile" = "프로필";
+
+/* RecommendationsView */
+"Near You" = "주변";
+"Best Globally" = "전 세계 최고";
+"Search Radius" = "검색 반경";
+"Location Access" = "위치 접근";
+"Enable location to see nearby recommendations" = "주변 추천을 보려면 위치 권한을 허용하세요";
+"Open Settings" = "설정 열기";
+"No Recommendations" = "추천 없음";
+
+/* ResortMapView */
+"Snow Quality Legend" = "설질 범례";
+"Standard" = "표준";
+"Satellite" = "위성";
+"Hybrid" = "하이브리드";
+"Show All Resorts" = "모든 리조트 보기";
+"View Full Details" = "상세 정보 보기";
+"Forecast" = "예보";
+"%d Resorts" = "%d개 리조트";
+
+/* ResortListView */
+"Snow Resorts" = "스키 리조트";
+"All Regions" = "전체 지역";
+"Search resorts..." = "리조트 검색...";
+"Loading resorts..." = "리조트 로딩 중...";
+"No Resorts Found" = "리조트를 찾을 수 없음";
+"Pull to refresh" = "당겨서 새로고침";
+"Try Again" = "다시 시도";

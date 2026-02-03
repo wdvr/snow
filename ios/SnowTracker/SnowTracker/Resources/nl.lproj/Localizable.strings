@@ -1,0 +1,146 @@
+/*
+  Localizable.strings
+  SnowTracker
+
+  Dutch (Nederlands)
+*/
+
+/* Common */
+"Done" = "Gereed";
+"Cancel" = "Annuleren";
+"Delete" = "Verwijderen";
+"Save" = "Bewaren";
+"OK" = "OK";
+"Error" = "Fout";
+"Loading" = "Laden";
+"Refresh" = "Vernieuwen";
+"Settings" = "Instellingen";
+"Search" = "Zoeken";
+
+/* Tabs */
+"Favorites" = "Favorieten";
+"Map" = "Kaart";
+"Best Snow" = "Beste Sneeuw";
+"Nearby" = "In de buurt";
+
+/* FavoritesView */
+"No Favorites Yet" = "Nog geen favorieten";
+"Tap the heart icon on any resort to add it to your favorites." = "Tik op het hartje bij een skigebied om het aan je favorieten toe te voegen.";
+"Browse Resorts" = "Bekijk skigebieden";
+
+/* SplashView */
+"Snow Tracker" = "Snow Tracker";
+"Fresh powder awaits" = "Verse poedersneeuw wacht op je";
+"Loading conditions..." = "Condities laden...";
+
+/* ConditionsView */
+"Snow Conditions" = "Sneeuwcondities";
+"Offline mode - showing cached data" = "Offline modus - gecachte gegevens worden getoond";
+"Last updated: %@" = "Laatst bijgewerkt: %@";
+"Snow Quality Guide" = "Sneeuwkwaliteit Gids";
+"Quality Levels" = "Kwaliteitsniveaus";
+"Warming" = "Opwarming";
+"since last thaw" = "sinds laatste dooi";
+
+/* Quality Ratings */
+"Excellent" = "Uitstekend";
+"Good" = "Goed";
+"Fair" = "Redelijk";
+"Poor" = "Matig";
+"Icy" = "IJzig";
+
+/* ResortDetailView */
+"Select Elevation" = "Selecteer hoogte";
+"Loading Conditions..." = "Condities laden...";
+"No Data Available" = "Geen gegevens beschikbaar";
+"All Elevations" = "Alle hoogtes";
+"Visit Website" = "Bezoek website";
+"Recent Snowfall" = "Recente sneeuwval";
+"Snow Forecast" = "Sneeuwverwachting";
+"Weather Details" = "Weerdetails";
+"Min Temp" = "Min temp";
+"Max Temp" = "Max temp";
+"Humidity" = "Luchtvochtigheid";
+"Wind" = "Wind";
+"24h" = "24u";
+"48h" = "48u";
+"72h" = "72u";
+"Next 24h" = "Komende 24u";
+"Next 48h" = "Komende 48u";
+"Next 72h" = "Komende 72u";
+"Heavy snowfall expected!" = "Zware sneeuwval verwacht!";
+"Light snow expected" = "Lichte sneeuwval verwacht";
+"Fresh" = "Vers";
+"Temp" = "Temp";
+
+/* FeedbackView */
+"Send Feedback" = "Feedback versturen";
+"Subject" = "Onderwerp";
+"Your Feedback" = "Jouw feedback";
+"Submit Feedback" = "Feedback verzenden";
+"Feedback Sent!" = "Feedback verzonden!";
+"Thank you for your feedback!" = "Bedankt voor je feedback!";
+"Email (optional)" = "E-mail (optioneel)";
+
+/* NotificationSettingsView */
+"Notifications" = "Meldingen";
+"All Notifications" = "Alle meldingen";
+"Fresh Snow Alerts" = "Verse sneeuw meldingen";
+"Snow Threshold" = "Sneeuwdrempel";
+"Event Alerts" = "Gebeurtenismeldingen";
+"Thaw/Freeze Alerts" = "Dooi/vorst meldingen";
+"Enable" = "Inschakelen";
+"%d cm" = "%d cm";
+
+/* SettingsView */
+"Account" = "Account";
+"Sign In" = "Inloggen";
+"Sign Out" = "Uitloggen";
+"Preferences" = "Voorkeuren";
+"Units" = "Eenheden";
+"Celsius" = "Celsius";
+"Fahrenheit" = "Fahrenheit";
+"Metric (km)" = "Metrisch (km)";
+"Imperial (mi)" = "Imperiaal (mi)";
+"Centimeters" = "Centimeters";
+"Inches" = "Inches";
+"Data & Storage" = "Gegevens en opslag";
+"Clear Offline Cache" = "Offline cache wissen";
+"Support" = "Ondersteuning";
+"Privacy Policy" = "Privacybeleid";
+"Terms of Service" = "Gebruiksvoorwaarden";
+"About" = "Over";
+"App Version" = "App-versie";
+
+/* AuthenticationViews */
+"Sign in with Google" = "Inloggen met Google";
+"Continue without signing in" = "Doorgaan zonder inloggen";
+"Profile" = "Profiel";
+
+/* RecommendationsView */
+"Near You" = "Bij jou in de buurt";
+"Best Globally" = "Beste wereldwijd";
+"Search Radius" = "Zoekradius";
+"Location Access" = "Locatietoegang";
+"Enable location to see nearby recommendations" = "Schakel locatie in om aanbevelingen in de buurt te zien";
+"Open Settings" = "Open instellingen";
+"No Recommendations" = "Geen aanbevelingen";
+
+/* ResortMapView */
+"Snow Quality Legend" = "Sneeuwkwaliteit legenda";
+"Standard" = "Standaard";
+"Satellite" = "Satelliet";
+"Hybrid" = "Hybride";
+"Show All Resorts" = "Toon alle skigebieden";
+"View Full Details" = "Bekijk alle details";
+"Forecast" = "Voorspelling";
+"%d Resorts" = "%d skigebieden";
+
+/* ResortListView */
+"Snow Resorts" = "Skigebieden";
+"All Regions" = "Alle regio's";
+"Search resorts..." = "Zoek skigebieden...";
+"Loading resorts..." = "Skigebieden laden...";
+"No Resorts Found" = "Geen skigebieden gevonden";
+"Pull to refresh" = "Trek om te vernieuwen";
+"Try Again" = "Opnieuw proberen";

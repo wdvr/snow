@@ -1,0 +1,146 @@
+/*
+  Localizable.strings
+  SnowTracker
+
+  Swedish
+*/
+
+/* Common */
+"Done" = "Klar";
+"Cancel" = "Avbryt";
+"Delete" = "Radera";
+"Save" = "Spara";
+"OK" = "OK";
+"Error" = "Fel";
+"Loading" = "Laddar";
+"Refresh" = "Uppdatera";
+"Settings" = "Inställningar";
+"Search" = "Sök";
+
+/* Tabs */
+"Favorites" = "Favoriter";
+"Map" = "Karta";
+"Best Snow" = "Bästa snön";
+"Nearby" = "I närheten";
+
+/* FavoritesView */
+"No Favorites Yet" = "Inga favoriter ännu";
+"Tap the heart icon on any resort to add it to your favorites." = "Tryck på hjärtikonen på valfri skidort för att lägga till den i dina favoriter.";
+"Browse Resorts" = "Utforska skidorter";
+
+/* SplashView */
+"Snow Tracker" = "Snow Tracker";
+"Fresh powder awaits" = "Nysnö väntar";
+"Loading conditions..." = "Laddar förhållanden...";
+
+/* ConditionsView */
+"Snow Conditions" = "Snöförhållanden";
+"Offline mode - showing cached data" = "Offlineläge - visar cachad data";
+"Last updated: %@" = "Senast uppdaterad: %@";
+"Snow Quality Guide" = "Guide för snökvalitet";
+"Quality Levels" = "Kvalitetsnivåer";
+"Warming" = "Uppvärmning";
+"since last thaw" = "sedan senaste töväder";
+
+/* Quality Ratings */
+"Excellent" = "Utmärkt";
+"Good" = "Bra";
+"Fair" = "Godtagbar";
+"Poor" = "Dålig";
+"Icy" = "Isig";
+
+/* ResortDetailView */
+"Select Elevation" = "Välj höjd";
+"Loading Conditions..." = "Laddar förhållanden...";
+"No Data Available" = "Ingen data tillgänglig";
+"All Elevations" = "Alla höjder";
+"Visit Website" = "Besök webbplats";
+"Recent Snowfall" = "Senaste snöfall";
+"Snow Forecast" = "Snöprognos";
+"Weather Details" = "Väderdetaljer";
+"Min Temp" = "Min temp";
+"Max Temp" = "Max temp";
+"Humidity" = "Luftfuktighet";
+"Wind" = "Vind";
+"24h" = "24 tim";
+"48h" = "48 tim";
+"72h" = "72 tim";
+"Next 24h" = "Nästa 24 tim";
+"Next 48h" = "Nästa 48 tim";
+"Next 72h" = "Nästa 72 tim";
+"Heavy snowfall expected!" = "Kraftigt snöfall väntas!";
+"Light snow expected" = "Lätt snöfall väntas";
+"Fresh" = "Nysnö";
+"Temp" = "Temp";
+
+/* FeedbackView */
+"Send Feedback" = "Skicka feedback";
+"Subject" = "Ämne";
+"Your Feedback" = "Din feedback";
+"Submit Feedback" = "Skicka feedback";
+"Feedback Sent!" = "Feedback skickad!";
+"Thank you for your feedback!" = "Tack för din feedback!";
+"Email (optional)" = "E-post (valfritt)";
+
+/* NotificationSettingsView */
+"Notifications" = "Notiser";
+"All Notifications" = "Alla notiser";
+"Fresh Snow Alerts" = "Nysnövarningar";
+"Snow Threshold" = "Snögräns";
+"Event Alerts" = "Händelsevarningar";
+"Thaw/Freeze Alerts" = "Tö/frost-varningar";
+"Enable" = "Aktivera";
+"%d cm" = "%d cm";
+
+/* SettingsView */
+"Account" = "Konto";
+"Sign In" = "Logga in";
+"Sign Out" = "Logga ut";
+"Preferences" = "Inställningar";
+"Units" = "Enheter";
+"Celsius" = "Celsius";
+"Fahrenheit" = "Fahrenheit";
+"Metric (km)" = "Metriskt (km)";
+"Imperial (mi)" = "Amerikanskt (mi)";
+"Centimeters" = "Centimeter";
+"Inches" = "Tum";
+"Data & Storage" = "Data och lagring";
+"Clear Offline Cache" = "Rensa offlinecache";
+"Support" = "Support";
+"Privacy Policy" = "Integritetspolicy";
+"Terms of Service" = "Användarvillkor";
+"About" = "Om";
+"App Version" = "Appversion";
+
+/* AuthenticationViews */
+"Sign in with Google" = "Logga in med Google";
+"Continue without signing in" = "Fortsätt utan att logga in";
+"Profile" = "Profil";
+
+/* RecommendationsView */
+"Near You" = "Nära dig";
+"Best Globally" = "Bäst globalt";
+"Search Radius" = "Sökradie";
+"Location Access" = "Platsåtkomst";
+"Enable location to see nearby recommendations" = "Aktivera plats för att se rekommendationer i närheten";
+"Open Settings" = "Öppna inställningar";
+"No Recommendations" = "Inga rekommendationer";
+
+/* ResortMapView */
+"Snow Quality Legend" = "Förklaring snökvalitet";
+"Standard" = "Standard";
+"Satellite" = "Satellit";
+"Hybrid" = "Hybrid";
+"Show All Resorts" = "Visa alla skidorter";
+"View Full Details" = "Visa fullständig information";
+"Forecast" = "Prognos";
+"%d Resorts" = "%d skidorter";
+
+/* ResortListView */
+"Snow Resorts" = "Skidorter";
+"All Regions" = "Alla regioner";
+"Search resorts..." = "Sök skidorter...";
+"Loading resorts..." = "Laddar skidorter...";
+"No Resorts Found" = "Inga skidorter hittades";
+"Pull to refresh" = "Dra för att uppdatera";
+"Try Again" = "Försök igen";
