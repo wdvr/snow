@@ -219,6 +219,34 @@ def scraper_orchestrator_handler(event: dict[str, Any], context) -> dict[str, An
     }
 
 
+def get_latest_job_id() -> str | None:
+    """Find the most recent scraper job ID from S3."""
+    try:
+        response = s3.list_objects_v2(
+            Bucket=RESULTS_BUCKET,
+            Prefix="scraper-results/",
+            Delimiter="/",
+        )
+        prefixes = response.get("CommonPrefixes", [])
+        if not prefixes:
+            return None
+
+        # Job IDs are timestamps like 20260203060000, so sorting works
+        job_ids = [
+            p["Prefix"].split("/")[1] for p in prefixes if p["Prefix"].split("/")[1]
+        ]
+        job_ids = [
+            j for j in job_ids if j and not j.startswith("test-")
+        ]  # Skip test jobs
+        if not job_ids:
+            return None
+
+        return sorted(job_ids, reverse=True)[0]  # Most recent
+    except Exception as e:
+        logger.error(f"Error finding latest job ID: {e}")
+        return None
+
+
 def process_scraper_results_handler(event: dict[str, Any], context) -> dict[str, Any]:
     """
     Lambda handler for processing scraper results and populating DynamoDB.
@@ -229,12 +257,19 @@ def process_scraper_results_handler(event: dict[str, Any], context) -> dict[str,
     Args:
         event: Contains:
             - job_id: The scraper job ID to process
+            - process_latest: If true, find and process the most recent job
         context: Lambda context object
 
     Returns:
         Dict with processing results
     """
     job_id = event.get("job_id")
+
+    # If process_latest is true, find the most recent job
+    if event.get("process_latest") and not job_id:
+        job_id = get_latest_job_id()
+        logger.info(f"Found latest job ID: {job_id}")
+
     if not job_id:
         return {
             "statusCode": 400,

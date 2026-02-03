@@ -542,6 +542,73 @@ scraper_schedule_target = aws.cloudwatch.EventTarget(
 )
 
 # =============================================================================
+# Scraper Results Processor Lambda - Processes S3 results into DynamoDB
+# =============================================================================
+
+# Log group for scraper results processor
+scraper_results_processor_log_group = aws.cloudwatch.LogGroup(
+    f"{app_name}-scraper-results-processor-logs-{environment}",
+    name=f"/aws/lambda/{app_name}-scraper-results-processor-{environment}",
+    retention_in_days=14,
+    tags=tags,
+)
+
+# Scraper results processor Lambda
+scraper_results_processor_lambda = aws.lambda_.Function(
+    f"{app_name}-scraper-results-processor-{environment}",
+    name=f"{app_name}-scraper-results-processor-{environment}",
+    role=lambda_role.arn,
+    handler="handlers.scraper_orchestrator.process_scraper_results_handler",
+    runtime="python3.12",
+    timeout=300,  # 5 minutes to process results
+    memory_size=256,
+    code=pulumi.AssetArchive(
+        {
+            "index.py": pulumi.StringAsset(placeholder_lambda_code),
+        }
+    ),
+    environment=aws.lambda_.FunctionEnvironmentArgs(
+        variables={
+            "ENVIRONMENT": environment,
+            "RESULTS_BUCKET": state_bucket_name,
+            "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
+            "AWS_REGION_NAME": aws_region,
+        }
+    ),
+    tags=tags,
+    opts=pulumi.ResourceOptions(
+        depends_on=[lambda_role, scraper_results_processor_log_group]
+    ),
+)
+
+# Schedule to process results 1 hour after scraper (07:00 UTC) - staging only
+# Prod requires manual approval
+if environment == "staging":
+    scraper_results_schedule_rule = aws.cloudwatch.EventRule(
+        f"{app_name}-scraper-results-schedule-{environment}",
+        name=f"{app_name}-scraper-results-schedule-{environment}",
+        description="Process scraper results daily at 07:00 UTC (1 hour after scraper)",
+        schedule_expression="cron(0 7 * * ? *)",
+        tags=tags,
+    )
+
+    scraper_results_schedule_permission = aws.lambda_.Permission(
+        f"{app_name}-scraper-results-schedule-permission-{environment}",
+        action="lambda:InvokeFunction",
+        function=scraper_results_processor_lambda.name,
+        principal="events.amazonaws.com",
+        source_arn=scraper_results_schedule_rule.arn,
+    )
+
+    # Pass yesterday's job_id pattern to process
+    scraper_results_schedule_target = aws.cloudwatch.EventTarget(
+        f"{app_name}-scraper-results-schedule-target-{environment}",
+        rule=scraper_results_schedule_rule.name,
+        arn=scraper_results_processor_lambda.arn,
+        input='{"process_latest": true}',
+    )
+
+# =============================================================================
 # Notification Processor Lambda - Sends push notifications for snow/events
 # =============================================================================
 
@@ -1861,6 +1928,9 @@ pulumi.export("weather_worker_lambda_name", weather_worker_lambda.name)
 pulumi.export("weather_schedule_rule_name", weather_schedule_rule.name)
 pulumi.export("scraper_orchestrator_lambda_name", scraper_orchestrator_lambda.name)
 pulumi.export("scraper_worker_lambda_name", scraper_worker_lambda.name)
+pulumi.export(
+    "scraper_results_processor_lambda_name", scraper_results_processor_lambda.name
+)
 pulumi.export("scraper_schedule_rule_name", scraper_schedule_rule.name)
 pulumi.export("api_handler_lambda_name", api_handler_lambda.name)
 pulumi.export("notification_processor_lambda_name", notification_processor_lambda.name)

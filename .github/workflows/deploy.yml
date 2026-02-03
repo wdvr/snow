@@ -306,6 +306,26 @@ jobs:
           echo "Scraper worker Lambda updated"
         fi
 
+        # Deploy Scraper Results Processor Lambda
+        SCRAPER_RESULTS_PROCESSOR=$(pulumi stack output scraper_results_processor_lambda_name 2>/dev/null || echo "")
+        if [ -n "$SCRAPER_RESULTS_PROCESSOR" ]; then
+          echo "Deploying Scraper results processor Lambda: $SCRAPER_RESULTS_PROCESSOR"
+          aws lambda update-function-code \
+            --function-name "$SCRAPER_RESULTS_PROCESSOR" \
+            --s3-bucket "$S3_BUCKET" \
+            --s3-key "$S3_KEY" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$SCRAPER_RESULTS_PROCESSOR" --region us-west-2
+
+          # Update Scraper Results Processor Lambda environment variables
+          aws lambda update-function-configuration \
+            --function-name "$SCRAPER_RESULTS_PROCESSOR" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2}" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$SCRAPER_RESULTS_PROCESSOR" --region us-west-2
+          echo "Scraper results processor Lambda updated"
+        fi
+
         echo "Lambda deployment complete"
 
     - name: Seed resort data (dev/staging only)

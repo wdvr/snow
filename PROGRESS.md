@@ -22,6 +22,11 @@
 |-------|-------------|--------|
 | Near You Limit | Shows only 6 items (requests 10, limited by resorts in range) | **Fixed** (increased default radius to 1000km) |
 
+### 🟠 In Progress
+| Issue | Description | Status |
+|-------|-------------|--------|
+| [#95](https://github.com/wdvr/snow/issues/95) | S3 → DynamoDB pipeline for scraped resorts | **In Progress** |
+
 ### 🟢 Low / Monitoring
 | Issue | Description | Status |
 |-------|-------------|--------|
