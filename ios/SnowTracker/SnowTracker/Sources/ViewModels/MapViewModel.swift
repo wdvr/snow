@@ -11,12 +11,13 @@ struct ResortAnnotation: Identifiable, Hashable {
     let snowQuality: SnowQuality
     let condition: WeatherCondition?
 
-    init(resort: Resort, condition: WeatherCondition?) {
+    init(resort: Resort, condition: WeatherCondition?, fallbackQuality: SnowQuality? = nil) {
         self.id = resort.id
         self.resort = resort
         self.coordinate = resort.primaryCoordinate
         self.condition = condition
-        self.snowQuality = condition?.snowQuality ?? .unknown
+        // Use condition's quality if available, otherwise use fallback, otherwise unknown
+        self.snowQuality = condition?.snowQuality ?? fallbackQuality ?? .unknown
     }
 
     var markerTint: Color {
@@ -166,10 +167,16 @@ class MapViewModel: ObservableObject {
 
     // MARK: - Public Methods
 
-    func updateAnnotations(resorts: [Resort], conditions: [String: [WeatherCondition]]) {
+    func updateAnnotations(
+        resorts: [Resort],
+        conditions: [String: [WeatherCondition]],
+        snowQualitySummaries: [String: SnowQualitySummaryLight] = [:]
+    ) {
         let allAnnotations = resorts.map { resort in
             let condition = conditions[resort.id]?.first
-            return ResortAnnotation(resort: resort, condition: condition)
+            // Use snow quality summary as fallback if no full condition available
+            let fallbackQuality = snowQualitySummaries[resort.id]?.overallSnowQuality
+            return ResortAnnotation(resort: resort, condition: condition, fallbackQuality: fallbackQuality)
         }
 
         // Apply filter
