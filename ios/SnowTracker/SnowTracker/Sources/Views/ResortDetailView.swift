@@ -280,6 +280,16 @@ struct ResortDetailView: View {
                         .font(.subheadline)
                         .fontWeight(.semibold)
                 }
+
+                // Total snow depth (base)
+                HStack {
+                    Text("Total snow depth:")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Text(condition.formattedSnowDepth)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                }
             }
             .padding(.vertical, 4)
 

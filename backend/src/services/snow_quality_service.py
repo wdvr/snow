@@ -75,13 +75,26 @@ class SnowQualityService:
         )
         adjusted_score = overall_score * source_multiplier
 
+        # CRITICAL: Temperature override - extremely warm = NOT SKIABLE
+        # At these temps, any snow would have melted regardless of what data shows
+        current_temp = weather.current_temp_celsius
+        if current_temp >= 15.0:
+            # Summer temperatures - definitely not skiable
+            adjusted_score = 0.0
+        elif current_temp >= 10.0:
+            # Very warm - snow cannot survive
+            adjusted_score = min(adjusted_score, 0.02)
+        elif current_temp >= 5.0:
+            # Warm - rapid melting, conditions degrading fast
+            adjusted_score = min(adjusted_score, 0.08)
+
         # CRITICAL: Cap quality based on fresh powder availability
         # Quality is determined by snow since last thaw-freeze event
         currently_warming = getattr(weather, "currently_warming", False)
 
         if snowfall_after_freeze <= 0 and (weather.snowfall_24h_cm or 0) <= 0:
             # No fresh snow at all = icy surface
-            if currently_warming or weather.current_temp_celsius >= 2.0:
+            if currently_warming or current_temp >= 2.0:
                 # Actively melting = HORRIBLE (not skiable)
                 adjusted_score = min(adjusted_score, 0.05)
             else:

@@ -97,6 +97,11 @@ class WeatherCondition(BaseModel):
         default=0.0, description="Snowfall in last 72 hours (cm)"
     )
 
+    # Current snow depth (total snow on ground, not just fresh)
+    snow_depth_cm: float | None = Field(
+        None, description="Current total snow depth on ground (cm)"
+    )
+
     # Snow predictions (future snowfall)
     predicted_snow_24h_cm: float = Field(
         default=0.0, description="Predicted snowfall in next 24 hours (cm)"

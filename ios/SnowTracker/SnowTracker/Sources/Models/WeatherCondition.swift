@@ -246,6 +246,9 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
     let snowfall48hCm: Double
     let snowfall72hCm: Double
 
+    // Current snow depth (total snow on ground)
+    let snowDepthCm: Double?
+
     // Snow predictions (future snowfall) - optional for backward compatibility
     let predictedSnow24hCm: Double?
     let predictedSnow48hCm: Double?
@@ -286,6 +289,7 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         case snowfall24hCm = "snowfall_24h_cm"
         case snowfall48hCm = "snowfall_48h_cm"
         case snowfall72hCm = "snowfall_72h_cm"
+        case snowDepthCm = "snow_depth_cm"
         case predictedSnow24hCm = "predicted_snow_24h_cm"
         case predictedSnow48hCm = "predicted_snow_48h_cm"
         case predictedSnow72hCm = "predicted_snow_72h_cm"
@@ -342,6 +346,15 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
             return "No fresh snow"
         }
         return "\(String(format: "%.1f", freshSnowCm))cm fresh"
+    }
+
+    /// Total snow depth at this elevation (base snow + fresh)
+    var formattedSnowDepth: String {
+        guard let depth = snowDepthCm, depth > 0 else {
+            return "No snow"
+        }
+        let inches = depth / 2.54
+        return String(format: "%.0fcm (%.0f\")", depth, inches)
     }
 
     /// Fresh snow since last thaw-freeze event (the key quality metric)
@@ -616,6 +629,7 @@ extension WeatherCondition {
             snowfall24hCm: 20.0,
             snowfall48hCm: 35.0,
             snowfall72hCm: 40.0,
+            snowDepthCm: 150.0,
             predictedSnow24hCm: 15.0,
             predictedSnow48hCm: 25.0,
             predictedSnow72hCm: 30.0,
@@ -645,6 +659,7 @@ extension WeatherCondition {
             snowfall24hCm: 12.0,
             snowfall48hCm: 20.0,
             snowfall72hCm: 25.0,
+            snowDepthCm: 80.0,
             predictedSnow24hCm: 8.0,
             predictedSnow48hCm: 15.0,
             predictedSnow72hCm: 20.0,

@@ -335,6 +335,11 @@ final class ResortAnnotationView: MKAnnotationView {
 final class ResortClusterAnnotationView: MKAnnotationView {
     private let clusterSize: CGFloat = 44
 
+    private lazy var pieChartLayer: CAShapeLayer = {
+        let layer = CAShapeLayer()
+        return layer
+    }()
+
     private lazy var countLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 14, weight: .bold)
@@ -357,6 +362,9 @@ final class ResortClusterAnnotationView: MKAnnotationView {
         frame = CGRect(x: 0, y: 0, width: clusterSize, height: clusterSize)
         centerOffset = CGPoint(x: 0, y: -clusterSize / 2)
 
+        // Add pie chart sublayers
+        layer.addSublayer(pieChartLayer)
+
         addSubview(countLabel)
         countLabel.frame = bounds
     }
@@ -367,26 +375,85 @@ final class ResortClusterAnnotationView: MKAnnotationView {
         let memberAnnotations = cluster.memberAnnotations.compactMap { $0 as? ResortPointAnnotation }
         let count = memberAnnotations.count
 
-        // Find the BEST quality in the cluster (lowest sortOrder = best)
-        // This way if any resort in the cluster has great snow, the cluster shows that
-        let bestQuality = memberAnnotations
-            .map { $0.snowQuality }
-            .min(by: { $0.sortOrder < $1.sortOrder }) ?? .unknown
-        let bestColor = UIColor(bestQuality.color)
+        // Count by quality category (simplified: excellent/good = green, fair/poor = orange, bad/horrible = red)
+        var greenCount = 0
+        var orangeCount = 0
+        var redCount = 0
+        var blackCount = 0
+
+        for annotation in memberAnnotations {
+            switch annotation.snowQuality {
+            case .excellent, .good:
+                greenCount += 1
+            case .fair, .poor:
+                orangeCount += 1
+            case .bad:
+                redCount += 1
+            case .horrible:
+                blackCount += 1
+            case .unknown:
+                orangeCount += 1  // Treat unknown as orange
+            }
+        }
+
+        // Draw pie chart
+        drawPieChart(green: greenCount, orange: orangeCount, red: redCount, black: blackCount, total: count)
 
         countLabel.text = count > 99 ? "99+" : "\(count)"
-        backgroundColor = bestColor
-        layer.cornerRadius = clusterSize / 2
-        layer.masksToBounds = true
 
-        // Add border to show it's a cluster
+        // Add white border
+        layer.cornerRadius = clusterSize / 2
         layer.borderWidth = 3
         layer.borderColor = UIColor.white.cgColor
 
-        // Add shadow
-        layer.shadowColor = bestColor.cgColor
+        // Add shadow based on best quality
+        let bestQuality = memberAnnotations
+            .map { $0.snowQuality }
+            .min(by: { $0.sortOrder < $1.sortOrder }) ?? .unknown
+        layer.shadowColor = UIColor(bestQuality.color).cgColor
         layer.shadowOffset = CGSize(width: 0, height: 2)
         layer.shadowRadius = 4
         layer.shadowOpacity = 0.5
+    }
+
+    private func drawPieChart(green: Int, orange: Int, red: Int, black: Int, total: Int) {
+        // Remove old sublayers
+        pieChartLayer.sublayers?.forEach { $0.removeFromSuperlayer() }
+
+        let center = CGPoint(x: clusterSize / 2, y: clusterSize / 2)
+        let radius = clusterSize / 2
+        var startAngle: CGFloat = -.pi / 2  // Start from top
+
+        let segments: [(count: Int, color: UIColor)] = [
+            (green, UIColor.systemGreen),
+            (orange, UIColor.orange),
+            (red, UIColor.red),
+            (black, UIColor.black)
+        ].filter { $0.count > 0 }
+
+        // If all same category, just fill with that color
+        if segments.count == 1 {
+            backgroundColor = segments[0].color
+            return
+        }
+
+        backgroundColor = .clear
+
+        for (count, color) in segments {
+            let proportion = CGFloat(count) / CGFloat(total)
+            let endAngle = startAngle + (proportion * 2 * .pi)
+
+            let path = UIBezierPath()
+            path.move(to: center)
+            path.addArc(withCenter: center, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
+            path.close()
+
+            let sliceLayer = CAShapeLayer()
+            sliceLayer.path = path.cgPath
+            sliceLayer.fillColor = color.cgColor
+            pieChartLayer.addSublayer(sliceLayer)
+
+            startAngle = endAngle
+        }
     }
 }
