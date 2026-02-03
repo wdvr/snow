@@ -59,7 +59,7 @@ struct BestSnowNearYouView: View {
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
 
     @State private var selectedTab = 0
-    @State private var searchRadius: Double = 500
+    @State private var searchRadius: Double = 1000
 
     var useMetric: Bool {
         userPreferencesManager.preferredUnits.distance == .metric
@@ -88,9 +88,10 @@ struct BestSnowNearYouView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Section("Search Radius") {
-                            Button("100 km / 62 mi") { searchRadius = 100; Task { await refreshNearby() } }
                             Button("250 km / 155 mi") { searchRadius = 250; Task { await refreshNearby() } }
                             Button("500 km / 310 mi") { searchRadius = 500; Task { await refreshNearby() } }
+                            Button("750 km / 465 mi") { searchRadius = 750; Task { await refreshNearby() } }
+                            Button("1000 km / 620 mi (Recommended)") { searchRadius = 1000; Task { await refreshNearby() } }
                         }
                     } label: {
                         Image(systemName: "slider.horizontal.3")
