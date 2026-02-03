@@ -287,6 +287,7 @@ jobs:
 
         # Deploy Scraper Worker Lambda
         SCRAPER_WORKER=$(pulumi stack output scraper_worker_lambda_name 2>/dev/null || echo "")
+        NEW_RESORTS_TOPIC=$(pulumi stack output new_resorts_topic_arn 2>/dev/null || echo "")
         if [ -n "$SCRAPER_WORKER" ]; then
           echo "Deploying Scraper worker Lambda: $SCRAPER_WORKER"
           aws lambda update-function-code \
@@ -299,7 +300,7 @@ jobs:
           # Update Scraper Worker Lambda environment variables
           aws lambda update-function-configuration \
             --function-name "$SCRAPER_WORKER" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2}" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2,NEW_RESORTS_TOPIC_ARN=$NEW_RESORTS_TOPIC}" \
             --region us-west-2
           aws lambda wait function-updated --function-name "$SCRAPER_WORKER" --region us-west-2
           echo "Scraper worker Lambda updated"

@@ -322,6 +322,22 @@ def handler(event, context):
     }
 """
 
+# SNS Topic for new resort notifications (must be defined before Lambdas that use it)
+new_resorts_topic = aws.sns.Topic(
+    f"{app_name}-new-resorts-{environment}",
+    name=f"{app_name}-new-resorts-{environment}",
+    tags=tags,
+)
+
+# Email subscription for new resort notifications (only in prod)
+if environment == "prod":
+    new_resorts_email_subscription = aws.sns.TopicSubscription(
+        f"{app_name}-new-resorts-email-{environment}",
+        topic=new_resorts_topic.arn,
+        protocol="email",
+        endpoint="wouterdevriendt@gmail.com",
+    )
+
 weather_processor_lambda = aws.lambda_.Function(
     f"{app_name}-weather-processor-{environment}",
     name=f"{app_name}-weather-processor-{environment}",
@@ -479,10 +495,13 @@ scraper_worker_lambda = aws.lambda_.Function(
             "RESULTS_BUCKET": state_bucket_name,
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "AWS_REGION_NAME": aws_region,
+            "NEW_RESORTS_TOPIC_ARN": new_resorts_topic.arn,
         }
     ),
     tags=tags,
-    opts=pulumi.ResourceOptions(depends_on=[lambda_role, scraper_worker_log_group]),
+    opts=pulumi.ResourceOptions(
+        depends_on=[lambda_role, scraper_worker_log_group, new_resorts_topic]
+    ),
 )
 
 # Daily scraper schedule (06:00 UTC - delta mode by default, full on 1st of month)
@@ -1839,6 +1858,7 @@ if apns_platform_app:
 else:
     pulumi.export("apns_platform_app_arn", "not-configured")
 pulumi.export("resort_updates_topic_arn", resort_updates_topic.arn)
+pulumi.export("new_resorts_topic_arn", new_resorts_topic.arn)
 
 # Monitoring exports
 pulumi.export("cloudwatch_dashboard_name", api_monitoring["dashboard"].dashboard_name)
