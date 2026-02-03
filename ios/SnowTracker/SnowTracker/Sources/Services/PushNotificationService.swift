@@ -153,21 +153,22 @@ extension PushNotificationService: UNUserNotificationCenterDelegate {
     ) {
         let userInfo = response.notification.request.content.userInfo
 
-        // Handle notification tap based on type
+        // Handle notification tap based on type - extract values before crossing actor boundary
         if let notificationType = userInfo["notification_type"] as? String {
+            let resortId = userInfo["resort_id"] as? String
             Task { @MainActor in
-                self.handleNotificationTap(type: notificationType, userInfo: userInfo)
+                self.handleNotificationTap(type: notificationType, resortId: resortId)
             }
         }
 
         completionHandler()
     }
 
-    private func handleNotificationTap(type: String, userInfo: [AnyHashable: Any]) {
+    private func handleNotificationTap(type: String, resortId: String?) {
         print("Notification tapped: \(type)")
 
-        // Extract resort ID if available
-        if let resortId = userInfo["resort_id"] as? String {
+        // Handle resort ID if available
+        if let resortId = resortId {
             print("Resort ID: \(resortId)")
             // TODO: Navigate to resort detail view
             // This would typically post a notification or use a navigation coordinator
