@@ -38,7 +38,6 @@ All tasks tracked at: https://github.com/wdvr/snow/issues
 
 | Issue | Title | Priority |
 |-------|-------|----------|
-| [#88](https://github.com/wdvr/snow/issues/88) | Add missing resorts (Crystal Mountain, Stevens Pass, etc.) | High |
 | [#23](https://github.com/wdvr/snow/issues/23) | Trip Planning Mode | Medium |
 | [#17](https://github.com/wdvr/snow/issues/17) | App Store preparation and TestFlight | Low |
 | [#13](https://github.com/wdvr/snow/issues/13) | Research alternative snow data sources | Low |
@@ -51,6 +50,7 @@ All tasks tracked at: https://github.com/wdvr/snow/issues
 
 | Feature | Date |
 |---------|------|
+| East Coast resorts (VT, NH, ME - 8 resorts) | 2026-02-03 |
 | Parallel resort scraper (orchestrator/worker pattern, 23 countries) | 2026-02-03 |
 | Parallel weather processing architecture (#90) | 2026-02-03 |
 | Map icons show correct snow quality colors (was showing "?") | 2026-02-03 |
