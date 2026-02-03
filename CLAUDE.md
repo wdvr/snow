@@ -39,6 +39,26 @@ wait
 ```
 Use this for independent tasks that can run concurrently (e.g., investigating different issues, running tests while making changes).
 
+### No Shortcuts Policy
+**We don't take shortcuts.** If you encounter issues during your work - even if they're unrelated to your current task - fix them. This includes:
+- Pre-existing test failures
+- Compilation warnings
+- Outdated dependencies
+- Code style inconsistencies
+- Documentation that's out of sync
+
+Spawn subagents to handle parallel fixes if needed:
+```bash
+claude -p --dangerously-skip-permissions "Fix the failing tests in SnowTrackerTests.swift" &
+```
+
+A clean codebase is everyone's responsibility. Leave things better than you found them.
+
+### Always Test on Real Device
+When working on iOS changes, **always build and deploy to the physical device** if it's available. Don't just build for simulator - real device testing catches issues that simulators miss. After deploying, launch the app to verify the fix works.
+
+The device ID for the iPhone is `00008150-001625E20AE2401C`.
+
 ---
 
 ## Hybrid Agent/Developer Workflow

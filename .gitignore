@@ -142,3 +142,7 @@ lambda-package.zip
 # OS generated files
 Thumbs.db
 ehthumbs.db
+
+# Fastlane
+ios/fastlane/.bundle/
+ios/fastlane/vendor/
