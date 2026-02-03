@@ -1,8 +1,9 @@
 """Tests for notification models and service."""
 
-import pytest
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from models.notification import (
     DeviceToken,

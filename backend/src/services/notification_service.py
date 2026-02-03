@@ -3,13 +3,12 @@
 import json
 import logging
 import os
+import random
 from datetime import datetime, timedelta
 from typing import Optional
 
 import boto3
 from botocore.exceptions import ClientError
-
-import random
 
 from models.notification import (
     FREEZE_MESSAGES,
@@ -111,7 +110,9 @@ class NotificationService:
             self.device_tokens_table.delete_item(
                 Key={"user_id": user_id, "device_id": device_id}
             )
-            logger.info(f"Unregistered device token for user {user_id}, device {device_id}")
+            logger.info(
+                f"Unregistered device token for user {user_id}, device {device_id}"
+            )
             return True
         except ClientError as e:
             logger.error(f"Error unregistering device token: {e}")
@@ -177,7 +178,9 @@ class NotificationService:
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code", "")
             if error_code == "EndpointDisabled":
-                logger.warning(f"Endpoint disabled for token, removing: {device_token[:20]}...")
+                logger.warning(
+                    f"Endpoint disabled for token, removing: {device_token[:20]}..."
+                )
                 # Token is no longer valid, could clean up here
             else:
                 logger.error(f"Error sending push notification: {e}")
@@ -372,8 +375,12 @@ class NotificationService:
             thaw_start_str = notification_settings.thaw_started_at.get(resort_id)
             if thaw_start_str:
                 try:
-                    thaw_start = datetime.fromisoformat(thaw_start_str.replace("Z", "+00:00"))
-                    hours_thawed = (now - thaw_start.replace(tzinfo=None)).total_seconds() / 3600
+                    thaw_start = datetime.fromisoformat(
+                        thaw_start_str.replace("Z", "+00:00")
+                    )
+                    hours_thawed = (
+                        now - thaw_start.replace(tzinfo=None)
+                    ).total_seconds() / 3600
 
                     # Check if we've been thawing for 4+ hours and haven't sent notification
                     if hours_thawed >= 4:
@@ -608,7 +615,9 @@ class NotificationService:
                     summary["users_processed"] += 1
 
                 except Exception as e:
-                    logger.error(f"Error processing user {user_data.get('user_id')}: {e}")
+                    logger.error(
+                        f"Error processing user {user_data.get('user_id')}: {e}"
+                    )
                     summary["errors"] += 1
 
         except Exception as e:

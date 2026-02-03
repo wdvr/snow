@@ -157,7 +157,11 @@ class TestRecommendationService:
             (sample_resorts[0], 10.0),  # 10km
             (sample_resorts[1], 80.0),  # 80km
         ]
-        mock_weather_service.get_conditions_for_resort.return_value = excellent_conditions
+        # Service uses batch query now
+        mock_weather_service.get_all_latest_conditions.return_value = {
+            "nearby-resort": excellent_conditions,
+            "medium-resort": excellent_conditions,
+        }
 
         # Get recommendations
         recommendations = recommendation_service.get_recommendations(
@@ -187,12 +191,11 @@ class TestRecommendationService:
             (sample_resorts[2], 300.0),  # Far but excellent conditions
         ]
 
-        def get_conditions(resort_id, hours_back=6):
-            if resort_id == "nearby-resort":
-                return poor_conditions
-            return excellent_conditions
-
-        mock_weather_service.get_conditions_for_resort.side_effect = get_conditions
+        # Service uses batch query now
+        mock_weather_service.get_all_latest_conditions.return_value = {
+            "nearby-resort": poor_conditions,
+            "far-resort": excellent_conditions,
+        }
 
         recommendations = recommendation_service.get_recommendations(
             latitude=49.28,
@@ -221,12 +224,11 @@ class TestRecommendationService:
             (sample_resorts[1], 80.0),
         ]
 
-        def get_conditions(resort_id, hours_back=6):
-            if resort_id == "nearby-resort":
-                return poor_conditions
-            return excellent_conditions
-
-        mock_weather_service.get_conditions_for_resort.side_effect = get_conditions
+        # Service uses batch query now
+        mock_weather_service.get_all_latest_conditions.return_value = {
+            "nearby-resort": poor_conditions,
+            "medium-resort": excellent_conditions,
+        }
 
         # Filter for GOOD or better
         recommendations = recommendation_service.get_recommendations(
@@ -255,7 +257,12 @@ class TestRecommendationService:
             (sample_resorts[1], 80.0),
             (sample_resorts[2], 300.0),
         ]
-        mock_weather_service.get_conditions_for_resort.return_value = excellent_conditions
+        # Service uses batch query now
+        mock_weather_service.get_all_latest_conditions.return_value = {
+            "nearby-resort": excellent_conditions,
+            "medium-resort": excellent_conditions,
+            "far-resort": excellent_conditions,
+        }
 
         recommendations = recommendation_service.get_recommendations(
             latitude=49.28,
@@ -270,9 +277,11 @@ class TestRecommendationService:
         self,
         recommendation_service,
         mock_resort_service,
+        mock_weather_service,
     ):
         """Test empty result when no resorts nearby."""
         mock_resort_service.get_nearby_resorts.return_value = []
+        mock_weather_service.get_all_latest_conditions.return_value = {}
 
         recommendations = recommendation_service.get_recommendations(
             latitude=0.0,
@@ -296,12 +305,11 @@ class TestRecommendationService:
             (sample_resorts[1], 80.0),
         ]
 
-        def get_conditions(resort_id, hours_back=6):
-            if resort_id == "nearby-resort":
-                return []  # No conditions
-            return excellent_conditions
-
-        mock_weather_service.get_conditions_for_resort.side_effect = get_conditions
+        # Service uses batch query now - nearby resort has no conditions
+        mock_weather_service.get_all_latest_conditions.return_value = {
+            "nearby-resort": [],  # No conditions
+            "medium-resort": excellent_conditions,
+        }
 
         recommendations = recommendation_service.get_recommendations(
             latitude=49.28,
@@ -325,12 +333,12 @@ class TestRecommendationService:
         """Test getting best conditions globally (no location bias)."""
         mock_resort_service.get_all_resorts.return_value = sample_resorts
 
-        def get_conditions(resort_id, hours_back=6):
-            if resort_id == "far-resort":
-                return excellent_conditions
-            return poor_conditions
-
-        mock_weather_service.get_conditions_for_resort.side_effect = get_conditions
+        # Service uses batch query now
+        mock_weather_service.get_all_latest_conditions.return_value = {
+            "nearby-resort": poor_conditions,
+            "medium-resort": poor_conditions,
+            "far-resort": excellent_conditions,
+        }
 
         recommendations = recommendation_service.get_best_conditions_globally(limit=10)
 
@@ -351,7 +359,10 @@ class TestRecommendationService:
         mock_resort_service.get_nearby_resorts.return_value = [
             (sample_resorts[0], 50.0),
         ]
-        mock_weather_service.get_conditions_for_resort.return_value = excellent_conditions
+        # Service uses batch query now
+        mock_weather_service.get_all_latest_conditions.return_value = {
+            "nearby-resort": excellent_conditions,
+        }
 
         recommendations = recommendation_service.get_recommendations(
             latitude=49.28,
@@ -391,12 +402,17 @@ class TestRecommendationService:
 
     def test_quality_score_calculation(self, recommendation_service):
         """Test quality score mapping."""
-        assert recommendation_service._calculate_quality_score(SnowQuality.EXCELLENT) == 1.0
+        assert (
+            recommendation_service._calculate_quality_score(SnowQuality.EXCELLENT)
+            == 1.0
+        )
         assert recommendation_service._calculate_quality_score(SnowQuality.GOOD) == 0.8
         assert recommendation_service._calculate_quality_score(SnowQuality.FAIR) == 0.6
         assert recommendation_service._calculate_quality_score(SnowQuality.POOR) == 0.4
         assert recommendation_service._calculate_quality_score(SnowQuality.BAD) == 0.2
-        assert recommendation_service._calculate_quality_score(SnowQuality.HORRIBLE) == 0.0
+        assert (
+            recommendation_service._calculate_quality_score(SnowQuality.HORRIBLE) == 0.0
+        )
 
     def test_fresh_snow_score_calculation(self, recommendation_service):
         """Test fresh/predicted snow score calculation."""
@@ -423,7 +439,10 @@ class TestRecommendationService:
         mock_resort_service.get_nearby_resorts.return_value = [
             (sample_resorts[0], 50.0),
         ]
-        mock_weather_service.get_conditions_for_resort.return_value = excellent_conditions
+        # Service uses batch query now
+        mock_weather_service.get_all_latest_conditions.return_value = {
+            "nearby-resort": excellent_conditions,
+        }
 
         recommendations = recommendation_service.get_recommendations(
             latitude=49.28,
@@ -445,7 +464,7 @@ class TestRecommendationService:
         # Create conditions for multiple elevations
         conditions = [
             WeatherCondition(
-                resort_id="test",
+                resort_id="nearby-resort",
                 elevation_level="base",
                 timestamp=datetime.now(UTC).isoformat(),
                 current_temp_celsius=-2.0,
@@ -462,7 +481,7 @@ class TestRecommendationService:
                 source_confidence=ConfidenceLevel.MEDIUM,
             ),
             WeatherCondition(
-                resort_id="test",
+                resort_id="nearby-resort",
                 elevation_level="top",
                 timestamp=datetime.now(UTC).isoformat(),
                 current_temp_celsius=-10.0,
@@ -483,7 +502,10 @@ class TestRecommendationService:
         mock_resort_service.get_nearby_resorts.return_value = [
             (sample_resorts[0], 50.0),
         ]
-        mock_weather_service.get_conditions_for_resort.return_value = conditions
+        # Service uses batch query now
+        mock_weather_service.get_all_latest_conditions.return_value = {
+            "nearby-resort": conditions,
+        }
 
         recommendations = recommendation_service.get_recommendations(
             latitude=49.28,

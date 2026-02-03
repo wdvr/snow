@@ -1,8 +1,5 @@
 """Data models for Snow Quality Tracker."""
 
-from .resort import ElevationPoint, Resort
-from .user import User, UserPreferences
-from .weather import ConfidenceLevel, SnowQuality, WeatherCondition
 from .notification import (
     DeviceToken,
     NotificationPayload,
@@ -12,6 +9,9 @@ from .notification import (
     ResortNotificationSettings,
     UserNotificationPreferences,
 )
+from .resort import ElevationPoint, Resort
+from .user import User, UserPreferences
+from .weather import ConfidenceLevel, SnowQuality, WeatherCondition
 
 __all__ = [
     "Resort",
