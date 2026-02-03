@@ -88,6 +88,12 @@ class SnowQualityService:
             # Warm - rapid melting, conditions degrading fast
             adjusted_score = min(adjusted_score, 0.08)
 
+        # CRITICAL: Check for no base snow - if snow_depth_cm is 0 or None, not skiable
+        snow_depth = getattr(weather, "snow_depth_cm", None)
+        if snow_depth is not None and snow_depth <= 0:
+            # No snow on the ground at all = NOT SKIABLE
+            adjusted_score = 0.0
+
         # CRITICAL: Cap quality based on fresh powder availability
         # Quality is determined by snow since last thaw-freeze event
         currently_warming = getattr(weather, "currently_warming", False)

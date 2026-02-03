@@ -817,28 +817,37 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
             "snowfall_24h_cm": None,
         }
 
-    # Calculate overall quality
+    # Calculate overall quality (including HORRIBLE for not-skiable conditions)
     quality_scores = {
-        SnowQuality.EXCELLENT: 5,
-        SnowQuality.GOOD: 4,
-        SnowQuality.FAIR: 3,
-        SnowQuality.POOR: 2,
-        SnowQuality.BAD: 1,
+        SnowQuality.EXCELLENT: 6,
+        SnowQuality.GOOD: 5,
+        SnowQuality.FAIR: 4,
+        SnowQuality.POOR: 3,
+        SnowQuality.BAD: 2,
+        SnowQuality.HORRIBLE: 1,
         SnowQuality.UNKNOWN: 0,
     }
-    overall_scores = [quality_scores.get(c.snow_quality, 0) for c in conditions]
-    avg_score = sum(overall_scores) / len(overall_scores) if overall_scores else 0
 
-    if avg_score >= 4.5:
-        overall_quality = SnowQuality.EXCELLENT
-    elif avg_score >= 3.5:
-        overall_quality = SnowQuality.GOOD
-    elif avg_score >= 2.5:
-        overall_quality = SnowQuality.FAIR
-    elif avg_score >= 1.5:
-        overall_quality = SnowQuality.POOR
+    # If ANY elevation is HORRIBLE, the resort is not skiable
+    has_horrible = any(c.snow_quality == SnowQuality.HORRIBLE for c in conditions)
+    if has_horrible:
+        overall_quality = SnowQuality.HORRIBLE
     else:
-        overall_quality = SnowQuality.BAD
+        overall_scores = [quality_scores.get(c.snow_quality, 0) for c in conditions]
+        avg_score = sum(overall_scores) / len(overall_scores) if overall_scores else 0
+
+        if avg_score >= 5.5:
+            overall_quality = SnowQuality.EXCELLENT
+        elif avg_score >= 4.5:
+            overall_quality = SnowQuality.GOOD
+        elif avg_score >= 3.5:
+            overall_quality = SnowQuality.FAIR
+        elif avg_score >= 2.5:
+            overall_quality = SnowQuality.POOR
+        elif avg_score >= 1.5:
+            overall_quality = SnowQuality.BAD
+        else:
+            overall_quality = SnowQuality.HORRIBLE
 
     # Get representative condition data (prefer mid elevation, then first available)
     representative = None
