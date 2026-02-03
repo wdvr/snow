@@ -1,12 +1,13 @@
 """Resort management service."""
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from botocore.exceptions import ClientError
 
 from models.resort import Resort
 
 # Import directly from module to avoid circular import through utils/__init__.py
+from utils.cache import get_resort_metadata_cache
 from utils.dynamodb_utils import parse_from_dynamodb, prepare_for_dynamodb
 from utils.geo_utils import bounding_box, haversine_distance
 
@@ -281,3 +282,75 @@ class ResortService:
             point = resort.elevation_points[0]
             return (point.latitude, point.longitude)
         return None
+
+    def get_resort_names(self, resort_ids: list[str]) -> dict[str, str]:
+        """
+        Get resort names for multiple resort IDs efficiently.
+        Uses cache with 24-hour TTL since resort names rarely change.
+
+        Args:
+            resort_ids: List of resort IDs
+
+        Returns:
+            Dict mapping resort_id -> resort_name
+        """
+        if not resort_ids:
+            return {}
+
+        cache = get_resort_metadata_cache()
+        result = {}
+        ids_to_fetch = []
+
+        # Check cache first
+        for resort_id in resort_ids:
+            cache_key = f"name:{resort_id}"
+            if cache_key in cache:
+                result[resort_id] = cache[cache_key]
+            else:
+                ids_to_fetch.append(resort_id)
+
+        # Batch fetch uncached resort names
+        if ids_to_fetch:
+            try:
+                # DynamoDB batch_get_item can fetch up to 100 items
+                for batch_start in range(0, len(ids_to_fetch), 100):
+                    batch_ids = ids_to_fetch[batch_start : batch_start + 100]
+                    keys = [{"resort_id": rid} for rid in batch_ids]
+
+                    # Get table name for batch request
+                    table_name = self.table.table_name
+                    response = self.table.meta.client.batch_get_item(
+                        RequestItems={
+                            table_name: {
+                                "Keys": keys,
+                                "ProjectionExpression": "resort_id, #n",
+                                "ExpressionAttributeNames": {"#n": "name"},
+                            }
+                        }
+                    )
+
+                    # Process results
+                    items = response.get("Responses", {}).get(table_name, [])
+                    for item in items:
+                        resort_id = item.get("resort_id")
+                        name = item.get("name", resort_id)
+                        result[resort_id] = name
+                        cache[f"name:{resort_id}"] = name
+
+            except ClientError as e:
+                # Fallback to individual gets on error
+                for resort_id in ids_to_fetch:
+                    try:
+                        resort = self.get_resort(resort_id)
+                        if resort:
+                            result[resort_id] = resort.name
+                            cache[f"name:{resort_id}"] = resort.name
+                    except Exception:
+                        result[resort_id] = resort_id
+
+        # Fill in any missing names with resort_id as fallback
+        for resort_id in resort_ids:
+            if resort_id not in result:
+                result[resort_id] = resort_id
+
+        return result

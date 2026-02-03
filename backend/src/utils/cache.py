@@ -10,6 +10,7 @@ from cachetools import TTLCache
 # Global caches - persist across Lambda invocations (warm starts)
 CACHE_TTL_SECONDS = 300  # 5 minutes for frequently changing data
 CACHE_TTL_LONG_SECONDS = 3600  # 1 hour for expensive aggregate queries
+CACHE_TTL_VERY_LONG_SECONDS = 86400  # 24 hours for rarely changing data
 _resorts_cache: TTLCache = TTLCache(maxsize=500, ttl=CACHE_TTL_SECONDS)
 _conditions_cache: TTLCache = TTLCache(maxsize=2000, ttl=CACHE_TTL_SECONDS)
 # Batch conditions cache - used by recommendations, 5-min TTL
@@ -17,6 +18,10 @@ _all_conditions_cache: TTLCache = TTLCache(maxsize=1, ttl=CACHE_TTL_SECONDS)
 # Snow quality uses 1-hour TTL since weather updates hourly
 _snow_quality_cache: TTLCache = TTLCache(maxsize=500, ttl=CACHE_TTL_LONG_SECONDS)
 _recommendations_cache: TTLCache = TTLCache(maxsize=50, ttl=CACHE_TTL_LONG_SECONDS)
+# Resort metadata cache - names, countries, etc. (rarely changes)
+_resort_metadata_cache: TTLCache = TTLCache(
+    maxsize=500, ttl=CACHE_TTL_VERY_LONG_SECONDS
+)
 
 
 def get_cache_key(*args, **kwargs) -> str:
@@ -96,6 +101,11 @@ def get_all_conditions_cache():
     return _all_conditions_cache
 
 
+def get_resort_metadata_cache():
+    """Get the resort metadata cache for direct access."""
+    return _resort_metadata_cache
+
+
 def clear_all_caches() -> None:
     """Clear all caches. Useful for testing."""
     _resorts_cache.clear()
@@ -103,6 +113,7 @@ def clear_all_caches() -> None:
     _all_conditions_cache.clear()
     _snow_quality_cache.clear()
     _recommendations_cache.clear()
+    _resort_metadata_cache.clear()
 
 
 # Cache-Control header values (weather updates hourly, aggressive caching is safe)
