@@ -22,8 +22,8 @@ class SnowConditionsManager: ObservableObject {
     /// Set to true to enable frontend caching of snow quality summaries
     private let useSnowQualityCache = true
 
-    /// Minimum interval between pull-to-refresh requests (prevents API spam)
-    private let refreshRateLimitSeconds: TimeInterval = 5.0
+    /// Minimum interval between pull-to-refresh requests (prevents double-tap spam)
+    private let refreshRateLimitSeconds: TimeInterval = 2.0
     private var lastRefreshTime: Date?
 
     func loadInitialData() {

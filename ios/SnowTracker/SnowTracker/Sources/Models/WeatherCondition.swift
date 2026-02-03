@@ -391,6 +391,7 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         case freshPowder = "Fresh Powder"
         case oldPowder = "Old Powder"
         case icy = "Icy"
+        case notSkiable = "Not Skiable"
         case unknown = "Unknown"
 
         var icon: String {
@@ -398,6 +399,7 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
             case .freshPowder: return "snowflake"
             case .oldPowder: return "cloud.snow"
             case .icy: return "thermometer.snowflake"
+            case .notSkiable: return "xmark.octagon.fill"
             case .unknown: return "questionmark.circle"
             }
         }
@@ -407,13 +409,20 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
             case .freshPowder: return .cyan
             case .oldPowder: return .blue
             case .icy: return .orange
+            case .notSkiable: return .black
             case .unknown: return .gray
             }
         }
     }
 
-    /// Determine surface type based on fresh snow and time since freeze
+    /// Determine surface type based on fresh snow, temperature and time since freeze
     var surfaceType: SurfaceType {
+        // If snow quality is horrible (not skiable), surface type should match
+        // This handles warm temperatures that make skiing impossible
+        if snowQuality == .horrible {
+            return .notSkiable
+        }
+
         let snowCm = snowSinceFreeze
         let hoursSinceFreeze = lastFreezeThawHoursAgo ?? 0
 
