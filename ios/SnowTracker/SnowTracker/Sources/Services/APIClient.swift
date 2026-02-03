@@ -972,23 +972,15 @@ struct SnowQualitySummaryLight: Codable {
     }
 
     /// Snow quality with frontend temperature override
-    /// This ensures warm temperature locations show "Not Skiable" even if backend data is stale
+    /// Only overrides at extreme temperatures where skiing is definitely impossible
     var overallSnowQuality: SnowQuality {
         let baseQuality = SnowQuality(rawValue: overallQuality) ?? .unknown
 
-        // Apply temperature override (same logic as backend)
-        // At these temps, any snow would have melted regardless of what data shows
-        if let temp = temperatureC {
-            if temp >= 15.0 {
-                // Summer temperatures - definitely not skiable
-                return .horrible
-            } else if temp >= 10.0 {
-                // Very warm - snow cannot survive
-                return .horrible
-            } else if temp >= 5.0 && baseQuality.sortOrder < SnowQuality.bad.sortOrder {
-                // Warm - cap quality at bad (icy)
-                return .bad
-            }
+        // Only override at summer temperatures (>= 15°C) where no snow can exist
+        // For moderate temps, trust the backend's quality assessment which has snow depth data
+        if let temp = temperatureC, temp >= 15.0 {
+            // Summer temperatures - definitely not skiable
+            return .horrible
         }
 
         return baseQuality

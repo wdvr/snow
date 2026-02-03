@@ -22,8 +22,8 @@ class SnowConditionsManager: ObservableObject {
     /// Set to true to enable frontend caching of snow quality summaries
     private let useSnowQualityCache = true
 
-    /// Minimum interval between pull-to-refresh requests (prevents double-tap spam)
-    private let refreshRateLimitSeconds: TimeInterval = 2.0
+    /// Minimum interval between pull-to-refresh requests (prevents spam)
+    private let refreshRateLimitSeconds: TimeInterval = 5.0
     private var lastRefreshTime: Date?
 
     func loadInitialData() {
@@ -84,7 +84,6 @@ class SnowConditionsManager: ObservableObject {
             do {
                 let batchResults = try await apiClient.getBatchSnowQuality(for: batchIds)
                 for (resortId, summary) in batchResults {
-                    snowQualitySummaries[resortId] = summary
                     allResults[resortId] = summary
                 }
                 totalLoaded += batchResults.count
@@ -95,8 +94,10 @@ class SnowConditionsManager: ObservableObject {
             }
         }
 
-        // Cache the results
+        // Update the published dictionary all at once to trigger SwiftUI update
         if !allResults.isEmpty {
+            print("fetchAllSnowQualitySummaries: Updating snowQualitySummaries with \(allResults.count) summaries")
+            snowQualitySummaries = allResults
             cacheService.cacheSnowQualitySummaries(allResults)
         }
 
