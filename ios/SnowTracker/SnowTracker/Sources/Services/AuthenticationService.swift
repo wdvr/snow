@@ -346,7 +346,18 @@ class AuthenticationService: NSObject, ObservableObject {
             print("Backend authentication failed: \(error). Using local auth.")
             // Fallback to local-only authentication - notifications still work without backend auth
             keychain.set(identityToken, forKey: Keys.authToken)
-            restoreUserSession(userIdentifier: userIdentifier, provider: .apple)
+
+            // Read any previously stored email (from credential or prior backend auth)
+            let storedEmail = keychain.get(Keys.userEmail)
+            let storedName = keychain.get(Keys.userName)
+
+            currentUser = AuthenticatedUser(
+                id: userIdentifier,
+                email: storedEmail,
+                fullName: storedName,
+                provider: .apple
+            )
+            isAuthenticated = true
         }
     }
 
