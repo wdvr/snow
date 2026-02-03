@@ -25,11 +25,13 @@ logger.setLevel(logging.INFO)
 dynamodb = boto3.resource("dynamodb")
 cloudwatch = boto3.client("cloudwatch")
 s3 = boto3.client("s3")
+sns = boto3.client("sns")
 
 # Environment variables
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
 RESULTS_BUCKET = os.environ.get("RESULTS_BUCKET", "snow-tracker-pulumi-state-us-west-2")
 RESORTS_TABLE = os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
+NEW_RESORTS_TOPIC_ARN = os.environ.get("NEW_RESORTS_TOPIC_ARN", "")
 
 # Scraper constants
 USER_AGENT = (
@@ -430,6 +432,59 @@ def publish_metrics(stats: dict[str, Any], country: str) -> None:
         logger.error(f"Failed to publish scraper metrics: {e}")
 
 
+def publish_new_resorts_notification(
+    new_resorts: list[dict[str, Any]], country: str, job_id: str
+) -> None:
+    """Publish SNS notification for newly discovered resorts."""
+    if not NEW_RESORTS_TOPIC_ARN or not new_resorts:
+        return
+
+    try:
+        # Create summary message
+        resort_names = [r.get("name", r.get("resort_id")) for r in new_resorts[:10]]
+        subject = (
+            f"[{ENVIRONMENT}] {len(new_resorts)} new resorts discovered in {country}"
+        )
+
+        message_lines = [
+            f"Scraper Job ID: {job_id}",
+            f"Country: {country}",
+            f"New Resorts Found: {len(new_resorts)}",
+            "",
+            "Resorts:",
+        ]
+
+        for resort in new_resorts[:20]:
+            name = resort.get("name", "Unknown")
+            region = resort.get("region", "Unknown")
+            vertical = resort.get("elevation_top_m", 0) - resort.get(
+                "elevation_base_m", 0
+            )
+            message_lines.append(f"  - {name} ({region}) - {vertical}m vertical")
+
+        if len(new_resorts) > 20:
+            message_lines.append(f"  ... and {len(new_resorts) - 20} more")
+
+        message_lines.extend(
+            [
+                "",
+                f"Results stored in: s3://{RESULTS_BUCKET}/scraper-results/{job_id}/{country}.json",
+            ]
+        )
+
+        message = "\n".join(message_lines)
+
+        sns.publish(
+            TopicArn=NEW_RESORTS_TOPIC_ARN,
+            Subject=subject[:100],  # SNS subject limit
+            Message=message,
+        )
+        logger.info(f"Published SNS notification for {len(new_resorts)} new resorts")
+
+    except Exception as e:
+        logger.error(f"Failed to publish new resorts notification: {e}")
+
+
 def scraper_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
     """
     Lambda handler for scraping resorts from a specific country.
@@ -522,6 +577,9 @@ def scraper_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
             logger.info(
                 f"Stored {len(scraped_resorts)} resorts to s3://{RESULTS_BUCKET}/{results_key}"
             )
+
+            # Send SNS notification for new resorts
+            publish_new_resorts_notification(scraped_resorts, country, job_id)
 
         # Publish metrics
         publish_metrics(stats, country)
