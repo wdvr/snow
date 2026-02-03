@@ -313,21 +313,18 @@ final class ResortAnnotationView: MKAnnotationView {
             ctx.addPath(pointerPath.cgPath)
             ctx.fillPath()
 
-            // Draw icon
-            let iconConfig = UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold)
+            // Draw icon centered in the circle
+            let iconSize: CGFloat = 18
+            let iconConfig = UIImage.SymbolConfiguration(pointSize: iconSize, weight: .bold)
+                .applying(UIImage.SymbolConfiguration(hierarchicalColor: .white))
             if let icon = UIImage(systemName: quality.icon, withConfiguration: iconConfig)?
                 .withTintColor(.white, renderingMode: .alwaysOriginal) {
-                let iconRect = CGRect(
-                    x: (markerSize - 16) / 2,
-                    y: (markerSize - 16) / 2,
-                    width: 16,
-                    height: 16
-                )
+                // Calculate centered position
+                let iconX = (markerSize - icon.size.width) / 2
+                let iconY = (markerSize - icon.size.height) / 2
+                let iconRect = CGRect(x: iconX, y: iconY, width: icon.size.width, height: icon.size.height)
                 icon.draw(in: iconRect)
             }
-
-            // Add shadow
-            ctx.setShadow(offset: CGSize(width: 0, height: 2), blur: 4, color: color.withAlphaComponent(0.5).cgColor)
         }
     }
 }
