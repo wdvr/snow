@@ -38,6 +38,7 @@ All tasks tracked at: https://github.com/wdvr/snow/issues
 
 | Issue | Title | Priority |
 |-------|-------|----------|
+| [#88](https://github.com/wdvr/snow/issues/88) | Add missing resorts (Crystal Mountain, Stevens Pass, etc.) | High |
 | [#23](https://github.com/wdvr/snow/issues/23) | Trip Planning Mode | Medium |
 | [#17](https://github.com/wdvr/snow/issues/17) | App Store preparation and TestFlight | Low |
 | [#13](https://github.com/wdvr/snow/issues/13) | Research alternative snow data sources | Low |
@@ -50,6 +51,8 @@ All tasks tracked at: https://github.com/wdvr/snow/issues
 
 | Feature | Date |
 |---------|------|
+| Parallel resort scraper (orchestrator/worker pattern, 23 countries) | 2026-02-03 |
+| Parallel weather processing architecture (#90) | 2026-02-03 |
 | Map icons show correct snow quality colors (was showing "?") | 2026-02-03 |
 | List view shows fresh snow (snowfall_after_freeze) for all resorts | 2026-02-03 |
 | Batch snow quality API returns temp and fresh snow data | 2026-02-03 |
@@ -135,7 +138,8 @@ Sign in via AWS SSO (IAM Identity Center)
 |-----|----------|-------------|
 | Weather Processor | Every 1 hour | Updates weather conditions via Open-Meteo API |
 | Notification Processor | Every 1 hour | Processes and sends push notifications |
-| Resort Scraper | Daily at 06:00 UTC | Scrapes OnTheSnow for snow depths |
+| Scraper Orchestrator | Daily at 06:00 UTC | Fans out to 23 country-specific worker Lambdas |
+| Scraper Workers | On-demand | Scrapes resorts from skiresort.info per country |
 
 ---
 
