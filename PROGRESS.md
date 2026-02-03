@@ -50,6 +50,8 @@ All tasks tracked at: https://github.com/wdvr/snow/issues
 
 | Feature | Date |
 |---------|------|
+| SNS notifications for new resorts discovered by scraper | 2026-02-03 |
+| S3 storage for scraper results | 2026-02-03 |
 | East Coast resorts (VT, NH, ME - 8 resorts) | 2026-02-03 |
 | Parallel resort scraper (orchestrator/worker pattern, 23 countries) | 2026-02-03 |
 | Parallel weather processing architecture (#90) | 2026-02-03 |
