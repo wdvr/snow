@@ -411,6 +411,106 @@ weather_schedule_target = aws.cloudwatch.EventTarget(
 )
 
 # =============================================================================
+# Scraper Lambdas - Parallel resort scraping by country
+# =============================================================================
+
+# Scraper orchestrator log group
+scraper_orchestrator_log_group = aws.cloudwatch.LogGroup(
+    f"{app_name}-scraper-orchestrator-logs-{environment}",
+    name=f"/aws/lambda/{app_name}-scraper-orchestrator-{environment}",
+    retention_in_days=14,
+    tags=tags,
+)
+
+# Scraper orchestrator Lambda
+scraper_orchestrator_lambda = aws.lambda_.Function(
+    f"{app_name}-scraper-orchestrator-{environment}",
+    name=f"{app_name}-scraper-orchestrator-{environment}",
+    role=lambda_role.arn,
+    handler="handlers.scraper_orchestrator.scraper_orchestrator_handler",
+    runtime="python3.12",
+    timeout=60,  # Orchestrator just dispatches, doesn't do heavy work
+    memory_size=256,
+    code=pulumi.AssetArchive(
+        {
+            "index.py": pulumi.StringAsset(placeholder_lambda_code),
+        }
+    ),
+    environment=aws.lambda_.FunctionEnvironmentArgs(
+        variables={
+            "ENVIRONMENT": environment,
+            "SCRAPER_WORKER_LAMBDA": f"{app_name}-scraper-worker-{environment}",
+            "RESULTS_BUCKET": state_bucket_name,
+            "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
+            "AWS_REGION_NAME": aws_region,
+        }
+    ),
+    tags=tags,
+    opts=pulumi.ResourceOptions(
+        depends_on=[lambda_role, scraper_orchestrator_log_group]
+    ),
+)
+
+# Scraper worker log group
+scraper_worker_log_group = aws.cloudwatch.LogGroup(
+    f"{app_name}-scraper-worker-logs-{environment}",
+    name=f"/aws/lambda/{app_name}-scraper-worker-{environment}",
+    retention_in_days=14,
+    tags=tags,
+)
+
+# Scraper worker Lambda (processes one country)
+scraper_worker_lambda = aws.lambda_.Function(
+    f"{app_name}-scraper-worker-{environment}",
+    name=f"{app_name}-scraper-worker-{environment}",
+    role=lambda_role.arn,
+    handler="handlers.scraper_worker.scraper_worker_handler",
+    runtime="python3.12",
+    timeout=600,  # 10 minutes per country (some countries have many resorts)
+    memory_size=512,  # More memory for HTML parsing
+    code=pulumi.AssetArchive(
+        {
+            "index.py": pulumi.StringAsset(placeholder_lambda_code),
+        }
+    ),
+    environment=aws.lambda_.FunctionEnvironmentArgs(
+        variables={
+            "ENVIRONMENT": environment,
+            "RESULTS_BUCKET": state_bucket_name,
+            "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
+            "AWS_REGION_NAME": aws_region,
+        }
+    ),
+    tags=tags,
+    opts=pulumi.ResourceOptions(depends_on=[lambda_role, scraper_worker_log_group]),
+)
+
+# Daily scraper schedule (06:00 UTC - delta mode by default, full on 1st of month)
+scraper_schedule_rule = aws.cloudwatch.EventRule(
+    f"{app_name}-scraper-schedule-{environment}",
+    name=f"{app_name}-scraper-schedule-{environment}",
+    description="Trigger resort scraping daily at 06:00 UTC",
+    schedule_expression="cron(0 6 * * ? *)",
+    tags=tags,
+)
+
+# Permission for CloudWatch Events to invoke the scraper orchestrator
+scraper_schedule_permission = aws.lambda_.Permission(
+    f"{app_name}-scraper-schedule-permission-{environment}",
+    action="lambda:InvokeFunction",
+    function=scraper_orchestrator_lambda.name,
+    principal="events.amazonaws.com",
+    source_arn=scraper_schedule_rule.arn,
+)
+
+# CloudWatch Events target for scraper
+scraper_schedule_target = aws.cloudwatch.EventTarget(
+    f"{app_name}-scraper-schedule-target-{environment}",
+    rule=scraper_schedule_rule.name,
+    arn=scraper_orchestrator_lambda.arn,
+)
+
+# =============================================================================
 # Notification Processor Lambda - Sends push notifications for snow/events
 # =============================================================================
 
@@ -1728,6 +1828,9 @@ pulumi.export("environment", environment)
 pulumi.export("weather_processor_lambda_name", weather_processor_lambda.name)
 pulumi.export("weather_worker_lambda_name", weather_worker_lambda.name)
 pulumi.export("weather_schedule_rule_name", weather_schedule_rule.name)
+pulumi.export("scraper_orchestrator_lambda_name", scraper_orchestrator_lambda.name)
+pulumi.export("scraper_worker_lambda_name", scraper_worker_lambda.name)
+pulumi.export("scraper_schedule_rule_name", scraper_schedule_rule.name)
 pulumi.export("api_handler_lambda_name", api_handler_lambda.name)
 pulumi.export("notification_processor_lambda_name", notification_processor_lambda.name)
 pulumi.export("notification_schedule_rule_name", notification_schedule_rule.name)
