@@ -81,12 +81,18 @@ final class CachedSnowQualitySummary {
     @Attribute(.unique) var resortId: String
     var overallQuality: String
     var lastUpdated: String?
+    var temperatureC: Double?
+    var snowfallFreshCm: Double?
+    var snowfall24hCm: Double?
     var cachedAt: Date
 
     init(resortId: String, summary: SnowQualitySummaryLight) {
         self.resortId = resortId
         self.overallQuality = summary.overallQuality
         self.lastUpdated = summary.lastUpdated
+        self.temperatureC = summary.temperatureC
+        self.snowfallFreshCm = summary.snowfallFreshCm
+        self.snowfall24hCm = summary.snowfall24hCm
         self.cachedAt = Date()
     }
 
@@ -94,7 +100,10 @@ final class CachedSnowQualitySummary {
         SnowQualitySummaryLight(
             resortId: resortId,
             overallQuality: overallQuality,
-            lastUpdated: lastUpdated
+            lastUpdated: lastUpdated,
+            temperatureC: temperatureC,
+            snowfallFreshCm: snowfallFreshCm,
+            snowfall24hCm: snowfall24hCm
         )
     }
 }

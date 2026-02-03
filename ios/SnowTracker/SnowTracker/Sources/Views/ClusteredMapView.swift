@@ -367,18 +367,15 @@ final class ResortClusterAnnotationView: MKAnnotationView {
         let memberAnnotations = cluster.memberAnnotations.compactMap { $0 as? ResortPointAnnotation }
         let count = memberAnnotations.count
 
-        // Count by quality
-        var qualityCounts: [SnowQuality: Int] = [:]
-        for annotation in memberAnnotations {
-            qualityCounts[annotation.snowQuality, default: 0] += 1
-        }
-
-        // Determine dominant color (most common quality)
-        let dominantQuality = qualityCounts.max(by: { $0.value < $1.value })?.key ?? .unknown
-        let dominantColor = UIColor(dominantQuality.color)
+        // Find the BEST quality in the cluster (lowest sortOrder = best)
+        // This way if any resort in the cluster has great snow, the cluster shows that
+        let bestQuality = memberAnnotations
+            .map { $0.snowQuality }
+            .min(by: { $0.sortOrder < $1.sortOrder }) ?? .unknown
+        let bestColor = UIColor(bestQuality.color)
 
         countLabel.text = count > 99 ? "99+" : "\(count)"
-        backgroundColor = dominantColor
+        backgroundColor = bestColor
         layer.cornerRadius = clusterSize / 2
         layer.masksToBounds = true
 
@@ -387,7 +384,7 @@ final class ResortClusterAnnotationView: MKAnnotationView {
         layer.borderColor = UIColor.white.cgColor
 
         // Add shadow
-        layer.shadowColor = dominantColor.cgColor
+        layer.shadowColor = bestColor.cgColor
         layer.shadowOffset = CGSize(width: 0, height: 2)
         layer.shadowRadius = 4
         layer.shadowOpacity = 0.5
