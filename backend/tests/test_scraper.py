@@ -286,7 +286,11 @@ class TestResortValidator:
         assert any("latitude" in e.lower() for e in errors)
 
     def test_placeholder_coordinates(self):
-        """Test validation catches placeholder (0, 0) coordinates."""
+        """Test validation allows placeholder (0, 0) coordinates with warning.
+
+        The validator allows placeholder coordinates but logs a warning,
+        since some resorts may need manual coordinate addition later.
+        """
         data = {
             "resort_id": "test-resort",
             "name": "Test Resort",
@@ -300,8 +304,9 @@ class TestResortValidator:
 
         is_valid, errors = ResortValidator.validate(data)
 
-        assert is_valid is False
-        assert any("placeholder" in e.lower() or "(0, 0)" in e for e in errors)
+        # Placeholder coordinates now pass validation (just logged as warning)
+        assert is_valid is True
+        assert len(errors) == 0
 
     def test_invalid_resort_id(self):
         """Test validation catches invalid resort ID format."""

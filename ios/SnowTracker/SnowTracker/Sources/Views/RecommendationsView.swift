@@ -22,7 +22,7 @@ class RecommendationsManager: ObservableObject {
                 latitude: latitude,
                 longitude: longitude,
                 radiusKm: radiusKm,
-                limit: 10
+                limit: 30
             )
             recommendations = response.recommendations
             lastUpdated = Date()
