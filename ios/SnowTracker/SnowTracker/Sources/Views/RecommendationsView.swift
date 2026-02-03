@@ -65,6 +65,20 @@ struct BestSnowNearYouView: View {
         userPreferencesManager.preferredUnits.distance == .metric
     }
 
+    /// Filter recommendations to only show visible regions
+    private var filteredNearbyRecommendations: [ResortRecommendation] {
+        recommendationsManager.recommendations.filter { recommendation in
+            !userPreferencesManager.hiddenRegions.contains(recommendation.resort.inferredRegion.rawValue)
+        }
+    }
+
+    /// Filter best conditions to only show visible regions
+    private var filteredBestConditions: [ResortRecommendation] {
+        recommendationsManager.bestConditions.filter { recommendation in
+            !userPreferencesManager.hiddenRegions.contains(recommendation.resort.inferredRegion.rawValue)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -110,10 +124,10 @@ struct BestSnowNearYouView: View {
                 locationDeniedView
             } else if recommendationsManager.isLoading && recommendationsManager.recommendations.isEmpty {
                 loadingView
-            } else if recommendationsManager.recommendations.isEmpty {
+            } else if filteredNearbyRecommendations.isEmpty {
                 emptyStateView
             } else {
-                recommendationsList(recommendations: recommendationsManager.recommendations, showDistance: true)
+                recommendationsList(recommendations: filteredNearbyRecommendations, showDistance: true)
             }
         }
         .refreshable {
@@ -142,14 +156,14 @@ struct BestSnowNearYouView: View {
         Group {
             if recommendationsManager.isLoading && recommendationsManager.bestConditions.isEmpty {
                 loadingView
-            } else if recommendationsManager.bestConditions.isEmpty {
+            } else if filteredBestConditions.isEmpty {
                 ContentUnavailableView(
                     "No Data Available",
                     systemImage: "snowflake.slash",
                     description: Text("Could not load best conditions. Pull to refresh.")
                 )
             } else {
-                recommendationsList(recommendations: recommendationsManager.bestConditions, showDistance: false)
+                recommendationsList(recommendations: filteredBestConditions, showDistance: false)
             }
         }
         .refreshable {
@@ -455,6 +469,13 @@ struct BestSnowNearYouCard: View {
         userPreferencesManager.preferredUnits.distance == .metric
     }
 
+    /// Filter recommendations to only show visible regions
+    private var filteredRecommendations: [ResortRecommendation] {
+        recommendationsManager.recommendations.filter { recommendation in
+            !userPreferencesManager.hiddenRegions.contains(recommendation.resort.inferredRegion.rawValue)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
@@ -476,7 +497,7 @@ struct BestSnowNearYouCard: View {
                     Spacer()
                 }
                 .padding(.vertical, 20)
-            } else if let topRecommendation = recommendationsManager.recommendations.first {
+            } else if let topRecommendation = filteredRecommendations.first {
                 // Show top recommendation
                 NavigationLink(destination: ResortDetailView(resort: topRecommendation.resort)) {
                     HStack {

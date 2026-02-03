@@ -8,6 +8,7 @@ import json
 import logging
 import os
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Any
 
 import boto3
@@ -344,16 +345,20 @@ def process_scraper_results_handler(event: dict[str, Any], context) -> dict[str,
 
 
 def convert_to_dynamodb_item(resort_data: dict) -> dict:
-    """Convert scraped resort data to DynamoDB item format."""
+    """Convert scraped resort data to DynamoDB item format.
+
+    Note: DynamoDB doesn't support Python floats, so we convert to Decimal.
+    """
     now = datetime.now(UTC).isoformat()
 
     # Calculate elevation points
-    base_m = resort_data["elevation_base_m"]
-    top_m = resort_data["elevation_top_m"]
+    base_m = int(resort_data["elevation_base_m"])
+    top_m = int(resort_data["elevation_top_m"])
     mid_m = (base_m + top_m) // 2
 
-    lat = resort_data.get("latitude", 0.0)
-    lon = resort_data.get("longitude", 0.0)
+    # Convert floats to Decimal for DynamoDB compatibility
+    lat = Decimal(str(resort_data.get("latitude", 0.0)))
+    lon = Decimal(str(resort_data.get("longitude", 0.0)))
 
     elevation_points = [
         {
@@ -367,15 +372,15 @@ def convert_to_dynamodb_item(resort_data: dict) -> dict:
             "level": "mid",
             "elevation_meters": mid_m,
             "elevation_feet": int(mid_m * 3.28084),
-            "latitude": lat + 0.002,
-            "longitude": lon - 0.003,
+            "latitude": lat + Decimal("0.002"),
+            "longitude": lon - Decimal("0.003"),
         },
         {
             "level": "top",
             "elevation_meters": top_m,
             "elevation_feet": int(top_m * 3.28084),
-            "latitude": lat + 0.004,
-            "longitude": lon - 0.006,
+            "latitude": lat + Decimal("0.004"),
+            "longitude": lon - Decimal("0.006"),
         },
     ]
 

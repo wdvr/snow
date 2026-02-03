@@ -106,6 +106,12 @@ struct SettingsView: View {
                 // Preferences Section
                 Section {
                     NavigationLink {
+                        RegionFilterSettingsView()
+                    } label: {
+                        Label("Regions", systemImage: "globe")
+                    }
+
+                    NavigationLink {
                         NotificationSettingsView()
                     } label: {
                         Label("Notifications", systemImage: "bell")

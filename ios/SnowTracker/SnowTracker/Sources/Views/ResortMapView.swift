@@ -96,6 +96,9 @@ struct ResortMapView: View {
             .onChange(of: mapViewModel.selectedFilter) { _, _ in
                 updateAnnotations()
             }
+            .onChange(of: userPreferencesManager.hiddenRegions) { _, _ in
+                updateAnnotations()
+            }
         }
     }
 
@@ -261,12 +264,15 @@ struct ResortMapView: View {
         mapViewModel.updateAnnotations(
             resorts: snowConditionsManager.resorts,
             conditions: snowConditionsManager.conditions,
-            snowQualitySummaries: snowConditionsManager.snowQualitySummaries
+            snowQualitySummaries: snowConditionsManager.snowQualitySummaries,
+            hiddenRegions: userPreferencesManager.hiddenRegions
         )
     }
 
     private func countForFilter(_ filter: MapFilterOption) -> Int {
-        let allAnnotations = snowConditionsManager.resorts.map { resort in
+        // Filter by visible regions first
+        let visibleResorts = userPreferencesManager.filterByVisibleRegions(snowConditionsManager.resorts)
+        let allAnnotations = visibleResorts.map { resort in
             // Use the manager's getSnowQuality which checks summaries first
             snowConditionsManager.getSnowQuality(for: resort.id)
         }

@@ -170,16 +170,22 @@ class MapViewModel: ObservableObject {
     func updateAnnotations(
         resorts: [Resort],
         conditions: [String: [WeatherCondition]],
-        snowQualitySummaries: [String: SnowQualitySummaryLight] = [:]
+        snowQualitySummaries: [String: SnowQualitySummaryLight] = [:],
+        hiddenRegions: Set<String> = []
     ) {
-        let allAnnotations = resorts.map { resort in
+        // Filter out resorts from hidden regions
+        let visibleResorts = resorts.filter { resort in
+            !hiddenRegions.contains(resort.inferredRegion.rawValue)
+        }
+
+        let allAnnotations = visibleResorts.map { resort in
             let condition = conditions[resort.id]?.first
             // Use snow quality summary as fallback if no full condition available
             let fallbackQuality = snowQualitySummaries[resort.id]?.overallSnowQuality
             return ResortAnnotation(resort: resort, condition: condition, fallbackQuality: fallbackQuality)
         }
 
-        // Apply filter
+        // Apply quality filter
         annotations = allAnnotations.filter { annotation in
             selectedFilter.qualities.contains(annotation.snowQuality)
         }

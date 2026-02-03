@@ -51,6 +51,7 @@
 		RECO1234567890ABCDEF0002 /* RecommendationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RECO1234567890ABCDEF0001 /* RecommendationsView.swift */; };
 		PUSH0NOTIFICATION0BUILD01 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = PUSH0NOTIFICATION0FILE001 /* PushNotificationService.swift */; };
 		NOTIF0SETTINGS0VIEW0BLD01 /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = NOTIF0SETTINGS0VIEW0FL01 /* NotificationSettingsView.swift */; };
+		REGION0FILTER0SET0BUILD1 /* RegionFilterSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = REGION0FILTER0SET0FILE01 /* RegionFilterSettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -137,6 +138,7 @@
 		RECO1234567890ABCDEF0001 /* RecommendationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecommendationsView.swift; sourceTree = "<group>"; };
 		PUSH0NOTIFICATION0FILE001 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
 		NOTIF0SETTINGS0VIEW0FL01 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
+		REGION0FILTER0SET0FILE01 /* RegionFilterSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionFilterSettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -199,6 +201,7 @@
 				1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */,
 				D94F3FDE9BBCEF47C3DC8547 /* FeedbackView.swift */,
 				NOTIF0SETTINGS0VIEW0FL01 /* NotificationSettingsView.swift */,
+				REGION0FILTER0SET0FILE01 /* RegionFilterSettingsView.swift */,
 				22ECDCF89993D8220437C43C /* ResortDetailView.swift */,
 				D49E6B5DE0674E438239F0C7 /* ResortListView.swift */,
 				9D2E198287C4AD2358752184 /* ResortMapView.swift */,
@@ -505,6 +508,7 @@
 				RECO1234567890ABCDEF0002 /* RecommendationsView.swift in Sources */,
 				PUSH0NOTIFICATION0BUILD01 /* PushNotificationService.swift in Sources */,
 				NOTIF0SETTINGS0VIEW0BLD01 /* NotificationSettingsView.swift in Sources */,
+				REGION0FILTER0SET0BUILD1 /* RegionFilterSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

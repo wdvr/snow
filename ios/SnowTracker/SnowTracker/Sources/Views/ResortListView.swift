@@ -30,14 +30,15 @@ struct ResortListView: View {
     }
 
     var filteredAndSortedResorts: [Resort] {
-        let resorts = snowConditionsManager.resorts
+        // Start with resorts filtered by user's visible regions preference
+        let visibleResorts = userPreferencesManager.filterByVisibleRegions(snowConditionsManager.resorts)
 
-        // Apply region filter
+        // Apply region filter (selected chip filter)
         let regionFiltered: [Resort]
         if let region = selectedRegion {
-            regionFiltered = resorts.filter { $0.inferredRegion == region }
+            regionFiltered = visibleResorts.filter { $0.inferredRegion == region }
         } else {
-            regionFiltered = resorts
+            regionFiltered = visibleResorts
         }
 
         // Apply search filter
@@ -82,7 +83,9 @@ struct ResortListView: View {
     }
 
     var availableRegions: [SkiRegion] {
-        let resortRegions = Set(snowConditionsManager.resorts.map { $0.inferredRegion })
+        // Only show regions that have resorts AND are visible in user preferences
+        let visibleResorts = userPreferencesManager.filterByVisibleRegions(snowConditionsManager.resorts)
+        let resortRegions = Set(visibleResorts.map { $0.inferredRegion })
         return SkiRegion.allCases.filter { resortRegions.contains($0) }
     }
 

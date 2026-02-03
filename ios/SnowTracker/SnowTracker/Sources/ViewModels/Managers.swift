@@ -306,9 +306,19 @@ class UserPreferencesManager: ObservableObject {
     }
     @Published var notificationSettings: NotificationSettings = NotificationSettings()
 
+    /// Regions that the user has chosen to hide from the app
+    /// Default: oceania and japan are hidden (southern hemisphere and distant regions)
+    @Published var hiddenRegions: Set<String> = [] {
+        didSet {
+            saveHiddenRegions()
+            scheduleSyncToBackend()
+        }
+    }
+
     private let apiClient = APIClient.shared
     private let favoritesKey = "favoriteResorts"
     private let unitPreferencesKey = "unitPreferences"
+    private let hiddenRegionsKey = "hiddenRegions"
     private let appGroupId = "group.com.wouterdevriendt.snowtracker"
 
     /// Debounce task for syncing preferences to backend
@@ -343,6 +353,9 @@ class UserPreferencesManager: ObservableObject {
 
         // Load unit preferences
         loadUnitPreferences()
+
+        // Load hidden regions
+        loadHiddenRegions()
     }
 
     private func loadUnitPreferences() {
@@ -363,6 +376,50 @@ class UserPreferencesManager: ObservableObject {
 
         // Also save to standard UserDefaults as backup
         UserDefaults.standard.set(encoded, forKey: unitPreferencesKey)
+    }
+
+    private func loadHiddenRegions() {
+        let defaults = sharedDefaults ?? UserDefaults.standard
+
+        if let savedRegions = defaults.array(forKey: hiddenRegionsKey) as? [String] {
+            // User has explicitly set their preferences
+            hiddenRegions = Set(savedRegions)
+        } else {
+            // First launch: set default hidden regions (oceania and japan)
+            hiddenRegions = Set(["oceania", "japan"])
+            saveHiddenRegions()
+        }
+    }
+
+    private func saveHiddenRegions() {
+        let regionsArray = Array(hiddenRegions)
+
+        // Save to shared app group (for widget access)
+        sharedDefaults?.set(regionsArray, forKey: hiddenRegionsKey)
+
+        // Also save to standard UserDefaults as backup
+        UserDefaults.standard.set(regionsArray, forKey: hiddenRegionsKey)
+    }
+
+    /// Check if a region is visible (not hidden)
+    func isRegionVisible(_ region: SkiRegion) -> Bool {
+        !hiddenRegions.contains(region.rawValue)
+    }
+
+    /// Toggle visibility of a region
+    func toggleRegionVisibility(_ region: SkiRegion) {
+        if hiddenRegions.contains(region.rawValue) {
+            hiddenRegions.remove(region.rawValue)
+        } else {
+            hiddenRegions.insert(region.rawValue)
+        }
+    }
+
+    /// Filter resorts based on hidden regions
+    func filterByVisibleRegions(_ resorts: [Resort]) -> [Resort] {
+        resorts.filter { resort in
+            !hiddenRegions.contains(resort.inferredRegion.rawValue)
+        }
     }
 
     func toggleFavorite(resortId: String) {
@@ -420,6 +477,14 @@ class UserPreferencesManager: ObservableObject {
 
         do {
             // Build the UserPreferences object to sync
+            var preferredUnitsDict: [String: String] = [
+                "temperature": preferredUnits.temperature.rawValue,
+                "distance": preferredUnits.distance.rawValue,
+                "snow_depth": preferredUnits.snowDepth.rawValue
+            ]
+            // Include hidden regions in the preferences sync
+            preferredUnitsDict["hidden_regions"] = Array(hiddenRegions).joined(separator: ",")
+
             let preferences = UserPreferences(
                 userId: "", // Backend will use authenticated user ID
                 favoriteResorts: Array(favoriteResorts),
@@ -430,11 +495,7 @@ class UserPreferencesManager: ObservableObject {
                     "thaw_freeze_alerts": notificationSettings.thawFreezeAlerts,
                     "weekly_summary": notificationSettings.weeklySummary
                 ],
-                preferredUnits: [
-                    "temperature": preferredUnits.temperature.rawValue,
-                    "distance": preferredUnits.distance.rawValue,
-                    "snow_depth": preferredUnits.snowDepth.rawValue
-                ],
+                preferredUnits: preferredUnitsDict,
                 qualityThreshold: "good", // Default threshold
                 createdAt: "", // Backend will handle timestamps
                 updatedAt: ""
