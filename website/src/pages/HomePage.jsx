@@ -8,15 +8,27 @@ import {
   FiSmartphone,
   FiGithub,
   FiMessageCircle,
+  FiCpu,
+  FiThermometer,
 } from 'react-icons/fi'
 import { BsApple, BsSnow } from 'react-icons/bs'
 
 function HomePage() {
   const features = [
     {
+      icon: <FiCpu />,
+      title: 'Proprietary Snow Algorithm',
+      description: 'Our advanced algorithm goes beyond basic snowfall data to calculate actual skiable snow quality in real-time.'
+    },
+    {
       icon: <BsSnow />,
-      title: 'Real-Time Snow Quality',
-      description: 'Our algorithm analyzes temperature, snowfall, and freeze-thaw cycles to rate snow from Excellent to Icy.'
+      title: 'Fresh Powder Tracking',
+      description: 'We track snow since the last ice formation event. Not just snowfall, but actual non-refrozen powder depth.'
+    },
+    {
+      icon: <FiThermometer />,
+      title: 'Ice Layer Detection',
+      description: 'Multi-threshold freeze-thaw analysis detects when snow becomes icy (3h@3°C, 6h@2°C, or 8h@1°C).'
     },
     {
       icon: <FiMapPin />,
@@ -24,24 +36,14 @@ function HomePage() {
       description: 'Track conditions at top resorts across North America, the Alps, Japan, and more.'
     },
     {
-      icon: <FiSun />,
-      title: 'Fresh Powder Tracking',
-      description: 'Know exactly how much non-refrozen snow is on the mountain. Find the freshest lines.'
-    },
-    {
       icon: <FiCloud />,
-      title: 'Weather Forecasts',
+      title: '72h Forecasts',
       description: 'See predicted snowfall for the next 24-72 hours. Plan your powder days in advance.'
-    },
-    {
-      icon: <FiStar />,
-      title: 'Favorite Resorts',
-      description: 'Save your favorite mountains and see their conditions at a glance on your home screen.'
     },
     {
       icon: <FiSmartphone />,
       title: 'iOS Widgets',
-      description: 'Beautiful home screen widgets showing conditions at your favorite resorts.'
+      description: 'Beautiful home screen widgets showing real-time snow quality at your favorite resorts.'
     }
   ]
 
@@ -133,34 +135,77 @@ function HomePage() {
         </div>
       </section>
 
+      {/* Algorithm Section */}
+      <section className="algorithm">
+        <div className="container">
+          <div className="section-header">
+            <h2>Our <span className="text-gradient">Proprietary Algorithm</span></h2>
+            <p>Other apps show you snowfall. We show you actual skiing conditions.</p>
+          </div>
+
+          <div className="algorithm-explainer">
+            <div className="algorithm-card">
+              <h3>Why Snowfall Data Isn't Enough</h3>
+              <p>
+                10 inches of snow means nothing if it refroze overnight. Most weather apps
+                ignore the science of snow metamorphosis. Powder Chaser tracks what actually
+                matters: <strong>how much non-refrozen snow sits on top of the last ice layer</strong>.
+              </p>
+            </div>
+
+            <div className="algorithm-features">
+              <div className="algo-feature">
+                <div className="algo-icon">🧊</div>
+                <h4>Ice Layer Detection</h4>
+                <p>We model ice formation using multiple temperature thresholds: 3 hours at 3°C, 6 hours at 2°C, or 8 hours at 1°C. When the surface refreezes, we reset the fresh powder counter.</p>
+              </div>
+              <div className="algo-feature">
+                <div className="algo-icon">❄️</div>
+                <h4>Fresh Powder Accumulation</h4>
+                <p>After each freeze-thaw event, we track all new snowfall as "non-refrozen snow." This is the actual skiable powder depth that determines your experience.</p>
+              </div>
+              <div className="algo-feature">
+                <div className="algo-icon">🌡️</div>
+                <h4>Real-Time Temperature Analysis</h4>
+                <p>Continuous monitoring of temperature trends lets us predict when conditions are degrading or improving, not just show you the current state.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works Section */}
       <section className="how-it-works">
         <div className="container">
           <div className="section-header">
-            <h2>How <span className="text-gradient">snow quality</span> works</h2>
-            <p>Our algorithm tracks what really matters for skiing.</p>
+            <h2>How <span className="text-gradient">snow quality</span> ratings work</h2>
+            <p>Our algorithm converts complex weather data into actionable ratings.</p>
           </div>
 
           <div className="quality-explainer">
             <div className="quality-item">
               <div className="quality-badge excellent">Excellent</div>
-              <p>3+ inches of fresh powder on top. No recent thaw-freeze. Perfect conditions.</p>
+              <p>3+ inches of fresh powder since last ice event. Cold temps preserving quality. Perfect conditions for all skiing.</p>
             </div>
             <div className="quality-item">
               <div className="quality-badge good">Good</div>
-              <p>2+ inches of non-refrozen snow. Surface is soft. Great for all-mountain skiing.</p>
+              <p>2+ inches of non-refrozen snow. Surface hasn't iced over. Great for on and off-piste skiing.</p>
             </div>
             <div className="quality-item">
               <div className="quality-badge fair">Fair</div>
-              <p>Some fresh snow on top of older base. Groomed runs in good shape.</p>
+              <p>~1 inch fresh on older base. May have thin crust in places. Groomed runs in good shape.</p>
             </div>
             <div className="quality-item">
               <div className="quality-badge poor">Poor</div>
-              <p>Thin fresh snow cover. Harder surface with some soft spots.</p>
+              <p>Less than 1 inch since last ice event. Harder surface with some soft spots. Stick to groomers.</p>
             </div>
             <div className="quality-item">
               <div className="quality-badge bad">Icy</div>
-              <p>No fresh snow since last thaw-freeze. Hard, refrozen surface.</p>
+              <p>No fresh snow since last thaw-freeze cycle. Hard, refrozen surface. Challenging conditions.</p>
+            </div>
+            <div className="quality-item">
+              <div className="quality-badge horrible">Not Skiable</div>
+              <p>Dangerous conditions: no snow cover, actively melting, or exposed terrain. Resort may be closed.</p>
             </div>
           </div>
         </div>
