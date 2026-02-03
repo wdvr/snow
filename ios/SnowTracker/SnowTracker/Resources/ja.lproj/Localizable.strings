@@ -1,0 +1,146 @@
+/*
+  Localizable.strings
+  SnowTracker
+
+  Japanese
+*/
+
+/* Common */
+"Done" = "完了";
+"Cancel" = "キャンセル";
+"Delete" = "削除";
+"Save" = "保存";
+"OK" = "OK";
+"Error" = "エラー";
+"Loading" = "読み込み中";
+"Refresh" = "更新";
+"Settings" = "設定";
+"Search" = "検索";
+
+/* Tabs */
+"Favorites" = "お気に入り";
+"Map" = "マップ";
+"Best Snow" = "ベストスノー";
+"Nearby" = "近くのスキー場";
+
+/* FavoritesView */
+"No Favorites Yet" = "お気に入りはまだありません";
+"Tap the heart icon on any resort to add it to your favorites." = "ハートアイコンをタップして、お気に入りのスキー場を追加しましょう。";
+"Browse Resorts" = "スキー場を探す";
+
+/* SplashView */
+"Snow Tracker" = "スノートラッカー";
+"Fresh powder awaits" = "新雪があなたを待っています";
+"Loading conditions..." = "コンディションを読み込み中...";
+
+/* ConditionsView */
+"Snow Conditions" = "積雪状況";
+"Offline mode - showing cached data" = "オフラインモード - キャッシュデータを表示中";
+"Last updated: %@" = "最終更新: %@";
+"Snow Quality Guide" = "雪質ガイド";
+"Quality Levels" = "品質レベル";
+"Warming" = "気温上昇中";
+"since last thaw" = "前回の融雪から";
+
+/* Quality Ratings */
+"Excellent" = "最高";
+"Good" = "良好";
+"Fair" = "普通";
+"Poor" = "悪い";
+"Icy" = "アイスバーン";
+
+/* ResortDetailView */
+"Select Elevation" = "標高を選択";
+"Loading Conditions..." = "コンディションを読み込み中...";
+"No Data Available" = "データがありません";
+"All Elevations" = "全標高";
+"Visit Website" = "ウェブサイトを見る";
+"Recent Snowfall" = "直近の降雪";
+"Snow Forecast" = "降雪予報";
+"Weather Details" = "気象詳細";
+"Min Temp" = "最低気温";
+"Max Temp" = "最高気温";
+"Humidity" = "湿度";
+"Wind" = "風速";
+"24h" = "24時間";
+"48h" = "48時間";
+"72h" = "72時間";
+"Next 24h" = "今後24時間";
+"Next 48h" = "今後48時間";
+"Next 72h" = "今後72時間";
+"Heavy snowfall expected!" = "大雪の予報！";
+"Light snow expected" = "小雪の予報";
+"Fresh" = "新雪";
+"Temp" = "気温";
+
+/* FeedbackView */
+"Send Feedback" = "フィードバックを送信";
+"Subject" = "件名";
+"Your Feedback" = "ご意見";
+"Submit Feedback" = "送信する";
+"Feedback Sent!" = "送信完了！";
+"Thank you for your feedback!" = "ご意見ありがとうございます！";
+"Email (optional)" = "メールアドレス（任意）";
+
+/* NotificationSettingsView */
+"Notifications" = "通知";
+"All Notifications" = "すべての通知";
+"Fresh Snow Alerts" = "新雪アラート";
+"Snow Threshold" = "降雪量のしきい値";
+"Event Alerts" = "イベントアラート";
+"Thaw/Freeze Alerts" = "融雪・凍結アラート";
+"Enable" = "有効にする";
+"%d cm" = "%d cm";
+
+/* SettingsView */
+"Account" = "アカウント";
+"Sign In" = "サインイン";
+"Sign Out" = "サインアウト";
+"Preferences" = "環境設定";
+"Units" = "単位";
+"Celsius" = "摂氏";
+"Fahrenheit" = "華氏";
+"Metric (km)" = "メートル法 (km)";
+"Imperial (mi)" = "ヤード・ポンド法 (mi)";
+"Centimeters" = "センチメートル";
+"Inches" = "インチ";
+"Data & Storage" = "データとストレージ";
+"Clear Offline Cache" = "オフラインキャッシュを消去";
+"Support" = "サポート";
+"Privacy Policy" = "プライバシーポリシー";
+"Terms of Service" = "利用規約";
+"About" = "このアプリについて";
+"App Version" = "アプリバージョン";
+
+/* AuthenticationViews */
+"Sign in with Google" = "Googleでサインイン";
+"Continue without signing in" = "サインインせずに続ける";
+"Profile" = "プロフィール";
+
+/* RecommendationsView */
+"Near You" = "近くのスキー場";
+"Best Globally" = "世界のベスト";
+"Search Radius" = "検索範囲";
+"Location Access" = "位置情報へのアクセス";
+"Enable location to see nearby recommendations" = "近くのおすすめを表示するには位置情報を有効にしてください";
+"Open Settings" = "設定を開く";
+"No Recommendations" = "おすすめはありません";
+
+/* ResortMapView */
+"Snow Quality Legend" = "雪質の凡例";
+"Standard" = "標準";
+"Satellite" = "航空写真";
+"Hybrid" = "ハイブリッド";
+"Show All Resorts" = "すべてのスキー場を表示";
+"View Full Details" = "詳細を見る";
+"Forecast" = "予報";
+"%d Resorts" = "%d件のスキー場";
+
+/* ResortListView */
+"Snow Resorts" = "スキー場一覧";
+"All Regions" = "すべての地域";
+"Search resorts..." = "スキー場を検索...";
+"Loading resorts..." = "スキー場を読み込み中...";
+"No Resorts Found" = "スキー場が見つかりません";
+"Pull to refresh" = "下に引いて更新";
+"Try Again" = "再試行";

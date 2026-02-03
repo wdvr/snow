@@ -1,0 +1,146 @@
+/*
+  Localizable.strings
+  SnowTracker
+
+  English (Base)
+*/
+
+/* Common */
+"Done" = "Done";
+"Cancel" = "Cancel";
+"Delete" = "Delete";
+"Save" = "Save";
+"OK" = "OK";
+"Error" = "Error";
+"Loading" = "Loading";
+"Refresh" = "Refresh";
+"Settings" = "Settings";
+"Search" = "Search";
+
+/* Tabs */
+"Favorites" = "Favorites";
+"Map" = "Map";
+"Best Snow" = "Best Snow";
+"Nearby" = "Nearby";
+
+/* FavoritesView */
+"No Favorites Yet" = "No Favorites Yet";
+"Tap the heart icon on any resort to add it to your favorites." = "Tap the heart icon on any resort to add it to your favorites.";
+"Browse Resorts" = "Browse Resorts";
+
+/* SplashView */
+"Snow Tracker" = "Snow Tracker";
+"Fresh powder awaits" = "Fresh powder awaits";
+"Loading conditions..." = "Loading conditions...";
+
+/* ConditionsView */
+"Snow Conditions" = "Snow Conditions";
+"Offline mode - showing cached data" = "Offline mode - showing cached data";
+"Last updated: %@" = "Last updated: %@";
+"Snow Quality Guide" = "Snow Quality Guide";
+"Quality Levels" = "Quality Levels";
+"Warming" = "Warming";
+"since last thaw" = "since last thaw";
+
+/* Quality Ratings */
+"Excellent" = "Excellent";
+"Good" = "Good";
+"Fair" = "Fair";
+"Poor" = "Poor";
+"Icy" = "Icy";
+
+/* ResortDetailView */
+"Select Elevation" = "Select Elevation";
+"Loading Conditions..." = "Loading Conditions...";
+"No Data Available" = "No Data Available";
+"All Elevations" = "All Elevations";
+"Visit Website" = "Visit Website";
+"Recent Snowfall" = "Recent Snowfall";
+"Snow Forecast" = "Snow Forecast";
+"Weather Details" = "Weather Details";
+"Min Temp" = "Min Temp";
+"Max Temp" = "Max Temp";
+"Humidity" = "Humidity";
+"Wind" = "Wind";
+"24h" = "24h";
+"48h" = "48h";
+"72h" = "72h";
+"Next 24h" = "Next 24h";
+"Next 48h" = "Next 48h";
+"Next 72h" = "Next 72h";
+"Heavy snowfall expected!" = "Heavy snowfall expected!";
+"Light snow expected" = "Light snow expected";
+"Fresh" = "Fresh";
+"Temp" = "Temp";
+
+/* FeedbackView */
+"Send Feedback" = "Send Feedback";
+"Subject" = "Subject";
+"Your Feedback" = "Your Feedback";
+"Submit Feedback" = "Submit Feedback";
+"Feedback Sent!" = "Feedback Sent!";
+"Thank you for your feedback!" = "Thank you for your feedback!";
+"Email (optional)" = "Email (optional)";
+
+/* NotificationSettingsView */
+"Notifications" = "Notifications";
+"All Notifications" = "All Notifications";
+"Fresh Snow Alerts" = "Fresh Snow Alerts";
+"Snow Threshold" = "Snow Threshold";
+"Event Alerts" = "Event Alerts";
+"Thaw/Freeze Alerts" = "Thaw/Freeze Alerts";
+"Enable" = "Enable";
+"%d cm" = "%d cm";
+
+/* SettingsView */
+"Account" = "Account";
+"Sign In" = "Sign In";
+"Sign Out" = "Sign Out";
+"Preferences" = "Preferences";
+"Units" = "Units";
+"Celsius" = "Celsius";
+"Fahrenheit" = "Fahrenheit";
+"Metric (km)" = "Metric (km)";
+"Imperial (mi)" = "Imperial (mi)";
+"Centimeters" = "Centimeters";
+"Inches" = "Inches";
+"Data & Storage" = "Data & Storage";
+"Clear Offline Cache" = "Clear Offline Cache";
+"Support" = "Support";
+"Privacy Policy" = "Privacy Policy";
+"Terms of Service" = "Terms of Service";
+"About" = "About";
+"App Version" = "App Version";
+
+/* AuthenticationViews */
+"Sign in with Google" = "Sign in with Google";
+"Continue without signing in" = "Continue without signing in";
+"Profile" = "Profile";
+
+/* RecommendationsView */
+"Near You" = "Near You";
+"Best Globally" = "Best Globally";
+"Search Radius" = "Search Radius";
+"Location Access" = "Location Access";
+"Enable location to see nearby recommendations" = "Enable location to see nearby recommendations";
+"Open Settings" = "Open Settings";
+"No Recommendations" = "No Recommendations";
+
+/* ResortMapView */
+"Snow Quality Legend" = "Snow Quality Legend";
+"Standard" = "Standard";
+"Satellite" = "Satellite";
+"Hybrid" = "Hybrid";
+"Show All Resorts" = "Show All Resorts";
+"View Full Details" = "View Full Details";
+"Forecast" = "Forecast";
+"%d Resorts" = "%d Resorts";
+
+/* ResortListView */
+"Snow Resorts" = "Snow Resorts";
+"All Regions" = "All Regions";
+"Search resorts..." = "Search resorts...";
+"Loading resorts..." = "Loading resorts...";
+"No Resorts Found" = "No Resorts Found";
+"Pull to refresh" = "Pull to refresh";
+"Try Again" = "Try Again";

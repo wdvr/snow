@@ -1,0 +1,146 @@
+/*
+  Localizable.strings
+  SnowTracker
+
+  German
+*/
+
+/* Common */
+"Done" = "Fertig";
+"Cancel" = "Abbrechen";
+"Delete" = "Löschen";
+"Save" = "Speichern";
+"OK" = "OK";
+"Error" = "Fehler";
+"Loading" = "Laden";
+"Refresh" = "Aktualisieren";
+"Settings" = "Einstellungen";
+"Search" = "Suchen";
+
+/* Tabs */
+"Favorites" = "Favoriten";
+"Map" = "Karte";
+"Best Snow" = "Bester Schnee";
+"Nearby" = "In der Nähe";
+
+/* FavoritesView */
+"No Favorites Yet" = "Noch keine Favoriten";
+"Tap the heart icon on any resort to add it to your favorites." = "Tippe auf das Herz-Symbol bei einem Skigebiet, um es zu deinen Favoriten hinzuzufügen.";
+"Browse Resorts" = "Skigebiete durchsuchen";
+
+/* SplashView */
+"Snow Tracker" = "Snow Tracker";
+"Fresh powder awaits" = "Frischer Pulverschnee wartet";
+"Loading conditions..." = "Bedingungen werden geladen...";
+
+/* ConditionsView */
+"Snow Conditions" = "Schneeverhältnisse";
+"Offline mode - showing cached data" = "Offline-Modus - gespeicherte Daten werden angezeigt";
+"Last updated: %@" = "Zuletzt aktualisiert: %@";
+"Snow Quality Guide" = "Schneequalitäts-Ratgeber";
+"Quality Levels" = "Qualitätsstufen";
+"Warming" = "Erwärmung";
+"since last thaw" = "seit letztem Tauwetter";
+
+/* Quality Ratings */
+"Excellent" = "Ausgezeichnet";
+"Good" = "Gut";
+"Fair" = "Mäßig";
+"Poor" = "Schlecht";
+"Icy" = "Eisig";
+
+/* ResortDetailView */
+"Select Elevation" = "Höhenlage wählen";
+"Loading Conditions..." = "Bedingungen werden geladen...";
+"No Data Available" = "Keine Daten verfügbar";
+"All Elevations" = "Alle Höhenlagen";
+"Visit Website" = "Website besuchen";
+"Recent Snowfall" = "Neuschnee";
+"Snow Forecast" = "Schneeprognose";
+"Weather Details" = "Wetterdetails";
+"Min Temp" = "Min. Temp.";
+"Max Temp" = "Max. Temp.";
+"Humidity" = "Luftfeuchtigkeit";
+"Wind" = "Wind";
+"24h" = "24 Std.";
+"48h" = "48 Std.";
+"72h" = "72 Std.";
+"Next 24h" = "Nächste 24 Std.";
+"Next 48h" = "Nächste 48 Std.";
+"Next 72h" = "Nächste 72 Std.";
+"Heavy snowfall expected!" = "Starker Schneefall erwartet!";
+"Light snow expected" = "Leichter Schneefall erwartet";
+"Fresh" = "Frisch";
+"Temp" = "Temp.";
+
+/* FeedbackView */
+"Send Feedback" = "Feedback senden";
+"Subject" = "Betreff";
+"Your Feedback" = "Dein Feedback";
+"Submit Feedback" = "Feedback absenden";
+"Feedback Sent!" = "Feedback gesendet!";
+"Thank you for your feedback!" = "Vielen Dank für dein Feedback!";
+"Email (optional)" = "E-Mail (optional)";
+
+/* NotificationSettingsView */
+"Notifications" = "Benachrichtigungen";
+"All Notifications" = "Alle Benachrichtigungen";
+"Fresh Snow Alerts" = "Neuschnee-Meldungen";
+"Snow Threshold" = "Schnee-Schwellenwert";
+"Event Alerts" = "Ereignis-Meldungen";
+"Thaw/Freeze Alerts" = "Tau-/Frost-Warnungen";
+"Enable" = "Aktivieren";
+"%d cm" = "%d cm";
+
+/* SettingsView */
+"Account" = "Konto";
+"Sign In" = "Anmelden";
+"Sign Out" = "Abmelden";
+"Preferences" = "Einstellungen";
+"Units" = "Einheiten";
+"Celsius" = "Celsius";
+"Fahrenheit" = "Fahrenheit";
+"Metric (km)" = "Metrisch (km)";
+"Imperial (mi)" = "Imperial (mi)";
+"Centimeters" = "Zentimeter";
+"Inches" = "Zoll";
+"Data & Storage" = "Daten & Speicher";
+"Clear Offline Cache" = "Offline-Cache leeren";
+"Support" = "Support";
+"Privacy Policy" = "Datenschutzrichtlinie";
+"Terms of Service" = "Nutzungsbedingungen";
+"About" = "Über";
+"App Version" = "App-Version";
+
+/* AuthenticationViews */
+"Sign in with Google" = "Mit Google anmelden";
+"Continue without signing in" = "Ohne Anmeldung fortfahren";
+"Profile" = "Profil";
+
+/* RecommendationsView */
+"Near You" = "In deiner Nähe";
+"Best Globally" = "Weltweit beste";
+"Search Radius" = "Suchradius";
+"Location Access" = "Standortzugriff";
+"Enable location to see nearby recommendations" = "Aktiviere den Standort, um Empfehlungen in der Nähe zu sehen";
+"Open Settings" = "Einstellungen öffnen";
+"No Recommendations" = "Keine Empfehlungen";
+
+/* ResortMapView */
+"Snow Quality Legend" = "Schneequalitäts-Legende";
+"Standard" = "Standard";
+"Satellite" = "Satellit";
+"Hybrid" = "Hybrid";
+"Show All Resorts" = "Alle Skigebiete anzeigen";
+"View Full Details" = "Alle Details anzeigen";
+"Forecast" = "Vorhersage";
+"%d Resorts" = "%d Skigebiete";
+
+/* ResortListView */
+"Snow Resorts" = "Skigebiete";
+"All Regions" = "Alle Regionen";
+"Search resorts..." = "Skigebiete suchen...";
+"Loading resorts..." = "Skigebiete werden geladen...";
+"No Resorts Found" = "Keine Skigebiete gefunden";
+"Pull to refresh" = "Zum Aktualisieren ziehen";
+"Try Again" = "Erneut versuchen";
