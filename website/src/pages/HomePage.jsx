@@ -91,26 +91,11 @@ function HomePage() {
             </div>
 
             <div className="hero-visual">
-              <div className="snow-card">
-                <div className="snow-card-header">
-                  <span className="resort-name">Whistler Blackcomb</span>
-                  <span className="quality-badge excellent">Excellent</span>
-                </div>
-                <div className="snow-card-stats">
-                  <div className="stat">
-                    <span className="stat-value">15cm</span>
-                    <span className="stat-label">Fresh Snow</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-value">-8°C</span>
-                    <span className="stat-label">Summit</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-value">25cm</span>
-                    <span className="stat-label">24h Forecast</span>
-                  </div>
-                </div>
-              </div>
+              <img
+                src="/screenshot-iphone.png"
+                alt="Powder Chaser app showing snow conditions at ski resorts"
+                className="hero-screenshot"
+              />
             </div>
           </div>
         </div>
