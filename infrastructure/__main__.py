@@ -106,9 +106,14 @@ resorts_table = aws.dynamodb.Table(
     name=f"{app_name}-resorts-{environment}",
     billing_mode="PAY_PER_REQUEST",
     hash_key="resort_id",
-    attributes=[{"name": "resort_id", "type": "S"}, {"name": "country", "type": "S"}],
+    attributes=[
+        {"name": "resort_id", "type": "S"},
+        {"name": "country", "type": "S"},
+        {"name": "geo_hash", "type": "S"},
+    ],
     global_secondary_indexes=[
-        {"name": "CountryIndex", "hash_key": "country", "projection_type": "ALL"}
+        {"name": "CountryIndex", "hash_key": "country", "projection_type": "ALL"},
+        {"name": "GeoHashIndex", "hash_key": "geo_hash", "projection_type": "ALL"},
     ],
     tags=tags,
 )
@@ -181,6 +186,23 @@ device_tokens_table = aws.dynamodb.Table(
     tags=tags,
 )
 
+# Snow summary table for persisting accumulated snow data
+# This table survives weather conditions TTL expiration
+# Stores season-long accumulation and last freeze dates
+snow_summary_table = aws.dynamodb.Table(
+    f"{app_name}-snow-summary-{environment}",
+    name=f"{app_name}-snow-summary-{environment}",
+    billing_mode="PAY_PER_REQUEST",
+    hash_key="resort_id",
+    range_key="elevation_level",  # base, mid, top
+    attributes=[
+        {"name": "resort_id", "type": "S"},
+        {"name": "elevation_level", "type": "S"},
+    ],
+    # NO TTL - this data persists forever for season-long tracking
+    tags=tags,
+)
+
 # Resort events table for tracking events at resorts
 resort_events_table = aws.dynamodb.Table(
     f"{app_name}-resort-events-{environment}",
@@ -234,6 +256,7 @@ lambda_policy = aws.iam.RolePolicy(
         feedback_table.arn,
         device_tokens_table.arn,
         resort_events_table.arn,
+        snow_summary_table.arn,
     ).apply(
         lambda arns: f"""{{
         "Version": "2012-10-17",
@@ -265,12 +288,14 @@ lambda_policy = aws.iam.RolePolicy(
                     "{arns[3]}",
                     "{arns[4]}",
                     "{arns[5]}",
+                    "{arns[6]}",
                     "{arns[0]}/index/*",
                     "{arns[1]}/index/*",
                     "{arns[2]}/index/*",
                     "{arns[3]}/index/*",
                     "{arns[4]}/index/*",
-                    "{arns[5]}/index/*"
+                    "{arns[5]}/index/*",
+                    "{arns[6]}/index/*"
                 ]
             }},
             {{
@@ -1975,6 +2000,7 @@ pulumi.export("user_preferences_table_name", user_preferences_table.name)
 pulumi.export("feedback_table_name", feedback_table.name)
 pulumi.export("device_tokens_table_name", device_tokens_table.name)
 pulumi.export("resort_events_table_name", resort_events_table.name)
+pulumi.export("snow_summary_table_name", snow_summary_table.name)
 pulumi.export("lambda_role_arn", lambda_role.arn)
 pulumi.export("api_gateway_id", api_gateway.id)
 pulumi.export("api_gateway_url", api_deployment.invoke_url)

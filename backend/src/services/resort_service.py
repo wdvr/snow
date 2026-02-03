@@ -9,7 +9,12 @@ from models.resort import Resort
 # Import directly from module to avoid circular import through utils/__init__.py
 from utils.cache import get_resort_metadata_cache
 from utils.dynamodb_utils import parse_from_dynamodb, prepare_for_dynamodb
-from utils.geo_utils import bounding_box, haversine_distance
+from utils.geo_utils import (
+    bounding_box,
+    encode_geohash,
+    get_geohashes_for_radius,
+    haversine_distance,
+)
 
 
 class ResortService:
@@ -221,6 +226,9 @@ class ResortService:
         """
         Get resorts near a given location, sorted by distance.
 
+        Uses geohash-based indexing for efficient queries instead of full table scans.
+        Falls back to table scan if geo_hash attribute is not present on resorts.
+
         Args:
             latitude: User's latitude in degrees
             longitude: User's longitude in degrees
@@ -231,17 +239,56 @@ class ResortService:
             List of tuples containing (Resort, distance_km), sorted by distance
         """
         try:
-            # Get all resorts
-            all_resorts = self.get_all_resorts()
+            # Determine geohash precision based on radius
+            # Precision 4 = ~39km cells, good for up to ~100km radius
+            # Precision 3 = ~156km cells, good for larger radii
+            precision = 4 if radius_km <= 100 else 3
 
-            # Calculate bounding box for quick pre-filtering
+            # Get geohashes to query (center + 8 neighbors)
+            geohashes = get_geohashes_for_radius(
+                latitude, longitude, radius_km, precision
+            )
+
+            # Query GeoHashIndex for each geohash
+            candidate_resorts = []
+            seen_resort_ids = set()
+
+            for geohash in geohashes:
+                try:
+                    response = self.table.query(
+                        IndexName="GeoHashIndex",
+                        KeyConditionExpression="geo_hash = :gh",
+                        ExpressionAttributeValues={":gh": geohash},
+                    )
+
+                    for item in response.get("Items", []):
+                        resort_id = item.get("resort_id")
+                        if resort_id and resort_id not in seen_resort_ids:
+                            seen_resort_ids.add(resort_id)
+                            parsed_item = parse_from_dynamodb(item)
+                            resort = Resort(**parsed_item)
+                            candidate_resorts.append(resort)
+
+                except ClientError:
+                    # GeoHashIndex may not exist yet, fall back to scan
+                    return self._get_nearby_resorts_scan(
+                        latitude, longitude, radius_km, limit
+                    )
+
+            # If no results from geohash queries, fall back to scan
+            # (handles case where resorts don't have geo_hash yet)
+            if not candidate_resorts:
+                return self._get_nearby_resorts_scan(
+                    latitude, longitude, radius_km, limit
+                )
+
+            # Filter by exact distance using haversine
             min_lat, max_lat, min_lon, max_lon = bounding_box(
                 latitude, longitude, radius_km
             )
 
             nearby = []
-            for resort in all_resorts:
-                # Get primary coordinate (prefer mid, then base, then first)
+            for resort in candidate_resorts:
                 coord = self._get_resort_coordinate(resort)
                 if not coord:
                     continue
@@ -260,7 +307,6 @@ class ResortService:
                     latitude, longitude, resort_lat, resort_lon
                 )
 
-                # Check if within radius
                 if distance <= radius_km:
                     nearby.append((resort, round(distance, 1)))
 
@@ -270,6 +316,47 @@ class ResortService:
 
         except Exception as e:
             raise Exception(f"Error finding nearby resorts: {str(e)}")
+
+    def _get_nearby_resorts_scan(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_km: float,
+        limit: int,
+    ) -> list[tuple[Resort, float]]:
+        """
+        Fallback method using full table scan for nearby resorts.
+
+        Used when GeoHashIndex is not available or resorts lack geo_hash attribute.
+        """
+        all_resorts = self.get_all_resorts()
+
+        min_lat, max_lat, min_lon, max_lon = bounding_box(
+            latitude, longitude, radius_km
+        )
+
+        nearby = []
+        for resort in all_resorts:
+            coord = self._get_resort_coordinate(resort)
+            if not coord:
+                continue
+
+            resort_lat, resort_lon = coord
+
+            # Quick bounding box check
+            if not (
+                min_lat <= resort_lat <= max_lat and min_lon <= resort_lon <= max_lon
+            ):
+                continue
+
+            # Calculate exact distance
+            distance = haversine_distance(latitude, longitude, resort_lat, resort_lon)
+
+            if distance <= radius_km:
+                nearby.append((resort, round(distance, 1)))
+
+        nearby.sort(key=lambda x: x[1])
+        return nearby[:limit]
 
     def _get_resort_coordinate(self, resort: Resort) -> tuple[float, float] | None:
         """Get the primary coordinate for a resort (mid > base > first)."""
@@ -354,3 +441,93 @@ class ResortService:
                 result[resort_id] = resort_id
 
         return result
+
+    def compute_geohash_for_resort(
+        self, resort: Resort, precision: int = 4
+    ) -> str | None:
+        """
+        Compute geohash for a resort based on its primary coordinate.
+
+        Args:
+            resort: The resort to compute geohash for
+            precision: Geohash precision (default 4 for ~39km cells)
+
+        Returns:
+            Geohash string or None if resort has no coordinates
+        """
+        coord = self._get_resort_coordinate(resort)
+        if not coord:
+            return None
+
+        latitude, longitude = coord
+        return encode_geohash(latitude, longitude, precision)
+
+    def backfill_geohashes(self, precision: int = 4) -> dict[str, Any]:
+        """
+        Backfill geo_hash attribute for all existing resorts.
+
+        This method should be run once after adding the GeoHashIndex GSI
+        to populate the geo_hash field for existing resorts.
+
+        Args:
+            precision: Geohash precision (default 4 for ~39km cells)
+
+        Returns:
+            Dict with backfill statistics
+        """
+        stats = {
+            "total_resorts": 0,
+            "updated": 0,
+            "skipped_no_coords": 0,
+            "already_has_geohash": 0,
+            "errors": 0,
+        }
+
+        try:
+            # Scan all resorts
+            response = self.table.scan()
+            items = response.get("Items", [])
+
+            # Handle pagination
+            while "LastEvaluatedKey" in response:
+                response = self.table.scan(
+                    ExclusiveStartKey=response["LastEvaluatedKey"]
+                )
+                items.extend(response.get("Items", []))
+
+            stats["total_resorts"] = len(items)
+
+            for item in items:
+                resort_id = item.get("resort_id")
+                if not resort_id:
+                    continue
+
+                # Skip if already has geo_hash
+                if item.get("geo_hash"):
+                    stats["already_has_geohash"] += 1
+                    continue
+
+                try:
+                    parsed_item = parse_from_dynamodb(item)
+                    resort = Resort(**parsed_item)
+                    geohash = self.compute_geohash_for_resort(resort, precision)
+
+                    if not geohash:
+                        stats["skipped_no_coords"] += 1
+                        continue
+
+                    # Update the resort with geo_hash
+                    self.table.update_item(
+                        Key={"resort_id": resort_id},
+                        UpdateExpression="SET geo_hash = :gh",
+                        ExpressionAttributeValues={":gh": geohash},
+                    )
+                    stats["updated"] += 1
+
+                except Exception as e:
+                    stats["errors"] += 1
+
+            return stats
+
+        except Exception as e:
+            raise Exception(f"Error backfilling geohashes: {str(e)}")

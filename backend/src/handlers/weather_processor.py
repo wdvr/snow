@@ -23,6 +23,7 @@ from services.onthesnow_scraper import OnTheSnowScraper
 from services.openmeteo_service import OpenMeteoService
 from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
+from services.snow_summary_service import SnowSummaryService
 from utils.dynamodb_utils import prepare_for_dynamodb
 
 # Configure logging
@@ -39,6 +40,9 @@ RESORTS_TABLE = os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
 WEATHER_CONDITIONS_TABLE = os.environ.get(
     "WEATHER_CONDITIONS_TABLE", "snow-tracker-weather-conditions-dev"
 )
+SNOW_SUMMARY_TABLE = os.environ.get(
+    "SNOW_SUMMARY_TABLE", "snow-tracker-snow-summary-dev"
+)
 ENABLE_SCRAPING = os.environ.get("ENABLE_SCRAPING", "true").lower() == "true"
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
 PARALLEL_PROCESSING = os.environ.get("PARALLEL_PROCESSING", "false").lower() == "true"
@@ -47,6 +51,9 @@ WEATHER_WORKER_LAMBDA = os.environ.get(
 )
 # Number of elevation points to process concurrently (for sequential mode)
 ELEVATION_CONCURRENCY = int(os.environ.get("ELEVATION_CONCURRENCY", "5"))
+
+# TTL for weather conditions: 60 days (extended from 7 days)
+WEATHER_CONDITIONS_TTL_DAYS = 60
 
 
 def publish_metrics(stats: dict[str, Any]) -> None:
@@ -237,8 +244,11 @@ def process_elevation_point(
     weather_conditions_table,
     scraper: OnTheSnowScraper | None,
     scraped_data: Any | None,
+    snow_summary_service: SnowSummaryService | None = None,
 ) -> dict[str, Any]:
     """Process a single elevation point and save the weather condition.
+
+    Also updates the snow summary table with accumulated snowfall data.
 
     Returns a dict with success status, the weather condition, and any error info.
     """
@@ -252,16 +262,109 @@ def process_elevation_point(
         )
         result["level"] = level
 
+        # Get existing snow summary for this resort/elevation
+        last_known_freeze_date = None
+        existing_summary = None
+        if snow_summary_service:
+            existing_summary = snow_summary_service.get_or_create_summary(
+                resort_id, level
+            )
+            last_known_freeze_date = existing_summary.get("last_freeze_date")
+
         # Fetch current weather data from Open-Meteo
+        # Pass the last known freeze date for better accumulation tracking
         weather_data = weather_service.get_current_weather(
             latitude=elevation_point.latitude,
             longitude=elevation_point.longitude,
             elevation_meters=elevation_point.elevation_meters,
+            last_known_freeze_date=last_known_freeze_date,
         )
 
         # Merge with scraped data if available
         if scraped_data and scraper:
             weather_data = scraper.merge_with_weather_data(weather_data, scraped_data)
+
+        # Update snow summary based on weather data
+        if snow_summary_service and existing_summary:
+            freeze_detected = weather_data.get("freeze_event_detected", False)
+            detected_freeze_date = weather_data.get("detected_freeze_date")
+
+            if freeze_detected and detected_freeze_date:
+                # New freeze event detected - record it and reset accumulation
+                snow_summary_service.record_freeze_event(
+                    resort_id=resort_id,
+                    elevation_level=level,
+                    freeze_date=detected_freeze_date,
+                )
+                # After recording freeze, snowfall_after_freeze from Open-Meteo is accurate
+                # Update the summary with the new accumulation
+                snow_summary_service.update_summary(
+                    resort_id=resort_id,
+                    elevation_level=level,
+                    last_freeze_date=detected_freeze_date,
+                    snowfall_since_freeze_cm=weather_data.get(
+                        "snowfall_after_freeze_cm", 0.0
+                    ),
+                    total_season_snowfall_cm=(
+                        existing_summary.get("total_season_snowfall_cm", 0.0)
+                        + weather_data.get("snowfall_24h_cm", 0.0)
+                    ),
+                    last_updated=datetime.now(UTC).isoformat(),
+                    season_start_date=existing_summary.get("season_start_date"),
+                )
+            else:
+                # No new freeze - accumulate snowfall
+                # Use the Open-Meteo snowfall_after_freeze if no freeze in 14 days
+                # Otherwise add new snowfall to existing summary
+                existing_accumulation = existing_summary.get(
+                    "snowfall_since_freeze_cm", 0.0
+                )
+                openmeteo_accumulation = weather_data.get(
+                    "snowfall_after_freeze_cm", 0.0
+                )
+
+                # If Open-Meteo can see the full history since freeze, use its value
+                # Otherwise, add new snowfall to our tracked accumulation
+                last_freeze_hours = weather_data.get("last_freeze_thaw_hours_ago")
+                if last_freeze_hours and last_freeze_hours >= 336:  # 14 days
+                    # Freeze is older than Open-Meteo can see
+                    # Add Open-Meteo's 14-day accumulation to our existing total
+                    new_accumulation = existing_accumulation + weather_data.get(
+                        "snowfall_24h_cm", 0.0
+                    )
+                    # Only update if we have new snowfall
+                    if weather_data.get("snowfall_24h_cm", 0.0) > 0:
+                        snow_summary_service.update_summary(
+                            resort_id=resort_id,
+                            elevation_level=level,
+                            last_freeze_date=existing_summary.get("last_freeze_date"),
+                            snowfall_since_freeze_cm=new_accumulation,
+                            total_season_snowfall_cm=(
+                                existing_summary.get("total_season_snowfall_cm", 0.0)
+                                + weather_data.get("snowfall_24h_cm", 0.0)
+                            ),
+                            last_updated=datetime.now(UTC).isoformat(),
+                            season_start_date=existing_summary.get("season_start_date"),
+                        )
+                else:
+                    # Open-Meteo can see the freeze - use its accumulation value
+                    snow_summary_service.update_summary(
+                        resort_id=resort_id,
+                        elevation_level=level,
+                        last_freeze_date=existing_summary.get("last_freeze_date"),
+                        snowfall_since_freeze_cm=openmeteo_accumulation,
+                        total_season_snowfall_cm=(
+                            existing_summary.get("total_season_snowfall_cm", 0.0)
+                            + max(0, openmeteo_accumulation - existing_accumulation)
+                        ),
+                        last_updated=datetime.now(UTC).isoformat(),
+                        season_start_date=existing_summary.get("season_start_date"),
+                    )
+
+                # Use the higher accumulation value for weather condition
+                weather_data["snowfall_after_freeze_cm"] = max(
+                    openmeteo_accumulation, existing_accumulation
+                )
 
         # Create weather condition object
         weather_condition = WeatherCondition(
@@ -281,8 +384,10 @@ def process_elevation_point(
         weather_condition.fresh_snow_cm = fresh_snow_cm
         weather_condition.confidence_level = confidence
 
-        # Set TTL (expire after 7 days)
-        weather_condition.ttl = int(datetime.now(UTC).timestamp() + 7 * 24 * 60 * 60)
+        # Set TTL (expire after 60 days - extended from 7 days)
+        weather_condition.ttl = int(
+            datetime.now(UTC).timestamp() + WEATHER_CONDITIONS_TTL_DAYS * 24 * 60 * 60
+        )
 
         # Save to DynamoDB
         save_weather_condition(weather_conditions_table, weather_condition)
@@ -474,11 +579,16 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
         resort_service = ResortService(dynamodb.Table(RESORTS_TABLE))
         weather_service = OpenMeteoService()
         snow_quality_service = SnowQualityService()
+        snow_summary_service = SnowSummaryService(dynamodb.Table(SNOW_SUMMARY_TABLE))
 
         # Initialize scraper if enabled
         scraper = OnTheSnowScraper() if ENABLE_SCRAPING else None
         if scraper:
             logger.info("OnTheSnow scraping enabled")
+
+        logger.info(
+            f"Snow summary service initialized with table: {SNOW_SUMMARY_TABLE}"
+        )
 
         # Statistics tracking
         stats = {
@@ -544,6 +654,7 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
                             weather_conditions_table,
                             scraper,
                             scraped_data,
+                            snow_summary_service,
                         ): elevation_point
                         for elevation_point in resort.elevation_points
                     }

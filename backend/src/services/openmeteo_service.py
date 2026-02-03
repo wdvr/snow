@@ -88,10 +88,22 @@ class OpenMeteoService:
         self.era5_url = "https://archive-api.open-meteo.com/v1/era5"
 
     def get_current_weather(
-        self, latitude: float, longitude: float, elevation_meters: int
+        self,
+        latitude: float,
+        longitude: float,
+        elevation_meters: int,
+        last_known_freeze_date: str | None = None,
     ) -> dict[str, Any]:
         """
         Fetch current weather data for a specific location and elevation.
+
+        Args:
+            latitude: Location latitude
+            longitude: Location longitude
+            elevation_meters: Elevation in meters
+            last_known_freeze_date: Optional ISO timestamp of last known freeze event
+                from the snow summary table. If provided and older than 14 days,
+                we use it instead of searching Open-Meteo history.
 
         Returns a dictionary suitable for creating a WeatherCondition object.
         """
@@ -122,7 +134,9 @@ class OpenMeteoService:
             daily = data.get("daily", {})
 
             # Calculate snowfall from daily data
-            snowfall_data = self._process_snowfall(daily, hourly)
+            snowfall_data = self._process_snowfall(
+                daily, hourly, last_known_freeze_date
+            )
 
             # Calculate ice hours from hourly temperatures
             ice_hours_data = self._calculate_ice_hours(hourly)
@@ -197,13 +211,25 @@ class OpenMeteoService:
             logger.error(f"Error processing Open-Meteo data: {str(e)}")
             raise Exception(f"Error processing weather data: {str(e)}")
 
-    def _process_snowfall(self, daily: dict, hourly: dict) -> dict[str, float]:
+    def _process_snowfall(
+        self, daily: dict, hourly: dict, last_known_freeze_date: str | None = None
+    ) -> dict[str, float]:
         """Process snowfall data using hourly data for accurate rolling windows.
 
         Uses hourly snowfall data to calculate true rolling 24h/48h/72h windows
         instead of calendar-day sums, which is more accurate for detecting recent snowfall.
 
         Also detects freeze-thaw events up to 14 days back for accurate fresh powder tracking.
+        If last_known_freeze_date is provided and is older than 14 days, we use that
+        as the freeze reference point instead of searching Open-Meteo history.
+
+        Args:
+            daily: Daily weather data from Open-Meteo
+            hourly: Hourly weather data from Open-Meteo
+            last_known_freeze_date: Optional ISO timestamp of last known freeze from snow summary
+
+        Returns:
+            dict containing snowfall metrics and freeze_event_detected flag
         """
         # Maximum hours to look back for freeze-thaw detection (14 days)
         MAX_HISTORICAL_HOURS = 336
@@ -222,7 +248,25 @@ class OpenMeteoService:
             "snowfall_after_freeze_cm": 0.0,
             "hours_since_last_snowfall": None,
             "last_freeze_thaw_hours_ago": None,
+            # New field: indicates if a NEW freeze event was detected in Open-Meteo data
+            "freeze_event_detected": False,
+            # Store the detected freeze date for updating snow summary
+            "detected_freeze_date": None,
         }
+
+        # Parse last_known_freeze_date if provided
+        known_freeze_datetime = None
+        known_freeze_hours_ago = None
+        if last_known_freeze_date:
+            try:
+                known_freeze_datetime = datetime.fromisoformat(
+                    last_known_freeze_date.replace("Z", "+00:00")
+                )
+                known_freeze_hours_ago = (
+                    datetime.now(UTC) - known_freeze_datetime
+                ).total_seconds() / 3600
+            except (ValueError, TypeError):
+                pass  # Invalid date, ignore
 
         # Process hourly data for accurate rolling windows
         hourly_snowfall = hourly.get("snowfall", [])
@@ -323,23 +367,69 @@ class OpenMeteoService:
                     break
 
             if last_ice_event_end_index is not None:
-                result["last_freeze_thaw_hours_ago"] = float(
+                # Found a freeze event in Open-Meteo data (within 14 days)
+                detected_freeze_hours_ago = float(
                     current_index - last_ice_event_end_index
                 )
+                result["last_freeze_thaw_hours_ago"] = detected_freeze_hours_ago
+
+                # Determine the detected freeze date for snow summary updates
+                if hourly_times and last_ice_event_end_index < len(hourly_times):
+                    result["detected_freeze_date"] = hourly_times[
+                        last_ice_event_end_index
+                    ]
+
+                # Check if this is a NEW freeze event (more recent than known freeze)
+                if (
+                    known_freeze_hours_ago is None
+                    or detected_freeze_hours_ago < known_freeze_hours_ago
+                ):
+                    result["freeze_event_detected"] = True
+                    logger.debug(
+                        f"New freeze event detected {detected_freeze_hours_ago:.0f}h ago "
+                        f"(known: {known_freeze_hours_ago}h ago)"
+                        if known_freeze_hours_ago
+                        else f"New freeze event detected {detected_freeze_hours_ago:.0f}h ago (no prior known)"
+                    )
+
                 # Sum snowfall AFTER the ice formation event (this is non-refrozen snow!)
                 for i in range(last_ice_event_end_index + 1, current_index + 1):
                     if i < len(hourly_snowfall) and hourly_snowfall[i] is not None:
                         result["snowfall_after_freeze_cm"] += hourly_snowfall[i]
             else:
-                # No ice formation event in last 14 days - all historical snow is fresh
-                # Sum all available snowfall
-                total_historical_snow = sum(
-                    s
-                    for s in hourly_snowfall[start_historical : current_index + 1]
-                    if s is not None
-                )
-                result["snowfall_after_freeze_cm"] = total_historical_snow
-                result["last_freeze_thaw_hours_ago"] = float(MAX_HISTORICAL_HOURS)
+                # No ice formation event found in Open-Meteo data (last 14 days)
+                # Check if we have a known freeze date from snow summary
+                if (
+                    known_freeze_hours_ago is not None
+                    and known_freeze_hours_ago > MAX_HISTORICAL_HOURS
+                ):
+                    # Known freeze is older than 14 days - use it as reference
+                    # All snowfall in our 14-day window is "after freeze"
+                    result["last_freeze_thaw_hours_ago"] = known_freeze_hours_ago
+                    total_historical_snow = sum(
+                        s
+                        for s in hourly_snowfall[start_historical : current_index + 1]
+                        if s is not None
+                    )
+                    result["snowfall_after_freeze_cm"] = total_historical_snow
+                    # No new freeze detected - use known date
+                    result["freeze_event_detected"] = False
+                else:
+                    # No ice formation event in last 14 days and no known freeze
+                    # This means potentially unlimited accumulation!
+                    total_historical_snow = sum(
+                        s
+                        for s in hourly_snowfall[start_historical : current_index + 1]
+                        if s is not None
+                    )
+                    result["snowfall_after_freeze_cm"] = total_historical_snow
+                    # Use known freeze hours or max historical if no known freeze
+                    result["last_freeze_thaw_hours_ago"] = (
+                        known_freeze_hours_ago
+                        if known_freeze_hours_ago is not None
+                        else float(MAX_HISTORICAL_HOURS)
+                    )
+                    result["freeze_event_detected"] = False
 
             # Also track if we're currently in a warming period (ice forming now)
             # Use lowest threshold (1°C) - any temp >= 1°C can form ice given enough time

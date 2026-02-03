@@ -384,7 +384,7 @@ def convert_to_dynamodb_item(resort_data: dict) -> dict:
         },
     ]
 
-    return {
+    item = {
         "resort_id": resort_data["resort_id"],
         "name": resort_data["name"],
         "country": resort_data["country"],
@@ -398,6 +398,12 @@ def convert_to_dynamodb_item(resort_data: dict) -> dict:
         "source": resort_data.get("source"),
         "scraped_at": resort_data.get("scraped_at"),
     }
+
+    # Include geo_hash if present (for geospatial indexing)
+    if resort_data.get("geo_hash"):
+        item["geo_hash"] = resort_data["geo_hash"]
+
+    return item
 
 
 def get_timezone(country: str, state_province: str) -> str:

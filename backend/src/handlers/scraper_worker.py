@@ -17,6 +17,8 @@ import boto3
 import requests
 from bs4 import BeautifulSoup
 
+from utils.geo_utils import encode_geohash
+
 # Configure logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -276,6 +278,11 @@ def scrape_resort_detail(
     # Generate resort ID
     resort_id = generate_resort_id(name)
 
+    # Compute geohash for geospatial indexing (precision 4 = ~39km cells)
+    geo_hash = None
+    if latitude and longitude and latitude != 0.0 and longitude != 0.0:
+        geo_hash = encode_geohash(latitude, longitude, precision=4)
+
     return {
         "resort_id": resort_id,
         "name": name,
@@ -286,6 +293,7 @@ def scrape_resort_detail(
         "elevation_top_m": elevation_top,
         "latitude": latitude,
         "longitude": longitude,
+        "geo_hash": geo_hash,
         "source": "skiresort.info",
         "source_url": url,
         "scraped_at": datetime.now(UTC).isoformat(),

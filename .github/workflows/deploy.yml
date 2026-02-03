@@ -217,7 +217,7 @@ jobs:
           # Update Weather Lambda environment variables with Weather API key and parallel processing config
           aws lambda update-function-configuration \
             --function-name "$WEATHER_LAMBDA" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,WEATHER_API_KEY=${{ secrets.WEATHER_API_KEY }},PARALLEL_PROCESSING=true,WEATHER_WORKER_LAMBDA=snow-tracker-weather-worker-${{ env.ENVIRONMENT }}}" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},SNOW_SUMMARY_TABLE=snow-tracker-snow-summary-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,WEATHER_API_KEY=${{ secrets.WEATHER_API_KEY }},PARALLEL_PROCESSING=true,WEATHER_WORKER_LAMBDA=snow-tracker-weather-worker-${{ env.ENVIRONMENT }}}" \
             --region us-west-2
           # Wait for configuration update to complete before invoking
           aws lambda wait function-updated --function-name "$WEATHER_LAMBDA" --region us-west-2
@@ -238,7 +238,7 @@ jobs:
           # Update Worker Lambda environment variables
           aws lambda update-function-configuration \
             --function-name "$WORKER_LAMBDA" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,ENABLE_SCRAPING=true}" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},SNOW_SUMMARY_TABLE=snow-tracker-snow-summary-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,ENABLE_SCRAPING=true}" \
             --region us-west-2
           aws lambda wait function-updated --function-name "$WORKER_LAMBDA" --region us-west-2
           echo "Weather worker Lambda updated"
