@@ -661,7 +661,7 @@ version_consolidator_schedule_rule = aws.cloudwatch.EventRule(
 )
 
 version_consolidator_schedule_permission = aws.lambda_.Permission(
-    f"{app_name}-version-consolidator-schedule-permission-{environment}",
+    f"{app_name}-vers-cons-schedule-perm-{environment}",
     action="lambda:InvokeFunction",
     function=version_consolidator_lambda.name,
     principal="events.amazonaws.com",
@@ -669,8 +669,9 @@ version_consolidator_schedule_permission = aws.lambda_.Permission(
 )
 
 version_consolidator_schedule_target = aws.cloudwatch.EventTarget(
-    f"{app_name}-version-consolidator-schedule-target-{environment}",
+    f"{app_name}-vers-cons-sched-target-{environment}",
     rule=version_consolidator_schedule_rule.name,
+    target_id=f"vers-cons-{environment}",  # Explicit short target_id
     arn=version_consolidator_lambda.arn,
     input='{"process_latest": true}',
 )
