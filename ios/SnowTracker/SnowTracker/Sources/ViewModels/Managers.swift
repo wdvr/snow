@@ -22,6 +22,10 @@ class SnowConditionsManager: ObservableObject {
     /// Set to true to enable frontend caching of snow quality summaries
     private let useSnowQualityCache = true
 
+    /// Minimum interval between pull-to-refresh requests (prevents API spam)
+    private let refreshRateLimitSeconds: TimeInterval = 5.0
+    private var lastRefreshTime: Date?
+
     func loadInitialData() {
         // Prevent multiple calls (can happen with tab switching)
         guard !hasLoadedInitialData else {
@@ -42,17 +46,23 @@ class SnowConditionsManager: ObservableObject {
     }
 
     /// Fetch lightweight snow quality summaries for all resorts (for main list display)
-    func fetchAllSnowQualitySummaries() async {
+    /// - Parameter forceRefresh: If true, bypasses cache and fetches fresh data from API
+    func fetchAllSnowQualitySummaries(forceRefresh: Bool = false) async {
         guard !resorts.isEmpty else {
             print("fetchAllSnowQualitySummaries: No resorts loaded, skipping")
             return
         }
 
         // Check cache first - use if not stale (controlled by useSnowQualityCache flag)
-        if useSnowQualityCache, let cached = cacheService.getCachedSnowQualitySummaries(), !cached.isStale {
+        // Skip cache check if forceRefresh is true
+        if !forceRefresh, useSnowQualityCache, let cached = cacheService.getCachedSnowQualitySummaries(), !cached.isStale {
             print("fetchAllSnowQualitySummaries: Using cached data (\(cached.data.count) summaries, age: \(cached.ageDescription))")
             snowQualitySummaries = cached.data
             return
+        }
+
+        if forceRefresh {
+            print("fetchAllSnowQualitySummaries: Force refresh requested, bypassing cache")
         }
 
         isLoadingSnowQuality = true
@@ -106,8 +116,29 @@ class SnowConditionsManager: ObservableObject {
         return .unknown
     }
 
+    /// Refresh all data - called by pull-to-refresh
+    /// This bypasses cache to ensure fresh data is fetched
+    /// Rate-limited to prevent API spam (5 second minimum between refreshes)
     func refreshData() async {
+        // Rate limiting - prevent rapid successive refreshes
+        if let lastRefresh = lastRefreshTime {
+            let timeSinceLastRefresh = Date().timeIntervalSince(lastRefresh)
+            if timeSinceLastRefresh < refreshRateLimitSeconds {
+                print("refreshData: Rate limited, only \(String(format: "%.1f", timeSinceLastRefresh))s since last refresh")
+                return
+            }
+        }
+
+        print("refreshData: Starting full refresh (bypassing cache)")
+        lastRefreshTime = Date()
+
+        // Refresh snow quality summaries for all resorts (used by list view)
+        await fetchAllSnowQualitySummaries(forceRefresh: true)
+        // Also refresh full conditions for favorites
         await fetchConditionsForFavorites()
+
+        lastUpdated = Date()
+        print("refreshData: Complete")
     }
 
     func refreshConditions() async {

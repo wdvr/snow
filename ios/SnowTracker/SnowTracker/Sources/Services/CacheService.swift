@@ -279,9 +279,12 @@ class CacheService {
             )
 
             if let existing = try? context.fetch(descriptor).first {
-                // Update existing
+                // Update existing - ensure all fields are updated
                 existing.overallQuality = summary.overallQuality
                 existing.lastUpdated = summary.lastUpdated
+                existing.temperatureC = summary.temperatureC
+                existing.snowfallFreshCm = summary.snowfallFreshCm
+                existing.snowfall24hCm = summary.snowfall24hCm
                 existing.cachedAt = Date()
             } else {
                 // Insert new

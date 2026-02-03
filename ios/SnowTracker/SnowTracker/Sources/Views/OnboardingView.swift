@@ -27,11 +27,26 @@ struct OnboardingView: View {
                     .font(.system(size: 60))
                     .foregroundStyle(.blue)
 
-                Text("Welcome to Snow Tracker")
+                Text("Welcome to Powder Chaser")
                     .font(.largeTitle)
                     .fontWeight(.bold)
 
-                Text("Select the ski regions you want to track. You can change these anytime in Settings.")
+                // Algorithm value proposition
+                VStack(spacing: 8) {
+                    Text("Powered by our proprietary snow quality algorithm")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.blue)
+
+                    Text("We track fresh powder since the last ice layer, not just snowfall. Know the actual skiing conditions before you go.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+                .padding(.vertical, 8)
+
+                Text("Select the ski regions you want to track:")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
