@@ -1,0 +1,180 @@
+name: Manage Resort Versions
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - list
+          - show
+          - deploy
+          - compare
+        default: list
+      version:
+        description: 'Version ID (e.g., v20260203060000) - required for show/deploy'
+        required: false
+        type: string
+      version_b:
+        description: 'Second version ID (for compare action only)'
+        required: false
+        type: string
+      environment:
+        description: 'Target environment (for deploy action)'
+        required: false
+        type: choice
+        options:
+          - staging
+          - prod
+        default: staging
+      dry_run:
+        description: 'Dry run (preview only, no changes)'
+        required: false
+        type: boolean
+        default: true
+      update_existing:
+        description: 'Update existing resorts instead of skipping'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  PYTHON_VERSION: '3.12'
+  S3_BUCKET: snow-tracker-pulumi-state-us-west-2
+
+jobs:
+  manage-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install boto3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      # Action: list
+      - name: List versions
+        if: github.event.inputs.action == 'list'
+        working-directory: backend
+        run: |
+          python scripts/manage_resort_versions.py list --limit 30
+
+      # Action: show
+      - name: Show version details
+        if: github.event.inputs.action == 'show'
+        working-directory: backend
+        run: |
+          if [ -z "${{ github.event.inputs.version }}" ]; then
+            echo "Error: version is required for 'show' action"
+            exit 1
+          fi
+          python scripts/manage_resort_versions.py show "${{ github.event.inputs.version }}" --verbose
+
+      # Action: compare
+      - name: Compare versions
+        if: github.event.inputs.action == 'compare'
+        working-directory: backend
+        run: |
+          if [ -z "${{ github.event.inputs.version }}" ] || [ -z "${{ github.event.inputs.version_b }}" ]; then
+            echo "Error: both version and version_b are required for 'compare' action"
+            exit 1
+          fi
+          python scripts/manage_resort_versions.py compare \
+            "${{ github.event.inputs.version }}" \
+            "${{ github.event.inputs.version_b }}"
+
+      # Action: deploy (dry run)
+      - name: Deploy version (dry run)
+        if: github.event.inputs.action == 'deploy' && github.event.inputs.dry_run == 'true'
+        working-directory: backend
+        run: |
+          if [ -z "${{ github.event.inputs.version }}" ]; then
+            echo "Error: version is required for 'deploy' action"
+            exit 1
+          fi
+
+          echo "=== DRY RUN - Preview only ==="
+          python scripts/manage_resort_versions.py deploy \
+            "${{ github.event.inputs.version }}" \
+            --env "${{ github.event.inputs.environment }}" \
+            --dry-run
+
+      # Action: deploy (actual)
+      - name: Deploy version
+        if: github.event.inputs.action == 'deploy' && github.event.inputs.dry_run != 'true'
+        working-directory: backend
+        run: |
+          if [ -z "${{ github.event.inputs.version }}" ]; then
+            echo "Error: version is required for 'deploy' action"
+            exit 1
+          fi
+
+          UPDATE_FLAG=""
+          if [ "${{ github.event.inputs.update_existing }}" == "true" ]; then
+            UPDATE_FLAG="--update-existing"
+          fi
+
+          echo "=== DEPLOYING TO ${{ github.event.inputs.environment }} ==="
+          python scripts/manage_resort_versions.py deploy \
+            "${{ github.event.inputs.version }}" \
+            --env "${{ github.event.inputs.environment }}" \
+            $UPDATE_FLAG
+
+      # Trigger weather processor after deployment (non-dry-run)
+      - name: Trigger weather processor
+        if: github.event.inputs.action == 'deploy' && github.event.inputs.dry_run != 'true'
+        run: |
+          echo "Triggering weather processor for new resorts..."
+          aws lambda invoke \
+            --function-name "snow-tracker-weather-processor-${{ github.event.inputs.environment }}" \
+            --invocation-type Event \
+            --region us-west-2 \
+            --payload '{}' \
+            /tmp/weather-response.json
+          echo "Weather processor triggered"
+
+      - name: Summary
+        run: |
+          echo "## Resort Version Management Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Action**: ${{ github.event.inputs.action }}" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "- **Version**: ${{ github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ github.event.inputs.action }}" == "deploy" ]; then
+            echo "- **Environment**: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Dry Run**: ${{ github.event.inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Update Existing**: ${{ github.event.inputs.update_existing }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Usage Examples" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo '# List available versions' >> $GITHUB_STEP_SUMMARY
+          echo 'gh workflow run manage-resort-versions.yml -f action=list' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '# Show version details' >> $GITHUB_STEP_SUMMARY
+          echo 'gh workflow run manage-resort-versions.yml -f action=show -f version=v20260203060000' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '# Deploy to staging (dry run)' >> $GITHUB_STEP_SUMMARY
+          echo 'gh workflow run manage-resort-versions.yml -f action=deploy -f version=v20260203060000 -f environment=staging -f dry_run=true' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '# Deploy to production' >> $GITHUB_STEP_SUMMARY
+          echo 'gh workflow run manage-resort-versions.yml -f action=deploy -f version=v20260203060000 -f environment=prod -f dry_run=false' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

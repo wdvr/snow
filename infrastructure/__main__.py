@@ -299,7 +299,8 @@ lambda_policy = aws.iam.RolePolicy(
                 ],
                 "Resource": [
                     "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2",
-                    "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2/scraper-results/*"
+                    "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2/scraper-results/*",
+                    "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2/resort-versions/*"
                 ]
             }}
         ]
@@ -607,6 +608,72 @@ if environment == "staging":
         arn=scraper_results_processor_lambda.arn,
         input='{"process_latest": true}',
     )
+
+# =============================================================================
+# Version Consolidator Lambda - Aggregates scraper results into versioned snapshots
+# =============================================================================
+
+# Log group for version consolidator
+version_consolidator_log_group = aws.cloudwatch.LogGroup(
+    f"{app_name}-version-consolidator-logs-{environment}",
+    name=f"/aws/lambda/{app_name}-version-consolidator-{environment}",
+    retention_in_days=14,
+    tags=tags,
+)
+
+# Version consolidator Lambda
+version_consolidator_lambda = aws.lambda_.Function(
+    f"{app_name}-version-consolidator-{environment}",
+    name=f"{app_name}-version-consolidator-{environment}",
+    role=lambda_role.arn,
+    handler="handlers.version_consolidator.version_consolidator_handler",
+    runtime="python3.12",
+    timeout=300,  # 5 minutes to consolidate results
+    memory_size=512,  # More memory for processing large datasets
+    code=pulumi.AssetArchive(
+        {
+            "index.py": pulumi.StringAsset(placeholder_lambda_code),
+        }
+    ),
+    environment=aws.lambda_.FunctionEnvironmentArgs(
+        variables={
+            "ENVIRONMENT": environment,
+            "RESULTS_BUCKET": state_bucket_name,
+            "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
+            "AWS_REGION_NAME": aws_region,
+            "RESORT_UPDATES_TOPIC_ARN": "",  # Will be set after topic creation
+        }
+    ),
+    tags=tags,
+    opts=pulumi.ResourceOptions(
+        depends_on=[lambda_role, version_consolidator_log_group]
+    ),
+)
+
+# Schedule version consolidator at 07:00 UTC (1 hour after scraper) - all environments
+# Creates versioned snapshots for review before deployment
+version_consolidator_schedule_rule = aws.cloudwatch.EventRule(
+    f"{app_name}-version-consolidator-schedule-{environment}",
+    name=f"{app_name}-version-consolidator-schedule-{environment}",
+    description="Consolidate scraper results into versioned database snapshot at 07:00 UTC",
+    schedule_expression="cron(0 7 * * ? *)",
+    tags=tags,
+)
+
+version_consolidator_schedule_permission = aws.lambda_.Permission(
+    f"{app_name}-version-consolidator-schedule-permission-{environment}",
+    action="lambda:InvokeFunction",
+    function=version_consolidator_lambda.name,
+    principal="events.amazonaws.com",
+    source_arn=version_consolidator_schedule_rule.arn,
+)
+
+version_consolidator_schedule_target = aws.cloudwatch.EventTarget(
+    f"{app_name}-version-consolidator-schedule-target-{environment}",
+    rule=version_consolidator_schedule_rule.name,
+    arn=version_consolidator_lambda.arn,
+    input='{"process_latest": true}',
+)
 
 # =============================================================================
 # Notification Processor Lambda - Sends push notifications for snow/events
@@ -1931,6 +1998,7 @@ pulumi.export("scraper_worker_lambda_name", scraper_worker_lambda.name)
 pulumi.export(
     "scraper_results_processor_lambda_name", scraper_results_processor_lambda.name
 )
+pulumi.export("version_consolidator_lambda_name", version_consolidator_lambda.name)
 pulumi.export("scraper_schedule_rule_name", scraper_schedule_rule.name)
 pulumi.export("api_handler_lambda_name", api_handler_lambda.name)
 pulumi.export("notification_processor_lambda_name", notification_processor_lambda.name)

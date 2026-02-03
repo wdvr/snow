@@ -311,6 +311,12 @@ class UserPreferencesManager: ObservableObject {
     private let unitPreferencesKey = "unitPreferences"
     private let appGroupId = "group.com.wouterdevriendt.snowtracker"
 
+    /// Debounce task for syncing preferences to backend
+    private var syncTask: Task<Void, Never>?
+
+    /// Delay before syncing to backend (debounce interval)
+    private let syncDebounceInterval: TimeInterval = 1.0
+
     private var sharedDefaults: UserDefaults? {
         UserDefaults(suiteName: appGroupId)
     }
@@ -367,6 +373,7 @@ class UserPreferencesManager: ObservableObject {
         }
 
         saveLocalPreferences()
+        scheduleSyncToBackend()
     }
 
     func isFavorite(resortId: String) -> Bool {
@@ -383,8 +390,74 @@ class UserPreferencesManager: ObservableObject {
         UserDefaults.standard.set(favoritesArray, forKey: favoritesKey)
     }
 
+    /// Schedule a debounced sync to the backend
+    /// This prevents too many API calls when rapidly toggling favorites
+    private func scheduleSyncToBackend() {
+        // Cancel any pending sync task
+        syncTask?.cancel()
+
+        // Schedule a new sync task with debounce delay
+        syncTask = Task {
+            // Wait for debounce interval
+            try? await Task.sleep(nanoseconds: UInt64(syncDebounceInterval * 1_000_000_000))
+
+            // Check if task was cancelled during sleep
+            if Task.isCancelled { return }
+
+            // Perform the sync
+            await syncPreferencesToBackend()
+        }
+    }
+
+    /// Sync user preferences (favorites and notification settings) to the backend
+    /// This runs in the background and does not block the UI
+    private func syncPreferencesToBackend() async {
+        // Check if user is authenticated before syncing
+        guard AuthenticationService.shared.isAuthenticated else {
+            print("UserPreferencesManager: Not authenticated, skipping backend sync")
+            return
+        }
+
+        do {
+            // Build the UserPreferences object to sync
+            let preferences = UserPreferences(
+                userId: "", // Backend will use authenticated user ID
+                favoriteResorts: Array(favoriteResorts),
+                notificationPreferences: [
+                    "notifications_enabled": notificationSettings.notificationsEnabled,
+                    "fresh_snow_alerts": notificationSettings.freshSnowAlerts,
+                    "event_alerts": notificationSettings.eventAlerts,
+                    "thaw_freeze_alerts": notificationSettings.thawFreezeAlerts,
+                    "weekly_summary": notificationSettings.weeklySummary
+                ],
+                preferredUnits: [
+                    "temperature": preferredUnits.temperature.rawValue,
+                    "distance": preferredUnits.distance.rawValue,
+                    "snow_depth": preferredUnits.snowDepth.rawValue
+                ],
+                qualityThreshold: "good", // Default threshold
+                createdAt: "", // Backend will handle timestamps
+                updatedAt: ""
+            )
+
+            try await apiClient.updateUserPreferences(preferences)
+            print("UserPreferencesManager: Successfully synced preferences to backend")
+        } catch {
+            // Log the error but don't block UI - local preferences are still saved
+            print("UserPreferencesManager: Failed to sync preferences to backend: \(error.localizedDescription)")
+        }
+    }
+
     func savePreferences() async {
         saveLocalPreferences()
+        // Also sync to backend when explicitly called
+        await syncPreferencesToBackend()
+    }
+
+    /// Update notification settings and sync to backend
+    func updateNotificationSettings(_ settings: NotificationSettings) {
+        notificationSettings = settings
+        scheduleSyncToBackend()
     }
 }
 

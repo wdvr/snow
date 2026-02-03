@@ -326,6 +326,27 @@ jobs:
           echo "Scraper results processor Lambda updated"
         fi
 
+        # Deploy Version Consolidator Lambda
+        VERSION_CONSOLIDATOR=$(pulumi stack output version_consolidator_lambda_name 2>/dev/null || echo "")
+        RESORT_UPDATES_TOPIC=$(pulumi stack output resort_updates_topic_arn 2>/dev/null || echo "")
+        if [ -n "$VERSION_CONSOLIDATOR" ]; then
+          echo "Deploying Version consolidator Lambda: $VERSION_CONSOLIDATOR"
+          aws lambda update-function-code \
+            --function-name "$VERSION_CONSOLIDATOR" \
+            --s3-bucket "$S3_BUCKET" \
+            --s3-key "$S3_KEY" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$VERSION_CONSOLIDATOR" --region us-west-2
+
+          # Update Version Consolidator Lambda environment variables
+          aws lambda update-function-configuration \
+            --function-name "$VERSION_CONSOLIDATOR" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2,RESORT_UPDATES_TOPIC_ARN=$RESORT_UPDATES_TOPIC}" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$VERSION_CONSOLIDATOR" --region us-west-2
+          echo "Version consolidator Lambda updated"
+        fi
+
         echo "Lambda deployment complete"
 
     - name: Seed resort data (dev/staging only)
