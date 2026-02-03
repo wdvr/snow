@@ -1621,6 +1621,45 @@ debug_test_push_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# =============================================================================
+# Admin API Routes (for maintenance operations)
+# =============================================================================
+
+# Admin resource: /api/v1/admin
+admin_resource = aws.apigateway.Resource(
+    f"{app_name}-admin-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="admin",
+)
+
+# Backfill geohashes resource: /api/v1/admin/backfill-geohashes
+admin_backfill_geohashes_resource = aws.apigateway.Resource(
+    f"{app_name}-admin-backfill-geohashes-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=admin_resource.id,
+    path_part="backfill-geohashes",
+)
+
+# POST /api/v1/admin/backfill-geohashes
+admin_backfill_geohashes_method = aws.apigateway.Method(
+    f"{app_name}-admin-backfill-geohashes-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=admin_backfill_geohashes_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+admin_backfill_geohashes_integration = aws.apigateway.Integration(
+    f"{app_name}-admin-backfill-geohashes-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=admin_backfill_geohashes_resource.id,
+    http_method=admin_backfill_geohashes_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # API Gateway Deployment (depends on all integrations)
 # Note: triggers parameter forces recreation when routes change
 api_deployment = aws.apigateway.Deployment(
@@ -1652,6 +1691,7 @@ api_deployment = aws.apigateway.Deployment(
             feedback_post_integration.id,
             debug_trigger_notifications_integration.id,
             debug_test_push_integration.id,
+            admin_backfill_geohashes_integration.id,
         ).apply(lambda ids: ",".join(ids)),
     },
     opts=pulumi.ResourceOptions(
@@ -1678,6 +1718,7 @@ api_deployment = aws.apigateway.Deployment(
             feedback_post_integration,
             debug_trigger_notifications_integration,
             debug_test_push_integration,
+            admin_backfill_geohashes_integration,
         ]
     ),
 )
