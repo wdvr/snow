@@ -1,7 +1,7 @@
 # Snow Quality Tracker - Progress
 
 ## Status: LIVE
-**Last Updated**: 2026-02-02
+**Last Updated**: 2026-02-03
 
 ### Endpoints & Website
 - **Staging API**: https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging ✅
@@ -16,14 +16,11 @@
 | Issue | Description | Status |
 |-------|-------------|--------|
 | Apple Sign In Email | Shows "Apple ID (000495...)" instead of email or relay email | **Needs Fix** |
-| Push Notifications | Test notification says "sent" but nothing arrives | **Fixed** (field name mismatch: `device_token` → `token`) |
 
 ### 🟡 Medium
 | Issue | Description | Status |
 |-------|-------------|--------|
-| Google Login Icon | Icon was scrambled/corrupted | **Fixed** (replaced Canvas with SVG asset) |
-| Scraper Schedule | Was monthly, should be daily | **Fixed** (now runs daily at 06:00 UTC) |
-| Near You Limit | Shows only 6 items (requests 10, limited by resorts in range) | **Investigate** |
+| Near You Limit | Shows only 6 items (requests 10, limited by resorts in range) | **Fixed** (increased default radius to 1000km) |
 
 ### 🟢 Low / Monitoring
 | Issue | Description | Status |
@@ -41,9 +38,6 @@ All tasks tracked at: https://github.com/wdvr/snow/issues
 
 | Issue | Title | Priority |
 |-------|-------|----------|
-| [#22](https://github.com/wdvr/snow/issues/22) | Best Snow This Week - Location Recommendations | High |
-| [#14](https://github.com/wdvr/snow/issues/14) | Sign in with Apple backend | Medium |
-| [#16](https://github.com/wdvr/snow/issues/16) | Push notifications for snow alerts | Medium |
 | [#23](https://github.com/wdvr/snow/issues/23) | Trip Planning Mode | Medium |
 | [#17](https://github.com/wdvr/snow/issues/17) | App Store preparation and TestFlight | Low |
 | [#13](https://github.com/wdvr/snow/issues/13) | Research alternative snow data sources | Low |
@@ -56,6 +50,13 @@ All tasks tracked at: https://github.com/wdvr/snow/issues
 
 | Feature | Date |
 |---------|------|
+| Map icons show correct snow quality colors (was showing "?") | 2026-02-03 |
+| List view shows fresh snow (snowfall_after_freeze) for all resorts | 2026-02-03 |
+| Batch snow quality API returns temp and fresh snow data | 2026-02-03 |
+| iOS list view fallback to summary data when conditions unavailable | 2026-02-03 |
+| Best Snow Recommendations feature (#22 closed) | 2026-02-03 |
+| Push Notifications fully implemented (#16 closed) | 2026-02-03 |
+| Near You default radius increased to 1000km | 2026-02-03 |
 | Firebase Analytics & Crashlytics integration | 2026-02-02 |
 | Daily resort scraper (was monthly) | 2026-02-02 |
 | Google logo SVG fix | 2026-02-02 |
@@ -166,4 +167,3 @@ gh issue list --state open
 
 1. **Apple Sign In email display** - Falls back to truncated ID instead of relay email
 2. **CORS allows all origins** - Should be configured per environment
-3. **Feedback table verification needed** - Confirm writes are working

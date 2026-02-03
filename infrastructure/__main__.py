@@ -341,12 +341,48 @@ weather_processor_lambda = aws.lambda_.Function(
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
             "AWS_REGION_NAME": aws_region,
-            # Weather API key is set via AWS Secrets Manager or environment variable
-            # For now, placeholder - will be configured via CI/CD secrets
+            # Parallel processing: set to "true" to enable worker-based parallel processing
+            "PARALLEL_PROCESSING": config.get("parallelWeatherProcessing") or "false",
+            "WEATHER_WORKER_LAMBDA": f"{app_name}-weather-worker-{environment}",
         }
     ),
     tags=tags,
     opts=pulumi.ResourceOptions(depends_on=[lambda_role, weather_processor_log_group]),
+)
+
+# Weather worker log group (for parallel processing)
+weather_worker_log_group = aws.cloudwatch.LogGroup(
+    f"{app_name}-weather-worker-logs-{environment}",
+    name=f"/aws/lambda/{app_name}-weather-worker-{environment}",
+    retention_in_days=14,
+    tags=tags,
+)
+
+# Weather worker Lambda (for parallel processing - one per region)
+weather_worker_lambda = aws.lambda_.Function(
+    f"{app_name}-weather-worker-{environment}",
+    name=f"{app_name}-weather-worker-{environment}",
+    role=lambda_role.arn,
+    handler="handlers.weather_worker.weather_worker_handler",
+    runtime="python3.12",
+    timeout=300,  # 5 minutes per region batch
+    memory_size=256,
+    code=pulumi.AssetArchive(
+        {
+            "index.py": pulumi.StringAsset(placeholder_lambda_code),
+        }
+    ),
+    environment=aws.lambda_.FunctionEnvironmentArgs(
+        variables={
+            "ENVIRONMENT": environment,
+            "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
+            "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
+            "AWS_REGION_NAME": aws_region,
+            "ENABLE_SCRAPING": "true",
+        }
+    ),
+    tags=tags,
+    opts=pulumi.ResourceOptions(depends_on=[lambda_role, weather_worker_log_group]),
 )
 
 # CloudWatch Events rule to trigger weather processor every hour
@@ -421,7 +457,9 @@ if apns_private_key and apns_key_id:
     )
     apns_platform_app_arn = apns_platform_app.arn
 else:
-    pulumi.log.warn("APNs credentials not configured. Push notifications will not work until configured.")
+    pulumi.log.warn(
+        "APNs credentials not configured. Push notifications will not work until configured."
+    )
 
 # Lambda function for notification processing
 notification_processor_lambda = aws.lambda_.Function(
@@ -447,11 +485,15 @@ notification_processor_lambda = aws.lambda_.Function(
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "AWS_REGION_NAME": aws_region,
             # APNs platform ARN is optional - notifications will be skipped if not configured
-            "APNS_PLATFORM_APP_ARN": apns_platform_app_arn if apns_platform_app_arn else "",
+            "APNS_PLATFORM_APP_ARN": apns_platform_app_arn
+            if apns_platform_app_arn
+            else "",
         }
     ),
     tags=tags,
-    opts=pulumi.ResourceOptions(depends_on=[lambda_role, notification_processor_log_group]),
+    opts=pulumi.ResourceOptions(
+        depends_on=[lambda_role, notification_processor_log_group]
+    ),
 )
 
 # CloudWatch Events rule to trigger notification processor every hour
@@ -1432,9 +1474,7 @@ if enable_custom_domain:
             zone_id=hosted_zone.zone_id,
             name=certificate.domain_validation_options[0].resource_record_name,
             type=certificate.domain_validation_options[0].resource_record_type,
-            records=[
-                certificate.domain_validation_options[0].resource_record_value
-            ],
+            records=[certificate.domain_validation_options[0].resource_record_value],
             ttl=300,
             allow_overwrite=True,
             opts=pulumi.ResourceOptions(provider=us_east_1),
@@ -1686,6 +1726,7 @@ pulumi.export("user_pool_client_id", user_pool_client.id)
 pulumi.export("region", aws_region)
 pulumi.export("environment", environment)
 pulumi.export("weather_processor_lambda_name", weather_processor_lambda.name)
+pulumi.export("weather_worker_lambda_name", weather_worker_lambda.name)
 pulumi.export("weather_schedule_rule_name", weather_schedule_rule.name)
 pulumi.export("api_handler_lambda_name", api_handler_lambda.name)
 pulumi.export("notification_processor_lambda_name", notification_processor_lambda.name)

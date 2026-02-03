@@ -1,0 +1,318 @@
+"""Lambda handler for processing weather data for a subset of resorts.
+
+This worker Lambda is invoked by the orchestrator (weather_processor) to process
+a batch of resorts in parallel. Each worker handles one region's resorts.
+"""
+
+import json
+import logging
+import os
+from datetime import UTC, datetime
+from typing import Any
+
+import boto3
+from botocore.exceptions import ClientError
+
+from models.weather import WeatherCondition
+from services.onthesnow_scraper import OnTheSnowScraper
+from services.openmeteo_service import OpenMeteoService
+from services.snow_quality_service import SnowQualityService
+from utils.dynamodb_utils import prepare_for_dynamodb
+
+# Configure logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Initialize AWS clients
+dynamodb = boto3.resource("dynamodb")
+cloudwatch = boto3.client("cloudwatch")
+
+# Environment variables
+RESORTS_TABLE = os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
+WEATHER_CONDITIONS_TABLE = os.environ.get(
+    "WEATHER_CONDITIONS_TABLE", "snow-tracker-weather-conditions-dev"
+)
+ENABLE_SCRAPING = os.environ.get("ENABLE_SCRAPING", "true").lower() == "true"
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
+
+
+def publish_worker_metrics(stats: dict[str, Any], region: str) -> None:
+    """Publish worker metrics to CloudWatch."""
+    try:
+        metrics = [
+            {
+                "MetricName": "WorkerResortsProcessed",
+                "Value": stats.get("resorts_processed", 0),
+                "Unit": "Count",
+                "Dimensions": [
+                    {"Name": "Environment", "Value": ENVIRONMENT},
+                    {"Name": "Region", "Value": region},
+                ],
+            },
+            {
+                "MetricName": "WorkerConditionsSaved",
+                "Value": stats.get("conditions_saved", 0),
+                "Unit": "Count",
+                "Dimensions": [
+                    {"Name": "Environment", "Value": ENVIRONMENT},
+                    {"Name": "Region", "Value": region},
+                ],
+            },
+            {
+                "MetricName": "WorkerErrors",
+                "Value": stats.get("errors", 0),
+                "Unit": "Count",
+                "Dimensions": [
+                    {"Name": "Environment", "Value": ENVIRONMENT},
+                    {"Name": "Region", "Value": region},
+                ],
+            },
+            {
+                "MetricName": "WorkerDuration",
+                "Value": stats.get("duration_seconds", 0),
+                "Unit": "Seconds",
+                "Dimensions": [
+                    {"Name": "Environment", "Value": ENVIRONMENT},
+                    {"Name": "Region", "Value": region},
+                ],
+            },
+        ]
+
+        cloudwatch.put_metric_data(
+            Namespace="SnowTracker/WeatherWorker", MetricData=metrics
+        )
+        logger.info(f"Published {len(metrics)} worker metrics for region {region}")
+
+    except Exception as e:
+        logger.error(f"Failed to publish worker metrics: {e}")
+
+
+def save_weather_condition(table, weather_condition: WeatherCondition) -> None:
+    """Save weather condition to DynamoDB table."""
+    try:
+        item = weather_condition.model_dump()
+        item = prepare_for_dynamodb(item)
+        table.put_item(Item=item)
+    except ClientError as e:
+        logger.error(f"Error saving weather condition to DynamoDB: {str(e)}")
+        raise
+
+
+def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
+    """
+    Worker Lambda handler for processing weather data for a batch of resorts.
+
+    This function is invoked by the orchestrator with a list of resort IDs to process.
+
+    Args:
+        event: Contains:
+            - resort_ids: List of resort IDs to process
+            - region: The region name (for metrics)
+        context: Lambda context object
+
+    Returns:
+        Dict with processing results and statistics
+    """
+    resort_ids = event.get("resort_ids", [])
+    region = event.get("region", "unknown")
+
+    if not resort_ids:
+        return {
+            "statusCode": 400,
+            "body": json.dumps({"error": "No resort_ids provided"}),
+        }
+
+    logger.info(f"Processing {len(resort_ids)} resorts for region {region}")
+
+    # Statistics tracking
+    stats = {
+        "resorts_processed": 0,
+        "elevation_points_processed": 0,
+        "conditions_saved": 0,
+        "scraper_hits": 0,
+        "scraper_misses": 0,
+        "errors": 0,
+        "start_time": datetime.now(UTC).isoformat(),
+        "region": region,
+    }
+
+    try:
+        # Initialize services
+        resorts_table = dynamodb.Table(RESORTS_TABLE)
+        weather_conditions_table = dynamodb.Table(WEATHER_CONDITIONS_TABLE)
+        weather_service = OpenMeteoService()
+        snow_quality_service = SnowQualityService()
+
+        # Initialize scraper if enabled
+        scraper = OnTheSnowScraper() if ENABLE_SCRAPING else None
+
+        # Fetch resorts by ID using batch get
+        resort_keys = [{"resort_id": rid} for rid in resort_ids]
+
+        # DynamoDB batch_get_item has a limit of 100 items
+        resorts = []
+        for i in range(0, len(resort_keys), 100):
+            batch_keys = resort_keys[i : i + 100]
+            response = dynamodb.meta.client.batch_get_item(
+                RequestItems={RESORTS_TABLE: {"Keys": batch_keys}}
+            )
+            resorts.extend(response.get("Responses", {}).get(RESORTS_TABLE, []))
+
+        logger.info(f"Fetched {len(resorts)} resorts from DynamoDB")
+
+        # Process each resort
+        for resort_data in resorts:
+            resort_id = resort_data.get("resort_id")
+            resort_name = resort_data.get("name", resort_id)
+
+            try:
+                logger.info(f"Processing resort: {resort_name} ({resort_id})")
+
+                # Get elevation points from resort data
+                elevation_points = resort_data.get("elevation_points", [])
+                if not elevation_points:
+                    logger.warning(f"No elevation points for {resort_id}")
+                    stats["errors"] += 1
+                    continue
+
+                # Try to get scraped data for this resort
+                scraped_data = None
+                if scraper and scraper.is_resort_supported(resort_id):
+                    try:
+                        scraped_data = scraper.get_snow_report(resort_id)
+                        if scraped_data:
+                            stats["scraper_hits"] += 1
+                            logger.info(
+                                f"Got scraped data for {resort_id}: "
+                                f"24h={scraped_data.snowfall_24h_cm}cm"
+                            )
+                        else:
+                            stats["scraper_misses"] += 1
+                    except Exception as e:
+                        logger.warning(f"Scraper failed for {resort_id}: {e}")
+                        stats["scraper_misses"] += 1
+
+                # Process each elevation point
+                for elevation_point in elevation_points:
+                    try:
+                        # Handle both dict and object formats
+                        if isinstance(elevation_point, dict):
+                            lat = elevation_point.get("latitude")
+                            lon = elevation_point.get("longitude")
+                            elev = elevation_point.get("elevation_meters")
+                            level = elevation_point.get("level", "mid")
+                        else:
+                            lat = elevation_point.latitude
+                            lon = elevation_point.longitude
+                            elev = elevation_point.elevation_meters
+                            level = getattr(
+                                elevation_point.level, "value", elevation_point.level
+                            )
+
+                        # Fetch current weather data from Open-Meteo
+                        weather_data = weather_service.get_current_weather(
+                            latitude=lat,
+                            longitude=lon,
+                            elevation_meters=elev,
+                        )
+
+                        # Merge with scraped data if available
+                        if scraped_data:
+                            weather_data = scraper.merge_with_weather_data(
+                                weather_data, scraped_data
+                            )
+
+                        # Create weather condition object
+                        weather_condition = WeatherCondition(
+                            resort_id=resort_id,
+                            elevation_level=level,
+                            timestamp=datetime.now(UTC).isoformat(),
+                            **weather_data,
+                        )
+
+                        # Assess snow quality
+                        snow_quality, fresh_snow_cm, confidence = (
+                            snow_quality_service.assess_snow_quality(weather_condition)
+                        )
+
+                        # Update condition with assessment results
+                        weather_condition.snow_quality = snow_quality
+                        weather_condition.fresh_snow_cm = fresh_snow_cm
+                        weather_condition.confidence_level = confidence
+
+                        # Set TTL (expire after 7 days)
+                        weather_condition.ttl = int(
+                            datetime.now(UTC).timestamp() + 7 * 24 * 60 * 60
+                        )
+
+                        # Save to DynamoDB
+                        save_weather_condition(
+                            weather_conditions_table, weather_condition
+                        )
+
+                        stats["elevation_points_processed"] += 1
+                        stats["conditions_saved"] += 1
+
+                        # Get string values for logging
+                        quality_str = (
+                            snow_quality.value
+                            if hasattr(snow_quality, "value")
+                            else snow_quality
+                        )
+
+                        logger.debug(
+                            f"Processed {resort_id} {level}: Quality={quality_str}"
+                        )
+
+                    except Exception as e:
+                        logger.error(
+                            f"Error processing elevation {level} for {resort_id}: {str(e)}"
+                        )
+                        stats["errors"] += 1
+
+                stats["resorts_processed"] += 1
+
+            except Exception as e:
+                logger.error(f"Error processing resort {resort_id}: {str(e)}")
+                stats["errors"] += 1
+
+        stats["end_time"] = datetime.now(UTC).isoformat()
+        stats["duration_seconds"] = (
+            datetime.fromisoformat(stats["end_time"].replace("Z", "+00:00"))
+            - datetime.fromisoformat(stats["start_time"].replace("Z", "+00:00"))
+        ).total_seconds()
+
+        logger.info(
+            f"Worker completed for region {region}. "
+            f"Processed {stats['resorts_processed']} resorts, "
+            f"{stats['conditions_saved']} conditions saved, "
+            f"{stats['errors']} errors"
+        )
+
+        # Publish metrics
+        publish_worker_metrics(stats, region)
+
+        return {
+            "statusCode": 200,
+            "body": json.dumps(
+                {
+                    "message": f"Processed {stats['resorts_processed']} resorts",
+                    "stats": stats,
+                }
+            ),
+        }
+
+    except Exception as e:
+        logger.error(f"Fatal error in weather worker: {str(e)}")
+        stats["errors"] += 1
+
+        return {
+            "statusCode": 500,
+            "body": json.dumps(
+                {
+                    "message": "Weather worker failed",
+                    "error": str(e),
+                    "stats": stats,
+                }
+            ),
+        }
