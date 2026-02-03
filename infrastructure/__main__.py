@@ -302,6 +302,13 @@ lambda_policy = aws.iam.RolePolicy(
                     "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2/scraper-results/*",
                     "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2/resort-versions/*"
                 ]
+            }},
+            {{
+                "Effect": "Allow",
+                "Action": [
+                    "cloudwatch:PutMetricData"
+                ],
+                "Resource": "*"
             }}
         ]
     }}"""
@@ -357,7 +364,7 @@ weather_processor_lambda = aws.lambda_.Function(
     role=lambda_role.arn,
     handler="handlers.weather_processor.weather_processor_handler",
     runtime="python3.12",
-    timeout=300,  # 5 minutes for processing all resorts
+    timeout=600,  # 10 minutes for processing all resorts (scaled for 1000+ resorts)
     memory_size=256,
     code=pulumi.AssetArchive(
         {
@@ -370,8 +377,8 @@ weather_processor_lambda = aws.lambda_.Function(
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
             "AWS_REGION_NAME": aws_region,
-            # Parallel processing: set to "true" to enable worker-based parallel processing
-            "PARALLEL_PROCESSING": config.get("parallelWeatherProcessing") or "false",
+            # Parallel processing: enabled by default for 1000+ resort scale
+            "PARALLEL_PROCESSING": config.get("parallelWeatherProcessing") or "true",
             "WEATHER_WORKER_LAMBDA": f"{app_name}-weather-worker-{environment}",
         }
     ),
@@ -394,7 +401,7 @@ weather_worker_lambda = aws.lambda_.Function(
     role=lambda_role.arn,
     handler="handlers.weather_worker.weather_worker_handler",
     runtime="python3.12",
-    timeout=300,  # 5 minutes per region batch
+    timeout=600,  # 10 minutes per region batch (scaled for large regions)
     memory_size=256,
     code=pulumi.AssetArchive(
         {

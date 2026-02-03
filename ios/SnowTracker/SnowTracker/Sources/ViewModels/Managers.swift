@@ -315,10 +315,14 @@ class UserPreferencesManager: ObservableObject {
         }
     }
 
+    /// Whether the user has completed the onboarding flow
+    @Published var hasCompletedOnboarding: Bool = false
+
     private let apiClient = APIClient.shared
     private let favoritesKey = "favoriteResorts"
     private let unitPreferencesKey = "unitPreferences"
     private let hiddenRegionsKey = "hiddenRegions"
+    private let hasCompletedOnboardingKey = "hasCompletedOnboarding"
     private let appGroupId = "group.com.wouterdevriendt.snowtracker"
 
     /// Debounce task for syncing preferences to backend
@@ -356,6 +360,9 @@ class UserPreferencesManager: ObservableObject {
 
         // Load hidden regions
         loadHiddenRegions()
+
+        // Load onboarding status
+        loadOnboardingStatus()
     }
 
     private func loadUnitPreferences() {
@@ -399,6 +406,22 @@ class UserPreferencesManager: ObservableObject {
 
         // Also save to standard UserDefaults as backup
         UserDefaults.standard.set(regionsArray, forKey: hiddenRegionsKey)
+    }
+
+    private func loadOnboardingStatus() {
+        let defaults = sharedDefaults ?? UserDefaults.standard
+        hasCompletedOnboarding = defaults.bool(forKey: hasCompletedOnboardingKey)
+    }
+
+    /// Mark onboarding as completed
+    func completeOnboarding() {
+        hasCompletedOnboarding = true
+
+        // Save to shared app group
+        sharedDefaults?.set(true, forKey: hasCompletedOnboardingKey)
+
+        // Also save to standard UserDefaults as backup
+        UserDefaults.standard.set(true, forKey: hasCompletedOnboardingKey)
     }
 
     /// Check if a region is visible (not hidden)

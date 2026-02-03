@@ -39,6 +39,7 @@ struct SnowTrackerApp: App {
     @ObservedObject private var authService = AuthenticationService.shared
     @ObservedObject private var userPreferencesManager = UserPreferencesManager.shared
     @State private var showSplash = true
+    @State private var showOnboarding = false
 
     init() {
         // Initialize Firebase Analytics & Crashlytics
@@ -52,10 +53,19 @@ struct SnowTrackerApp: App {
         WindowGroup {
             ZStack {
                 if authService.isAuthenticated {
-                    MainTabView()
-                        .environmentObject(snowConditionsManager)
+                    if showOnboarding {
+                        OnboardingView {
+                            withAnimation {
+                                showOnboarding = false
+                            }
+                        }
                         .environmentObject(userPreferencesManager)
-                        .environmentObject(pushNotificationService)
+                    } else {
+                        MainTabView()
+                            .environmentObject(snowConditionsManager)
+                            .environmentObject(userPreferencesManager)
+                            .environmentObject(pushNotificationService)
+                    }
                 } else {
                     WelcomeView()
                 }
@@ -67,6 +77,9 @@ struct SnowTrackerApp: App {
                 }
             }
             .onAppear {
+                // Check if onboarding is needed
+                showOnboarding = !userPreferencesManager.hasCompletedOnboarding
+
                 // Show splash for minimum duration while data loads
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                     withAnimation(.easeOut(duration: 0.5)) {
@@ -80,6 +93,9 @@ struct SnowTrackerApp: App {
             }
             .onChange(of: authService.isAuthenticated) { _, isAuthenticated in
                 if isAuthenticated {
+                    // Check if onboarding is needed when user signs in
+                    showOnboarding = !userPreferencesManager.hasCompletedOnboarding
+
                     // Request notification permissions when user is authenticated
                     Task {
                         await pushNotificationService.requestAuthorization()

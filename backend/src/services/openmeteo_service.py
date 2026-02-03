@@ -1,6 +1,7 @@
 """Open-Meteo weather data service for accurate elevation-aware weather data."""
 
 import logging
+import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -9,6 +10,66 @@ import requests
 from models.weather import ConfidenceLevel
 
 logger = logging.getLogger(__name__)
+
+
+# Retry configuration for API calls
+MAX_RETRIES = 3
+RETRY_DELAYS = [1, 2, 4]  # Exponential backoff: 1s, 2s, 4s
+RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+
+
+def _is_retryable_error(exception: Exception) -> bool:
+    """Check if an exception is retryable."""
+    if isinstance(exception, requests.exceptions.Timeout):
+        return True
+    if isinstance(exception, requests.exceptions.ConnectionError):
+        return True
+    if isinstance(exception, requests.exceptions.HTTPError):
+        response = exception.response
+        if response is not None and response.status_code in RETRYABLE_STATUS_CODES:
+            return True
+    return False
+
+
+def _request_with_retry(
+    method: str,
+    url: str,
+    **kwargs,
+) -> requests.Response:
+    """Make an HTTP request with retry logic and exponential backoff.
+
+    Args:
+        method: HTTP method (GET, POST, etc.)
+        url: Request URL
+        **kwargs: Additional arguments passed to requests
+
+    Returns:
+        Response object
+
+    Raises:
+        requests.exceptions.RequestException: If all retries fail
+    """
+    last_exception = None
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = requests.request(method, url, **kwargs)
+            response.raise_for_status()
+            return response
+        except requests.exceptions.RequestException as e:
+            last_exception = e
+            if not _is_retryable_error(e) or attempt == MAX_RETRIES - 1:
+                raise
+
+            delay = RETRY_DELAYS[attempt]
+            logger.warning(
+                f"Request to {url} failed (attempt {attempt + 1}/{MAX_RETRIES}): {e}. "
+                f"Retrying in {delay}s..."
+            )
+            time.sleep(delay)
+
+    # This shouldn't be reached, but just in case
+    raise last_exception
 
 
 class OpenMeteoService:
@@ -49,8 +110,9 @@ class OpenMeteoService:
                 "timezone": "auto",
             }
 
-            response = requests.get(self.base_url, params=params, timeout=10)
-            response.raise_for_status()
+            response = _request_with_retry(
+                "GET", self.base_url, params=params, timeout=10
+            )
 
             data = response.json()
 
@@ -370,8 +432,8 @@ class OpenMeteoService:
         now = datetime.now(UTC).isoformat()[:13]  # Get current hour
         current_index = len(temps) - 1
 
-        for i, time in enumerate(times):
-            if time[:13] == now:
+        for i, t in enumerate(times):
+            if t[:13] == now:
                 current_index = i
                 break
 
@@ -448,10 +510,9 @@ class OpenMeteoService:
                 "timezone": "auto",
             }
 
-            response = requests.get(self.era5_url, params=params, timeout=15)
-
-            if response.status_code != 200:
-                return None
+            response = _request_with_retry(
+                "GET", self.era5_url, params=params, timeout=15
+            )
 
             data = response.json()
             daily = data.get("daily", {})
@@ -477,7 +538,9 @@ class OpenMeteoService:
                 "longitude": -118.93,
                 "current": "temperature_2m",
             }
-            response = requests.get(self.base_url, params=params, timeout=10)
-            return response.status_code == 200
+            response = _request_with_retry(
+                "GET", self.base_url, params=params, timeout=10
+            )
+            return True
         except Exception:
             return False

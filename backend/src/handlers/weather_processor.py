@@ -11,6 +11,7 @@ import json
 import logging
 import os
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from typing import Any
 
@@ -44,6 +45,8 @@ PARALLEL_PROCESSING = os.environ.get("PARALLEL_PROCESSING", "false").lower() == 
 WEATHER_WORKER_LAMBDA = os.environ.get(
     "WEATHER_WORKER_LAMBDA", f"snow-tracker-weather-worker-{ENVIRONMENT}"
 )
+# Number of elevation points to process concurrently (for sequential mode)
+ELEVATION_CONCURRENCY = int(os.environ.get("ELEVATION_CONCURRENCY", "5"))
 
 
 def publish_metrics(stats: dict[str, Any]) -> None:
@@ -224,6 +227,76 @@ def get_remaining_time_ms(context) -> int:
     if context and hasattr(context, "get_remaining_time_in_millis"):
         return context.get_remaining_time_in_millis()
     return 600000  # Default 10 minutes if no context
+
+
+def process_elevation_point(
+    elevation_point: Any,
+    resort_id: str,
+    weather_service: OpenMeteoService,
+    snow_quality_service: SnowQualityService,
+    weather_conditions_table,
+    scraper: OnTheSnowScraper | None,
+    scraped_data: Any | None,
+) -> dict[str, Any]:
+    """Process a single elevation point and save the weather condition.
+
+    Returns a dict with success status, the weather condition, and any error info.
+    """
+    result = {"success": False, "error": None, "level": None, "weather_condition": None}
+
+    try:
+        level = (
+            elevation_point.level.value
+            if hasattr(elevation_point.level, "value")
+            else elevation_point.level
+        )
+        result["level"] = level
+
+        # Fetch current weather data from Open-Meteo
+        weather_data = weather_service.get_current_weather(
+            latitude=elevation_point.latitude,
+            longitude=elevation_point.longitude,
+            elevation_meters=elevation_point.elevation_meters,
+        )
+
+        # Merge with scraped data if available
+        if scraped_data and scraper:
+            weather_data = scraper.merge_with_weather_data(weather_data, scraped_data)
+
+        # Create weather condition object
+        weather_condition = WeatherCondition(
+            resort_id=resort_id,
+            elevation_level=level,
+            timestamp=datetime.now(UTC).isoformat(),
+            **weather_data,
+        )
+
+        # Assess snow quality
+        snow_quality, fresh_snow_cm, confidence = (
+            snow_quality_service.assess_snow_quality(weather_condition)
+        )
+
+        # Update condition with assessment results
+        weather_condition.snow_quality = snow_quality
+        weather_condition.fresh_snow_cm = fresh_snow_cm
+        weather_condition.confidence_level = confidence
+
+        # Set TTL (expire after 7 days)
+        weather_condition.ttl = int(datetime.now(UTC).timestamp() + 7 * 24 * 60 * 60)
+
+        # Save to DynamoDB
+        save_weather_condition(weather_conditions_table, weather_condition)
+
+        result["success"] = True
+        result["weather_condition"] = weather_condition
+
+    except Exception as e:
+        result["error"] = str(e)
+        logger.error(
+            f"Error processing elevation {result['level']} for {resort_id}: {e}"
+        )
+
+    return result
 
 
 # Minimum time buffer before timeout (60 seconds)
@@ -459,85 +532,55 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
                         logger.warning(f"Scraper failed for {resort.resort_id}: {e}")
                         stats["scraper_misses"] += 1
 
-                # Process each elevation point
-                for elevation_point in resort.elevation_points:
-                    try:
-                        # Fetch current weather data from Open-Meteo
-                        weather_data = weather_service.get_current_weather(
-                            latitude=elevation_point.latitude,
-                            longitude=elevation_point.longitude,
-                            elevation_meters=elevation_point.elevation_meters,
-                        )
+                # Process elevation points concurrently using ThreadPoolExecutor
+                with ThreadPoolExecutor(max_workers=ELEVATION_CONCURRENCY) as executor:
+                    futures = {
+                        executor.submit(
+                            process_elevation_point,
+                            elevation_point,
+                            resort.resort_id,
+                            weather_service,
+                            snow_quality_service,
+                            weather_conditions_table,
+                            scraper,
+                            scraped_data,
+                        ): elevation_point
+                        for elevation_point in resort.elevation_points
+                    }
 
-                        # Merge with scraped data if available (scraped data is more accurate)
-                        if scraped_data:
-                            weather_data = scraper.merge_with_weather_data(
-                                weather_data, scraped_data
-                            )
+                    for future in as_completed(futures):
+                        result = future.result()
+                        if result["success"]:
+                            stats["elevation_points_processed"] += 1
+                            stats["conditions_saved"] += 1
 
-                        # Create weather condition object
-                        weather_condition = WeatherCondition(
-                            resort_id=resort.resort_id,
-                            elevation_level=elevation_point.level.value,
-                            timestamp=datetime.now(UTC).isoformat(),
-                            **weather_data,
-                        )
+                            # Publish snow condition metrics for Grafana
+                            if result["weather_condition"]:
+                                publish_condition_metrics(result["weather_condition"])
 
-                        # Assess snow quality
-                        snow_quality, fresh_snow_cm, confidence = (
-                            snow_quality_service.assess_snow_quality(weather_condition)
-                        )
-
-                        # Update condition with assessment results
-                        weather_condition.snow_quality = snow_quality
-                        weather_condition.fresh_snow_cm = fresh_snow_cm
-                        weather_condition.confidence_level = confidence
-
-                        # Set TTL (expire after 7 days)
-                        weather_condition.ttl = int(
-                            datetime.now(UTC).timestamp() + 7 * 24 * 60 * 60
-                        )
-
-                        # Save to DynamoDB
-                        save_weather_condition(
-                            weather_conditions_table, weather_condition
-                        )
-
-                        # Publish snow condition metrics for Grafana
-                        publish_condition_metrics(weather_condition)
-
-                        stats["elevation_points_processed"] += 1
-                        stats["conditions_saved"] += 1
-
-                        # Get string values for logging (enums might already be strings due to use_enum_values)
-                        quality_str = (
-                            snow_quality.value
-                            if hasattr(snow_quality, "value")
-                            else snow_quality
-                        )
-                        confidence_str = (
-                            confidence.value
-                            if hasattr(confidence, "value")
-                            else confidence
-                        )
-                        level_str = (
-                            elevation_point.level.value
-                            if hasattr(elevation_point.level, "value")
-                            else elevation_point.level
-                        )
-
-                        logger.info(
-                            f"Processed {resort.resort_id} {level_str}: "
-                            f"Quality={quality_str}, Fresh Snow={fresh_snow_cm}cm, "
-                            f"Confidence={confidence_str}"
-                        )
-
-                    except Exception as e:
-                        logger.error(
-                            f"Error processing elevation {elevation_point.level.value} "
-                            f"for resort {resort.resort_id}: {str(e)}"
-                        )
-                        stats["errors"] += 1
+                            # Log success
+                            weather_condition = result["weather_condition"]
+                            if weather_condition:
+                                quality_str = (
+                                    weather_condition.snow_quality.value
+                                    if hasattr(weather_condition.snow_quality, "value")
+                                    else weather_condition.snow_quality
+                                )
+                                confidence_str = (
+                                    weather_condition.confidence_level.value
+                                    if hasattr(
+                                        weather_condition.confidence_level, "value"
+                                    )
+                                    else weather_condition.confidence_level
+                                )
+                                logger.info(
+                                    f"Processed {resort.resort_id} {result['level']}: "
+                                    f"Quality={quality_str}, "
+                                    f"Fresh Snow={weather_condition.fresh_snow_cm}cm, "
+                                    f"Confidence={confidence_str}"
+                                )
+                        else:
+                            stats["errors"] += 1
 
                 stats["resorts_processed"] += 1
 
