@@ -1,18 +1,41 @@
-Track real-time snow conditions at ski resorts worldwide. Powder Chaser helps you find the best skiing conditions with accurate snow quality ratings.
+Powder Chaser - The Smart Way to Find Fresh Snow
 
-FEATURES:
-• Real-time snow conditions for 28+ resorts across 8 regions
-• Snow quality ratings based on fresh powder since last thaw
-• Temperature and snowfall data at multiple elevations
-• Beautiful map view with resort locations
-• Offline support with cached data
+Track real-time snow conditions at 28+ ski resorts worldwide with our proprietary snow quality algorithm. Unlike other apps, we don't just show snowfall - we track fresh powder since the last ice layer formed, so you know the actual skiing conditions before you go.
 
-REGIONS COVERED:
-• North America West Coast (Whistler, Mammoth, Tahoe)
-• North America Rockies (Vail, Park City, Jackson Hole)
-• Alps (Chamonix, Zermatt, St. Anton, Verbier)
-• Japan (Niseko, Hakuba)
-• Oceania (Remarkables NZ, Thredbo AU)
-• South America (Portillo)
+PROPRIETARY SNOW QUALITY ALGORITHM
+Our unique algorithm tracks:
+- Fresh powder accumulation since the last thaw-freeze cycle
+- Real snow depth vs. just snowfall amounts
+- Temperature patterns that affect snow quality
+- Surface conditions at multiple elevations
 
-Perfect for planning your next ski trip or checking conditions before heading to the mountain.
+REAL-TIME CONDITIONS
+- Current temperature and weather at base, mid, and summit elevations
+- 24h, 48h, and 72h snowfall tracking
+- Snow depth and fresh powder measurements
+- Snow quality ratings: Excellent, Good, Fair, Poor, Bad, or Not Skiable
+
+PLAN YOUR TRIPS
+- Create trips to track conditions leading up to your ski days
+- Get alerts when fresh powder falls at your favorite resorts
+- Receive thaw/freeze notifications that indicate icy conditions ahead
+- View 72-hour snow forecasts
+
+REGIONS COVERED
+- North America West: Whistler, Mammoth, Palisades Tahoe, Big White
+- North America Rockies: Vail, Park City, Jackson Hole, Aspen, Telluride
+- North America East: Stowe, Killington, Sunday River
+- Alps: Chamonix, Zermatt, St. Anton, Verbier, Val d'Isere
+- Japan: Niseko, Hakuba
+- Oceania: Remarkables (NZ), Thredbo (AU)
+- South America: Portillo (Chile)
+
+FEATURES
+- Beautiful map view with color-coded quality indicators
+- Cluster view showing quality distribution across regions
+- Offline support - cached data works without internet
+- Filter by region to focus on your preferred ski areas
+- Favorites list for quick access to your go-to resorts
+- Share conditions with friends
+
+Perfect for planning your next powder day or checking conditions before heading to the mountain. Download now and never miss the best snow again!

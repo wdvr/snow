@@ -4,6 +4,182 @@ default_platform(:ios)
 
 platform :ios do
   # ============================================
+  # Build & TestFlight
+  # ============================================
+
+  desc "Build and upload to TestFlight"
+  lane :beta do |options|
+    api_key = get_api_key
+
+    # Increment build number
+    increment_build_number(
+      xcodeproj: "SnowTracker.xcodeproj"
+    )
+
+    # Build the app
+    build_app(
+      project: "SnowTracker.xcodeproj",
+      scheme: "SnowTracker",
+      export_method: "app-store",
+      clean: true,
+      output_directory: "./build",
+      output_name: "SnowTracker.ipa"
+    )
+
+    # Upload to TestFlight
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: options[:skip_wait] || false,
+      distribute_external: false
+    )
+
+    # Commit the version bump
+    commit_version_bump(
+      xcodeproj: "SnowTracker.xcodeproj",
+      message: "Bump build number for TestFlight",
+      force: true
+    )
+  end
+
+  desc "Build and upload to TestFlight (quick - skip processing wait)"
+  lane :beta_quick do
+    beta(skip_wait: true)
+  end
+
+  # ============================================
+  # Full Release Workflow
+  # ============================================
+
+  desc "Full release: build, upload to TestFlight, upload metadata, submit for review"
+  lane :release do |options|
+    api_key = get_api_key
+    version = get_version_number(xcodeproj: "SnowTracker.xcodeproj")
+
+    UI.message("Releasing version #{version}")
+
+    # 1. Increment build number
+    increment_build_number(xcodeproj: "SnowTracker.xcodeproj")
+    build_number = get_build_number(xcodeproj: "SnowTracker.xcodeproj")
+    UI.message("Build number: #{build_number}")
+
+    # 2. Build the app
+    UI.message("Building app...")
+    build_app(
+      project: "SnowTracker.xcodeproj",
+      scheme: "SnowTracker",
+      export_method: "app-store",
+      clean: true,
+      output_directory: "./build",
+      output_name: "SnowTracker.ipa"
+    )
+
+    # 3. Upload to TestFlight (App Store Connect)
+    UI.message("Uploading to App Store Connect...")
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: false
+    )
+
+    # 4. Generate screenshots (optional - can skip if already have them)
+    unless options[:skip_screenshots]
+      UI.message("Generating screenshots...")
+      begin
+        screenshots
+      rescue => e
+        UI.important("Screenshot generation failed: #{e.message}")
+        UI.important("Continuing without new screenshots...")
+      end
+    end
+
+    # 5. Upload metadata and screenshots
+    UI.message("Uploading metadata...")
+    deliver(
+      api_key: api_key,
+      app_identifier: "com.wouterdevriendt.snowtracker",
+      app_version: version,
+      skip_binary_upload: true,
+      skip_screenshots: options[:skip_screenshots] || false,
+      skip_metadata: false,
+      force: true,
+      precheck_include_in_app_purchases: false,
+      submit_for_review: false,
+      automatic_release: false,
+      run_precheck_before_submit: false,
+      overwrite_screenshots: true
+    )
+
+    # 6. Submit for review
+    UI.message("Submitting for App Store review...")
+    deliver(
+      api_key: api_key,
+      app_identifier: "com.wouterdevriendt.snowtracker",
+      app_version: version,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: true,
+      submit_for_review: true,
+      automatic_release: true,
+      force: true,
+      submission_information: {
+        add_id_info_uses_idfa: false
+      }
+    )
+
+    # 7. Commit version bump
+    commit_version_bump(
+      xcodeproj: "SnowTracker.xcodeproj",
+      message: "Release version #{version} (#{build_number})",
+      force: true
+    )
+
+    # 8. Tag the release
+    add_git_tag(tag: "v#{version}-#{build_number}")
+
+    UI.success("Successfully submitted version #{version} for review!")
+  end
+
+  desc "Release without screenshots (faster)"
+  lane :release_no_screenshots do
+    release(skip_screenshots: true)
+  end
+
+  desc "Submit existing build for review (metadata only)"
+  lane :submit_for_review do |options|
+    api_key = get_api_key
+    version = options[:version] || get_version_number(xcodeproj: "SnowTracker.xcodeproj")
+
+    # Upload metadata first
+    deliver(
+      api_key: api_key,
+      app_identifier: "com.wouterdevriendt.snowtracker",
+      app_version: version,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: false,
+      force: true,
+      run_precheck_before_submit: false
+    )
+
+    # Submit for review
+    deliver(
+      api_key: api_key,
+      app_identifier: "com.wouterdevriendt.snowtracker",
+      app_version: version,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: true,
+      submit_for_review: true,
+      automatic_release: true,
+      force: true,
+      submission_information: {
+        add_id_info_uses_idfa: false
+      }
+    )
+
+    UI.success("Submitted version #{version} for review!")
+  end
+
+  # ============================================
   # Screenshot Generation
   # ============================================
 
@@ -11,7 +187,7 @@ platform :ios do
   lane :screenshots do
     # Ensure we have the UI tests scheme
     capture_screenshots(
-      project: "../SnowTracker.xcodeproj",
+      project: "SnowTracker.xcodeproj",
       scheme: "SnowTracker",
       testplan: "ScreenshotTestPlan",
       devices: [
@@ -33,7 +209,7 @@ platform :ios do
   desc "Generate screenshots for iPhone only (faster)"
   lane :screenshots_iphone do
     capture_screenshots(
-      project: "../SnowTracker.xcodeproj",
+      project: "SnowTracker.xcodeproj",
       scheme: "SnowTracker",
       testplan: "ScreenshotTestPlan",
       devices: ["iPhone 16 Pro Max"],
@@ -53,8 +229,8 @@ platform :ios do
   lane :deliver_metadata do |options|
     api_key = get_api_key
 
-    # Get version from options or default to 1.0.0
-    version = options[:app_version] || ENV["APP_VERSION"] || "1.0.0"
+    # Get version from options or project
+    version = options[:app_version] || get_version_number(xcodeproj: "SnowTracker.xcodeproj")
 
     deliver(
       api_key: api_key,
@@ -110,7 +286,7 @@ platform :ios do
   lane :upload_metadata_only do |options|
     api_key = get_api_key
 
-    version = options[:app_version] || ENV["APP_VERSION"] || "1.0.0"
+    version = options[:app_version] || get_version_number(xcodeproj: "SnowTracker.xcodeproj")
 
     deliver(
       api_key: api_key,
@@ -138,6 +314,38 @@ platform :ios do
       run_precheck_before_submit: false,
       download_metadata: true
     )
+  end
+
+  # ============================================
+  # Version Management
+  # ============================================
+
+  desc "Bump version number (major, minor, or patch)"
+  lane :bump_version do |options|
+    bump_type = options[:type] || "patch"
+
+    increment_version_number(
+      xcodeproj: "SnowTracker.xcodeproj",
+      bump_type: bump_type
+    )
+
+    version = get_version_number(xcodeproj: "SnowTracker.xcodeproj")
+    UI.success("Bumped version to #{version}")
+  end
+
+  desc "Set specific version number"
+  lane :set_version do |options|
+    version = options[:version]
+    unless version
+      UI.user_error!("Please provide version number: fastlane set_version version:X.Y.Z")
+    end
+
+    increment_version_number(
+      xcodeproj: "SnowTracker.xcodeproj",
+      version_number: version
+    )
+
+    UI.success("Set version to #{version}")
   end
 
   # ============================================

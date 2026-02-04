@@ -1,0 +1,21 @@
+Version 4.0 - Major Feature Release
+
+NEW FEATURES:
+- Comprehensive analytics to help us improve your experience
+- Improved "Not Skiable" detection for warm weather resorts
+- Smarter snow quality calculations based on actual snow depth
+- Region-based filtering in onboarding - choose your ski regions
+- Improved map with pie chart clusters showing quality distribution
+- Enhanced pull-to-refresh with rate limiting for faster updates
+
+IMPROVEMENTS:
+- Better offline caching of snow quality summaries
+- Faster loading with batch API queries
+- More accurate temperature displays
+- Improved algorithm messaging in onboarding
+
+BUG FIXES:
+- Fixed pull-to-refresh not updating the resort list
+- Fixed detail view showing incorrect surface type
+- Fixed warm temperature quality override logic
+- Various stability improvements
