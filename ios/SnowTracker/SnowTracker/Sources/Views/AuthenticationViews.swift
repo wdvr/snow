@@ -104,26 +104,6 @@ struct WelcomeView: View {
             }
 
             Spacer()
-
-            // Terms
-            VStack(spacing: 4) {
-                Text("By signing in, you agree to our")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                HStack {
-                    if let termsURL = URL(string: "https://snow-tracker.com/terms") {
-                        Link("Terms of Service", destination: termsURL)
-                    }
-                    Text("and")
-                        .foregroundColor(.secondary)
-                    if let privacyURL = URL(string: "https://snow-tracker.com/privacy") {
-                        Link("Privacy Policy", destination: privacyURL)
-                    }
-                }
-                .font(.caption)
-            }
-            .padding(.bottom, 20)
         }
     }
 }

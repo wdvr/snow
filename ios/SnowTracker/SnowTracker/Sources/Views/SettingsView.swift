@@ -70,15 +70,8 @@ struct SettingsView: View {
                 }
                 #endif
 
-                // Environment Info Section
+                // App Info Section
                 Section {
-                    HStack {
-                        Text("Environment")
-                        Spacer()
-                        Text(environmentName)
-                            .foregroundStyle(.secondary)
-                    }
-
                     HStack {
                         Text("App Version")
                         Spacer()
@@ -159,21 +152,13 @@ struct SettingsView: View {
 
                 // About Section
                 Section {
-                    Link(destination: URL(string: "https://snow-tracker.com/privacy")!) {
-                        Label("Privacy Policy", systemImage: "hand.raised")
-                    }
-
-                    Link(destination: URL(string: "https://snow-tracker.com/terms")!) {
-                        Label("Terms of Service", systemImage: "doc.text")
-                    }
-
                     NavigationLink {
                         AboutView()
                     } label: {
                         Label("About", systemImage: "info.circle")
                     }
                 } header: {
-                    Text("Legal")
+                    Text("About")
                 }
             }
             .navigationTitle("Settings")
@@ -237,10 +222,6 @@ struct SettingsView: View {
         } else {
             urlValidationError = "Invalid URL format. Must start with http:// or https://"
         }
-    }
-
-    private var environmentName: String {
-        config.currentConfigurationDisplay
     }
 
     private var appVersion: String {
