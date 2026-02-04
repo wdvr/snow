@@ -139,12 +139,6 @@ struct MainTabView: View {
                     Text("Best Snow")
                 }
 
-            TripsListView()
-                .tabItem {
-                    Image(systemName: "calendar")
-                    Text("Trips")
-                }
-
             FavoritesView()
                 .tabItem {
                     Image(systemName: "heart")
