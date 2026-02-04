@@ -99,10 +99,13 @@ class SNSNotifier:
             lines.append("")
 
         if removed_resorts:
-            lines.append(f"REMOVED RESORTS ({removed_count}):")
+            lines.append(f"NOT FOUND IN SCRAPE ({removed_count}):")
             lines.append("-" * 30)
+            lines.append("(These resorts exist in DB but weren't found by scraper.")
+            lines.append(" They were NOT deleted. Review before manual removal.)")
+            lines.append("")
             for resort_id in removed_resorts:
-                lines.append(f"  - {resort_id}")
+                lines.append(f"  ? {resort_id}")
             lines.append("")
 
         if results.get("errors"):
@@ -262,7 +265,9 @@ class ResortValidator:
         # Check for placeholder coordinates - warn but don't reject
         # Some resorts may need manual coordinate addition later
         if lat == 0 and lon == 0:
-            logger.warning(f"Resort has placeholder (0, 0) coordinates: {data.get('name', 'unknown')}")
+            logger.warning(
+                f"Resort has placeholder (0, 0) coordinates: {data.get('name', 'unknown')}"
+            )
             # Don't add to errors - just warn
 
         # Validate timezone
@@ -659,6 +664,21 @@ def main():
     if args.detect_removed:
         logger.info("Detecting removed resorts...")
         try:
+            # Load protected resort IDs from core resorts.json
+            # These are hand-curated resorts that should never be auto-removed
+            protected_ids = set()
+            core_resorts_path = Path(__file__).parent.parent / "data" / "resorts.json"
+            if core_resorts_path.exists():
+                with open(core_resorts_path) as f:
+                    core_data = json.load(f)
+                    core_resorts = core_data.get("resorts", [])
+                    protected_ids = {
+                        r.get("resort_id") for r in core_resorts if r.get("resort_id")
+                    }
+                    logger.info(
+                        f"Loaded {len(protected_ids)} protected resort IDs from core data"
+                    )
+
             # Get all existing resort IDs from database
             existing_resorts = resort_service.list_resorts()
             existing_ids = {r.resort_id for r in existing_resorts}
@@ -666,11 +686,24 @@ def main():
             # Get IDs from source file
             source_ids = {r.get("resort_id") for r in resorts if r.get("resort_id")}
 
-            # Find resorts in DB but not in source
-            removed_resorts = list(existing_ids - source_ids)
+            # Find resorts in DB but not in source, EXCLUDING protected resorts
+            potentially_removed = existing_ids - source_ids
+            removed_resorts = [
+                rid for rid in potentially_removed if rid not in protected_ids
+            ]
+            protected_not_scraped = [
+                rid for rid in potentially_removed if rid in protected_ids
+            ]
+
+            if protected_not_scraped:
+                logger.info(
+                    f"Skipped {len(protected_not_scraped)} protected resorts not found in scrape "
+                    "(these are core resorts that won't be auto-removed)"
+                )
+
             if removed_resorts:
                 logger.warning(
-                    f"Found {len(removed_resorts)} resorts in DB not in source file"
+                    f"Found {len(removed_resorts)} non-protected resorts in DB not in source file"
                 )
                 for rid in removed_resorts[:10]:
                     logger.warning(f"  - {rid}")
