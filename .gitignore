@@ -146,3 +146,6 @@ ehthumbs.db
 # Fastlane
 ios/fastlane/.bundle/
 ios/fastlane/vendor/
+
+# Firebase credentials (use template + env vars)
+ios/SnowTracker/SnowTracker/Resources/GoogleService-Info.plist
