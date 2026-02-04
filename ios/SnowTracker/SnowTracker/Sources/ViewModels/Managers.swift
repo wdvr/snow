@@ -45,6 +45,10 @@ class SnowConditionsManager: ObservableObject {
         }
     }
 
+    /// Maximum number of resorts to fetch snow quality for in one session
+    /// This prevents excessive API calls when the backend returns thousands of resorts
+    private let maxSnowQualityFetchCount = 300
+
     /// Fetch lightweight snow quality summaries for all resorts (for main list display)
     /// - Parameter forceRefresh: If true, bypasses cache and fetches fresh data from API
     func fetchAllSnowQualitySummaries(forceRefresh: Bool = false) async {
@@ -68,18 +72,37 @@ class SnowConditionsManager: ObservableObject {
         isLoadingSnowQuality = true
         defer { isLoadingSnowQuality = false }
 
-        let resortIds = resorts.map { $0.id }
+        // Prioritize favorites, then limit total to prevent excessive API calls
+        let favoriteIds = Set(UserPreferencesManager.shared.favoriteResorts)
+        let allResortIds = resorts.map { $0.id }
+
+        // Sort favorites first, then limit total
+        let sortedIds = allResortIds.sorted { id1, id2 in
+            let isFav1 = favoriteIds.contains(id1)
+            let isFav2 = favoriteIds.contains(id2)
+            if isFav1 != isFav2 {
+                return isFav1 // Favorites come first
+            }
+            return id1 < id2
+        }
+
+        let resortIds = Array(sortedIds.prefix(maxSnowQualityFetchCount))
+
+        if allResortIds.count > maxSnowQualityFetchCount {
+            print("fetchAllSnowQualitySummaries: Limiting from \(allResortIds.count) to \(resortIds.count) resorts (favorites prioritized)")
+        }
         print("fetchAllSnowQualitySummaries: Fetching summaries for \(resortIds.count) resorts from API")
 
-        // Batch fetch in chunks of 50
+        // Batch fetch in chunks of 50, updating UI progressively
         let batchSize = 50
         var totalLoaded = 0
-        var allResults: [String: SnowQualitySummaryLight] = [:]
+        var allResults: [String: SnowQualitySummaryLight] = snowQualitySummaries // Start with existing data
 
         for batchStart in stride(from: 0, to: resortIds.count, by: batchSize) {
             let batchEnd = min(batchStart + batchSize, resortIds.count)
             let batchIds = Array(resortIds[batchStart..<batchEnd])
-            print("fetchAllSnowQualitySummaries: Fetching batch \(batchStart/batchSize + 1) with \(batchIds.count) resorts")
+            let batchNumber = batchStart/batchSize + 1
+            print("fetchAllSnowQualitySummaries: Fetching batch \(batchNumber) with \(batchIds.count) resorts")
 
             do {
                 let batchResults = try await apiClient.getBatchSnowQuality(for: batchIds)
@@ -87,17 +110,19 @@ class SnowConditionsManager: ObservableObject {
                     allResults[resortId] = summary
                 }
                 totalLoaded += batchResults.count
-                print("fetchAllSnowQualitySummaries: Batch \(batchStart/batchSize + 1) loaded \(batchResults.count) summaries")
+                print("fetchAllSnowQualitySummaries: Batch \(batchNumber) loaded \(batchResults.count) summaries")
+
+                // Update UI progressively after each batch so users see data faster
+                snowQualitySummaries = allResults
             } catch {
-                print("fetchAllSnowQualitySummaries: Batch \(batchStart/batchSize + 1) failed: \(error.localizedDescription)")
+                print("fetchAllSnowQualitySummaries: Batch \(batchNumber) failed: \(error.localizedDescription)")
                 // Continue with next batch rather than failing completely
             }
         }
 
-        // Update the published dictionary all at once to trigger SwiftUI update
+        // Cache the final results
         if !allResults.isEmpty {
-            print("fetchAllSnowQualitySummaries: Updating snowQualitySummaries with \(allResults.count) summaries")
-            snowQualitySummaries = allResults
+            print("fetchAllSnowQualitySummaries: Caching \(allResults.count) summaries")
             cacheService.cacheSnowQualitySummaries(allResults)
         }
 
