@@ -83,6 +83,10 @@ struct ResortMapView: View {
             .onAppear {
                 updateAnnotations()
                 locationManager.requestOneTimeLocation()
+                AnalyticsService.shared.trackScreen("Map", screenClass: "ResortMapView")
+            }
+            .onDisappear {
+                AnalyticsService.shared.trackScreenExit("Map")
             }
             .onChange(of: snowConditionsManager.resorts) { _, _ in
                 updateAnnotations()
@@ -93,8 +97,19 @@ struct ResortMapView: View {
             .onChange(of: snowConditionsManager.snowQualitySummaries.count) { _, _ in
                 updateAnnotations()
             }
-            .onChange(of: mapViewModel.selectedFilter) { _, _ in
+            .onChange(of: mapViewModel.selectedFilter) { _, newValue in
                 updateAnnotations()
+                AnalyticsService.shared.trackFilterApplied(filterType: "map_filter", filterValue: newValue.rawValue)
+            }
+            .onChange(of: mapStyle) { _, newValue in
+                let styleName: String
+                switch newValue {
+                case .standard: styleName = "standard"
+                case .imagery: styleName = "satellite"
+                case .hybrid: styleName = "hybrid"
+                default: styleName = "unknown"
+                }
+                AnalyticsService.shared.trackMapStyleChanged(style: styleName)
             }
             .onChange(of: userPreferencesManager.hiddenRegions) { _, _ in
                 updateAnnotations()
@@ -114,11 +129,17 @@ struct ResortMapView: View {
             onAnnotationTap: { resort in
                 selectedResort = resort
                 showResortDetail = true
+                AnalyticsService.shared.trackResortClicked(
+                    resortId: resort.id,
+                    resortName: resort.name,
+                    source: "map"
+                )
             },
             onClusterTap: { resorts in
                 // Show a list of resorts in the cluster
                 clusterResorts = resorts
                 showClusterList = true
+                AnalyticsService.shared.trackMapInteraction(action: "cluster_tap")
             }
         )
         .ignoresSafeArea(edges: .bottom)

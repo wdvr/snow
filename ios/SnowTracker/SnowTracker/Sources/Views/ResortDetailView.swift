@@ -66,6 +66,7 @@ struct ResortDetailView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 16) {
                     Button {
+                        AnalyticsService.shared.trackResortShared(resortId: resort.id, resortName: resort.name)
                         showingShareSheet = true
                     } label: {
                         Image(systemName: "square.and.arrow.up")
@@ -73,7 +74,13 @@ struct ResortDetailView: View {
                     }
 
                     Button {
+                        let wasFavorite = userPreferencesManager.isFavorite(resortId: resort.id)
                         userPreferencesManager.toggleFavorite(resortId: resort.id)
+                        if wasFavorite {
+                            AnalyticsService.shared.trackResortUnfavorited(resortId: resort.id, resortName: resort.name)
+                        } else {
+                            AnalyticsService.shared.trackResortFavorited(resortId: resort.id, resortName: resort.name)
+                        }
                     } label: {
                         Image(systemName: userPreferencesManager.isFavorite(resortId: resort.id) ? "heart.fill" : "heart")
                             .foregroundColor(userPreferencesManager.isFavorite(resortId: resort.id) ? .red : .gray)
@@ -85,11 +92,26 @@ struct ResortDetailView: View {
             ShareSheet(items: [shareText])
         }
         .refreshable {
+            AnalyticsService.shared.trackPullToRefresh(screen: "ResortDetail")
             await snowConditionsManager.fetchConditionsForResort(resort.id)
         }
         .task {
             // Fetch conditions for this resort when view appears
             await snowConditionsManager.fetchConditionsForResort(resort.id)
+        }
+        .onAppear {
+            AnalyticsService.shared.trackScreen("ResortDetail", screenClass: "ResortDetailView")
+            AnalyticsService.shared.trackResortViewed(
+                resortId: resort.id,
+                resortName: resort.name,
+                region: resort.inferredRegion.rawValue
+            )
+        }
+        .onDisappear {
+            AnalyticsService.shared.trackScreenExit("ResortDetail")
+        }
+        .onChange(of: selectedElevation) { _, newValue in
+            AnalyticsService.shared.trackElevationChanged(resortId: resort.id, elevation: newValue.rawValue)
         }
     }
 
@@ -134,6 +156,9 @@ struct ResortDetailView: View {
                     Label("Visit Website", systemImage: "safari")
                         .font(.caption)
                 }
+                .simultaneousGesture(TapGesture().onEnded {
+                    AnalyticsService.shared.trackResortWebsiteVisited(resortId: resort.id, resortName: resort.name)
+                })
             }
         }
         .padding()

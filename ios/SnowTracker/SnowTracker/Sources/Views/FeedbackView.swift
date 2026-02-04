@@ -58,6 +58,12 @@ struct FeedbackView: View {
         }
         .navigationTitle("Send Feedback")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            AnalyticsService.shared.trackScreen("Feedback", screenClass: "FeedbackView")
+        }
+        .onDisappear {
+            AnalyticsService.shared.trackScreenExit("Feedback")
+        }
         .alert("Feedback Sent!", isPresented: $showingSuccessAlert) {
             Button("OK") {
                 dismiss()
@@ -96,6 +102,17 @@ struct FeedbackView: View {
                 await MainActor.run {
                     isSubmitting = false
                     showingSuccessAlert = true
+                    // Determine feedback type from subject
+                    let feedbackType: String
+                    let subjectLower = subject.lowercased()
+                    if subjectLower.contains("bug") || subjectLower.contains("issue") || subjectLower.contains("problem") {
+                        feedbackType = "bug"
+                    } else if subjectLower.contains("feature") || subjectLower.contains("request") || subjectLower.contains("suggestion") {
+                        feedbackType = "feature"
+                    } else {
+                        feedbackType = "general"
+                    }
+                    AnalyticsService.shared.trackFeedbackSubmitted(type: feedbackType)
                 }
             } catch {
                 await MainActor.run {

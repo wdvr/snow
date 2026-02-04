@@ -89,6 +89,9 @@ struct RegionFilterSettingsView: View {
             }
         }
         .navigationTitle("Regions")
+        .onAppear {
+            AnalyticsService.shared.trackScreen("RegionSettings", screenClass: "RegionFilterSettingsView")
+        }
     }
 
     private func resortCount(for region: SkiRegion) -> Int {
@@ -111,9 +114,11 @@ struct RegionToggleRow: View {
         Toggle(isOn: Binding(
             get: { isVisible },
             set: { _ in
+                let wasVisible = isVisible
                 withAnimation {
                     userPreferencesManager.toggleRegionVisibility(region)
                 }
+                AnalyticsService.shared.trackRegionVisibilityChanged(region: region.rawValue, isVisible: !wasVisible)
             }
         )) {
             HStack(spacing: 12) {

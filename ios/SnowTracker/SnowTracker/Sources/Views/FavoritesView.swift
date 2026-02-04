@@ -20,7 +20,14 @@ struct FavoritesView: View {
                 }
             }
             .navigationTitle("Favorites")
+            .onAppear {
+                AnalyticsService.shared.trackScreen("Favorites", screenClass: "FavoritesView")
+            }
+            .onDisappear {
+                AnalyticsService.shared.trackScreenExit("Favorites")
+            }
             .refreshable {
+                AnalyticsService.shared.trackPullToRefresh(screen: "Favorites")
                 await snowConditionsManager.fetchConditionsForFavorites()
             }
             .task {
@@ -63,6 +70,13 @@ struct FavoritesView: View {
                 NavigationLink(destination: ResortDetailView(resort: resort)) {
                     FavoriteResortRow(resort: resort)
                 }
+                .simultaneousGesture(TapGesture().onEnded {
+                    AnalyticsService.shared.trackResortClicked(
+                        resortId: resort.id,
+                        resortName: resort.name,
+                        source: "favorites"
+                    )
+                })
             }
             .onDelete(perform: removeFavorites)
         }

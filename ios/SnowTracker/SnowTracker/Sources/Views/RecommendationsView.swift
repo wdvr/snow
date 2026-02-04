@@ -98,6 +98,16 @@ struct BestSnowNearYouView: View {
                 }
             }
             .navigationTitle("Best Snow")
+            .onAppear {
+                AnalyticsService.shared.trackScreen("BestSnow", screenClass: "BestSnowNearYouView")
+            }
+            .onDisappear {
+                AnalyticsService.shared.trackScreenExit("BestSnow")
+            }
+            .onChange(of: selectedTab) { _, newValue in
+                let tabName = newValue == 0 ? "nearby" : "global"
+                AnalyticsService.shared.trackFilterApplied(filterType: "best_snow_tab", filterValue: tabName)
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
@@ -131,10 +141,19 @@ struct BestSnowNearYouView: View {
             }
         }
         .refreshable {
+            AnalyticsService.shared.trackPullToRefresh(screen: "BestSnowNearYou")
             await refreshNearby()
         }
         .task {
             await loadNearbyIfNeeded()
+            // Track recommendations viewed when loaded
+            if !filteredNearbyRecommendations.isEmpty {
+                AnalyticsService.shared.trackRecommendationsViewed(
+                    count: filteredNearbyRecommendations.count,
+                    radiusKm: searchRadius,
+                    source: "nearby"
+                )
+            }
         }
         .onChange(of: locationManager.userLocation) { _, newLocation in
             // Reload when location becomes available (e.g., after permission granted)
@@ -246,7 +265,7 @@ struct BestSnowNearYouView: View {
                 }
 
                 // Recommendations
-                ForEach(recommendations) { recommendation in
+                ForEach(Array(recommendations.enumerated()), id: \.element.id) { index, recommendation in
                     NavigationLink(destination: ResortDetailView(resort: recommendation.resort)) {
                         RecommendationCard(
                             recommendation: recommendation,
@@ -255,6 +274,14 @@ struct BestSnowNearYouView: View {
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .simultaneousGesture(TapGesture().onEnded {
+                        AnalyticsService.shared.trackRecommendationClicked(
+                            resortId: recommendation.resort.id,
+                            resortName: recommendation.resort.name,
+                            rank: index + 1,
+                            score: recommendation.combinedScore
+                        )
+                    })
                 }
             }
             .padding()

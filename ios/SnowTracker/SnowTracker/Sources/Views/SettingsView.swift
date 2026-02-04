@@ -187,6 +187,11 @@ struct SettingsView: View {
             }
             .onAppear {
                 customURL = config.customAPIURLString
+                AnalyticsService.shared.trackScreen("Settings", screenClass: "SettingsView")
+                AnalyticsService.shared.trackSettingsOpened()
+            }
+            .onDisappear {
+                AnalyticsService.shared.trackScreenExit("Settings")
             }
             .alert("Reset API URL?", isPresented: $showingResetAlert) {
                 Button("Cancel", role: .cancel) { }
@@ -201,6 +206,7 @@ struct SettingsView: View {
             .alert("Sign Out?", isPresented: $showingSignOutAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Sign Out", role: .destructive) {
+                    AnalyticsService.shared.trackSignOut()
                     authService.signOut()
                 }
             } message: {
@@ -210,6 +216,7 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { }
                 Button("Clear", role: .destructive) {
                     snowConditionsManager.clearCache()
+                    AnalyticsService.shared.trackCacheCleared()
                 }
             } message: {
                 Text("This will delete all cached resort and weather data. The app will need to download fresh data.")
@@ -329,6 +336,18 @@ struct UnitsSettingsView: View {
             }
         }
         .navigationTitle("Units")
+        .onAppear {
+            AnalyticsService.shared.trackScreen("UnitsSettings", screenClass: "UnitsSettingsView")
+        }
+        .onChange(of: userPreferencesManager.preferredUnits.temperature) { _, newValue in
+            AnalyticsService.shared.trackUnitsChanged(unitType: "temperature", value: newValue.rawValue)
+        }
+        .onChange(of: userPreferencesManager.preferredUnits.distance) { _, newValue in
+            AnalyticsService.shared.trackUnitsChanged(unitType: "distance", value: newValue.rawValue)
+        }
+        .onChange(of: userPreferencesManager.preferredUnits.snowDepth) { _, newValue in
+            AnalyticsService.shared.trackUnitsChanged(unitType: "snow_depth", value: newValue.rawValue)
+        }
     }
 }
 

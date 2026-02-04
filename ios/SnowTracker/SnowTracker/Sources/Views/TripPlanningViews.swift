@@ -132,7 +132,14 @@ struct TripsListView: View {
                     }
                 }
             }
+            .onAppear {
+                AnalyticsService.shared.trackScreen("TripsList", screenClass: "TripsListView")
+            }
+            .onDisappear {
+                AnalyticsService.shared.trackScreenExit("TripsList")
+            }
             .refreshable {
+                AnalyticsService.shared.trackPullToRefresh(screen: "TripsList")
                 await tripManager.loadTrips()
             }
             .sheet(isPresented: $showingCreateTrip) {
@@ -334,7 +341,14 @@ struct TripDetailView: View {
                 }
             }
         }
+        .onAppear {
+            AnalyticsService.shared.trackScreen("TripDetail", screenClass: "TripDetailView")
+        }
+        .onDisappear {
+            AnalyticsService.shared.trackScreenExit("TripDetail")
+        }
         .refreshable {
+            AnalyticsService.shared.trackPullToRefresh(screen: "TripDetail")
             await refreshConditions()
         }
         .sheet(isPresented: $showingEditSheet) {
@@ -344,6 +358,7 @@ struct TripDetailView: View {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
                 Task {
+                    AnalyticsService.shared.trackTripDeleted(tripId: trip.tripId, resortName: trip.resortName)
                     try? await tripManager.deleteTrip(trip)
                     dismiss()
                 }
@@ -482,7 +497,10 @@ struct TripDetailView: View {
                 }
                 Spacer()
                 Button("Mark all read") {
-                    Task { try? await tripManager.markAlertsRead(trip) }
+                    Task {
+                        try? await tripManager.markAlertsRead(trip)
+                        AnalyticsService.shared.trackTripAlertsMarkedRead(tripId: trip.tripId, alertCount: trip.unreadAlertCount)
+                    }
                 }
                 .font(.caption)
                 .disabled(trip.unreadAlertCount == 0)
@@ -490,6 +508,9 @@ struct TripDetailView: View {
 
             ForEach(trip.alerts.prefix(5)) { alert in
                 AlertRow(alert: alert)
+                    .onTapGesture {
+                        AnalyticsService.shared.trackTripAlertViewed(tripId: trip.tripId, alertType: alert.type.rawValue)
+                    }
             }
         }
         .padding()
@@ -589,6 +610,7 @@ struct TripDetailView: View {
                 partySize: nil,
                 status: .active
             )
+            AnalyticsService.shared.trackTripStatusChanged(tripId: trip.tripId, resortName: trip.resortName, newStatus: "active")
         }
     }
 
@@ -602,6 +624,7 @@ struct TripDetailView: View {
                 partySize: nil,
                 status: .completed
             )
+            AnalyticsService.shared.trackTripStatusChanged(tripId: trip.tripId, resortName: trip.resortName, newStatus: "completed")
         }
     }
 }
@@ -740,6 +763,14 @@ struct CreateTripView: View {
                     startDate: startDate,
                     endDate: endDate,
                     notes: notes.isEmpty ? nil : notes,
+                    partySize: partySize
+                )
+                // Track trip creation
+                let durationDays = Calendar.current.dateComponents([.day], from: startDate, to: endDate).day ?? 1
+                AnalyticsService.shared.trackTripCreated(
+                    resortId: resort.id,
+                    resortName: resort.name,
+                    durationDays: durationDays + 1, // Include both start and end day
                     partySize: partySize
                 )
                 dismiss()

@@ -168,6 +168,13 @@ struct ResortListView: View {
                                 useMetric: useMetricDistance
                             )
                         }
+                        .simultaneousGesture(TapGesture().onEnded {
+                            AnalyticsService.shared.trackResortClicked(
+                                resortId: resort.id,
+                                resortName: resort.name,
+                                source: "list"
+                            )
+                        })
                     }
                 }
                 .listStyle(PlainListStyle())
@@ -183,9 +190,30 @@ struct ResortListView: View {
                 if let option = ResortSortOption(rawValue: savedSortOption) {
                     sortOption = option
                 }
+                // Track screen view
+                AnalyticsService.shared.trackScreen("ResortList", screenClass: "ResortListView")
+            }
+            .onDisappear {
+                AnalyticsService.shared.trackScreenExit("ResortList")
             }
             .refreshable {
+                AnalyticsService.shared.trackPullToRefresh(screen: "ResortList")
                 await snowConditionsManager.refreshData()
+            }
+            .onChange(of: searchText) { _, newValue in
+                // Track search when user stops typing (debounced by SwiftUI)
+                if !newValue.isEmpty {
+                    AnalyticsService.shared.trackSearch(query: newValue, resultsCount: filteredResorts.count)
+                }
+            }
+            .onChange(of: selectedRegion) { oldValue, newValue in
+                AnalyticsService.shared.trackRegionFilterChanged(
+                    region: newValue?.rawValue,
+                    previousRegion: oldValue?.rawValue
+                )
+            }
+            .onChange(of: sortOption) { _, newValue in
+                AnalyticsService.shared.trackSortChanged(sortOption: newValue.rawValue)
             }
             .overlay {
                 if snowConditionsManager.isLoading && snowConditionsManager.resorts.isEmpty {

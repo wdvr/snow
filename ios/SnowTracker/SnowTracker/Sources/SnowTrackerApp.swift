@@ -102,6 +102,15 @@ struct SnowTrackerApp: App {
                     }
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+                AnalyticsService.shared.trackAppBackground()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                AnalyticsService.shared.trackAppForeground()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willTerminateNotification)) { _ in
+                AnalyticsService.shared.endSession()
+            }
         }
     }
 }

@@ -37,6 +37,7 @@ struct NotificationSettingsView: View {
                 Toggle("All Notifications", isOn: $viewModel.notificationsEnabled)
                     .onChange(of: viewModel.notificationsEnabled) { _, newValue in
                         viewModel.saveSettings()
+                        AnalyticsService.shared.trackNotificationSettingChanged(setting: "all_notifications", enabled: newValue)
                     }
             } header: {
                 Text("Master Switch")
@@ -48,8 +49,9 @@ struct NotificationSettingsView: View {
             if viewModel.notificationsEnabled {
                 Section {
                     Toggle("Fresh Snow Alerts", isOn: $viewModel.freshSnowAlerts)
-                        .onChange(of: viewModel.freshSnowAlerts) { _, _ in
+                        .onChange(of: viewModel.freshSnowAlerts) { _, newValue in
                             viewModel.saveSettings()
+                            AnalyticsService.shared.trackNotificationSettingChanged(setting: "fresh_snow_alerts", enabled: newValue)
                         }
 
                     if viewModel.freshSnowAlerts {
@@ -77,13 +79,15 @@ struct NotificationSettingsView: View {
                     }
 
                     Toggle("Resort Event Alerts", isOn: $viewModel.eventAlerts)
-                        .onChange(of: viewModel.eventAlerts) { _, _ in
+                        .onChange(of: viewModel.eventAlerts) { _, newValue in
                             viewModel.saveSettings()
+                            AnalyticsService.shared.trackNotificationSettingChanged(setting: "event_alerts", enabled: newValue)
                         }
 
                     Toggle("Thaw/Freeze Alerts", isOn: $viewModel.thawFreezeAlerts)
-                        .onChange(of: viewModel.thawFreezeAlerts) { _, _ in
+                        .onChange(of: viewModel.thawFreezeAlerts) { _, newValue in
                             viewModel.saveSettings()
+                            AnalyticsService.shared.trackNotificationSettingChanged(setting: "thaw_freeze_alerts", enabled: newValue)
                         }
                 } header: {
                     Text("Alert Types")
@@ -202,6 +206,9 @@ struct NotificationSettingsView: View {
             }
         }
         .navigationTitle("Notifications")
+        .onAppear {
+            AnalyticsService.shared.trackScreen("NotificationSettings", screenClass: "NotificationSettingsView")
+        }
         .task {
             await viewModel.loadSettings()
         }

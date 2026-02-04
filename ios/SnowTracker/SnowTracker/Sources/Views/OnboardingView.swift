@@ -117,10 +117,14 @@ struct OnboardingView: View {
         .onAppear {
             // Initialize with default selections (northern hemisphere regions)
             selectedRegions = Set(northernHemisphereRegions.map { $0.rawValue })
+            AnalyticsService.shared.trackScreen("Onboarding", screenClass: "OnboardingView")
+            AnalyticsService.shared.trackOnboardingStarted()
         }
     }
 
     private func completeOnboarding() {
+        // Track onboarding completion
+        AnalyticsService.shared.trackOnboardingCompleted(regionsSelected: selectedRegions.count)
         // Calculate hidden regions (inverse of selected)
         let allRegions = Set(SkiRegion.allCases.map { $0.rawValue })
         let hiddenRegions = allRegions.subtracting(selectedRegions)
@@ -168,13 +172,15 @@ struct RegionGroupView: View {
     }
 
     private func toggleRegion(_ region: SkiRegion) {
+        let wasSelected = selectedRegions.contains(region.rawValue)
         withAnimation(.easeInOut(duration: 0.2)) {
-            if selectedRegions.contains(region.rawValue) {
+            if wasSelected {
                 selectedRegions.remove(region.rawValue)
             } else {
                 selectedRegions.insert(region.rawValue)
             }
         }
+        AnalyticsService.shared.trackOnboardingRegionToggled(region: region.rawValue, selected: !wasSelected)
     }
 }
 
