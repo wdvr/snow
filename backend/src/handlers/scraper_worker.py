@@ -272,8 +272,11 @@ def scrape_resort_detail(
     # Extract state/province
     state_province = extract_state_province(soup, country)
 
-    # Extract coordinates
+    # Extract coordinates from page, fallback to geocoding API
     latitude, longitude = extract_coordinates(soup)
+    if latitude == 0.0 and longitude == 0.0:
+        # Try geocoding as fallback
+        latitude, longitude = geocode_resort(name, country)
 
     # Generate resort ID
     resort_id = generate_resort_id(name)
@@ -350,6 +353,63 @@ def extract_coordinates(soup: BeautifulSoup) -> tuple[float, float]:
             )
             if lat_match and lng_match:
                 return float(lat_match.group(1)), float(lng_match.group(1))
+
+    return 0.0, 0.0
+
+
+def geocode_resort(name: str, country: str) -> tuple[float, float]:
+    """
+    Geocode a resort using Open-Meteo's free geocoding API.
+    Returns (0.0, 0.0) if geocoding fails.
+    """
+    try:
+        # Clean name for search
+        clean_name = name.lower()
+        clean_name = re.sub(r"ski resort|ski area|mountain resort", "", clean_name)
+        clean_name = re.sub(r"[–-]", " ", clean_name)
+        clean_name = re.sub(r"\s+", " ", clean_name).strip()
+
+        # Try Open-Meteo geocoding API (free, no API key needed)
+        url = "https://geocoding-api.open-meteo.com/v1/search"
+        params = {
+            "name": f"{clean_name} ski",
+            "count": 5,
+            "language": "en",
+            "format": "json",
+        }
+
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        results = data.get("results", [])
+        if not results:
+            # Try without "ski" suffix
+            params["name"] = clean_name
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            results = data.get("results", [])
+
+        if results:
+            # Find best match (prefer results in the right country)
+            for result in results:
+                if result.get("country_code", "").upper() == country.upper():
+                    lat = result.get("latitude", 0.0)
+                    lon = result.get("longitude", 0.0)
+                    if lat != 0.0 or lon != 0.0:
+                        logger.info(f"Geocoded {name} ({country}) -> {lat}, {lon}")
+                        return lat, lon
+
+            # Fallback to first result if country doesn't match
+            lat = results[0].get("latitude", 0.0)
+            lon = results[0].get("longitude", 0.0)
+            if lat != 0.0 or lon != 0.0:
+                logger.info(f"Geocoded {name} (fallback) -> {lat}, {lon}")
+                return lat, lon
+
+    except Exception as e:
+        logger.warning(f"Geocoding failed for {name}: {e}")
 
     return 0.0, 0.0
 
@@ -448,16 +508,23 @@ def publish_new_resorts_notification(
         return
 
     try:
+        # Count resorts without coordinates
+        no_coords = [r for r in new_resorts if r.get("latitude", 0) == 0.0 and r.get("longitude", 0) == 0.0]
+        has_coords = len(new_resorts) - len(no_coords)
+
         # Create summary message
-        resort_names = [r.get("name", r.get("resort_id")) for r in new_resorts[:10]]
         subject = (
             f"[{ENVIRONMENT}] {len(new_resorts)} new resorts discovered in {country}"
         )
+        if no_coords:
+            subject += f" ({len(no_coords)} missing coords)"
 
         message_lines = [
             f"Scraper Job ID: {job_id}",
             f"Country: {country}",
             f"New Resorts Found: {len(new_resorts)}",
+            f"With Coordinates: {has_coords}",
+            f"Missing Coordinates: {len(no_coords)}",
             "",
             "Resorts:",
         ]
@@ -468,10 +535,25 @@ def publish_new_resorts_notification(
             vertical = resort.get("elevation_top_m", 0) - resort.get(
                 "elevation_base_m", 0
             )
-            message_lines.append(f"  - {name} ({region}) - {vertical}m vertical")
+            coords_status = "" if (resort.get("latitude", 0) != 0.0 or resort.get("longitude", 0) != 0.0) else " [NO COORDS]"
+            message_lines.append(f"  - {name} ({region}) - {vertical}m vertical{coords_status}")
 
         if len(new_resorts) > 20:
             message_lines.append(f"  ... and {len(new_resorts) - 20} more")
+
+        # Add warning about missing coordinates
+        if no_coords:
+            message_lines.extend([
+                "",
+                "⚠️ WARNING: Resorts without coordinates will not appear on the map.",
+                "Please manually geocode these resorts or verify the scraper extraction.",
+                "",
+                "Resorts missing coordinates:",
+            ])
+            for resort in no_coords[:10]:
+                message_lines.append(f"  - {resort.get('name', 'Unknown')}")
+            if len(no_coords) > 10:
+                message_lines.append(f"  ... and {len(no_coords) - 10} more")
 
         message_lines.extend(
             [
@@ -487,7 +569,7 @@ def publish_new_resorts_notification(
             Subject=subject[:100],  # SNS subject limit
             Message=message,
         )
-        logger.info(f"Published SNS notification for {len(new_resorts)} new resorts")
+        logger.info(f"Published SNS notification for {len(new_resorts)} new resorts ({len(no_coords)} without coords)")
 
     except Exception as e:
         logger.error(f"Failed to publish new resorts notification: {e}")

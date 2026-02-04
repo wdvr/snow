@@ -174,6 +174,13 @@ struct SettingsView: View {
                 customURL = config.customAPIURLString
                 AnalyticsService.shared.trackScreen("Settings", screenClass: "SettingsView")
                 AnalyticsService.shared.trackSettingsOpened()
+
+                // Refresh user info to get email from backend (Apple only sends email on first sign in)
+                if authService.currentUser?.provider == .apple && authService.currentUser?.email == nil {
+                    Task {
+                        await authService.refreshUserInfo()
+                    }
+                }
             }
             .onDisappear {
                 AnalyticsService.shared.trackScreenExit("Settings")

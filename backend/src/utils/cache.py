@@ -11,16 +11,17 @@ from cachetools import TTLCache
 CACHE_TTL_SECONDS = 300  # 5 minutes for frequently changing data
 CACHE_TTL_LONG_SECONDS = 3600  # 1 hour for expensive aggregate queries
 CACHE_TTL_VERY_LONG_SECONDS = 86400  # 24 hours for rarely changing data
-_resorts_cache: TTLCache = TTLCache(maxsize=500, ttl=CACHE_TTL_SECONDS)
-_conditions_cache: TTLCache = TTLCache(maxsize=2000, ttl=CACHE_TTL_SECONDS)
+_resorts_cache: TTLCache = TTLCache(maxsize=1000, ttl=CACHE_TTL_SECONDS)
+_conditions_cache: TTLCache = TTLCache(maxsize=5000, ttl=CACHE_TTL_SECONDS)
 # Batch conditions cache - used by recommendations, 5-min TTL
 _all_conditions_cache: TTLCache = TTLCache(maxsize=1, ttl=CACHE_TTL_SECONDS)
 # Snow quality uses 1-hour TTL since weather updates hourly
-_snow_quality_cache: TTLCache = TTLCache(maxsize=500, ttl=CACHE_TTL_LONG_SECONDS)
-_recommendations_cache: TTLCache = TTLCache(maxsize=50, ttl=CACHE_TTL_LONG_SECONDS)
+# Sized for 10K+ resorts to support large databases
+_snow_quality_cache: TTLCache = TTLCache(maxsize=15000, ttl=CACHE_TTL_LONG_SECONDS)
+_recommendations_cache: TTLCache = TTLCache(maxsize=100, ttl=CACHE_TTL_LONG_SECONDS)
 # Resort metadata cache - names, countries, etc. (rarely changes)
 _resort_metadata_cache: TTLCache = TTLCache(
-    maxsize=500, ttl=CACHE_TTL_VERY_LONG_SECONDS
+    maxsize=15000, ttl=CACHE_TTL_VERY_LONG_SECONDS
 )
 
 
