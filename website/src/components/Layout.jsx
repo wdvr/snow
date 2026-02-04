@@ -1,5 +1,5 @@
 import { Outlet, Link } from 'react-router-dom'
-import { FiGithub, FiHelpCircle } from 'react-icons/fi'
+import { FiGithub, FiHelpCircle, FiCoffee } from 'react-icons/fi'
 
 function Layout() {
   return (
@@ -22,6 +22,14 @@ function Layout() {
             >
               <FiGithub /> GitHub
             </a>
+            <a
+              href="https://buymeacoffee.com/wdvr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="nav-link"
+            >
+              <FiCoffee /> Support
+            </a>
           </nav>
         </div>
       </header>
@@ -39,14 +47,19 @@ function Layout() {
             </div>
             <div className="footer-links">
               <Link to="/support">Support</Link>
-              <Link to="/privacy">Privacy Policy</Link>
-              <Link to="/terms">Terms of Service</Link>
               <a
                 href="https://github.com/wdvr/snow"
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 GitHub
+              </a>
+              <a
+                href="https://buymeacoffee.com/wdvr"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Buy Me a Coffee
               </a>
             </div>
             <div className="footer-copyright">
