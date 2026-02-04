@@ -1,5 +1,5 @@
 import { Outlet, Link } from 'react-router-dom'
-import { FiGithub } from 'react-icons/fi'
+import { FiGithub, FiHelpCircle } from 'react-icons/fi'
 
 function Layout() {
   return (
@@ -11,6 +11,9 @@ function Layout() {
             <span className="logo-text">Powder Chaser</span>
           </Link>
           <nav className="nav">
+            <Link to="/support" className="nav-link">
+              <FiHelpCircle /> Support
+            </Link>
             <a
               href="https://github.com/wdvr/snow"
               target="_blank"
@@ -35,6 +38,7 @@ function Layout() {
               <span>Powder Chaser</span>
             </div>
             <div className="footer-links">
+              <Link to="/support">Support</Link>
               <Link to="/privacy">Privacy Policy</Link>
               <Link to="/terms">Terms of Service</Link>
               <a
