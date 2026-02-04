@@ -53,7 +53,7 @@ platform :ios do
   desc "Full release: build, upload to TestFlight, upload metadata, submit for review"
   lane :release do |options|
     api_key = get_api_key
-    version = get_version_number(xcodeproj: "SnowTracker.xcodeproj")
+    version = get_version_number(xcodeproj: "SnowTracker.xcodeproj", target: "SnowTracker")
 
     UI.message("Releasing version #{version}")
 
@@ -146,7 +146,7 @@ platform :ios do
   desc "Submit existing build for review (metadata only)"
   lane :submit_for_review do |options|
     api_key = get_api_key
-    version = options[:version] || get_version_number(xcodeproj: "SnowTracker.xcodeproj")
+    version = options[:version] || get_version_number(xcodeproj: "SnowTracker.xcodeproj", target: "SnowTracker")
 
     # Upload metadata first
     deliver(
@@ -230,7 +230,7 @@ platform :ios do
     api_key = get_api_key
 
     # Get version from options or project
-    version = options[:app_version] || get_version_number(xcodeproj: "SnowTracker.xcodeproj")
+    version = options[:app_version] || get_version_number(xcodeproj: "SnowTracker.xcodeproj", target: "SnowTracker")
 
     deliver(
       api_key: api_key,
@@ -286,7 +286,7 @@ platform :ios do
   lane :upload_metadata_only do |options|
     api_key = get_api_key
 
-    version = options[:app_version] || get_version_number(xcodeproj: "SnowTracker.xcodeproj")
+    version = options[:app_version] || get_version_number(xcodeproj: "SnowTracker.xcodeproj", target: "SnowTracker")
 
     deliver(
       api_key: api_key,
@@ -329,7 +329,7 @@ platform :ios do
       bump_type: bump_type
     )
 
-    version = get_version_number(xcodeproj: "SnowTracker.xcodeproj")
+    version = get_version_number(xcodeproj: "SnowTracker.xcodeproj", target: "SnowTracker")
     UI.success("Bumped version to #{version}")
   end
 

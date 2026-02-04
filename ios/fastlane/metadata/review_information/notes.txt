@@ -1,1 +1,12 @@
-No demo account needed. The app works without login.
+Snow Tracker helps skiers find resorts with the best snow conditions by aggregating weather data and snow quality estimates.
+
+No login is required. The app fetches real-time weather data from public APIs.
+
+To test:
+1. Launch the app to see the resort list
+2. Tap a resort to view detailed conditions
+3. Use the map view to explore resorts geographically
+4. Check favorites and recommendations
+5. View settings for preferences
+
+The app works with live weather data and requires no special credentials.

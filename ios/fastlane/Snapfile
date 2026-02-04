@@ -1,0 +1,41 @@
+# Snapfile - Fastlane screenshot configuration
+
+# Devices to capture screenshots on
+devices([
+  "iPhone 16 Pro Max",
+  "iPhone 16 Pro",
+  "iPhone SE (3rd generation)",
+  "iPad Pro 13-inch (M4)"
+])
+
+# Languages to capture
+languages([
+  "en-US"
+])
+
+# Xcode scheme to use
+scheme("SnowTracker")
+
+# Output directory
+output_directory("./screenshots")
+
+# Clear previous screenshots
+clear_previous_screenshots(true)
+
+# Override the status bar
+override_status_bar(true)
+
+# Don't stop on first error
+stop_after_first_error(false)
+
+# Skip opening the HTML summary
+skip_open_summary(true)
+
+# Use concurrent simulators for faster execution
+concurrent_simulators(false)
+
+# Project file
+project("../SnowTracker.xcodeproj")
+
+# Test plan (optional - uses default if not specified)
+# testplan("ScreenshotTestPlan")

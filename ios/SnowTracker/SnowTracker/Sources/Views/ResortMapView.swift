@@ -16,105 +16,115 @@ struct ResortMapView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                // Map
-                mapContent
+            mainMapContent
+        }
+    }
 
-                // Overlays
-                VStack {
-                    // Top bar with filters
-                    filterBar
-                        .padding(.horizontal)
-                        .padding(.top, 8)
-
-                    Spacer()
-
-                    // Bottom overlays
-                    VStack(spacing: 12) {
-                        // Legend toggle
-                        if showLegend {
-                            qualityLegend
-                                .transition(.move(edge: .bottom).combined(with: .opacity))
-                        }
-
-                        // Nearby resorts carousel (if location available)
-                        if locationManager.isLocationAvailable && !mapViewModel.nearbyResorts().isEmpty {
-                            nearbyResortsCarousel
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 8)
-                }
-            }
+    private var mainMapContent: some View {
+        mapZStackContent
             .navigationTitle("Map")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    mapStyleMenu
-                }
+            .toolbar { mapToolbarItems }
+            .sheet(isPresented: $showResortDetail) { resortDetailSheet }
+            .sheet(isPresented: $showClusterList) { clusterListSheet }
+            .onAppear { handleAppear() }
+            .onDisappear { handleDisappear() }
+            .modifier(MapChangeHandlers(
+                resorts: snowConditionsManager.resorts,
+                conditions: snowConditionsManager.conditions,
+                summaryCount: snowConditionsManager.snowQualitySummaries.count,
+                selectedFilter: mapViewModel.selectedFilter,
+                hiddenRegions: userPreferencesManager.hiddenRegions,
+                onAnnotationsUpdate: updateAnnotations,
+                onFilterChange: handleFilterChange
+            ))
+    }
 
-                ToolbarItem(placement: .topBarTrailing) {
-                    trailingToolbarItems
-                }
+    private var mapZStackContent: some View {
+        ZStack {
+            mapContent
+            mapOverlays
+        }
+    }
+
+    @ViewBuilder
+    private var mapOverlays: some View {
+        VStack {
+            filterBar
+                .padding(.horizontal)
+                .padding(.top, 8)
+            Spacer()
+            bottomOverlays
+        }
+    }
+
+    @ViewBuilder
+    private var bottomOverlays: some View {
+        VStack(spacing: 12) {
+            if showLegend {
+                qualityLegend
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            .sheet(isPresented: $showResortDetail) {
-                if let resort = selectedResort {
-                    ResortMapDetailSheet(resort: resort)
-                        .environmentObject(snowConditionsManager)
-                        .environmentObject(userPreferencesManager)
-                        .presentationDetents([.medium, .large])
-                        .presentationDragIndicator(.visible)
-                }
+            if locationManager.isLocationAvailable && !mapViewModel.nearbyResorts().isEmpty {
+                nearbyResortsCarousel
             }
-            .sheet(isPresented: $showClusterList) {
-                ClusterResortListSheet(
-                    resorts: clusterResorts,
-                    onResortSelected: { resort in
-                        showClusterList = false
-                        selectedResort = resort
-                        showResortDetail = true
-                    }
-                )
+        }
+        .padding(.horizontal)
+        .padding(.bottom, 8)
+    }
+
+    @ToolbarContentBuilder
+    private var mapToolbarItems: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) { mapStyleMenu }
+        ToolbarItem(placement: .topBarTrailing) { trailingToolbarItems }
+    }
+
+    @ViewBuilder
+    private var resortDetailSheet: some View {
+        if let resort = selectedResort {
+            ResortMapDetailSheet(resort: resort)
                 .environmentObject(snowConditionsManager)
                 .environmentObject(userPreferencesManager)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
-            }
-            .onAppear {
-                updateAnnotations()
-                locationManager.requestOneTimeLocation()
-                AnalyticsService.shared.trackScreen("Map", screenClass: "ResortMapView")
-            }
-            .onDisappear {
-                AnalyticsService.shared.trackScreenExit("Map")
-            }
-            .onChange(of: snowConditionsManager.resorts) { _, _ in
-                updateAnnotations()
-            }
-            .onChange(of: snowConditionsManager.conditions) { _, _ in
-                updateAnnotations()
-            }
-            .onChange(of: snowConditionsManager.snowQualitySummaries.count) { _, _ in
-                updateAnnotations()
-            }
-            .onChange(of: mapViewModel.selectedFilter) { _, newValue in
-                updateAnnotations()
-                AnalyticsService.shared.trackFilterApplied(filterType: "map_filter", filterValue: newValue.rawValue)
-            }
-            .onChange(of: mapStyle) { _, newValue in
-                let styleName: String
-                switch newValue {
-                case .standard: styleName = "standard"
-                case .imagery: styleName = "satellite"
-                case .hybrid: styleName = "hybrid"
-                default: styleName = "unknown"
-                }
-                AnalyticsService.shared.trackMapStyleChanged(style: styleName)
-            }
-            .onChange(of: userPreferencesManager.hiddenRegions) { _, _ in
-                updateAnnotations()
-            }
         }
+    }
+
+    @ViewBuilder
+    private var clusterListSheet: some View {
+        ClusterResortListSheet(
+            resorts: clusterResorts,
+            onResortSelected: { resort in
+                showClusterList = false
+                selectedResort = resort
+                showResortDetail = true
+            }
+        )
+        .environmentObject(snowConditionsManager)
+        .environmentObject(userPreferencesManager)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private func handleAppear() {
+        updateAnnotations()
+        locationManager.requestOneTimeLocation()
+        AnalyticsService.shared.trackScreen("Map", screenClass: "ResortMapView")
+    }
+
+    private func handleDisappear() {
+        AnalyticsService.shared.trackScreenExit("Map")
+    }
+
+    private func handleFilterChange(_ newValue: MapFilterOption) {
+        updateAnnotations()
+        AnalyticsService.shared.trackFilterApplied(filterType: "map_filter", filterValue: newValue.rawValue)
+    }
+
+    private func handleMapStyleChange(_ newValue: MapStyle) {
+        // MapStyle doesn't conform to Equatable, so use string representation
+        let styleName = String(describing: newValue)
+        AnalyticsService.shared.trackMapStyleChanged(style: styleName)
     }
 
     // MARK: - Map Content
@@ -763,6 +773,27 @@ struct ClusterResortRow: View {
                 .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Map Change Handlers Modifier
+
+private struct MapChangeHandlers: ViewModifier {
+    let resorts: [Resort]
+    let conditions: [String: [WeatherCondition]]
+    let summaryCount: Int
+    let selectedFilter: MapFilterOption
+    let hiddenRegions: Set<String>
+    let onAnnotationsUpdate: () -> Void
+    let onFilterChange: (MapFilterOption) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: resorts.count) { _, _ in onAnnotationsUpdate() }
+            .onChange(of: conditions.count) { _, _ in onAnnotationsUpdate() }
+            .onChange(of: summaryCount) { _, _ in onAnnotationsUpdate() }
+            .onChange(of: selectedFilter) { _, newValue in onFilterChange(newValue) }
+            .onChange(of: hiddenRegions.count) { _, _ in onAnnotationsUpdate() }
     }
 }
 

@@ -2061,6 +2061,337 @@ if environment == "prod":
         endpoint="wouterdevriendt@gmail.com",
     )
 
+# =============================================================================
+# SES Email Forwarding (support@powderchaserapp.com -> Gmail)
+# =============================================================================
+# Only set up in prod to avoid duplicate MX records
+if environment == "prod" and hosted_zone is not None:
+    forward_to_email = "wouterdevriendt@gmail.com"
+
+    # SES Domain Identity - verify the domain for sending/receiving
+    ses_domain_identity = aws.ses.DomainIdentity(
+        f"{app_name}-ses-domain",
+        domain=domain_name,
+    )
+
+    # DKIM for email authentication
+    ses_domain_dkim = aws.ses.DomainDkim(
+        f"{app_name}-ses-dkim",
+        domain=ses_domain_identity.domain,
+    )
+
+    # Route53 DKIM records (3 CNAME records for DKIM verification)
+    ses_dkim_records = []
+    for i in range(3):
+        record = aws.route53.Record(
+            f"{app_name}-ses-dkim-record-{i}",
+            zone_id=hosted_zone.zone_id,
+            name=ses_domain_dkim.dkim_tokens[i].apply(
+                lambda t: f"{t}._domainkey.{domain_name}"
+            ),
+            type="CNAME",
+            ttl=300,
+            records=[
+                ses_domain_dkim.dkim_tokens[i].apply(
+                    lambda t: f"{t}.dkim.amazonses.com"
+                )
+            ],
+        )
+        ses_dkim_records.append(record)
+
+    # MX record for receiving emails via SES
+    ses_mx_record = aws.route53.Record(
+        f"{app_name}-ses-mx-record",
+        zone_id=hosted_zone.zone_id,
+        name=domain_name,
+        type="MX",
+        ttl=300,
+        records=["10 inbound-smtp.us-west-2.amazonaws.com"],
+    )
+
+    # SPF record for sending authentication
+    ses_spf_record = aws.route53.Record(
+        f"{app_name}-ses-spf-record",
+        zone_id=hosted_zone.zone_id,
+        name=domain_name,
+        type="TXT",
+        ttl=300,
+        records=["v=spf1 include:amazonses.com ~all"],
+    )
+
+    # S3 bucket to store incoming emails temporarily
+    ses_email_bucket = aws.s3.BucketV2(
+        f"{app_name}-ses-emails",
+        bucket=f"{app_name}-ses-emails-{aws_region}",
+        tags=tags,
+    )
+
+    # Lifecycle rule to delete old emails after 7 days
+    ses_email_bucket_lifecycle = aws.s3.BucketLifecycleConfigurationV2(
+        f"{app_name}-ses-emails-lifecycle",
+        bucket=ses_email_bucket.id,
+        rules=[
+            aws.s3.BucketLifecycleConfigurationV2RuleArgs(
+                id="delete-old-emails",
+                status="Enabled",
+                expiration=aws.s3.BucketLifecycleConfigurationV2RuleExpirationArgs(
+                    days=7,
+                ),
+            )
+        ],
+    )
+
+    # S3 bucket policy to allow SES to write emails
+    ses_email_bucket_policy = aws.s3.BucketPolicy(
+        f"{app_name}-ses-emails-policy",
+        bucket=ses_email_bucket.id,
+        policy=pulumi.Output.all(ses_email_bucket.arn).apply(
+            lambda args: f"""{{
+                "Version": "2012-10-17",
+                "Statement": [
+                    {{
+                        "Sid": "AllowSESPuts",
+                        "Effect": "Allow",
+                        "Principal": {{
+                            "Service": "ses.amazonaws.com"
+                        }},
+                        "Action": "s3:PutObject",
+                        "Resource": "{args[0]}/*",
+                        "Condition": {{
+                            "StringEquals": {{
+                                "AWS:SourceAccount": "{aws.get_caller_identity().account_id}"
+                            }}
+                        }}
+                    }}
+                ]
+            }}"""
+        ),
+    )
+
+    # Lambda function to forward emails
+    email_forwarder_role = aws.iam.Role(
+        f"{app_name}-email-forwarder-role",
+        assume_role_policy="""{
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Action": "sts:AssumeRole",
+                "Principal": {
+                    "Service": "lambda.amazonaws.com"
+                },
+                "Effect": "Allow"
+            }]
+        }""",
+        tags=tags,
+    )
+
+    # Policy for email forwarder Lambda
+    email_forwarder_policy = aws.iam.RolePolicy(
+        f"{app_name}-email-forwarder-policy",
+        role=email_forwarder_role.id,
+        policy=pulumi.Output.all(ses_email_bucket.arn).apply(
+            lambda args: f"""{{
+                "Version": "2012-10-17",
+                "Statement": [
+                    {{
+                        "Effect": "Allow",
+                        "Action": [
+                            "logs:CreateLogGroup",
+                            "logs:CreateLogStream",
+                            "logs:PutLogEvents"
+                        ],
+                        "Resource": "arn:aws:logs:*:*:*"
+                    }},
+                    {{
+                        "Effect": "Allow",
+                        "Action": ["s3:GetObject"],
+                        "Resource": "{args[0]}/*"
+                    }},
+                    {{
+                        "Effect": "Allow",
+                        "Action": ["ses:SendRawEmail"],
+                        "Resource": "*"
+                    }}
+                ]
+            }}"""
+        ),
+    )
+
+    # Email forwarder Lambda code
+    email_forwarder_code = f'''
+import boto3
+import email
+import os
+import re
+
+def handler(event, context):
+    """Forward incoming SES emails to Gmail."""
+    s3 = boto3.client("s3")
+    ses = boto3.client("ses", region_name="{aws_region}")
+
+    forward_to = os.environ["FORWARD_TO"]
+    sender_domain = os.environ["SENDER_DOMAIN"]
+
+    for record in event.get("Records", []):
+        # Get email from S3
+        bucket = record["s3"]["bucket"]["name"]
+        key = record["s3"]["object"]["key"]
+
+        response = s3.get_object(Bucket=bucket, Key=key)
+        raw_email = response["Body"].read()
+
+        # Parse email
+        msg = email.message_from_bytes(raw_email)
+        original_from = msg.get("From", "unknown")
+        original_to = msg.get("To", "")
+        subject = msg.get("Subject", "(no subject)")
+
+        # Create forwarded email
+        # Replace From with our domain (required by SES)
+        # Put original sender in Reply-To
+        del msg["From"]
+        del msg["Return-Path"]
+        del msg["DKIM-Signature"]
+
+        msg["From"] = f"support@{{sender_domain}}"
+        msg["Reply-To"] = original_from
+        msg["X-Original-From"] = original_from
+        msg["X-Original-To"] = original_to
+
+        # Prefix subject with [Fwd]
+        del msg["Subject"]
+        msg["Subject"] = f"[Fwd] {{subject}}"
+
+        # Send via SES
+        ses.send_raw_email(
+            Source=f"support@{{sender_domain}}",
+            Destinations=[forward_to],
+            RawMessage={{"Data": msg.as_bytes()}}
+        )
+
+        print(f"Forwarded email from {{original_from}} to {{forward_to}}")
+
+    return {{"status": "ok"}}
+'''
+
+    # Create Lambda function for email forwarding
+    email_forwarder_lambda = aws.lambda_.Function(
+        f"{app_name}-email-forwarder",
+        role=email_forwarder_role.arn,
+        runtime="python3.11",
+        handler="index.handler",
+        timeout=30,
+        memory_size=256,
+        code=pulumi.AssetArchive(
+            {"index.py": pulumi.StringAsset(email_forwarder_code)}
+        ),
+        environment=aws.lambda_.FunctionEnvironmentArgs(
+            variables={
+                "FORWARD_TO": forward_to_email,
+                "SENDER_DOMAIN": domain_name,
+            }
+        ),
+        tags=tags,
+    )
+
+    # Allow S3 to invoke Lambda
+    email_forwarder_s3_permission = aws.lambda_.Permission(
+        f"{app_name}-email-forwarder-s3-permission",
+        action="lambda:InvokeFunction",
+        function=email_forwarder_lambda.name,
+        principal="s3.amazonaws.com",
+        source_arn=ses_email_bucket.arn,
+    )
+
+    # S3 notification to trigger Lambda when new email arrives
+    ses_email_bucket_notification = aws.s3.BucketNotification(
+        f"{app_name}-ses-emails-notification",
+        bucket=ses_email_bucket.id,
+        lambda_functions=[
+            aws.s3.BucketNotificationLambdaFunctionArgs(
+                lambda_function_arn=email_forwarder_lambda.arn,
+                events=["s3:ObjectCreated:*"],
+            )
+        ],
+        opts=pulumi.ResourceOptions(depends_on=[email_forwarder_s3_permission]),
+    )
+
+    # SES Receipt Rule Set (active rule set for receiving emails)
+    ses_rule_set = aws.ses.ReceiptRuleSet(
+        f"{app_name}-ses-rule-set",
+        rule_set_name=f"{app_name}-email-rules",
+    )
+
+    # Activate the rule set
+    ses_active_rule_set = aws.ses.ActiveReceiptRuleSet(
+        f"{app_name}-ses-active-rule-set",
+        rule_set_name=ses_rule_set.rule_set_name,
+    )
+
+    # SES Receipt Rule - save emails to S3 (which triggers Lambda)
+    ses_receipt_rule = aws.ses.ReceiptRule(
+        f"{app_name}-ses-receipt-rule",
+        rule_set_name=ses_rule_set.rule_set_name,
+        name="forward-to-gmail",
+        enabled=True,
+        scan_enabled=True,
+        recipients=[f"support@{domain_name}"],
+        s3_actions=[
+            aws.ses.ReceiptRuleS3ActionArgs(
+                bucket_name=ses_email_bucket.bucket,
+                position=1,
+            )
+        ],
+        opts=pulumi.ResourceOptions(
+            depends_on=[ses_active_rule_set, ses_email_bucket_policy]
+        ),
+    )
+
+    # SMTP credentials for sending FROM Gmail as support@powderchaserapp.com
+    ses_smtp_user = aws.iam.User(
+        f"{app_name}-ses-smtp-user",
+        name=f"{app_name}-ses-smtp",
+        tags=tags,
+    )
+
+    ses_smtp_policy = aws.iam.UserPolicy(
+        f"{app_name}-ses-smtp-policy",
+        user=ses_smtp_user.name,
+        policy="""{
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Effect": "Allow",
+                "Action": "ses:SendRawEmail",
+                "Resource": "*"
+            }]
+        }""",
+    )
+
+    ses_smtp_access_key = aws.iam.AccessKey(
+        f"{app_name}-ses-smtp-access-key",
+        user=ses_smtp_user.name,
+    )
+
+    # Export SES email setup info
+    pulumi.export("ses_smtp_server", "email-smtp.us-west-2.amazonaws.com")
+    pulumi.export("ses_smtp_port", "587")
+    pulumi.export("ses_smtp_username", ses_smtp_access_key.id)
+    pulumi.export("ses_smtp_password", ses_smtp_access_key.ses_smtp_password_v4)
+    pulumi.export("support_email", f"support@{domain_name}")
+    pulumi.export(
+        "gmail_send_as_instructions",
+        pulumi.Output.concat(
+            "To send from Gmail as support@powderchaserapp.com:\n",
+            "1. Gmail Settings -> Accounts -> 'Send mail as' -> Add another email\n",
+            "2. Email: support@powderchaserapp.com\n",
+            "3. SMTP Server: email-smtp.us-west-2.amazonaws.com\n",
+            "4. Port: 587, TLS: Yes\n",
+            "5. Username: ",
+            ses_smtp_access_key.id,
+            "\n",
+            "6. Password: (see ses_smtp_password output)\n",
+        ),
+    )
+
 pulumi.export("user_pool_id", user_pool.id)
 pulumi.export("user_pool_client_id", user_pool_client.id)
 pulumi.export("region", aws_region)
