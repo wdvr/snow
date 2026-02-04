@@ -1,8 +1,9 @@
 import XCTest
 
+@MainActor
 final class AppStoreScreenshotTests: XCTestCase {
 
-    var app: XCUIApplication!
+    nonisolated(unsafe) var app: XCUIApplication!
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -200,7 +201,8 @@ final class AppStoreScreenshotTests: XCTestCase {
             takeScreenshot(name: "10-search-results")
 
             // Clear search
-            if let clearButton = searchField.buttons["Clear text"].firstOrNil {
+            let clearButton = searchField.buttons["Clear text"]
+            if clearButton.exists {
                 clearButton.tap()
             }
         }
@@ -247,13 +249,5 @@ final class AppStoreScreenshotTests: XCTestCase {
         sleep(2)
 
         takeScreenshot(name: "12-favorites-with-content")
-    }
-}
-
-// MARK: - Helper Extensions
-
-extension XCUIElementQuery {
-    var firstOrNil: XCUIElement? {
-        return count > 0 ? element(boundBy: 0) : nil
     }
 }
