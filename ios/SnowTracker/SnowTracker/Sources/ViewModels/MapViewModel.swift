@@ -179,7 +179,11 @@ class MapViewModel: ObservableObject {
         }
 
         let allAnnotations = visibleResorts.map { resort in
-            let condition = conditions[resort.id]?.first
+            // Prefer top elevation for snow quality (best conditions), fall back to mid, then any
+            let resortConditions = conditions[resort.id] ?? []
+            let condition = resortConditions.first { $0.elevationLevel == "top" }
+                ?? resortConditions.first { $0.elevationLevel == "mid" }
+                ?? resortConditions.first
             // Use snow quality summary as fallback if no full condition available
             let fallbackQuality = snowQualitySummaries[resort.id]?.overallSnowQuality
             return ResortAnnotation(resort: resort, condition: condition, fallbackQuality: fallbackQuality)
