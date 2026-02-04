@@ -364,6 +364,17 @@ async def get_regions(response: Response):
         )
 
 
+def _has_valid_coordinates(resort: Resort) -> bool:
+    """Check if a resort has valid (non-zero) coordinates."""
+    if not resort.elevation_points:
+        return False
+    # Check if any elevation point has valid coordinates
+    for ep in resort.elevation_points:
+        if ep.latitude != 0.0 or ep.longitude != 0.0:
+            return True
+    return False
+
+
 @app.get("/api/v1/resorts")
 async def get_resorts(
     response: Response,
@@ -373,8 +384,15 @@ async def get_resorts(
     region: str | None = Query(
         None, description="Filter by region (na_west, alps, japan, etc.)"
     ),
+    include_no_coords: bool = Query(
+        False, description="Include resorts without valid coordinates (default: exclude)"
+    ),
 ):
-    """Get all ski resorts, optionally filtered by country or region."""
+    """Get all ski resorts, optionally filtered by country or region.
+
+    By default, resorts with invalid (0,0) coordinates are excluded.
+    Use include_no_coords=true to include them.
+    """
     try:
         # Validate region if provided
         if region and region not in VALID_REGIONS:
@@ -384,6 +402,10 @@ async def get_resorts(
             )
 
         resorts = _get_all_resorts_cached()
+
+        # Filter out resorts with invalid coordinates (unless explicitly included)
+        if not include_no_coords:
+            resorts = [r for r in resorts if _has_valid_coordinates(r)]
 
         # Apply region filter
         if region:
@@ -881,6 +903,7 @@ async def get_batch_snow_quality(
 
     This is optimized for the resort list view where we need quality indicators
     for many resorts at once. Returns lightweight summaries (just overall quality).
+    Supports up to 200 resorts per request for efficient bulk loading.
     """
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -893,10 +916,11 @@ async def get_batch_snow_quality(
                 detail="No resort IDs provided",
             )
 
-        if len(ids) > 50:
+        # Increased limit to 200 for efficient bulk loading
+        if len(ids) > 200:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Maximum 50 resorts per batch request",
+                detail="Maximum 200 resorts per batch request",
             )
 
         results = {}
@@ -908,8 +932,9 @@ async def get_batch_snow_quality(
             except Exception as e:
                 return resort_id, {"error": str(e)}
 
-        # Fetch all in parallel
-        with ThreadPoolExecutor(max_workers=min(len(ids), 20)) as executor:
+        # Fetch all in parallel with more workers for larger batches
+        max_workers = min(len(ids), 50)  # Up to 50 parallel workers
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {executor.submit(fetch_quality, rid): rid for rid in ids}
             for future in as_completed(futures):
                 resort_id, result = future.result()

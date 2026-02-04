@@ -93,8 +93,8 @@ class SnowConditionsManager: ObservableObject {
         }
         print("fetchAllSnowQualitySummaries: Fetching summaries for \(resortIds.count) resorts from API")
 
-        // Batch fetch in chunks of 50, updating UI progressively
-        let batchSize = 50
+        // Batch fetch in chunks of 200 (API limit), updating UI progressively
+        let batchSize = 200
         var totalLoaded = 0
         var allResults: [String: SnowQualitySummaryLight] = snowQualitySummaries // Start with existing data
 
