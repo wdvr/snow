@@ -191,10 +191,9 @@ platform :ios do
       scheme: "SnowTracker",
       testplan: "ScreenshotTestPlan",
       devices: [
-        "iPhone 16 Pro Max",      # 6.9" display (required)
-        "iPhone 16 Pro",          # 6.3" display
-        "iPhone SE (3rd generation)", # 4.7" display
-        "iPad Pro 13-inch (M4)"   # 13" iPad Pro
+        "iPhone 17 Pro Max",      # 6.9" display (required)
+        "iPhone 17 Pro",          # 6.3" display
+        "iPhone 16e"              # smaller display
       ],
       languages: ["en-US"],
       output_directory: "./screenshots",
@@ -212,7 +211,7 @@ platform :ios do
       project: "SnowTracker.xcodeproj",
       scheme: "SnowTracker",
       testplan: "ScreenshotTestPlan",
-      devices: ["iPhone 16 Pro Max"],
+      devices: ["iPhone 17 Pro Max"],
       languages: ["en-US"],
       output_directory: "./screenshots",
       clear_previous_screenshots: true,

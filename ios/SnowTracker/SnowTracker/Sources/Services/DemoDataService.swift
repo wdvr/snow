@@ -219,6 +219,7 @@ class DemoDataService {
             snowfall24hCm: snowData.snowfall24h,
             snowfall48hCm: snowData.snowfall48h,
             snowfall72hCm: snowData.snowfall72h,
+            snowDepthCm: elevation.elevationMeters > 2000 ? 180.0 : (elevation.elevationMeters > 1500 ? 120.0 : 80.0),
             predictedSnow24hCm: snowData.predicted24h,
             predictedSnow48hCm: snowData.predicted48h,
             predictedSnow72hCm: snowData.predicted72h,

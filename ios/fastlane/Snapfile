@@ -1,11 +1,10 @@
 # Snapfile - Fastlane screenshot configuration
 
-# Devices to capture screenshots on
+# Devices to capture screenshots on (Xcode 26 / iOS 19 simulators)
 devices([
-  "iPhone 16 Pro Max",
-  "iPhone 16 Pro",
-  "iPhone SE (3rd generation)",
-  "iPad Pro 13-inch (M4)"
+  "iPhone 17 Pro Max",
+  "iPhone 17 Pro",
+  "iPhone 16e"
 ])
 
 # Languages to capture
@@ -34,8 +33,8 @@ skip_open_summary(true)
 # Use concurrent simulators for faster execution
 concurrent_simulators(false)
 
-# Project file
-project("../SnowTracker.xcodeproj")
+# Project file (relative to ios directory)
+project("SnowTracker.xcodeproj")
 
 # Test plan (optional - uses default if not specified)
 # testplan("ScreenshotTestPlan")
