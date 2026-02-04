@@ -10,6 +10,7 @@ import {
   FiMessageCircle,
   FiCpu,
   FiThermometer,
+  FiCoffee,
 } from 'react-icons/fi'
 import { BsApple, BsSnow } from 'react-icons/bs'
 
@@ -226,6 +227,15 @@ function HomePage() {
               >
                 <BsApple size={20} />
                 Download for iOS
+              </a>
+              <a
+                href="https://buymeacoffee.com/wdvr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary"
+              >
+                <FiCoffee size={20} />
+                Buy Me a Coffee
               </a>
             </div>
           </div>

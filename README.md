@@ -259,7 +259,7 @@ Contributions are welcome! Please:
 
 ## License
 
-This project is open source under the [MIT License](LICENSE).
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). You can use, modify, and distribute the code for noncommercial purposes.
 
 ## Acknowledgments
 
