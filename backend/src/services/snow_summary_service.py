@@ -77,6 +77,7 @@ class SnowSummaryService:
         total_season_snowfall_cm: float,
         last_updated: str,
         season_start_date: str | None = None,
+        last_snowfall_24h_cm: float | None = None,
     ) -> bool:
         """Update the snow summary with latest data.
 
@@ -88,6 +89,7 @@ class SnowSummaryService:
             total_season_snowfall_cm: Total snowfall this season
             last_updated: ISO timestamp of this update
             season_start_date: When tracking started (YYYY-MM-DD format)
+            last_snowfall_24h_cm: Last known 24h snowfall value (for delta tracking)
 
         Returns:
             True if update successful, False otherwise
@@ -110,6 +112,11 @@ class SnowSummaryService:
 
             if season_start_date:
                 item["season_start_date"] = season_start_date
+
+            if last_snowfall_24h_cm is not None:
+                item["last_snowfall_24h_cm"] = Decimal(
+                    str(round(last_snowfall_24h_cm, 2))
+                )
 
             self.table.put_item(Item=item)
             logger.debug(

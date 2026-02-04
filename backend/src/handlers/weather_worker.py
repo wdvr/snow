@@ -192,6 +192,7 @@ def process_elevation_point(
                     ),
                     last_updated=datetime.now(UTC).isoformat(),
                     season_start_date=existing_summary.get("season_start_date"),
+                    last_snowfall_24h_cm=weather_data.get("snowfall_24h_cm", 0.0),
                 )
             else:
                 # No new freeze - accumulate snowfall
@@ -204,23 +205,29 @@ def process_elevation_point(
 
                 last_freeze_hours = weather_data.get("last_freeze_thaw_hours_ago")
                 if last_freeze_hours and last_freeze_hours >= 336:  # 14 days
-                    # Freeze is older than Open-Meteo can see
-                    new_accumulation = existing_accumulation + weather_data.get(
-                        "snowfall_24h_cm", 0.0
+                    # Freeze is older than Open-Meteo can see - use delta tracking
+                    # Only add the DIFFERENCE between current and previous 24h snowfall
+                    # to avoid counting the same snowfall multiple times across Lambda runs
+                    current_24h = weather_data.get("snowfall_24h_cm", 0.0)
+                    previous_24h = existing_summary.get("last_snowfall_24h_cm", 0.0)
+                    snowfall_delta = max(0.0, current_24h - previous_24h)
+
+                    new_accumulation = existing_accumulation + snowfall_delta
+
+                    # Always update to track the current 24h value, even if no new snow
+                    snow_summary_service.update_summary(
+                        resort_id=resort_id,
+                        elevation_level=level,
+                        last_freeze_date=existing_summary.get("last_freeze_date"),
+                        snowfall_since_freeze_cm=new_accumulation,
+                        total_season_snowfall_cm=(
+                            existing_summary.get("total_season_snowfall_cm", 0.0)
+                            + snowfall_delta
+                        ),
+                        last_updated=datetime.now(UTC).isoformat(),
+                        season_start_date=existing_summary.get("season_start_date"),
+                        last_snowfall_24h_cm=current_24h,
                     )
-                    if weather_data.get("snowfall_24h_cm", 0.0) > 0:
-                        snow_summary_service.update_summary(
-                            resort_id=resort_id,
-                            elevation_level=level,
-                            last_freeze_date=existing_summary.get("last_freeze_date"),
-                            snowfall_since_freeze_cm=new_accumulation,
-                            total_season_snowfall_cm=(
-                                existing_summary.get("total_season_snowfall_cm", 0.0)
-                                + weather_data.get("snowfall_24h_cm", 0.0)
-                            ),
-                            last_updated=datetime.now(UTC).isoformat(),
-                            season_start_date=existing_summary.get("season_start_date"),
-                        )
                 else:
                     # Open-Meteo can see the freeze - use its accumulation value
                     snow_summary_service.update_summary(
@@ -234,6 +241,7 @@ def process_elevation_point(
                         ),
                         last_updated=datetime.now(UTC).isoformat(),
                         season_start_date=existing_summary.get("season_start_date"),
+                        last_snowfall_24h_cm=weather_data.get("snowfall_24h_cm", 0.0),
                     )
 
                 # Use the higher accumulation value for weather condition
