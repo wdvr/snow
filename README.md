@@ -104,6 +104,25 @@ cd ios
 open SnowTracker.xcodeproj
 ```
 
+**Required: Firebase Configuration**
+
+The app requires `GoogleService-Info.plist` for Firebase Analytics. This file is not included in the repo for security reasons.
+
+**Option A: Create your own Firebase project**
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Create a new project
+3. Add an iOS app with bundle ID `com.wouterdevriendt.snowtracker`
+4. Download `GoogleService-Info.plist`
+5. Place it in `ios/SnowTracker/SnowTracker/Resources/`
+
+**Option B: Use environment variables**
+```bash
+export FIREBASE_API_KEY="your-api-key"
+export FIREBASE_GCM_SENDER_ID="your-sender-id"
+export FIREBASE_GOOGLE_APP_ID="your-app-id"
+cd ios && ./scripts/generate-google-service-info.sh
+```
+
 Build and run on simulator or device. The app connects to the production API by default.
 
 **For development with local backend:**
