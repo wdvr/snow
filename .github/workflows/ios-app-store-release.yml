@@ -1,6 +1,7 @@
 name: iOS App Store Release
 
-# Uses shared workflow from ios-infra for App Store release preparation
+# Fully automated App Store release with AI-generated release notes
+# Uses shared workflow from ios-infra
 
 on:
   workflow_dispatch:
@@ -24,10 +25,15 @@ on:
         required: false
         default: true
         type: boolean
+      generate_release_notes:
+        description: 'Generate release notes with AI (from commits since last release)'
+        required: false
+        default: true
+        type: boolean
       submit_for_review:
         description: 'Submit to App Store review'
         required: false
-        default: false
+        default: true
         type: boolean
 
 concurrency:
@@ -50,7 +56,9 @@ jobs:
       app_context: 'A ski resort snow tracking app with real-time conditions, powder alerts, and weather forecasts for resorts worldwide'
       generate_screenshots: ${{ github.event.inputs.generate_screenshots }}
       generate_description: ${{ github.event.inputs.generate_description }}
+      generate_release_notes: ${{ github.event.inputs.generate_release_notes }}
       submit_for_review: ${{ github.event.inputs.submit_for_review }}
       use_xcodegen: true
       xcodegen_path: ios
+      project_path: ios/SnowTracker.xcodeproj
     secrets: inherit
