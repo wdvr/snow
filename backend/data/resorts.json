@@ -120,6 +120,21 @@
       "annual_snowfall_cm": 600
     },
     {
+      "resort_id": "fernie",
+      "name": "Fernie Alpine Resort",
+      "country": "CA",
+      "region": "na_west",
+      "state_province": "BC",
+      "elevation_base_m": 1082,
+      "elevation_top_m": 2134,
+      "latitude": 49.4621,
+      "longitude": -115.0874,
+      "timezone": "America/Edmonton",
+      "website": "https://www.skifernie.com",
+      "features": ["powder", "bowl_skiing", "legendary_snow"],
+      "annual_snowfall_cm": 875
+    },
+    {
       "resort_id": "lake-louise",
       "name": "Lake Louise Ski Resort",
       "country": "CA",

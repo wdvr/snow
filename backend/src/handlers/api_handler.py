@@ -862,17 +862,18 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
         elevation_summaries = {}
         overall_scores = []
 
-        for condition in conditions:
-            # Calculate a numerical score for overall quality
-            quality_scores = {
-                SnowQuality.EXCELLENT: 5,
-                SnowQuality.GOOD: 4,
-                SnowQuality.FAIR: 3,
-                SnowQuality.POOR: 2,
-                SnowQuality.BAD: 1,
-                SnowQuality.UNKNOWN: 0,
-            }
+        # Quality scores including HORRIBLE for consistency with batch endpoint
+        quality_scores = {
+            SnowQuality.EXCELLENT: 6,
+            SnowQuality.GOOD: 5,
+            SnowQuality.FAIR: 4,
+            SnowQuality.POOR: 3,
+            SnowQuality.BAD: 2,
+            SnowQuality.HORRIBLE: 1,
+            SnowQuality.UNKNOWN: 0,
+        }
 
+        for condition in conditions:
             score = quality_scores.get(condition.snow_quality, 0)
             overall_scores.append(score)
 
@@ -885,19 +886,25 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
                 "timestamp": condition.timestamp,
             }
 
-        # Calculate overall quality
-        if overall_scores:
+        # Calculate overall quality (consistent with batch endpoint logic)
+        # If ANY elevation is HORRIBLE, the resort is not skiable
+        has_horrible = any(c.snow_quality == SnowQuality.HORRIBLE for c in conditions)
+        if has_horrible:
+            overall_quality = SnowQuality.HORRIBLE
+        elif overall_scores:
             avg_score = sum(overall_scores) / len(overall_scores)
-            if avg_score >= 4.5:
+            if avg_score >= 5.5:
                 overall_quality = SnowQuality.EXCELLENT
-            elif avg_score >= 3.5:
+            elif avg_score >= 4.5:
                 overall_quality = SnowQuality.GOOD
-            elif avg_score >= 2.5:
+            elif avg_score >= 3.5:
                 overall_quality = SnowQuality.FAIR
-            elif avg_score >= 1.5:
+            elif avg_score >= 2.5:
                 overall_quality = SnowQuality.POOR
-            else:
+            elif avg_score >= 1.5:
                 overall_quality = SnowQuality.BAD
+            else:
+                overall_quality = SnowQuality.HORRIBLE
         else:
             overall_quality = SnowQuality.UNKNOWN
 
