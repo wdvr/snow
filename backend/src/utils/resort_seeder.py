@@ -729,16 +729,16 @@ class ResortSeeder:
                 elevation_points=[
                     ElevationPoint(
                         level=ElevationLevel.BASE,
-                        elevation_meters=1082,
-                        elevation_feet=3550,
+                        elevation_meters=1052,
+                        elevation_feet=3451,
                         latitude=49.4621,
                         longitude=-115.0874,
                         weather_station_id=None,
                     ),
                     ElevationPoint(
                         level=ElevationLevel.MID,
-                        elevation_meters=1608,
-                        elevation_feet=5275,
+                        elevation_meters=1593,
+                        elevation_feet=5226,
                         latitude=49.4671,
                         longitude=-115.0824,
                         weather_station_id=None,
