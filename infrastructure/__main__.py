@@ -249,7 +249,9 @@ lambda_role = aws.iam.Role(
 )
 
 # Website bucket name pattern for static JSON API
-website_bucket_name = f"{app_name}-website-{environment}-{caller_identity.account_id}"
+website_bucket_name = caller_identity.account_id.apply(
+    lambda account_id: f"{app_name}-website-{environment}-{account_id}"
+)
 
 # IAM Policy for Lambda to access DynamoDB and CloudWatch
 lambda_policy = aws.iam.RolePolicy(
