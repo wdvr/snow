@@ -2529,17 +2529,19 @@ if environment == "prod" and website_distribution:
         "static_api_snow_quality_url", f"https://{domain_name}/data/snow-quality.json"
     )
 else:
-    pulumi.export("website_url", website_bucket.website_endpoint)
+    pulumi.export("website_url", website_bucket_website.website_endpoint)
     # Static JSON API URLs (served via S3 website endpoint)
     pulumi.export(
         "static_api_resorts_url",
         pulumi.Output.concat(
-            "http://", website_bucket.website_endpoint, "/data/resorts.json"
+            "http://", website_bucket_website.website_endpoint, "/data/resorts.json"
         ),
     )
     pulumi.export(
         "static_api_snow_quality_url",
         pulumi.Output.concat(
-            "http://", website_bucket.website_endpoint, "/data/snow-quality.json"
+            "http://",
+            website_bucket_website.website_endpoint,
+            "/data/snow-quality.json",
         ),
     )
