@@ -16,6 +16,11 @@ on:
         required: false
         type: boolean
         default: false
+      update_existing:
+        description: 'Update existing resorts instead of skipping'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   seed:
@@ -49,8 +54,11 @@ jobs:
           RESORTS_TABLE: snow-tracker-resorts-${{ env.ENVIRONMENT }}
           PYTHONPATH: ${{ github.workspace }}/backend/src
         run: |
+          ARGS=""
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            python scripts/seed_resorts.py --dry-run
-          else
-            python scripts/seed_resorts.py
+            ARGS="$ARGS --dry-run"
           fi
+          if [ "${{ github.event.inputs.update_existing }}" = "true" ]; then
+            ARGS="$ARGS --update"
+          fi
+          python scripts/seed_resorts.py $ARGS
