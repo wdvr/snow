@@ -185,6 +185,7 @@ jobs:
         # Deploy API Handler Lambda
         API_LAMBDA=$(pulumi stack output api_handler_lambda_name 2>/dev/null || echo "")
         APNS_PLATFORM_ARN=$(pulumi stack output apns_platform_app_arn 2>/dev/null || echo "")
+        WEBSITE_BUCKET=$(pulumi stack output website_bucket_name 2>/dev/null || echo "")
         if [ -n "$API_LAMBDA" ]; then
           echo "Deploying API handler Lambda: $API_LAMBDA"
           aws lambda update-function-code \
@@ -194,10 +195,10 @@ jobs:
             --region us-west-2
           aws lambda wait function-updated --function-name "$API_LAMBDA" --region us-west-2
 
-          # Update API Lambda environment variables (including APNS_PLATFORM_APP_ARN for debug endpoints)
+          # Update API Lambda environment variables (including WEBSITE_BUCKET for static JSON)
           aws lambda update-function-configuration \
             --function-name "$API_LAMBDA" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},USER_PREFERENCES_TABLE=snow-tracker-user-preferences-${{ env.ENVIRONMENT }},FEEDBACK_TABLE=snow-tracker-feedback-${{ env.ENVIRONMENT }},DEVICE_TOKENS_TABLE=snow-tracker-device-tokens-${{ env.ENVIRONMENT }},RESORT_EVENTS_TABLE=snow-tracker-resort-events-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,APNS_PLATFORM_APP_ARN=$APNS_PLATFORM_ARN}" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},USER_PREFERENCES_TABLE=snow-tracker-user-preferences-${{ env.ENVIRONMENT }},FEEDBACK_TABLE=snow-tracker-feedback-${{ env.ENVIRONMENT }},DEVICE_TOKENS_TABLE=snow-tracker-device-tokens-${{ env.ENVIRONMENT }},RESORT_EVENTS_TABLE=snow-tracker-resort-events-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,APNS_PLATFORM_APP_ARN=$APNS_PLATFORM_ARN,WEBSITE_BUCKET=$WEBSITE_BUCKET}" \
             --region us-west-2
           aws lambda wait function-updated --function-name "$API_LAMBDA" --region us-west-2
           echo "API handler Lambda updated"

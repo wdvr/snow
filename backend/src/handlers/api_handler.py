@@ -101,6 +101,104 @@ def get_dynamodb():
     return _dynamodb
 
 
+# S3 client for fetching static JSON (lazy init)
+_s3_client = None
+
+
+def get_s3_client():
+    """Get or create S3 client (lazy init for SnapStart)."""
+    global _s3_client
+    if _s3_client is None:
+        region = os.environ.get("AWS_DEFAULT_REGION", "us-west-2")
+        _s3_client = boto3.client("s3", region_name=region)
+    return _s3_client
+
+
+# Cached static JSON data with TTL
+_static_resorts_cache = {"data": None, "expires": 0}
+_static_snow_quality_cache = {"data": None, "expires": 0}
+STATIC_CACHE_TTL_SECONDS = 300  # 5 minute cache for static JSON
+
+
+def _get_static_resorts_from_s3() -> list[dict] | None:
+    """Fetch resorts from static S3 JSON file with caching.
+
+    Returns None if static file is not available (falls back to DynamoDB).
+    """
+    import time
+
+    # Check cache first
+    now = time.time()
+    if _static_resorts_cache["data"] and now < _static_resorts_cache["expires"]:
+        return _static_resorts_cache["data"]
+
+    # Try to fetch from S3
+    website_bucket = os.environ.get("WEBSITE_BUCKET")
+    if not website_bucket:
+        return None
+
+    try:
+        response = get_s3_client().get_object(
+            Bucket=website_bucket, Key="data/resorts.json"
+        )
+        data = json.loads(response["Body"].read().decode("utf-8"))
+
+        # Cache the result
+        _static_resorts_cache["data"] = data.get("resorts", [])
+        _static_resorts_cache["expires"] = now + STATIC_CACHE_TTL_SECONDS
+
+        return _static_resorts_cache["data"]
+    except ClientError as e:
+        # File doesn't exist or access denied - fall back to DynamoDB
+        if e.response["Error"]["Code"] in ("NoSuchKey", "AccessDenied"):
+            return None
+        raise
+    except Exception:
+        # Any other error - fall back to DynamoDB
+        return None
+
+
+def _get_static_snow_quality_from_s3() -> dict | None:
+    """Fetch snow quality from static S3 JSON file with caching.
+
+    Returns None if static file is not available (falls back to DynamoDB).
+    """
+    import time
+
+    # Check cache first
+    now = time.time()
+    if (
+        _static_snow_quality_cache["data"]
+        and now < _static_snow_quality_cache["expires"]
+    ):
+        return _static_snow_quality_cache["data"]
+
+    # Try to fetch from S3
+    website_bucket = os.environ.get("WEBSITE_BUCKET")
+    if not website_bucket:
+        return None
+
+    try:
+        response = get_s3_client().get_object(
+            Bucket=website_bucket, Key="data/snow-quality.json"
+        )
+        data = json.loads(response["Body"].read().decode("utf-8"))
+
+        # Cache the result
+        _static_snow_quality_cache["data"] = data.get("results", {})
+        _static_snow_quality_cache["expires"] = now + STATIC_CACHE_TTL_SECONDS
+
+        return _static_snow_quality_cache["data"]
+    except ClientError as e:
+        # File doesn't exist or access denied - fall back to DynamoDB
+        if e.response["Error"]["Code"] in ("NoSuchKey", "AccessDenied"):
+            return None
+        raise
+    except Exception:
+        # Any other error - fall back to DynamoDB
+        return None
+
+
 def get_resort_service():
     """Get or create ResortService (lazy init for SnapStart)."""
     global _resort_service
@@ -450,7 +548,18 @@ async def get_resorts(
 
 @cached_resorts
 def _get_all_resorts_cached():
-    """Cached wrapper for getting all resorts."""
+    """Get all resorts, preferring static S3 JSON over DynamoDB.
+
+    Tries to fetch from pre-computed S3 static JSON first (faster, cheaper),
+    falls back to DynamoDB scan if static file not available.
+    """
+    # Try static S3 JSON first (pre-computed, cached at edge)
+    static_resorts = _get_static_resorts_from_s3()
+    if static_resorts is not None:
+        # Convert dicts to Resort objects for compatibility
+        return [Resort(**r) for r in static_resorts]
+
+    # Fall back to DynamoDB scan
     return get_resort_service().get_all_resorts()
 
 
@@ -923,6 +1032,8 @@ async def get_batch_snow_quality(
     This is optimized for the resort list view where we need quality indicators
     for many resorts at once. Returns lightweight summaries (just overall quality).
     Supports up to 200 resorts per request for efficient bulk loading.
+
+    Uses pre-computed static JSON from S3 when available for faster response.
     """
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -942,6 +1053,42 @@ async def get_batch_snow_quality(
                 detail="Maximum 200 resorts per batch request",
             )
 
+        # Try to use pre-computed static JSON from S3 (much faster)
+        static_quality = _get_static_snow_quality_from_s3()
+        if static_quality is not None:
+            # Filter to only requested IDs
+            results = {rid: static_quality[rid] for rid in ids if rid in static_quality}
+
+            # For any missing resorts, fall back to DynamoDB lookup
+            missing_ids = [rid for rid in ids if rid not in results]
+            if missing_ids:
+
+                def fetch_quality(resort_id: str):
+                    try:
+                        summary = _get_snow_quality_for_resort(resort_id)
+                        return resort_id, summary
+                    except Exception as e:
+                        return resort_id, {"error": str(e)}
+
+                max_workers = min(len(missing_ids), 50)
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    futures = {
+                        executor.submit(fetch_quality, rid): rid for rid in missing_ids
+                    }
+                    for future in as_completed(futures):
+                        resort_id, result = future.result()
+                        if result:
+                            results[resort_id] = result
+
+            response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC_LONG
+            return {
+                "results": results,
+                "last_updated": datetime.now(UTC).isoformat(),
+                "resort_count": len(ids),
+                "source": "static",
+            }
+
+        # Fall back to DynamoDB lookup for all resorts
         results = {}
 
         def fetch_quality(resort_id: str):
@@ -967,6 +1114,7 @@ async def get_batch_snow_quality(
             "results": results,
             "last_updated": datetime.now(UTC).isoformat(),
             "resort_count": len(ids),
+            "source": "dynamodb",
         }
 
     except HTTPException:
