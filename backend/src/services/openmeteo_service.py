@@ -161,6 +161,8 @@ class OpenMeteoService:
                 "snowfall_24h_cm": snowfall_data.get("snowfall_24h", 0.0),
                 "snowfall_48h_cm": snowfall_data.get("snowfall_48h", 0.0),
                 "snowfall_72h_cm": snowfall_data.get("snowfall_72h", 0.0),
+                # Current snow depth on ground (total, not just fresh)
+                "snow_depth_cm": snowfall_data.get("current_snow_depth"),
                 # Future predictions
                 "predicted_snow_24h_cm": snowfall_data.get("predicted_24h", 0.0),
                 "predicted_snow_48h_cm": snowfall_data.get("predicted_48h", 0.0),
