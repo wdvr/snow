@@ -19,6 +19,13 @@ on:
         - staging
         - prod
 
+# Prevent concurrent deployments to the same environment
+# The group is based on environment (determined in the job), but for push/workflow_dispatch
+# we use ref to prevent multiple deploys from the same branch
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false  # Don't cancel in-progress deploys, just queue
+
 env:
   PYTHON_VERSION: '3.12'
   PULUMI_STATE_BUCKET: snow-tracker-pulumi-state-us-west-2
