@@ -58,7 +58,9 @@ def setup_services():
         sys.exit(1)
 
 
-def seed_resorts(seeder: ResortSeeder, dry_run: bool = False):
+def seed_resorts(
+    seeder: ResortSeeder, dry_run: bool = False, update_existing: bool = False
+):
     """Seed the initial resort data."""
     if dry_run:
         logger.info("DRY RUN: Would create the following resorts:")
@@ -75,12 +77,13 @@ def seed_resorts(seeder: ResortSeeder, dry_run: bool = False):
 
     try:
         logger.info("Starting resort data seeding...")
-        results = seeder.seed_initial_resorts()
+        results = seeder.seed_initial_resorts(update_existing=update_existing)
 
         print("\n" + "=" * 50)
         print("RESORT SEEDING RESULTS")
         print("=" * 50)
         print(f"Resorts created: {results['resorts_created']}")
+        print(f"Resorts updated: {results.get('resorts_updated', 0)}")
         print(f"Resorts skipped: {results['resorts_skipped']}")
         print(f"Errors: {len(results['errors'])}")
 
@@ -88,6 +91,11 @@ def seed_resorts(seeder: ResortSeeder, dry_run: bool = False):
             print("\nCreated resorts:")
             for resort_id in results["created_resorts"]:
                 print(f"  ✅ {resort_id}")
+
+        if results.get("updated_resorts"):
+            print("\nUpdated resorts:")
+            for resort_id in results["updated_resorts"]:
+                print(f"  🔄 {resort_id}")
 
         if results["errors"]:
             print("\nErrors:")
@@ -220,6 +228,11 @@ def main():
         action="store_true",
         help="Show what would be created without actually creating",
     )
+    parser.add_argument(
+        "--update",
+        action="store_true",
+        help="Update existing resorts instead of skipping them",
+    )
 
     args = parser.parse_args()
 
@@ -235,7 +248,7 @@ def main():
         show_summary(seeder)
     else:
         # Default action is to seed resorts
-        seed_resorts(seeder, dry_run=args.dry_run)
+        seed_resorts(seeder, dry_run=args.dry_run, update_existing=args.update)
 
 
 if __name__ == "__main__":

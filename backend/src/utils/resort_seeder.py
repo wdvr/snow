@@ -18,9 +18,13 @@ class ResortSeeder:
         """Initialize the seeder with a resort service."""
         self.resort_service = resort_service
 
-    def seed_initial_resorts(self) -> dict[str, Any]:
+    def seed_initial_resorts(self, update_existing: bool = False) -> dict[str, Any]:
         """
-        Seed the initial three resorts: Big White, Lake Louise, Silver Star.
+        Seed the initial resorts.
+
+        Args:
+            update_existing: If True, update existing resorts with new data.
+                           If False (default), skip existing resorts.
 
         Returns:
             Dictionary with seeding results and statistics.
@@ -29,9 +33,11 @@ class ResortSeeder:
 
         results = {
             "resorts_created": 0,
+            "resorts_updated": 0,
             "resorts_skipped": 0,
             "errors": [],
             "created_resorts": [],
+            "updated_resorts": [],
         }
 
         initial_resorts = self._get_initial_resort_data()
@@ -41,10 +47,20 @@ class ResortSeeder:
                 # Check if resort already exists
                 existing = self.resort_service.get_resort(resort_data.resort_id)
                 if existing:
-                    logger.info(
-                        f"Resort {resort_data.resort_id} already exists, skipping"
-                    )
-                    results["resorts_skipped"] += 1
+                    if update_existing:
+                        # Update the existing resort
+                        resort_data.created_at = (
+                            existing.created_at
+                        )  # Preserve creation time
+                        self.resort_service.update_resort(resort_data)
+                        logger.info(f"Updated resort: {resort_data.name}")
+                        results["resorts_updated"] += 1
+                        results["updated_resorts"].append(resort_data.resort_id)
+                    else:
+                        logger.info(
+                            f"Resort {resort_data.resort_id} already exists, skipping"
+                        )
+                        results["resorts_skipped"] += 1
                     continue
 
                 # Create the resort
@@ -61,6 +77,7 @@ class ResortSeeder:
 
         logger.info(
             f"Resort seeding completed. Created: {results['resorts_created']}, "
+            f"Updated: {results['resorts_updated']}, "
             f"Skipped: {results['resorts_skipped']}, Errors: {len(results['errors'])}"
         )
 
@@ -700,6 +717,43 @@ class ResortSeeder:
                 ],
                 timezone="America/Vancouver",
                 official_website="https://www.sunpeaksresort.com",
+                weather_sources=["weatherapi"],
+                created_at=now,
+                updated_at=now,
+            ),
+            Resort(
+                resort_id="fernie",
+                name="Fernie Alpine Resort",
+                country="CA",
+                region="BC",
+                elevation_points=[
+                    ElevationPoint(
+                        level=ElevationLevel.BASE,
+                        elevation_meters=1082,
+                        elevation_feet=3550,
+                        latitude=49.4621,
+                        longitude=-115.0874,
+                        weather_station_id=None,
+                    ),
+                    ElevationPoint(
+                        level=ElevationLevel.MID,
+                        elevation_meters=1608,
+                        elevation_feet=5275,
+                        latitude=49.4671,
+                        longitude=-115.0824,
+                        weather_station_id=None,
+                    ),
+                    ElevationPoint(
+                        level=ElevationLevel.TOP,
+                        elevation_meters=2134,
+                        elevation_feet=7000,
+                        latitude=49.4721,
+                        longitude=-115.0774,
+                        weather_station_id=None,
+                    ),
+                ],
+                timezone="America/Edmonton",
+                official_website="https://www.skifernie.com",
                 weather_sources=["weatherapi"],
                 created_at=now,
                 updated_at=now,
