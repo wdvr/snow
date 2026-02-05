@@ -112,7 +112,10 @@ def app_client(dynamodb_tables):
     """Create FastAPI test client after tables are set up."""
     from fastapi.testclient import TestClient
 
-    from handlers.api_handler import app
+    from handlers.api_handler import app, reset_services
+
+    # Reset services to ensure they use the mocked DynamoDB
+    reset_services()
 
     return TestClient(app)
 
