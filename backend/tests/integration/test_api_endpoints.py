@@ -115,9 +115,9 @@ def dynamodb_tables(aws_mock):
 
 
 @pytest.fixture(scope="module")
-def app_client(dynamodb_tables):
+def app_client(aws_mock, dynamodb_tables):
     """Create FastAPI test client after tables are set up."""
-    # Import app after mock is active
+    # Import app after mock is active (explicit aws_mock dependency ensures this)
     from fastapi.testclient import TestClient
 
     from handlers.api_handler import app, reset_services

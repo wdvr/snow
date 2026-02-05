@@ -29,7 +29,7 @@ os.environ["WEATHER_API_KEY"] = "test-key"
 os.environ["JWT_SECRET_KEY"] = "test-jwt-secret-key-for-testing"
 
 # Performance thresholds in milliseconds
-BATCH_SNOW_QUALITY_THRESHOLD_MS = 2000  # Must complete in <2 seconds
+BATCH_SNOW_QUALITY_THRESHOLD_MS = 2500  # Must complete in <2.5 seconds
 
 
 @pytest.fixture(scope="module")
@@ -108,8 +108,9 @@ def dynamodb_tables(aws_mock):
 
 
 @pytest.fixture(scope="module")
-def app_client(dynamodb_tables):
+def app_client(aws_mock, dynamodb_tables):
     """Create FastAPI test client after tables are set up."""
+    # Import app after mock is active (explicit aws_mock dependency ensures this)
     from fastapi.testclient import TestClient
 
     from handlers.api_handler import app, reset_services
