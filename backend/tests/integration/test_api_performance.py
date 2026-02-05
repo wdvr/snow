@@ -250,7 +250,7 @@ class TestAPIPerformance:
             # Cleanup
             for resort_id in resort_ids:
                 resorts_table.delete_item(Key={"resort_id": resort_id})
-                for level in ["base", "mid", "top"]:
+                for _ in ["base", "mid", "top"]:
                     try:
                         weather_table.delete_item(
                             Key={
@@ -363,7 +363,9 @@ class TestAPIPerformance:
                 f"cold cache ({cold_elapsed_ms:.0f}ms)"
             )
 
-            print(f"\n✓ 100 resorts cold: {cold_elapsed_ms:.0f}ms, warm: {warm_elapsed_ms:.0f}ms")
+            print(
+                f"\n✓ 100 resorts cold: {cold_elapsed_ms:.0f}ms, warm: {warm_elapsed_ms:.0f}ms"
+            )
 
         finally:
             # Cleanup
