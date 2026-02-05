@@ -238,6 +238,21 @@ struct ResortConditionCard: View {
                     .font(.caption)
             }
 
+            // Snow depth (base depth at this elevation)
+            if let depth = condition.snowDepthCm, depth > 0 {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.down.to.line")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Text(WeatherCondition.formatSnowShort(depth, prefs: userPreferencesManager.preferredUnits))
+                        .font(.caption)
+                        .foregroundColor(.primary)
+                    Text("base")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+
             Text(condition.formattedSnowfall24hWithPrefs(userPreferencesManager.preferredUnits))
                 .font(.caption)
                 .foregroundColor(.blue)

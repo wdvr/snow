@@ -306,14 +306,31 @@ struct ResortDetailView: View {
                         .fontWeight(.semibold)
                 }
 
-                // Total snow depth (base)
-                HStack {
-                    Text("Total snow depth:")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Text(condition.formattedSnowDepth)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+                // Total snow depth (base depth at this elevation)
+                if let depth = condition.snowDepthCm, depth > 0 {
+                    HStack {
+                        Text("Base depth:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text(WeatherCondition.formatSnow(depth, prefs: userPreferencesManager.preferredUnits))
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        // Show warning for thin coverage
+                        if depth < 50 {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.caption)
+                                .foregroundColor(depth < 20 ? .red : .orange)
+                        }
+                    }
+                } else {
+                    HStack {
+                        Text("Base depth:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text("No data")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
             .padding(.vertical, 4)

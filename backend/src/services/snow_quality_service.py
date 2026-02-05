@@ -93,6 +93,22 @@ class SnowQualityService:
             # But cap at BAD, not HORRIBLE, since we're not certain
             adjusted_score = min(adjusted_score, 0.15)
 
+        # Snow depth quality adjustment - base depth affects ski quality
+        # Based on industry research: 20cm minimum, 50cm good, 100cm+ excellent
+        if snow_depth is not None and snow_depth > 0:
+            if snow_depth < 20:
+                # Very thin cover (<20cm/8") - rocks and grass likely exposed
+                # Dangerous conditions, cap at BAD (Icy)
+                adjusted_score = min(adjusted_score, 0.15)
+            elif snow_depth < 50:
+                # Thin cover (20-50cm/8-20") - adequate but not ideal
+                # Cap at FAIR - conditions are skiable but marginal
+                adjusted_score = min(adjusted_score, 0.45)
+            elif snow_depth >= 100:
+                # Deep base (100cm+/40"+) - excellent coverage
+                # Boost score slightly for deep powder base
+                adjusted_score = min(1.0, adjusted_score * 1.1)
+
         # Apply gradual degradation for warm temps (but don't go to HORRIBLE)
         # Warm temps mean softer snow, but skiing is still possible with base
         if current_temp >= 10.0:
