@@ -23,6 +23,9 @@ environment = config.get("env") or "dev"
 aws_config = pulumi.Config("aws")
 aws_region = aws_config.get("region") or "us-west-2"
 
+# Get AWS account ID for unique bucket names
+caller_identity = aws.get_caller_identity()
+
 # Create tags for all resources
 tags = {
     "Project": "Snow Quality Tracker",
@@ -245,6 +248,9 @@ lambda_role = aws.iam.Role(
     tags=tags,
 )
 
+# Website bucket name pattern for static JSON API
+website_bucket_name = f"{app_name}-website-{environment}-{caller_identity.account_id}"
+
 # IAM Policy for Lambda to access DynamoDB and CloudWatch
 lambda_policy = aws.iam.RolePolicy(
     f"{app_name}-lambda-policy-{environment}",
@@ -325,7 +331,9 @@ lambda_policy = aws.iam.RolePolicy(
                 "Resource": [
                     "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2",
                     "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2/scraper-results/*",
-                    "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2/resort-versions/*"
+                    "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2/resort-versions/*",
+                    "arn:aws:s3:::{website_bucket_name}",
+                    "arn:aws:s3:::{website_bucket_name}/data/*"
                 ]
             }},
             {{
@@ -405,6 +413,9 @@ weather_processor_lambda = aws.lambda_.Function(
             # Parallel processing: enabled by default for 1000+ resort scale
             "PARALLEL_PROCESSING": config.get("parallelWeatherProcessing") or "true",
             "WEATHER_WORKER_LAMBDA": f"{app_name}-weather-worker-{environment}",
+            # Static JSON API generation (uploads to website bucket)
+            "ENABLE_STATIC_JSON": config.get("enableStaticJson") or "true",
+            "WEBSITE_BUCKET": website_bucket_name,
         }
     ),
     tags=tags,
@@ -469,6 +480,71 @@ weather_schedule_target = aws.cloudwatch.EventTarget(
     f"{app_name}-weather-schedule-target-{environment}",
     rule=weather_schedule_rule.name,
     arn=weather_processor_lambda.arn,
+)
+
+# =============================================================================
+# Static JSON Generator Lambda - Generates pre-computed JSON for edge caching
+# =============================================================================
+
+# Static JSON generator log group
+static_json_log_group = aws.cloudwatch.LogGroup(
+    f"{app_name}-static-json-logs-{environment}",
+    name=f"/aws/lambda/{app_name}-static-json-{environment}",
+    retention_in_days=14,
+    tags=tags,
+)
+
+# Static JSON generator Lambda
+static_json_lambda = aws.lambda_.Function(
+    f"{app_name}-static-json-{environment}",
+    name=f"{app_name}-static-json-{environment}",
+    role=lambda_role.arn,
+    handler="handlers.static_json_handler.static_json_handler",
+    runtime="python3.12",
+    timeout=300,  # 5 minutes to generate and upload all JSON files
+    memory_size=256,
+    code=pulumi.AssetArchive(
+        {
+            "index.py": pulumi.StringAsset(placeholder_lambda_code),
+        }
+    ),
+    environment=aws.lambda_.FunctionEnvironmentArgs(
+        variables={
+            "ENVIRONMENT": environment,
+            "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
+            "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
+            "WEBSITE_BUCKET": website_bucket_name,
+            "AWS_REGION_NAME": aws_region,
+        }
+    ),
+    tags=tags,
+    opts=pulumi.ResourceOptions(depends_on=[lambda_role, static_json_log_group]),
+)
+
+# Schedule static JSON generation 15 minutes after weather processor
+# This gives enough time for all parallel workers to complete
+static_json_schedule_rule = aws.cloudwatch.EventRule(
+    f"{app_name}-static-json-schedule-{environment}",
+    name=f"{app_name}-static-json-schedule-{environment}",
+    description="Generate static JSON API files 15 minutes after each hour",
+    schedule_expression="cron(15 * * * ? *)",  # 15 minutes past every hour
+    tags=tags,
+)
+
+# Permission for CloudWatch Events to invoke the static JSON Lambda
+static_json_schedule_permission = aws.lambda_.Permission(
+    f"{app_name}-static-json-schedule-permission-{environment}",
+    action="lambda:InvokeFunction",
+    function=static_json_lambda.name,
+    principal="events.amazonaws.com",
+    source_arn=static_json_schedule_rule.arn,
+)
+
+# CloudWatch Events target for static JSON generation
+static_json_schedule_target = aws.cloudwatch.EventTarget(
+    f"{app_name}-static-json-schedule-target-{environment}",
+    rule=static_json_schedule_rule.name,
+    arn=static_json_lambda.arn,
 )
 
 # =============================================================================
@@ -1831,9 +1907,6 @@ if enable_custom_domain:
 # Marketing Website (powderchaserapp.com) - S3 + CloudFront
 # =============================================================================
 
-# Get AWS account ID for unique bucket names
-caller_identity = aws.get_caller_identity()
-
 # S3 bucket for website static files
 website_bucket = aws.s3.BucketV2(
     f"{app_name}-website-{environment}",
@@ -2409,6 +2482,8 @@ pulumi.export("scraper_schedule_rule_name", scraper_schedule_rule.name)
 pulumi.export("api_handler_lambda_name", api_handler_lambda.name)
 pulumi.export("notification_processor_lambda_name", notification_processor_lambda.name)
 pulumi.export("notification_schedule_rule_name", notification_schedule_rule.name)
+pulumi.export("static_json_lambda_name", static_json_lambda.name)
+pulumi.export("static_json_schedule_rule_name", static_json_schedule_rule.name)
 if apns_platform_app:
     pulumi.export("apns_platform_app_arn", apns_platform_app.arn)
 else:
@@ -2448,5 +2523,23 @@ if enable_custom_domain:
 if environment == "prod" and website_distribution:
     pulumi.export("website_url", f"https://{domain_name}")
     pulumi.export("cloudfront_distribution_id", website_distribution.id)
+    # Static JSON API URLs (served via CloudFront)
+    pulumi.export("static_api_resorts_url", f"https://{domain_name}/data/resorts.json")
+    pulumi.export(
+        "static_api_snow_quality_url", f"https://{domain_name}/data/snow-quality.json"
+    )
 else:
     pulumi.export("website_url", website_bucket.website_endpoint)
+    # Static JSON API URLs (served via S3 website endpoint)
+    pulumi.export(
+        "static_api_resorts_url",
+        pulumi.Output.concat(
+            "http://", website_bucket.website_endpoint, "/data/resorts.json"
+        ),
+    )
+    pulumi.export(
+        "static_api_snow_quality_url",
+        pulumi.Output.concat(
+            "http://", website_bucket.website_endpoint, "/data/snow-quality.json"
+        ),
+    )

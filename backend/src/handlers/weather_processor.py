@@ -51,6 +51,8 @@ WEATHER_WORKER_LAMBDA = os.environ.get(
 )
 # Number of elevation points to process concurrently (for sequential mode)
 ELEVATION_CONCURRENCY = int(os.environ.get("ELEVATION_CONCURRENCY", "5"))
+# Enable static JSON API generation after weather processing
+ENABLE_STATIC_JSON = os.environ.get("ENABLE_STATIC_JSON", "true").lower() == "true"
 
 # TTL for weather conditions: 60 days (extended from 7 days)
 WEATHER_CONDITIONS_TTL_DAYS = 60
@@ -713,6 +715,21 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
             )
         else:
             logger.info(f"Weather processing completed. Stats: {stats}")
+
+            # Generate static JSON API files after successful processing
+            if ENABLE_STATIC_JSON:
+                try:
+                    logger.info("Generating static JSON API files...")
+                    from services.static_json_generator import generate_static_json_api
+
+                    json_result = generate_static_json_api()
+                    stats["static_json"] = json_result
+                    logger.info(
+                        f"Static JSON generation complete: {json_result.get('files', [])}"
+                    )
+                except Exception as json_error:
+                    logger.error(f"Failed to generate static JSON: {json_error}")
+                    stats["static_json_error"] = str(json_error)
 
         # Publish metrics to CloudWatch for Grafana dashboards
         publish_metrics(stats)

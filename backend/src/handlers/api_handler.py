@@ -75,11 +75,29 @@ _trips_table = None
 security = HTTPBearer(auto_error=False)
 
 
+def reset_services():
+    """Reset all lazy-initialized services. Useful for testing."""
+    global _dynamodb, _resort_service, _weather_service, _snow_quality_service
+    global _user_service, _feedback_table, _auth_service, _recommendation_service
+    global _trip_service, _trips_table
+    _dynamodb = None
+    _resort_service = None
+    _weather_service = None
+    _snow_quality_service = None
+    _user_service = None
+    _feedback_table = None
+    _auth_service = None
+    _recommendation_service = None
+    _trip_service = None
+    _trips_table = None
+
+
 def get_dynamodb():
     """Get or create DynamoDB resource (lazy init for SnapStart)."""
     global _dynamodb
     if _dynamodb is None:
-        _dynamodb = boto3.resource("dynamodb")
+        region = os.environ.get("AWS_DEFAULT_REGION", "us-west-2")
+        _dynamodb = boto3.resource("dynamodb", region_name=region)
     return _dynamodb
 
 
@@ -385,7 +403,8 @@ async def get_resorts(
         None, description="Filter by region (na_west, alps, japan, etc.)"
     ),
     include_no_coords: bool = Query(
-        False, description="Include resorts without valid coordinates (default: exclude)"
+        False,
+        description="Include resorts without valid coordinates (default: exclude)",
     ),
 ):
     """Get all ski resorts, optionally filtered by country or region.

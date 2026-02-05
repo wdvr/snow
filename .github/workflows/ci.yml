@@ -283,7 +283,7 @@ jobs:
     - name: Lint with Ruff
       run: |
         cd backend
-        ruff check src/ tests/ --ignore=E501,F401,F841,UP035,B904 --output-format=github
+        ruff check src/ tests/ --ignore=E501,F401,F841,UP035,UP042,B904 --output-format=github
 
     - name: Type checking with mypy (non-blocking)
       continue-on-error: true

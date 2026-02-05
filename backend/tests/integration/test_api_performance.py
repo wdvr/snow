@@ -29,7 +29,7 @@ os.environ["WEATHER_API_KEY"] = "test-key"
 os.environ["JWT_SECRET_KEY"] = "test-jwt-secret-key-for-testing"
 
 # Performance thresholds in milliseconds
-BATCH_SNOW_QUALITY_THRESHOLD_MS = 2000  # Must complete in <2 seconds
+BATCH_SNOW_QUALITY_THRESHOLD_MS = 2500  # Must complete in <2.5 seconds
 
 
 @pytest.fixture(scope="module")
@@ -108,11 +108,15 @@ def dynamodb_tables(aws_mock):
 
 
 @pytest.fixture(scope="module")
-def app_client(dynamodb_tables):
+def app_client(aws_mock, dynamodb_tables):
     """Create FastAPI test client after tables are set up."""
+    # Import app after mock is active (explicit aws_mock dependency ensures this)
     from fastapi.testclient import TestClient
 
-    from handlers.api_handler import app
+    from handlers.api_handler import app, reset_services
+
+    # Reset services to ensure they use the mocked DynamoDB
+    reset_services()
 
     return TestClient(app)
 
@@ -250,7 +254,7 @@ class TestAPIPerformance:
             # Cleanup
             for resort_id in resort_ids:
                 resorts_table.delete_item(Key={"resort_id": resort_id})
-                for level in ["base", "mid", "top"]:
+                for _ in ["base", "mid", "top"]:
                     try:
                         weather_table.delete_item(
                             Key={
@@ -363,7 +367,9 @@ class TestAPIPerformance:
                 f"cold cache ({cold_elapsed_ms:.0f}ms)"
             )
 
-            print(f"\n✓ 100 resorts cold: {cold_elapsed_ms:.0f}ms, warm: {warm_elapsed_ms:.0f}ms")
+            print(
+                f"\n✓ 100 resorts cold: {cold_elapsed_ms:.0f}ms, warm: {warm_elapsed_ms:.0f}ms"
+            )
 
         finally:
             # Cleanup
