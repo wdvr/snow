@@ -665,7 +665,7 @@
 				CODE_SIGN_ENTITLEMENTS = SnowTracker/SnowTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = N324UX8D9M;
 				INFOPLIST_FILE = SnowTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -817,7 +817,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = SnowTrackerWidget/SnowTrackerWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = N324UX8D9M;
 				INFOPLIST_FILE = SnowTrackerWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -841,7 +841,7 @@
 				CODE_SIGN_ENTITLEMENTS = SnowTracker/SnowTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = N324UX8D9M;
 				INFOPLIST_FILE = SnowTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -862,7 +862,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = SnowTrackerWidget/SnowTrackerWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = N324UX8D9M;
 				INFOPLIST_FILE = SnowTrackerWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
