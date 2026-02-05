@@ -60,7 +60,7 @@ enum MapFilterOption: String, CaseIterable, Identifiable {
         case .fair:
             return [.fair]
         case .poor:
-            return [.poor, .bad, .horrible]
+            return [.poor, .slushy, .bad, .horrible]
         }
     }
 

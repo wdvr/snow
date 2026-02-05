@@ -38,8 +38,9 @@ final class SnowTrackerTests: XCTestCase {
         XCTAssertEqual(SnowQuality.excellent.displayName, "Excellent")
         XCTAssertEqual(SnowQuality.good.displayName, "Good")
         XCTAssertEqual(SnowQuality.fair.displayName, "Fair")
-        XCTAssertEqual(SnowQuality.poor.displayName, "Poor")
-        XCTAssertEqual(SnowQuality.bad.displayName, "Bad")
+        XCTAssertEqual(SnowQuality.poor.displayName, "Soft")
+        XCTAssertEqual(SnowQuality.slushy.displayName, "Slushy")
+        XCTAssertEqual(SnowQuality.bad.displayName, "Icy")
         XCTAssertEqual(SnowQuality.unknown.displayName, "Unknown")
     }
 
@@ -47,7 +48,8 @@ final class SnowTrackerTests: XCTestCase {
         XCTAssertEqual(SnowQuality.excellent.icon, "snowflake")
         XCTAssertEqual(SnowQuality.good.icon, "cloud.snow")
         XCTAssertEqual(SnowQuality.fair.icon, "cloud")
-        XCTAssertEqual(SnowQuality.poor.icon, "sun.max")
+        XCTAssertEqual(SnowQuality.poor.icon, "drop.fill")
+        XCTAssertEqual(SnowQuality.slushy.icon, "drop.fill")
         XCTAssertEqual(SnowQuality.bad.icon, "thermometer.sun")
         XCTAssertEqual(SnowQuality.unknown.icon, "questionmark.circle")
     }
@@ -188,6 +190,7 @@ final class SnowTrackerTests: XCTestCase {
             snowfall24hCm: 0.0,
             snowfall48hCm: 0.0,
             snowfall72hCm: 0.0,
+            snowDepthCm: 50.0,
             predictedSnow24hCm: nil,
             predictedSnow48hCm: nil,
             predictedSnow72hCm: nil,
@@ -243,6 +246,7 @@ final class SnowTrackerTests: XCTestCase {
             snowfall24hCm: 10.0,
             snowfall48hCm: 20.0,
             snowfall72hCm: 30.0,
+            snowDepthCm: 100.0,
             predictedSnow24hCm: nil,
             predictedSnow48hCm: nil,
             predictedSnow72hCm: nil,
@@ -1138,12 +1142,12 @@ final class SnowTrackerTests: XCTestCase {
                     "elevation_conditions": {}
                 }
             ],
-            "search_location": {
+            "search_center": {
                 "latitude": 49.28,
                 "longitude": -123.12
             },
             "search_radius_km": 500,
-            "timestamp": "2026-01-20T10:00:00Z"
+            "generated_at": "2026-01-20T10:00:00Z"
         }
         """
 
@@ -1152,8 +1156,8 @@ final class SnowTrackerTests: XCTestCase {
 
         XCTAssertEqual(response.recommendations.count, 1)
         XCTAssertEqual(response.recommendations[0].resort.name, "Big White")
-        XCTAssertEqual(response.searchLocation?.latitude, 49.28)
-        XCTAssertEqual(response.searchLocation?.longitude, -123.12)
+        XCTAssertEqual(response.searchCenter?.latitude, 49.28)
+        XCTAssertEqual(response.searchCenter?.longitude, -123.12)
         XCTAssertEqual(response.searchRadiusKm, 500)
     }
 

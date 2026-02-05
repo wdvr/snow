@@ -69,6 +69,7 @@ enum WidgetSnowQuality: String, Sendable {
     case good = "good"
     case fair = "fair"
     case poor = "poor"
+    case slushy = "slushy"
     case bad = "bad"
     case horrible = "horrible"
     case unknown = "unknown"
@@ -78,7 +79,8 @@ enum WidgetSnowQuality: String, Sendable {
         case .excellent: return "Excellent"
         case .good: return "Good"
         case .fair: return "Fair"
-        case .poor: return "Poor"
+        case .poor: return "Soft"
+        case .slushy: return "Slushy"
         case .bad: return "Icy"
         case .horrible: return "Not Skiable"
         case .unknown: return "Unknown"
@@ -91,6 +93,7 @@ enum WidgetSnowQuality: String, Sendable {
         case .good: return Color(.systemGreen)
         case .fair: return .orange
         case .poor: return Color(.systemOrange)
+        case .slushy: return Color(.systemOrange)
         case .bad: return .red
         case .horrible: return .black
         case .unknown: return .gray
@@ -102,7 +105,8 @@ enum WidgetSnowQuality: String, Sendable {
         case .excellent: return "snowflake"
         case .good: return "cloud.snow"
         case .fair: return "cloud"
-        case .poor: return "sun.max"
+        case .poor: return "drop.fill"
+        case .slushy: return "drop.fill"
         case .bad: return "thermometer.sun"
         case .horrible: return "xmark.octagon.fill"
         case .unknown: return "questionmark.circle"

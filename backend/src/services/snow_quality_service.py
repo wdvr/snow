@@ -106,15 +106,14 @@ class SnowQualityService:
         # No fresh snow = harder/icier surface, but still skiable
         if snowfall_after_freeze <= 0 and (weather.snowfall_24h_cm or 0) <= 0:
             # No fresh snow at all = harder surface conditions
-            if currently_warming and current_temp >= 5.0:
-                # Actively warming with no fresh cover = icy/slushy (POOR)
-                adjusted_score = min(adjusted_score, 0.25)
-            elif currently_warming or current_temp >= 2.0:
-                # Some warming = packed/firm conditions (BAD)
-                adjusted_score = min(adjusted_score, 0.15)
+            # Key distinction: above vs below freezing determines current texture
+            if current_temp > 0:
+                # Above freezing = snow is currently SOFT/SLUSHY (thawing)
+                # Will refreeze tonight, but right now it's soft, not icy
+                adjusted_score = min(adjusted_score, 0.25)  # POOR = "Soft/Slushy"
             else:
-                # Cold but icy = hard-packed (BAD)
-                adjusted_score = min(adjusted_score, 0.15)
+                # At or below freezing = snow is currently HARD/ICY (frozen)
+                adjusted_score = min(adjusted_score, 0.15)  # BAD = "Icy"
         elif snowfall_after_freeze < 2.54:  # Less than 1 inch
             # Very little fresh snow - cap at POOR
             adjusted_score = min(adjusted_score, 0.25)

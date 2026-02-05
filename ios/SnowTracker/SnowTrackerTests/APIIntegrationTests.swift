@@ -375,7 +375,7 @@ final class APIIntegrationTests: XCTestCase {
         let decoder = JSONDecoder()
         let recommendationsResponse = try decoder.decode(RecommendationsResponse.self, from: data)
 
-        XCTAssertNotNil(recommendationsResponse.timestamp)
+        XCTAssertNotNil(recommendationsResponse.generatedAt)
         print("Best conditions returned \(recommendationsResponse.recommendations.count) results")
     }
 

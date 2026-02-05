@@ -324,6 +324,7 @@ class DemoDataService {
         case .good: return "Light snow"
         case .fair: return "Partly cloudy"
         case .poor: return "Sunny"
+        case .slushy: return "Warm, wet conditions"
         case .bad: return "Rain/snow mix"
         case .horrible: return "Rain"
         case .unknown: return "Conditions unknown"
@@ -334,7 +335,7 @@ class DemoDataService {
         switch quality {
         case .excellent, .good: return .high
         case .fair: return .medium
-        case .poor: return .medium
+        case .poor, .slushy: return .medium
         case .bad, .horrible: return .high
         case .unknown: return .low
         }

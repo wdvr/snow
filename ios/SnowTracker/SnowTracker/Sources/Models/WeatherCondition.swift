@@ -69,8 +69,9 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
     case excellent = "excellent"
     case good = "good"
     case fair = "fair"
-    case poor = "poor"
-    case bad = "bad"
+    case poor = "poor"      // Now used for soft/slushy (above freezing, thawing)
+    case slushy = "slushy"  // Future: explicit slushy value
+    case bad = "bad"        // Icy (below freezing, frozen)
     case horrible = "horrible"
     case unknown = "unknown"
 
@@ -79,7 +80,8 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
         case .excellent: return "Excellent"
         case .good: return "Good"
         case .fair: return "Fair"
-        case .poor: return "Poor"
+        case .poor: return "Soft"      // Thawing/slushy conditions
+        case .slushy: return "Slushy"  // Future: explicit slushy
         case .bad: return "Icy"
         case .horrible: return "Not Skiable"
         case .unknown: return "Unknown"
@@ -92,6 +94,7 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
         case .good: return Color(.systemGreen)
         case .fair: return .orange
         case .poor: return Color(.systemOrange)
+        case .slushy: return Color(.systemOrange)
         case .bad: return .red
         case .horrible: return .black
         case .unknown: return .gray
@@ -103,7 +106,8 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
         case .excellent: return "snowflake"
         case .good: return "cloud.snow"
         case .fair: return "cloud"
-        case .poor: return "sun.max"
+        case .poor: return "drop.fill"      // Water drop = soft/melting
+        case .slushy: return "drop.fill"
         case .bad: return "thermometer.sun"
         case .horrible: return "xmark.octagon.fill"
         case .unknown: return "questionmark.circle"
@@ -115,7 +119,8 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
         case .excellent: return "Fresh powder, perfect conditions"
         case .good: return "Good snow with minimal ice"
         case .fair: return "Some ice formation present"
-        case .poor: return "Significant ice, limited fresh snow"
+        case .poor: return "Soft, thawing snow - warming conditions"
+        case .slushy: return "Slushy, wet snow - actively thawing"
         case .bad: return "Icy surface, no fresh snow"
         case .horrible: return "Not skiable, dangerous conditions"
         case .unknown: return "Conditions unknown"
@@ -129,8 +134,9 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
         case .good: return 2
         case .fair: return 3
         case .poor: return 4
-        case .bad: return 5
-        case .horrible: return 6
+        case .slushy: return 5
+        case .bad: return 6
+        case .horrible: return 7
         case .unknown: return 99
         }
     }
@@ -158,9 +164,15 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
             )
         case .poor:
             return (
-                title: "Poor - Thin Cover",
-                description: "Less than 1 inch of fresh snow since last ice event. Harder surface with some soft spots.",
-                criteria: "Less than 1 inch since last thaw-freeze (3h@+3°C, 6h@+2°C, or 8h@+1°C)"
+                title: "Soft - Thawing",
+                description: "Snow is softening in warm temperatures. Conditions are still skiable but deteriorating. Best skiing early morning.",
+                criteria: "Above freezing temps, snow actively softening but not yet slushy"
+            )
+        case .slushy:
+            return (
+                title: "Slushy - Wet Snow",
+                description: "Heavy, wet snow from prolonged warm temps. Difficult skiing, slow snow. Spring skiing conditions.",
+                criteria: "Extended warm period, high water content in snow"
             )
         case .bad:
             return (
