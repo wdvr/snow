@@ -75,45 +75,45 @@ class SnowQualityService:
         )
         adjusted_score = overall_score * source_multiplier
 
-        # CRITICAL: Temperature override - extremely warm = NOT SKIABLE
-        # At these temps, any snow would have melted regardless of what data shows
+        # Temperature adjustment - be conservative with "not skiable" designation
+        # Warm temps degrade conditions but don't make skiing impossible if base exists
         current_temp = weather.current_temp_celsius
-        if current_temp >= 15.0:
-            # Summer temperatures - definitely not skiable
-            adjusted_score = 0.0
-        elif current_temp >= 10.0:
-            # Very warm - snow cannot survive
-            adjusted_score = min(adjusted_score, 0.02)
-        elif current_temp >= 5.0:
-            # Warm - rapid melting, conditions degrading fast
-            adjusted_score = min(adjusted_score, 0.08)
-
-        # CRITICAL: Check for no base snow - if snow_depth_cm is 0, not skiable
-        # Also check for warm temps + no fresh snow as indicator of no-snow conditions
         snow_depth = getattr(weather, "snow_depth_cm", None)
-        if snow_depth is not None and snow_depth <= 0:
-            # Confirmed no snow on the ground = NOT SKIABLE
-            adjusted_score = 0.0
-        elif (
-            current_temp >= 5.0
-            and snowfall_after_freeze <= 0
-            and (weather.snowfall_24h_cm or 0) <= 0
-        ):
-            # Warm temperature AND no fresh snow = likely no skiable conditions
-            # At 5°C+ with no recent snow, any existing snow would be heavily compromised
-            adjusted_score = min(adjusted_score, 0.05)  # HORRIBLE
-
-        # CRITICAL: Cap quality based on fresh powder availability
-        # Quality is determined by snow since last thaw-freeze event
         currently_warming = getattr(weather, "currently_warming", False)
 
+        # CRITICAL: Only mark as NOT SKIABLE when we KNOW there's no snow
+        # Snow depth data confirms no snow = definitely not skiable
+        if snow_depth is not None and snow_depth <= 0:
+            adjusted_score = 0.0  # HORRIBLE - confirmed no snow
+        elif current_temp >= 20.0:
+            # True summer temps (>20°C) - extremely unlikely to have snow
+            adjusted_score = min(adjusted_score, 0.02)  # HORRIBLE
+        elif current_temp >= 15.0 and snow_depth is None:
+            # Very warm, unknown snow depth - probably no skiable conditions
+            # But cap at BAD, not HORRIBLE, since we're not certain
+            adjusted_score = min(adjusted_score, 0.15)
+
+        # Apply gradual degradation for warm temps (but don't go to HORRIBLE)
+        # Warm temps mean softer snow, but skiing is still possible with base
+        if current_temp >= 10.0:
+            # Warm spring-like conditions - cap at POOR
+            adjusted_score = min(adjusted_score, 0.25)
+        elif current_temp >= 5.0:
+            # Moderately warm - cap at FAIR (conditions are degrading but skiable)
+            adjusted_score = min(adjusted_score, 0.45)
+
+        # Fresh powder assessment - affects quality but not skiability
+        # No fresh snow = harder/icier surface, but still skiable
         if snowfall_after_freeze <= 0 and (weather.snowfall_24h_cm or 0) <= 0:
-            # No fresh snow at all = icy surface
-            if currently_warming or current_temp >= 2.0:
-                # Actively melting = HORRIBLE (not skiable)
-                adjusted_score = min(adjusted_score, 0.05)
+            # No fresh snow at all = harder surface conditions
+            if currently_warming and current_temp >= 5.0:
+                # Actively warming with no fresh cover = icy/slushy (POOR)
+                adjusted_score = min(adjusted_score, 0.25)
+            elif currently_warming or current_temp >= 2.0:
+                # Some warming = packed/firm conditions (BAD)
+                adjusted_score = min(adjusted_score, 0.15)
             else:
-                # Cold but icy = BAD
+                # Cold but icy = hard-packed (BAD)
                 adjusted_score = min(adjusted_score, 0.15)
         elif snowfall_after_freeze < 2.54:  # Less than 1 inch
             # Very little fresh snow - cap at POOR
