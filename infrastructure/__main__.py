@@ -1914,14 +1914,18 @@ website_bucket = aws.s3.BucketV2(
     tags=tags,
 )
 
-# Block public access - CloudFront will use OAC
+# Block public access - settings depend on environment
+# Prod: fully blocked (CloudFront uses OAC)
+# Non-prod: allow public bucket policy for static JSON API access
 website_bucket_public_access_block = aws.s3.BucketPublicAccessBlock(
     f"{app_name}-website-pab-{environment}",
     bucket=website_bucket.id,
     block_public_acls=True,
-    block_public_policy=True,
+    block_public_policy=(environment == "prod"),  # Allow public policy for non-prod
     ignore_public_acls=True,
-    restrict_public_buckets=True,
+    restrict_public_buckets=(
+        environment == "prod"
+    ),  # Allow public buckets for non-prod
 )
 
 # Website bucket configuration (for S3 website hosting fallback)
@@ -2035,6 +2039,26 @@ if environment == "prod" and cert_validation:
                 evaluate_target_health=False,
             )
         ],
+    )
+else:
+    # Non-prod: bucket policy allows public read access to the data/ folder
+    # This enables direct S3 website endpoint access for static JSON API
+    website_bucket_policy = aws.s3.BucketPolicy(
+        f"{app_name}-website-policy-{environment}",
+        bucket=website_bucket.id,
+        policy=website_bucket.arn.apply(
+            lambda arn: f"""{{
+                "Version": "2012-10-17",
+                "Statement": [{{
+                    "Sid": "AllowPublicReadData",
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": "s3:GetObject",
+                    "Resource": "{arn}/data/*"
+                }}]
+            }}"""
+        ),
+        opts=pulumi.ResourceOptions(depends_on=[website_bucket_public_access_block]),
     )
 
 # =============================================================================
