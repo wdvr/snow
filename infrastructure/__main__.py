@@ -263,6 +263,7 @@ lambda_policy = aws.iam.RolePolicy(
         device_tokens_table.arn,
         resort_events_table.arn,
         snow_summary_table.arn,
+        website_bucket_name,
     ).apply(
         lambda arns: f"""{{
         "Version": "2012-10-17",
@@ -332,8 +333,8 @@ lambda_policy = aws.iam.RolePolicy(
                     "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2",
                     "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2/scraper-results/*",
                     "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2/resort-versions/*",
-                    "arn:aws:s3:::{website_bucket_name}",
-                    "arn:aws:s3:::{website_bucket_name}/data/*"
+                    "arn:aws:s3:::{arns[7]}",
+                    "arn:aws:s3:::{arns[7]}/data/*"
                 ]
             }},
             {{
