@@ -347,6 +347,27 @@ jobs:
           echo "Version consolidator Lambda updated"
         fi
 
+        # Deploy Static JSON Lambda
+        STATIC_JSON_LAMBDA=$(pulumi stack output static_json_lambda_name 2>/dev/null || echo "")
+        WEBSITE_BUCKET=$(pulumi stack output website_bucket_name 2>/dev/null || echo "")
+        if [ -n "$STATIC_JSON_LAMBDA" ]; then
+          echo "Deploying Static JSON Lambda: $STATIC_JSON_LAMBDA"
+          aws lambda update-function-code \
+            --function-name "$STATIC_JSON_LAMBDA" \
+            --s3-bucket "$S3_BUCKET" \
+            --s3-key "$S3_KEY" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$STATIC_JSON_LAMBDA" --region us-west-2
+
+          # Update Static JSON Lambda environment variables
+          aws lambda update-function-configuration \
+            --function-name "$STATIC_JSON_LAMBDA" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},WEBSITE_BUCKET=$WEBSITE_BUCKET,AWS_REGION_NAME=us-west-2}" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$STATIC_JSON_LAMBDA" --region us-west-2
+          echo "Static JSON Lambda updated"
+        fi
+
         echo "Lambda deployment complete"
 
     - name: Seed resort data (dev/staging only)
