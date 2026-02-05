@@ -411,6 +411,26 @@ jobs:
           echo "Weather processor Lambda name not available"
         fi
 
+    - name: Invoke static JSON generator (async)
+      run: |
+        cd infrastructure
+        STATIC_JSON_LAMBDA=$(pulumi stack output static_json_lambda_name 2>/dev/null || echo "")
+
+        if [ -n "$STATIC_JSON_LAMBDA" ]; then
+          echo "Invoking static JSON generator asynchronously: $STATIC_JSON_LAMBDA"
+          aws lambda invoke \
+            --function-name "$STATIC_JSON_LAMBDA" \
+            --invocation-type Event \
+            --region us-west-2 \
+            --payload '{}' \
+            /tmp/static-json-response.json
+
+          echo "Static JSON generator triggered (running in background)"
+          echo "Output will be available at: /data/resorts.json and /data/snow-quality.json"
+        else
+          echo "Static JSON Lambda name not available"
+        fi
+
     - name: Run smoke tests
       run: |
         # Wait for deployment to be ready
