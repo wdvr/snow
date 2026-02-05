@@ -130,7 +130,6 @@ class TestStaticJsonGenerator:
         self, mock_dynamodb, mock_s3, sample_resort
     ):
         """Test snow quality calculation returns EXCELLENT for great conditions."""
-        mock_table = MagicMock()
 
         # Resort table returns one resort
         def mock_scan():
@@ -199,7 +198,7 @@ class TestStaticJsonGenerator:
             website_bucket="test-bucket",
         )
 
-        result = generator._generate_snow_quality_json()
+        generator._generate_snow_quality_json()
 
         # Verify S3 upload was called
         assert mock_s3.put_object.called
@@ -250,7 +249,6 @@ class TestStaticJsonGenerator:
 
         # Return conditions based on elevation level
         def mock_query(**kwargs):
-            filter_exp = kwargs.get("FilterExpression", "")
             if ":level" in str(kwargs.get("ExpressionAttributeValues", {})):
                 level = kwargs["ExpressionAttributeValues"].get(":level", "")
                 if level == "base":
@@ -309,7 +307,7 @@ class TestStaticJsonGenerator:
             website_bucket="test-bucket",
         )
 
-        result = generator._generate_snow_quality_json()
+        generator._generate_snow_quality_json()
 
         # Check the uploaded JSON content
         call_args = mock_s3.put_object.call_args

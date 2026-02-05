@@ -18,10 +18,9 @@ import boto3
 from botocore.exceptions import ClientError
 
 from models.resort import Resort
-from models.weather import SnowQuality, WeatherCondition
+from models.weather import SnowQuality
 from services.resort_service import ResortService
 from services.weather_service import WeatherService
-from utils.dynamodb_utils import parse_from_dynamodb
 
 logger = logging.getLogger(__name__)
 
