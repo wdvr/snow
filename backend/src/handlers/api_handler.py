@@ -96,7 +96,8 @@ def get_dynamodb():
     """Get or create DynamoDB resource (lazy init for SnapStart)."""
     global _dynamodb
     if _dynamodb is None:
-        _dynamodb = boto3.resource("dynamodb")
+        region = os.environ.get("AWS_DEFAULT_REGION", "us-west-2")
+        _dynamodb = boto3.resource("dynamodb", region_name=region)
     return _dynamodb
 
 
