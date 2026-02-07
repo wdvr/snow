@@ -195,6 +195,219 @@ class TestSnowDepthExtraction:
         )
 
 
+class TestFreezeThawDetection:
+    """Tests for freeze-thaw detection thresholds and edge cases."""
+
+    def _make_freeze_thaw_data(
+        self,
+        warm_hours: int,
+        warm_temp: float,
+        warm_start_hours_ago: int = 30,
+    ):
+        """Create hourly data with a specific warm period.
+
+        Args:
+            warm_hours: Duration of above-0 period
+            warm_temp: Peak temperature during warm period
+            warm_start_hours_ago: When warm period started (hours before now)
+        """
+        now = datetime.now(UTC)
+        start = now - timedelta(hours=336)
+        total_hours = 336 + 72
+
+        times = []
+        temps = []
+        snowfall = []
+        snow_depth = []
+
+        warm_end_hours_ago = warm_start_hours_ago - warm_hours
+
+        for i in range(total_hours):
+            t = start + timedelta(hours=i)
+            times.append(t.strftime("%Y-%m-%dT%H:00"))
+            snow_depth.append(1.0)
+
+            hours_ago = 336 - i
+            if warm_end_hours_ago < hours_ago <= warm_start_hours_ago:
+                temps.append(warm_temp)
+            else:
+                temps.append(-5.0)
+
+            # Add snowfall after the warm period
+            if hours_ago < warm_end_hours_ago and hours_ago > warm_end_hours_ago - 24:
+                snowfall.append(0.5)
+            else:
+                snowfall.append(0.0)
+
+        return {
+            "time": times,
+            "temperature_2m": temps,
+            "snowfall": snowfall,
+            "snow_depth": snow_depth,
+        }
+
+    def test_lower_threshold_detects_4h_above_zero(self):
+        """Regression: Big White top - 7h above 0°C (peak +1.5°C) was missed.
+
+        The old thresholds required 8h at ≥1°C minimum. The new (0°C, 4h)
+        threshold detects any 4+ hour period above freezing.
+        """
+        service = OpenMeteoService()
+
+        # 5 hours above 0°C, peak at +0.8°C (below old 1°C threshold)
+        hourly = self._make_freeze_thaw_data(
+            warm_hours=5,
+            warm_temp=0.8,
+            warm_start_hours_ago=35,
+        )
+        daily = {
+            "time": [],
+            "snowfall_sum": [],
+            "temperature_2m_min": [],
+            "temperature_2m_max": [],
+        }
+
+        result = service._process_snowfall(daily, hourly)
+
+        # Should detect the freeze event (~30-35 hours ago)
+        assert result["last_freeze_thaw_hours_ago"] < 100, (
+            f"Freeze-thaw {result['last_freeze_thaw_hours_ago']}h ago. "
+            f"5 hours above 0°C should be detected by (0°C, 4h) threshold."
+        )
+
+    def test_3h_above_zero_not_detected(self):
+        """Test: 3 hours above 0°C should NOT trigger the (0°C, 4h) threshold."""
+        service = OpenMeteoService()
+
+        # Only 3 hours above 0°C - below the 4h requirement
+        hourly = self._make_freeze_thaw_data(
+            warm_hours=3,
+            warm_temp=0.5,
+            warm_start_hours_ago=35,
+        )
+        daily = {
+            "time": [],
+            "snowfall_sum": [],
+            "temperature_2m_min": [],
+            "temperature_2m_max": [],
+        }
+
+        result = service._process_snowfall(daily, hourly)
+
+        # Should NOT detect a freeze event (3h < 4h required)
+        assert result["last_freeze_thaw_hours_ago"] >= 336, (
+            f"Freeze-thaw detected at {result['last_freeze_thaw_hours_ago']}h. "
+            f"3 hours above 0°C should NOT trigger the 4h threshold."
+        )
+
+    def test_freeze_detection_skips_current_hour(self):
+        """Regression: Whistler mid - freeze detected at current hour caused
+        false resets of snowfall_after_freeze and DynamoDB corruption.
+
+        The search should start at current_index - 1 to only detect
+        completed ice events, not ongoing ones.
+        """
+        service = OpenMeteoService()
+
+        now = datetime.now(UTC)
+        start = now - timedelta(hours=336)
+        total_hours = 336 + 72
+
+        times = []
+        temps = []
+        snowfall = []
+        snow_depth = []
+
+        for i in range(total_hours):
+            t = start + timedelta(hours=i)
+            times.append(t.strftime("%Y-%m-%dT%H:00"))
+            snow_depth.append(1.0)
+            snowfall.append(0.0)
+
+            hours_ago = 336 - i
+            # Make the LAST 4 hours (including current) warm at +0.5°C
+            # With current hour: 4 hours triggers (0.0, 4) threshold
+            # Without current hour: only 3 hours, below threshold
+            if 0 <= hours_ago <= 3:
+                temps.append(0.5)
+            else:
+                temps.append(-5.0)
+
+        hourly = {
+            "time": times,
+            "temperature_2m": temps,
+            "snowfall": snowfall,
+            "snow_depth": snow_depth,
+        }
+        daily = {
+            "time": [],
+            "snowfall_sum": [],
+            "temperature_2m_min": [],
+            "temperature_2m_max": [],
+        }
+
+        result = service._process_snowfall(daily, hourly)
+
+        # Should NOT detect freeze at current hour
+        # The warming is ongoing (only 4h including current), not completed
+        # Skipping current_index means only 3 hours visible, below (0.0, 4) threshold
+        assert result["last_freeze_thaw_hours_ago"] >= 336, (
+            f"Freeze detected at {result['last_freeze_thaw_hours_ago']}h ago. "
+            f"Should not detect ongoing warming as a freeze event. "
+            f"Search must start at current_index - 1."
+        )
+
+    def test_completed_freeze_event_still_detected(self):
+        """Test: A completed freeze-thaw event (warm then cold again) IS detected."""
+        service = OpenMeteoService()
+
+        # Warm period ended 10 hours ago (completed event)
+        hourly = self._make_freeze_thaw_data(
+            warm_hours=5,
+            warm_temp=3.5,  # Triggers (3.0, 3) threshold
+            warm_start_hours_ago=15,
+        )
+        daily = {
+            "time": [],
+            "snowfall_sum": [],
+            "temperature_2m_min": [],
+            "temperature_2m_max": [],
+        }
+
+        result = service._process_snowfall(daily, hourly)
+
+        # Should detect the completed freeze event (~10 hours ago)
+        assert result["last_freeze_thaw_hours_ago"] < 20, (
+            f"Freeze at {result['last_freeze_thaw_hours_ago']}h. "
+            f"Completed warm event 10-15h ago should be detected."
+        )
+
+    def test_snowfall_after_freeze_accumulates_correctly(self):
+        """Test: Snowfall after a detected freeze event is summed correctly."""
+        service = OpenMeteoService()
+
+        # Freeze event 30h ago, 24h of snowfall after it
+        hourly = self._make_freeze_thaw_data(
+            warm_hours=5,
+            warm_temp=3.5,
+            warm_start_hours_ago=30,
+        )
+        daily = {
+            "time": [],
+            "snowfall_sum": [],
+            "temperature_2m_min": [],
+            "temperature_2m_max": [],
+        }
+
+        result = service._process_snowfall(daily, hourly)
+
+        # Should have accumulated snowfall after the freeze
+        assert result["snowfall_after_freeze_cm"] > 5, (
+            f"Snowfall after freeze {result['snowfall_after_freeze_cm']}cm is too low. "
+            f"Expected ~12cm (24h * 0.5cm/h) after the freeze event."
+        )
+
+
 class TestTimezoneHandling:
     """Tests for timezone consistency in Open-Meteo API calls."""
 

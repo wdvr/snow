@@ -603,7 +603,7 @@ class TestSnowDepthReliability:
         )
 
     def test_zero_depth_with_no_snow_still_horrible(self, snow_quality_algorithm):
-        """Test: snow_depth=0 with no fresh snow = HORRIBLE (still works)."""
+        """Test: snow_depth=0 with no fresh snow and HIGH confidence = HORRIBLE."""
         service = SnowQualityService(snow_quality_algorithm)
 
         no_snow = WeatherCondition(
@@ -624,10 +624,10 @@ class TestSnowDepthReliability:
             currently_warming=True,
             snow_depth_cm=0.0,  # Confirmed no snow
             snow_quality=SnowQuality.UNKNOWN,
-            confidence_level=ConfidenceLevel.MEDIUM,
+            confidence_level=ConfidenceLevel.HIGH,
             fresh_snow_cm=0.0,
-            data_source="open-meteo.com",
-            source_confidence=ConfidenceLevel.MEDIUM,
+            data_source="resort-report",
+            source_confidence=ConfidenceLevel.HIGH,  # Reliable source
         )
 
         quality, fresh_snow, confidence = service.assess_snow_quality(no_snow)
@@ -708,3 +708,243 @@ class TestSnowDepthReliability:
             SnowQuality.EXCELLENT.value,
             SnowQuality.GOOD.value,
         ]
+
+
+class TestFreezeThawAndQualityEdgeCases:
+    """Regression tests for freeze-thaw detection and quality edge cases.
+
+    Covers bugs found during multi-resort spot-checks (Feb 2026):
+    - Big White top: 7h above 0°C missed by ICE_THRESHOLDS
+    - Whistler mid: freeze detected at current hour, resetting accumulation
+    - Vail base/mid: HORRIBLE rating from unreliable 0cm depth
+    - Jackson Hole mid: quality flipping BAD↔POOR at 0°C boundary
+    - Jackson Hole top: old unfrozen snow rated POOR despite no freeze in 14d
+    """
+
+    def test_zero_depth_unreliable_not_horrible_vail_scenario(
+        self, snow_quality_algorithm
+    ):
+        """Regression: Vail base/mid - Open-Meteo reports 0cm but real depth ~94cm.
+
+        With MEDIUM confidence (model data), snow_depth=0 should NOT trigger
+        HORRIBLE. The model is simply wrong for this grid cell.
+        """
+        service = SnowQualityService(snow_quality_algorithm)
+
+        vail_like = WeatherCondition(
+            resort_id="test-vail",
+            elevation_level="base",
+            timestamp=datetime.now(UTC).isoformat(),
+            current_temp_celsius=3.4,
+            min_temp_celsius=-2.0,
+            max_temp_celsius=5.0,
+            snowfall_24h_cm=0.0,
+            snowfall_48h_cm=0.0,
+            snowfall_72h_cm=0.0,
+            hours_above_ice_threshold=3.0,
+            max_consecutive_warm_hours=9.0,
+            snowfall_after_freeze_cm=0.0,
+            hours_since_last_snowfall=312.0,
+            last_freeze_thaw_hours_ago=14.0,
+            currently_warming=True,
+            snow_depth_cm=0.0,  # Model says 0 - WRONG
+            snow_quality=SnowQuality.UNKNOWN,
+            confidence_level=ConfidenceLevel.MEDIUM,
+            fresh_snow_cm=0.0,
+            data_source="open-meteo.com",
+            source_confidence=ConfidenceLevel.MEDIUM,  # Unreliable
+        )
+
+        quality, _, _ = service.assess_snow_quality(vail_like)
+        quality_value = quality.value if hasattr(quality, "value") else quality
+
+        # Should NOT be HORRIBLE - depth data is unreliable
+        assert quality_value != SnowQuality.HORRIBLE.value, (
+            "Quality should not be HORRIBLE when snow_depth=0 from unreliable "
+            "source. Open-Meteo grid model often reports 0cm at mountain resorts."
+        )
+
+    def test_old_unfrozen_snow_not_icy_jackson_top_scenario(
+        self, snow_quality_algorithm
+    ):
+        """Regression: Jackson Hole top - 157cm at -4.2°C, no freeze in 14+ days.
+
+        Snow that has NEVER been through a freeze-thaw cycle is aged packed
+        powder, not icy. Should be FAIR, not BAD.
+        """
+        service = SnowQualityService(snow_quality_algorithm)
+
+        jackson_top = WeatherCondition(
+            resort_id="test-jackson",
+            elevation_level="top",
+            timestamp=datetime.now(UTC).isoformat(),
+            current_temp_celsius=-4.2,
+            min_temp_celsius=-8.0,
+            max_temp_celsius=-2.0,
+            snowfall_24h_cm=0.0,
+            snowfall_48h_cm=0.0,
+            snowfall_72h_cm=0.0,
+            hours_above_ice_threshold=0.0,
+            max_consecutive_warm_hours=0.0,
+            snowfall_after_freeze_cm=0.0,  # No fresh snow
+            hours_since_last_snowfall=200.0,
+            last_freeze_thaw_hours_ago=336.0,  # No freeze in 14+ days!
+            currently_warming=False,
+            snow_depth_cm=157.0,
+            snow_quality=SnowQuality.UNKNOWN,
+            confidence_level=ConfidenceLevel.HIGH,
+            fresh_snow_cm=0.0,
+            data_source="open-meteo.com + onthesnow.com",
+            source_confidence=ConfidenceLevel.HIGH,
+        )
+
+        quality, _, _ = service.assess_snow_quality(jackson_top)
+        quality_value = quality.value if hasattr(quality, "value") else quality
+
+        # Should be FAIR (packed powder), not BAD (icy)
+        assert quality_value in [
+            SnowQuality.FAIR.value,
+            SnowQuality.GOOD.value,
+        ], (
+            f"Quality {quality_value} is too low for -4.2°C with no freeze-thaw "
+            f"in 14+ days. Old unfrozen snow is packed powder, not icy."
+        )
+
+    def test_old_unfrozen_snow_cold_is_fair(self, snow_quality_algorithm):
+        """Test: Very cold old snow with no freeze in 14d = FAIR (dry packed)."""
+        service = SnowQualityService(snow_quality_algorithm)
+
+        cold_old = WeatherCondition(
+            resort_id="test-resort",
+            elevation_level="top",
+            timestamp=datetime.now(UTC).isoformat(),
+            current_temp_celsius=-10.0,  # Very cold
+            min_temp_celsius=-15.0,
+            max_temp_celsius=-8.0,
+            snowfall_24h_cm=0.0,
+            snowfall_48h_cm=0.0,
+            snowfall_72h_cm=0.0,
+            hours_above_ice_threshold=0.0,
+            max_consecutive_warm_hours=0.0,
+            snowfall_after_freeze_cm=0.0,
+            hours_since_last_snowfall=300.0,
+            last_freeze_thaw_hours_ago=336.0,  # No freeze in 14+ days
+            currently_warming=False,
+            snow_depth_cm=200.0,
+            snow_quality=SnowQuality.UNKNOWN,
+            confidence_level=ConfidenceLevel.HIGH,
+            fresh_snow_cm=0.0,
+            data_source="open-meteo.com + onthesnow.com",
+            source_confidence=ConfidenceLevel.HIGH,
+        )
+
+        quality, _, _ = service.assess_snow_quality(cold_old)
+        quality_value = quality.value if hasattr(quality, "value") else quality
+
+        assert quality_value == SnowQuality.FAIR.value, (
+            f"Quality {quality_value} should be FAIR for very cold (-10°C) old "
+            f"snow with no freeze-thaw. This is dry packed powder."
+        )
+
+    def test_smooth_zero_degree_transition(self, snow_quality_algorithm):
+        """Regression: Jackson Hole mid - quality shouldn't flip at exactly 0°C.
+
+        At 0.5°C with recent freeze and no fresh snow, quality should be
+        between BAD (0°C) and POOR (2°C), not jump to either extreme.
+        """
+        service = SnowQualityService(snow_quality_algorithm)
+
+        at_half_degree = WeatherCondition(
+            resort_id="test-resort",
+            elevation_level="mid",
+            timestamp=datetime.now(UTC).isoformat(),
+            current_temp_celsius=0.5,  # Just above 0
+            min_temp_celsius=-3.0,
+            max_temp_celsius=2.0,
+            snowfall_24h_cm=0.0,
+            snowfall_48h_cm=0.0,
+            snowfall_72h_cm=0.0,
+            hours_above_ice_threshold=0.0,
+            max_consecutive_warm_hours=3.0,
+            snowfall_after_freeze_cm=0.0,
+            hours_since_last_snowfall=100.0,
+            last_freeze_thaw_hours_ago=20.0,  # Recent freeze
+            currently_warming=False,
+            snow_quality=SnowQuality.UNKNOWN,
+            confidence_level=ConfidenceLevel.HIGH,
+            fresh_snow_cm=0.0,
+            data_source="test-api",
+            source_confidence=ConfidenceLevel.HIGH,
+        )
+
+        at_minus_half = WeatherCondition(
+            resort_id="test-resort",
+            elevation_level="mid",
+            timestamp=datetime.now(UTC).isoformat(),
+            current_temp_celsius=-0.5,  # Just below 0
+            min_temp_celsius=-3.0,
+            max_temp_celsius=2.0,
+            snowfall_24h_cm=0.0,
+            snowfall_48h_cm=0.0,
+            snowfall_72h_cm=0.0,
+            hours_above_ice_threshold=0.0,
+            max_consecutive_warm_hours=3.0,
+            snowfall_after_freeze_cm=0.0,
+            hours_since_last_snowfall=100.0,
+            last_freeze_thaw_hours_ago=20.0,  # Recent freeze
+            currently_warming=False,
+            snow_quality=SnowQuality.UNKNOWN,
+            confidence_level=ConfidenceLevel.HIGH,
+            fresh_snow_cm=0.0,
+            data_source="test-api",
+            source_confidence=ConfidenceLevel.HIGH,
+        )
+
+        quality_above, _, _ = service.assess_snow_quality(at_half_degree)
+        quality_below, _, _ = service.assess_snow_quality(at_minus_half)
+
+        q_above = (
+            quality_above.value if hasattr(quality_above, "value") else quality_above
+        )
+        q_below = (
+            quality_below.value if hasattr(quality_below, "value") else quality_below
+        )
+
+        # Both should be in the BAD-POOR range (transition zone)
+        assert q_above in [SnowQuality.BAD.value, SnowQuality.POOR.value]
+        assert q_below == SnowQuality.BAD.value
+
+    def test_recent_freeze_no_snow_above_2c_is_poor(self, snow_quality_algorithm):
+        """Test: Recent freeze + no fresh snow + clearly above freezing = POOR."""
+        service = SnowQualityService(snow_quality_algorithm)
+
+        warm_after_freeze = WeatherCondition(
+            resort_id="test-resort",
+            elevation_level="base",
+            timestamp=datetime.now(UTC).isoformat(),
+            current_temp_celsius=3.0,
+            min_temp_celsius=-1.0,
+            max_temp_celsius=5.0,
+            snowfall_24h_cm=0.0,
+            snowfall_48h_cm=0.0,
+            snowfall_72h_cm=0.0,
+            hours_above_ice_threshold=2.0,
+            max_consecutive_warm_hours=5.0,
+            snowfall_after_freeze_cm=0.0,
+            hours_since_last_snowfall=100.0,
+            last_freeze_thaw_hours_ago=12.0,  # Recent freeze
+            currently_warming=True,
+            snow_quality=SnowQuality.UNKNOWN,
+            confidence_level=ConfidenceLevel.HIGH,
+            fresh_snow_cm=0.0,
+            data_source="test-api",
+            source_confidence=ConfidenceLevel.HIGH,
+        )
+
+        quality, _, _ = service.assess_snow_quality(warm_after_freeze)
+        quality_value = quality.value if hasattr(quality, "value") else quality
+
+        assert quality_value == SnowQuality.POOR.value, (
+            f"Quality {quality_value} should be POOR (Soft/Slushy) for "
+            f"above-freezing conditions with recent freeze and no fresh snow."
+        )

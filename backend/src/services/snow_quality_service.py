@@ -103,7 +103,9 @@ class SnowQualityService:
 
         # CRITICAL: Only mark as NOT SKIABLE when we KNOW there's no snow
         # Require both model AND snowfall data to agree on "no snow"
-        if snow_depth is not None and snow_depth <= 0:
+        # Also require reliable depth data - Open-Meteo often reports 0cm when
+        # there is clearly snow (e.g., Vail base/mid in February)
+        if snow_depth is not None and snow_depth <= 0 and snow_depth_reliable:
             if snowfall_after_freeze <= 0 and (weather.snowfall_24h_cm or 0) <= 0:
                 adjusted_score = 0.0  # HORRIBLE - confirmed no snow
         if current_temp >= 20.0:
@@ -143,16 +145,33 @@ class SnowQualityService:
 
         # Fresh powder assessment - affects quality but not skiability
         # No fresh snow = harder/icier surface, but still skiable
+        last_freeze_hours = getattr(weather, "last_freeze_thaw_hours_ago", None)
         if snowfall_after_freeze <= 0 and (weather.snowfall_24h_cm or 0) <= 0:
             # No fresh snow at all = harder surface conditions
-            # Key distinction: above vs below freezing determines current texture
-            if current_temp > 0:
-                # Above freezing = snow is currently SOFT/SLUSHY (thawing)
-                # Will refreeze tonight, but right now it's soft, not icy
-                adjusted_score = min(adjusted_score, 0.25)  # POOR = "Soft/Slushy"
+            if last_freeze_hours is not None and last_freeze_hours >= 336:
+                # No freeze-thaw in 14+ days: snow is aged but never refrozen
+                # This is packed/groomed powder, not icy.
+                if current_temp <= 0:
+                    # Below freezing, never refrozen - cold packed powder
+                    adjusted_score = min(adjusted_score, 0.45)  # FAIR
+                else:
+                    # Above freezing - softening old snow
+                    adjusted_score = min(adjusted_score, 0.25)  # POOR
             else:
-                # At or below freezing = snow is currently HARD/ICY (frozen)
-                adjusted_score = min(adjusted_score, 0.15)  # BAD = "Icy"
+                # Recent freeze-thaw occurred - snow texture depends on temp
+                # Use smooth gradient around 0°C instead of hard cutoff
+                if current_temp > 2.0:
+                    # Clearly above freezing = SOFT/SLUSHY
+                    adjusted_score = min(adjusted_score, 0.25)  # POOR
+                elif current_temp > 0.0:
+                    # Transition zone (0-2°C): blend between icy and soft
+                    # Linear interpolation: 0°C→0.15 (BAD), 2°C→0.25 (POOR)
+                    blend = current_temp / 2.0
+                    cap = 0.15 + blend * 0.10
+                    adjusted_score = min(adjusted_score, cap)
+                else:
+                    # Below freezing = HARD/ICY (frozen after thaw)
+                    adjusted_score = min(adjusted_score, 0.15)  # BAD = "Icy"
         elif snowfall_after_freeze < 2.54:  # Less than 1 inch
             # Very little fresh snow - cap at POOR
             adjusted_score = min(adjusted_score, 0.25)

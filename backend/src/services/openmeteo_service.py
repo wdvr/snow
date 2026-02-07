@@ -326,9 +326,10 @@ class OpenMeteoService:
 
             # Thaw-freeze thresholds: (temp_celsius, required_hours)
             ICE_THRESHOLDS = [
-                (3.0, 3),  # 3 hours at +3°C
+                (3.0, 3),  # 3 hours at +3°C (hard ice fast)
                 (2.0, 6),  # 6 hours at +2°C
                 (1.0, 8),  # 8 hours at +1°C
+                (0.0, 4),  # 4 hours above 0°C (surface crust formation)
             ]
 
             # Find the last "ice formation event" using multi-threshold detection
@@ -336,8 +337,14 @@ class OpenMeteoService:
             # Search up to 14 days back for accurate freeze-thaw tracking
             last_ice_event_end_index = None
 
+            # Start from current_index - 1 to only detect COMPLETED ice events.
+            # Starting at current_index would detect "ongoing" warming as a freeze
+            # event, resetting snowfall_after_freeze to 0 during any warm period
+            # and corrupting the persistent snow summary in DynamoDB.
+            search_start = max(current_index - 1, start_historical)
+
             # Track consecutive hours at each threshold level
-            for i in range(current_index, start_historical - 1, -1):
+            for i in range(search_start, start_historical - 1, -1):
                 if i >= len(hourly_temps) or hourly_temps[i] is None:
                     continue
 
