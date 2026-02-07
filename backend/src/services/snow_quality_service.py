@@ -173,8 +173,21 @@ class SnowQualityService:
                     # Below freezing = HARD/ICY (frozen after thaw)
                     adjusted_score = min(adjusted_score, 0.15)  # BAD = "Icy"
         elif snowfall_after_freeze < 2.54:  # Less than 1 inch
-            # Very little fresh snow - cap at POOR
-            adjusted_score = min(adjusted_score, 0.25)
+            # Very little fresh snow - base condition dominates
+            if last_freeze_hours is not None and last_freeze_hours < 336:
+                # Recent freeze-thaw: thin dusting over refrozen base
+                if current_temp <= 0:
+                    # Cold: icy base with cosmetic dusting ("dust on crust")
+                    adjusted_score = min(adjusted_score, 0.15)  # BAD (Icy)
+                else:
+                    # Warm: softening slushy conditions
+                    adjusted_score = min(adjusted_score, 0.25)  # POOR (Soft)
+            else:
+                # No recent freeze: thin fresh on packed powder base
+                if current_temp <= 0:
+                    adjusted_score = min(adjusted_score, 0.45)  # FAIR
+                else:
+                    adjusted_score = min(adjusted_score, 0.25)  # POOR (Soft)
 
         # Determine quality level
         snow_quality = self._score_to_quality(adjusted_score)

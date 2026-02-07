@@ -948,3 +948,350 @@ class TestFreezeThawAndQualityEdgeCases:
             f"Quality {quality_value} should be POOR (Soft/Slushy) for "
             f"above-freezing conditions with recent freeze and no fresh snow."
         )
+
+
+class TestSnowConditionMatrix:
+    """Comprehensive tests mapping real-world ski conditions to quality ratings.
+
+    Based on ski industry standards (OnTheSnow, OpenSnow, resort reporting).
+    Labels: EXCELLENT=Powder, GOOD=Soft Surface, FAIR=Some Fresh/Packed,
+            POOR=Soft/Slushy, BAD=Icy, HORRIBLE=Not Skiable
+    """
+
+    def _make_condition(self, **overrides):
+        """Helper to create a WeatherCondition with sensible defaults."""
+        defaults = {
+            "resort_id": "test",
+            "elevation_level": "mid",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "current_temp_celsius": -5.0,
+            "min_temp_celsius": -8.0,
+            "max_temp_celsius": -3.0,
+            "snowfall_24h_cm": 0.0,
+            "snowfall_48h_cm": 0.0,
+            "snowfall_72h_cm": 0.0,
+            "hours_above_ice_threshold": 0.0,
+            "max_consecutive_warm_hours": 0.0,
+            "snowfall_after_freeze_cm": 0.0,
+            "hours_since_last_snowfall": None,
+            "last_freeze_thaw_hours_ago": 48.0,
+            "currently_warming": False,
+            "snow_depth_cm": 150.0,
+            "snow_quality": SnowQuality.UNKNOWN,
+            "confidence_level": ConfidenceLevel.HIGH,
+            "fresh_snow_cm": 0.0,
+            "data_source": "test",
+            "source_confidence": ConfidenceLevel.HIGH,
+        }
+        defaults.update(overrides)
+        return WeatherCondition(**defaults)
+
+    def _assess(self, condition, algorithm):
+        service = SnowQualityService(algorithm)
+        quality, _, _ = service.assess_snow_quality(condition)
+        return quality.value if hasattr(quality, "value") else quality
+
+    # === POWDER / EXCELLENT scenarios ===
+
+    def test_deep_powder_cold(self, snow_quality_algorithm):
+        """15+ cm fresh at -10°C, no thaw → EXCELLENT (Deep Powder)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=-10.0,
+                snowfall_after_freeze_cm=20.0,
+                snowfall_24h_cm=15.0,
+                hours_since_last_snowfall=4.0,
+                last_freeze_thaw_hours_ago=72.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q == SnowQuality.EXCELLENT.value
+
+    def test_fresh_powder_moderate_cold(self, snow_quality_algorithm):
+        """10cm fresh at -5°C → EXCELLENT or GOOD."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=-5.0,
+                snowfall_after_freeze_cm=10.0,
+                snowfall_24h_cm=8.0,
+                hours_since_last_snowfall=8.0,
+                last_freeze_thaw_hours_ago=48.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q in [SnowQuality.EXCELLENT.value, SnowQuality.GOOD.value]
+
+    def test_heavy_damp_powder_near_freezing(self, snow_quality_algorithm):
+        """10cm fresh at +1°C ("Sierra cement") → GOOD or FAIR."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=1.0,
+                max_temp_celsius=2.0,
+                snowfall_after_freeze_cm=12.0,
+                snowfall_24h_cm=10.0,
+                hours_since_last_snowfall=6.0,
+                last_freeze_thaw_hours_ago=48.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q in [SnowQuality.GOOD.value, SnowQuality.FAIR.value]
+
+    def test_wet_snow_above_freezing(self, snow_quality_algorithm):
+        """10cm fresh at +4°C → FAIR at best (heavy wet snow)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=4.0,
+                max_temp_celsius=5.0,
+                snowfall_after_freeze_cm=10.0,
+                snowfall_24h_cm=8.0,
+                hours_since_last_snowfall=6.0,
+                last_freeze_thaw_hours_ago=48.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q in [SnowQuality.FAIR.value, SnowQuality.POOR.value]
+
+    # === ICY scenarios (freeze-thaw + cold + no/thin fresh) ===
+
+    def test_icy_classic_freeze_thaw_cold(self, snow_quality_algorithm):
+        """No fresh, -10°C, thaw 2 days ago → BAD (Icy)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=-10.0,
+                snowfall_after_freeze_cm=0.0,
+                last_freeze_thaw_hours_ago=48.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q == SnowQuality.BAD.value, (
+            f"Got {q}. -10°C with no fresh snow after freeze = Icy (BAD)"
+        )
+
+    def test_icy_recent_freeze_minus5(self, snow_quality_algorithm):
+        """No fresh, -5°C, thaw yesterday → BAD (Icy).
+        This is Big White top scenario: -5.4°C, 1.19cm, freeze 45h ago.
+        """
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=-5.4,
+                snowfall_after_freeze_cm=1.19,  # < 2.54cm (1 inch)
+                snowfall_24h_cm=1.07,
+                hours_since_last_snowfall=5.0,
+                last_freeze_thaw_hours_ago=45.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q == SnowQuality.BAD.value, (
+            f"Got {q}. Big White top: -5.4°C with 1.19cm dust on refrozen "
+            f"base should be Icy (BAD), not Soft (POOR)"
+        )
+
+    def test_icy_thin_dusting_cold(self, snow_quality_algorithm):
+        """2cm fresh at -8°C, thaw 36h ago → BAD (dust on crust)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=-8.0,
+                snowfall_after_freeze_cm=2.0,  # < 2.54cm
+                snowfall_24h_cm=2.0,
+                hours_since_last_snowfall=6.0,
+                last_freeze_thaw_hours_ago=36.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q == SnowQuality.BAD.value, (
+            f"Got {q}. Thin dusting (<1 inch) over ice at -8°C = Icy (BAD)"
+        )
+
+    # === SOFT/SLUSHY scenarios (warm + no fresh) ===
+
+    def test_soft_warm_after_freeze(self, snow_quality_algorithm):
+        """No fresh, +3°C, thaw ongoing → POOR (Soft/Slushy)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=3.0,
+                max_temp_celsius=5.0,
+                snowfall_after_freeze_cm=0.0,
+                last_freeze_thaw_hours_ago=6.0,
+                currently_warming=True,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q == SnowQuality.POOR.value, (
+            f"Got {q}. +3°C with no fresh after freeze = Soft (POOR)"
+        )
+
+    def test_soft_thin_dusting_warm(self, snow_quality_algorithm):
+        """1.5cm fresh at +2°C, recent freeze → POOR (Soft)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=2.0,
+                max_temp_celsius=3.0,
+                snowfall_after_freeze_cm=1.5,
+                snowfall_24h_cm=1.5,
+                hours_since_last_snowfall=3.0,
+                last_freeze_thaw_hours_ago=24.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q == SnowQuality.POOR.value, (
+            f"Got {q}. Thin wet snow at +2°C = Soft (POOR)"
+        )
+
+    def test_slushy_hot(self, snow_quality_algorithm):
+        """No fresh, +8°C → POOR (Slushy/Mashed Potatoes)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=8.0,
+                max_temp_celsius=10.0,
+                snowfall_after_freeze_cm=0.0,
+                last_freeze_thaw_hours_ago=3.0,
+                currently_warming=True,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q in [SnowQuality.POOR.value, SnowQuality.BAD.value]
+
+    # === PACKED POWDER / FAIR scenarios (old snow, never refrozen) ===
+
+    def test_packed_powder_cold(self, snow_quality_algorithm):
+        """No fresh, -10°C, NO freeze in 14+ days → FAIR (Packed Powder)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=-10.0,
+                snowfall_after_freeze_cm=0.0,
+                last_freeze_thaw_hours_ago=336.0,  # 14+ days
+            ),
+            snow_quality_algorithm,
+        )
+        assert q == SnowQuality.FAIR.value, (
+            f"Got {q}. Cold packed powder never refrozen = FAIR, not Icy"
+        )
+
+    def test_packed_powder_light_dusting(self, snow_quality_algorithm):
+        """1.5cm fresh, -5°C, NO freeze in 14+ days → FAIR (nice dusting)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=-5.0,
+                snowfall_after_freeze_cm=1.5,
+                snowfall_24h_cm=1.5,
+                hours_since_last_snowfall=8.0,
+                last_freeze_thaw_hours_ago=336.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q == SnowQuality.FAIR.value, (
+            f"Got {q}. Light dusting on packed powder (no freeze) = FAIR"
+        )
+
+    # === SPRING CORN scenarios ===
+
+    def test_spring_corn_warm(self, snow_quality_algorithm):
+        """No fresh, +3°C, thaw 12h ago (overnight freeze) → POOR."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=3.0,
+                max_temp_celsius=5.0,
+                snowfall_after_freeze_cm=0.0,
+                last_freeze_thaw_hours_ago=12.0,
+                hours_above_ice_threshold=2.0,
+                currently_warming=True,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q == SnowQuality.POOR.value
+
+    # === NOT SKIABLE scenarios ===
+
+    def test_not_skiable_summer(self, snow_quality_algorithm):
+        """+20°C, no snow → HORRIBLE."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=20.0,
+                max_temp_celsius=22.0,
+                snow_depth_cm=0.0,
+                snowfall_after_freeze_cm=0.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q == SnowQuality.HORRIBLE.value
+
+    def test_not_skiable_warm_no_snow(self, snow_quality_algorithm):
+        """+12°C, no fresh, melting out → POOR or worse."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=12.0,
+                max_temp_celsius=15.0,
+                snow_depth_cm=10.0,
+                snowfall_after_freeze_cm=0.0,
+                last_freeze_thaw_hours_ago=2.0,
+                currently_warming=True,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q in [
+            SnowQuality.POOR.value,
+            SnowQuality.BAD.value,
+            SnowQuality.HORRIBLE.value,
+        ]
+
+    # === TRANSITION ZONE scenarios (near 0°C) ===
+
+    def test_transition_at_zero_icy_side(self, snow_quality_algorithm):
+        """No fresh, -0.5°C, recent freeze → BAD (still frozen = icy)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=-0.5,
+                snowfall_after_freeze_cm=0.0,
+                last_freeze_thaw_hours_ago=24.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q == SnowQuality.BAD.value
+
+    def test_transition_at_one_degree(self, snow_quality_algorithm):
+        """No fresh, +1°C, recent freeze → BAD or POOR (transitioning)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=1.0,
+                snowfall_after_freeze_cm=0.0,
+                last_freeze_thaw_hours_ago=24.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q in [SnowQuality.BAD.value, SnowQuality.POOR.value]
+
+    # === ENOUGH FRESH SNOW COVERS ICY BASE ===
+
+    def test_3_inches_covers_ice(self, snow_quality_algorithm):
+        """8cm fresh at -5°C, freeze 48h ago → GOOD+ (fresh covers ice)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=-5.0,
+                snowfall_after_freeze_cm=8.0,
+                snowfall_24h_cm=6.0,
+                hours_since_last_snowfall=6.0,
+                last_freeze_thaw_hours_ago=48.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q in [SnowQuality.EXCELLENT.value, SnowQuality.GOOD.value], (
+            f"Got {q}. 8cm (3+ inches) of fresh at -5°C should cover icy base"
+        )
+
+    def test_2_inches_partially_covers(self, snow_quality_algorithm):
+        """5.5cm fresh at -5°C, freeze 48h ago → GOOD+ (good coverage)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=-5.0,
+                snowfall_after_freeze_cm=5.5,
+                snowfall_24h_cm=4.0,
+                hours_since_last_snowfall=12.0,
+                last_freeze_thaw_hours_ago=48.0,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q in [
+            SnowQuality.EXCELLENT.value,
+            SnowQuality.GOOD.value,
+            SnowQuality.FAIR.value,
+        ]
