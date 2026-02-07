@@ -81,11 +81,32 @@ class SnowQualityService:
         snow_depth = getattr(weather, "snow_depth_cm", None)
         currently_warming = getattr(weather, "currently_warming", False)
 
+        # Determine if the model snow_depth is reliable enough for hard caps.
+        # Open-Meteo forecast model snow_depth is grid-level (~10-25km resolution)
+        # and often wildly inaccurate for mountain terrain (e.g., reporting 11cm
+        # when actual depth is 200cm+). Don't let it override strong fresh snow evidence.
+        snow_depth_reliable = True
+        if snow_depth is not None:
+            # Consistency check: if accumulated fresh snow exceeds the model's
+            # total depth estimate, the model is clearly wrong
+            if snowfall_after_freeze > 0 and snow_depth < snowfall_after_freeze:
+                snow_depth_reliable = False
+            # For medium/low confidence sources (weather models), snow_depth
+            # is a rough estimate - don't use it for hard quality caps
+            source_conf = getattr(weather, "source_confidence", None)
+            if source_conf in (
+                ConfidenceLevel.MEDIUM,
+                ConfidenceLevel.LOW,
+                ConfidenceLevel.VERY_LOW,
+            ):
+                snow_depth_reliable = False
+
         # CRITICAL: Only mark as NOT SKIABLE when we KNOW there's no snow
-        # Snow depth data confirms no snow = definitely not skiable
+        # Require both model AND snowfall data to agree on "no snow"
         if snow_depth is not None and snow_depth <= 0:
-            adjusted_score = 0.0  # HORRIBLE - confirmed no snow
-        elif current_temp >= 20.0:
+            if snowfall_after_freeze <= 0 and (weather.snowfall_24h_cm or 0) <= 0:
+                adjusted_score = 0.0  # HORRIBLE - confirmed no snow
+        if current_temp >= 20.0:
             # True summer temps (>20°C) - extremely unlikely to have snow
             adjusted_score = min(adjusted_score, 0.02)  # HORRIBLE
         elif current_temp >= 15.0 and snow_depth is None:
@@ -94,8 +115,10 @@ class SnowQualityService:
             adjusted_score = min(adjusted_score, 0.15)
 
         # Snow depth quality adjustment - base depth affects ski quality
-        # Based on industry research: 20cm minimum, 50cm good, 100cm+ excellent
-        if snow_depth is not None and snow_depth > 0:
+        # Only apply hard caps when snow_depth data is reliable (resort-reported
+        # or consistent with observed snowfall). Weather model snow_depth is too
+        # inaccurate for mountain terrain to use as a hard cap.
+        if snow_depth is not None and snow_depth > 0 and snow_depth_reliable:
             if snow_depth < 20:
                 # Very thin cover (<20cm/8") - rocks and grass likely exposed
                 # Dangerous conditions, cap at BAD (Icy)

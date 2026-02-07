@@ -119,7 +119,7 @@ class OpenMeteoService:
                 "daily": "temperature_2m_min,temperature_2m_max,snowfall_sum",
                 "past_days": 14,  # Need 14 days for freeze-thaw detection
                 "forecast_days": 3,
-                "timezone": "auto",
+                "timezone": "GMT",  # Use GMT so timestamps match datetime.now(UTC)
             }
 
             response = _request_with_retry(
@@ -495,13 +495,29 @@ class OpenMeteoService:
                 if len(daily_max_temps) > today_index:
                     result["max_temp_24h"] = daily_max_temps[today_index]
 
-        # Get current snow depth from hourly data (most recent value)
+        # Get current snow depth from hourly data at current time
+        # IMPORTANT: Do NOT use reversed() on the full array - that picks up
+        # future forecast values (3 days ahead) instead of current conditions.
+        # Search backwards from current hour to find the most recent actual value.
         hourly_snow_depth = hourly.get("snow_depth", [])
         if hourly_snow_depth:
-            # Find the most recent non-null value
-            for depth in reversed(hourly_snow_depth):
-                if depth is not None:
-                    result["current_snow_depth"] = depth * 100  # Convert m to cm
+            # Find current hour index for snow depth lookup
+            hourly_times_for_depth = hourly.get("time", [])
+            depth_current_index = len(hourly_snow_depth) - 1
+            if hourly_times_for_depth:
+                now_depth = datetime.now(UTC)
+                now_depth_str = now_depth.strftime("%Y-%m-%dT%H:00")
+                for i, time_str in enumerate(hourly_times_for_depth):
+                    if time_str[:13] >= now_depth_str[:13]:
+                        depth_current_index = i
+                        break
+
+            # Search backwards from current hour (not from end of forecast)
+            for i in range(depth_current_index, -1, -1):
+                if i < len(hourly_snow_depth) and hourly_snow_depth[i] is not None:
+                    result["current_snow_depth"] = (
+                        hourly_snow_depth[i] * 100
+                    )  # Convert m to cm
                     break
 
         return result
@@ -599,7 +615,7 @@ class OpenMeteoService:
                 "start_date": start_date,
                 "end_date": end_date,
                 "daily": "snow_depth_max",
-                "timezone": "auto",
+                "timezone": "GMT",  # Use GMT so timestamps match datetime.now(UTC)
             }
 
             response = _request_with_retry(

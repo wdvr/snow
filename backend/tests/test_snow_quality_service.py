@@ -453,3 +453,258 @@ class TestQualityCappingLogic:
             SnowQuality.FAIR.value,
             SnowQuality.POOR.value,
         ]
+
+
+class TestSnowDepthReliability:
+    """Regression tests for snow_depth reliability checks.
+
+    These tests cover the bug where Open-Meteo's forecast model snow_depth
+    was wildly inaccurate for mountain terrain and hard-capped quality to
+    BAD/Icy even when there was abundant fresh powder.
+
+    Real-world example: Big White showed "Icy" with 28cm fresh snow because
+    Open-Meteo reported snow_depth=11cm (actually 81-141cm at the resort).
+    """
+
+    def test_low_model_depth_does_not_override_fresh_powder_medium_confidence(
+        self, snow_quality_algorithm
+    ):
+        """Test: Low model snow_depth with MEDIUM confidence should NOT cap quality.
+
+        Regression for Big White bug: Open-Meteo reported 11cm depth (model
+        artifact from 3-day forecast) when real depth was 81-141cm. This
+        triggered the <20cm cap, overriding 28cm of fresh powder to "Icy".
+        """
+        service = SnowQualityService(snow_quality_algorithm)
+
+        # Big White-like conditions: cold, lots of fresh snow, but model
+        # reports low snow_depth (common Open-Meteo inaccuracy for mountains)
+        big_white_like = WeatherCondition(
+            resort_id="test-big-white",
+            elevation_level="base",
+            timestamp=datetime.now(UTC).isoformat(),
+            current_temp_celsius=-6.0,
+            min_temp_celsius=-10.0,
+            max_temp_celsius=-3.0,
+            snowfall_24h_cm=1.3,
+            snowfall_48h_cm=2.0,
+            snowfall_72h_cm=2.0,
+            hours_above_ice_threshold=0.0,
+            max_consecutive_warm_hours=0.0,
+            snowfall_after_freeze_cm=27.5,  # 28cm fresh since last freeze
+            hours_since_last_snowfall=24.0,
+            last_freeze_thaw_hours_ago=336.0,  # 14 days ago
+            currently_warming=False,
+            snow_depth_cm=11.0,  # Model says 11cm - WRONG for a ski resort!
+            snow_quality=SnowQuality.UNKNOWN,
+            confidence_level=ConfidenceLevel.MEDIUM,
+            fresh_snow_cm=0.0,
+            data_source="open-meteo.com",
+            source_confidence=ConfidenceLevel.MEDIUM,  # Open-Meteo = MEDIUM
+        )
+
+        quality, fresh_snow, confidence = service.assess_snow_quality(big_white_like)
+
+        quality_value = quality.value if hasattr(quality, "value") else quality
+        # Should NOT be BAD/Icy! With 27.5cm fresh powder at -6°C, should be GOOD+
+        assert quality_value not in [
+            SnowQuality.BAD.value,
+            SnowQuality.HORRIBLE.value,
+        ], (
+            f"Quality should not be {quality_value} with 27.5cm fresh snow. "
+            f"Low model snow_depth from MEDIUM confidence source should not override."
+        )
+
+    def test_low_model_depth_still_caps_with_high_confidence(
+        self, snow_quality_algorithm
+    ):
+        """Test: Low snow_depth with HIGH confidence (resort report) SHOULD cap quality.
+
+        If a resort actually reports only 11cm of snow, that's a real problem
+        and the quality cap should apply.
+        """
+        service = SnowQualityService(snow_quality_algorithm)
+
+        resort_reported_thin = WeatherCondition(
+            resort_id="test-resort",
+            elevation_level="base",
+            timestamp=datetime.now(UTC).isoformat(),
+            current_temp_celsius=-5.0,
+            min_temp_celsius=-8.0,
+            max_temp_celsius=-3.0,
+            snowfall_24h_cm=5.0,
+            snowfall_48h_cm=8.0,
+            snowfall_72h_cm=10.0,
+            hours_above_ice_threshold=0.0,
+            max_consecutive_warm_hours=0.0,
+            snowfall_after_freeze_cm=1.0,  # Only 1cm since freeze
+            hours_since_last_snowfall=6.0,
+            last_freeze_thaw_hours_ago=48.0,
+            currently_warming=False,
+            snow_depth_cm=11.0,  # Resort reports 11cm - this IS reliable
+            snow_quality=SnowQuality.UNKNOWN,
+            confidence_level=ConfidenceLevel.HIGH,
+            fresh_snow_cm=0.0,
+            data_source="resort-report",
+            source_confidence=ConfidenceLevel.HIGH,
+        )
+
+        quality, fresh_snow, confidence = service.assess_snow_quality(
+            resort_reported_thin
+        )
+
+        quality_value = quality.value if hasattr(quality, "value") else quality
+        # With HIGH confidence and genuinely thin cover, should be capped
+        assert quality_value in [
+            SnowQuality.BAD.value,
+            SnowQuality.POOR.value,
+        ]
+
+    def test_inconsistent_depth_vs_fresh_snow_ignored(self, snow_quality_algorithm):
+        """Test: snow_depth < snowfall_after_freeze means model is wrong."""
+        service = SnowQualityService(snow_quality_algorithm)
+
+        # Even with HIGH confidence, if depth < accumulated fresh snow,
+        # the depth data is clearly wrong
+        inconsistent = WeatherCondition(
+            resort_id="test-resort",
+            elevation_level="mid",
+            timestamp=datetime.now(UTC).isoformat(),
+            current_temp_celsius=-8.0,
+            min_temp_celsius=-12.0,
+            max_temp_celsius=-5.0,
+            snowfall_24h_cm=10.0,
+            snowfall_48h_cm=20.0,
+            snowfall_72h_cm=25.0,
+            hours_above_ice_threshold=0.0,
+            max_consecutive_warm_hours=0.0,
+            snowfall_after_freeze_cm=30.0,  # 30cm fresh since freeze
+            hours_since_last_snowfall=4.0,
+            last_freeze_thaw_hours_ago=72.0,
+            currently_warming=False,
+            snow_depth_cm=15.0,  # 15cm < 30cm fresh = impossible, model is wrong
+            snow_quality=SnowQuality.UNKNOWN,
+            confidence_level=ConfidenceLevel.HIGH,
+            fresh_snow_cm=0.0,
+            data_source="open-meteo.com",
+            source_confidence=ConfidenceLevel.HIGH,
+        )
+
+        quality, fresh_snow, confidence = service.assess_snow_quality(inconsistent)
+
+        quality_value = quality.value if hasattr(quality, "value") else quality
+        # Should NOT be capped by the inconsistent snow_depth
+        assert quality_value not in [
+            SnowQuality.BAD.value,
+            SnowQuality.HORRIBLE.value,
+        ], (
+            f"Quality {quality_value} should not be BAD/HORRIBLE when "
+            f"snowfall_after_freeze (30cm) > snow_depth (15cm) - model is wrong"
+        )
+
+    def test_zero_depth_with_no_snow_still_horrible(self, snow_quality_algorithm):
+        """Test: snow_depth=0 with no fresh snow = HORRIBLE (still works)."""
+        service = SnowQualityService(snow_quality_algorithm)
+
+        no_snow = WeatherCondition(
+            resort_id="test-resort",
+            elevation_level="base",
+            timestamp=datetime.now(UTC).isoformat(),
+            current_temp_celsius=15.0,
+            min_temp_celsius=10.0,
+            max_temp_celsius=20.0,
+            snowfall_24h_cm=0.0,
+            snowfall_48h_cm=0.0,
+            snowfall_72h_cm=0.0,
+            hours_above_ice_threshold=24.0,
+            max_consecutive_warm_hours=24.0,
+            snowfall_after_freeze_cm=0.0,
+            hours_since_last_snowfall=None,
+            last_freeze_thaw_hours_ago=None,
+            currently_warming=True,
+            snow_depth_cm=0.0,  # Confirmed no snow
+            snow_quality=SnowQuality.UNKNOWN,
+            confidence_level=ConfidenceLevel.MEDIUM,
+            fresh_snow_cm=0.0,
+            data_source="open-meteo.com",
+            source_confidence=ConfidenceLevel.MEDIUM,
+        )
+
+        quality, fresh_snow, confidence = service.assess_snow_quality(no_snow)
+
+        quality_value = quality.value if hasattr(quality, "value") else quality
+        assert quality_value == SnowQuality.HORRIBLE.value
+
+    def test_zero_depth_but_fresh_snow_not_horrible(self, snow_quality_algorithm):
+        """Test: snow_depth=0 but recent snowfall = model is wrong, not HORRIBLE."""
+        service = SnowQualityService(snow_quality_algorithm)
+
+        model_says_zero = WeatherCondition(
+            resort_id="test-resort",
+            elevation_level="mid",
+            timestamp=datetime.now(UTC).isoformat(),
+            current_temp_celsius=-5.0,
+            min_temp_celsius=-8.0,
+            max_temp_celsius=-2.0,
+            snowfall_24h_cm=10.0,
+            snowfall_48h_cm=15.0,
+            snowfall_72h_cm=20.0,
+            hours_above_ice_threshold=0.0,
+            max_consecutive_warm_hours=0.0,
+            snowfall_after_freeze_cm=15.0,  # 15cm fresh snow
+            hours_since_last_snowfall=3.0,
+            last_freeze_thaw_hours_ago=72.0,
+            currently_warming=False,
+            snow_depth_cm=0.0,  # Model says 0 - but we have 15cm fresh!
+            snow_quality=SnowQuality.UNKNOWN,
+            confidence_level=ConfidenceLevel.MEDIUM,
+            fresh_snow_cm=0.0,
+            data_source="open-meteo.com",
+            source_confidence=ConfidenceLevel.MEDIUM,
+        )
+
+        quality, fresh_snow, confidence = service.assess_snow_quality(model_says_zero)
+
+        quality_value = quality.value if hasattr(quality, "value") else quality
+        # Should NOT be HORRIBLE - model snow_depth=0 contradicts fresh snow data
+        assert quality_value != SnowQuality.HORRIBLE.value, (
+            "Quality should not be HORRIBLE when there's 15cm fresh snow. "
+            "Model snow_depth=0 contradicts snowfall data."
+        )
+
+    def test_deep_base_boosts_only_with_reliable_data(self, snow_quality_algorithm):
+        """Test: snow_depth >= 100cm boost only applies with reliable data."""
+        service = SnowQualityService(snow_quality_algorithm)
+
+        deep_base = WeatherCondition(
+            resort_id="test-resort",
+            elevation_level="top",
+            timestamp=datetime.now(UTC).isoformat(),
+            current_temp_celsius=-8.0,
+            min_temp_celsius=-12.0,
+            max_temp_celsius=-5.0,
+            snowfall_24h_cm=12.0,
+            snowfall_48h_cm=20.0,
+            snowfall_72h_cm=25.0,
+            hours_above_ice_threshold=0.0,
+            max_consecutive_warm_hours=0.0,
+            snowfall_after_freeze_cm=10.0,
+            hours_since_last_snowfall=2.0,
+            last_freeze_thaw_hours_ago=72.0,
+            currently_warming=False,
+            snow_depth_cm=150.0,  # Deep base
+            snow_quality=SnowQuality.UNKNOWN,
+            confidence_level=ConfidenceLevel.HIGH,
+            fresh_snow_cm=0.0,
+            data_source="resort-report",
+            source_confidence=ConfidenceLevel.HIGH,  # Reliable source
+        )
+
+        quality, fresh_snow, confidence = service.assess_snow_quality(deep_base)
+
+        quality_value = quality.value if hasattr(quality, "value") else quality
+        # Deep base + lots of fresh = Excellent
+        assert quality_value in [
+            SnowQuality.EXCELLENT.value,
+            SnowQuality.GOOD.value,
+        ]
