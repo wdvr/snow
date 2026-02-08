@@ -293,3 +293,78 @@ class TestMergeEndToEnd:
         assert quality.value != "horrible", (
             f"Steamboat top with 144cm scraped depth should not be HORRIBLE, got {quality.value}"
         )
+
+
+class TestSnowDepthRegexParsing:
+    """Tests for the scraper regex patterns that extract depth from HTML text.
+
+    Regression: The original regexes were too greedy:
+    - Base regex matched "base depth with 25" (lifts count) instead of "37" base"
+    - Summit regex matched "top of Eagle Bahn Gondola...1995" (copyright year)
+    """
+
+    def test_base_depth_data_section_format(self):
+        """Parse 'Base 37" Machine Groomed' format."""
+        scraper = OnTheSnowScraper()
+        html = '<div>Base 37" Machine Groomed Summit 41" Packed Powder</div>'
+        result = scraper._parse_snow_report(html, "test", "https://test.com")
+        assert result.base_depth_inches == 37.0
+
+    def test_summit_depth_data_section_format(self):
+        """Parse 'Summit 41" Packed Powder' format."""
+        scraper = OnTheSnowScraper()
+        html = '<div>Base 37" Machine Groomed Summit 41" Packed Powder</div>'
+        result = scraper._parse_snow_report(html, "test", "https://test.com")
+        assert result.summit_depth_inches == 41.0
+
+    def test_base_depth_inline_format(self):
+        """Parse 'a 37" base depth' format."""
+        scraper = OnTheSnowScraper()
+        html = '<div>Vail has a 37" base depth with 25 of 33 lifts open</div>'
+        result = scraper._parse_snow_report(html, "test", "https://test.com")
+        assert result.base_depth_inches == 37.0
+
+    def test_does_not_match_lifts_as_base_depth(self):
+        """Regression: old regex matched lifts count (25) as base depth."""
+        scraper = OnTheSnowScraper()
+        # The old regex: (?:base|bottom)[^0-9]*(\d+) matched "base depth with 25"
+        html = "<div>No other base info, just 25 of 33 lifts open</div>"
+        result = scraper._parse_snow_report(html, "test", "https://test.com")
+        assert result.base_depth_inches is None
+
+    def test_does_not_match_copyright_as_summit(self):
+        """Regression: old regex matched copyright year (1995) as summit depth."""
+        scraper = OnTheSnowScraper()
+        html = (
+            "<div>top of Eagle Bahn Gondola offers snowmobiling. "
+            "Copyright 1995-2026 OnTheSnow.com</div>"
+        )
+        result = scraper._parse_snow_report(html, "test", "https://test.com")
+        assert result.summit_depth_inches is None
+
+    def test_sanity_check_rejects_huge_depth(self):
+        """Depth values >300" (base) or >500" (summit) are rejected."""
+        scraper = OnTheSnowScraper()
+        html = '<div>Base 999" Summit 999"</div>'
+        result = scraper._parse_snow_report(html, "test", "https://test.com")
+        assert result.base_depth_inches is None
+        assert result.summit_depth_inches is None
+
+    def test_palisades_tahoe_real_format(self):
+        """Parse real Palisades Tahoe page format."""
+        scraper = OnTheSnowScraper()
+        html = (
+            '<div>Palisades Tahoe has a 28" base depth with 34 of 37 lifts open. '
+            'Base 28" Machine Groomed Summit 45" Variable Conditions</div>'
+        )
+        result = scraper._parse_snow_report(html, "palisades-tahoe", "https://test.com")
+        assert result.base_depth_inches == 28.0
+        assert result.summit_depth_inches == 45.0
+
+    def test_no_summit_data_returns_none(self):
+        """When page has no 'Summit XX"' pattern, summit should be None."""
+        scraper = OnTheSnowScraper()
+        html = '<div>Base 37" Machine Groomed. Top of mountain accessible by gondola.</div>'
+        result = scraper._parse_snow_report(html, "test", "https://test.com")
+        assert result.base_depth_inches == 37.0
+        assert result.summit_depth_inches is None

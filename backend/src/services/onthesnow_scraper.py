@@ -209,22 +209,34 @@ class OnTheSnowScraper:
             data.snowfall_72h_inches = float(match_72h.group(1))
 
         # Try to extract base depth
+        # OnTheSnow pages use two formats:
+        #   "Base 37" Machine Groomed" (data section)
+        #   "a 37" base depth with..." (intro text)
+        # The old regex matched "base depth with 25" (lifts count!)
+        # because [^0-9]* skipped past "depth with" to the next number.
         match_base = re.search(
-            r"(?:base|bottom)[^0-9]*(\d+\.?\d*)\s*(?:\"|in|inches)?",
+            r'(?:Base\s+(\d+\.?\d*)\s*"|(\d+\.?\d*)\s*"\s*base)',
             text,
             re.IGNORECASE,
         )
         if match_base:
-            data.base_depth_inches = float(match_base.group(1))
+            val = float(match_base.group(1) or match_base.group(2))
+            if val <= 300:  # Sanity check: no resort has >300" base
+                data.base_depth_inches = val
 
         # Try to extract summit depth
+        # OnTheSnow uses "Summit 41" Packed Powder" in the data section.
+        # The old regex matched "top of Eagle Bahn Gondola...1995" (copyright!)
+        # because [^0-9]* traversed the entire page text.
         match_summit = re.search(
-            r"(?:summit|top|peak)[^0-9]*(\d+\.?\d*)\s*(?:\"|in|inches)?",
+            r'Summit\s+(\d+\.?\d*)\s*"',
             text,
             re.IGNORECASE,
         )
         if match_summit:
-            data.summit_depth_inches = float(match_summit.group(1))
+            val = float(match_summit.group(1))
+            if val <= 500:  # Sanity check: no resort has >500" summit depth
+                data.summit_depth_inches = val
 
         # Try to extract surface conditions
         conditions_match = re.search(
