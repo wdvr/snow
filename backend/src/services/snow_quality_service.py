@@ -172,18 +172,30 @@ class SnowQualityService:
                 else:
                     # Below freezing = HARD/ICY (frozen after thaw)
                     adjusted_score = min(adjusted_score, 0.15)  # BAD = "Icy"
-        elif snowfall_after_freeze < 2.54:  # Less than 1 inch
-            # Very little fresh snow - base condition dominates
+        elif snowfall_after_freeze < 5.08:  # Less than 2 inches
+            # Thin-to-moderate fresh snow on a base - use smooth gradient.
+            # Old code had a cliff at 2.54cm: <2.54→BAD, >=2.54→EXCELLENT.
+            # Fix: continuous gradient from BAD at 0cm through FAIR at 2.54cm
+            # to GOOD at 5.08cm, eliminating quality jumps from tiny differences.
             if last_freeze_hours is not None and last_freeze_hours < 336:
-                # Recent freeze-thaw: thin dusting over refrozen base
-                if current_temp <= 0:
-                    # Cold: icy base with cosmetic dusting ("dust on crust")
-                    adjusted_score = min(adjusted_score, 0.15)  # BAD (Icy)
+                # Recent freeze-thaw: fresh snow gradually covers refrozen base
+                if snowfall_after_freeze < 2.54:
+                    # 0-1 inch: BAD→FAIR gradient
+                    blend = snowfall_after_freeze / 2.54
+                    if current_temp <= 0:
+                        cap = 0.15 + blend * 0.30  # 0→0.15(BAD), 2.54→0.45(FAIR)
+                    else:
+                        cap = 0.20 + blend * 0.10  # 0→0.20(POOR), 2.54→0.30(POOR)
                 else:
-                    # Warm: softening slushy conditions
-                    adjusted_score = min(adjusted_score, 0.25)  # POOR (Soft)
+                    # 1-2 inches: FAIR→GOOD gradient
+                    blend = (snowfall_after_freeze - 2.54) / (5.08 - 2.54)
+                    if current_temp <= 0:
+                        cap = 0.45 + blend * 0.20  # 2.54→0.45(FAIR), 5.08→0.65(GOOD)
+                    else:
+                        cap = 0.30 + blend * 0.15  # 2.54→0.30(POOR), 5.08→0.45(FAIR)
+                adjusted_score = min(adjusted_score, cap)
             else:
-                # No recent freeze: thin fresh on packed powder base
+                # No recent freeze: fresh on packed powder base
                 if current_temp <= 0:
                     adjusted_score = min(adjusted_score, 0.45)  # FAIR
                 else:

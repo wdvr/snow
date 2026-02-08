@@ -1068,8 +1068,10 @@ class TestSnowConditionMatrix:
         )
 
     def test_icy_recent_freeze_minus5(self, snow_quality_algorithm):
-        """No fresh, -5°C, thaw yesterday → BAD (Icy).
-        This is Big White top scenario: -5.4°C, 1.19cm, freeze 45h ago.
+        """Big White top: -5.4°C, 1.19cm, freeze 45h ago → POOR.
+        With ~half an inch of fresh snow on refrozen base, conditions are
+        marginal but not fully icy - the dusting provides some coverage.
+        The gradient gives cap=0.29 at 1.19cm (BAD→FAIR range).
         """
         q = self._assess(
             self._make_condition(
@@ -1081,13 +1083,16 @@ class TestSnowConditionMatrix:
             ),
             snow_quality_algorithm,
         )
-        assert q == SnowQuality.BAD.value, (
-            f"Got {q}. Big White top: -5.4°C with 1.19cm dust on refrozen "
-            f"base should be Icy (BAD), not Soft (POOR)"
+        assert q == SnowQuality.POOR.value, (
+            f"Got {q}. Big White top: -5.4°C with 1.19cm on refrozen base. "
+            f"Gradient gives POOR (thin but not bare ice)"
         )
 
-    def test_icy_thin_dusting_cold(self, snow_quality_algorithm):
-        """2cm fresh at -8°C, thaw 36h ago → BAD (dust on crust)."""
+    def test_thin_dusting_cold_nearly_1_inch(self, snow_quality_algorithm):
+        """2cm fresh at -8°C, thaw 36h ago → POOR (nearly 1 inch covers base).
+        2cm is ~0.8 inches - enough to partially cover the refrozen base.
+        Gradient gives cap=0.39 at 2.0cm, which is POOR range.
+        """
         q = self._assess(
             self._make_condition(
                 current_temp_celsius=-8.0,
@@ -1098,8 +1103,60 @@ class TestSnowConditionMatrix:
             ),
             snow_quality_algorithm,
         )
+        assert q == SnowQuality.POOR.value, (
+            f"Got {q}. 2cm (~0.8 inch) over ice at -8°C = thin but skiable (POOR)"
+        )
+
+    def test_no_cliff_edge_at_2_54cm(self, snow_quality_algorithm):
+        """Regression: 2.52cm and 2.56cm should NOT differ by 4 quality tiers.
+        Big White/Silver Star mid had 2.45-2.52cm → BAD while top had 2.59cm → EXCELLENT.
+        The gradient ensures near-1-inch values score similarly.
+        """
+        # Just below old cliff: 2.52cm at -3°C, recent freeze
+        q_below = self._assess(
+            self._make_condition(
+                current_temp_celsius=-3.0,
+                snowfall_after_freeze_cm=2.52,
+                snowfall_24h_cm=2.5,
+                hours_since_last_snowfall=6.0,
+                last_freeze_thaw_hours_ago=44.0,
+            ),
+            snow_quality_algorithm,
+        )
+        # Just above old cliff: 2.56cm
+        q_above = self._assess(
+            self._make_condition(
+                current_temp_celsius=-3.0,
+                snowfall_after_freeze_cm=2.56,
+                snowfall_24h_cm=2.5,
+                hours_since_last_snowfall=6.0,
+                last_freeze_thaw_hours_ago=44.0,
+            ),
+            snow_quality_algorithm,
+        )
+        # They should be within 1 quality tier of each other
+        quality_order = ["horrible", "bad", "poor", "fair", "good", "excellent"]
+        idx_below = quality_order.index(q_below)
+        idx_above = quality_order.index(q_above)
+        assert abs(idx_above - idx_below) <= 1, (
+            f"2.52cm={q_below} vs 2.56cm={q_above} differ by "
+            f"{abs(idx_above - idx_below)} tiers (max 1 allowed)"
+        )
+
+    def test_true_dust_on_crust_still_bad(self, snow_quality_algorithm):
+        """Very thin dusting (0.3cm) at -5°C on refrozen base → BAD (Icy)."""
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=-5.0,
+                snowfall_after_freeze_cm=0.3,  # Cosmetic dusting
+                snowfall_24h_cm=0.3,
+                hours_since_last_snowfall=3.0,
+                last_freeze_thaw_hours_ago=24.0,
+            ),
+            snow_quality_algorithm,
+        )
         assert q == SnowQuality.BAD.value, (
-            f"Got {q}. Thin dusting (<1 inch) over ice at -8°C = Icy (BAD)"
+            f"Got {q}. 0.3cm cosmetic dust on ice should still be BAD (Icy)"
         )
 
     # === SOFT/SLUSHY scenarios (warm + no fresh) ===
