@@ -164,7 +164,9 @@ def process_elevation_point(
 
         # Merge with scraped data if available
         if scraped_data and scraper:
-            weather_data = scraper.merge_with_weather_data(weather_data, scraped_data)
+            weather_data = scraper.merge_with_weather_data(
+                weather_data, scraped_data, elevation_level=level
+            )
 
         # Update snow summary based on weather data
         if snow_summary_service and existing_summary:

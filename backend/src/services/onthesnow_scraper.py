@@ -254,13 +254,22 @@ class OnTheSnowScraper:
         return data
 
     def merge_with_weather_data(
-        self, weather_data: dict[str, Any], scraped_data: ScrapedSnowData
+        self,
+        weather_data: dict[str, Any],
+        scraped_data: ScrapedSnowData,
+        elevation_level: str = "mid",
     ) -> dict[str, Any]:
         """
         Merge scraped data with weather API data, preferring scraped values.
 
         Scraped data from resort reports is generally more accurate than
         weather API forecasts for snowfall measurements.
+
+        Args:
+            weather_data: Weather data from Open-Meteo API
+            scraped_data: Scraped data from OnTheSnow
+            elevation_level: "base", "mid", or "top" - determines which
+                scraped depth value to use
         """
         merged = weather_data.copy()
 
@@ -284,6 +293,13 @@ class OnTheSnowScraper:
                 scraped_data.snowfall_72h_cm * 0.7 + api_72h * 0.3
             )
 
+        # Override snow_depth with scraped data if available.
+        # Resort-reported base/summit depth is far more accurate than
+        # Open-Meteo's grid-level model estimate (~10-25km resolution).
+        scraped_depth = self._get_scraped_depth_for_level(scraped_data, elevation_level)
+        if scraped_depth is not None:
+            merged["snow_depth_cm"] = scraped_depth
+
         # Upgrade confidence level since we have resort-reported data
         merged["source_confidence"] = ConfidenceLevel.HIGH
         merged["data_source"] = "open-meteo.com + onthesnow.com"
@@ -302,6 +318,33 @@ class OnTheSnowScraper:
         }
 
         return merged
+
+    @staticmethod
+    def _get_scraped_depth_for_level(
+        scraped_data: ScrapedSnowData, elevation_level: str
+    ) -> float | None:
+        """Get the appropriate scraped depth for an elevation level.
+
+        Args:
+            scraped_data: Scraped data with base_depth_cm and summit_depth_cm
+            elevation_level: "base", "mid", or "top"
+
+        Returns:
+            Depth in cm, or None if not available for this level
+        """
+        base = scraped_data.base_depth_cm
+        summit = scraped_data.summit_depth_cm
+
+        if elevation_level == "base":
+            return base
+        elif elevation_level == "top":
+            # Prefer summit depth, fall back to base if summit not available
+            return summit if summit is not None else base
+        else:  # mid
+            # Average of base and summit if both available
+            if base is not None and summit is not None:
+                return (base + summit) / 2.0
+            return summit if summit is not None else base
 
     def is_resort_supported(self, resort_id: str) -> bool:
         """Check if a resort is supported by this scraper."""
