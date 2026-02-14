@@ -28,18 +28,15 @@ enum AppEnvironment: String, CaseIterable {
     }
 
     /// API base URL for each environment
-    /// Using custom subdomains of powderchaserapp.com
+    /// Using API Gateway URLs directly (custom domain DNS is not resolving)
     var apiBaseURL: URL {
         switch self {
         case .development:
-            // Dev environment - use dev subdomain
-            return URL(string: "https://dev.api.powderchaserapp.com")!
+            return URL(string: "https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging")!
         case .staging:
-            // Staging subdomain
-            return URL(string: "https://staging.api.powderchaserapp.com")!
+            return URL(string: "https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging")!
         case .production:
-            // Production API
-            return URL(string: "https://api.powderchaserapp.com")!
+            return URL(string: "https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod")!
         }
     }
 
