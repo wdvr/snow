@@ -131,10 +131,19 @@ snow/
 └── PROGRESS.md       # Status tracking
 ```
 
+### AWS Account
+All infrastructure runs on the **personal** AWS account (`us-west-2` region).
+
 ### API Endpoints
 ```
-Staging:    https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging
-Production: https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod
+Custom domains (used by iOS app):
+  Production: https://api.powderchaserapp.com
+  Staging:    https://staging.api.powderchaserapp.com
+  Dev:        https://dev.api.powderchaserapp.com
+
+API Gateway URLs (direct):
+  Staging:    https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging
+  Production: https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod
 
 GET  /health                           - Health check
 GET  /api/v1/regions                   - List ski regions with resort counts
