@@ -161,6 +161,9 @@ jobs:
           echo "APNs credentials not set - push notifications will not be available"
         fi
 
+        # Refresh state to clear any pending operations from previous failed deployments
+        pulumi refresh --yes --diff 2>/dev/null || true
+
         # Deploy - Pulumi will update existing resources in place
         pulumi up --yes --diff
 
