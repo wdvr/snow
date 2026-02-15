@@ -1352,3 +1352,32 @@ class TestSnowConditionMatrix:
             SnowQuality.GOOD.value,
             SnowQuality.FAIR.value,
         ]
+
+    def test_big_white_base_4cm_fresh_cold_is_good(self, snow_quality_algorithm):
+        """Regression: Big White base with 4.2cm fresh at -8.9°C → GOOD.
+
+        Real-world scenario (Feb 2026): Big White base had 4.2cm (~1.65 inches)
+        of non-refrozen snow at -8.9°C, freeze 196h ago, source_confidence=HIGH.
+        The old cap formula (0.45 + blend * 0.20) produced 0.581 → FAIR,
+        while mid/top with 4.97cm got GOOD. Anecdotally, conditions were good.
+        Fix: widened gradient to (0.45 + blend * 0.25) so 4.2cm → ~0.61 → GOOD.
+        """
+        q = self._assess(
+            self._make_condition(
+                current_temp_celsius=-8.9,
+                min_temp_celsius=-8.8,
+                max_temp_celsius=-2.3,
+                snowfall_after_freeze_cm=4.2,
+                snowfall_24h_cm=1.26,
+                hours_since_last_snowfall=7.0,
+                last_freeze_thaw_hours_ago=196.0,
+                snow_depth_cm=157.48,
+                source_confidence=ConfidenceLevel.HIGH,
+            ),
+            snow_quality_algorithm,
+        )
+        assert q == SnowQuality.GOOD.value, (
+            f"Got {q}. Big White base: 4.2cm fresh at -8.9°C, freeze 196h ago "
+            f"should be GOOD, not FAIR. 1.65 inches of preserved powder on a "
+            f"cold base with no recent thawing."
+        )
