@@ -190,7 +190,7 @@ class SnowQualityService:
                     # 1-2 inches: FAIR→GOOD gradient
                     blend = (snowfall_after_freeze - 2.54) / (5.08 - 2.54)
                     if current_temp <= 0:
-                        cap = 0.45 + blend * 0.20  # 2.54→0.45(FAIR), 5.08→0.65(GOOD)
+                        cap = 0.45 + blend * 0.25  # 2.54→0.45(FAIR), 5.08→0.70(GOOD)
                     else:
                         cap = 0.30 + blend * 0.15  # 2.54→0.30(POOR), 5.08→0.45(FAIR)
                 adjusted_score = min(adjusted_score, cap)
