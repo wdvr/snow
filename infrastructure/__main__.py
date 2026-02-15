@@ -2088,6 +2088,7 @@ if enable_custom_domain:
         type=api_regional_cert.domain_validation_options[0].resource_record_type,
         records=[api_regional_cert.domain_validation_options[0].resource_record_value],
         ttl=300,
+        allow_overwrite=True,
     )
 
     api_cert_validation = aws.acm.CertificateValidation(
