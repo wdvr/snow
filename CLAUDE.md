@@ -270,3 +270,11 @@ xcrun devicectl device install app --device 00008150-001625E20AE2401C \
   ~/Library/Developer/Xcode/DerivedData/SnowTracker-*/Build/Products/Debug-iphoneos/SnowTracker.app
 xcrun devicectl device process launch --device 00008150-001625E20AE2401C com.snowtracker.app
 ```
+
+## Available Skills
+
+Detailed instructions in `.claude/commands/`:
+
+- **`/build-test`** — Build iOS app and run tests, run backend pytest
+- **`/deploy-testflight`** — Deploy to TestFlight (via GH Actions or manual xcodebuild)
+- **`/deploy-backend`** — Deploy backend to AWS Lambda via Pulumi or GH Actions
