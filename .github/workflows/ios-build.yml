@@ -31,6 +31,5 @@ jobs:
       xcodegen_path: ios
       info_plist_path: ios/SnowTracker/Info.plist
       additional_info_plists: 'ios/SnowTrackerWidget/Info.plist'
-      skip_automatic_signing: false
       code_signing_identity: 'Apple Distribution'
     secrets: inherit
