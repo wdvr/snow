@@ -102,16 +102,17 @@ struct FavoriteResortRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Snow quality indicator
-            if let condition = topCondition {
+            // Snow quality indicator - use overall quality for consistency
+            let displayQuality = snowConditionsManager.getSnowQuality(for: resort.id)
+            if displayQuality != .unknown {
                 ZStack {
                     Circle()
-                        .fill(condition.snowQuality.color.opacity(0.2))
+                        .fill(displayQuality.color.opacity(0.2))
                         .frame(width: 50, height: 50)
 
-                    Image(systemName: condition.snowQuality.icon)
+                    Image(systemName: displayQuality.icon)
                         .font(.title2)
-                        .foregroundColor(condition.snowQuality.color)
+                        .foregroundColor(displayQuality.color)
                 }
             } else {
                 ZStack {

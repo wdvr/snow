@@ -117,6 +117,13 @@ struct ResortDetailView: View {
 
     // MARK: - Resort Header
 
+    /// Best quality across all loaded elevations (used for header badge)
+    private var bestElevationQuality: SnowQuality? {
+        let qualities = conditions.map { $0.snowQuality }
+        guard !qualities.isEmpty else { return nil }
+        return qualities.min(by: { $0.sortOrder < $1.sortOrder })
+    }
+
     private var resortHeader: some View {
         VStack(spacing: 8) {
             HStack {
@@ -132,21 +139,21 @@ struct ResortDetailView: View {
 
                 Spacer()
 
-                // Overall snow quality badge
-                if let condition = conditions.first {
+                // Overall snow quality badge - use best quality across elevations
+                if let quality = bestElevationQuality {
                     VStack {
-                        Image(systemName: condition.snowQuality.icon)
+                        Image(systemName: quality.icon)
                             .font(.title)
-                            .foregroundColor(condition.snowQuality.color)
-                        Text(condition.snowQuality.displayName)
+                            .foregroundColor(quality.color)
+                        Text(quality.displayName)
                             .font(.caption)
                             .fontWeight(.semibold)
-                            .foregroundColor(condition.snowQuality.color)
+                            .foregroundColor(quality.color)
                     }
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(condition.snowQuality.color.opacity(0.1))
+                            .fill(quality.color.opacity(0.1))
                     )
                 }
             }

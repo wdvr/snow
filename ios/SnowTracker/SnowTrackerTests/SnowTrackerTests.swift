@@ -134,7 +134,7 @@ final class SnowTrackerTests: XCTestCase {
         let bigWhite = Resort.sampleResorts.first { $0.id == "big-white" }
         let topElevation = bigWhite?.topElevation
         XCTAssertNotNil(topElevation)
-        XCTAssertEqual(topElevation?.formattedElevation, "7608ft (2319m)")
+        XCTAssertEqual(topElevation?.formattedElevation, "7,608 ft (2,319 m)")
     }
 
     func testElevationPointCoordinate() {

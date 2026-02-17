@@ -34,14 +34,47 @@ class SnowConditionsManager: ObservableObject {
         }
         hasLoadedInitialData = true
 
+        // 1. Load cached data immediately so the UI is populated right away
+        loadCachedDataSynchronously()
+
+        // 2. Refresh from API in background
         Task {
             await fetchResorts()
             // Fetch snow quality summaries for all resorts (lightweight, fast)
             await fetchAllSnowQualitySummaries()
-            // Also fetch full conditions for favorites
-            await fetchConditionsForFavorites()
+            // Fetch full conditions for all visible resorts so detail views are instant
+            await fetchConditionsForAllResorts()
             // Clean up old cached data periodically
             cacheService.cleanupStaleCache()
+        }
+    }
+
+    /// Loads cached resorts and snow quality summaries immediately so the UI
+    /// doesn't show "Loading resorts..." while the network request is in flight.
+    private func loadCachedDataSynchronously() {
+        // Load cached resorts
+        if let cachedResorts = cacheService.getCachedResorts() {
+            resorts = cachedResorts.data
+            isUsingCachedData = true
+            cachedDataAge = cachedResorts.ageDescription
+            print("loadCachedDataSynchronously: Loaded \(resorts.count) resorts from cache (stale: \(cachedResorts.isStale))")
+        }
+
+        // Load cached snow quality summaries
+        if let cachedSummaries = cacheService.getCachedSnowQualitySummaries() {
+            snowQualitySummaries = cachedSummaries.data
+            print("loadCachedDataSynchronously: Loaded \(cachedSummaries.data.count) snow quality summaries from cache")
+        }
+
+        // Load cached conditions for favorites
+        let favoriteIds = Array(UserPreferencesManager.shared.favoriteResorts)
+        for resortId in favoriteIds {
+            if let cached = cacheService.getCachedConditions(for: resortId) {
+                conditions[resortId] = cached.data
+            }
+        }
+        if !favoriteIds.isEmpty {
+            print("loadCachedDataSynchronously: Loaded cached conditions for \(favoriteIds.count) favorites")
         }
     }
 
@@ -131,13 +164,15 @@ class SnowConditionsManager: ObservableObject {
 
     /// Get cached snow quality for a resort (from summary or conditions)
     func getSnowQuality(for resortId: String) -> SnowQuality {
-        // First check if we have a lightweight summary
+        // First check if we have a lightweight summary (overall quality from backend)
         if let summary = snowQualitySummaries[resortId] {
             return summary.overallSnowQuality
         }
-        // Fall back to full condition data if available
-        if let condition = conditions[resortId]?.first {
-            return condition.snowQuality
+        // Fall back to best quality across loaded elevations
+        if let resortConditions = conditions[resortId], !resortConditions.isEmpty {
+            return resortConditions
+                .map { $0.snowQuality }
+                .min(by: { $0.sortOrder < $1.sortOrder }) ?? .unknown
         }
         return .unknown
     }
@@ -160,8 +195,8 @@ class SnowConditionsManager: ObservableObject {
 
         // Refresh snow quality summaries for all resorts (used by list view)
         await fetchAllSnowQualitySummaries(forceRefresh: true)
-        // Also refresh full conditions for favorites
-        await fetchConditionsForFavorites()
+        // Refresh full conditions for all resorts
+        await fetchConditionsForAllResorts()
 
         lastUpdated = Date()
         print("refreshData: Complete")
@@ -176,6 +211,42 @@ class SnowConditionsManager: ObservableObject {
         let favoriteIds = Array(UserPreferencesManager.shared.favoriteResorts)
         guard !favoriteIds.isEmpty else { return }
         await fetchConditionsForResorts(resortIds: favoriteIds)
+    }
+
+    /// Fetch conditions for all loaded resorts in the background
+    /// This ensures detail views have data ready without lazy loading
+    func fetchConditionsForAllResorts() async {
+        let allIds = resorts.map { $0.id }
+        guard !allIds.isEmpty else { return }
+
+        // Prioritize favorites first, then fetch the rest
+        let favoriteIds = Set(UserPreferencesManager.shared.favoriteResorts)
+        let sortedIds = allIds.sorted { id1, id2 in
+            let isFav1 = favoriteIds.contains(id1)
+            let isFav2 = favoriteIds.contains(id2)
+            if isFav1 != isFav2 { return isFav1 }
+            return id1 < id2
+        }
+
+        // Skip resorts that already have fresh cached conditions
+        let idsToFetch = sortedIds.filter { resortId in
+            if let cached = cacheService.getCachedConditions(for: resortId), !cached.isStale {
+                // Already have fresh data, load from cache into memory
+                if conditions[resortId] == nil {
+                    conditions[resortId] = cached.data
+                }
+                return false
+            }
+            return true
+        }
+
+        guard !idsToFetch.isEmpty else {
+            print("fetchConditionsForAllResorts: All \(sortedIds.count) resorts have fresh cached conditions")
+            return
+        }
+
+        print("fetchConditionsForAllResorts: Fetching conditions for \(idsToFetch.count) resorts (\(sortedIds.count - idsToFetch.count) already cached)")
+        await fetchConditionsForResorts(resortIds: idsToFetch)
     }
 
     /// Fetch conditions for a single resort - use when opening detail view
@@ -194,8 +265,16 @@ class SnowConditionsManager: ObservableObject {
     func fetchConditionsForResorts(resortIds: [String]) async {
         guard !resortIds.isEmpty else { return }
 
-        isLoading = true
-        defer { isLoading = false }
+        // Only show loading indicator if we have no data at all to display
+        let hasExistingData = !resorts.isEmpty
+        if !hasExistingData {
+            isLoading = true
+        }
+        defer {
+            if !hasExistingData {
+                isLoading = false
+            }
+        }
 
         // Use batch API for efficiency
         do {
@@ -222,8 +301,10 @@ class SnowConditionsManager: ObservableObject {
     }
 
     func fetchResorts() async {
-        isLoading = true
-        defer { isLoading = false }
+        // Only show loading indicator if we have no cached resorts to display
+        let showLoading = resorts.isEmpty
+        if showLoading { isLoading = true }
+        defer { if showLoading { isLoading = false } }
 
         do {
             // Try to fetch from API
@@ -261,8 +342,9 @@ class SnowConditionsManager: ObservableObject {
     }
 
     func fetchAllConditions() async {
-        isLoading = true
-        defer { isLoading = false }
+        let showLoading = resorts.isEmpty
+        if showLoading { isLoading = true }
+        defer { if showLoading { isLoading = false } }
 
         let resortIds = resorts.map { $0.id }
         var anyFromCache = false

@@ -326,8 +326,9 @@ struct ResortRowView: View {
 
                 Spacer()
 
-                // Snow quality indicator - use condition if available, else check summary
-                let displayQuality = latestCondition?.snowQuality ?? snowConditionsManager.getSnowQuality(for: resort.id)
+                // Snow quality indicator - always use summary/overall quality for consistency
+                // (latestCondition is a single elevation which may differ from overall)
+                let displayQuality = snowConditionsManager.getSnowQuality(for: resort.id)
                 if displayQuality != .unknown {
                     VStack {
                         Image(systemName: displayQuality.icon)

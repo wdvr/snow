@@ -152,7 +152,7 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
             )
         case .good:
             return (
-                title: "Good - Soft Surface",
+                title: "Good - Fresh Snow",
                 description: "2+ inches of non-refrozen snow. Surface hasn't iced over. Enjoyable skiing on and off-piste.",
                 criteria: "2-3 inches (5-7.6 cm) of snow since last thaw-freeze, temps staying cold"
             )
