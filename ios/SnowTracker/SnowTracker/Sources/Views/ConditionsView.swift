@@ -145,7 +145,7 @@ struct ResortConditionCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Header
+            // Header - use overall quality from summary for consistency
             HStack {
                 VStack(alignment: .leading) {
                     Text(resort.name)
@@ -158,15 +158,16 @@ struct ResortConditionCard: View {
 
                 Spacer()
 
-                if let condition = topCondition {
+                let displayQuality = snowConditionsManager.getSnowQuality(for: resort.id)
+                if displayQuality != .unknown {
                     VStack {
-                        Image(systemName: condition.snowQuality.icon)
+                        Image(systemName: displayQuality.icon)
                             .font(.title2)
-                            .foregroundColor(condition.snowQuality.color)
-                        Text(condition.snowQuality.displayName)
+                            .foregroundColor(displayQuality.color)
+                        Text(displayQuality.displayName)
                             .font(.caption)
                             .fontWeight(.semibold)
-                            .foregroundColor(condition.snowQuality.color)
+                            .foregroundColor(displayQuality.color)
                     }
                 }
             }

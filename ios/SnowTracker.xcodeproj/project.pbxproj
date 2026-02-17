@@ -51,6 +51,7 @@
 		C0711EC616F41F08730D790A /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */; };
 		C440EFF2F7868A9A09A525C2 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A882E15FD24B57516DE0B29E /* Configuration.swift */; };
 		C9503A1D14E11C37EBD585F7 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = BFEBBB03F51632FE030398C0 /* GoogleSignInSwift */; };
+		CA425D6DF761A30E14DAF304 /* GoogleService-Info.plist.template in Resources */ = {isa = PBXBuildFile; fileRef = C9D8809765B1DAE070C75605 /* GoogleService-Info.plist.template */; };
 		CB46CD3F06EA5CAB49652FC8 /* MapViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 137A889DFFD57B2095D78866 /* MapViewModel.swift */; };
 		CCD8A0284D887301091D486F /* TripPlanningViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34B3DE91A8041E068949717A /* TripPlanningViews.swift */; };
 		CE8B411E66E77DAF8A7FB715 /* ResortDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22ECDCF89993D8220437C43C /* ResortDetailView.swift */; };
@@ -146,6 +147,7 @@
 		C195DDF1D0D05A96F34D77AC /* SnapshotHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotHelper.swift; sourceTree = "<group>"; };
 		C1CD2C514C419D7264FB7E0D /* SnowTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowTrackerApp.swift; sourceTree = "<group>"; };
 		C8A4D65C5E4661E9DBBBB32F /* AppStoreScreenshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotTests.swift; sourceTree = "<group>"; };
+		C9D8809765B1DAE070C75605 /* GoogleService-Info.plist.template */ = {isa = PBXFileReference; path = "GoogleService-Info.plist.template"; sourceTree = "<group>"; };
 		CF54F2EE12C18F789C609199 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		D08B0D7A69AC7F3C0A29887D /* WidgetModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetModels.swift; sourceTree = "<group>"; };
 		D23B988BBFF873484906C493 /* AuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
@@ -280,7 +282,6 @@
 			children = (
 				BE115A7AABCC32A18E3ACBF1 /* Models */,
 				285960ACA67185390B9A0DFC /* Services */,
-				AE770580F728A11A4FE34122 /* Utils */,
 				1E3908A7EEE6BA35E8EA44FB /* ViewModels */,
 				2B26478395424C45EDF16B48 /* Views */,
 				C1CD2C514C419D7264FB7E0D /* SnowTrackerApp.swift */,
@@ -306,17 +307,11 @@
 			children = (
 				9DA3C8E41208AE034CEF3110 /* Assets.xcassets */,
 				D306BA8EC8E75B251574AF45 /* GoogleService-Info.plist */,
+				C9D8809765B1DAE070C75605 /* GoogleService-Info.plist.template */,
 				F3EC6FA3AFD9ECE413C5A241 /* Localizable.strings */,
 			);
 			name = Resources;
 			path = SnowTracker/SnowTracker/Resources;
-			sourceTree = "<group>";
-		};
-		AE770580F728A11A4FE34122 /* Utils */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Utils;
 			sourceTree = "<group>";
 		};
 		BE115A7AABCC32A18E3ACBF1 /* Models */ = {
@@ -482,6 +477,7 @@
 			files = (
 				75E9966D6DAC958DE49B8269 /* Assets.xcassets in Resources */,
 				A559B6F611A845A81B6E08EF /* GoogleService-Info.plist in Resources */,
+				CA425D6DF761A30E14DAF304 /* GoogleService-Info.plist.template in Resources */,
 				DE52E62806A7F2BDDCC1E5C1 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -665,7 +661,7 @@
 				CODE_SIGN_ENTITLEMENTS = SnowTracker/SnowTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = N324UX8D9M;
 				INFOPLIST_FILE = SnowTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -817,7 +813,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = SnowTrackerWidget/SnowTrackerWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = N324UX8D9M;
 				INFOPLIST_FILE = SnowTrackerWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -841,7 +837,7 @@
 				CODE_SIGN_ENTITLEMENTS = SnowTracker/SnowTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = N324UX8D9M;
 				INFOPLIST_FILE = SnowTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -862,7 +858,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = SnowTrackerWidget/SnowTrackerWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = N324UX8D9M;
 				INFOPLIST_FILE = SnowTrackerWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -718,8 +718,8 @@ struct ClusterResortListSheet: View {
 
     private var sortedResorts: [Resort] {
         resorts.sorted { resort1, resort2 in
-            let quality1 = snowConditionsManager.getLatestCondition(for: resort1.id)?.snowQuality ?? .unknown
-            let quality2 = snowConditionsManager.getLatestCondition(for: resort2.id)?.snowQuality ?? .unknown
+            let quality1 = snowConditionsManager.getSnowQuality(for: resort1.id)
+            let quality2 = snowConditionsManager.getSnowQuality(for: resort2.id)
             if quality1.sortOrder != quality2.sortOrder {
                 return quality1.sortOrder < quality2.sortOrder
             }
