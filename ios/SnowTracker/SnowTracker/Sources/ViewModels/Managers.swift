@@ -200,7 +200,7 @@ class SnowConditionsManager: ObservableObject {
         // Refresh snow quality summaries for all resorts (used by list view)
         await fetchAllSnowQualitySummaries(forceRefresh: true)
         // Refresh full conditions for all resorts
-        await fetchConditionsForAllResorts()
+        await fetchConditionsForAllResorts(forceRefresh: true)
 
         lastUpdated = Date()
         print("refreshData: Complete")
@@ -219,7 +219,7 @@ class SnowConditionsManager: ObservableObject {
 
     /// Fetch conditions for all loaded resorts in the background
     /// This ensures detail views have data ready without lazy loading
-    func fetchConditionsForAllResorts() async {
+    func fetchConditionsForAllResorts(forceRefresh: Bool = false) async {
         let allIds = resorts.map { $0.id }
         guard !allIds.isEmpty else { return }
 
@@ -232,16 +232,21 @@ class SnowConditionsManager: ObservableObject {
             return id1 < id2
         }
 
-        // Skip resorts that already have fresh cached conditions
-        let idsToFetch = sortedIds.filter { resortId in
-            if let cached = cacheService.getCachedConditions(for: resortId), !cached.isStale {
-                // Already have fresh data, load from cache into memory
-                if conditions[resortId] == nil {
-                    conditions[resortId] = cached.data
+        let idsToFetch: [String]
+        if forceRefresh {
+            idsToFetch = sortedIds
+        } else {
+            // Skip resorts that already have fresh cached conditions
+            idsToFetch = sortedIds.filter { resortId in
+                if let cached = cacheService.getCachedConditions(for: resortId), !cached.isStale {
+                    // Already have fresh data, load from cache into memory
+                    if conditions[resortId] == nil {
+                        conditions[resortId] = cached.data
+                    }
+                    return false
                 }
-                return false
+                return true
             }
-            return true
         }
 
         guard !idsToFetch.isEmpty else {
