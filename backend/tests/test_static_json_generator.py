@@ -314,8 +314,9 @@ class TestStaticJsonGenerator:
         uploaded_content = call_args.kwargs["Body"].decode("utf-8")
         data = json.loads(uploaded_content)
 
-        # If ANY elevation is HORRIBLE, resort should be HORRIBLE
-        assert data["results"]["test-resort"]["overall_quality"] == "horrible"
+        # Weighted scoring: top (50%) GOOD + base (15%) HORRIBLE = GOOD overall
+        # A warm base shouldn't override good upper mountain conditions
+        assert data["results"]["test-resort"]["overall_quality"] == "good"
 
     def test_generate_all_creates_both_files(self, mock_dynamodb, mock_s3):
         """Test that generate_all creates both resorts.json and snow-quality.json."""

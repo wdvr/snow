@@ -861,23 +861,8 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
 
         # Analyze conditions for summary
         elevation_summaries = {}
-        overall_scores = []
-
-        # Quality scores including HORRIBLE for consistency with batch endpoint
-        quality_scores = {
-            SnowQuality.EXCELLENT: 6,
-            SnowQuality.GOOD: 5,
-            SnowQuality.FAIR: 4,
-            SnowQuality.POOR: 3,
-            SnowQuality.BAD: 2,
-            SnowQuality.HORRIBLE: 1,
-            SnowQuality.UNKNOWN: 0,
-        }
 
         for condition in conditions:
-            score = quality_scores.get(condition.snow_quality, 0)
-            overall_scores.append(score)
-
             elevation_summaries[condition.elevation_level] = {
                 "quality": condition.snow_quality.value,
                 "fresh_snow_cm": condition.fresh_snow_cm,
@@ -887,27 +872,10 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
                 "timestamp": condition.timestamp,
             }
 
-        # Calculate overall quality (consistent with batch endpoint logic)
-        # If ANY elevation is HORRIBLE, the resort is not skiable
-        has_horrible = any(c.snow_quality == SnowQuality.HORRIBLE for c in conditions)
-        if has_horrible:
-            overall_quality = SnowQuality.HORRIBLE
-        elif overall_scores:
-            avg_score = sum(overall_scores) / len(overall_scores)
-            if avg_score >= 5.5:
-                overall_quality = SnowQuality.EXCELLENT
-            elif avg_score >= 4.5:
-                overall_quality = SnowQuality.GOOD
-            elif avg_score >= 3.5:
-                overall_quality = SnowQuality.FAIR
-            elif avg_score >= 2.5:
-                overall_quality = SnowQuality.POOR
-            elif avg_score >= 1.5:
-                overall_quality = SnowQuality.BAD
-            else:
-                overall_quality = SnowQuality.HORRIBLE
-        else:
-            overall_quality = SnowQuality.UNKNOWN
+        # Calculate overall quality using weighted elevation scoring
+        from services.snow_quality_service import SnowQualityService
+
+        overall_quality = SnowQualityService.calculate_overall_quality(conditions)
 
         # Get explanation for overall quality
         quality_explanation = SNOW_QUALITY_EXPLANATIONS.get(overall_quality, {})
@@ -1043,37 +1011,10 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
             "snowfall_24h_cm": None,
         }
 
-    # Calculate overall quality (including HORRIBLE for not-skiable conditions)
-    quality_scores = {
-        SnowQuality.EXCELLENT: 6,
-        SnowQuality.GOOD: 5,
-        SnowQuality.FAIR: 4,
-        SnowQuality.POOR: 3,
-        SnowQuality.BAD: 2,
-        SnowQuality.HORRIBLE: 1,
-        SnowQuality.UNKNOWN: 0,
-    }
+    # Calculate overall quality using weighted elevation scoring
+    from services.snow_quality_service import SnowQualityService
 
-    # If ANY elevation is HORRIBLE, the resort is not skiable
-    has_horrible = any(c.snow_quality == SnowQuality.HORRIBLE for c in conditions)
-    if has_horrible:
-        overall_quality = SnowQuality.HORRIBLE
-    else:
-        overall_scores = [quality_scores.get(c.snow_quality, 0) for c in conditions]
-        avg_score = sum(overall_scores) / len(overall_scores) if overall_scores else 0
-
-        if avg_score >= 5.5:
-            overall_quality = SnowQuality.EXCELLENT
-        elif avg_score >= 4.5:
-            overall_quality = SnowQuality.GOOD
-        elif avg_score >= 3.5:
-            overall_quality = SnowQuality.FAIR
-        elif avg_score >= 2.5:
-            overall_quality = SnowQuality.POOR
-        elif avg_score >= 1.5:
-            overall_quality = SnowQuality.BAD
-        else:
-            overall_quality = SnowQuality.HORRIBLE
+    overall_quality = SnowQualityService.calculate_overall_quality(conditions)
 
     # Get representative condition data (prefer mid elevation, then first available)
     representative = None

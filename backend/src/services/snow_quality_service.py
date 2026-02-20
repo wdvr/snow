@@ -69,11 +69,13 @@ class SnowQualityService:
             + self.algorithm.snowfall_weight * snowfall_score
         )
 
-        # Apply source confidence multiplier
+        # Source confidence is used for the confidence_level field only,
+        # NOT as a multiplier on quality score. Quality should reflect
+        # actual conditions; confidence separately indicates data reliability.
         source_multiplier = self.algorithm.source_confidence_multiplier.get(
             weather.source_confidence, 0.5
         )
-        adjusted_score = overall_score * source_multiplier
+        adjusted_score = overall_score
 
         # Temperature adjustment - be conservative with "not skiable" designation
         # Warm temps degrade conditions but don't make skiing impossible if base exists
@@ -533,3 +535,60 @@ class SnowQualityService:
             results[condition.elevation_level].append((quality, fresh_snow, confidence))
 
         return results
+
+    @staticmethod
+    def calculate_overall_quality(conditions) -> "SnowQuality":
+        """Calculate overall resort quality from per-elevation conditions.
+
+        Uses the best of top/mid elevations (weighted 50/35/15) since base
+        elevations in mountain resorts are often warm valley towns that
+        nobody actually skis. A warm base shouldn't drag down a resort
+        with excellent upper mountain conditions.
+        """
+        quality_scores = {
+            SnowQuality.EXCELLENT: 6,
+            SnowQuality.GOOD: 5,
+            SnowQuality.FAIR: 4,
+            SnowQuality.POOR: 3,
+            SnowQuality.BAD: 2,
+            SnowQuality.HORRIBLE: 1,
+            SnowQuality.UNKNOWN: 0,
+        }
+
+        if not conditions:
+            return SnowQuality.UNKNOWN
+
+        # Separate by elevation
+        scores_by_elevation = {}
+        for c in conditions:
+            quality = c.snow_quality
+            if isinstance(quality, str):
+                quality = SnowQuality(quality)
+            scores_by_elevation[c.elevation_level] = quality_scores.get(quality, 0)
+
+        if not scores_by_elevation:
+            return SnowQuality.UNKNOWN
+
+        # Weighted average: top 50%, mid 35%, base 15%
+        weights = {"top": 0.50, "mid": 0.35, "base": 0.15}
+        total_weight = 0
+        weighted_score = 0
+        for level, score in scores_by_elevation.items():
+            w = weights.get(level, 0.15)
+            weighted_score += score * w
+            total_weight += w
+
+        avg_score = weighted_score / total_weight if total_weight > 0 else 0
+
+        if avg_score >= 5.5:
+            return SnowQuality.EXCELLENT
+        elif avg_score >= 4.5:
+            return SnowQuality.GOOD
+        elif avg_score >= 3.5:
+            return SnowQuality.FAIR
+        elif avg_score >= 2.5:
+            return SnowQuality.POOR
+        elif avg_score >= 1.5:
+            return SnowQuality.BAD
+        else:
+            return SnowQuality.HORRIBLE

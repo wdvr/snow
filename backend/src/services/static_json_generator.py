@@ -227,50 +227,10 @@ class StaticJsonGenerator:
                 "snowfall_24h_cm": None,
             }
 
-        # Calculate overall quality (same logic as API)
-        quality_scores = {
-            SnowQuality.EXCELLENT: 6,
-            SnowQuality.GOOD: 5,
-            SnowQuality.FAIR: 4,
-            SnowQuality.POOR: 3,
-            SnowQuality.BAD: 2,
-            SnowQuality.HORRIBLE: 1,
-            SnowQuality.UNKNOWN: 0,
-        }
+        # Calculate overall quality using weighted elevation scoring
+        from services.snow_quality_service import SnowQualityService
 
-        # If ANY elevation is HORRIBLE, the resort is not skiable
-        has_horrible = any(
-            c.snow_quality == SnowQuality.HORRIBLE or c.snow_quality == "horrible"
-            for c in conditions
-        )
-        if has_horrible:
-            overall_quality = SnowQuality.HORRIBLE
-        else:
-            total_score = 0
-            count = 0
-            for c in conditions:
-                quality = c.snow_quality
-                if isinstance(quality, str):
-                    quality = SnowQuality(quality)
-                total_score += quality_scores.get(quality, 0)
-                count += 1
-
-            if count > 0:
-                avg_score = total_score / count
-                if avg_score >= 5.5:
-                    overall_quality = SnowQuality.EXCELLENT
-                elif avg_score >= 4.5:
-                    overall_quality = SnowQuality.GOOD
-                elif avg_score >= 3.5:
-                    overall_quality = SnowQuality.FAIR
-                elif avg_score >= 2.5:
-                    overall_quality = SnowQuality.POOR
-                elif avg_score >= 1.5:
-                    overall_quality = SnowQuality.BAD
-                else:
-                    overall_quality = SnowQuality.HORRIBLE
-            else:
-                overall_quality = SnowQuality.UNKNOWN
+        overall_quality = SnowQualityService.calculate_overall_quality(conditions)
 
         # Get representative condition (prefer mid elevation)
         representative = None

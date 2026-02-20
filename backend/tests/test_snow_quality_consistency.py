@@ -55,8 +55,8 @@ class TestSnowQualityApiConsistency:
             ),
         ]
 
-    def test_batch_endpoint_horrible_override(self, mock_conditions_horrible_base):
-        """Test that batch endpoint marks resort as HORRIBLE if ANY elevation is HORRIBLE."""
+    def test_batch_endpoint_weighted_quality(self, mock_conditions_horrible_base):
+        """Test that batch endpoint uses weighted elevation scoring (top/mid weighted higher than base)."""
         from handlers.api_handler import _get_snow_quality_for_resort
 
         # Mock the dependencies
@@ -86,8 +86,9 @@ class TestSnowQualityApiConsistency:
             # Call the function
             result = _get_snow_quality_for_resort("test-resort")
 
-            # If ANY elevation is HORRIBLE, overall should be HORRIBLE
-            assert result["overall_quality"] == SnowQuality.HORRIBLE.value
+            # Weighted scoring: top (50%) EXCELLENT + base (15%) HORRIBLE = GOOD overall
+            # A warm base shouldn't override excellent upper mountain conditions
+            assert result["overall_quality"] == SnowQuality.GOOD.value
 
     def test_detail_endpoint_horrible_override(self, mock_conditions_horrible_base):
         """Test that detail endpoint also marks resort as HORRIBLE if ANY elevation is HORRIBLE.
