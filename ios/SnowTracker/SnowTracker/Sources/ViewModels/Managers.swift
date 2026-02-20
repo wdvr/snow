@@ -254,12 +254,14 @@ class SnowConditionsManager: ObservableObject {
     }
 
     /// Fetch conditions for a single resort - use when opening detail view
-    func fetchConditionsForResort(_ resortId: String) async {
-        // Check if we already have fresh conditions
-        if let existing = conditions[resortId], !existing.isEmpty {
-            // Check if cached data is still fresh (less than 5 minutes old)
-            if let cached = cacheService.getCachedConditions(for: resortId), !cached.isStale {
-                return
+    func fetchConditionsForResort(_ resortId: String, forceRefresh: Bool = false) async {
+        if !forceRefresh {
+            // Check if we already have fresh conditions
+            if let existing = conditions[resortId], !existing.isEmpty {
+                // Check if cached data is still fresh (less than 5 minutes old)
+                if let cached = cacheService.getCachedConditions(for: resortId), !cached.isStale {
+                    return
+                }
             }
         }
         await fetchConditionsForResorts(resortIds: [resortId])

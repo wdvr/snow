@@ -527,6 +527,9 @@ struct ResortMapDetailSheet: View {
                     }
                 }
             }
+            .task {
+                await snowConditionsManager.fetchConditionsForResort(resort.id)
+            }
         }
     }
 

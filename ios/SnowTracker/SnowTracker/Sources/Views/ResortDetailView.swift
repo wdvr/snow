@@ -94,7 +94,7 @@ struct ResortDetailView: View {
         }
         .refreshable {
             AnalyticsService.shared.trackPullToRefresh(screen: "ResortDetail")
-            await snowConditionsManager.fetchConditionsForResort(resort.id)
+            await snowConditionsManager.fetchConditionsForResort(resort.id, forceRefresh: true)
         }
         .task {
             // Fetch conditions for this resort when view appears
