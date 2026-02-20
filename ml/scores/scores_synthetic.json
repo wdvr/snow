@@ -1,0 +1,2312 @@
+[
+  {
+    "resort_id": "synth-packed-0",
+    "date": "2026-01-15",
+    "score": 3.8375374557482163,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-1",
+    "date": "2026-01-16",
+    "score": 3.971412547100727,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-2",
+    "date": "2026-01-17",
+    "score": 3.5741966747041185,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-3",
+    "date": "2026-01-18",
+    "score": 3.9416325050185814,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-4",
+    "date": "2026-01-19",
+    "score": 3.563833581538902,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-5",
+    "date": "2026-01-20",
+    "score": 4.249323670169995,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-6",
+    "date": "2026-01-21",
+    "score": 3.945559795019717,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-7",
+    "date": "2026-01-22",
+    "score": 4.254327771468043,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-8",
+    "date": "2026-01-23",
+    "score": 3.9490945073305204,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-9",
+    "date": "2026-01-24",
+    "score": 3.5376931003397876,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-10",
+    "date": "2026-01-25",
+    "score": 4.276862702090894,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-11",
+    "date": "2026-01-26",
+    "score": 3.8478122005352837,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-12",
+    "date": "2026-01-27",
+    "score": 3.738755833158906,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-13",
+    "date": "2026-01-28",
+    "score": 3.7593248456037385,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-14",
+    "date": "2026-01-29",
+    "score": 3.568522761654303,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-15",
+    "date": "2026-01-15",
+    "score": 4.197946432868206,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-16",
+    "date": "2026-01-16",
+    "score": 3.850480067131603,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-17",
+    "date": "2026-01-17",
+    "score": 4.004882365816079,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-18",
+    "date": "2026-01-18",
+    "score": 4.248411392464536,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-19",
+    "date": "2026-01-19",
+    "score": 3.8736197344293397,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-20",
+    "date": "2026-01-20",
+    "score": 3.652167126752649,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-21",
+    "date": "2026-01-21",
+    "score": 3.540470663619905,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-22",
+    "date": "2026-01-22",
+    "score": 3.820832234039562,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-23",
+    "date": "2026-01-23",
+    "score": 4.2963381515941705,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-24",
+    "date": "2026-01-24",
+    "score": 3.5457322183259863,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-25",
+    "date": "2026-01-25",
+    "score": 4.040170042883272,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-26",
+    "date": "2026-01-26",
+    "score": 3.918226172425567,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-27",
+    "date": "2026-01-27",
+    "score": 4.101491593931522,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-28",
+    "date": "2026-01-28",
+    "score": 4.204691338949152,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-29",
+    "date": "2026-01-29",
+    "score": 3.5062584857217263,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-30",
+    "date": "2026-01-15",
+    "score": 3.717878569851853,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-31",
+    "date": "2026-01-16",
+    "score": 3.573838774170187,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-32",
+    "date": "2026-01-17",
+    "score": 3.8421495351845434,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-33",
+    "date": "2026-01-18",
+    "score": 3.601956415425711,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-34",
+    "date": "2026-01-19",
+    "score": 4.124092993497154,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-35",
+    "date": "2026-01-20",
+    "score": 4.20513296373066,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-36",
+    "date": "2026-01-21",
+    "score": 4.129899607308377,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-37",
+    "date": "2026-01-22",
+    "score": 3.682076389926216,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-38",
+    "date": "2026-01-23",
+    "score": 4.284919749758608,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-packed-39",
+    "date": "2026-01-24",
+    "score": 3.8476510068517156,
+    "source": "synthetic",
+    "scenario": "packed_powder_cold"
+  },
+  {
+    "resort_id": "synth-icy-0",
+    "date": "2026-01-10",
+    "score": 1.9846067973835126,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-1",
+    "date": "2026-01-11",
+    "score": 1.7702900413901377,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-2",
+    "date": "2026-01-12",
+    "score": 1.7708548871090088,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-3",
+    "date": "2026-01-13",
+    "score": 2.3110627432454285,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-4",
+    "date": "2026-01-14",
+    "score": 1.679216939453919,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-5",
+    "date": "2026-01-15",
+    "score": 1.719585995620595,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-6",
+    "date": "2026-01-16",
+    "score": 1.7242784516939744,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-7",
+    "date": "2026-01-17",
+    "score": 1.9543003483419616,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-8",
+    "date": "2026-01-18",
+    "score": 2.064073593283603,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-9",
+    "date": "2026-01-19",
+    "score": 1.5578059656424903,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-10",
+    "date": "2026-01-20",
+    "score": 1.8423429260349404,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-11",
+    "date": "2026-01-21",
+    "score": 1.6974794711592924,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-12",
+    "date": "2026-01-22",
+    "score": 1.8546182307057342,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-13",
+    "date": "2026-01-23",
+    "score": 1.8412135940077226,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-14",
+    "date": "2026-01-24",
+    "score": 2.0865791897195005,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-15",
+    "date": "2026-01-25",
+    "score": 2.1902082885206164,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-16",
+    "date": "2026-01-26",
+    "score": 2.3623555543853065,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-17",
+    "date": "2026-01-27",
+    "score": 2.385459916363204,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-18",
+    "date": "2026-01-28",
+    "score": 2.0720265954913013,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-19",
+    "date": "2026-01-29",
+    "score": 2.15792359287461,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-20",
+    "date": "2026-01-10",
+    "score": 2.2658575526812132,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-21",
+    "date": "2026-01-11",
+    "score": 2.148067197693775,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-22",
+    "date": "2026-01-12",
+    "score": 2.0234000267991306,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-23",
+    "date": "2026-01-13",
+    "score": 1.6075992671295476,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-24",
+    "date": "2026-01-14",
+    "score": 1.674705820281966,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-25",
+    "date": "2026-01-15",
+    "score": 1.9417908250714009,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-26",
+    "date": "2026-01-16",
+    "score": 1.5666739532300757,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-27",
+    "date": "2026-01-17",
+    "score": 1.7031184233585313,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-28",
+    "date": "2026-01-18",
+    "score": 1.6870091152411961,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-29",
+    "date": "2026-01-19",
+    "score": 2.13626024689113,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-30",
+    "date": "2026-01-20",
+    "score": 2.0828712510622327,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-31",
+    "date": "2026-01-21",
+    "score": 2.1297603164781456,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-32",
+    "date": "2026-01-22",
+    "score": 2.252362752515563,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-33",
+    "date": "2026-01-23",
+    "score": 1.6633402325008133,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-34",
+    "date": "2026-01-24",
+    "score": 1.7593960158253101,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-35",
+    "date": "2026-01-25",
+    "score": 2.091894347834816,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-36",
+    "date": "2026-01-26",
+    "score": 1.8943044855651403,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-37",
+    "date": "2026-01-27",
+    "score": 2.321636890635751,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-38",
+    "date": "2026-01-28",
+    "score": 1.9961385691924227,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-39",
+    "date": "2026-01-29",
+    "score": 2.2384945258670204,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-40",
+    "date": "2026-01-10",
+    "score": 1.909810155179851,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-41",
+    "date": "2026-01-11",
+    "score": 1.847470877241884,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-42",
+    "date": "2026-01-12",
+    "score": 1.9733559781268053,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-43",
+    "date": "2026-01-13",
+    "score": 2.2665887631156223,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-44",
+    "date": "2026-01-14",
+    "score": 2.328836188902267,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-45",
+    "date": "2026-01-15",
+    "score": 2.2165291186459903,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-46",
+    "date": "2026-01-16",
+    "score": 1.7167468126706817,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-47",
+    "date": "2026-01-17",
+    "score": 1.897556805243433,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-48",
+    "date": "2026-01-18",
+    "score": 2.014730423115665,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-icy-49",
+    "date": "2026-01-19",
+    "score": 2.045765843768827,
+    "source": "synthetic",
+    "scenario": "icy_recent_ft"
+  },
+  {
+    "resort_id": "synth-corn-0",
+    "date": "2026-03-01",
+    "score": 3.2545034052662647,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-1",
+    "date": "2026-03-02",
+    "score": 2.618943817972105,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-2",
+    "date": "2026-03-03",
+    "score": 2.6036527367047833,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-3",
+    "date": "2026-03-04",
+    "score": 2.9829150774421533,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-4",
+    "date": "2026-03-05",
+    "score": 3.3237303178688435,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-5",
+    "date": "2026-03-06",
+    "score": 3.298533377675652,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-6",
+    "date": "2026-03-07",
+    "score": 2.8673042971279306,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-7",
+    "date": "2026-03-08",
+    "score": 2.8583256784699356,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-8",
+    "date": "2026-03-09",
+    "score": 3.008120178317167,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-9",
+    "date": "2026-03-10",
+    "score": 2.616992918299093,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-10",
+    "date": "2026-03-11",
+    "score": 2.97347697393808,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-11",
+    "date": "2026-03-12",
+    "score": 2.9122382698879137,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-12",
+    "date": "2026-03-13",
+    "score": 2.747514399602158,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-13",
+    "date": "2026-03-14",
+    "score": 3.1920664570942647,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-14",
+    "date": "2026-03-15",
+    "score": 2.6373750322918514,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-15",
+    "date": "2026-03-16",
+    "score": 2.610008156819103,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-16",
+    "date": "2026-03-17",
+    "score": 2.701820382196809,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-17",
+    "date": "2026-03-18",
+    "score": 2.523628448308225,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-18",
+    "date": "2026-03-19",
+    "score": 2.6276871887361417,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-19",
+    "date": "2026-03-20",
+    "score": 2.54734794378297,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-20",
+    "date": "2026-03-21",
+    "score": 2.7549218230724044,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-21",
+    "date": "2026-03-22",
+    "score": 2.795310120344057,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-22",
+    "date": "2026-03-23",
+    "score": 2.516867382927081,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-23",
+    "date": "2026-03-24",
+    "score": 3.2488233217645366,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-24",
+    "date": "2026-03-25",
+    "score": 2.9594349560879336,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-25",
+    "date": "2026-03-26",
+    "score": 3.1841937659922026,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-26",
+    "date": "2026-03-27",
+    "score": 3.2778221873482742,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-27",
+    "date": "2026-03-28",
+    "score": 3.248526968496809,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-28",
+    "date": "2026-03-01",
+    "score": 3.0866537091837487,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-29",
+    "date": "2026-03-02",
+    "score": 2.8939824468783097,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-30",
+    "date": "2026-03-03",
+    "score": 2.585055352763585,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-31",
+    "date": "2026-03-04",
+    "score": 3.1286319665306928,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-32",
+    "date": "2026-03-05",
+    "score": 2.9737540057607568,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-33",
+    "date": "2026-03-06",
+    "score": 3.259985549817295,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-34",
+    "date": "2026-03-07",
+    "score": 3.1939880323578898,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-35",
+    "date": "2026-03-08",
+    "score": 2.7785211069065108,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-36",
+    "date": "2026-03-09",
+    "score": 3.235202115623116,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-37",
+    "date": "2026-03-10",
+    "score": 2.745512169632221,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-38",
+    "date": "2026-03-11",
+    "score": 3.395072816114462,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-corn-39",
+    "date": "2026-03-12",
+    "score": 3.134982557760172,
+    "source": "synthetic",
+    "scenario": "spring_corn"
+  },
+  {
+    "resort_id": "synth-wet-snow-0",
+    "date": "2026-02-01",
+    "score": 4.015375730209406,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-1",
+    "date": "2026-02-02",
+    "score": 3.5162422311089476,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-2",
+    "date": "2026-02-03",
+    "score": 3.7934425711750315,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-3",
+    "date": "2026-02-04",
+    "score": 3.886644768260692,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-4",
+    "date": "2026-02-05",
+    "score": 3.5423551628501295,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-5",
+    "date": "2026-02-06",
+    "score": 3.882854401688778,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-6",
+    "date": "2026-02-07",
+    "score": 4.496365112154761,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-7",
+    "date": "2026-02-08",
+    "score": 4.137700022564016,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-8",
+    "date": "2026-02-09",
+    "score": 3.573750712911239,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-9",
+    "date": "2026-02-10",
+    "score": 4.440904054931535,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-10",
+    "date": "2026-02-11",
+    "score": 3.545461803291342,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-11",
+    "date": "2026-02-12",
+    "score": 4.106660262820636,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-12",
+    "date": "2026-02-13",
+    "score": 3.827435820801195,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-13",
+    "date": "2026-02-14",
+    "score": 4.347172365393468,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-14",
+    "date": "2026-02-15",
+    "score": 3.8390852999525653,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-15",
+    "date": "2026-02-16",
+    "score": 4.328289385957376,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-16",
+    "date": "2026-02-17",
+    "score": 3.6705120617466593,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-17",
+    "date": "2026-02-18",
+    "score": 3.7073417049712445,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-18",
+    "date": "2026-02-19",
+    "score": 3.789004137403525,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-19",
+    "date": "2026-02-20",
+    "score": 3.756443975473482,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-20",
+    "date": "2026-02-21",
+    "score": 4.429099680169978,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-21",
+    "date": "2026-02-22",
+    "score": 4.49717180308851,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-22",
+    "date": "2026-02-23",
+    "score": 3.6624942625397385,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-23",
+    "date": "2026-02-24",
+    "score": 3.735521252801534,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-24",
+    "date": "2026-02-25",
+    "score": 3.7191286009353437,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-25",
+    "date": "2026-02-26",
+    "score": 4.047649248710932,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-26",
+    "date": "2026-02-27",
+    "score": 4.316453225933131,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-27",
+    "date": "2026-02-28",
+    "score": 4.406767311524573,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-28",
+    "date": "2026-02-01",
+    "score": 3.846159734987627,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-29",
+    "date": "2026-02-02",
+    "score": 4.363730242670057,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-30",
+    "date": "2026-02-03",
+    "score": 3.9272005822945433,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-31",
+    "date": "2026-02-04",
+    "score": 3.634092751059078,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-32",
+    "date": "2026-02-05",
+    "score": 4.4570197605266735,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-33",
+    "date": "2026-02-06",
+    "score": 4.4813184568465765,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-wet-snow-34",
+    "date": "2026-02-07",
+    "score": 3.7573267576348828,
+    "source": "synthetic",
+    "scenario": "warm_heavy_snow"
+  },
+  {
+    "resort_id": "synth-summer-0",
+    "date": "2026-06-01",
+    "score": 1.3667597558777467,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-1",
+    "date": "2026-06-02",
+    "score": 1.3370178867301394,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-2",
+    "date": "2026-06-03",
+    "score": 1.1951417536012285,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-3",
+    "date": "2026-06-04",
+    "score": 1.3224670795789715,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-4",
+    "date": "2026-06-05",
+    "score": 1.1492206333854729,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-5",
+    "date": "2026-06-06",
+    "score": 1.0374002021708437,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-6",
+    "date": "2026-06-07",
+    "score": 1.3431841253454677,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-7",
+    "date": "2026-06-08",
+    "score": 1.370233924032369,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-8",
+    "date": "2026-06-09",
+    "score": 1.1593184081580488,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-9",
+    "date": "2026-06-10",
+    "score": 1.3953911831656411,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-10",
+    "date": "2026-06-11",
+    "score": 1.1586812197235838,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-11",
+    "date": "2026-06-12",
+    "score": 1.2642687630059501,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-12",
+    "date": "2026-06-13",
+    "score": 1.1266712914726145,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-13",
+    "date": "2026-06-14",
+    "score": 1.163217670033255,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-14",
+    "date": "2026-06-15",
+    "score": 1.3604544179425733,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-15",
+    "date": "2026-06-16",
+    "score": 1.173870507705098,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-16",
+    "date": "2026-06-17",
+    "score": 1.1218631983005027,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-17",
+    "date": "2026-06-18",
+    "score": 1.054449788631306,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-18",
+    "date": "2026-06-19",
+    "score": 1.230351712649984,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-19",
+    "date": "2026-06-20",
+    "score": 1.2200396627989891,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-20",
+    "date": "2026-06-21",
+    "score": 1.1997212861155842,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-21",
+    "date": "2026-06-22",
+    "score": 1.2026450572118035,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-22",
+    "date": "2026-06-23",
+    "score": 1.307581619168016,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-23",
+    "date": "2026-06-24",
+    "score": 1.1721822175560728,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-24",
+    "date": "2026-06-25",
+    "score": 1.2354359826160588,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-25",
+    "date": "2026-06-26",
+    "score": 1.1247561375590165,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-26",
+    "date": "2026-06-27",
+    "score": 1.0460341066795145,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-27",
+    "date": "2026-06-28",
+    "score": 1.38338504869358,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-28",
+    "date": "2026-06-01",
+    "score": 1.1555343121422827,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-summer-29",
+    "date": "2026-06-02",
+    "score": 1.1830201688824742,
+    "source": "synthetic",
+    "scenario": "not_skiable_summer"
+  },
+  {
+    "resort_id": "synth-powder-0",
+    "date": "2026-01-01",
+    "score": 5.808681339668213,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-1",
+    "date": "2026-01-02",
+    "score": 5.846718270858223,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-2",
+    "date": "2026-01-03",
+    "score": 5.777456287916249,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-3",
+    "date": "2026-01-04",
+    "score": 5.98191454470747,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-4",
+    "date": "2026-01-05",
+    "score": 5.646044954779353,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-5",
+    "date": "2026-01-06",
+    "score": 5.887556513931997,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-6",
+    "date": "2026-01-07",
+    "score": 5.875672747371836,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-7",
+    "date": "2026-01-08",
+    "score": 5.905351358419705,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-8",
+    "date": "2026-01-09",
+    "score": 5.675407739476415,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-9",
+    "date": "2026-01-10",
+    "score": 5.547612581907171,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-10",
+    "date": "2026-01-11",
+    "score": 5.9142409013493165,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-11",
+    "date": "2026-01-12",
+    "score": 5.546547392021309,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-12",
+    "date": "2026-01-13",
+    "score": 5.865465968743527,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-13",
+    "date": "2026-01-14",
+    "score": 5.914171808524404,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-14",
+    "date": "2026-01-15",
+    "score": 5.7297908813367835,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-15",
+    "date": "2026-01-16",
+    "score": 5.579488731452909,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-16",
+    "date": "2026-01-17",
+    "score": 5.8497206857622865,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-17",
+    "date": "2026-01-18",
+    "score": 5.847798553644024,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-18",
+    "date": "2026-01-19",
+    "score": 5.9404944974901355,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-19",
+    "date": "2026-01-20",
+    "score": 5.720049710389926,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-20",
+    "date": "2026-01-21",
+    "score": 5.794786958880756,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-21",
+    "date": "2026-01-22",
+    "score": 5.88948482625663,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-22",
+    "date": "2026-01-23",
+    "score": 5.9489562801784945,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-23",
+    "date": "2026-01-24",
+    "score": 5.565991440366351,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-24",
+    "date": "2026-01-25",
+    "score": 5.631092638581033,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-25",
+    "date": "2026-01-26",
+    "score": 5.768282408035008,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-26",
+    "date": "2026-01-27",
+    "score": 5.917263234592376,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-27",
+    "date": "2026-01-28",
+    "score": 5.804416202213722,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-28",
+    "date": "2026-01-29",
+    "score": 5.891493550771873,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-29",
+    "date": "2026-01-30",
+    "score": 5.635990297510677,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-30",
+    "date": "2026-01-01",
+    "score": 5.627558040519539,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-31",
+    "date": "2026-01-02",
+    "score": 5.6914897371837,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-32",
+    "date": "2026-01-03",
+    "score": 5.860143960714098,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-33",
+    "date": "2026-01-04",
+    "score": 5.534463218886373,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-34",
+    "date": "2026-01-05",
+    "score": 5.811358761946052,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-35",
+    "date": "2026-01-06",
+    "score": 5.70501805478301,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-36",
+    "date": "2026-01-07",
+    "score": 5.55197450967578,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-37",
+    "date": "2026-01-08",
+    "score": 5.759879609246019,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-38",
+    "date": "2026-01-09",
+    "score": 5.7174914392174925,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-powder-39",
+    "date": "2026-01-10",
+    "score": 5.53734371790124,
+    "source": "synthetic",
+    "scenario": "cold_fresh_powder"
+  },
+  {
+    "resort_id": "synth-good-0",
+    "date": "2026-02-01",
+    "score": 4.738507134223237,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-1",
+    "date": "2026-02-02",
+    "score": 4.962113707840857,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-2",
+    "date": "2026-02-03",
+    "score": 4.510761230852472,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-3",
+    "date": "2026-02-04",
+    "score": 4.558024832442219,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-4",
+    "date": "2026-02-05",
+    "score": 4.8554988193997275,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-5",
+    "date": "2026-02-06",
+    "score": 4.870792985666549,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-6",
+    "date": "2026-02-07",
+    "score": 5.203724190160883,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-7",
+    "date": "2026-02-08",
+    "score": 4.552732107250307,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-8",
+    "date": "2026-02-09",
+    "score": 5.396752843655812,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-9",
+    "date": "2026-02-10",
+    "score": 4.525385912754444,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-10",
+    "date": "2026-02-11",
+    "score": 4.709361022274916,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-11",
+    "date": "2026-02-12",
+    "score": 5.027948257582088,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-12",
+    "date": "2026-02-13",
+    "score": 4.641753497415161,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-13",
+    "date": "2026-02-14",
+    "score": 4.657816466991199,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-14",
+    "date": "2026-02-15",
+    "score": 5.3289343947762715,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-15",
+    "date": "2026-02-16",
+    "score": 5.138069231830702,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-16",
+    "date": "2026-02-17",
+    "score": 5.3721916425951175,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-17",
+    "date": "2026-02-18",
+    "score": 5.261186235622104,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-18",
+    "date": "2026-02-19",
+    "score": 5.052280253201005,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-19",
+    "date": "2026-02-20",
+    "score": 5.156976605103261,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-20",
+    "date": "2026-02-21",
+    "score": 5.040193975212392,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-21",
+    "date": "2026-02-22",
+    "score": 4.989713426297713,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-22",
+    "date": "2026-02-23",
+    "score": 4.577136580655925,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-23",
+    "date": "2026-02-24",
+    "score": 5.293488482475861,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-24",
+    "date": "2026-02-25",
+    "score": 4.655591075525845,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-25",
+    "date": "2026-02-26",
+    "score": 5.319724037158435,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-26",
+    "date": "2026-02-27",
+    "score": 4.877634450802706,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-27",
+    "date": "2026-02-28",
+    "score": 4.869801033569298,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-28",
+    "date": "2026-02-01",
+    "score": 4.7138213645246765,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-29",
+    "date": "2026-02-02",
+    "score": 4.620946968871596,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-30",
+    "date": "2026-02-03",
+    "score": 5.280470073495204,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-31",
+    "date": "2026-02-04",
+    "score": 5.253279009847826,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-32",
+    "date": "2026-02-05",
+    "score": 5.034639234106937,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-33",
+    "date": "2026-02-06",
+    "score": 5.015032254918271,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-good-34",
+    "date": "2026-02-07",
+    "score": 5.082634398757522,
+    "source": "synthetic",
+    "scenario": "moderate_fresh_cold"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-0",
+    "date": "2026-02-05",
+    "score": 2.251998709277876,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-1",
+    "date": "2026-02-06",
+    "score": 2.609050104638017,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-2",
+    "date": "2026-02-07",
+    "score": 2.1499292963541565,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-3",
+    "date": "2026-02-08",
+    "score": 2.259426272711989,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-4",
+    "date": "2026-02-09",
+    "score": 2.9065265055050546,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-5",
+    "date": "2026-02-10",
+    "score": 2.7629182183193026,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-6",
+    "date": "2026-02-11",
+    "score": 2.2940511216503428,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-7",
+    "date": "2026-02-12",
+    "score": 2.2983557538174635,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-8",
+    "date": "2026-02-13",
+    "score": 2.7789411774338144,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-9",
+    "date": "2026-02-14",
+    "score": 2.763569167105499,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-10",
+    "date": "2026-02-15",
+    "score": 2.322213133848069,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-11",
+    "date": "2026-02-16",
+    "score": 2.1670201872683093,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-12",
+    "date": "2026-02-17",
+    "score": 2.3592508863666324,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-13",
+    "date": "2026-02-18",
+    "score": 2.3665914513998487,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-14",
+    "date": "2026-02-19",
+    "score": 2.689749748377426,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-15",
+    "date": "2026-02-20",
+    "score": 2.269977149537189,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-16",
+    "date": "2026-02-21",
+    "score": 2.2629939156137318,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-17",
+    "date": "2026-02-22",
+    "score": 2.671633132465205,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-18",
+    "date": "2026-02-23",
+    "score": 2.988665930757604,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-19",
+    "date": "2026-02-24",
+    "score": 2.758204004841238,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-20",
+    "date": "2026-02-05",
+    "score": 2.1828694203036427,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-21",
+    "date": "2026-02-06",
+    "score": 2.0586463956651775,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-22",
+    "date": "2026-02-07",
+    "score": 2.6844641333814727,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-23",
+    "date": "2026-02-08",
+    "score": 2.677928921020164,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-24",
+    "date": "2026-02-09",
+    "score": 2.2485769948507075,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-25",
+    "date": "2026-02-10",
+    "score": 2.8518711514460664,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-26",
+    "date": "2026-02-11",
+    "score": 2.459094594748235,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-27",
+    "date": "2026-02-12",
+    "score": 2.0001697154783367,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-28",
+    "date": "2026-02-13",
+    "score": 2.2229181143963146,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-thin-on-ice-29",
+    "date": "2026-02-14",
+    "score": 2.829883885634401,
+    "source": "synthetic",
+    "scenario": "thin_cover_on_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-0",
+    "date": "2026-02-01",
+    "score": 4.606961505519519,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-1",
+    "date": "2026-02-02",
+    "score": 5.426626530537311,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-2",
+    "date": "2026-02-03",
+    "score": 4.548571605631905,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-3",
+    "date": "2026-02-04",
+    "score": 4.887405579220666,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-4",
+    "date": "2026-02-05",
+    "score": 5.4704916499121,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-5",
+    "date": "2026-02-06",
+    "score": 5.435512077462536,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-6",
+    "date": "2026-02-07",
+    "score": 5.0038934390432495,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-7",
+    "date": "2026-02-08",
+    "score": 5.3413893024169115,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-8",
+    "date": "2026-02-09",
+    "score": 4.66093539434323,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-9",
+    "date": "2026-02-10",
+    "score": 5.36803537365441,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-10",
+    "date": "2026-02-11",
+    "score": 5.42648481116878,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-11",
+    "date": "2026-02-12",
+    "score": 5.370118092321335,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-12",
+    "date": "2026-02-13",
+    "score": 4.794177721804491,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-13",
+    "date": "2026-02-14",
+    "score": 5.083986057683931,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-14",
+    "date": "2026-02-15",
+    "score": 5.161890210964939,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-15",
+    "date": "2026-02-16",
+    "score": 4.915931243770421,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-16",
+    "date": "2026-02-17",
+    "score": 5.496631082604338,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-17",
+    "date": "2026-02-18",
+    "score": 5.182551360768528,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-18",
+    "date": "2026-02-19",
+    "score": 5.3028167375082935,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-19",
+    "date": "2026-02-20",
+    "score": 4.507330586216845,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-20",
+    "date": "2026-02-21",
+    "score": 5.275206740463061,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-21",
+    "date": "2026-02-22",
+    "score": 5.058084205317811,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-22",
+    "date": "2026-02-23",
+    "score": 5.1414227464816395,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-23",
+    "date": "2026-02-24",
+    "score": 4.586505221437792,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-24",
+    "date": "2026-02-25",
+    "score": 5.045724468640823,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-25",
+    "date": "2026-02-26",
+    "score": 5.055069745640262,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-26",
+    "date": "2026-02-27",
+    "score": 4.9126544960262475,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-27",
+    "date": "2026-02-28",
+    "score": 5.351387722425474,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-28",
+    "date": "2026-02-01",
+    "score": 4.830850931682724,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  },
+  {
+    "resort_id": "synth-fresh-covers-ice-29",
+    "date": "2026-02-02",
+    "score": 5.084169932845198,
+    "source": "synthetic",
+    "scenario": "fresh_covers_ice"
+  }
+]

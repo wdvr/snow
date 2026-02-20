@@ -138,15 +138,31 @@ ENGINEERED_FEATURE_NAMES = [
 
 
 def load_data():
-    """Load features and merge with scores."""
+    """Load features and merge with scores.
+
+    Loads both real data (training_features.json) and synthetic data
+    (synthetic_features.json) if available.
+    """
+    features_by_key = {}
+
+    # Load real features
     with open(FEATURES_FILE) as f:
         features_data = json.load(f)
-
-    features_by_key = {}
     for item in features_data["data"]:
         key = (item["resort_id"], item["date"])
         features_by_key[key] = item
 
+    # Load synthetic features if available
+    synthetic_file = ML_DIR / "synthetic_features.json"
+    if synthetic_file.exists():
+        with open(synthetic_file) as f:
+            synth_data = json.load(f)
+        for item in synth_data["data"]:
+            key = (item["resort_id"], item["date"])
+            features_by_key[key] = item
+        print(f"  + {len(synth_data['data'])} synthetic samples")
+
+    # Load all score files
     scores_by_key = {}
     for score_file in sorted(SCORES_DIR.glob("scores_*.json")):
         with open(score_file) as f:
@@ -391,59 +407,62 @@ def main():
     best_val_mae = float("inf")
     best_model_state = None
 
-    # Try multiple hidden layer sizes
-    for n_hidden in [16, 24, 32]:
-        np.random.seed(42)
-        model = SimpleNN(n_features, n_hidden=n_hidden)
+    # Try multiple hidden layer sizes and random seeds
+    for n_hidden in [24, 32, 48]:
+        for seed in [42, 123, 7]:
+            np.random.seed(seed)
+            model = SimpleNN(n_features, n_hidden=n_hidden)
 
-        # Training loop
-        lr = 0.01
-        n_epochs = 2000
-        batch_size = 128
+            # Training loop
+            lr = 0.01
+            n_epochs = 3000
+            batch_size = 64  # Smaller batches for better gradient estimates
 
-        for epoch in range(n_epochs):
-            # Mini-batch SGD
-            perm = np.random.permutation(len(X_train))
-            epoch_loss = 0
-            n_batches = 0
+            for epoch in range(n_epochs):
+                # Mini-batch SGD
+                perm = np.random.permutation(len(X_train))
+                epoch_loss = 0
+                n_batches = 0
 
-            for start in range(0, len(X_train), batch_size):
-                batch_idx = perm[start : start + batch_size]
-                X_batch = X_train[batch_idx]
-                y_batch = y_train[batch_idx]
-                w_batch = weights[batch_idx]
+                for start in range(0, len(X_train), batch_size):
+                    batch_idx = perm[start : start + batch_size]
+                    X_batch = X_train[batch_idx]
+                    y_batch = y_train[batch_idx]
+                    w_batch = weights[batch_idx]
 
-                y_pred, cache = model.forward(X_batch)
-                loss = np.mean(w_batch * (y_pred - y_batch) ** 2)
-                epoch_loss += loss
-                n_batches += 1
+                    y_pred, cache = model.forward(X_batch)
+                    loss = np.mean(w_batch * (y_pred - y_batch) ** 2)
+                    epoch_loss += loss
+                    n_batches += 1
 
-                grads = model.backward(y_batch, y_pred, cache, w_batch)
-                model.update(grads, lr)
+                    grads = model.backward(y_batch, y_pred, cache, w_batch)
+                    model.update(grads, lr)
 
-            # Learning rate decay
-            if epoch > 0 and epoch % 500 == 0:
-                lr *= 0.5
+                # Learning rate decay
+                if epoch > 0 and epoch % 500 == 0:
+                    lr *= 0.5
 
-            # Evaluate periodically
-            if epoch % 200 == 0 or epoch == n_epochs - 1:
-                val_pred = model.predict(X_val)
-                val_mae = np.mean(np.abs(y_val - val_pred))
-                train_pred = model.predict(X_train)
-                train_mae = np.mean(np.abs(y_train - train_pred))
-                print(
-                    f"  h={n_hidden} epoch {epoch}: train_mae={train_mae:.3f} val_mae={val_mae:.3f} lr={lr:.5f}"
-                )
+                # Evaluate periodically
+                if epoch % 500 == 0 or epoch == n_epochs - 1:
+                    val_pred = model.predict(X_val)
+                    val_mae = np.mean(np.abs(y_val - val_pred))
+                    train_pred = model.predict(X_train)
+                    train_mae = np.mean(np.abs(y_train - train_pred))
+                    print(
+                        f"  h={n_hidden} s={seed} epoch {epoch}: "
+                        f"train_mae={train_mae:.3f} val_mae={val_mae:.3f} lr={lr:.5f}"
+                    )
 
-                if val_mae < best_val_mae:
-                    best_val_mae = val_mae
-                    best_model_state = {
-                        "n_hidden": n_hidden,
-                        "W1": model.W1.copy(),
-                        "b1": model.b1.copy(),
-                        "W2": model.W2.copy(),
-                        "b2": model.b2.copy(),
-                    }
+                    if val_mae < best_val_mae:
+                        best_val_mae = val_mae
+                        best_model_state = {
+                            "n_hidden": n_hidden,
+                            "seed": seed,
+                            "W1": model.W1.copy(),
+                            "b1": model.b1.copy(),
+                            "W2": model.W2.copy(),
+                            "b2": model.b2.copy(),
+                        }
 
     # Use best model
     print(f"\nBest model: h={best_model_state['n_hidden']}, val_mae={best_val_mae:.3f}")
