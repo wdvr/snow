@@ -249,3 +249,37 @@ class SnowQualityAlgorithm(BaseModel):
     )
 
     model_config = ConfigDict(use_enum_values=True)
+
+
+class TimelinePoint(BaseModel):
+    """A single point in the conditions timeline."""
+
+    date: str = Field(..., description="Date in YYYY-MM-DD format")
+    time_label: str = Field(..., description="morning, midday, or afternoon")
+    hour: int = Field(..., description="Hour of day (0-23)")
+    timestamp: str = Field(..., description="ISO timestamp")
+    temperature_c: float = Field(..., description="Temperature in Celsius")
+    wind_speed_kmh: float | None = Field(None, description="Wind speed in km/h")
+    snowfall_cm: float = Field(
+        default=0.0, description="Snowfall in surrounding window"
+    )
+    snow_depth_cm: float | None = Field(None, description="Snow depth in cm")
+    snow_quality: str = Field(default="unknown", description="Snow quality assessment")
+    weather_code: int | None = Field(None, description="WMO weather code")
+    weather_description: str | None = Field(None, description="Weather description")
+    is_forecast: bool = Field(
+        default=False, description="Whether this is forecast data"
+    )
+
+    model_config = ConfigDict(use_enum_values=True)
+
+
+class TimelineResponse(BaseModel):
+    """Response for the timeline endpoint."""
+
+    timeline: list[TimelinePoint] = Field(default_factory=list)
+    elevation_level: str = Field(..., description="base, mid, or top")
+    elevation_meters: int = Field(..., description="Elevation in meters")
+    resort_id: str = Field(..., description="Resort identifier")
+
+    model_config = ConfigDict(use_enum_values=True)

@@ -18,8 +18,9 @@ from models.feedback import Feedback, FeedbackSubmission
 from models.resort import Resort
 from models.trip import Trip, TripCreate, TripStatus, TripUpdate
 from models.user import UserPreferences
-from models.weather import SNOW_QUALITY_EXPLANATIONS, SnowQuality
+from models.weather import SNOW_QUALITY_EXPLANATIONS, SnowQuality, TimelineResponse
 from services.auth_service import AuthenticationError, AuthProvider, AuthService
+from services.openmeteo_service import OpenMeteoService
 from services.recommendation_service import RecommendationService
 from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
@@ -934,6 +935,74 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve snow quality summary: {str(e)}",
+        )
+
+
+@app.get("/api/v1/resorts/{resort_id}/timeline")
+async def get_resort_timeline(
+    resort_id: str,
+    response: Response,
+    elevation: str = Query("mid", description="Elevation level: base, mid, or top"),
+):
+    """Get conditions timeline for a resort at a given elevation.
+
+    Returns 3 data points per day (morning, midday, afternoon) over
+    7 days past and 7 days forecast, including temperature, snowfall,
+    snow depth, and snow quality assessment.
+    """
+    try:
+        # Validate elevation
+        valid_levels = ["base", "mid", "top"]
+        if elevation not in valid_levels:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid elevation level. Must be one of: {valid_levels}",
+            )
+
+        # Look up resort
+        resort = _get_resort_cached(resort_id)
+        if not resort:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Resort {resort_id} not found",
+            )
+
+        # Find the matching elevation point
+        elevation_point = None
+        for ep in resort.elevation_points:
+            if ep.level == elevation:
+                elevation_point = ep
+                break
+
+        if not elevation_point:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Elevation level '{elevation}' not found for resort {resort_id}",
+            )
+
+        # Fetch timeline data
+        service = OpenMeteoService()
+        timeline_data = service.get_timeline_data(
+            latitude=elevation_point.latitude,
+            longitude=elevation_point.longitude,
+            elevation_meters=elevation_point.elevation_meters,
+            elevation_level=elevation,
+        )
+
+        # Add resort_id to the response
+        timeline_data["resort_id"] = resort_id
+
+        # Set cache headers (30 min cache)
+        response.headers["Cache-Control"] = "public, max-age=1800"
+
+        return timeline_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve timeline: {str(e)}",
         )
 
 

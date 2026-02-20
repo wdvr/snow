@@ -47,6 +47,7 @@ struct ResortDetailView: View {
                 if let condition = conditionForSelectedElevation {
                     currentConditionsCard(condition)
                     snowDetailsCard(condition)
+                    TimelineCard(resortId: resort.id, elevation: selectedElevation)
                     predictionsCard(condition)
                     weatherDetailsCard(condition)
                 } else if snowConditionsManager.isLoading {

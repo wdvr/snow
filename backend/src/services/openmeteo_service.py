@@ -7,7 +7,7 @@ from typing import Any
 
 import requests
 
-from models.weather import ConfidenceLevel
+from models.weather import ConfidenceLevel, SnowQuality, WeatherCondition
 
 logger = logging.getLogger(__name__)
 
@@ -212,6 +212,209 @@ class OpenMeteoService:
         except Exception as e:
             logger.error(f"Error processing Open-Meteo data: {str(e)}")
             raise Exception(f"Error processing weather data: {str(e)}")
+
+    def get_timeline_data(
+        self,
+        latitude: float,
+        longitude: float,
+        elevation_meters: int,
+        elevation_level: str = "mid",
+        timezone: str = "GMT",
+    ) -> dict[str, Any]:
+        """
+        Fetch timeline data for a location showing 3 data points per day
+        (morning, midday, afternoon) over 7 days past and 7 days forecast.
+
+        Args:
+            latitude: Location latitude
+            longitude: Location longitude
+            elevation_meters: Elevation in meters
+            elevation_level: base, mid, or top
+            timezone: Timezone string (default GMT)
+
+        Returns a dictionary with timeline points and metadata.
+        """
+        try:
+            params = {
+                "latitude": latitude,
+                "longitude": longitude,
+                "elevation": elevation_meters,
+                "hourly": "temperature_2m,snowfall,snow_depth,wind_speed_10m,weather_code",
+                "past_days": 7,
+                "forecast_days": 7,
+                "timezone": timezone,
+            }
+
+            response = _request_with_retry(
+                "GET", self.base_url, params=params, timeout=10
+            )
+
+            data = response.json()
+            hourly = data.get("hourly", {})
+
+            hourly_times = hourly.get("time", [])
+            hourly_temps = hourly.get("temperature_2m", [])
+            hourly_snowfall = hourly.get("snowfall", [])
+            hourly_snow_depth = hourly.get("snow_depth", [])
+            hourly_wind = hourly.get("wind_speed_10m", [])
+            hourly_weather_code = hourly.get("weather_code", [])
+
+            now = datetime.now(UTC)
+
+            # Define the 3 windows per day
+            windows = [
+                ("morning", 7, 5, 9),
+                ("midday", 12, 10, 14),
+                ("afternoon", 16, 14, 18),
+            ]
+
+            # Build a mapping from (date, hour) -> index for quick lookups
+            time_index_map = {}
+            for i, t in enumerate(hourly_times):
+                # hourly_times are like "2026-02-13T07:00"
+                time_index_map[t[:13]] = i  # key: "2026-02-13T07"
+
+            # Collect unique dates
+            dates_seen = []
+            for t in hourly_times:
+                d = t[:10]
+                if not dates_seen or dates_seen[-1] != d:
+                    dates_seen.append(d)
+
+            # Import SnowQualityService inside method to avoid circular imports
+            from services.snow_quality_service import SnowQualityService
+
+            snow_quality_service = SnowQualityService()
+
+            timeline_points = []
+
+            for date_str in dates_seen:
+                for time_label, hour, window_start, window_end in windows:
+                    # Build the key to find the index
+                    key = f"{date_str}T{hour:02d}"
+                    idx = time_index_map.get(key)
+                    if idx is None:
+                        continue
+
+                    # Temperature at that hour
+                    temp = (
+                        hourly_temps[idx]
+                        if idx < len(hourly_temps) and hourly_temps[idx] is not None
+                        else 0.0
+                    )
+
+                    # Wind speed at that hour
+                    wind = (
+                        hourly_wind[idx]
+                        if idx < len(hourly_wind) and hourly_wind[idx] is not None
+                        else None
+                    )
+
+                    # Sum snowfall in the surrounding window
+                    snowfall_sum = 0.0
+                    for h in range(window_start, window_end + 1):
+                        window_key = f"{date_str}T{h:02d}"
+                        widx = time_index_map.get(window_key)
+                        if (
+                            widx is not None
+                            and widx < len(hourly_snowfall)
+                            and hourly_snowfall[widx] is not None
+                        ):
+                            snowfall_sum += hourly_snowfall[widx]
+
+                    # Snow depth at that hour (convert from meters to cm)
+                    snow_depth = None
+                    if (
+                        idx < len(hourly_snow_depth)
+                        and hourly_snow_depth[idx] is not None
+                    ):
+                        snow_depth = hourly_snow_depth[idx] * 100  # m -> cm
+
+                    # Weather code and description
+                    wcode = (
+                        hourly_weather_code[idx]
+                        if idx < len(hourly_weather_code)
+                        and hourly_weather_code[idx] is not None
+                        else None
+                    )
+                    wdesc = (
+                        self._weather_code_to_description(wcode)
+                        if wcode is not None
+                        else None
+                    )
+
+                    # Determine if this is forecast (hour is in the future)
+                    # Parse the timestamp to compare with now
+                    timestamp_str = hourly_times[idx]
+                    try:
+                        point_time = datetime.fromisoformat(
+                            timestamp_str.replace("Z", "+00:00")
+                        )
+                        # If timezone is not GMT, the timestamps won't have tzinfo
+                        # Make them tz-aware for comparison
+                        if point_time.tzinfo is None:
+                            # Treat as UTC for comparison purposes
+                            from datetime import timezone as tz
+
+                            point_time = point_time.replace(tzinfo=UTC)
+                        is_forecast = point_time > now
+                    except (ValueError, TypeError):
+                        is_forecast = False
+
+                    # Calculate snow quality using SnowQualityService
+                    weather_condition = WeatherCondition(
+                        resort_id="timeline",
+                        elevation_level=elevation_level,
+                        timestamp=timestamp_str,
+                        current_temp_celsius=temp,
+                        min_temp_celsius=temp,
+                        max_temp_celsius=temp,
+                        snowfall_24h_cm=snowfall_sum,
+                        snowfall_48h_cm=0.0,
+                        snowfall_72h_cm=0.0,
+                        snow_depth_cm=snow_depth,
+                        snowfall_after_freeze_cm=snowfall_sum,
+                        data_source="open-meteo.com",
+                        source_confidence=ConfidenceLevel.MEDIUM,
+                    )
+
+                    quality, _, _ = snow_quality_service.assess_snow_quality(
+                        weather_condition
+                    )
+
+                    point = {
+                        "date": date_str,
+                        "time_label": time_label,
+                        "hour": hour,
+                        "timestamp": timestamp_str,
+                        "temperature_c": temp,
+                        "wind_speed_kmh": wind,
+                        "snowfall_cm": round(snowfall_sum, 2),
+                        "snow_depth_cm": round(snow_depth, 1)
+                        if snow_depth is not None
+                        else None,
+                        "snow_quality": quality.value
+                        if hasattr(quality, "value")
+                        else str(quality),
+                        "weather_code": wcode,
+                        "weather_description": wdesc,
+                        "is_forecast": is_forecast,
+                    }
+
+                    timeline_points.append(point)
+
+            return {
+                "timeline": timeline_points,
+                "elevation_level": elevation_level,
+                "elevation_meters": elevation_meters,
+            }
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Open-Meteo API request failed for timeline: {str(e)}")
+            raise Exception(f"Failed to fetch timeline data: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error processing timeline data: {str(e)}")
+            raise Exception(f"Error processing timeline data: {str(e)}")
 
     def _process_snowfall(
         self, daily: dict, hourly: dict, last_known_freeze_date: str | None = None
