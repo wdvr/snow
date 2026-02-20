@@ -989,25 +989,16 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
     if not resort:
         return None
 
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-
     conditions = []
     elevation_levels = [ep.level.value for ep in resort.elevation_points]
 
-    def fetch_condition(level: str):
-        return _get_latest_condition_cached(resort_id, level)
-
-    with ThreadPoolExecutor(max_workers=min(len(elevation_levels), 5)) as executor:
-        futures = [
-            executor.submit(fetch_condition, level) for level in elevation_levels
-        ]
-        for future in as_completed(futures):
-            try:
-                condition = future.result()
-                if condition:
-                    conditions.append(condition)
-            except Exception:
-                pass
+    for level in elevation_levels:
+        try:
+            condition = _get_latest_condition_cached(resort_id, level)
+            if condition:
+                conditions.append(condition)
+        except Exception:
+            pass
 
     if not conditions:
         return {
@@ -1095,7 +1086,7 @@ async def get_batch_snow_quality(
                     except Exception as e:
                         return resort_id, {"error": str(e)}
 
-                max_workers = min(len(missing_ids), 50)
+                max_workers = min(len(missing_ids), 10)
                 with ThreadPoolExecutor(max_workers=max_workers) as executor:
                     futures = {
                         executor.submit(fetch_quality, rid): rid for rid in missing_ids
@@ -1124,7 +1115,7 @@ async def get_batch_snow_quality(
                 return resort_id, {"error": str(e)}
 
         # Fetch all in parallel with more workers for larger batches
-        max_workers = min(len(ids), 50)  # Up to 50 parallel workers
+        max_workers = min(len(ids), 10)  # Cap at 10 to avoid thread contention
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {executor.submit(fetch_quality, rid): rid for rid in ids}
             for future in as_completed(futures):

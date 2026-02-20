@@ -24,6 +24,19 @@ MODEL_PATH = Path(__file__).parent.parent / "ml_model" / "model_weights_v2.json"
 _model = None
 
 
+def _transpose_weights(weights: dict) -> dict:
+    """Pre-transpose W1 for fast row-major dot products.
+
+    Converts W1 from [n_input][n_hidden] to W1_T[n_hidden][n_input]
+    so forward pass can use zip() instead of column indexing.
+    """
+    W1 = weights["W1"]
+    n_input = len(W1)
+    n_hidden = len(W1[0]) if W1 else 0
+    W1_T = [[W1[i][j] for i in range(n_input)] for j in range(n_hidden)]
+    return {**weights, "W1_T": W1_T}
+
+
 def _load_model() -> dict:
     """Load model weights from JSON file."""
     global _model
@@ -32,13 +45,16 @@ def _load_model() -> dict:
     try:
         with open(MODEL_PATH) as f:
             _model = json.load(f)
+        # Pre-transpose weights for faster inference
         ensemble = _model.get("ensemble", [])
         if ensemble:
+            _model["ensemble"] = [_transpose_weights(m) for m in ensemble]
             logger.info(
                 f"Loaded ML model v2 ensemble ({len(ensemble)} models, "
                 f"primary: {_model['architecture']['hidden_size']} hidden)"
             )
         else:
+            _model["weights"] = _transpose_weights(_model["weights"])
             logger.info(
                 f"Loaded ML model v2 ({_model['architecture']['hidden_size']} hidden neurons)"
             )
@@ -58,21 +74,26 @@ def _sigmoid(x: float) -> float:
 
 
 def _forward_single(normalized: list[float], weights: dict) -> float:
-    """Run forward pass through a single neural network."""
-    W1 = weights["W1"]
+    """Run forward pass through a single neural network.
+
+    Uses pre-transposed W1_T for fast row-major dot products.
+    """
+    W1_T = weights["W1_T"]
     b1 = weights["b1"]
     W2 = weights["W2"]
     b2 = weights["b2"]
-    n_hidden = len(b1)
-    n_input = min(len(normalized), len(W1))
 
-    hidden = []
-    for j in range(n_hidden):
-        z = sum(normalized[i] * W1[i][j] for i in range(n_input)) + b1[j]
-        hidden.append(_relu(z))
+    # Hidden layer: z = W1^T @ x + b1, then ReLU
+    # W1_T[j] is the weight row for hidden neuron j
+    hidden = [
+        max(0.0, sum(w * x for w, x in zip(row, normalized, strict=False)) + b)
+        for row, b in zip(W1_T, b1, strict=False)
+    ]
 
-    z_out = sum(hidden[j] * W2[j][0] for j in range(n_hidden)) + b2[0]
-    return _sigmoid(z_out) * 5.0 + 1.0
+    # Output: sigmoid(W2^T @ hidden + b2) * 5 + 1
+    z_out = sum(h * w[0] for h, w in zip(hidden, W2, strict=False)) + b2[0]
+    z_out = max(-500.0, min(500.0, z_out))
+    return (1.0 / (1.0 + math.exp(-z_out))) * 5.0 + 1.0
 
 
 def _forward_ensemble(normalized: list[float], ensemble: list[dict]) -> float:
