@@ -19,6 +19,11 @@ struct ResortListView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @StateObject private var locationManager = LocationManager.shared
+    @Binding var deepLinkResort: Resort?
+
+    init(deepLinkResort: Binding<Resort?> = .constant(nil)) {
+        _deepLinkResort = deepLinkResort
+    }
     @State private var searchText = ""
     @State private var selectedRegion: SkiRegion? = nil
     @State private var sortOption: ResortSortOption = .name
@@ -214,6 +219,9 @@ struct ResortListView: View {
             }
             .onChange(of: sortOption) { _, newValue in
                 AnalyticsService.shared.trackSortChanged(sortOption: newValue.rawValue)
+            }
+            .navigationDestination(item: $deepLinkResort) { resort in
+                ResortDetailView(resort: resort)
             }
             .overlay {
                 if snowConditionsManager.isLoading && snowConditionsManager.resorts.isEmpty {
@@ -462,7 +470,7 @@ struct FilterChip: View {
 
 
 #Preview("Resort List") {
-    ResortListView()
+    ResortListView(deepLinkResort: .constant(nil))
         .environmentObject(SnowConditionsManager())
         .environmentObject(UserPreferencesManager.shared)
 }

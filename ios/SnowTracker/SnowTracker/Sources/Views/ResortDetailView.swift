@@ -6,6 +6,7 @@ struct ResortDetailView: View {
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @State private var selectedElevation: ElevationLevel = .top
     @State private var showingShareSheet: Bool = false
+    @State private var showThawFreezeInfo: Bool = false
 
     private var conditions: [WeatherCondition] {
         snowConditionsManager.conditions[resort.id] ?? []
@@ -296,11 +297,25 @@ struct ResortDetailView: View {
                         .font(.subheadline)
                         .fontWeight(.semibold)
                     Button {
-                        // TODO: Show info popover about thaw-freeze
+                        showThawFreezeInfo = true
                     } label: {
                         Image(systemName: "info.circle")
                             .font(.caption)
                             .foregroundColor(.blue)
+                    }
+                    .popover(isPresented: $showThawFreezeInfo) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Thaw-Freeze Cycles")
+                                .font(.headline)
+                            Text("A thaw-freeze cycle occurs when temperatures rise above freezing for several hours, then drop below freezing again. This creates an ice layer under the snow surface.")
+                                .font(.subheadline)
+                            Text("Fresh snow that falls after a thaw-freeze covers the ice and creates good skiing conditions. The more snow since the last cycle, the better the quality.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .frame(maxWidth: 300)
+                        .presentationCompactAdaptation(.popover)
                     }
                 }
 

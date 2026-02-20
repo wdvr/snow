@@ -118,32 +118,39 @@ struct SnowTrackerApp: App {
 struct MainTabView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @ObservedObject private var authService = AuthenticationService.shared
+    @ObservedObject private var pushService = PushNotificationService.shared
+    @State private var selectedTab = 0
+    @State private var deepLinkResort: Resort?
 
     var body: some View {
-        TabView {
-            ResortListView()
+        TabView(selection: $selectedTab) {
+            ResortListView(deepLinkResort: $deepLinkResort)
                 .tabItem {
                     Image(systemName: "mountain.2")
                     Text("Resorts")
                 }
+                .tag(0)
 
             ResortMapView()
                 .tabItem {
                     Image(systemName: "map.fill")
                     Text("Map")
                 }
+                .tag(1)
 
             BestSnowNearYouView()
                 .tabItem {
                     Image(systemName: "star.fill")
                     Text("Best Snow")
                 }
+                .tag(2)
 
             FavoritesView()
                 .tabItem {
                     Image(systemName: "heart")
                     Text("Favorites")
                 }
+                .tag(3)
 
             SettingsView()
                 .environmentObject(authService)
@@ -151,10 +158,20 @@ struct MainTabView: View {
                     Image(systemName: "gear")
                     Text("Settings")
                 }
+                .tag(4)
         }
         .tint(.blue)
         .onAppear {
             snowConditionsManager.loadInitialData()
+        }
+        .onChange(of: pushService.pendingResortId) { _, resortId in
+            guard let resortId else { return }
+            // Find the resort and navigate to it
+            if let resort = snowConditionsManager.resorts.first(where: { $0.id == resortId }) {
+                selectedTab = 0
+                deepLinkResort = resort
+            }
+            pushService.pendingResortId = nil
         }
     }
 }

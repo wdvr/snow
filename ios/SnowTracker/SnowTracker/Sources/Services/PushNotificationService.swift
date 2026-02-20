@@ -11,6 +11,7 @@ final class PushNotificationService: NSObject, ObservableObject {
     @Published var isAuthorized: Bool = false
     @Published var authorizationStatus: UNAuthorizationStatus = .notDetermined
     @Published var deviceToken: String?
+    @Published var pendingResortId: String?
 
     private let apiClient = APIClient.shared
     private let notificationCenter = UNUserNotificationCenter.current()
@@ -167,11 +168,9 @@ extension PushNotificationService: UNUserNotificationCenterDelegate {
     private func handleNotificationTap(type: String, resortId: String?) {
         print("Notification tapped: \(type)")
 
-        // Handle resort ID if available
         if let resortId = resortId {
-            print("Resort ID: \(resortId)")
-            // TODO: Navigate to resort detail view
-            // This would typically post a notification or use a navigation coordinator
+            print("Navigating to resort: \(resortId)")
+            pendingResortId = resortId
         }
     }
 }
