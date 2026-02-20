@@ -19,20 +19,35 @@ class SnowQualityService:
         self.algorithm = algorithm_config or SnowQualityAlgorithm()
 
     def assess_snow_quality(
-        self, weather: WeatherCondition
+        self, weather: WeatherCondition, elevation_m: float | None = None
     ) -> tuple[SnowQuality, float, ConfidenceLevel]:
         """
         Assess snow quality based on weather conditions.
 
-        The algorithm prioritizes "fresh powder that hasn't frozen" using:
-        1. Snowfall-after-freeze: snow that fell after the last thaw event
-        2. Hours since last snowfall: fresher = better
-        3. Current temperature: colder = better preservation
-        4. Time above freezing: more warm hours = more degradation
+        Uses ML model (v2 neural network) as primary scorer when available,
+        falls back to heuristic algorithm.
 
         Returns:
             tuple: (snow_quality, fresh_snow_estimate_cm, confidence_level)
         """
+        # Try ML-based scoring first
+        try:
+            from services.ml_scorer import predict_quality
+
+            ml_quality, ml_score = predict_quality(weather, elevation_m)
+            if ml_quality != SnowQuality.UNKNOWN:
+                fresh_snow_cm = self._estimate_fresh_snow_simple(weather)
+                confidence = self._calculate_confidence_level(
+                    weather,
+                    self.algorithm.source_confidence_multiplier.get(
+                        weather.source_confidence, 0.5
+                    ),
+                )
+                return ml_quality, fresh_snow_cm, confidence
+        except Exception:
+            pass  # Fall through to heuristic
+
+        # Heuristic fallback
         # Calculate temperature impact
         temp_score = self._calculate_temperature_score(
             weather.current_temp_celsius,
@@ -416,6 +431,18 @@ class SnowQualityService:
             return SnowQuality.BAD
         else:
             return SnowQuality.HORRIBLE
+
+    def _estimate_fresh_snow_simple(self, weather: WeatherCondition) -> float:
+        """Simple fresh snow estimate using available fields."""
+        snowfall_after_freeze = getattr(weather, "snowfall_after_freeze_cm", 0.0) or 0.0
+        if snowfall_after_freeze > 0:
+            # Apply temperature degradation
+            currently_warming = getattr(weather, "currently_warming", False)
+            if currently_warming and weather.current_temp_celsius > 3.0:
+                degradation = min(0.4, (weather.current_temp_celsius - 3.0) * 0.1)
+                return round(max(0.0, snowfall_after_freeze * (1.0 - degradation)), 1)
+            return round(snowfall_after_freeze, 1)
+        return round(max(0.0, weather.snowfall_24h_cm or 0.0), 1)
 
     def _estimate_fresh_snow(
         self, weather: WeatherCondition, temp_score: float, time_score: float

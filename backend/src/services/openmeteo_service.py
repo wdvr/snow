@@ -390,7 +390,7 @@ class OpenMeteoService:
                     )
 
                     quality, _, _ = snow_quality_service.assess_snow_quality(
-                        weather_condition
+                        weather_condition, elevation_m=elevation_meters
                     )
 
                     point = {

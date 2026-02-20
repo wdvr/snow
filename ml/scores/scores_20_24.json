@@ -1,0 +1,1377 @@
+[
+  {
+    "resort_id": "big-white",
+    "date": "2026-02-16",
+    "score": 4
+  },
+  {
+    "resort_id": "big-white",
+    "date": "2026-02-17",
+    "score": 4
+  },
+  {
+    "resort_id": "big-white",
+    "date": "2026-02-18",
+    "score": 4
+  },
+  {
+    "resort_id": "big-white",
+    "date": "2026-02-19",
+    "score": 4
+  },
+  {
+    "resort_id": "big-white",
+    "date": "2026-02-20",
+    "score": 4
+  },
+  {
+    "resort_id": "crystal-mountain-wa",
+    "date": "2026-02-08",
+    "score": 3
+  },
+  {
+    "resort_id": "crystal-mountain-wa",
+    "date": "2026-02-09",
+    "score": 5
+  },
+  {
+    "resort_id": "crystal-mountain-wa",
+    "date": "2026-02-10",
+    "score": 5
+  },
+  {
+    "resort_id": "crystal-mountain-wa",
+    "date": "2026-02-11",
+    "score": 4
+  },
+  {
+    "resort_id": "crystal-mountain-wa",
+    "date": "2026-02-12",
+    "score": 4
+  },
+  {
+    "resort_id": "crystal-mountain-wa",
+    "date": "2026-02-13",
+    "score": 4
+  },
+  {
+    "resort_id": "crystal-mountain-wa",
+    "date": "2026-02-14",
+    "score": 4
+  },
+  {
+    "resort_id": "crystal-mountain-wa",
+    "date": "2026-02-15",
+    "score": 4
+  },
+  {
+    "resort_id": "crystal-mountain-wa",
+    "date": "2026-02-16",
+    "score": 4
+  },
+  {
+    "resort_id": "crystal-mountain-wa",
+    "date": "2026-02-17",
+    "score": 4
+  },
+  {
+    "resort_id": "crystal-mountain-wa",
+    "date": "2026-02-18",
+    "score": 4
+  },
+  {
+    "resort_id": "crystal-mountain-wa",
+    "date": "2026-02-19",
+    "score": 4
+  },
+  {
+    "resort_id": "crystal-mountain-wa",
+    "date": "2026-02-20",
+    "score": 4
+  },
+  {
+    "resort_id": "cypress-mountain",
+    "date": "2026-02-08",
+    "score": 3
+  },
+  {
+    "resort_id": "cypress-mountain",
+    "date": "2026-02-09",
+    "score": 3
+  },
+  {
+    "resort_id": "cypress-mountain",
+    "date": "2026-02-10",
+    "score": 4
+  },
+  {
+    "resort_id": "cypress-mountain",
+    "date": "2026-02-11",
+    "score": 4
+  },
+  {
+    "resort_id": "cypress-mountain",
+    "date": "2026-02-12",
+    "score": 4
+  },
+  {
+    "resort_id": "cypress-mountain",
+    "date": "2026-02-13",
+    "score": 4
+  },
+  {
+    "resort_id": "cypress-mountain",
+    "date": "2026-02-14",
+    "score": 4
+  },
+  {
+    "resort_id": "cypress-mountain",
+    "date": "2026-02-15",
+    "score": 4
+  },
+  {
+    "resort_id": "cypress-mountain",
+    "date": "2026-02-16",
+    "score": 4
+  },
+  {
+    "resort_id": "cypress-mountain",
+    "date": "2026-02-17",
+    "score": 4
+  },
+  {
+    "resort_id": "cypress-mountain",
+    "date": "2026-02-18",
+    "score": 4
+  },
+  {
+    "resort_id": "cypress-mountain",
+    "date": "2026-02-19",
+    "score": 4
+  },
+  {
+    "resort_id": "cypress-mountain",
+    "date": "2026-02-20",
+    "score": 4
+  },
+  {
+    "resort_id": "fernie",
+    "date": "2026-02-08",
+    "score": 3
+  },
+  {
+    "resort_id": "fernie",
+    "date": "2026-02-09",
+    "score": 3
+  },
+  {
+    "resort_id": "fernie",
+    "date": "2026-02-10",
+    "score": 3
+  },
+  {
+    "resort_id": "fernie",
+    "date": "2026-02-11",
+    "score": 3
+  },
+  {
+    "resort_id": "fernie",
+    "date": "2026-02-12",
+    "score": 3
+  },
+  {
+    "resort_id": "fernie",
+    "date": "2026-02-13",
+    "score": 3
+  },
+  {
+    "resort_id": "fernie",
+    "date": "2026-02-14",
+    "score": 3
+  },
+  {
+    "resort_id": "fernie",
+    "date": "2026-02-15",
+    "score": 3
+  },
+  {
+    "resort_id": "fernie",
+    "date": "2026-02-16",
+    "score": 3
+  },
+  {
+    "resort_id": "fernie",
+    "date": "2026-02-17",
+    "score": 4
+  },
+  {
+    "resort_id": "fernie",
+    "date": "2026-02-18",
+    "score": 4
+  },
+  {
+    "resort_id": "fernie",
+    "date": "2026-02-19",
+    "score": 4
+  },
+  {
+    "resort_id": "fernie",
+    "date": "2026-02-20",
+    "score": 4
+  },
+  {
+    "resort_id": "grouse-mountain",
+    "date": "2026-02-08",
+    "score": 4
+  },
+  {
+    "resort_id": "grouse-mountain",
+    "date": "2026-02-09",
+    "score": 4
+  },
+  {
+    "resort_id": "grouse-mountain",
+    "date": "2026-02-10",
+    "score": 5
+  },
+  {
+    "resort_id": "grouse-mountain",
+    "date": "2026-02-11",
+    "score": 5
+  },
+  {
+    "resort_id": "grouse-mountain",
+    "date": "2026-02-12",
+    "score": 5
+  },
+  {
+    "resort_id": "grouse-mountain",
+    "date": "2026-02-13",
+    "score": 4
+  },
+  {
+    "resort_id": "grouse-mountain",
+    "date": "2026-02-14",
+    "score": 4
+  },
+  {
+    "resort_id": "grouse-mountain",
+    "date": "2026-02-15",
+    "score": 4
+  },
+  {
+    "resort_id": "grouse-mountain",
+    "date": "2026-02-16",
+    "score": 4
+  },
+  {
+    "resort_id": "grouse-mountain",
+    "date": "2026-02-17",
+    "score": 4
+  },
+  {
+    "resort_id": "grouse-mountain",
+    "date": "2026-02-18",
+    "score": 4
+  },
+  {
+    "resort_id": "grouse-mountain",
+    "date": "2026-02-19",
+    "score": 4
+  },
+  {
+    "resort_id": "grouse-mountain",
+    "date": "2026-02-20",
+    "score": 4
+  },
+  {
+    "resort_id": "heavenly",
+    "date": "2026-02-08",
+    "score": 3
+  },
+  {
+    "resort_id": "heavenly",
+    "date": "2026-02-09",
+    "score": 2
+  },
+  {
+    "resort_id": "heavenly",
+    "date": "2026-02-10",
+    "score": 2
+  },
+  {
+    "resort_id": "heavenly",
+    "date": "2026-02-11",
+    "score": 4
+  },
+  {
+    "resort_id": "heavenly",
+    "date": "2026-02-12",
+    "score": 6
+  },
+  {
+    "resort_id": "heavenly",
+    "date": "2026-02-13",
+    "score": 6
+  },
+  {
+    "resort_id": "heavenly",
+    "date": "2026-02-14",
+    "score": 4
+  },
+  {
+    "resort_id": "heavenly",
+    "date": "2026-02-15",
+    "score": 4
+  },
+  {
+    "resort_id": "heavenly",
+    "date": "2026-02-16",
+    "score": 4
+  },
+  {
+    "resort_id": "heavenly",
+    "date": "2026-02-17",
+    "score": 6
+  },
+  {
+    "resort_id": "heavenly",
+    "date": "2026-02-18",
+    "score": 6
+  },
+  {
+    "resort_id": "heavenly",
+    "date": "2026-02-19",
+    "score": 6
+  },
+  {
+    "resort_id": "heavenly",
+    "date": "2026-02-20",
+    "score": 6
+  },
+  {
+    "resort_id": "homewood-mountain-resort",
+    "date": "2026-02-08",
+    "score": 2
+  },
+  {
+    "resort_id": "homewood-mountain-resort",
+    "date": "2026-02-09",
+    "score": 1
+  },
+  {
+    "resort_id": "homewood-mountain-resort",
+    "date": "2026-02-10",
+    "score": 3
+  },
+  {
+    "resort_id": "homewood-mountain-resort",
+    "date": "2026-02-11",
+    "score": 4
+  },
+  {
+    "resort_id": "homewood-mountain-resort",
+    "date": "2026-02-12",
+    "score": 4
+  },
+  {
+    "resort_id": "homewood-mountain-resort",
+    "date": "2026-02-13",
+    "score": 5
+  },
+  {
+    "resort_id": "homewood-mountain-resort",
+    "date": "2026-02-14",
+    "score": 3
+  },
+  {
+    "resort_id": "homewood-mountain-resort",
+    "date": "2026-02-15",
+    "score": 2
+  },
+  {
+    "resort_id": "homewood-mountain-resort",
+    "date": "2026-02-16",
+    "score": 3
+  },
+  {
+    "resort_id": "homewood-mountain-resort",
+    "date": "2026-02-17",
+    "score": 5
+  },
+  {
+    "resort_id": "homewood-mountain-resort",
+    "date": "2026-02-18",
+    "score": 6
+  },
+  {
+    "resort_id": "homewood-mountain-resort",
+    "date": "2026-02-19",
+    "score": 5
+  },
+  {
+    "resort_id": "homewood-mountain-resort",
+    "date": "2026-02-20",
+    "score": 5
+  },
+  {
+    "resort_id": "hudson-bay-mountain-smithers",
+    "date": "2026-02-08",
+    "score": 4
+  },
+  {
+    "resort_id": "hudson-bay-mountain-smithers",
+    "date": "2026-02-09",
+    "score": 4
+  },
+  {
+    "resort_id": "hudson-bay-mountain-smithers",
+    "date": "2026-02-10",
+    "score": 4
+  },
+  {
+    "resort_id": "hudson-bay-mountain-smithers",
+    "date": "2026-02-11",
+    "score": 4
+  },
+  {
+    "resort_id": "hudson-bay-mountain-smithers",
+    "date": "2026-02-12",
+    "score": 4
+  },
+  {
+    "resort_id": "hudson-bay-mountain-smithers",
+    "date": "2026-02-13",
+    "score": 4
+  },
+  {
+    "resort_id": "hudson-bay-mountain-smithers",
+    "date": "2026-02-14",
+    "score": 4
+  },
+  {
+    "resort_id": "hudson-bay-mountain-smithers",
+    "date": "2026-02-15",
+    "score": 4
+  },
+  {
+    "resort_id": "hudson-bay-mountain-smithers",
+    "date": "2026-02-16",
+    "score": 4
+  },
+  {
+    "resort_id": "hudson-bay-mountain-smithers",
+    "date": "2026-02-17",
+    "score": 5
+  },
+  {
+    "resort_id": "hudson-bay-mountain-smithers",
+    "date": "2026-02-18",
+    "score": 5
+  },
+  {
+    "resort_id": "hudson-bay-mountain-smithers",
+    "date": "2026-02-19",
+    "score": 5
+  },
+  {
+    "resort_id": "hudson-bay-mountain-smithers",
+    "date": "2026-02-20",
+    "score": 5
+  },
+  {
+    "resort_id": "june-mountain",
+    "date": "2026-02-08",
+    "score": 4
+  },
+  {
+    "resort_id": "june-mountain",
+    "date": "2026-02-09",
+    "score": 4
+  },
+  {
+    "resort_id": "june-mountain",
+    "date": "2026-02-10",
+    "score": 3
+  },
+  {
+    "resort_id": "june-mountain",
+    "date": "2026-02-11",
+    "score": 6
+  },
+  {
+    "resort_id": "june-mountain",
+    "date": "2026-02-12",
+    "score": 6
+  },
+  {
+    "resort_id": "june-mountain",
+    "date": "2026-02-13",
+    "score": 6
+  },
+  {
+    "resort_id": "june-mountain",
+    "date": "2026-02-14",
+    "score": 6
+  },
+  {
+    "resort_id": "june-mountain",
+    "date": "2026-02-15",
+    "score": 6
+  },
+  {
+    "resort_id": "june-mountain",
+    "date": "2026-02-16",
+    "score": 6
+  },
+  {
+    "resort_id": "june-mountain",
+    "date": "2026-02-17",
+    "score": 6
+  },
+  {
+    "resort_id": "june-mountain",
+    "date": "2026-02-18",
+    "score": 6
+  },
+  {
+    "resort_id": "june-mountain",
+    "date": "2026-02-19",
+    "score": 6
+  },
+  {
+    "resort_id": "june-mountain",
+    "date": "2026-02-20",
+    "score": 6
+  },
+  {
+    "resort_id": "kicking-horse-golden",
+    "date": "2026-02-08",
+    "score": 4
+  },
+  {
+    "resort_id": "kicking-horse-golden",
+    "date": "2026-02-09",
+    "score": 4
+  },
+  {
+    "resort_id": "kicking-horse-golden",
+    "date": "2026-02-10",
+    "score": 4
+  },
+  {
+    "resort_id": "kicking-horse-golden",
+    "date": "2026-02-11",
+    "score": 4
+  },
+  {
+    "resort_id": "kicking-horse-golden",
+    "date": "2026-02-12",
+    "score": 4
+  },
+  {
+    "resort_id": "kicking-horse-golden",
+    "date": "2026-02-13",
+    "score": 4
+  },
+  {
+    "resort_id": "kicking-horse-golden",
+    "date": "2026-02-14",
+    "score": 4
+  },
+  {
+    "resort_id": "kicking-horse-golden",
+    "date": "2026-02-15",
+    "score": 4
+  },
+  {
+    "resort_id": "kicking-horse-golden",
+    "date": "2026-02-16",
+    "score": 4
+  },
+  {
+    "resort_id": "kicking-horse-golden",
+    "date": "2026-02-17",
+    "score": 4
+  },
+  {
+    "resort_id": "kicking-horse-golden",
+    "date": "2026-02-18",
+    "score": 4
+  },
+  {
+    "resort_id": "kicking-horse-golden",
+    "date": "2026-02-19",
+    "score": 4
+  },
+  {
+    "resort_id": "kicking-horse-golden",
+    "date": "2026-02-20",
+    "score": 4
+  },
+  {
+    "resort_id": "kimberley",
+    "date": "2026-02-08",
+    "score": 3
+  },
+  {
+    "resort_id": "kimberley",
+    "date": "2026-02-09",
+    "score": 3
+  },
+  {
+    "resort_id": "kimberley",
+    "date": "2026-02-10",
+    "score": 3
+  },
+  {
+    "resort_id": "kimberley",
+    "date": "2026-02-11",
+    "score": 3
+  },
+  {
+    "resort_id": "kimberley",
+    "date": "2026-02-12",
+    "score": 3
+  },
+  {
+    "resort_id": "kimberley",
+    "date": "2026-02-13",
+    "score": 3
+  },
+  {
+    "resort_id": "kimberley",
+    "date": "2026-02-14",
+    "score": 3
+  },
+  {
+    "resort_id": "kimberley",
+    "date": "2026-02-15",
+    "score": 3
+  },
+  {
+    "resort_id": "kimberley",
+    "date": "2026-02-16",
+    "score": 3
+  },
+  {
+    "resort_id": "kimberley",
+    "date": "2026-02-17",
+    "score": 4
+  },
+  {
+    "resort_id": "kimberley",
+    "date": "2026-02-18",
+    "score": 4
+  },
+  {
+    "resort_id": "kimberley",
+    "date": "2026-02-19",
+    "score": 4
+  },
+  {
+    "resort_id": "kimberley",
+    "date": "2026-02-20",
+    "score": 4
+  },
+  {
+    "resort_id": "kirkwood",
+    "date": "2026-02-08",
+    "score": 3
+  },
+  {
+    "resort_id": "kirkwood",
+    "date": "2026-02-09",
+    "score": 2
+  },
+  {
+    "resort_id": "kirkwood",
+    "date": "2026-02-10",
+    "score": 2
+  },
+  {
+    "resort_id": "kirkwood",
+    "date": "2026-02-11",
+    "score": 5
+  },
+  {
+    "resort_id": "kirkwood",
+    "date": "2026-02-12",
+    "score": 5
+  },
+  {
+    "resort_id": "kirkwood",
+    "date": "2026-02-13",
+    "score": 5
+  },
+  {
+    "resort_id": "kirkwood",
+    "date": "2026-02-14",
+    "score": 5
+  },
+  {
+    "resort_id": "kirkwood",
+    "date": "2026-02-15",
+    "score": 5
+  },
+  {
+    "resort_id": "kirkwood",
+    "date": "2026-02-16",
+    "score": 5
+  },
+  {
+    "resort_id": "kirkwood",
+    "date": "2026-02-17",
+    "score": 6
+  },
+  {
+    "resort_id": "kirkwood",
+    "date": "2026-02-18",
+    "score": 6
+  },
+  {
+    "resort_id": "kirkwood",
+    "date": "2026-02-19",
+    "score": 5
+  },
+  {
+    "resort_id": "kirkwood",
+    "date": "2026-02-20",
+    "score": 6
+  },
+  {
+    "resort_id": "mammoth-mountain",
+    "date": "2026-02-08",
+    "score": 4
+  },
+  {
+    "resort_id": "mammoth-mountain",
+    "date": "2026-02-09",
+    "score": 4
+  },
+  {
+    "resort_id": "mammoth-mountain",
+    "date": "2026-02-10",
+    "score": 4
+  },
+  {
+    "resort_id": "mammoth-mountain",
+    "date": "2026-02-11",
+    "score": 6
+  },
+  {
+    "resort_id": "mammoth-mountain",
+    "date": "2026-02-12",
+    "score": 6
+  },
+  {
+    "resort_id": "mammoth-mountain",
+    "date": "2026-02-13",
+    "score": 6
+  },
+  {
+    "resort_id": "mammoth-mountain",
+    "date": "2026-02-14",
+    "score": 6
+  },
+  {
+    "resort_id": "mammoth-mountain",
+    "date": "2026-02-15",
+    "score": 6
+  },
+  {
+    "resort_id": "mammoth-mountain",
+    "date": "2026-02-16",
+    "score": 6
+  },
+  {
+    "resort_id": "mammoth-mountain",
+    "date": "2026-02-17",
+    "score": 6
+  },
+  {
+    "resort_id": "mammoth-mountain",
+    "date": "2026-02-18",
+    "score": 6
+  },
+  {
+    "resort_id": "mammoth-mountain",
+    "date": "2026-02-19",
+    "score": 6
+  },
+  {
+    "resort_id": "mammoth-mountain",
+    "date": "2026-02-20",
+    "score": 6
+  },
+  {
+    "resort_id": "mount-seymour",
+    "date": "2026-02-08",
+    "score": 4
+  },
+  {
+    "resort_id": "mount-seymour",
+    "date": "2026-02-09",
+    "score": 4
+  },
+  {
+    "resort_id": "mount-seymour",
+    "date": "2026-02-10",
+    "score": 5
+  },
+  {
+    "resort_id": "mount-seymour",
+    "date": "2026-02-11",
+    "score": 5
+  },
+  {
+    "resort_id": "mount-seymour",
+    "date": "2026-02-12",
+    "score": 5
+  },
+  {
+    "resort_id": "mount-seymour",
+    "date": "2026-02-13",
+    "score": 4
+  },
+  {
+    "resort_id": "mount-seymour",
+    "date": "2026-02-14",
+    "score": 5
+  },
+  {
+    "resort_id": "mount-seymour",
+    "date": "2026-02-15",
+    "score": 5
+  },
+  {
+    "resort_id": "mount-seymour",
+    "date": "2026-02-16",
+    "score": 5
+  },
+  {
+    "resort_id": "mount-seymour",
+    "date": "2026-02-17",
+    "score": 5
+  },
+  {
+    "resort_id": "mount-seymour",
+    "date": "2026-02-18",
+    "score": 5
+  },
+  {
+    "resort_id": "mount-seymour",
+    "date": "2026-02-19",
+    "score": 5
+  },
+  {
+    "resort_id": "mount-seymour",
+    "date": "2026-02-20",
+    "score": 5
+  },
+  {
+    "resort_id": "mount-washington",
+    "date": "2026-02-08",
+    "score": 3
+  },
+  {
+    "resort_id": "mount-washington",
+    "date": "2026-02-09",
+    "score": 3
+  },
+  {
+    "resort_id": "mount-washington",
+    "date": "2026-02-10",
+    "score": 4
+  },
+  {
+    "resort_id": "mount-washington",
+    "date": "2026-02-11",
+    "score": 4
+  },
+  {
+    "resort_id": "mount-washington",
+    "date": "2026-02-12",
+    "score": 4
+  },
+  {
+    "resort_id": "mount-washington",
+    "date": "2026-02-13",
+    "score": 4
+  },
+  {
+    "resort_id": "mount-washington",
+    "date": "2026-02-14",
+    "score": 4
+  },
+  {
+    "resort_id": "mount-washington",
+    "date": "2026-02-15",
+    "score": 4
+  },
+  {
+    "resort_id": "mount-washington",
+    "date": "2026-02-16",
+    "score": 4
+  },
+  {
+    "resort_id": "mount-washington",
+    "date": "2026-02-17",
+    "score": 4
+  },
+  {
+    "resort_id": "mount-washington",
+    "date": "2026-02-18",
+    "score": 4
+  },
+  {
+    "resort_id": "mount-washington",
+    "date": "2026-02-19",
+    "score": 4
+  },
+  {
+    "resort_id": "mount-washington",
+    "date": "2026-02-20",
+    "score": 4
+  },
+  {
+    "resort_id": "mt-bachelor",
+    "date": "2026-02-08",
+    "score": 3
+  },
+  {
+    "resort_id": "mt-bachelor",
+    "date": "2026-02-09",
+    "score": 6
+  },
+  {
+    "resort_id": "mt-bachelor",
+    "date": "2026-02-10",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-bachelor",
+    "date": "2026-02-11",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-bachelor",
+    "date": "2026-02-12",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-bachelor",
+    "date": "2026-02-13",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-bachelor",
+    "date": "2026-02-14",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-bachelor",
+    "date": "2026-02-15",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-bachelor",
+    "date": "2026-02-16",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-bachelor",
+    "date": "2026-02-17",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-bachelor",
+    "date": "2026-02-18",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-bachelor",
+    "date": "2026-02-19",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-bachelor",
+    "date": "2026-02-20",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-baker",
+    "date": "2026-02-08",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-baker",
+    "date": "2026-02-09",
+    "score": 4
+  },
+  {
+    "resort_id": "mt-baker",
+    "date": "2026-02-10",
+    "score": 4
+  },
+  {
+    "resort_id": "mt-baker",
+    "date": "2026-02-11",
+    "score": 4
+  },
+  {
+    "resort_id": "mt-baker",
+    "date": "2026-02-12",
+    "score": 4
+  },
+  {
+    "resort_id": "mt-baker",
+    "date": "2026-02-13",
+    "score": 4
+  },
+  {
+    "resort_id": "mt-baker",
+    "date": "2026-02-14",
+    "score": 6
+  },
+  {
+    "resort_id": "mt-baker",
+    "date": "2026-02-15",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-baker",
+    "date": "2026-02-16",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-baker",
+    "date": "2026-02-17",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-baker",
+    "date": "2026-02-18",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-baker",
+    "date": "2026-02-19",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-baker",
+    "date": "2026-02-20",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-hood-meadows",
+    "date": "2026-02-08",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-hood-meadows",
+    "date": "2026-02-09",
+    "score": 6
+  },
+  {
+    "resort_id": "mt-hood-meadows",
+    "date": "2026-02-10",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-hood-meadows",
+    "date": "2026-02-11",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-hood-meadows",
+    "date": "2026-02-12",
+    "score": 3
+  },
+  {
+    "resort_id": "mt-hood-meadows",
+    "date": "2026-02-13",
+    "score": 2
+  },
+  {
+    "resort_id": "mt-hood-meadows",
+    "date": "2026-02-14",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-hood-meadows",
+    "date": "2026-02-15",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-hood-meadows",
+    "date": "2026-02-16",
+    "score": 4
+  },
+  {
+    "resort_id": "mt-hood-meadows",
+    "date": "2026-02-17",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-hood-meadows",
+    "date": "2026-02-18",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-hood-meadows",
+    "date": "2026-02-19",
+    "score": 5
+  },
+  {
+    "resort_id": "mt-hood-meadows",
+    "date": "2026-02-20",
+    "score": 5
+  },
+  {
+    "resort_id": "northstar",
+    "date": "2026-02-08",
+    "score": 1
+  },
+  {
+    "resort_id": "northstar",
+    "date": "2026-02-09",
+    "score": 1
+  },
+  {
+    "resort_id": "northstar",
+    "date": "2026-02-10",
+    "score": 1
+  },
+  {
+    "resort_id": "northstar",
+    "date": "2026-02-11",
+    "score": 5
+  },
+  {
+    "resort_id": "northstar",
+    "date": "2026-02-12",
+    "score": 5
+  },
+  {
+    "resort_id": "northstar",
+    "date": "2026-02-13",
+    "score": 5
+  },
+  {
+    "resort_id": "northstar",
+    "date": "2026-02-14",
+    "score": 4
+  },
+  {
+    "resort_id": "northstar",
+    "date": "2026-02-15",
+    "score": 4
+  },
+  {
+    "resort_id": "northstar",
+    "date": "2026-02-16",
+    "score": 4
+  },
+  {
+    "resort_id": "northstar",
+    "date": "2026-02-17",
+    "score": 6
+  },
+  {
+    "resort_id": "northstar",
+    "date": "2026-02-18",
+    "score": 6
+  },
+  {
+    "resort_id": "northstar",
+    "date": "2026-02-19",
+    "score": 5
+  },
+  {
+    "resort_id": "northstar",
+    "date": "2026-02-20",
+    "score": 5
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-08",
+    "score": 2
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-09",
+    "score": 2
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-10",
+    "score": 2
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-11",
+    "score": 5
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-12",
+    "score": 5
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-13",
+    "score": 5
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-14",
+    "score": 4
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-15",
+    "score": 4
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-16",
+    "score": 4
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-17",
+    "score": 6
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-18",
+    "score": 6
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-19",
+    "score": 5
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-20",
+    "score": 5
+  },
+  {
+    "resort_id": "palisades-tahoe",
+    "date": "2026-02-08",
+    "score": 2
+  },
+  {
+    "resort_id": "palisades-tahoe",
+    "date": "2026-02-09",
+    "score": 2
+  },
+  {
+    "resort_id": "palisades-tahoe",
+    "date": "2026-02-10",
+    "score": 2
+  },
+  {
+    "resort_id": "palisades-tahoe",
+    "date": "2026-02-11",
+    "score": 5
+  },
+  {
+    "resort_id": "palisades-tahoe",
+    "date": "2026-02-12",
+    "score": 5
+  },
+  {
+    "resort_id": "palisades-tahoe",
+    "date": "2026-02-13",
+    "score": 5
+  },
+  {
+    "resort_id": "palisades-tahoe",
+    "date": "2026-02-14",
+    "score": 4
+  },
+  {
+    "resort_id": "palisades-tahoe",
+    "date": "2026-02-15",
+    "score": 4
+  },
+  {
+    "resort_id": "palisades-tahoe",
+    "date": "2026-02-16",
+    "score": 4
+  },
+  {
+    "resort_id": "palisades-tahoe",
+    "date": "2026-02-17",
+    "score": 6
+  },
+  {
+    "resort_id": "palisades-tahoe",
+    "date": "2026-02-18",
+    "score": 6
+  },
+  {
+    "resort_id": "palisades-tahoe",
+    "date": "2026-02-19",
+    "score": 5
+  },
+  {
+    "resort_id": "palisades-tahoe",
+    "date": "2026-02-20",
+    "score": 5
+  },
+  {
+    "resort_id": "panorama",
+    "date": "2026-02-08",
+    "score": 4
+  },
+  {
+    "resort_id": "panorama",
+    "date": "2026-02-09",
+    "score": 4
+  },
+  {
+    "resort_id": "panorama",
+    "date": "2026-02-10",
+    "score": 4
+  },
+  {
+    "resort_id": "panorama",
+    "date": "2026-02-11",
+    "score": 4
+  },
+  {
+    "resort_id": "panorama",
+    "date": "2026-02-12",
+    "score": 4
+  },
+  {
+    "resort_id": "panorama",
+    "date": "2026-02-13",
+    "score": 4
+  },
+  {
+    "resort_id": "panorama",
+    "date": "2026-02-14",
+    "score": 4
+  },
+  {
+    "resort_id": "panorama",
+    "date": "2026-02-15",
+    "score": 4
+  },
+  {
+    "resort_id": "panorama",
+    "date": "2026-02-16",
+    "score": 4
+  },
+  {
+    "resort_id": "panorama",
+    "date": "2026-02-17",
+    "score": 4
+  }
+]

@@ -206,9 +206,12 @@ def process_elevation_point(
             **weather_data,
         )
 
-        # Assess snow quality
+        # Assess snow quality (pass elevation for ML model)
+        elev_m = getattr(elevation_point, "elevation_meters", None)
         snow_quality, fresh_snow_cm, confidence = (
-            snow_quality_service.assess_snow_quality(weather_condition)
+            snow_quality_service.assess_snow_quality(
+                weather_condition, elevation_m=elev_m
+            )
         )
 
         # Update condition with assessment results
