@@ -149,3 +149,12 @@ ios/fastlane/vendor/
 
 # Firebase credentials (use template + env vars)
 ios/SnowTracker/SnowTracker/Resources/GoogleService-Info.plist
+
+# ML training data (too large for git, regenerate with collect_historical.py)
+ml/training_features.json
+ml/training_features_v*.json
+ml/historical_features.json
+ml/scores/old_scores/
+ml/model_weights.json
+ml/validation_report.txt
+ml/scores_historical_deterministic.json.bak
