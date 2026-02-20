@@ -28,8 +28,6 @@ logger.setLevel(logging.INFO)
 
 # Initialize AWS clients
 dynamodb = boto3.resource("dynamodb")
-cloudwatch = boto3.client("cloudwatch")
-
 # Environment variables
 RESORTS_TABLE = os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
 WEATHER_CONDITIONS_TABLE = os.environ.get(
@@ -47,57 +45,6 @@ INTER_RESORT_DELAY = float(os.environ.get("INTER_RESORT_DELAY", "0.5"))
 
 # TTL for weather conditions: 60 days (extended from 7 days)
 WEATHER_CONDITIONS_TTL_DAYS = 60
-
-
-def publish_worker_metrics(stats: dict[str, Any], region: str) -> None:
-    """Publish worker metrics to CloudWatch."""
-    try:
-        metrics = [
-            {
-                "MetricName": "WorkerResortsProcessed",
-                "Value": stats.get("resorts_processed", 0),
-                "Unit": "Count",
-                "Dimensions": [
-                    {"Name": "Environment", "Value": ENVIRONMENT},
-                    {"Name": "Region", "Value": region},
-                ],
-            },
-            {
-                "MetricName": "WorkerConditionsSaved",
-                "Value": stats.get("conditions_saved", 0),
-                "Unit": "Count",
-                "Dimensions": [
-                    {"Name": "Environment", "Value": ENVIRONMENT},
-                    {"Name": "Region", "Value": region},
-                ],
-            },
-            {
-                "MetricName": "WorkerErrors",
-                "Value": stats.get("errors", 0),
-                "Unit": "Count",
-                "Dimensions": [
-                    {"Name": "Environment", "Value": ENVIRONMENT},
-                    {"Name": "Region", "Value": region},
-                ],
-            },
-            {
-                "MetricName": "WorkerDuration",
-                "Value": stats.get("duration_seconds", 0),
-                "Unit": "Seconds",
-                "Dimensions": [
-                    {"Name": "Environment", "Value": ENVIRONMENT},
-                    {"Name": "Region", "Value": region},
-                ],
-            },
-        ]
-
-        cloudwatch.put_metric_data(
-            Namespace="SnowTracker/WeatherWorker", MetricData=metrics
-        )
-        logger.info(f"Published {len(metrics)} worker metrics for region {region}")
-
-    except Exception as e:
-        logger.error(f"Failed to publish worker metrics: {e}")
 
 
 def save_weather_condition(table, weather_condition: WeatherCondition) -> None:
@@ -438,9 +385,6 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
             f"{stats['conditions_saved']} conditions saved, "
             f"{stats['errors']} errors"
         )
-
-        # Publish metrics
-        publish_worker_metrics(stats, region)
 
         return {
             "statusCode": 200,

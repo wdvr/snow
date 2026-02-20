@@ -24,7 +24,6 @@ logger.setLevel(logging.INFO)
 # Initialize AWS clients
 s3 = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
-cloudwatch = boto3.client("cloudwatch")
 sns = boto3.client("sns")
 
 # Environment variables
@@ -277,45 +276,6 @@ def store_version(
     return data_key, manifest_key
 
 
-def publish_metrics(stats: dict[str, Any], diff: dict[str, Any]) -> None:
-    """Publish consolidation metrics to CloudWatch."""
-    try:
-        metrics = [
-            {
-                "MetricName": "VersionCreated",
-                "Value": 1,
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "TotalResortsInVersion",
-                "Value": stats.get("total_resorts", 0),
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "ResortsAdded",
-                "Value": len(diff.get("added", [])),
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "ResortsRemoved",
-                "Value": len(diff.get("removed", [])),
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-        ]
-
-        cloudwatch.put_metric_data(
-            Namespace="SnowTracker/VersionConsolidator", MetricData=metrics
-        )
-        logger.info("Published version consolidator metrics")
-
-    except Exception as e:
-        logger.error(f"Failed to publish metrics: {e}")
-
-
 def send_notification(
     version_id: str, stats: dict[str, Any], diff: dict[str, Any]
 ) -> None:
@@ -451,9 +411,6 @@ def version_consolidator_handler(event: dict[str, Any], context) -> dict[str, An
 
     # Store version
     data_key, manifest_key = store_version(job_id, resorts, manifest)
-
-    # Publish metrics
-    publish_metrics(stats, diff)
 
     # Send notification
     send_notification(version_id, stats, diff)

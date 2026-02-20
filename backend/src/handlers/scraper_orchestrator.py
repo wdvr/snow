@@ -20,7 +20,6 @@ logger.setLevel(logging.INFO)
 # Initialize AWS clients
 lambda_client = boto3.client("lambda")
 dynamodb = boto3.resource("dynamodb")
-cloudwatch = boto3.client("cloudwatch")
 s3 = boto3.client("s3")
 
 # Environment variables
@@ -45,45 +44,6 @@ ALL_COUNTRIES = PRIORITY_COUNTRIES + SECONDARY_COUNTRIES + OTHER_COUNTRIES
 def is_first_of_month() -> bool:
     """Check if today is the first day of the month."""
     return datetime.now(UTC).day == 1
-
-
-def publish_orchestrator_metrics(stats: dict[str, Any]) -> None:
-    """Publish orchestrator metrics to CloudWatch."""
-    try:
-        metrics = [
-            {
-                "MetricName": "ScraperWorkersInvoked",
-                "Value": stats.get("workers_invoked", 0),
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "ScraperWorkersFailed",
-                "Value": stats.get("workers_failed", 0),
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "ScraperMode",
-                "Value": 1.0 if stats.get("full_scrape") else 0.0,
-                "Unit": "None",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "ScraperOrchestrationDuration",
-                "Value": stats.get("duration_seconds", 0),
-                "Unit": "Seconds",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-        ]
-
-        cloudwatch.put_metric_data(
-            Namespace="SnowTracker/ScraperOrchestrator", MetricData=metrics
-        )
-        logger.info("Published orchestrator metrics")
-
-    except Exception as e:
-        logger.error(f"Failed to publish orchestrator metrics: {e}")
 
 
 def scraper_orchestrator_handler(event: dict[str, Any], context) -> dict[str, Any]:
@@ -195,9 +155,6 @@ def scraper_orchestrator_handler(event: dict[str, Any], context) -> dict[str, An
         )
     except Exception as e:
         logger.error(f"Failed to store job metadata: {e}")
-
-    # Publish metrics
-    publish_orchestrator_metrics(stats)
 
     logger.info(
         f"Orchestration complete: {stats['workers_invoked']} workers invoked, "

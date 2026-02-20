@@ -32,7 +32,6 @@ logger.setLevel(logging.INFO)
 
 # Initialize AWS clients
 dynamodb = boto3.resource("dynamodb")
-cloudwatch = boto3.client("cloudwatch")
 lambda_client = boto3.client("lambda")
 
 # Environment variables
@@ -56,179 +55,6 @@ ENABLE_STATIC_JSON = os.environ.get("ENABLE_STATIC_JSON", "true").lower() == "tr
 
 # TTL for weather conditions: 60 days (extended from 7 days)
 WEATHER_CONDITIONS_TTL_DAYS = 60
-
-
-def publish_metrics(stats: dict[str, Any]) -> None:
-    """Publish scraping metrics to CloudWatch for Grafana dashboards."""
-    try:
-        metrics = [
-            {
-                "MetricName": "ResortsProcessed",
-                "Value": stats.get("resorts_processed", 0),
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "ResortsSkipped",
-                "Value": stats.get("resorts_skipped", 0),
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "GracefulTimeout",
-                "Value": 1.0 if stats.get("timeout_graceful", False) else 0.0,
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "ElevationPointsProcessed",
-                "Value": stats.get("elevation_points_processed", 0),
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "ConditionsSaved",
-                "Value": stats.get("conditions_saved", 0),
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "ScraperHits",
-                "Value": stats.get("scraper_hits", 0),
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "ScraperMisses",
-                "Value": stats.get("scraper_misses", 0),
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "ProcessingErrors",
-                "Value": stats.get("errors", 0),
-                "Unit": "Count",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-            {
-                "MetricName": "ProcessingDuration",
-                "Value": stats.get("duration_seconds", 0),
-                "Unit": "Seconds",
-                "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-            },
-        ]
-
-        # Calculate success rate
-        total_scrapes = stats.get("scraper_hits", 0) + stats.get("scraper_misses", 0)
-        if total_scrapes > 0:
-            success_rate = (stats.get("scraper_hits", 0) / total_scrapes) * 100
-            metrics.append(
-                {
-                    "MetricName": "ScraperSuccessRate",
-                    "Value": success_rate,
-                    "Unit": "Percent",
-                    "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-                }
-            )
-
-        cloudwatch.put_metric_data(Namespace="SnowTracker/Scraping", MetricData=metrics)
-        logger.info(f"Published {len(metrics)} metrics to CloudWatch")
-
-    except Exception as e:
-        logger.error(f"Failed to publish metrics to CloudWatch: {e}")
-
-
-def publish_condition_metrics(weather_condition: "WeatherCondition") -> None:
-    """Publish snow condition metrics to CloudWatch for monitoring."""
-    try:
-        # Convert quality to numeric score (0-3)
-        quality_scores = {
-            "excellent": 3,
-            "good": 2,
-            "fair": 1,
-            "poor": 0,
-            "bad": 0,
-            "unknown": -1,
-        }
-        quality_str = (
-            weather_condition.snow_quality.value
-            if hasattr(weather_condition.snow_quality, "value")
-            else weather_condition.snow_quality
-        )
-        quality_score = quality_scores.get(quality_str.lower(), -1)
-
-        # Get values with fallbacks
-        fresh_snow_cm = getattr(weather_condition, "fresh_snow_cm", 0.0) or 0.0
-        snowfall_after_freeze = (
-            getattr(weather_condition, "snowfall_after_freeze_cm", 0.0) or 0.0
-        )
-        last_freeze_hours = getattr(
-            weather_condition, "last_freeze_thaw_hours_ago", None
-        )
-        currently_warming = getattr(weather_condition, "currently_warming", False)
-
-        metrics = [
-            {
-                "MetricName": "SnowQualityScore",
-                "Value": quality_score,
-                "Unit": "None",
-                "Dimensions": [
-                    {"Name": "Environment", "Value": ENVIRONMENT},
-                    {"Name": "ResortId", "Value": weather_condition.resort_id},
-                    {"Name": "Elevation", "Value": weather_condition.elevation_level},
-                ],
-            },
-            {
-                "MetricName": "FreshSnowCm",
-                "Value": fresh_snow_cm,
-                "Unit": "None",
-                "Dimensions": [
-                    {"Name": "Environment", "Value": ENVIRONMENT},
-                    {"Name": "ResortId", "Value": weather_condition.resort_id},
-                    {"Name": "Elevation", "Value": weather_condition.elevation_level},
-                ],
-            },
-            {
-                "MetricName": "SnowAfterFreezeCm",
-                "Value": snowfall_after_freeze,
-                "Unit": "None",
-                "Dimensions": [
-                    {"Name": "Environment", "Value": ENVIRONMENT},
-                    {"Name": "ResortId", "Value": weather_condition.resort_id},
-                    {"Name": "Elevation", "Value": weather_condition.elevation_level},
-                ],
-            },
-            {
-                "MetricName": "CurrentlyWarming",
-                "Value": 1.0 if currently_warming else 0.0,
-                "Unit": "None",
-                "Dimensions": [
-                    {"Name": "Environment", "Value": ENVIRONMENT},
-                    {"Name": "ResortId", "Value": weather_condition.resort_id},
-                ],
-            },
-        ]
-
-        # Add hours since last freeze event if available
-        if last_freeze_hours is not None:
-            metrics.append(
-                {
-                    "MetricName": "HoursSinceLastFreeze",
-                    "Value": last_freeze_hours,
-                    "Unit": "None",
-                    "Dimensions": [
-                        {"Name": "Environment", "Value": ENVIRONMENT},
-                        {"Name": "ResortId", "Value": weather_condition.resort_id},
-                    ],
-                }
-            )
-
-        cloudwatch.put_metric_data(
-            Namespace="SnowTracker/Conditions", MetricData=metrics
-        )
-
-    except Exception as e:
-        logger.warning(f"Failed to publish condition metrics: {e}")
 
 
 def get_remaining_time_ms(context) -> int:
@@ -485,40 +311,6 @@ def orchestrate_parallel_processing(context) -> dict[str, Any]:
     failed = len(invocations) - successful
     duration = (datetime.now(UTC) - start_time).total_seconds()
 
-    # Publish orchestrator metrics
-    try:
-        cloudwatch.put_metric_data(
-            Namespace="SnowTracker/Orchestrator",
-            MetricData=[
-                {
-                    "MetricName": "WorkersInvoked",
-                    "Value": successful,
-                    "Unit": "Count",
-                    "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-                },
-                {
-                    "MetricName": "WorkerInvocationsFailed",
-                    "Value": failed,
-                    "Unit": "Count",
-                    "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-                },
-                {
-                    "MetricName": "TotalResortsDispatched",
-                    "Value": len(resorts),
-                    "Unit": "Count",
-                    "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-                },
-                {
-                    "MetricName": "OrchestrationDuration",
-                    "Value": duration,
-                    "Unit": "Seconds",
-                    "Dimensions": [{"Name": "Environment", "Value": ENVIRONMENT}],
-                },
-            ],
-        )
-    except Exception as e:
-        logger.error(f"Failed to publish orchestrator metrics: {e}")
-
     logger.info(
         f"Orchestration complete: {successful}/{len(invocations)} workers invoked, "
         f"{len(resorts)} resorts dispatched in {duration:.2f}s"
@@ -667,10 +459,6 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
                             stats["elevation_points_processed"] += 1
                             stats["conditions_saved"] += 1
 
-                            # Publish snow condition metrics for Grafana
-                            if result["weather_condition"]:
-                                publish_condition_metrics(result["weather_condition"])
-
                             # Log success
                             weather_condition = result["weather_condition"]
                             if weather_condition:
@@ -730,9 +518,6 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
                 except Exception as json_error:
                     logger.error(f"Failed to generate static JSON: {json_error}")
                     stats["static_json_error"] = str(json_error)
-
-        # Publish metrics to CloudWatch for Grafana dashboards
-        publish_metrics(stats)
 
         message = (
             "Weather processing stopped gracefully (timeout)"

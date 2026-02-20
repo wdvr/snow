@@ -25,7 +25,6 @@ logger.setLevel(logging.INFO)
 
 # Initialize AWS clients
 dynamodb = boto3.resource("dynamodb")
-cloudwatch = boto3.client("cloudwatch")
 s3 = boto3.client("s3")
 sns = boto3.client("sns")
 
@@ -451,55 +450,6 @@ def get_existing_resort_ids() -> set[str]:
     return existing_ids
 
 
-def publish_metrics(stats: dict[str, Any], country: str) -> None:
-    """Publish scraper metrics to CloudWatch."""
-    try:
-        metrics = [
-            {
-                "MetricName": "ResortsScraped",
-                "Value": stats.get("resorts_scraped", 0),
-                "Unit": "Count",
-                "Dimensions": [
-                    {"Name": "Environment", "Value": ENVIRONMENT},
-                    {"Name": "Country", "Value": country},
-                ],
-            },
-            {
-                "MetricName": "ResortsSkipped",
-                "Value": stats.get("resorts_skipped", 0),
-                "Unit": "Count",
-                "Dimensions": [
-                    {"Name": "Environment", "Value": ENVIRONMENT},
-                    {"Name": "Country", "Value": country},
-                ],
-            },
-            {
-                "MetricName": "ScraperErrors",
-                "Value": stats.get("errors", 0),
-                "Unit": "Count",
-                "Dimensions": [
-                    {"Name": "Environment", "Value": ENVIRONMENT},
-                    {"Name": "Country", "Value": country},
-                ],
-            },
-            {
-                "MetricName": "ScraperDuration",
-                "Value": stats.get("duration_seconds", 0),
-                "Unit": "Seconds",
-                "Dimensions": [
-                    {"Name": "Environment", "Value": ENVIRONMENT},
-                    {"Name": "Country", "Value": country},
-                ],
-            },
-        ]
-
-        cloudwatch.put_metric_data(Namespace="SnowTracker/Scraper", MetricData=metrics)
-        logger.info(f"Published scraper metrics for {country}")
-
-    except Exception as e:
-        logger.error(f"Failed to publish scraper metrics: {e}")
-
-
 def publish_new_resorts_notification(
     new_resorts: list[dict[str, Any]], country: str, job_id: str
 ) -> None:
@@ -509,7 +459,11 @@ def publish_new_resorts_notification(
 
     try:
         # Count resorts without coordinates
-        no_coords = [r for r in new_resorts if r.get("latitude", 0) == 0.0 and r.get("longitude", 0) == 0.0]
+        no_coords = [
+            r
+            for r in new_resorts
+            if r.get("latitude", 0) == 0.0 and r.get("longitude", 0) == 0.0
+        ]
         has_coords = len(new_resorts) - len(no_coords)
 
         # Create summary message
@@ -535,21 +489,32 @@ def publish_new_resorts_notification(
             vertical = resort.get("elevation_top_m", 0) - resort.get(
                 "elevation_base_m", 0
             )
-            coords_status = "" if (resort.get("latitude", 0) != 0.0 or resort.get("longitude", 0) != 0.0) else " [NO COORDS]"
-            message_lines.append(f"  - {name} ({region}) - {vertical}m vertical{coords_status}")
+            coords_status = (
+                ""
+                if (
+                    resort.get("latitude", 0) != 0.0
+                    or resort.get("longitude", 0) != 0.0
+                )
+                else " [NO COORDS]"
+            )
+            message_lines.append(
+                f"  - {name} ({region}) - {vertical}m vertical{coords_status}"
+            )
 
         if len(new_resorts) > 20:
             message_lines.append(f"  ... and {len(new_resorts) - 20} more")
 
         # Add warning about missing coordinates
         if no_coords:
-            message_lines.extend([
-                "",
-                "⚠️ WARNING: Resorts without coordinates will not appear on the map.",
-                "Please manually geocode these resorts or verify the scraper extraction.",
-                "",
-                "Resorts missing coordinates:",
-            ])
+            message_lines.extend(
+                [
+                    "",
+                    "⚠️ WARNING: Resorts without coordinates will not appear on the map.",
+                    "Please manually geocode these resorts or verify the scraper extraction.",
+                    "",
+                    "Resorts missing coordinates:",
+                ]
+            )
             for resort in no_coords[:10]:
                 message_lines.append(f"  - {resort.get('name', 'Unknown')}")
             if len(no_coords) > 10:
@@ -569,7 +534,9 @@ def publish_new_resorts_notification(
             Subject=subject[:100],  # SNS subject limit
             Message=message,
         )
-        logger.info(f"Published SNS notification for {len(new_resorts)} new resorts ({len(no_coords)} without coords)")
+        logger.info(
+            f"Published SNS notification for {len(new_resorts)} new resorts ({len(no_coords)} without coords)"
+        )
 
     except Exception as e:
         logger.error(f"Failed to publish new resorts notification: {e}")
@@ -670,9 +637,6 @@ def scraper_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
 
             # Send SNS notification for new resorts
             publish_new_resorts_notification(scraped_resorts, country, job_id)
-
-        # Publish metrics
-        publish_metrics(stats, country)
 
         logger.info(
             f"Scrape complete for {country}: "
