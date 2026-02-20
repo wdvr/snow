@@ -35,10 +35,6 @@ class SnowQualityService:
         # so it's only reliable when we can extract the same exact features.
         # Without raw_data, fall through to the heuristic algorithm.
         try:
-            import logging
-
-            ml_logger = logging.getLogger("snow_quality_service.ml")
-
             from services.ml_scorer import (
                 extract_features_from_raw_data,
                 predict_quality,
@@ -47,13 +43,6 @@ class SnowQualityService:
             raw_features = extract_features_from_raw_data(weather, elevation_m)
             if raw_features is not None:
                 ml_quality, ml_score = predict_quality(weather, elevation_m)
-                ml_logger.warning(
-                    "ML scored %s/%s: %.2f (%s)",
-                    getattr(weather, "resort_id", "?"),
-                    getattr(weather, "elevation_level", "?"),
-                    ml_score,
-                    ml_quality.value if hasattr(ml_quality, "value") else ml_quality,
-                )
                 if ml_quality != SnowQuality.UNKNOWN:
                     # Post-ML adjustments for features the model doesn't see.
                     # snow_depth_cm (scraped base depth) isn't a model feature.
@@ -73,13 +62,6 @@ class SnowQualityService:
                         ),
                     )
                     return ml_quality, fresh_snow_cm, confidence
-            else:
-                ml_logger.warning(
-                    "ML skipped %s/%s: raw_data=%s",
-                    getattr(weather, "resort_id", "?"),
-                    getattr(weather, "elevation_level", "?"),
-                    "present" if getattr(weather, "raw_data", None) else "missing",
-                )
         except Exception as e:
             import logging
 
