@@ -59,22 +59,28 @@ def engineer_features(raw: dict[str, float]) -> list[float]:
     Returns:
         List of 24 engineered feature values.
     """
-    ct = raw.get("cur_temp", 0.0)
-    max24 = raw.get("max_temp_24h", ct)
-    max48 = raw.get("max_temp_48h", max24)
-    min24 = raw.get("min_temp_24h", ct)
-    ft_days = raw.get("freeze_thaw_days_ago", 14.0)
-    warmest = raw.get("warmest_thaw", 0.0)
-    snow_ft = raw.get("snow_since_freeze_cm", 0.0)
-    snow24 = raw.get("snowfall_24h_cm", 0.0)
-    snow72 = raw.get("snowfall_72h_cm", 0.0)
-    elev = raw.get("elevation_m", 1500.0)
-    ha0 = raw.get("total_hours_above_0C_since_ft", 0)
-    ha3 = raw.get("total_hours_above_3C_since_ft", 0)
-    ha6 = raw.get("total_hours_above_6C_since_ft", 0)
-    ca0 = raw.get("cur_hours_above_0C", 0)
-    ca3 = raw.get("cur_hours_above_3C", 0)
-    ca6 = raw.get("cur_hours_above_6C", 0)
+
+    # Convert all values to float to handle DynamoDB Decimal types
+    def _f(key, default=0.0):
+        v = raw.get(key, default)
+        return float(v) if v is not None else float(default)
+
+    ct = _f("cur_temp")
+    max24 = _f("max_temp_24h", ct)
+    max48 = _f("max_temp_48h", max24)
+    min24 = _f("min_temp_24h", ct)
+    ft_days = _f("freeze_thaw_days_ago", 14.0)
+    warmest = _f("warmest_thaw")
+    snow_ft = _f("snow_since_freeze_cm")
+    snow24 = _f("snowfall_24h_cm")
+    snow72 = _f("snowfall_72h_cm")
+    elev = _f("elevation_m", 1500.0)
+    ha0 = _f("total_hours_above_0C_since_ft")
+    ha3 = _f("total_hours_above_3C_since_ft")
+    ha6 = _f("total_hours_above_6C_since_ft")
+    ca0 = _f("cur_hours_above_0C")
+    ca3 = _f("cur_hours_above_3C")
+    ca6 = _f("cur_hours_above_6C")
 
     return [
         ct,
@@ -302,7 +308,7 @@ def extract_features_from_raw_data(
         "snow_since_freeze_cm": snow_since_freeze,
         "snowfall_24h_cm": snow_24h,
         "snowfall_72h_cm": snow_72h,
-        "elevation_m": elevation_m or raw_data.get("elevation_meters", 1500.0),
+        "elevation_m": float(elevation_m or raw_data.get("elevation_meters", 1500.0)),
         "total_hours_above_0C_since_ft": ha[0],
         "total_hours_above_1C_since_ft": ha[1],
         "total_hours_above_2C_since_ft": ha[2],
