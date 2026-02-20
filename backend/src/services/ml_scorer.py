@@ -32,9 +32,16 @@ def _load_model() -> dict:
     try:
         with open(MODEL_PATH) as f:
             _model = json.load(f)
-        logger.info(
-            f"Loaded ML model v2 ({_model['architecture']['hidden_size']} hidden neurons)"
-        )
+        ensemble = _model.get("ensemble", [])
+        if ensemble:
+            logger.info(
+                f"Loaded ML model v2 ensemble ({len(ensemble)} models, "
+                f"primary: {_model['architecture']['hidden_size']} hidden)"
+            )
+        else:
+            logger.info(
+                f"Loaded ML model v2 ({_model['architecture']['hidden_size']} hidden neurons)"
+            )
         return _model
     except FileNotFoundError:
         logger.warning(f"ML model not found at {MODEL_PATH}, falling back to heuristic")
@@ -48,6 +55,32 @@ def _relu(x: float) -> float:
 def _sigmoid(x: float) -> float:
     x = max(-500.0, min(500.0, x))
     return 1.0 / (1.0 + math.exp(-x))
+
+
+def _forward_single(normalized: list[float], weights: dict) -> float:
+    """Run forward pass through a single neural network."""
+    W1 = weights["W1"]
+    b1 = weights["b1"]
+    W2 = weights["W2"]
+    b2 = weights["b2"]
+    n_hidden = len(b1)
+    n_input = min(len(normalized), len(W1))
+
+    hidden = []
+    for j in range(n_hidden):
+        z = sum(normalized[i] * W1[i][j] for i in range(n_input)) + b1[j]
+        hidden.append(_relu(z))
+
+    z_out = sum(hidden[j] * W2[j][0] for j in range(n_hidden)) + b2[0]
+    return _sigmoid(z_out) * 5.0 + 1.0
+
+
+def _forward_ensemble(normalized: list[float], ensemble: list[dict]) -> float:
+    """Run forward pass through ensemble of models and average predictions."""
+    total = 0.0
+    for model_weights in ensemble:
+        total += _forward_single(normalized, model_weights)
+    return total / len(ensemble)
 
 
 def engineer_features(raw: dict[str, float]) -> list[float]:
@@ -391,23 +424,12 @@ def predict_quality(
     std = norm["std"]
     normalized = [(f - m) / s for f, m, s in zip(features, mean, std, strict=False)]
 
-    # Forward pass through neural network
-    W1 = model["weights"]["W1"]
-    b1 = model["weights"]["b1"]
-    W2 = model["weights"]["W2"]
-    b2 = model["weights"]["b2"]
-
-    n_hidden = len(b1)
-
-    # Hidden layer: Z1 = X @ W1 + b1, A1 = relu(Z1)
-    hidden = []
-    for j in range(n_hidden):
-        z = sum(normalized[i] * W1[i][j] for i in range(len(normalized))) + b1[j]
-        hidden.append(_relu(z))
-
-    # Output layer: Z2 = A1 @ W2 + b2, out = sigmoid(Z2) * 5 + 1
-    z_out = sum(hidden[j] * W2[j][0] for j in range(n_hidden)) + b2[0]
-    score = _sigmoid(z_out) * 5.0 + 1.0
+    # Run inference — ensemble if available, single model otherwise
+    ensemble = model.get("ensemble", [])
+    if ensemble:
+        score = _forward_ensemble(normalized, ensemble)
+    else:
+        score = _forward_single(normalized, model["weights"])
     score = max(1.0, min(6.0, score))
 
     # Map to quality

@@ -435,6 +435,7 @@ def train_model(
     n_epochs=3000,
     checkpoint_interval=50,
     verbose=True,
+    ensemble_size=5,
 ):
     """Train model with grid search over hidden sizes and seeds.
 
@@ -442,7 +443,10 @@ def train_model(
     Selection metric combines MAE with within-1 accuracy to avoid
     selecting models that overfit on average error but miss quality levels.
 
-    Returns (best_model, best_model_state, best_val_mae).
+    Keeps the top `ensemble_size` models from different configurations for
+    ensemble inference.
+
+    Returns (best_model, best_model_state, best_val_mae, top_models).
     """
     if hidden_sizes is None:
         hidden_sizes = [16, 24, 32, 48, 64]
@@ -458,12 +462,16 @@ def train_model(
     total_configs = len(hidden_sizes) * len(seeds)
     config_num = 0
 
+    # Track best checkpoint per configuration for ensemble diversity
+    config_best = {}  # (n_hidden, seed) -> (combined_score, model_state)
+
     for n_hidden in hidden_sizes:
         for seed in seeds:
             config_num += 1
             np.random.seed(seed)
             model = SimpleNN(n_features, n_hidden=n_hidden)
             lr = 0.01
+            config_key = (n_hidden, seed)
 
             for epoch in range(n_epochs):
                 perm = np.random.permutation(len(X_train))
@@ -497,7 +505,6 @@ def train_model(
                     ) / len(y_val)
 
                     # Combined score: strongly prioritize within-1 >= 99.8%, then minimize MAE
-                    # Penalty of 2.0 for each % below 100% within-1
                     within_1_penalty = max(0, 1.0 - within_1) * 10.0
                     combined_score = val_mae + within_1_penalty
 
@@ -511,19 +518,31 @@ def train_model(
                             f"w1={within_1:.1%} lr={lr:.5f}"
                         )
 
+                    model_state = {
+                        "n_hidden": n_hidden,
+                        "seed": seed,
+                        "epoch": epoch,
+                        "within_1": within_1,
+                        "val_mae": val_mae,
+                        "combined_score": combined_score,
+                        "W1": model.W1.copy(),
+                        "b1": model.b1.copy(),
+                        "W2": model.W2.copy(),
+                        "b2": model.b2.copy(),
+                    }
+
+                    # Track best per config
+                    if (
+                        config_key not in config_best
+                        or combined_score < config_best[config_key][0]
+                    ):
+                        config_best[config_key] = (combined_score, model_state)
+
+                    # Track global best
                     if combined_score < best_score:
                         best_score = combined_score
                         best_val_mae = val_mae
-                        best_model_state = {
-                            "n_hidden": n_hidden,
-                            "seed": seed,
-                            "epoch": epoch,
-                            "within_1": within_1,
-                            "W1": model.W1.copy(),
-                            "b1": model.b1.copy(),
-                            "W2": model.W2.copy(),
-                            "b2": model.b2.copy(),
-                        }
+                        best_model_state = model_state
 
             if verbose:
                 print(
@@ -535,12 +554,52 @@ def train_model(
                     f"w1={best_model_state['within_1']:.1%}"
                 )
 
+    # Select top K diverse models for ensemble
+    all_configs = sorted(config_best.values(), key=lambda x: x[0])
+    top_models = [state for _, state in all_configs[:ensemble_size]]
+
+    if verbose:
+        print(f"\nTop {len(top_models)} models for ensemble:")
+        for i, m in enumerate(top_models):
+            print(
+                f"  {i + 1}. h={m['n_hidden']} s={m['seed']} ep={m['epoch']} "
+                f"mae={m['val_mae']:.3f} w1={m['within_1']:.1%}"
+            )
+
+        # Evaluate ensemble on validation set
+        ensemble_preds = np.zeros(len(y_val))
+        for m_state in top_models:
+            m = SimpleNN(n_features, n_hidden=m_state["n_hidden"])
+            m.W1 = m_state["W1"]
+            m.b1 = m_state["b1"]
+            m.W2 = m_state["W2"]
+            m.b2 = m_state["b2"]
+            ensemble_preds += m.predict(X_val)
+        ensemble_preds /= len(top_models)
+        ens_mae = np.mean(np.abs(y_val - ensemble_preds))
+        tq = [score_to_quality(s) for s in y_val]
+        pq = [score_to_quality(s) for s in ensemble_preds]
+        ens_exact = sum(1 for t, p in zip(tq, pq) if t == p) / len(y_val)
+        ens_w1 = sum(
+            1
+            for t, p in zip(tq, pq)
+            if abs(quality_order.index(t) - quality_order.index(p)) <= 1
+        ) / len(y_val)
+        print(
+            f"\n  Ensemble (k={len(top_models)}): MAE={ens_mae:.3f}, "
+            f"Exact={ens_exact:.1%}, Within-1={ens_w1:.1%}"
+        )
+        print(
+            f"  Single best:       MAE={best_val_mae:.3f}, "
+            f"Exact=..., Within-1={best_model_state['within_1']:.1%}"
+        )
+
     model = SimpleNN(n_features, n_hidden=best_model_state["n_hidden"])
     model.W1 = best_model_state["W1"]
     model.b1 = best_model_state["b1"]
     model.W2 = best_model_state["W2"]
     model.b2 = best_model_state["b2"]
-    return model, best_model_state, best_val_mae
+    return model, best_model_state, best_val_mae, top_models
 
 
 def evaluate_by_source(y_true, y_pred, metadata):
@@ -607,26 +666,58 @@ def main(historical_weight=None):
     weights = class_weights * source_weights_train
 
     # Train
-    model, best_model_state, best_val_mae = train_model(
+    model, best_model_state, best_val_mae, top_models = train_model(
         X_train, y_train, X_val, y_val, weights, meta_val
     )
 
     print(f"\nBest model: h={best_model_state['n_hidden']}, val_mae={best_val_mae:.3f}")
 
-    # Final evaluation
-    y_train_pred = model.predict(X_train)
-    print("\n--- Training Set ---")
-    train_metrics = evaluate(y_train, y_train_pred, meta_train)
-    print("\n  By source:")
-    evaluate_by_source(y_train, y_train_pred, meta_train)
+    # Evaluate ensemble on validation
+    n_features = X_train.shape[1]
+    ensemble_val_pred = np.zeros(len(y_val))
+    for m_state in top_models:
+        m = SimpleNN(n_features, n_hidden=m_state["n_hidden"])
+        m.W1, m.b1, m.W2, m.b2 = (
+            m_state["W1"],
+            m_state["b1"],
+            m_state["W2"],
+            m_state["b2"],
+        )
+        ensemble_val_pred += m.predict(X_val)
+    ensemble_val_pred /= len(top_models)
 
-    y_val_pred = model.predict(X_val)
-    print("\n--- Validation Set ---")
-    val_metrics = evaluate(y_val, y_val_pred, meta_val, VALIDATION_REPORT)
-    print("\n  By source:")
-    source_metrics = evaluate_by_source(y_val, y_val_pred, meta_val)
+    # Final evaluation — use ensemble predictions
+    ensemble_train_pred = np.zeros(len(y_train))
+    for m_state in top_models:
+        m = SimpleNN(n_features, n_hidden=m_state["n_hidden"])
+        m.W1, m.b1, m.W2, m.b2 = (
+            m_state["W1"],
+            m_state["b1"],
+            m_state["W2"],
+            m_state["b2"],
+        )
+        ensemble_train_pred += m.predict(X_train)
+    ensemble_train_pred /= len(top_models)
 
-    # Save model
+    print("\n--- Training Set (ensemble) ---")
+    train_metrics = evaluate(y_train, ensemble_train_pred, meta_train)
+    print("\n  By source:")
+    evaluate_by_source(y_train, ensemble_train_pred, meta_train)
+
+    print("\n--- Validation Set (ensemble) ---")
+    val_metrics = evaluate(y_val, ensemble_val_pred, meta_val, VALIDATION_REPORT)
+    print("\n  By source:")
+    source_metrics = evaluate_by_source(y_val, ensemble_val_pred, meta_val)
+
+    # Also evaluate single best for comparison
+    y_val_pred_single = model.predict(X_val)
+    single_mae = np.mean(np.abs(y_val - y_val_pred_single))
+    tq = [score_to_quality(s) for s in y_val]
+    pq = [score_to_quality(s) for s in y_val_pred_single]
+    single_exact = sum(1 for t, p in zip(tq, pq) if t == p) / len(y_val)
+    print(f"\n  Single best: MAE={single_mae:.3f}, Exact={single_exact:.1%}")
+
+    # Save model with ensemble
     model_data = {
         "version": "v2",
         "type": "neural_network",
@@ -645,6 +736,20 @@ def main(historical_weight=None):
             "W2": best_model_state["W2"].tolist(),
             "b2": best_model_state["b2"].tolist(),
         },
+        "ensemble": [
+            {
+                "n_hidden": m["n_hidden"],
+                "seed": m["seed"],
+                "epoch": m["epoch"],
+                "val_mae": float(m["val_mae"]),
+                "within_1": float(m["within_1"]),
+                "W1": m["W1"].tolist(),
+                "b1": m["b1"].tolist(),
+                "W2": m["W2"].tolist(),
+                "b2": m["b2"].tolist(),
+            }
+            for m in top_models
+        ],
         "normalization": {
             "mean": mean.tolist(),
             "std": std.tolist(),
@@ -660,6 +765,7 @@ def main(historical_weight=None):
         "training_config": {
             "historical_weight": historical_weight,
             "n_samples": len(y),
+            "ensemble_size": len(top_models),
         },
         "metrics": {
             "train": {k: float(v) for k, v in train_metrics.items()},

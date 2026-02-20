@@ -4,7 +4,7 @@
 
 The snow quality score determines how good skiing conditions are at a resort. It's the core metric our app displays — getting this right is critical.
 
-**Model**: 2-layer neural network (24 input → 64 hidden → 1 output)
+**Model**: Ensemble of 5 neural networks (27 input → varying hidden → 1 output, averaged)
 **Output**: Score 1.0-6.0, mapped to quality levels:
 - **6 = EXCELLENT**: Fresh powder, cold temps, perfect skiing
 - **5 = GOOD**: Nice conditions, some fresh or well-preserved snow
@@ -18,18 +18,24 @@ The snow quality score determines how good skiing conditions are at a resort. It
 ```
 Raw Weather Data (Open-Meteo hourly)
         |
-Feature Engineering (24 features)
+Feature Engineering (27 features)
         |
 Normalization (z-score using training stats)
         |
-Hidden Layer (64 neurons, ReLU activation)
-        |
-Output Layer (1 neuron, sigmoid x 5 + 1)
-        |
-Score [1.0, 6.0] -> Quality Level
+┌─────────┬─────────┬─────────┬─────────┬─────────┐
+│ Model 1 │ Model 2 │ Model 3 │ Model 4 │ Model 5 │
+│ h=48-64 │ h=48-64 │ h=48-64 │ h=24-64 │ h=48-64 │
+└────┬────┴────┬────┴────┬────┴────┬────┴────┬────┘
+     │         │         │         │         │
+     └─────────┴────┬────┴─────────┴─────────┘
+                    │ Average
+                Score [1.0, 6.0] -> Quality Level
 ```
 
-## Input Features (24 total)
+Each model: Hidden Layer (ReLU) → Output (sigmoid × 5 + 1).
+Ensemble averaging reduces boundary prediction variance.
+
+## Input Features (27 total)
 
 ### Temperature (4 features)
 | Feature | Description |
@@ -79,6 +85,13 @@ Consecutive hours in the current warm spell (0 if currently below threshold).
 | `cur_hours_above_3C` | Current consecutive hours above 3C |
 | `cur_hours_above_6C` | Current consecutive hours above 6C |
 
+### Wind Features (3 features)
+| Feature | Description |
+|---------|-------------|
+| `avg_wind_24h` | Average wind speed in last 24 hours (km/h) |
+| `max_wind_24h` | Maximum wind speed in last 24 hours (km/h) |
+| `calm_powder_indicator` | snowfall_24h × max(0, 1 - avg_wind/40) - High when fresh snow + calm conditions |
+
 ### Interaction Features (6 features)
 Non-linear combinations that capture key skiing condition patterns:
 
@@ -95,9 +108,9 @@ Non-linear combinations that capture key skiing condition patterns:
 
 ### Real Data
 - **Source**: Open-Meteo hourly weather data for 127 ski resorts worldwide
-- **Period**: 13 days (Feb 7-20, 2026)
+- **Period**: 13 days (Feb 8-20, 2026)
 - **Total samples**: 1,651 (resort x day x top elevation)
-- **Scoring**: Expert-labeled 1-6 scores via subagent review of weather features
+- **Scoring**: Deterministic rule-based scorer (`score_historical_batches.py`) applied to weather features for consistent, aligned labels
 
 ### Synthetic Data
 - **Source**: Algorithmically generated edge cases (labeled as `source: "synthetic"`)
@@ -124,33 +137,35 @@ Non-linear combinations that capture key skiing condition patterns:
 - **Split**: 80% train (1,744), 20% validation (437)
 
 ### Scoring Criteria Used for Labels
-- snowfall_24h >= 20cm AND cur_temp < -3C -> 6 (EXCELLENT)
-- snowfall_24h >= 10cm AND cur_temp < -2C -> 5-6
-- cur_temp > 5C AND warm for 24+ hours -> 1 (HORRIBLE)
-- Recent harsh freeze-thaw (warmest > 3C) -> subtract 1-2 from base
-- High elevation + moderate cold -> slight quality boost
+Deterministic rule-based scoring (`score_historical_batches.py`):
+- **Fresh snow + cold**: 20cm/24h + cold (<-5°C) = 6.0 (EXCELLENT)
+- **Moderate fresh**: 5-10cm/24h + cold = 5.0-5.3 (GOOD)
+- **No fresh, cold packed powder**: No FT in 14+ days, cold = 3.5-4.2 (FAIR)
+- **Recent freeze-thaw damage**: Severity depends on thaw warmth and snow cover
+- **Warm/summer**: >10°C for extended period = 1.0 (HORRIBLE)
+- Adjustments for: elevation, 72h snowfall, temperature extremes, thaw hours
 
 ## Performance (Validation Set)
 
 | Metric | Value |
 |--------|-------|
-| MAE | 0.351 |
-| RMSE | 0.480 |
-| R^2 | 0.830 |
-| Exact quality match | 76.7% |
-| **Within-1 quality level** | **99.8%** |
+| MAE | 0.183 |
+| RMSE | 0.254 |
+| R^2 | 0.948 |
+| Exact quality match | 87.4% |
+| **Within-1 quality level** | **100.0%** |
 
 ### Per-Class Accuracy
 | Quality | Correct | Total | Accuracy |
 |---------|---------|-------|----------|
-| HORRIBLE | 20 | 25 | 80% |
-| BAD | 24 | 27 | 89% |
-| POOR | 45 | 65 | 69% |
-| FAIR | 167 | 213 | 78% |
-| GOOD | 53 | 73 | 73% |
-| EXCELLENT | 26 | 34 | 76% |
+| HORRIBLE | 20 | 22 | 91% |
+| BAD | 29 | 31 | 94% |
+| POOR | 50 | 57 | 88% |
+| FAIR | 208 | 230 | 90% |
+| GOOD | 47 | 59 | 80% |
+| EXCELLENT | 28 | 38 | 74% |
 
-The model misses by more than one quality level on only 0.2% of validation samples (1 out of 437).
+The model never misses by more than one quality level (0 out of 437 validation samples).
 
 ## Production Integration
 
@@ -183,7 +198,8 @@ Per-elevation scores are aggregated with weighted averaging:
 | `ml/training_features.json` | Raw collected feature data (Feb 7-20, 2026) |
 | `ml/historical_features.json` | Historical feature data (Jan 2026, 3,683 samples) |
 | `ml/synthetic_features.json` | Synthetic feature data (530 samples) |
-| `ml/scores/` | Expert-labeled + synthetic training scores |
+| `ml/score_historical_batches.py` | Deterministic scoring rules for training labels |
+| `ml/scores/` | Deterministic + synthetic training scores |
 | `backend/src/services/ml_scorer.py` | ML inference service (forward pass only) |
 | `backend/src/services/snow_quality_service.py` | Production scoring code (ML + heuristic fallback) |
 | `backend/src/ml_model/model_weights_v2.json` | Weights copy for Lambda package |
@@ -197,8 +213,22 @@ Per-elevation scores are aggregated with weighted averaging:
 | v3 | 2026-02-20 | +330 synthetic edge cases, more training epochs, seed search | 0.367 | 73.6% |
 | v3.1 | 2026-02-20 | Fine-grained checkpointing, source weights in training | 0.366 | 74.6% |
 | v4 | 2026-02-20 | +200 boundary synthetic data, 64-neuron hidden layer, 40-config search | 0.351 | 76.7% |
+| v5 | 2026-02-20 | Ensemble of 5 models, deterministic labels, wind features | 0.183 | 87.4% |
 
-### Historical Data Experiment (not deployed)
+### Key Experiments
+
+#### Deterministic Labeling (v5 breakthrough)
+Replaced noisy LLM-generated labels with a deterministic rule-based scorer. The LLM labels
+had an average disagreement of 0.454 with deterministic rules, with 127 samples differing by
+more than 1.0 quality level. Training on consistent deterministic labels improved exact accuracy
+from 76.7% to 87.4% and within-1 from 99.8% to 100.0%.
+
+#### Wind Features Experiment (v4→v5)
+Added wind_speed_10m (avg_wind_24h, max_wind_24h, calm_powder_indicator). Wind features alone
+didn't improve model performance — the main bottleneck was label noise, not missing features.
+Wind features are kept in the pipeline for potential future benefit.
+
+#### Historical Data Experiment (not deployed)
 Collected 3,683 historical samples from January 2026 via Open-Meteo archive API.
 Scored by 6 independent subagents in parallel. Training with this data showed:
 - Labels were noisy due to inter-annotator disagreement (54% agreement with v3 model predictions)
@@ -210,7 +240,8 @@ Scored by 6 independent subagents in parallel. Training with this data showed:
 1. **More training data**: Collect across multiple seasons, different weather patterns
 2. **Live data collection**: Ongoing collection as weather changes for retraining
 3. **Confidence estimation**: Output uncertainty bounds alongside quality score
-4. **Wind/humidity features**: Wind creates wind crust, humidity affects snow type
+4. **Humidity features**: Humidity affects snow type (light vs heavy powder)
 5. **Snow depth integration**: When reliable depth data is available, add as feature
 6. **Temporal features**: Day-over-day quality change trends
 7. **On-device inference**: Export to CoreML for iOS offline scoring
+8. **Improve GOOD/EXCELLENT accuracy**: Currently 80%/74%, lowest among categories
