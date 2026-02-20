@@ -19,7 +19,8 @@ from models.weather import SnowQuality
 logger = logging.getLogger(__name__)
 
 # Load model weights at module level (loaded once per Lambda cold start)
-MODEL_PATH = Path(__file__).parent.parent.parent / "ml" / "model_weights_v2.json"
+# Model weights are included in the Lambda package at ml_model/
+MODEL_PATH = Path(__file__).parent.parent / "ml_model" / "model_weights_v2.json"
 _model = None
 
 

@@ -30,20 +30,38 @@ class SnowQualityService:
         Returns:
             tuple: (snow_quality, fresh_snow_estimate_cm, confidence_level)
         """
-        # Try ML-based scoring first
+        # Try ML-based scoring when we have raw hourly data (exact features).
+        # The model was trained on features computed from raw Open-Meteo hourly data,
+        # so it's only reliable when we can extract the same exact features.
+        # Without raw_data, fall through to the heuristic algorithm.
         try:
-            from services.ml_scorer import predict_quality
+            from services.ml_scorer import (
+                extract_features_from_raw_data,
+                predict_quality,
+            )
 
-            ml_quality, ml_score = predict_quality(weather, elevation_m)
-            if ml_quality != SnowQuality.UNKNOWN:
-                fresh_snow_cm = self._estimate_fresh_snow_simple(weather)
-                confidence = self._calculate_confidence_level(
-                    weather,
-                    self.algorithm.source_confidence_multiplier.get(
-                        weather.source_confidence, 0.5
-                    ),
-                )
-                return ml_quality, fresh_snow_cm, confidence
+            raw_features = extract_features_from_raw_data(weather, elevation_m)
+            if raw_features is not None:
+                ml_quality, ml_score = predict_quality(weather, elevation_m)
+                if ml_quality != SnowQuality.UNKNOWN:
+                    # Post-ML adjustments for features the model doesn't see.
+                    # snow_depth_cm (scraped base depth) isn't a model feature.
+                    # Apply a floor: confirmed deep base means skiing IS possible.
+                    snow_depth = getattr(weather, "snow_depth_cm", None)
+                    if snow_depth is not None and snow_depth >= 50:
+                        if ml_quality == SnowQuality.HORRIBLE:
+                            ml_quality = SnowQuality.BAD
+                        if snow_depth >= 100 and ml_quality == SnowQuality.BAD:
+                            ml_quality = SnowQuality.POOR
+
+                    fresh_snow_cm = self._estimate_fresh_snow_simple(weather)
+                    confidence = self._calculate_confidence_level(
+                        weather,
+                        self.algorithm.source_confidence_multiplier.get(
+                            weather.source_confidence, 0.5
+                        ),
+                    )
+                    return ml_quality, fresh_snow_cm, confidence
         except Exception:
             pass  # Fall through to heuristic
 
