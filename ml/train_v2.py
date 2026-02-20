@@ -44,6 +44,9 @@ RAW_FEATURE_COLUMNS = [
     "cur_hours_above_4C",
     "cur_hours_above_5C",
     "cur_hours_above_6C",
+    "cur_wind_kmh",
+    "max_wind_24h",
+    "avg_wind_24h",
 ]
 
 
@@ -74,6 +77,10 @@ def engineer_features(raw_features: dict) -> list[float]:
     ca3 = raw_features["cur_hours_above_3C"]
     ca6 = raw_features["cur_hours_above_6C"]
 
+    # Wind features
+    avg_wind = raw_features.get("avg_wind_24h", 0.0)
+    max_wind = raw_features.get("max_wind_24h", 0.0)
+
     return [
         # Temperature features (4)
         ct,
@@ -99,6 +106,13 @@ def engineer_features(raw_features: dict) -> list[float]:
         ca0,
         ca3,
         ca6,
+        # Wind features (3) - wind affects snow quality (crust, transport)
+        avg_wind,  # average wind speed in last 24h
+        max_wind,  # maximum wind speed in last 24h
+        snow24
+        * max(
+            0, 1.0 - avg_wind / 40.0
+        ),  # calm powder indicator (low wind + fresh snow)
         # Interaction features (6) - these capture the non-linear relationships
         snow24 * max(0, -ct) / 10.0,  # fresh powder indicator (snow * cold)
         snow_ft * max(0, -ct) / 10.0,  # accumulated powder indicator
@@ -128,6 +142,9 @@ ENGINEERED_FEATURE_NAMES = [
     "cur_hours_above_0C",
     "cur_hours_above_3C",
     "cur_hours_above_6C",
+    "avg_wind_24h",
+    "max_wind_24h",
+    "calm_powder_indicator",
     "fresh_powder_indicator",
     "accumulated_powder_indicator",
     "warm_degradation",
@@ -479,9 +496,9 @@ def train_model(
                         if abs(quality_order.index(t) - quality_order.index(p)) <= 1
                     ) / len(y_val)
 
-                    # Combined score: prioritize within-1 = 100%, then minimize MAE
-                    # Penalty of 1.0 for each % below 100% within-1
-                    within_1_penalty = max(0, 1.0 - within_1) * 5.0
+                    # Combined score: strongly prioritize within-1 >= 99.8%, then minimize MAE
+                    # Penalty of 2.0 for each % below 100% within-1
+                    within_1_penalty = max(0, 1.0 - within_1) * 10.0
                     combined_score = val_mae + within_1_penalty
 
                     if verbose and epoch % 500 == 0:

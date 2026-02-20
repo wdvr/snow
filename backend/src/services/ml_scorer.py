@@ -57,7 +57,7 @@ def engineer_features(raw: dict[str, float]) -> list[float]:
         raw: Dict with keys matching RAW_FEATURE_COLUMNS from training.
 
     Returns:
-        List of 24 engineered feature values.
+        List of 27 engineered feature values.
     """
 
     # Convert all values to float to handle DynamoDB Decimal types
@@ -81,6 +81,8 @@ def engineer_features(raw: dict[str, float]) -> list[float]:
     ca0 = _f("cur_hours_above_0C")
     ca3 = _f("cur_hours_above_3C")
     ca6 = _f("cur_hours_above_6C")
+    avg_wind = _f("avg_wind_24h")
+    max_wind = _f("max_wind_24h")
 
     return [
         ct,
@@ -101,6 +103,9 @@ def engineer_features(raw: dict[str, float]) -> list[float]:
         ca0,
         ca3,
         ca6,
+        avg_wind,
+        max_wind,
+        snow24 * max(0, 1.0 - avg_wind / 40.0),
         snow24 * max(0, -ct) / 10.0,
         snow_ft * max(0, -ct) / 10.0,
         max(0, ct) * ca0,
@@ -164,6 +169,9 @@ def extract_features_from_condition(
     ca3 = hours_above_3c if cur_temp >= 3 else 0
     ca6 = hours_above_3c * 0.3 if cur_temp >= 6 else 0
 
+    # Wind approximation from condition fields
+    wind_speed = getattr(condition, "wind_speed_kmh", 0.0) or 0.0
+
     return {
         "cur_temp": cur_temp,
         "max_temp_24h": max_temp,
@@ -190,6 +198,9 @@ def extract_features_from_condition(
         "cur_hours_above_4C": ca3 * 0.7,
         "cur_hours_above_5C": ca6 * 1.3,
         "cur_hours_above_6C": ca6,
+        "cur_wind_kmh": float(wind_speed),
+        "max_wind_24h": float(wind_speed) * 1.5,  # approximate
+        "avg_wind_24h": float(wind_speed),
     }
 
 
@@ -209,6 +220,7 @@ def extract_features_from_raw_data(
     hourly = api_response.get("hourly", {})
     temps = hourly.get("temperature_2m", [])
     snowfall = hourly.get("snowfall", [])
+    wind_speeds = hourly.get("wind_speed_10m", [])
 
     if not temps or len(temps) < 48:
         return None
@@ -298,6 +310,19 @@ def extract_features_from_raw_data(
                 break
         ca[threshold] = count
 
+    # Wind features
+    if wind_speeds and len(wind_speeds) > target_hour:
+        wind_24h = [w for w in wind_speeds[h24_start:target_hour] if w is not None]
+        cur_wind = (
+            wind_speeds[target_hour] if wind_speeds[target_hour] is not None else 0.0
+        )
+        avg_wind_24h = sum(wind_24h) / len(wind_24h) if wind_24h else 0.0
+        max_wind_24h = max(wind_24h) if wind_24h else 0.0
+    else:
+        cur_wind = 0.0
+        avg_wind_24h = 0.0
+        max_wind_24h = 0.0
+
     return {
         "cur_temp": cur_temp,
         "max_temp_24h": max_temp_24h,
@@ -323,6 +348,9 @@ def extract_features_from_raw_data(
         "cur_hours_above_4C": ca[4],
         "cur_hours_above_5C": ca[5],
         "cur_hours_above_6C": ca[6],
+        "cur_wind_kmh": cur_wind,
+        "max_wind_24h": max_wind_24h,
+        "avg_wind_24h": avg_wind_24h,
     }
 
 

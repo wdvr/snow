@@ -22,7 +22,12 @@ REQUEST_DELAY = 0.3
 
 
 def compute_features_for_day(
-    hourly_temps, hourly_snowfall, hourly_times, day_index, elevation_m
+    hourly_temps,
+    hourly_snowfall,
+    hourly_times,
+    day_index,
+    elevation_m,
+    hourly_wind=None,
 ):
     """Compute all ML features for a specific day from hourly data.
 
@@ -116,6 +121,19 @@ def compute_features_for_day(
                 break
         cur_hours_above[threshold] = count
 
+    # Wind features
+    if hourly_wind and len(hourly_wind) > target_hour:
+        wind_24h = [w for w in hourly_wind[h24_start:target_hour] if w is not None]
+        cur_wind = (
+            hourly_wind[target_hour] if hourly_wind[target_hour] is not None else 0.0
+        )
+        avg_wind_24h = sum(wind_24h) / len(wind_24h) if wind_24h else 0.0
+        max_wind_24h = max(wind_24h) if wind_24h else 0.0
+    else:
+        cur_wind = 0.0
+        avg_wind_24h = 0.0
+        max_wind_24h = 0.0
+
     return {
         "cur_temp": round(cur_temp, 1),
         "max_temp_24h": round(max_temp_24h, 1),
@@ -141,6 +159,9 @@ def compute_features_for_day(
         "cur_hours_above_4C": cur_hours_above[4],
         "cur_hours_above_5C": cur_hours_above[5],
         "cur_hours_above_6C": cur_hours_above[6],
+        "cur_wind_kmh": round(cur_wind, 1),
+        "max_wind_24h": round(max_wind_24h, 1),
+        "avg_wind_24h": round(avg_wind_24h, 1),
     }
 
 
@@ -162,7 +183,7 @@ async def fetch_resort_archive(
             "latitude": lat,
             "longitude": lon,
             "elevation": elev_top,
-            "hourly": "temperature_2m,snowfall",
+            "hourly": "temperature_2m,snowfall,wind_speed_10m",
             "start_date": start_date,
             "end_date": end_date,
             "timezone": "GMT",
@@ -197,6 +218,7 @@ async def fetch_resort_archive(
         temps = hourly.get("temperature_2m", [])
         snowfall = hourly.get("snowfall", [])
         times = hourly.get("time", [])
+        wind = hourly.get("wind_speed_10m", [])
 
         if not temps:
             print(f"  NO DATA {resort_id}")
@@ -207,7 +229,7 @@ async def fetch_resort_archive(
 
         for day_idx in range(2, n_days):
             features = compute_features_for_day(
-                temps, snowfall, times, day_idx, elev_top
+                temps, snowfall, times, day_idx, elev_top, wind
             )
             if features:
                 hour_idx = day_idx * 24

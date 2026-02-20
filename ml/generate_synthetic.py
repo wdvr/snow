@@ -40,6 +40,9 @@ def make_sample(
     cur_hours: dict,
     score: float,
     scenario: str,
+    cur_wind_kmh: float = 0.0,
+    max_wind_24h: float = 0.0,
+    avg_wind_24h: float = 0.0,
 ) -> tuple[dict, dict]:
     """Create a synthetic feature vector and score pair."""
     features = {
@@ -62,6 +65,9 @@ def make_sample(
     for th in range(7):
         features[f"total_hours_above_{th}C_since_ft"] = hours_above.get(th, 0)
         features[f"cur_hours_above_{th}C"] = cur_hours.get(th, 0)
+    features["cur_wind_kmh"] = round(cur_wind_kmh, 1)
+    features["max_wind_24h"] = round(max_wind_24h, 1)
+    features["avg_wind_24h"] = round(avg_wind_24h, 1)
 
     score_entry = {
         "resort_id": resort_id,
@@ -96,6 +102,7 @@ def generate_all():
     for i in range(40):
         temp = random.uniform(-15, -2)
         elev = random.uniform(1500, 3000)
+        wind = random.uniform(5, 25)
         f, s = make_sample(
             resort_id=f"synth-packed-{i}",
             date=f"2026-01-{15 + i % 15:02d}",
@@ -113,6 +120,9 @@ def generate_all():
             cur_hours={},
             score=random.uniform(3.5, 4.3),  # FAIR
             scenario="packed_powder_cold",
+            avg_wind_24h=wind,
+            max_wind_24h=wind + random.uniform(5, 15),
+            cur_wind_kmh=wind + random.uniform(-5, 10),
         )
         add(f, s)
 
@@ -126,6 +136,7 @@ def generate_all():
         ha0 = int(warmest * random.uniform(3, 8))
         ha3 = int(ha0 * 0.6)
         ha6 = int(ha0 * 0.2)
+        wind = random.uniform(5, 30)
         f, s = make_sample(
             resort_id=f"synth-icy-{i}",
             date=f"2026-01-{10 + i % 20:02d}",
@@ -151,6 +162,9 @@ def generate_all():
             cur_hours={},  # Currently cold
             score=random.uniform(1.5, 2.4),  # BAD
             scenario="icy_recent_ft",
+            avg_wind_24h=wind,
+            max_wind_24h=wind + random.uniform(5, 15),
+            cur_wind_kmh=wind + random.uniform(-5, 10),
         )
         add(f, s)
 
@@ -164,6 +178,7 @@ def generate_all():
         ha3 = int(ha0 * 0.5)
         ca0 = int(random.uniform(2, 8))  # Currently warming
         ca3 = ca0 if temp >= 3 else 0
+        wind = random.uniform(3, 15)  # Spring: light to moderate wind
         f, s = make_sample(
             resort_id=f"synth-corn-{i}",
             date=f"2026-03-{1 + i % 28:02d}",
@@ -197,6 +212,9 @@ def generate_all():
             },
             score=random.uniform(2.5, 3.4),  # POOR
             scenario="spring_corn",
+            avg_wind_24h=wind,
+            max_wind_24h=wind + random.uniform(3, 10),
+            cur_wind_kmh=wind + random.uniform(-3, 5),
         )
         add(f, s)
 
@@ -207,6 +225,7 @@ def generate_all():
         temp = random.uniform(0, 4)
         snow24 = random.uniform(8, 25)
         snow72 = snow24 + random.uniform(0, 15)
+        wind = random.uniform(10, 30)  # Storm conditions: moderate wind
         f, s = make_sample(
             resort_id=f"synth-wet-snow-{i}",
             date=f"2026-02-{1 + i % 28:02d}",
@@ -240,6 +259,9 @@ def generate_all():
             },
             score=random.uniform(3.5, 4.5),  # FAIR to GOOD
             scenario="warm_heavy_snow",
+            avg_wind_24h=wind,
+            max_wind_24h=wind + random.uniform(10, 25),
+            cur_wind_kmh=wind + random.uniform(-5, 10),
         )
         add(f, s)
 
@@ -250,6 +272,7 @@ def generate_all():
         temp = random.uniform(10, 25)
         ca0 = int(random.uniform(48, 200))
         ha0 = ca0 + int(random.uniform(0, 100))
+        wind = random.uniform(3, 20)  # Summer: variable wind
         f, s = make_sample(
             resort_id=f"synth-summer-{i}",
             date=f"2026-06-{1 + i % 28:02d}",
@@ -267,6 +290,9 @@ def generate_all():
             cur_hours={i: max(0, ca0 - i * 10) for i in range(7)},
             score=random.uniform(1.0, 1.4),  # HORRIBLE
             scenario="not_skiable_summer",
+            avg_wind_24h=wind,
+            max_wind_24h=wind + random.uniform(5, 15),
+            cur_wind_kmh=wind + random.uniform(-3, 8),
         )
         add(f, s)
 
@@ -277,6 +303,7 @@ def generate_all():
         temp = random.uniform(-20, -5)
         snow24 = random.uniform(5, 30)
         snow72 = snow24 + random.uniform(0, 20)
+        wind = random.uniform(2, 15)  # Calm to light wind (powder conditions)
         f, s = make_sample(
             resort_id=f"synth-powder-{i}",
             date=f"2026-01-{1 + i % 30:02d}",
@@ -294,6 +321,9 @@ def generate_all():
             cur_hours={},
             score=random.uniform(5.5, 6.0),  # EXCELLENT
             scenario="cold_fresh_powder",
+            avg_wind_24h=wind,
+            max_wind_24h=wind + random.uniform(3, 12),
+            cur_wind_kmh=wind + random.uniform(-2, 5),
         )
         add(f, s)
 
@@ -306,6 +336,7 @@ def generate_all():
         snow72 = snow24 + random.uniform(1, 10)
         ft_days = random.uniform(2, 10)
         ha0 = int(ft_days * random.uniform(0, 3))
+        wind = random.uniform(3, 20)  # Light to moderate wind
         f, s = make_sample(
             resort_id=f"synth-good-{i}",
             date=f"2026-02-{1 + i % 28:02d}",
@@ -331,6 +362,9 @@ def generate_all():
             cur_hours={},  # Currently cold
             score=random.uniform(4.5, 5.4),  # GOOD
             scenario="moderate_fresh_cold",
+            avg_wind_24h=wind,
+            max_wind_24h=wind + random.uniform(5, 15),
+            cur_wind_kmh=wind + random.uniform(-3, 8),
         )
         add(f, s)
 
@@ -343,6 +377,7 @@ def generate_all():
         snow_af = random.uniform(0.5, 3)
         warmest = random.uniform(2, 6)
         ha0 = int(warmest * random.uniform(3, 8))
+        wind = random.uniform(5, 25)
         f, s = make_sample(
             resort_id=f"synth-thin-on-ice-{i}",
             date=f"2026-02-{5 + i % 20:02d}",
@@ -368,6 +403,9 @@ def generate_all():
             cur_hours={},  # Currently cold or just above 0
             score=random.uniform(2.0, 3.0),  # BAD to POOR
             scenario="thin_cover_on_ice",
+            avg_wind_24h=wind,
+            max_wind_24h=wind + random.uniform(5, 15),
+            cur_wind_kmh=wind + random.uniform(-5, 10),
         )
         add(f, s)
 
@@ -381,6 +419,7 @@ def generate_all():
         snow_af = snow24 + random.uniform(0, 10)
         warmest = random.uniform(2, 6)
         ha0 = int(warmest * random.uniform(3, 6))
+        wind = random.uniform(5, 20)  # Post-storm, moderate wind
         f, s = make_sample(
             resort_id=f"synth-fresh-covers-ice-{i}",
             date=f"2026-02-{1 + i % 28:02d}",
@@ -406,6 +445,9 @@ def generate_all():
             cur_hours={},  # Currently cold
             score=random.uniform(4.5, 5.5),  # GOOD
             scenario="fresh_covers_ice",
+            avg_wind_24h=wind,
+            max_wind_24h=wind + random.uniform(5, 15),
+            cur_wind_kmh=wind + random.uniform(-5, 8),
         )
         add(f, s)
 
@@ -443,6 +485,9 @@ def generate_all():
             cur_hours={},  # Currently cold
             score=random.uniform(3.0, 3.4),  # POOR
             scenario="aging_cold_snow",
+            avg_wind_24h=random.uniform(5, 20),
+            max_wind_24h=random.uniform(15, 35),
+            cur_wind_kmh=random.uniform(3, 25),
         )
         add(f, s)
 
@@ -469,6 +514,9 @@ def generate_all():
             cur_hours={},
             score=random.uniform(3.8, 4.3),  # FAIR
             scenario="well_preserved_base",
+            avg_wind_24h=random.uniform(3, 15),
+            max_wind_24h=random.uniform(10, 30),
+            cur_wind_kmh=random.uniform(2, 20),
         )
         add(f, s)
 
@@ -505,6 +553,9 @@ def generate_all():
             cur_hours={},
             score=random.uniform(4.3, 5.0),  # upper FAIR to GOOD
             scenario="light_fresh_dusting",
+            avg_wind_24h=random.uniform(3, 15),
+            max_wind_24h=random.uniform(8, 25),
+            cur_wind_kmh=random.uniform(2, 18),
         )
         add(f, s)
 
@@ -549,6 +600,9 @@ def generate_all():
             },
             score=random.uniform(2.5, 3.3),  # POOR
             scenario="warm_aging_snow",
+            avg_wind_24h=random.uniform(5, 20),
+            max_wind_24h=random.uniform(10, 30),
+            cur_wind_kmh=random.uniform(3, 22),
         )
         add(f, s)
 
@@ -585,6 +639,9 @@ def generate_all():
             cur_hours={},
             score=random.uniform(4.5, 5.2),  # GOOD
             scenario="borderline_good_accumulation",
+            avg_wind_24h=random.uniform(3, 15),
+            max_wind_24h=random.uniform(8, 25),
+            cur_wind_kmh=random.uniform(2, 18),
         )
         add(f, s)
 
