@@ -406,6 +406,26 @@ struct ResortRowView: View {
                             .foregroundColor(.secondary)
                     }
                 }
+            } else {
+                // Loading skeleton while weather data is being fetched
+                HStack {
+                    Label("--\u{00B0}C", systemImage: "thermometer")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Spacer()
+
+                    Label("-- cm", systemImage: "snowflake")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+
+                    Spacer()
+
+                    Label("--:--", systemImage: "clock")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .redacted(reason: .placeholder)
             }
         }
         .padding(.vertical, 4)

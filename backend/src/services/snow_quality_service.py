@@ -134,6 +134,12 @@ class SnowQualityService:
                 # Boost score slightly for deep powder base
                 adjusted_score = min(1.0, adjusted_score * 1.1)
 
+            # Floor: substantial reliable snow depth means skiing IS possible,
+            # even if conditions are degraded (warm, icy, no fresh snow).
+            # 50+cm confirmed base should never be HORRIBLE (not skiable).
+            if snow_depth >= 50:
+                adjusted_score = max(adjusted_score, 0.20)  # At least POOR
+
         # Apply gradual degradation for warm temps (but don't go to HORRIBLE)
         # Warm temps mean softer snow, but skiing is still possible with base
         if current_temp >= 10.0:
