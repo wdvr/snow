@@ -328,6 +328,34 @@
       "features": []
     },
     {
+      "resort_id": "bretton-woods",
+      "name": "Bretton Woods",
+      "country": "US",
+      "region": "na_east",
+      "state_province": "NH",
+      "elevation_base_m": 457,
+      "elevation_top_m": 945,
+      "latitude": 44.2594,
+      "longitude": -71.4638,
+      "timezone": "America/New_York",
+      "website": "https://www.brettonwoods.com",
+      "features": []
+    },
+    {
+      "resort_id": "jay-peak",
+      "name": "Jay Peak Resort",
+      "country": "US",
+      "region": "na_east",
+      "state_province": "VT",
+      "elevation_base_m": 558,
+      "elevation_top_m": 1175,
+      "latitude": 44.9305,
+      "longitude": -72.5057,
+      "timezone": "America/New_York",
+      "website": "https://www.jaypeakresort.com",
+      "features": []
+    },
+    {
       "resort_id": "killington",
       "name": "Killington",
       "country": "US",
@@ -339,6 +367,20 @@
       "longitude": -72.7798,
       "timezone": "America/New_York",
       "website": "https://www.killington.com",
+      "features": []
+    },
+    {
+      "resort_id": "loon-mountain",
+      "name": "Loon Mountain Resort",
+      "country": "US",
+      "region": "na_east",
+      "state_province": "NH",
+      "elevation_base_m": 290,
+      "elevation_top_m": 945,
+      "latitude": 44.0365,
+      "longitude": -71.6218,
+      "timezone": "America/New_York",
+      "website": "https://www.loonmtn.com",
       "features": []
     },
     {
