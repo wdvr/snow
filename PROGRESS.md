@@ -1,7 +1,7 @@
 # Snow Quality Tracker - Progress
 
-## Status: LIVE (Ready for Open Source)
-**Last Updated**: 2026-02-04
+## Status: LIVE
+**Last Updated**: 2026-02-20
 
 ### Endpoints & Website
 - **Staging API**: https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging
@@ -36,6 +36,17 @@
 
 | Feature | Date |
 |---------|------|
+| Notification deep linking to resort detail | 2026-02-20 |
+| Thaw-freeze info popover in resort detail | 2026-02-20 |
+| Fix 12 more na_east resort elevations | 2026-02-20 |
+| Add 3 missing resorts (Bretton Woods, Jay Peak, Loon Mountain) | 2026-02-20 |
+| Protect elevation data from scraper overwrites | 2026-02-20 |
+| Fix elevation data for 94+ resorts (critical weather accuracy) | 2026-02-20 |
+| Populate workflow: source and update_existing inputs | 2026-02-20 |
+| ML model v6: 10-model ensemble, 93.6% exact accuracy | 2026-02-20 |
+| Optimized quality thresholds (v5.1): 87.4% → 92.7% | 2026-02-20 |
+| ML model v5: deterministic labels, 87.4% exact accuracy | 2026-02-20 |
+| Map view date selector for nearby resorts | 2026-02-20 |
 | Map markers use top elevation for snow quality (not base) | 2026-02-04 |
 | Core resorts protected from false removal notifications | 2026-02-04 |
 | Support page with contact form | 2026-02-04 |
@@ -70,15 +81,10 @@
 ## Architecture
 
 ### Snow Quality Algorithm
-Quality is based on **fresh powder since last thaw-freeze event**:
-- **Excellent**: 3+ inches (7.6+ cm) of fresh snow
-- **Good**: 2-3 inches (5-7.6 cm)
-- **Fair**: 1-2 inches (2.5-5 cm)
-- **Poor**: <1 inch (<2.5 cm)
-- **Bad/Icy**: No fresh snow, cold temps
-- **Horrible**: No snow, warm temps (not skiable)
+ML model v6: ensemble of 10 neural networks (27 features → quality score 1-6).
+93.6% exact accuracy, 100% within-1 quality level. See `ml/ALGORITHM.md` for details.
 
-**Ice forms when**: 3h @ +3°C, 6h @ +2°C, or 8h @ +1°C
+Quality levels: EXCELLENT (6) → GOOD (5) → FAIR (4) → POOR (3) → BAD (2) → HORRIBLE (1)
 
 ### DynamoDB Tables
 - `snow-tracker-resorts-{env}`
