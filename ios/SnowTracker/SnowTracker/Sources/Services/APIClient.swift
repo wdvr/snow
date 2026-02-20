@@ -185,8 +185,8 @@ final class APIClient {
     func getBatchSnowQuality(for resortIds: [String]) async throws -> [String: SnowQualitySummaryLight] {
         guard !resortIds.isEmpty else { return [:] }
 
-        // Limit to 50 resorts per batch
-        let ids = Array(resortIds.prefix(50))
+        // Limit to 200 resorts per batch (backend supports up to 200)
+        let ids = Array(resortIds.prefix(200))
 
         // Build URL with query parameter (same pattern as getBatchConditions)
         var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/snow-quality/batch"), resolvingAgainstBaseURL: false)!

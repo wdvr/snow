@@ -352,13 +352,13 @@ class SnowConditionsManager: ObservableObject {
 
         // Try batch endpoint first, fall back to individual calls if it fails
         // Note: The batch endpoint may not be available (requires API Gateway configuration)
-        let batchSize = 20
+        let batchSize = 50
         for batchStart in stride(from: 0, to: resortIds.count, by: batchSize) {
             let batchEnd = min(batchStart + batchSize, resortIds.count)
             let batchIds = Array(resortIds[batchStart..<batchEnd])
 
             do {
-                // Try batch endpoint for efficiency (single request per 20 resorts)
+                // Try batch endpoint for efficiency (single request per 50 resorts)
                 let batchResults = try await apiClient.getBatchConditions(resortIds: batchIds)
 
                 for (resortId, resortConditions) in batchResults {
