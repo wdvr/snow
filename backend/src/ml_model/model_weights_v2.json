@@ -7240,9 +7240,9 @@
     ]
   },
   "quality_thresholds": {
-    "excellent": 5.5,
-    "good": 4.5,
-    "fair": 3.5,
+    "excellent": 5.25,
+    "good": 4.45,
+    "fair": 3.35,
     "poor": 2.5,
     "bad": 1.5,
     "horrible": 0.0

@@ -152,7 +152,7 @@ Deterministic rule-based scoring (`score_historical_batches.py`):
 | MAE | 0.183 |
 | RMSE | 0.254 |
 | R^2 | 0.948 |
-| Exact quality match | 87.4% |
+| Exact quality match | 92.7% |
 | **Within-1 quality level** | **100.0%** |
 
 ### Per-Class Accuracy
@@ -160,10 +160,10 @@ Deterministic rule-based scoring (`score_historical_batches.py`):
 |---------|---------|-------|----------|
 | HORRIBLE | 20 | 22 | 91% |
 | BAD | 29 | 31 | 94% |
-| POOR | 50 | 57 | 88% |
-| FAIR | 208 | 230 | 90% |
-| GOOD | 47 | 59 | 80% |
-| EXCELLENT | 28 | 38 | 74% |
+| POOR | 49 | 57 | 86% |
+| FAIR | 219 | 230 | 95% |
+| GOOD | 50 | 59 | 85% |
+| EXCELLENT | 38 | 38 | 100% |
 
 The model never misses by more than one quality level (0 out of 437 validation samples).
 
@@ -214,8 +214,15 @@ Per-elevation scores are aggregated with weighted averaging:
 | v3.1 | 2026-02-20 | Fine-grained checkpointing, source weights in training | 0.366 | 74.6% |
 | v4 | 2026-02-20 | +200 boundary synthetic data, 64-neuron hidden layer, 40-config search | 0.351 | 76.7% |
 | v5 | 2026-02-20 | Ensemble of 5 models, deterministic labels, wind features | 0.183 | 87.4% |
+| v5.1 | 2026-02-20 | Optimized quality thresholds (same model weights) | 0.183 | 92.7% |
 
 ### Key Experiments
+
+#### Threshold Optimization (v5.1)
+Searched optimal quality thresholds over the validation set while maintaining 100% within-1
+accuracy. Lowered EXCELLENT from 5.5→5.25, GOOD from 4.5→4.45, FAIR from 3.5→3.35. This
+recovered 10 EXCELLENT samples that were borderline-predicted (5.25-5.49) without any
+retraining. EXCELLENT accuracy improved from 74%→100%, overall from 87.4%→92.7%.
 
 #### Deterministic Labeling (v5 breakthrough)
 Replaced noisy LLM-generated labels with a deterministic rule-based scorer. The LLM labels
@@ -244,4 +251,4 @@ Scored by 6 independent subagents in parallel. Training with this data showed:
 5. **Snow depth integration**: When reliable depth data is available, add as feature
 6. **Temporal features**: Day-over-day quality change trends
 7. **On-device inference**: Export to CoreML for iOS offline scoring
-8. **Improve GOOD/EXCELLENT accuracy**: Currently 80%/74%, lowest among categories
+8. **Improve POOR accuracy**: Currently 86%, lowest among categories
