@@ -2,38 +2,38 @@
 Model Evaluation Report (v2 - Neural Network)
 ============================================================
 Samples: 437
-MAE: 0.183
-RMSE: 0.254
-R²: 0.948
+MAE: 0.182
+RMSE: 0.253
+R²: 0.949
 Exact quality match: 87.4%
 Within-1 quality level: 100.0%
 
 Score distribution:
   True  - mean: 3.76, std: 1.12
-  Pred  - mean: 3.75, std: 1.11
+  Pred  - mean: 3.75, std: 1.12
 
 Quality confusion (true → predicted):
     horrible ( 22): horrible=20, bad=2
-         bad ( 31): bad=29, poor=2
+         bad ( 31): bad=30, poor=1
         poor ( 57): poor=50, bad=6, fair=1
-        fair (230): fair=208, poor=19, good=3
+        fair (230): fair=206, poor=20, good=4
         good ( 59): good=47, fair=11, excellent=1
-   excellent ( 38): excellent=28, good=10
+   excellent ( 38): excellent=29, good=9
 
 Worst 15 predictions:
   Resort                              Date          True  Pred Error
-  synth-corn-18                       2026-03-19     3.3   2.0  1.29
-  grouse-mountain                     2026-02-12     3.7   2.8  0.92
-  big-sky-resort                      2026-02-10     2.5   3.4  0.90
-  synth-light-dusting-37              2026-02-10     4.9   4.0  0.86
-  buttermilk-mountain                 2026-02-13     4.0   3.2  0.80
-  aspen-highlands                     2026-02-18     4.4   5.2  0.79
-  synth-corn-27                       2026-03-28     3.0   2.3  0.72
-  silverstar                          2026-02-10     3.8   3.1  0.67
-  synth-good-3                        2026-02-04     5.3   4.7  0.65
-  winter-park-resort                  2026-02-14     4.4   3.8  0.60
-  big-sky-resort                      2026-02-12     3.5   2.9  0.59
-  snow-king-mountain-jackson          2026-02-14     3.8   3.2  0.59
-  synth-icy-9                         2026-01-19     1.8   2.4  0.59
-  synth-summer-11                     2026-06-12     1.1   1.7  0.58
-  cypress-mountain                    2026-02-12     3.4   2.8  0.58
+  synth-corn-18                       2026-03-19     3.3   2.0  1.33
+  grouse-mountain                     2026-02-12     3.7   2.7  0.97
+  synth-light-dusting-37              2026-02-10     4.9   4.0  0.93
+  buttermilk-mountain                 2026-02-13     4.0   3.1  0.87
+  synth-corn-27                       2026-03-28     3.0   2.2  0.81
+  big-sky-resort                      2026-02-10     2.5   3.3  0.78
+  aspen-highlands                     2026-02-18     4.4   5.1  0.72
+  synth-corn-2                        2026-03-03     3.1   2.4  0.72
+  winter-park-resort                  2026-02-14     4.4   3.8  0.65
+  synth-wet-snow-13                   2026-02-14     4.4   3.8  0.62
+  silverstar                          2026-02-10     3.8   3.2  0.62
+  synth-icy-9                         2026-01-19     1.8   2.4  0.60
+  snow-king-mountain-jackson          2026-02-14     3.8   3.2  0.60
+  synth-good-3                        2026-02-04     5.3   4.7  0.59
+  castle-mountain                     2026-02-18     3.8   4.4  0.58

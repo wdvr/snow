@@ -432,10 +432,10 @@ def train_model(
     meta_val,
     hidden_sizes=None,
     seeds=None,
-    n_epochs=3000,
+    n_epochs=4000,
     checkpoint_interval=50,
     verbose=True,
-    ensemble_size=5,
+    ensemble_size=10,
 ):
     """Train model with grid search over hidden sizes and seeds.
 
@@ -451,7 +451,7 @@ def train_model(
     if hidden_sizes is None:
         hidden_sizes = [16, 24, 32, 48, 64]
     if seeds is None:
-        seeds = [7, 42, 77, 123, 256, 512, 777, 1234]
+        seeds = list(range(7, 2000, 123))[:16]  # 16 seeds for wider search
 
     quality_order = ["horrible", "bad", "poor", "fair", "good", "excellent"]
     n_features = X_train.shape[1]
@@ -755,9 +755,9 @@ def main(historical_weight=None):
             "std": std.tolist(),
         },
         "quality_thresholds": {
-            "excellent": 5.5,
-            "good": 4.5,
-            "fair": 3.5,
+            "excellent": 5.35,
+            "good": 4.40,
+            "fair": 3.30,
             "poor": 2.5,
             "bad": 1.5,
             "horrible": 0.0,
