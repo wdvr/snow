@@ -240,7 +240,8 @@ class OpenMeteoService:
                 "longitude": longitude,
                 "elevation": elevation_meters,
                 "hourly": "temperature_2m,snowfall,snow_depth,wind_speed_10m,weather_code",
-                "past_days": 7,
+                "daily": "temperature_2m_min,temperature_2m_max,snowfall_sum",
+                "past_days": 14,
                 "forecast_days": 7,
                 "timezone": timezone,
             }
@@ -251,6 +252,7 @@ class OpenMeteoService:
 
             data = response.json()
             hourly = data.get("hourly", {})
+            daily = data.get("daily", {})
 
             hourly_times = hourly.get("time", [])
             hourly_temps = hourly.get("temperature_2m", [])
@@ -260,6 +262,11 @@ class OpenMeteoService:
             hourly_weather_code = hourly.get("weather_code", [])
 
             now = datetime.now(UTC)
+
+            # Compute global freeze-thaw state once for the entire timeline.
+            # This gives us cumulative snowfall_after_freeze_cm, snowfall_24h/48h/72h
+            # so timeline quality reflects the resort's actual condition.
+            snowfall_data = self._process_snowfall(daily, hourly)
 
             # Define the 3 windows per day
             windows = [
@@ -362,6 +369,8 @@ class OpenMeteoService:
                         is_forecast = False
 
                     # Calculate snow quality using SnowQualityService
+                    # Use global freeze-thaw context from _process_snowfall()
+                    # so timeline quality matches the resort's actual condition
                     weather_condition = WeatherCondition(
                         resort_id="timeline",
                         elevation_level=elevation_level,
@@ -369,11 +378,13 @@ class OpenMeteoService:
                         current_temp_celsius=temp,
                         min_temp_celsius=temp,
                         max_temp_celsius=temp,
-                        snowfall_24h_cm=snowfall_sum,
-                        snowfall_48h_cm=0.0,
-                        snowfall_72h_cm=0.0,
+                        snowfall_24h_cm=snowfall_data.get("snowfall_24h", 0.0),
+                        snowfall_48h_cm=snowfall_data.get("snowfall_48h", 0.0),
+                        snowfall_72h_cm=snowfall_data.get("snowfall_72h", 0.0),
                         snow_depth_cm=snow_depth,
-                        snowfall_after_freeze_cm=snowfall_sum,
+                        snowfall_after_freeze_cm=snowfall_data.get(
+                            "snowfall_after_freeze_cm", 0.0
+                        ),
                         data_source="open-meteo.com",
                         source_confidence=ConfidenceLevel.MEDIUM,
                     )
@@ -389,7 +400,7 @@ class OpenMeteoService:
                         "timestamp": timestamp_str,
                         "temperature_c": temp,
                         "wind_speed_kmh": wind,
-                        "snowfall_cm": round(snowfall_sum, 2),
+                        "snowfall_cm": round(snowfall_sum, 1),
                         "snow_depth_cm": round(snow_depth, 1)
                         if snow_depth is not None
                         else None,

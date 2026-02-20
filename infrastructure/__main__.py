@@ -463,6 +463,7 @@ weather_schedule_rule = aws.cloudwatch.EventRule(
     name=f"{app_name}-weather-schedule-{environment}",
     description="Trigger weather data fetch every hour",
     schedule_expression="rate(1 hour)",
+    is_enabled=True,
     tags=tags,
 )
 

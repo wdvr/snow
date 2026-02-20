@@ -361,6 +361,23 @@ class CacheService {
         try? context.save()
     }
 
+    // MARK: - API Change Detection
+
+    private let lastAPIURLKey = "com.snowtracker.lastAPIBaseURL"
+
+    /// Check if the API URL has changed since the last session and invalidate
+    /// all cached data if so. This prevents stale data from a different
+    /// environment (e.g. staging) from being shown after switching to production.
+    func checkAndInvalidateIfAPIChanged() {
+        let currentURL = AppConfiguration.shared.apiBaseURL.absoluteString
+        let lastURL = UserDefaults.standard.string(forKey: lastAPIURLKey)
+        if let lastURL, lastURL != currentURL {
+            print("CacheService: API URL changed from \(lastURL) to \(currentURL) — clearing all cache")
+            clearAllCache()
+        }
+        UserDefaults.standard.set(currentURL, forKey: lastAPIURLKey)
+    }
+
     func clearAllCache() {
         guard let context = modelContext else { return }
 
