@@ -416,24 +416,34 @@ def train_model(
     hidden_sizes=None,
     seeds=None,
     n_epochs=3000,
+    checkpoint_interval=50,
     verbose=True,
 ):
     """Train model with grid search over hidden sizes and seeds.
 
-    Returns (best_model, best_model_state, mean, std, best_val_mae).
+    Uses fine-grained checkpointing to find optimal training epoch.
+    Selection metric combines MAE with within-1 accuracy to avoid
+    selecting models that overfit on average error but miss quality levels.
+
+    Returns (best_model, best_model_state, best_val_mae).
     """
     if hidden_sizes is None:
-        hidden_sizes = [24, 32, 48]
+        hidden_sizes = [16, 24, 32, 48, 64]
     if seeds is None:
-        seeds = [42, 123, 7]
+        seeds = [7, 42, 77, 123, 256, 512, 777, 1234]
 
+    quality_order = ["horrible", "bad", "poor", "fair", "good", "excellent"]
     n_features = X_train.shape[1]
+    best_score = float("inf")
     best_val_mae = float("inf")
     best_model_state = None
     batch_size = 64
+    total_configs = len(hidden_sizes) * len(seeds)
+    config_num = 0
 
     for n_hidden in hidden_sizes:
         for seed in seeds:
+            config_num += 1
             np.random.seed(seed)
             model = SimpleNN(n_features, n_hidden=n_hidden)
             lr = 0.01
@@ -454,26 +464,59 @@ def train_model(
                 if epoch > 0 and epoch % 500 == 0:
                     lr *= 0.5
 
-                if (epoch % 500 == 0 or epoch == n_epochs - 1) and verbose:
+                # Fine-grained checkpointing
+                should_eval = epoch % checkpoint_interval == 0 or epoch == n_epochs - 1
+                if should_eval:
                     val_pred = model.predict(X_val)
                     val_mae = np.mean(np.abs(y_val - val_pred))
-                    train_pred = model.predict(X_train)
-                    train_mae = np.mean(np.abs(y_train - train_pred))
-                    print(
-                        f"  h={n_hidden} s={seed} epoch {epoch}: "
-                        f"train_mae={train_mae:.3f} val_mae={val_mae:.3f} lr={lr:.5f}"
-                    )
 
-                    if val_mae < best_val_mae:
+                    # Compute within-1 accuracy for selection metric
+                    tq = [score_to_quality(s) for s in y_val]
+                    pq = [score_to_quality(s) for s in val_pred]
+                    within_1 = sum(
+                        1
+                        for t, p in zip(tq, pq)
+                        if abs(quality_order.index(t) - quality_order.index(p)) <= 1
+                    ) / len(y_val)
+
+                    # Combined score: prioritize within-1 = 100%, then minimize MAE
+                    # Penalty of 1.0 for each % below 100% within-1
+                    within_1_penalty = max(0, 1.0 - within_1) * 5.0
+                    combined_score = val_mae + within_1_penalty
+
+                    if verbose and epoch % 500 == 0:
+                        train_pred = model.predict(X_train)
+                        train_mae = np.mean(np.abs(y_train - train_pred))
+                        print(
+                            f"  [{config_num}/{total_configs}] "
+                            f"h={n_hidden} s={seed} ep={epoch}: "
+                            f"train={train_mae:.3f} val={val_mae:.3f} "
+                            f"w1={within_1:.1%} lr={lr:.5f}"
+                        )
+
+                    if combined_score < best_score:
+                        best_score = combined_score
                         best_val_mae = val_mae
                         best_model_state = {
                             "n_hidden": n_hidden,
                             "seed": seed,
+                            "epoch": epoch,
+                            "within_1": within_1,
                             "W1": model.W1.copy(),
                             "b1": model.b1.copy(),
                             "W2": model.W2.copy(),
                             "b2": model.b2.copy(),
                         }
+
+            if verbose:
+                print(
+                    f"  -> Config h={n_hidden} s={seed} done. "
+                    f"Best so far: h={best_model_state['n_hidden']} "
+                    f"s={best_model_state['seed']} "
+                    f"ep={best_model_state['epoch']} "
+                    f"mae={best_val_mae:.3f} "
+                    f"w1={best_model_state['within_1']:.1%}"
+                )
 
     model = SimpleNN(n_features, n_hidden=best_model_state["n_hidden"])
     model.W1 = best_model_state["W1"]

@@ -110,6 +110,12 @@ def dynamodb_tables(aws_mock):
 @pytest.fixture(scope="module")
 def app_client(aws_mock, dynamodb_tables):
     """Create FastAPI test client after tables are set up."""
+    # Re-set env vars to ensure they match our table names, even if another
+    # test module (e.g., test_api_endpoints.py) overwrote them at import time
+    os.environ["RESORTS_TABLE"] = "snow-tracker-resorts-perf-test"
+    os.environ["WEATHER_CONDITIONS_TABLE"] = "snow-tracker-weather-conditions-perf-test"
+    os.environ["USER_PREFERENCES_TABLE"] = "snow-tracker-user-preferences-perf-test"
+
     # Import app after mock is active (explicit aws_mock dependency ensures this)
     from fastapi.testclient import TestClient
 

@@ -409,6 +409,185 @@ def generate_all():
         )
         add(f, s)
 
+    # === AGING COLD SNOW: Cold, old base, no fresh, mild FT history ===
+    # Key: cold (-3 to -10°C), ft_days 5-12, no fresh snow, some warm hours history
+    # Score: 3.0-3.5 (POOR) - snow has been sitting, some degradation
+    for i in range(40):
+        temp = random.uniform(-10, -3)
+        ft_days = random.uniform(5, 12)
+        warmest = random.uniform(1, 4)
+        ha0 = int(ft_days * random.uniform(1, 4))
+        ha3 = int(ha0 * 0.3)
+        f, s = make_sample(
+            resort_id=f"synth-aging-cold-{i}",
+            date=f"2026-02-{1 + i % 28:02d}",
+            cur_temp=temp,
+            max_temp_24h=temp + random.uniform(1, 3),
+            min_temp_24h=temp - random.uniform(1, 4),
+            max_temp_48h=temp + random.uniform(2, 5),
+            freeze_thaw_days_ago=ft_days,
+            warmest_thaw=warmest,
+            snow_since_freeze_cm=random.uniform(0, 2),
+            snowfall_24h_cm=random.uniform(0, 0.5),
+            snowfall_72h_cm=random.uniform(0, 2),
+            elevation_m=random.uniform(1500, 2800),
+            hours_above={
+                0: ha0,
+                1: int(ha0 * 0.7),
+                2: int(ha0 * 0.5),
+                3: ha3,
+                4: int(ha3 * 0.5),
+                5: 0,
+                6: 0,
+            },
+            cur_hours={},  # Currently cold
+            score=random.uniform(3.0, 3.4),  # POOR
+            scenario="aging_cold_snow",
+        )
+        add(f, s)
+
+    # === WELL-PRESERVED BASE: Very cold, stable, no FT, no fresh ===
+    # Key: very cold (< -10°C), ft_days=14 (none), no fresh, high elevation
+    # Score: 3.8-4.3 (FAIR) - cold keeps base snow decent
+    for i in range(50):
+        temp = random.uniform(-25, -10)
+        elev = random.uniform(1800, 3500)
+        f, s = make_sample(
+            resort_id=f"synth-cold-base-{i}",
+            date=f"2026-01-{5 + i % 25:02d}",
+            cur_temp=temp,
+            max_temp_24h=temp + random.uniform(1, 5),
+            min_temp_24h=temp - random.uniform(1, 5),
+            max_temp_48h=temp + random.uniform(2, 7),
+            freeze_thaw_days_ago=14.0,
+            warmest_thaw=0.0,
+            snow_since_freeze_cm=random.uniform(0, 3),
+            snowfall_24h_cm=random.uniform(0, 1),
+            snowfall_72h_cm=random.uniform(0, 3),
+            elevation_m=elev,
+            hours_above={},  # All zeros
+            cur_hours={},
+            score=random.uniform(3.8, 4.3),  # FAIR
+            scenario="well_preserved_base",
+        )
+        add(f, s)
+
+    # === LIGHT FRESH DUSTING: Cold, light fresh (1-4cm), decent base ===
+    # Key: cold, small fresh snow, FT 3-14 days ago
+    # Score: 4.3-5.0 (upper FAIR to GOOD) - light refresh on decent base
+    for i in range(40):
+        temp = random.uniform(-15, -3)
+        snow24 = random.uniform(1, 4)
+        snow72 = snow24 + random.uniform(0, 3)
+        ft_days = random.uniform(3, 14)
+        f, s = make_sample(
+            resort_id=f"synth-light-dusting-{i}",
+            date=f"2026-02-{1 + i % 28:02d}",
+            cur_temp=temp,
+            max_temp_24h=temp + random.uniform(1, 4),
+            min_temp_24h=temp - random.uniform(1, 4),
+            max_temp_48h=temp + random.uniform(2, 6),
+            freeze_thaw_days_ago=ft_days,
+            warmest_thaw=random.uniform(0, 2) if ft_days < 10 else 0,
+            snow_since_freeze_cm=snow72 * random.uniform(0.8, 1.0),
+            snowfall_24h_cm=snow24,
+            snowfall_72h_cm=snow72,
+            elevation_m=random.uniform(1600, 3200),
+            hours_above={
+                0: int(random.uniform(0, 5)),
+                1: int(random.uniform(0, 3)),
+                2: int(random.uniform(0, 2)),
+                3: 0,
+                4: 0,
+                5: 0,
+                6: 0,
+            },
+            cur_hours={},
+            score=random.uniform(4.3, 5.0),  # upper FAIR to GOOD
+            scenario="light_fresh_dusting",
+        )
+        add(f, s)
+
+    # === WARM AGING: Above freezing, old snow degrading ===
+    # Key: warm (0-5°C), some hours above 0, old snow, no fresh
+    # Score: 2.5-3.3 (POOR) - warm temps degrading existing snow
+    for i in range(35):
+        temp = random.uniform(0, 5)
+        ca0 = int(random.uniform(4, 24))
+        ha0 = ca0 + int(random.uniform(10, 40))
+        ha3 = int(ha0 * 0.4) if temp >= 3 else int(ha0 * 0.2)
+        f, s = make_sample(
+            resort_id=f"synth-warm-aging-{i}",
+            date=f"2026-02-{5 + i % 20:02d}",
+            cur_temp=temp,
+            max_temp_24h=temp + random.uniform(0, 3),
+            min_temp_24h=temp - random.uniform(2, 5),
+            max_temp_48h=temp + random.uniform(1, 5),
+            freeze_thaw_days_ago=random.uniform(1, 5),
+            warmest_thaw=temp + random.uniform(0, 3),
+            snow_since_freeze_cm=random.uniform(0, 3),
+            snowfall_24h_cm=random.uniform(0, 0.5),
+            snowfall_72h_cm=random.uniform(0, 2),
+            elevation_m=random.uniform(1500, 2800),
+            hours_above={
+                0: ha0,
+                1: int(ha0 * 0.8),
+                2: int(ha0 * 0.6),
+                3: ha3,
+                4: int(ha3 * 0.5),
+                5: int(ha3 * 0.2),
+                6: 0,
+            },
+            cur_hours={
+                0: ca0,
+                1: int(ca0 * 0.8),
+                2: int(ca0 * 0.5),
+                3: int(ca0 * 0.3) if temp >= 3 else 0,
+                4: 0,
+                5: 0,
+                6: 0,
+            },
+            score=random.uniform(2.5, 3.3),  # POOR
+            scenario="warm_aging_snow",
+        )
+        add(f, s)
+
+    # === BORDERLINE GOOD: Moderate-cold, decent 72h accumulation ===
+    # Key: cold enough to preserve (-5 to -15°C), 72h snow 5-15cm, recent snow tapering
+    # Score: 4.5-5.2 (GOOD) - accumulated snow, good conditions
+    for i in range(35):
+        temp = random.uniform(-15, -5)
+        snow72 = random.uniform(5, 15)
+        snow24 = snow72 * random.uniform(0.2, 0.5)  # Recent snow tapering off
+        ft_days = random.uniform(4, 14)
+        f, s = make_sample(
+            resort_id=f"synth-borderline-good-{i}",
+            date=f"2026-01-{10 + i % 20:02d}",
+            cur_temp=temp,
+            max_temp_24h=temp + random.uniform(2, 5),
+            min_temp_24h=temp - random.uniform(1, 4),
+            max_temp_48h=temp + random.uniform(3, 7),
+            freeze_thaw_days_ago=ft_days,
+            warmest_thaw=random.uniform(0, 2) if ft_days < 10 else 0,
+            snow_since_freeze_cm=snow72 * random.uniform(0.9, 1.0),
+            snowfall_24h_cm=snow24,
+            snowfall_72h_cm=snow72,
+            elevation_m=random.uniform(2000, 3500),
+            hours_above={
+                0: int(random.uniform(0, 8)),
+                1: int(random.uniform(0, 5)),
+                2: int(random.uniform(0, 3)),
+                3: 0,
+                4: 0,
+                5: 0,
+                6: 0,
+            },
+            cur_hours={},
+            score=random.uniform(4.5, 5.2),  # GOOD
+            scenario="borderline_good_accumulation",
+        )
+        add(f, s)
+
     # Save
     output = {
         "collected_at": "2026-02-20T00:00:00Z",

@@ -4,7 +4,7 @@
 
 The snow quality score determines how good skiing conditions are at a resort. It's the core metric our app displays — getting this right is critical.
 
-**Model**: 2-layer neural network (24 input → 24 hidden → 1 output)
+**Model**: 2-layer neural network (24 input → 64 hidden → 1 output)
 **Output**: Score 1.0-6.0, mapped to quality levels:
 - **6 = EXCELLENT**: Fresh powder, cold temps, perfect skiing
 - **5 = GOOD**: Nice conditions, some fresh or well-preserved snow
@@ -22,7 +22,7 @@ Feature Engineering (24 features)
         |
 Normalization (z-score using training stats)
         |
-Hidden Layer (24 neurons, ReLU activation)
+Hidden Layer (64 neurons, ReLU activation)
         |
 Output Layer (1 neuron, sigmoid x 5 + 1)
         |
@@ -101,7 +101,7 @@ Non-linear combinations that capture key skiing condition patterns:
 
 ### Synthetic Data
 - **Source**: Algorithmically generated edge cases (labeled as `source: "synthetic"`)
-- **Total samples**: 330
+- **Total samples**: 530
 - **Purpose**: Address underrepresented scenarios in real data
 - **Scenarios covered**:
   - Packed powder (cold, no freeze-thaw in 14+ days, no fresh snow) -> FAIR
@@ -113,10 +113,15 @@ Non-linear combinations that capture key skiing condition patterns:
   - Moderate fresh on cold base -> GOOD
   - Thin cover on icy base (< 3cm fresh on ice) -> BAD/POOR
   - Thick fresh covers icy base (8+ cm covers ice) -> GOOD
+  - Aging cold snow (old base, mild FT history) -> POOR
+  - Well-preserved base (very cold, stable, no FT) -> FAIR
+  - Light fresh dusting (1-4cm, cold) -> upper FAIR/GOOD
+  - Warm aging snow (above freezing, degrading) -> POOR
+  - Borderline good accumulation (72h snow, cold) -> GOOD
 
 ### Combined Dataset
-- **Total**: 1,981 samples (1,651 real + 330 synthetic)
-- **Split**: 80% train (1,584), 20% validation (397)
+- **Total**: 2,181 samples (1,651 real + 530 synthetic)
+- **Split**: 80% train (1,744), 20% validation (437)
 
 ### Scoring Criteria Used for Labels
 - snowfall_24h >= 20cm AND cur_temp < -3C -> 6 (EXCELLENT)
@@ -129,23 +134,23 @@ Non-linear combinations that capture key skiing condition patterns:
 
 | Metric | Value |
 |--------|-------|
-| MAE | 0.366 |
-| RMSE | 0.488 |
-| R^2 | 0.851 |
-| Exact quality match | 74.6% |
-| **Within-1 quality level** | **100.0%** |
+| MAE | 0.351 |
+| RMSE | 0.480 |
+| R^2 | 0.830 |
+| Exact quality match | 76.7% |
+| **Within-1 quality level** | **99.8%** |
 
 ### Per-Class Accuracy
 | Quality | Correct | Total | Accuracy |
 |---------|---------|-------|----------|
-| HORRIBLE | 30 | 32 | 94% |
-| BAD | 22 | 28 | 79% |
-| POOR | 32 | 52 | 62% |
-| FAIR | 141 | 187 | 75% |
-| GOOD | 43 | 63 | 68% |
-| EXCELLENT | 28 | 35 | 80% |
+| HORRIBLE | 20 | 25 | 80% |
+| BAD | 24 | 27 | 89% |
+| POOR | 45 | 65 | 69% |
+| FAIR | 167 | 213 | 78% |
+| GOOD | 53 | 73 | 73% |
+| EXCELLENT | 26 | 34 | 76% |
 
-The model **never misses by more than one quality level** on validation data.
+The model misses by more than one quality level on only 0.2% of validation samples (1 out of 437).
 
 ## Production Integration
 
@@ -177,7 +182,7 @@ Per-elevation scores are aggregated with weighted averaging:
 | `ml/model_weights_v2.json` | Trained model weights + normalization stats |
 | `ml/training_features.json` | Raw collected feature data (Feb 7-20, 2026) |
 | `ml/historical_features.json` | Historical feature data (Jan 2026, 3,683 samples) |
-| `ml/synthetic_features.json` | Synthetic feature data (330 samples) |
+| `ml/synthetic_features.json` | Synthetic feature data (530 samples) |
 | `ml/scores/` | Expert-labeled + synthetic training scores |
 | `backend/src/services/ml_scorer.py` | ML inference service (forward pass only) |
 | `backend/src/services/snow_quality_service.py` | Production scoring code (ML + heuristic fallback) |
@@ -191,8 +196,9 @@ Per-elevation scores are aggregated with weighted averaging:
 | v2 | 2026-02-20 | Neural network, engineered features, class balancing | 0.392 | 67.7% |
 | v3 | 2026-02-20 | +330 synthetic edge cases, more training epochs, seed search | 0.367 | 73.6% |
 | v3.1 | 2026-02-20 | Fine-grained checkpointing, source weights in training | 0.366 | 74.6% |
+| v4 | 2026-02-20 | +200 boundary synthetic data, 64-neuron hidden layer, 40-config search | 0.351 | 76.7% |
 
-### Historical Data Experiment (v4 - not deployed)
+### Historical Data Experiment (not deployed)
 Collected 3,683 historical samples from January 2026 via Open-Meteo archive API.
 Scored by 6 independent subagents in parallel. Training with this data showed:
 - Labels were noisy due to inter-annotator disagreement (54% agreement with v3 model predictions)

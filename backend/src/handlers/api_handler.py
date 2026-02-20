@@ -77,10 +77,15 @@ security = HTTPBearer(auto_error=False)
 
 
 def reset_services():
-    """Reset all lazy-initialized services. Useful for testing."""
+    """Reset all lazy-initialized services. Useful for testing.
+
+    Also resets boto3's default session so that subsequent calls to
+    boto3.resource() create fresh sessions within the current mock context
+    (e.g., moto's mock_aws).
+    """
     global _dynamodb, _resort_service, _weather_service, _snow_quality_service
     global _user_service, _feedback_table, _auth_service, _recommendation_service
-    global _trip_service, _trips_table
+    global _trip_service, _trips_table, _s3_client
     _dynamodb = None
     _resort_service = None
     _weather_service = None
@@ -91,6 +96,9 @@ def reset_services():
     _recommendation_service = None
     _trip_service = None
     _trips_table = None
+    _s3_client = None
+    # Reset boto3's default session so new clients use the moto mock context
+    boto3.DEFAULT_SESSION = None
 
 
 def get_dynamodb():
