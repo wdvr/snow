@@ -81,8 +81,8 @@
 ## Architecture
 
 ### Snow Quality Algorithm
-ML model v6: ensemble of 10 neural networks (27 features → quality score 1-6).
-93.6% exact accuracy, 100% within-1 quality level. See `ml/ALGORITHM.md` for details.
+ML model v7: ensemble of 10 neural networks (27 features → quality score 1-6).
+88.2% exact accuracy, 100% within-1 quality level. Retrained on corrected elevation data. See `ml/ALGORITHM.md` for details.
 
 Quality levels: EXCELLENT (6) → GOOD (5) → FAIR (4) → POOR (3) → BAD (2) → HORRIBLE (1)
 

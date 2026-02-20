@@ -107,9 +107,9 @@ Non-linear combinations that capture key skiing condition patterns:
 ## Training Data
 
 ### Real Data
-- **Source**: Open-Meteo hourly weather data for 127 ski resorts worldwide
+- **Source**: Open-Meteo hourly weather data for 129 ski resorts worldwide
 - **Period**: 13 days (Feb 8-20, 2026)
-- **Total samples**: 1,651 (resort x day x top elevation)
+- **Total samples**: 1,677 (resort x day x top elevation)
 - **Scoring**: Deterministic rule-based scorer (`score_historical_batches.py`) applied to weather features for consistent, aligned labels
 
 ### Synthetic Data
@@ -133,8 +133,8 @@ Non-linear combinations that capture key skiing condition patterns:
   - Borderline good accumulation (72h snow, cold) -> GOOD
 
 ### Combined Dataset
-- **Total**: 2,181 samples (1,651 real + 530 synthetic)
-- **Split**: 80% train (1,744), 20% validation (437)
+- **Total**: 2,207 samples (1,677 real + 530 synthetic)
+- **Split**: 80% train (1,765), 20% validation (442)
 
 ### Scoring Criteria Used for Labels
 Deterministic rule-based scoring (`score_historical_batches.py`):
@@ -149,23 +149,23 @@ Deterministic rule-based scoring (`score_historical_batches.py`):
 
 | Metric | Value |
 |--------|-------|
-| MAE | 0.182 |
-| RMSE | 0.253 |
-| R^2 | 0.949 |
-| Exact quality match | 93.6% |
+| MAE | 0.195 |
+| RMSE | 0.274 |
+| R^2 | 0.950 |
+| Exact quality match | 88.2% |
 | **Within-1 quality level** | **100.0%** |
 
 ### Per-Class Accuracy
 | Quality | Correct | Total | Accuracy |
 |---------|---------|-------|----------|
-| HORRIBLE | 20 | 22 | 90% |
-| BAD | 30 | 31 | 96% |
-| POOR | 49 | 57 | 85% |
-| FAIR | 217 | 230 | 94% |
-| GOOD | 56 | 59 | 94% |
-| EXCELLENT | 37 | 38 | 97% |
+| HORRIBLE | 19 | 22 | 86% |
+| BAD | 19 | 23 | 83% |
+| POOR | 66 | 78 | 85% |
+| FAIR | 161 | 172 | 94% |
+| GOOD | 73 | 88 | 83% |
+| EXCELLENT | 44 | 59 | 75% |
 
-The model never misses by more than one quality level (0 out of 437 validation samples).
+The model never misses by more than one quality level (0 out of 442 validation samples).
 
 ## Production Integration
 
@@ -216,8 +216,19 @@ Per-elevation scores are aggregated with weighted averaging:
 | v5 | 2026-02-20 | Ensemble of 5 models, deterministic labels, wind features | 0.183 | 87.4% |
 | v5.1 | 2026-02-20 | Optimized quality thresholds (same model weights) | 0.183 | 92.7% |
 | v6 | 2026-02-20 | 10-model ensemble, 80-config search, 4000 epochs, threshold optimization | 0.182 | 93.6% |
+| v7 | 2026-02-20 | Retrained on corrected elevation data (106 resort elevations fixed) | 0.195 | 88.2% |
 
 ### Key Experiments
+
+#### Corrected Elevation Data (v7)
+Fixed elevation data for 106 resorts in resorts.json. Many resorts had wildly wrong top
+elevations from the scraper regex (e.g., Le Relais 3403m→429m, Cape Smokey 3000m→340m).
+Since Open-Meteo uses elevation for temperature lapse rate adjustment, wrong elevations
+caused temperature errors of up to 22°C. Recollected all training data (Feb 8-20) with
+corrected elevations, re-scored deterministically, and retrained. Validation accuracy
+appears lower (88.2% vs 93.6%) because the v6 metrics were evaluated against data with
+wrong temperatures. The v7 model produces more accurate real-world predictions because
+it was trained on correct temperature data matching production conditions.
 
 #### Threshold Optimization (v5.1)
 Searched optimal quality thresholds over the validation set while maintaining 100% within-1

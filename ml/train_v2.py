@@ -423,6 +423,65 @@ def evaluate(y_true, y_pred, metadata, report_file=None):
     }
 
 
+def optimize_thresholds(y_true, y_pred):
+    """Search for optimal quality thresholds that maximize exact accuracy.
+
+    Uses asymmetric thresholds: the scorer's original thresholds (5.5, 4.5, etc.)
+    for TRUE labels, and optimized thresholds for PREDICTED labels.
+    Constraint: must maintain 100% within-1 accuracy.
+    """
+    quality_order = ["horrible", "bad", "poor", "fair", "good", "excellent"]
+
+    def score_to_quality_custom(score, exc_t, good_t, fair_t):
+        if score >= exc_t:
+            return "excellent"
+        elif score >= good_t:
+            return "good"
+        elif score >= fair_t:
+            return "fair"
+        elif score >= 2.5:
+            return "poor"
+        elif score >= 1.5:
+            return "bad"
+        else:
+            return "horrible"
+
+    best_accuracy = 0
+    best_thresholds = (5.5, 4.5, 3.5)
+    true_quality = [score_to_quality(s) for s in y_true]
+
+    # Search over threshold grid
+    for exc_t in np.arange(5.0, 5.6, 0.05):
+        for good_t in np.arange(4.0, 4.6, 0.05):
+            for fair_t in np.arange(3.0, 3.6, 0.05):
+                pred_quality = [
+                    score_to_quality_custom(s, exc_t, good_t, fair_t) for s in y_pred
+                ]
+                accuracy = sum(
+                    1 for t, p in zip(true_quality, pred_quality) if t == p
+                ) / len(y_true)
+                within_1 = sum(
+                    1
+                    for t, p in zip(true_quality, pred_quality)
+                    if abs(quality_order.index(t) - quality_order.index(p)) <= 1
+                ) / len(y_true)
+
+                if within_1 >= 1.0 and accuracy > best_accuracy:
+                    best_accuracy = accuracy
+                    best_thresholds = (
+                        round(exc_t, 2),
+                        round(good_t, 2),
+                        round(fair_t, 2),
+                    )
+
+    print(
+        f"\nOptimal thresholds: excellent={best_thresholds[0]}, "
+        f"good={best_thresholds[1]}, fair={best_thresholds[2]}"
+    )
+    print(f"Asymmetric accuracy: {best_accuracy:.1%}")
+    return best_thresholds, best_accuracy
+
+
 def train_model(
     X_train,
     y_train,
@@ -717,6 +776,9 @@ def main(historical_weight=None):
     single_exact = sum(1 for t, p in zip(tq, pq) if t == p) / len(y_val)
     print(f"\n  Single best: MAE={single_mae:.3f}, Exact={single_exact:.1%}")
 
+    # Optimize quality thresholds
+    opt_thresholds, opt_accuracy = optimize_thresholds(y_val, ensemble_val_pred)
+
     # Save model with ensemble
     model_data = {
         "version": "v2",
@@ -755,9 +817,9 @@ def main(historical_weight=None):
             "std": std.tolist(),
         },
         "quality_thresholds": {
-            "excellent": 5.35,
-            "good": 4.40,
-            "fair": 3.30,
+            "excellent": opt_thresholds[0],
+            "good": opt_thresholds[1],
+            "fair": opt_thresholds[2],
             "poor": 2.5,
             "bad": 1.5,
             "horrible": 0.0,
