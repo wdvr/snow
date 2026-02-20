@@ -251,15 +251,44 @@ def scrape_resort_detail(
     if any(name.lower().startswith(prefix.lower()) for prefix in skip_prefixes):
         return None
 
-    # Extract elevation
+    # Extract elevation - target the elevation/altitude section specifically
+    # to avoid matching random numbers (trail lengths, distances, etc.)
     elevation_base = None
     elevation_top = None
 
-    all_elevations = re.findall(r"(\d{3,4})\s*m", soup.get_text())
-    all_elevations = [int(e) for e in all_elevations if 100 < int(e) < 5000]
-    if len(all_elevations) >= 2:
-        elevation_base = min(all_elevations)
-        elevation_top = max(all_elevations)
+    # Try to find elevation in structured data sections first
+    # skiresort.info uses specific sections for elevation data
+    elevation_section = soup.find(
+        string=re.compile(r"(?:altitude|elevation|höhe)", re.IGNORECASE)
+    )
+    search_text = ""
+    if elevation_section:
+        # Search in the parent and sibling elements near the elevation label
+        parent = elevation_section.find_parent()
+        if parent:
+            # Look in the parent's parent for a broader section
+            grandparent = parent.find_parent()
+            search_text = (grandparent or parent).get_text()
+
+    # Fallback: look for "base" and "top/summit" patterns in page text
+    if not search_text:
+        full_text = soup.get_text()
+        # Match patterns like "1035 m - 3842 m" or "Base: 1035m ... Top: 3842m"
+        range_match = re.search(r"(\d{3,4})\s*m\s*[-–]\s*(\d{3,4})\s*m", full_text)
+        if range_match:
+            elevation_base = int(range_match.group(1))
+            elevation_top = int(range_match.group(2))
+            if elevation_base > elevation_top:
+                elevation_base, elevation_top = elevation_top, elevation_base
+        else:
+            search_text = full_text
+
+    if search_text and not (elevation_base and elevation_top):
+        all_elevations = re.findall(r"(\d{3,4})\s*m", search_text)
+        all_elevations = [int(e) for e in all_elevations if 100 < int(e) < 5000]
+        if len(all_elevations) >= 2:
+            elevation_base = min(all_elevations)
+            elevation_top = max(all_elevations)
 
     if not elevation_base or not elevation_top:
         return None

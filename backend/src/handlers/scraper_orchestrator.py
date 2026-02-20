@@ -264,10 +264,23 @@ def process_scraper_results_handler(event: dict[str, Any], context) -> dict[str,
 
                     for resort_data in resorts:
                         try:
-                            # Convert to DynamoDB format
-                            item = convert_to_dynamodb_item(resort_data)
-                            table.put_item(Item=item)
-                            stats["resorts_added"] += 1
+                            resort_id = resort_data.get("resort_id")
+                            # Check if resort already exists
+                            existing = table.get_item(Key={"resort_id": resort_id}).get(
+                                "Item"
+                            )
+
+                            if existing:
+                                # Update existing resort WITHOUT overwriting
+                                # elevation_points (which may have been manually
+                                # corrected via resorts.json)
+                                update_existing_resort(table, resort_id, resort_data)
+                                stats["resorts_updated"] += 1
+                            else:
+                                # New resort - create with scraped data
+                                item = convert_to_dynamodb_item(resort_data)
+                                table.put_item(Item=item)
+                                stats["resorts_added"] += 1
                         except Exception as e:
                             logger.error(
                                 f"Error adding resort {resort_data.get('resort_id')}: {e}"
@@ -280,14 +293,19 @@ def process_scraper_results_handler(event: dict[str, Any], context) -> dict[str,
 
         logger.info(
             f"Processed job {job_id}: "
-            f"{stats['resorts_added']} added, {stats['errors']} errors"
+            f"{stats['resorts_added']} added, "
+            f"{stats['resorts_updated']} updated, "
+            f"{stats['errors']} errors"
         )
 
         return {
             "statusCode": 200,
             "body": json.dumps(
                 {
-                    "message": f"Processed {stats['resorts_added']} resorts",
+                    "message": (
+                        f"Processed {stats['resorts_added']} new, "
+                        f"{stats['resorts_updated']} updated"
+                    ),
                     "stats": stats,
                 }
             ),
@@ -299,6 +317,38 @@ def process_scraper_results_handler(event: dict[str, Any], context) -> dict[str,
             "statusCode": 500,
             "body": json.dumps({"error": str(e)}),
         }
+
+
+def update_existing_resort(table, resort_id: str, resort_data: dict) -> None:
+    """Update an existing resort with scraped metadata WITHOUT overwriting elevation_points.
+
+    Elevation data from the scraper uses a regex that often produces incorrect values.
+    Elevation corrections applied via resorts.json must be preserved.
+    """
+    now = datetime.now(UTC).isoformat()
+
+    update_expr = "SET updated_at = :updated_at, scraped_at = :scraped_at"
+    expr_values: dict[str, Any] = {
+        ":updated_at": now,
+        ":scraped_at": resort_data.get("scraped_at", now),
+    }
+
+    # Update source if present
+    if resort_data.get("source"):
+        update_expr += ", source = :source"
+        expr_values[":source"] = resort_data["source"]
+
+    # Update official_website if scraped and not empty
+    if resort_data.get("official_website"):
+        update_expr += ", official_website = :website"
+        expr_values[":website"] = resort_data["official_website"]
+
+    table.update_item(
+        Key={"resort_id": resort_id},
+        UpdateExpression=update_expr,
+        ExpressionAttributeValues=expr_values,
+    )
+    logger.info(f"Updated metadata for existing resort: {resort_id}")
 
 
 def convert_to_dynamodb_item(resort_data: dict) -> dict:
