@@ -1,6 +1,6 @@
 """Tests for notification models and service."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -45,7 +45,7 @@ class TestDeviceToken:
             token="token",
         )
 
-        now = datetime.utcnow().timestamp()
+        now = datetime.now(UTC).timestamp()
         expected_ttl = now + (90 * 24 * 60 * 60)
 
         # Allow 10 seconds tolerance
@@ -86,7 +86,7 @@ class TestUserNotificationPreferences:
         prefs = UserNotificationPreferences(grace_period_hours=1)
 
         # Set last_notified to 2 hours ago
-        two_hours_ago = (datetime.utcnow() - timedelta(hours=2)).isoformat()
+        two_hours_ago = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
         prefs.last_notified["resort123"] = two_hours_ago
 
         # Should be able to notify now
@@ -145,8 +145,8 @@ class TestUserPreferencesIntegration:
         """Test that get_notification_settings creates defaults if not set."""
         prefs = UserPreferences(
             user_id="user123",
-            created_at=datetime.utcnow().isoformat(),
-            updated_at=datetime.utcnow().isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
+            updated_at=datetime.now(UTC).isoformat(),
         )
 
         settings = prefs.get_notification_settings()
@@ -163,8 +163,8 @@ class TestUserPreferencesIntegration:
                 "condition_updates": True,
                 "weekly_summary": True,
             },
-            created_at=datetime.utcnow().isoformat(),
-            updated_at=datetime.utcnow().isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
+            updated_at=datetime.now(UTC).isoformat(),
         )
 
         settings = prefs.get_notification_settings()

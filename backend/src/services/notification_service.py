@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import random
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Optional
 
 import boto3
@@ -236,8 +236,8 @@ class NotificationService:
         Returns:
             List of upcoming events
         """
-        today = datetime.utcnow().strftime("%Y-%m-%d")
-        future_date = (datetime.utcnow() + timedelta(days=days_ahead)).strftime(
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        future_date = (datetime.now(UTC) + timedelta(days=days_ahead)).strftime(
             "%Y-%m-%d"
         )
 
@@ -358,7 +358,7 @@ class NotificationService:
         Returns:
             NotificationPayload if a thaw/freeze alert should be sent, None otherwise
         """
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         prev_state = notification_settings.temperature_state.get(resort_id, "unknown")
         current_state = "thawed" if current_temp >= 0 else "frozen"
 
@@ -518,7 +518,7 @@ class NotificationService:
             # Check for new events
             if events_enabled:
                 # Get events created in the last hour
-                one_hour_ago = (datetime.utcnow() - timedelta(hours=1)).isoformat()
+                one_hour_ago = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
                 new_events = self.get_new_events_since(resort_id, one_hour_ago)
 
                 for event in new_events:

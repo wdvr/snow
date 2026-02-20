@@ -9,7 +9,7 @@ It respects a 24-hour grace period per resort to avoid notification spam.
 
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 
 import boto3
 
@@ -68,7 +68,7 @@ def notification_handler(event, context):
     Returns:
         Summary of notifications processed
     """
-    logger.info(f"Notification processor started at {datetime.utcnow().isoformat()}")
+    logger.info(f"Notification processor started at {datetime.now(UTC).isoformat()}")
     logger.info(f"Environment: {ENVIRONMENT}")
 
     try:
@@ -82,7 +82,7 @@ def notification_handler(event, context):
             "body": {
                 "message": "Notification processing complete",
                 "summary": summary,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
         }
 
@@ -92,7 +92,7 @@ def notification_handler(event, context):
             "statusCode": 500,
             "body": {
                 "message": f"Error processing notifications: {str(e)}",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
         }
 

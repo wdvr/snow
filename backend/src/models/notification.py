@@ -1,6 +1,6 @@
 """Notification-related data models."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Optional
 
@@ -54,9 +54,13 @@ class DeviceToken(BaseModel):
     device_id: str = Field(..., description="Unique device identifier")
     token: str = Field(..., description="APNs device token")
     platform: str = Field(default="ios", description="Platform (ios, android)")
-    app_version: str | None = Field(None, description="App version when token was registered")
+    app_version: str | None = Field(
+        None, description="App version when token was registered"
+    )
     created_at: str = Field(..., description="ISO timestamp when token was created")
-    updated_at: str = Field(..., description="ISO timestamp when token was last updated")
+    updated_at: str = Field(
+        ..., description="ISO timestamp when token was last updated"
+    )
     ttl: int | None = Field(None, description="TTL for auto-expiry (epoch timestamp)")
 
     @classmethod
@@ -70,7 +74,7 @@ class DeviceToken(BaseModel):
         ttl_days: int = 90,
     ) -> "DeviceToken":
         """Create a new device token with auto-generated timestamps."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         ttl_timestamp = int((now.timestamp()) + (ttl_days * 24 * 60 * 60))
 
         return cls(
@@ -131,7 +135,9 @@ class UserNotificationPreferences(BaseModel):
 
     # Quiet hours
     quiet_hours_enabled: bool = Field(default=False, description="Enable quiet hours")
-    quiet_hours_start: str = Field(default="22:00", description="Quiet hours start (HH:MM)")
+    quiet_hours_start: str = Field(
+        default="22:00", description="Quiet hours start (HH:MM)"
+    )
     quiet_hours_end: str = Field(default="07:00", description="Quiet hours end (HH:MM)")
     timezone: str = Field(default="UTC", description="User's timezone for quiet hours")
 
@@ -169,15 +175,17 @@ class UserNotificationPreferences(BaseModel):
         last_time_str = self.last_notified[resort_id]
         try:
             last_time = datetime.fromisoformat(last_time_str.replace("Z", "+00:00"))
-            now = datetime.utcnow()
-            hours_since = (now - last_time.replace(tzinfo=None)).total_seconds() / 3600
+            if last_time.tzinfo is None:
+                last_time = last_time.replace(tzinfo=UTC)
+            now = datetime.now(UTC)
+            hours_since = (now - last_time).total_seconds() / 3600
             return hours_since >= self.grace_period_hours
         except (ValueError, TypeError):
             return True
 
     def mark_notified(self, resort_id: str) -> None:
         """Mark that a notification was sent for this resort."""
-        self.last_notified[resort_id] = datetime.utcnow().isoformat()
+        self.last_notified[resort_id] = datetime.now(UTC).isoformat()
 
 
 class ResortEvent(BaseModel):
@@ -185,7 +193,10 @@ class ResortEvent(BaseModel):
 
     resort_id: str = Field(..., description="Resort ID where event takes place")
     event_id: str = Field(..., description="Unique event identifier")
-    event_type: str = Field(..., description="Type of event (e.g., 'free_store', 'special_offer', 'competition')")
+    event_type: str = Field(
+        ...,
+        description="Type of event (e.g., 'free_store', 'special_offer', 'competition')",
+    )
     title: str = Field(..., description="Event title")
     description: str | None = Field(None, description="Event description")
     event_date: str = Field(..., description="Date of the event (YYYY-MM-DD)")
@@ -212,7 +223,7 @@ class ResortEvent(BaseModel):
         ttl_days: int = 30,
     ) -> "ResortEvent":
         """Create a new resort event with auto-generated timestamps."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         ttl_timestamp = int((now.timestamp()) + (ttl_days * 24 * 60 * 60))
 
         return cls(
@@ -269,5 +280,7 @@ class NotificationRecord(BaseModel):
     title: str = Field(..., description="Notification title")
     body: str = Field(..., description="Notification body")
     sent_at: str = Field(..., description="ISO timestamp when notification was sent")
-    read_at: str | None = Field(None, description="ISO timestamp when notification was read")
+    read_at: str | None = Field(
+        None, description="ISO timestamp when notification was read"
+    )
     data: dict = Field(default_factory=dict, description="Additional data")
