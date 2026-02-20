@@ -11,6 +11,19 @@ on:
           - staging
           - prod
         default: staging
+      source:
+        description: 'Data source file'
+        required: true
+        type: choice
+        options:
+          - data/resorts.json
+          - data/resorts_scraped.json
+        default: data/resorts.json
+      update_existing:
+        description: 'Update existing resorts (not just create new)'
+        required: false
+        type: boolean
+        default: false
       dry_run:
         description: 'Dry run (preview only)'
         required: false
@@ -69,10 +82,15 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/backend/src
         run: |
           echo "=== DRY RUN - Preview only ==="
+          UPDATE_FLAG=""
+          if [ "${{ github.event.inputs.update_existing }}" == "true" ]; then
+            UPDATE_FLAG="--update-existing"
+          fi
           python scripts/populate_resorts.py \
-            --source data/resorts_scraped.json \
+            --source ${{ github.event.inputs.source }} \
             --dry-run \
             --detect-removed \
+            $UPDATE_FLAG \
             --verbose
 
       - name: Populate resorts
@@ -88,10 +106,16 @@ jobs:
             NOTIFY_FLAG="--notify"
           fi
 
+          UPDATE_FLAG=""
+          if [ "${{ github.event.inputs.update_existing }}" == "true" ]; then
+            UPDATE_FLAG="--update-existing"
+          fi
+
           python scripts/populate_resorts.py \
-            --source data/resorts_scraped.json \
+            --source ${{ github.event.inputs.source }} \
             --detect-removed \
             $NOTIFY_FLAG \
+            $UPDATE_FLAG \
             --environment ${{ github.event.inputs.environment }} \
             --verbose
 
