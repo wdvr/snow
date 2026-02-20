@@ -490,6 +490,7 @@ struct ResortMapDetailSheet: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @Environment(\.dismiss) private var dismiss
+    @State private var isLoadingConditions = true
 
     private var condition: WeatherCondition? {
         snowConditionsManager.getLatestCondition(for: resort.id)
@@ -507,6 +508,8 @@ struct ResortMapDetailSheet: View {
                     // Current conditions
                     if let condition = condition {
                         conditionsSection(condition)
+                    } else if isLoadingConditions {
+                        loadingConditionsView
                     } else {
                         noConditionsView
                     }
@@ -528,7 +531,11 @@ struct ResortMapDetailSheet: View {
                 }
             }
             .task {
+                if condition == nil {
+                    isLoadingConditions = true
+                }
                 await snowConditionsManager.fetchConditionsForResort(resort.id)
+                isLoadingConditions = false
             }
         }
     }
@@ -634,6 +641,17 @@ struct ResortMapDetailSheet: View {
                 .padding(.top, 8)
             }
         }
+    }
+
+    private var loadingConditionsView: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .controlSize(.large)
+            Text("Loading conditions...")
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
     }
 
     private var noConditionsView: some View {
