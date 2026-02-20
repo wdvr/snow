@@ -2,38 +2,38 @@
 Model Evaluation Report (v2 - Neural Network)
 ============================================================
 Samples: 397
-MAE: 0.367
-RMSE: 0.489
-R²: 0.850
-Exact quality match: 73.6%
+MAE: 0.366
+RMSE: 0.488
+R²: 0.851
+Exact quality match: 74.6%
 Within-1 quality level: 100.0%
 
 Score distribution:
   True  - mean: 3.81, std: 1.26
-  Pred  - mean: 3.83, std: 1.25
+  Pred  - mean: 3.84, std: 1.25
 
 Quality confusion (true → predicted):
     horrible ( 32): horrible=30, bad=2
          bad ( 28): bad=22, poor=6
-        poor ( 52): poor=31, fair=14, bad=7
-        fair (187): fair=138, good=26, poor=23
-        good ( 63): good=44, fair=13, excellent=6
-   excellent ( 35): excellent=27, good=8
+        poor ( 52): poor=32, fair=14, bad=6
+        fair (187): fair=141, good=26, poor=20
+        good ( 63): good=43, fair=14, excellent=6
+   excellent ( 35): excellent=28, good=7
 
 Worst 15 predictions:
   Resort                              Date          True  Pred Error
-  killington                          2026-02-19     3.0   4.5  1.49
-  angel-fire                          2026-02-15     3.0   4.4  1.40
+  killington                          2026-02-19     3.0   4.5  1.48
+  angel-fire                          2026-02-15     3.0   4.4  1.42
   killington                          2026-02-20     3.0   4.4  1.36
-  le-relais-lac-beauport              2026-02-20     3.0   4.3  1.29
-  bald-mountain-sun-valley            2026-02-18     4.0   5.3  1.27
+  bald-mountain-sun-valley            2026-02-18     4.0   5.3  1.30
   killington                          2026-02-14     3.0   4.3  1.27
-  homewood-mountain-resort            2026-02-09     1.0   2.2  1.22
-  powder-king                         2026-02-18     5.0   3.8  1.19
+  le-relais-lac-beauport              2026-02-20     3.0   4.3  1.26
+  homewood-mountain-resort            2026-02-09     1.0   2.2  1.24
+  jackson-hole                        2026-02-17     4.0   5.2  1.20
   mount-washington                    2026-02-09     3.0   4.2  1.19
-  mt-baker                            2026-02-14     6.0   4.8  1.19
-  heavenly                            2026-02-13     6.0   4.8  1.18
-  park-city                           2026-02-17     4.0   5.2  1.17
-  jackson-hole                        2026-02-17     4.0   5.2  1.17
+  mt-baker                            2026-02-14     6.0   4.8  1.18
+  heavenly                            2026-02-13     6.0   4.8  1.17
+  park-city                           2026-02-17     4.0   5.2  1.16
+  stoneham                            2026-02-15     5.0   3.9  1.14
   marmot-basin-jasper                 2026-02-17     4.0   5.1  1.14
-  snoqualmie-pass                     2026-02-08     4.0   2.9  1.14
+  snoqualmie-pass                     2026-02-13     2.0   3.1  1.11

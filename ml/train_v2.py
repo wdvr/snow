@@ -137,13 +137,18 @@ ENGINEERED_FEATURE_NAMES = [
 ]
 
 
-def load_data():
+def load_data(historical_weight=1.0):
     """Load features and merge with scores.
 
-    Loads both real data (training_features.json) and synthetic data
-    (synthetic_features.json) if available.
+    Loads real data, synthetic data, and optionally historical data.
+    Returns X, y, metadata, source_weights arrays.
+
+    Args:
+        historical_weight: Weight multiplier for historical samples (0.0 to exclude,
+            1.0 for full weight, 0.3-0.5 recommended due to noisier labels).
     """
     features_by_key = {}
+    source_by_key = {}
 
     # Load real features
     with open(FEATURES_FILE) as f:
@@ -151,6 +156,7 @@ def load_data():
     for item in features_data["data"]:
         key = (item["resort_id"], item["date"])
         features_by_key[key] = item
+        source_by_key[key] = "real"
 
     # Load synthetic features if available
     synthetic_file = ML_DIR / "synthetic_features.json"
@@ -160,7 +166,21 @@ def load_data():
         for item in synth_data["data"]:
             key = (item["resort_id"], item["date"])
             features_by_key[key] = item
+            source_by_key[key] = "synthetic"
         print(f"  + {len(synth_data['data'])} synthetic samples")
+
+    # Load historical features if available
+    historical_file = ML_DIR / "historical_features.json"
+    if historical_file.exists() and historical_weight > 0:
+        with open(historical_file) as f:
+            hist_data = json.load(f)
+        for item in hist_data["data"]:
+            key = (item["resort_id"], item["date"])
+            features_by_key[key] = item
+            source_by_key[key] = "historical"
+        print(
+            f"  + {len(hist_data['data'])} historical samples (weight={historical_weight})"
+        )
 
     # Load all score files
     scores_by_key = {}
@@ -176,14 +196,22 @@ def load_data():
     X = []
     y = []
     metadata = []
+    source_weights = []
     for key, features in features_by_key.items():
         if key in scores_by_key:
             row = engineer_features(features)
             X.append(row)
             y.append(scores_by_key[key])
-            metadata.append({"resort_id": key[0], "date": key[1]})
+            source = source_by_key.get(key, "real")
+            metadata.append({"resort_id": key[0], "date": key[1], "source": source})
+            source_weights.append(historical_weight if source == "historical" else 1.0)
 
-    return np.array(X, dtype=np.float64), np.array(y, dtype=np.float64), metadata
+    return (
+        np.array(X, dtype=np.float64),
+        np.array(y, dtype=np.float64),
+        metadata,
+        np.array(source_weights, dtype=np.float64),
+    )
 
 
 # --- Neural Network ---
@@ -378,51 +406,40 @@ def evaluate(y_true, y_pred, metadata, report_file=None):
     }
 
 
-def main():
-    X_raw, y, metadata = load_data()
-    print(f"Data: {X_raw.shape[0]} samples, {X_raw.shape[1]} engineered features")
+def train_model(
+    X_train,
+    y_train,
+    X_val,
+    y_val,
+    weights,
+    meta_val,
+    hidden_sizes=None,
+    seeds=None,
+    n_epochs=3000,
+    verbose=True,
+):
+    """Train model with grid search over hidden sizes and seeds.
 
-    # Split 80/20
-    np.random.seed(42)
-    n = len(y)
-    indices = np.random.permutation(n)
-    split = int(0.8 * n)
-    train_idx = indices[:split]
-    val_idx = indices[split:]
+    Returns (best_model, best_model_state, mean, std, best_val_mae).
+    """
+    if hidden_sizes is None:
+        hidden_sizes = [24, 32, 48]
+    if seeds is None:
+        seeds = [42, 123, 7]
 
-    X_train_raw, y_train = X_raw[train_idx], y[train_idx]
-    X_val_raw, y_val = X_raw[val_idx], y[val_idx]
-    meta_train = [metadata[i] for i in train_idx]
-    meta_val = [metadata[i] for i in val_idx]
-
-    # Normalize
-    X_train, mean, std = normalize_features(X_train_raw)
-    X_val = (X_val_raw - mean) / std
-
-    # Sample weights for class balancing
-    weights = compute_sample_weights(y_train)
-
-    # Train neural network
     n_features = X_train.shape[1]
     best_val_mae = float("inf")
     best_model_state = None
+    batch_size = 64
 
-    # Try multiple hidden layer sizes and random seeds
-    for n_hidden in [24, 32, 48]:
-        for seed in [42, 123, 7]:
+    for n_hidden in hidden_sizes:
+        for seed in seeds:
             np.random.seed(seed)
             model = SimpleNN(n_features, n_hidden=n_hidden)
-
-            # Training loop
             lr = 0.01
-            n_epochs = 3000
-            batch_size = 64  # Smaller batches for better gradient estimates
 
             for epoch in range(n_epochs):
-                # Mini-batch SGD
                 perm = np.random.permutation(len(X_train))
-                epoch_loss = 0
-                n_batches = 0
 
                 for start in range(0, len(X_train), batch_size):
                     batch_idx = perm[start : start + batch_size]
@@ -431,19 +448,13 @@ def main():
                     w_batch = weights[batch_idx]
 
                     y_pred, cache = model.forward(X_batch)
-                    loss = np.mean(w_batch * (y_pred - y_batch) ** 2)
-                    epoch_loss += loss
-                    n_batches += 1
-
                     grads = model.backward(y_batch, y_pred, cache, w_batch)
                     model.update(grads, lr)
 
-                # Learning rate decay
                 if epoch > 0 and epoch % 500 == 0:
                     lr *= 0.5
 
-                # Evaluate periodically
-                if epoch % 500 == 0 or epoch == n_epochs - 1:
+                if (epoch % 500 == 0 or epoch == n_epochs - 1) and verbose:
                     val_pred = model.predict(X_val)
                     val_mae = np.mean(np.abs(y_val - val_pred))
                     train_pred = model.predict(X_train)
@@ -464,29 +475,103 @@ def main():
                             "b2": model.b2.copy(),
                         }
 
-    # Use best model
-    print(f"\nBest model: h={best_model_state['n_hidden']}, val_mae={best_val_mae:.3f}")
     model = SimpleNN(n_features, n_hidden=best_model_state["n_hidden"])
     model.W1 = best_model_state["W1"]
     model.b1 = best_model_state["b1"]
     model.W2 = best_model_state["W2"]
     model.b2 = best_model_state["b2"]
+    return model, best_model_state, best_val_mae
+
+
+def evaluate_by_source(y_true, y_pred, metadata):
+    """Evaluate model performance broken down by data source."""
+    quality_order = ["horrible", "bad", "poor", "fair", "good", "excellent"]
+    sources = set(m.get("source", "real") for m in metadata)
+    results = {}
+    for src in sorted(sources):
+        mask = [i for i, m in enumerate(metadata) if m.get("source", "real") == src]
+        if not mask:
+            continue
+        yt = y_true[mask]
+        yp = y_pred[mask]
+        mae = np.mean(np.abs(yt - yp))
+        tq = [score_to_quality(s) for s in yt]
+        pq = [score_to_quality(s) for s in yp]
+        exact = sum(1 for t, p in zip(tq, pq) if t == p) / len(yt)
+        w1 = sum(
+            1
+            for t, p in zip(tq, pq)
+            if abs(quality_order.index(t) - quality_order.index(p)) <= 1
+        ) / len(yt)
+        results[src] = {"n": len(mask), "mae": mae, "exact": exact, "within_1": w1}
+        print(
+            f"  {src:>12s} (n={len(mask):4d}): MAE={mae:.3f}, Exact={exact:.1%}, Within-1={w1:.1%}"
+        )
+    return results
+
+
+def main(historical_weight=None):
+    import sys
+
+    # Parse historical weight from command line or argument
+    if historical_weight is None:
+        historical_weight = float(sys.argv[1]) if len(sys.argv) > 1 else 1.0
+
+    print(f"\n{'=' * 60}")
+    print(f"Training with historical_weight={historical_weight}")
+    print(f"{'=' * 60}")
+
+    X_raw, y, metadata, source_weights = load_data(historical_weight=historical_weight)
+    print(f"Data: {X_raw.shape[0]} samples, {X_raw.shape[1]} engineered features")
+
+    # Split 80/20
+    np.random.seed(42)
+    n = len(y)
+    indices = np.random.permutation(n)
+    split = int(0.8 * n)
+    train_idx = indices[:split]
+    val_idx = indices[split:]
+
+    X_train_raw, y_train = X_raw[train_idx], y[train_idx]
+    X_val_raw, y_val = X_raw[val_idx], y[val_idx]
+    meta_train = [metadata[i] for i in train_idx]
+    meta_val = [metadata[i] for i in val_idx]
+    source_weights_train = source_weights[train_idx]
+
+    # Normalize
+    X_train, mean, std = normalize_features(X_train_raw)
+    X_val = (X_val_raw - mean) / std
+
+    # Sample weights: class balancing * source weights
+    class_weights = compute_sample_weights(y_train)
+    weights = class_weights * source_weights_train
+
+    # Train
+    model, best_model_state, best_val_mae = train_model(
+        X_train, y_train, X_val, y_val, weights, meta_val
+    )
+
+    print(f"\nBest model: h={best_model_state['n_hidden']}, val_mae={best_val_mae:.3f}")
 
     # Final evaluation
     y_train_pred = model.predict(X_train)
     print("\n--- Training Set ---")
     train_metrics = evaluate(y_train, y_train_pred, meta_train)
+    print("\n  By source:")
+    evaluate_by_source(y_train, y_train_pred, meta_train)
 
     y_val_pred = model.predict(X_val)
     print("\n--- Validation Set ---")
     val_metrics = evaluate(y_val, y_val_pred, meta_val, VALIDATION_REPORT)
+    print("\n  By source:")
+    source_metrics = evaluate_by_source(y_val, y_val_pred, meta_val)
 
     # Save model
     model_data = {
         "version": "v2",
         "type": "neural_network",
         "architecture": {
-            "input_size": n_features,
+            "input_size": X_train.shape[1],
             "hidden_size": best_model_state["n_hidden"],
             "output_size": 1,
             "activation": "relu",
@@ -512,9 +597,20 @@ def main():
             "bad": 1.5,
             "horrible": 0.0,
         },
+        "training_config": {
+            "historical_weight": historical_weight,
+            "n_samples": len(y),
+        },
         "metrics": {
             "train": {k: float(v) for k, v in train_metrics.items()},
             "validation": {k: float(v) for k, v in val_metrics.items()},
+            "validation_by_source": {
+                k: {
+                    kk: float(vv) if isinstance(vv, (float, np.floating)) else vv
+                    for kk, vv in v.items()
+                }
+                for k, v in source_metrics.items()
+            },
         },
     }
 

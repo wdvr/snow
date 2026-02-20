@@ -129,10 +129,10 @@ Non-linear combinations that capture key skiing condition patterns:
 
 | Metric | Value |
 |--------|-------|
-| MAE | 0.367 |
-| RMSE | 0.489 |
-| R^2 | 0.850 |
-| Exact quality match | 73.6% |
+| MAE | 0.366 |
+| RMSE | 0.488 |
+| R^2 | 0.851 |
+| Exact quality match | 74.6% |
 | **Within-1 quality level** | **100.0%** |
 
 ### Per-Class Accuracy
@@ -140,10 +140,10 @@ Non-linear combinations that capture key skiing condition patterns:
 |---------|---------|-------|----------|
 | HORRIBLE | 30 | 32 | 94% |
 | BAD | 22 | 28 | 79% |
-| POOR | 31 | 52 | 60% |
-| FAIR | 138 | 187 | 74% |
-| GOOD | 44 | 63 | 70% |
-| EXCELLENT | 27 | 35 | 77% |
+| POOR | 32 | 52 | 62% |
+| FAIR | 141 | 187 | 75% |
+| GOOD | 43 | 63 | 68% |
+| EXCELLENT | 28 | 35 | 80% |
 
 The model **never misses by more than one quality level** on validation data.
 
@@ -170,12 +170,14 @@ Per-elevation scores are aggregated with weighted averaging:
 
 | File | Description |
 |------|-------------|
-| `ml/collect_data.py` | Data collection from Open-Meteo API |
+| `ml/collect_data.py` | Data collection from Open-Meteo forecast API |
+| `ml/collect_historical.py` | Data collection from Open-Meteo archive API |
 | `ml/generate_synthetic.py` | Synthetic edge case data generation |
 | `ml/train_v2.py` | Neural network training script |
 | `ml/model_weights_v2.json` | Trained model weights + normalization stats |
-| `ml/training_features.json` | Raw collected feature data (not in git, too large) |
-| `ml/synthetic_features.json` | Synthetic feature data |
+| `ml/training_features.json` | Raw collected feature data (Feb 7-20, 2026) |
+| `ml/historical_features.json` | Historical feature data (Jan 2026, 3,683 samples) |
+| `ml/synthetic_features.json` | Synthetic feature data (330 samples) |
 | `ml/scores/` | Expert-labeled + synthetic training scores |
 | `backend/src/services/ml_scorer.py` | ML inference service (forward pass only) |
 | `backend/src/services/snow_quality_service.py` | Production scoring code (ML + heuristic fallback) |
@@ -188,6 +190,14 @@ Per-elevation scores are aggregated with weighted averaging:
 | v1 | 2026-02-20 | Ridge regression, 24 raw features | 0.505 | 52.3% |
 | v2 | 2026-02-20 | Neural network, engineered features, class balancing | 0.392 | 67.7% |
 | v3 | 2026-02-20 | +330 synthetic edge cases, more training epochs, seed search | 0.367 | 73.6% |
+| v3.1 | 2026-02-20 | Fine-grained checkpointing, source weights in training | 0.366 | 74.6% |
+
+### Historical Data Experiment (v4 - not deployed)
+Collected 3,683 historical samples from January 2026 via Open-Meteo archive API.
+Scored by 6 independent subagents in parallel. Training with this data showed:
+- Labels were noisy due to inter-annotator disagreement (54% agreement with v3 model predictions)
+- Adding historical data at any weight (0.1-1.0) degraded within-1 accuracy on clean real data
+- Historical labels preserved in `scores/scores_historical_*.json` for future use with better labeling
 
 ## Future Improvements
 
