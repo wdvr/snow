@@ -263,11 +263,6 @@ class OpenMeteoService:
 
             now = datetime.now(UTC)
 
-            # Compute global freeze-thaw state once for the entire timeline.
-            # This gives us cumulative snowfall_after_freeze_cm, snowfall_24h/48h/72h
-            # so timeline quality reflects the resort's actual condition.
-            snowfall_data = self._process_snowfall(daily, hourly)
-
             # Define the 3 windows per day
             windows = [
                 ("morning", 7, 5, 9),
@@ -288,10 +283,8 @@ class OpenMeteoService:
                 if not dates_seen or dates_seen[-1] != d:
                     dates_seen.append(d)
 
-            # Import SnowQualityService inside method to avoid circular imports
-            from services.snow_quality_service import SnowQualityService
-
-            snow_quality_service = SnowQualityService()
+            # Use ML model for timeline quality predictions
+            from services.ml_scorer import predict_quality_at_hour
 
             timeline_points = []
 
@@ -351,46 +344,26 @@ class OpenMeteoService:
                     )
 
                     # Determine if this is forecast (hour is in the future)
-                    # Parse the timestamp to compare with now
                     timestamp_str = hourly_times[idx]
                     try:
                         point_time = datetime.fromisoformat(
                             timestamp_str.replace("Z", "+00:00")
                         )
-                        # If timezone is not GMT, the timestamps won't have tzinfo
-                        # Make them tz-aware for comparison
                         if point_time.tzinfo is None:
-                            # Treat as UTC for comparison purposes
-                            from datetime import timezone as tz
-
                             point_time = point_time.replace(tzinfo=UTC)
                         is_forecast = point_time > now
                     except (ValueError, TypeError):
                         is_forecast = False
 
-                    # Calculate snow quality using SnowQualityService
-                    # Use global freeze-thaw context from _process_snowfall()
-                    # so timeline quality matches the resort's actual condition
-                    weather_condition = WeatherCondition(
-                        resort_id="timeline",
-                        elevation_level=elevation_level,
-                        timestamp=timestamp_str,
-                        current_temp_celsius=temp,
-                        min_temp_celsius=temp,
-                        max_temp_celsius=temp,
-                        snowfall_24h_cm=snowfall_data.get("snowfall_24h", 0.0),
-                        snowfall_48h_cm=snowfall_data.get("snowfall_48h", 0.0),
-                        snowfall_72h_cm=snowfall_data.get("snowfall_72h", 0.0),
-                        snow_depth_cm=snow_depth,
-                        snowfall_after_freeze_cm=snowfall_data.get(
-                            "snowfall_after_freeze_cm", 0.0
-                        ),
-                        data_source="open-meteo.com",
-                        source_confidence=ConfidenceLevel.MEDIUM,
-                    )
-
-                    quality, _, _ = snow_quality_service.assess_snow_quality(
-                        weather_condition, elevation_m=elevation_meters
+                    # Calculate snow quality using ML model directly
+                    # This uses the same model as the conditions endpoint
+                    quality, _ = predict_quality_at_hour(
+                        hourly_times,
+                        hourly_temps,
+                        hourly_snowfall,
+                        hourly_wind,
+                        idx,
+                        elevation_meters,
                     )
 
                     point = {

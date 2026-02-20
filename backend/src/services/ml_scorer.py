@@ -258,44 +258,23 @@ def extract_features_from_condition(
     }
 
 
-def extract_features_from_raw_data(
-    condition: Any,
-    elevation_m: float | None = None,
+def _extract_features_at_hour(
+    temps: list[float | None],
+    snowfall: list[float | None],
+    wind_speeds: list[float | None],
+    target_hour: int,
+    elevation_m: float,
 ) -> dict[str, float] | None:
-    """Extract ML features from raw hourly data stored in condition.raw_data.
+    """Core feature extraction at a specific hour index.
 
-    This gives exact features (not approximations) when raw_data is available.
+    Computes the 27 ML input features (pre-engineering) from hourly weather
+    arrays centered on target_hour. Used by both real-time conditions and
+    timeline predictions.
     """
-    raw_data = getattr(condition, "raw_data", None)
-    if not raw_data or not isinstance(raw_data, dict):
+    if target_hour < 48 or not temps or target_hour >= len(temps):
         return None
 
-    api_response = raw_data.get("api_response", raw_data)
-    hourly = api_response.get("hourly", {})
-    temps = hourly.get("temperature_2m", [])
-    snowfall = hourly.get("snowfall", [])
-    wind_speeds = hourly.get("wind_speed_10m", [])
-
-    if not temps or len(temps) < 48:
-        return None
-
-    from datetime import datetime, timezone
-
-    hourly_times = hourly.get("time", [])
-
-    # Find current hour index
-    now_str = datetime.now(UTC).strftime("%Y-%m-%dT%H:00")
-    current_index = len(hourly_times) - 1
-    for i, time_str in enumerate(hourly_times):
-        if time_str[:13] >= now_str[:13]:
-            current_index = i
-            break
-
-    target_hour = current_index
-    if target_hour < 48:
-        return None
-
-    cur_temp = temps[target_hour] if target_hour < len(temps) else temps[-1]
+    cur_temp = temps[target_hour] if temps[target_hour] is not None else 0.0
 
     # Max/min temp windows
     h24_start = max(0, target_hour - 24)
@@ -387,7 +366,7 @@ def extract_features_from_raw_data(
         "snow_since_freeze_cm": snow_since_freeze,
         "snowfall_24h_cm": snow_24h,
         "snowfall_72h_cm": snow_72h,
-        "elevation_m": float(elevation_m or raw_data.get("elevation_meters", 1500.0)),
+        "elevation_m": elevation_m,
         "total_hours_above_0C_since_ft": ha[0],
         "total_hours_above_1C_since_ft": ha[1],
         "total_hours_above_2C_since_ft": ha[2],
@@ -406,6 +385,43 @@ def extract_features_from_raw_data(
         "max_wind_24h": max_wind_24h,
         "avg_wind_24h": avg_wind_24h,
     }
+
+
+def extract_features_from_raw_data(
+    condition: Any,
+    elevation_m: float | None = None,
+) -> dict[str, float] | None:
+    """Extract ML features from raw hourly data stored in condition.raw_data.
+
+    This gives exact features (not approximations) when raw_data is available.
+    """
+    raw_data = getattr(condition, "raw_data", None)
+    if not raw_data or not isinstance(raw_data, dict):
+        return None
+
+    api_response = raw_data.get("api_response", raw_data)
+    hourly = api_response.get("hourly", {})
+    temps = hourly.get("temperature_2m", [])
+    snowfall = hourly.get("snowfall", [])
+    wind_speeds = hourly.get("wind_speed_10m", [])
+
+    if not temps or len(temps) < 48:
+        return None
+
+    from datetime import datetime
+
+    hourly_times = hourly.get("time", [])
+
+    # Find current hour index
+    now_str = datetime.now(UTC).strftime("%Y-%m-%dT%H:00")
+    current_index = len(hourly_times) - 1
+    for i, time_str in enumerate(hourly_times):
+        if time_str[:13] >= now_str[:13]:
+            current_index = i
+            break
+
+    elev = float(elevation_m or raw_data.get("elevation_meters", 1500.0))
+    return _extract_features_at_hour(temps, snowfall, wind_speeds, current_index, elev)
 
 
 def predict_quality(
@@ -454,6 +470,72 @@ def predict_quality(
     score = max(1.0, min(6.0, score))
 
     # Map to quality
+    thresholds = model["quality_thresholds"]
+    if score >= thresholds["excellent"]:
+        quality = SnowQuality.EXCELLENT
+    elif score >= thresholds["good"]:
+        quality = SnowQuality.GOOD
+    elif score >= thresholds["fair"]:
+        quality = SnowQuality.FAIR
+    elif score >= thresholds["poor"]:
+        quality = SnowQuality.POOR
+    elif score >= thresholds["bad"]:
+        quality = SnowQuality.BAD
+    else:
+        quality = SnowQuality.HORRIBLE
+
+    return quality, score
+
+
+def predict_quality_at_hour(
+    hourly_times: list[str],
+    temps: list[float | None],
+    snowfall: list[float | None],
+    wind_speeds: list[float | None],
+    target_hour_index: int,
+    elevation_m: float,
+) -> tuple[SnowQuality, float]:
+    """Predict snow quality at a specific hour index using the ML model.
+
+    This is used by the timeline to compute ML-based quality predictions
+    at each timeline point, rather than falling back to the heuristic.
+
+    Args:
+        hourly_times: List of ISO time strings (for reference, not used in computation)
+        temps: Hourly temperature array
+        snowfall: Hourly snowfall array (cm)
+        wind_speeds: Hourly wind speed array (km/h)
+        target_hour_index: Index into the arrays for the target hour
+        elevation_m: Elevation in meters
+
+    Returns:
+        Tuple of (SnowQuality, raw_score)
+    """
+    model = _load_model()
+    if model is None:
+        return SnowQuality.UNKNOWN, 3.5
+
+    raw_features = _extract_features_at_hour(
+        temps, snowfall, wind_speeds, target_hour_index, elevation_m
+    )
+    if raw_features is None:
+        return SnowQuality.UNKNOWN, 3.5
+
+    features = engineer_features(raw_features)
+
+    norm = model["normalization"]
+    normalized = [
+        (f - m) / s
+        for f, m, s in zip(features, norm["mean"], norm["std"], strict=False)
+    ]
+
+    ensemble = model.get("ensemble", [])
+    if ensemble:
+        score = _forward_ensemble(normalized, ensemble)
+    else:
+        score = _forward_single(normalized, model["weights"])
+    score = max(1.0, min(6.0, score))
+
     thresholds = model["quality_thresholds"]
     if score >= thresholds["excellent"]:
         quality = SnowQuality.EXCELLENT
