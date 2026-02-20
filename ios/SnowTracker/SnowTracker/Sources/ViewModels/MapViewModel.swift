@@ -145,9 +145,23 @@ class MapViewModel: ObservableObject {
     @Published var selectedRegionPreset: MapRegionPreset = .naRockies
     @Published var cameraPosition: MapCameraPosition = .automatic
     @Published var sortByDistance: Bool = false
+    @Published var selectedForecastDate: Date? = nil
+    @Published var isFetchingTimelines = false
 
     private let locationManager = LocationManager.shared
     private var cancellables = Set<AnyCancellable>()
+    private var timelineCache: [String: TimelineResponse] = [:]
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    var forecastDates: [Date] {
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        return (0...6).compactMap { Calendar.current.date(byAdding: .day, value: $0, to: startOfToday) }
+    }
 
     init() {
         setupLocationObserver()
@@ -277,15 +291,74 @@ class MapViewModel: ObservableObject {
         return String(format: "%.0f km", distance / 1000)
     }
 
+    // MARK: - Forecast Date Selection
+
+    func selectForecastDate(_ date: Date?) {
+        selectedForecastDate = date
+        if date != nil {
+            Task { await fetchTimelinesForNearby() }
+        }
+    }
+
+    func fetchTimelinesForNearby() async {
+        let nearby = nearbyResortIds(limit: 5)
+        let uncached = nearby.filter { timelineCache[$0] == nil }
+        guard !uncached.isEmpty else { return }
+
+        isFetchingTimelines = true
+        await withTaskGroup(of: (String, TimelineResponse?).self) { group in
+            for resortId in uncached {
+                group.addTask {
+                    let response = try? await APIClient.shared.getTimeline(for: resortId, elevation: .top)
+                    return (resortId, response)
+                }
+            }
+            for await (resortId, response) in group {
+                if let response { timelineCache[resortId] = response }
+            }
+        }
+        isFetchingTimelines = false
+    }
+
+    func predictedQuality(for resortId: String, on date: Date) -> SnowQuality? {
+        guard let timeline = timelineCache[resortId] else { return nil }
+        let dateStr = Self.dateFormatter.string(from: date)
+        return timeline.timeline
+            .first { $0.date == dateStr && $0.timeLabel == "midday" }?.snowQuality
+            ?? timeline.timeline.first { $0.date == dateStr }?.snowQuality
+    }
+
+    private func nearbyResortIds(limit: Int = 5) -> [String] {
+        guard let userLocation = locationManager.userLocation else { return [] }
+        return annotations
+            .sorted { $0.resort.distance(from: userLocation) < $1.resort.distance(from: userLocation) }
+            .prefix(limit)
+            .map { $0.id }
+    }
+
     // MARK: - Nearby Resorts
 
     func nearbyResorts(limit: Int = 5) -> [ResortAnnotation] {
         guard let userLocation = locationManager.userLocation else { return [] }
 
-        return annotations
+        let sorted = annotations
             .sorted { $0.resort.distance(from: userLocation) < $1.resort.distance(from: userLocation) }
             .prefix(limit)
-            .map { $0 }
+
+        guard let forecastDate = selectedForecastDate else {
+            return sorted.map { $0 }
+        }
+
+        return sorted.map { annotation in
+            if let predicted = predictedQuality(for: annotation.id, on: forecastDate) {
+                return ResortAnnotation(
+                    resort: annotation.resort,
+                    condition: nil,
+                    fallbackQuality: predicted
+                )
+            }
+            return annotation
+        }
     }
 
     // MARK: - Quality Statistics

@@ -218,8 +218,23 @@ struct ResortMapView: View {
                     .foregroundStyle(.blue)
                 Text("Nearby")
                     .font(.headline)
+
+                if mapViewModel.selectedForecastDate != nil {
+                    Text("Forecast")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                if mapViewModel.isFetchingTimelines {
+                    ProgressView()
+                        .controlSize(.small)
+                }
             }
             .padding(.horizontal, 4)
+
+            dateSelector
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
@@ -237,6 +252,40 @@ struct ResortMapView: View {
         }
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var dateSelector: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(mapViewModel.forecastDates, id: \.self) { date in
+                    let isToday = Calendar.current.isDateInToday(date)
+                    let isSelected = isToday
+                        ? mapViewModel.selectedForecastDate == nil
+                        : Calendar.current.isDate(date, inSameDayAs: mapViewModel.selectedForecastDate ?? .distantPast)
+
+                    Button {
+                        mapViewModel.selectForecastDate(isToday ? nil : date)
+                    } label: {
+                        Text(isToday ? "Today" : dayAbbreviation(date))
+                            .font(.caption)
+                            .fontWeight(isSelected ? .semibold : .regular)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(isSelected ? Color.blue : Color.clear)
+                            .foregroundStyle(isSelected ? .white : .primary)
+                            .clipShape(Capsule())
+                            .overlay(Capsule().strokeBorder(isSelected ? .clear : Color.blue.opacity(0.4)))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func dayAbbreviation(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE"
+        return formatter.string(from: date)
     }
 
     // MARK: - Helpers
