@@ -1,6 +1,8 @@
 name: iOS Build
 
-# Uses shared workflow from ios-infra for building the iOS app
+# Inline build workflow (mirrors footprint approach) to avoid certificate
+# creation issues with the shared ios-infra workflow.
+# Uses App Store Connect API for automatic signing without creating new certs.
 
 on:
   push:
@@ -20,16 +22,174 @@ concurrency:
   group: ios-build-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  actions: read
+
+env:
+  TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
 jobs:
   build:
-    uses: wdvr/ios-infra/.github/workflows/ios-build.yml@main
-    with:
-      bundle_id: com.wouterdevriendt.snowtracker
-      scheme: SnowTracker
-      project_path: ios/SnowTracker.xcodeproj
-      use_xcodegen: true
-      xcodegen_path: ios
-      info_plist_path: ios/SnowTracker/Info.plist
-      additional_info_plists: 'ios/SnowTrackerWidget/Info.plist'
-      skip_automatic_signing: false
-    secrets: inherit
+    name: Build & Archive
+    runs-on: macos-15
+    timeout-minutes: 30
+    outputs:
+      build_number: ${{ steps.version.outputs.build }}
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Select Xcode
+      run: |
+        XCODE_PATH=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+        if [ -z "$XCODE_PATH" ]; then
+          XCODE_PATH=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
+        fi
+        if [ -z "$XCODE_PATH" ]; then
+          XCODE_PATH="/Applications/Xcode.app"
+        fi
+
+        if [ -d "$XCODE_PATH" ]; then
+          echo "Using Xcode: $XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer" || true
+        else
+          echo "Using default Xcode"
+        fi
+        xcodebuild -version
+
+    - name: Install XcodeGen
+      run: which xcodegen || brew install xcodegen
+
+    - name: Generate Xcode project
+      run: |
+        cd ios
+        xcodegen generate
+
+    - name: Resolve Swift Package Dependencies
+      run: |
+        xcodebuild -resolvePackageDependencies \
+          -project ios/SnowTracker.xcodeproj \
+          -scheme SnowTracker
+
+    - name: Calculate build number
+      id: version
+      run: |
+        BUILD=$(git rev-list --count HEAD)
+        PLIST="ios/SnowTracker/Info.plist"
+        VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST" 2>/dev/null || echo "1.0.0")
+
+        # Update build number in main Info.plist
+        /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$PLIST" 2>/dev/null || \
+        /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $BUILD" "$PLIST"
+
+        # Update widget Info.plist
+        WIDGET_PLIST="ios/SnowTrackerWidget/Info.plist"
+        if [ -f "$WIDGET_PLIST" ]; then
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$WIDGET_PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$WIDGET_PLIST" 2>/dev/null || true
+        fi
+
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "build=$BUILD" >> $GITHUB_OUTPUT
+        echo "Building version $VERSION ($BUILD)"
+
+    - name: Setup App Store Connect API Key
+      if: github.event_name != 'pull_request'
+      run: |
+        mkdir -p $RUNNER_TEMP/private_keys
+        echo "${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}" | tr -d '\r' > $RUNNER_TEMP/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
+        chmod 600 $RUNNER_TEMP/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
+
+    - name: Build (PR - no signing)
+      if: github.event_name == 'pull_request'
+      run: |
+        xcodebuild build \
+          -project ios/SnowTracker.xcodeproj \
+          -scheme SnowTracker \
+          -configuration Release \
+          -destination 'generic/platform=iOS' \
+          CODE_SIGNING_ALLOWED=NO
+
+    - name: Archive app
+      if: github.event_name != 'pull_request'
+      run: |
+        xcodebuild archive \
+          -project ios/SnowTracker.xcodeproj \
+          -scheme SnowTracker \
+          -configuration Release \
+          -archivePath $RUNNER_TEMP/Export/App.xcarchive \
+          -destination 'generic/platform=iOS' \
+          -allowProvisioningUpdates \
+          -authenticationKeyPath $RUNNER_TEMP/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8 \
+          -authenticationKeyID ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
+          -authenticationKeyIssuerID ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }} \
+          CODE_SIGN_STYLE=Automatic \
+          DEVELOPMENT_TEAM=${{ env.TEAM_ID }}
+
+    - name: Create ExportOptions.plist
+      if: github.event_name != 'pull_request'
+      run: |
+        cat > /tmp/ExportOptions.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>${{ env.TEAM_ID }}</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>destination</key>
+            <string>export</string>
+        </dict>
+        </plist>
+        EOF
+
+    - name: Export IPA
+      if: github.event_name != 'pull_request'
+      run: |
+        xcodebuild -exportArchive \
+          -archivePath $RUNNER_TEMP/Export/App.xcarchive \
+          -exportPath $RUNNER_TEMP/Export \
+          -exportOptionsPlist /tmp/ExportOptions.plist \
+          -allowProvisioningUpdates \
+          -authenticationKeyPath $RUNNER_TEMP/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8 \
+          -authenticationKeyID ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
+          -authenticationKeyIssuerID ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+
+    - name: Upload IPA artifact
+      if: github.event_name != 'pull_request'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ipa-${{ steps.version.outputs.version }}-${{ steps.version.outputs.build }}
+        path: |
+          ${{ runner.temp }}/Export/*.ipa
+          ${{ runner.temp }}/Export/App.xcarchive/dSYMs
+        retention-days: 30
+
+    - name: Summary
+      run: |
+        echo "## Build Successful" >> $GITHUB_STEP_SUMMARY
+        echo "- **Scheme**: SnowTracker" >> $GITHUB_STEP_SUMMARY
+        echo "- **Bundle ID**: com.wouterdevriendt.snowtracker" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ steps.version.outputs.version }} (${{ steps.version.outputs.build }})" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ github.event_name }}" != "pull_request" ]; then
+          echo "- **Artifact**: ipa-${{ steps.version.outputs.version }}-${{ steps.version.outputs.build }}" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "Run **TestFlight Internal** workflow to upload to TestFlight." >> $GITHUB_STEP_SUMMARY
+
+    - name: Cleanup
+      if: always()
+      run: |
+        rm -rf $RUNNER_TEMP/private_keys $RUNNER_TEMP/Export
