@@ -107,12 +107,8 @@ class AppConfiguration: ObservableObject {
         // Use staging for debug builds since dev environment is not deployed
         self.defaultEnvironment = .staging
         #else
-        // TestFlight builds use staging, App Store builds use production
-        if AppEnvironment.isDebugOrTestFlight {
-            self.defaultEnvironment = .staging
-        } else {
-            self.defaultEnvironment = .production
-        }
+        // Both TestFlight and App Store builds use production
+        self.defaultEnvironment = .production
         #endif
 
         // Load saved environment preference (debug builds only)
