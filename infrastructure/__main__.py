@@ -1272,6 +1272,33 @@ event_delete_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# Timeline resource: /api/v1/resorts/{resortId}/timeline
+timeline_resource = aws.apigateway.Resource(
+    f"{app_name}-timeline-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=resort_resource.id,
+    path_part="timeline",
+)
+
+# GET /api/v1/resorts/{resortId}/timeline
+timeline_method = aws.apigateway.Method(
+    f"{app_name}-timeline-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=timeline_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+timeline_integration = aws.apigateway.Integration(
+    f"{app_name}-timeline-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=timeline_resource.id,
+    http_method=timeline_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # Batch conditions resource: /api/v1/conditions
 batch_conditions_parent_resource = aws.apigateway.Resource(
     f"{app_name}-batch-conditions-parent-resource-{environment}",
@@ -1749,6 +1776,7 @@ api_deployment = aws.apigateway.Deployment(
             resorts_integration.id,
             resort_integration.id,
             conditions_integration.id,
+            timeline_integration.id,
             events_get_integration.id,
             events_post_integration.id,
             event_delete_integration.id,
@@ -1776,6 +1804,7 @@ api_deployment = aws.apigateway.Deployment(
             resorts_integration,
             resort_integration,
             conditions_integration,
+            timeline_integration,
             events_get_integration,
             events_post_integration,
             event_delete_integration,

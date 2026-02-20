@@ -1239,4 +1239,129 @@ final class SnowTrackerTests: XCTestCase {
         XCTAssertEqual(summary.snowQuality, .fair)
         XCTAssertEqual(summary.freshSnowCm, 0.0)
     }
+
+    // MARK: - Timeline Model Tests
+
+    func testTimelinePointDecoding() throws {
+        let json = """
+        {
+            "date": "2026-02-19",
+            "time_label": "morning",
+            "hour": 7,
+            "timestamp": "2026-02-19T07:00:00Z",
+            "temperature_c": -5.2,
+            "wind_speed_kmh": 12.3,
+            "snowfall_cm": 2.1,
+            "snow_depth_cm": 145.0,
+            "snow_quality": "good",
+            "weather_code": 71,
+            "weather_description": "Slight snow fall",
+            "is_forecast": false
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let decoder = JSONDecoder()
+        let point = try decoder.decode(TimelinePoint.self, from: data)
+
+        XCTAssertEqual(point.date, "2026-02-19")
+        XCTAssertEqual(point.timeLabel, "morning")
+        XCTAssertEqual(point.hour, 7)
+        XCTAssertEqual(point.temperatureC, -5.2, accuracy: 0.01)
+        XCTAssertEqual(point.snowQuality, .good)
+        XCTAssertEqual(point.isForecast, false)
+        XCTAssertEqual(point.timeDisplay, "AM")
+    }
+
+    func testTimelinePointTimeDisplay() throws {
+        // Test the timeDisplay computed property for each time label
+        let makeJSON: (String, Int) -> String = { label, hour in
+            """
+            {
+                "date": "2026-02-19",
+                "time_label": "\(label)",
+                "hour": \(hour),
+                "timestamp": "2026-02-19T\(String(format: "%02d", hour)):00:00Z",
+                "temperature_c": 0.0,
+                "wind_speed_kmh": null,
+                "snowfall_cm": 0.0,
+                "snow_depth_cm": null,
+                "snow_quality": "fair",
+                "weather_code": null,
+                "weather_description": null,
+                "is_forecast": false
+            }
+            """
+        }
+
+        let morningPoint = try JSONDecoder().decode(TimelinePoint.self, from: makeJSON("morning", 7).data(using: .utf8)!)
+        XCTAssertEqual(morningPoint.timeDisplay, "AM")
+
+        let middayPoint = try JSONDecoder().decode(TimelinePoint.self, from: makeJSON("midday", 12).data(using: .utf8)!)
+        XCTAssertEqual(middayPoint.timeDisplay, "Noon")
+
+        let afternoonPoint = try JSONDecoder().decode(TimelinePoint.self, from: makeJSON("afternoon", 16).data(using: .utf8)!)
+        XCTAssertEqual(afternoonPoint.timeDisplay, "PM")
+    }
+
+    func testTimelineResponseDecoding() throws {
+        let json = """
+        {
+            "timeline": [
+                {
+                    "date": "2026-02-19",
+                    "time_label": "morning",
+                    "hour": 7,
+                    "timestamp": "2026-02-19T07:00:00Z",
+                    "temperature_c": -5.2,
+                    "wind_speed_kmh": 12.3,
+                    "snowfall_cm": 2.1,
+                    "snow_depth_cm": 145.0,
+                    "snow_quality": "good",
+                    "weather_code": 71,
+                    "weather_description": "Slight snow fall",
+                    "is_forecast": false
+                }
+            ],
+            "elevation_level": "mid",
+            "elevation_meters": 2200,
+            "resort_id": "whistler-blackcomb"
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let decoder = JSONDecoder()
+        let response = try decoder.decode(TimelineResponse.self, from: data)
+
+        XCTAssertEqual(response.timeline.count, 1)
+        XCTAssertEqual(response.elevationLevel, "mid")
+        XCTAssertEqual(response.elevationMeters, 2200)
+        XCTAssertEqual(response.resortId, "whistler-blackcomb")
+    }
+
+    func testTimelinePointWithNullOptionals() throws {
+        // Test decoding when optional fields are null
+        let json = """
+        {
+            "date": "2026-02-19",
+            "time_label": "afternoon",
+            "hour": 16,
+            "timestamp": "2026-02-19T16:00:00Z",
+            "temperature_c": 2.0,
+            "wind_speed_kmh": null,
+            "snowfall_cm": 0.0,
+            "snow_depth_cm": null,
+            "snow_quality": "fair",
+            "weather_code": null,
+            "weather_description": null,
+            "is_forecast": true
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let point = try JSONDecoder().decode(TimelinePoint.self, from: data)
+
+        XCTAssertNil(point.windSpeedKmh)
+        XCTAssertNil(point.snowDepthCm)
+        XCTAssertNil(point.weatherCode)
+        XCTAssertEqual(point.isForecast, true)
+        XCTAssertEqual(point.timeDisplay, "PM")
+    }
 }

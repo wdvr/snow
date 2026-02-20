@@ -182,6 +182,32 @@ final class APIClient {
         }
     }
 
+    /// Fetch timeline data for a resort at a specific elevation
+    func getTimeline(for resortId: String, elevation: ElevationLevel = .mid) async throws -> TimelineResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/timeline"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "elevation", value: elevation.rawValue)
+        ]
+
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url)
+                .validate()
+                .responseDecodable(of: TimelineResponse.self) { response in
+                    switch response.result {
+                    case .success(let timelineResponse):
+                        continuation.resume(returning: timelineResponse)
+                    case .failure(let error):
+                        print("API Error fetching timeline for \(resortId): \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
     func getBatchSnowQuality(for resortIds: [String]) async throws -> [String: SnowQualitySummaryLight] {
         guard !resortIds.isEmpty else { return [:] }
 
