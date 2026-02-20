@@ -34,6 +34,10 @@ class SnowConditionsManager: ObservableObject {
         }
         hasLoadedInitialData = true
 
+        // 0. Check if API URL changed (e.g. switched from staging to prod)
+        //    and invalidate stale cache from the old environment
+        cacheService.checkAndInvalidateIfAPIChanged()
+
         // 1. Load cached data immediately so the UI is populated right away
         loadCachedDataSynchronously()
 

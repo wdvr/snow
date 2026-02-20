@@ -16,59 +16,67 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                // API Configuration Section (Debug only)
-                #if DEBUG
-                Section {
-                    // Environment Picker
-                    Picker("Environment", selection: $config.selectedEnvironment) {
-                        ForEach(AppEnvironment.allCases, id: \.self) { env in
-                            Text(env.displayName).tag(env)
+                // API Configuration Section (Debug builds + admin users)
+                if config.showDeveloperSettings {
+                    Section {
+                        // Environment Picker — hide dev environment in release builds
+                        Picker("Environment", selection: $config.selectedEnvironment) {
+                            ForEach(AppEnvironment.allCases.filter { env in
+                                #if DEBUG
+                                return true
+                                #else
+                                return env != .development
+                                #endif
+                            }, id: \.self) { env in
+                                Text(env.displayName).tag(env)
+                            }
                         }
-                    }
 
-                    Toggle("Use Custom API URL", isOn: $config.useCustomAPI)
+                        #if DEBUG
+                        Toggle("Use Custom API URL", isOn: $config.useCustomAPI)
 
-                    if config.useCustomAPI {
-                        TextField("API URL", text: $customURL)
-                            .keyboardType(.URL)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .onChange(of: customURL) { _, newValue in
-                                validateAndSaveURL(newValue)
+                        if config.useCustomAPI {
+                            TextField("API URL", text: $customURL)
+                                .keyboardType(.URL)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .onChange(of: customURL) { _, newValue in
+                                    validateAndSaveURL(newValue)
+                                }
+
+                            if let error = urlValidationError {
+                                Text(error)
+                                    .font(.caption)
+                                    .foregroundStyle(.red)
                             }
 
-                        if let error = urlValidationError {
-                            Text(error)
+                            Text("Example: http://localhost:8000 or https://your-api.ngrok.io")
                                 .font(.caption)
-                                .foregroundStyle(.red)
+                                .foregroundStyle(.secondary)
+                        }
+                        #endif
+
+                        HStack {
+                            Text("Current API")
+                            Spacer()
+                            Text(config.apiBaseURL.absoluteString)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
                         }
 
-                        Text("Example: http://localhost:8000 or https://your-api.ngrok.io")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    HStack {
-                        Text("Current API")
-                        Spacer()
-                        Text(config.apiBaseURL.absoluteString)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-
-                    if config.isUsingCustomAPI || config.selectedEnvironment != config.defaultEnvironment {
-                        Button("Reset to Default") {
-                            showingResetAlert = true
+                        if config.isUsingCustomAPI || config.selectedEnvironment != config.defaultEnvironment {
+                            Button("Reset to Default") {
+                                showingResetAlert = true
+                            }
+                            .foregroundStyle(.orange)
                         }
-                        .foregroundStyle(.orange)
+                    } header: {
+                        Text("Developer Settings")
+                    } footer: {
+                        Text("Configure environment and API endpoint for testing.")
                     }
-                } header: {
-                    Text("Developer Settings")
-                } footer: {
-                    Text("Configure environment and API endpoint for testing. Only available in debug builds.")
                 }
-                #endif
 
                 // App Info Section
                 Section {
