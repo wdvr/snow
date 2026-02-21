@@ -929,22 +929,46 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
                 "timestamp": condition.timestamp,
             }
 
-        # Calculate overall quality using weighted elevation scoring
+        # Calculate overall quality from weighted raw scores (top 50%, mid 35%, base 15%).
+        # This ensures overall_quality and overall_snow_score are always consistent.
+        elevation_weights = {"top": 0.50, "mid": 0.35, "base": 0.15}
+        weighted_raw_score = 0.0
+        total_weight = 0.0
+        for cond in conditions:
+            raw = cond.quality_score
+            if raw is not None:
+                w = elevation_weights.get(cond.elevation_level, 0.15)
+                weighted_raw_score += raw * w
+                total_weight += w
+        if total_weight > 0:
+            overall_raw_score = weighted_raw_score / total_weight
+        else:
+            overall_raw_score = None
+
+        # Derive quality label from weighted raw score
         from services.snow_quality_service import SnowQualityService
 
-        overall_quality = SnowQualityService.calculate_overall_quality(conditions)
+        if overall_raw_score is not None:
+            overall_snow_score = score_to_100(overall_raw_score)
+            # Map weighted raw score to quality using same thresholds
+            if overall_raw_score >= 5.5:
+                overall_quality = SnowQuality.EXCELLENT
+            elif overall_raw_score >= 4.5:
+                overall_quality = SnowQuality.GOOD
+            elif overall_raw_score >= 3.5:
+                overall_quality = SnowQuality.FAIR
+            elif overall_raw_score >= 2.5:
+                overall_quality = SnowQuality.POOR
+            elif overall_raw_score >= 1.5:
+                overall_quality = SnowQuality.BAD
+            else:
+                overall_quality = SnowQuality.HORRIBLE
+        else:
+            overall_quality = SnowQualityService.calculate_overall_quality(conditions)
+            overall_snow_score = None
 
         # Get explanation for overall quality
         quality_explanation = SNOW_QUALITY_EXPLANATIONS.get(overall_quality, {})
-
-        # Compute overall snow_score: weighted average of per-elevation scores
-        # Use top elevation's score as overall if available, else best available
-        overall_snow_score = None
-        for pref_level in ["top", "mid", "base"]:
-            if pref_level in elevation_summaries:
-                overall_snow_score = elevation_summaries[pref_level].get("snow_score")
-                if overall_snow_score is not None:
-                    break
 
         # Generate overall explanation from top elevation condition
         overall_explanation = None
@@ -1087,10 +1111,36 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
             "snowfall_24h_cm": None,
         }
 
-    # Calculate overall quality using weighted elevation scoring
-    from services.snow_quality_service import SnowQualityService
+    # Calculate overall quality from weighted raw scores (consistent with detail endpoint)
+    elevation_weights = {"top": 0.50, "mid": 0.35, "base": 0.15}
+    weighted_raw = 0.0
+    total_w = 0.0
+    for c in conditions:
+        if c.quality_score is not None:
+            w = elevation_weights.get(c.elevation_level, 0.15)
+            weighted_raw += c.quality_score * w
+            total_w += w
 
-    overall_quality = SnowQualityService.calculate_overall_quality(conditions)
+    if total_w > 0:
+        overall_raw = weighted_raw / total_w
+        snow_score = score_to_100(overall_raw)
+        if overall_raw >= 5.5:
+            overall_quality = SnowQuality.EXCELLENT
+        elif overall_raw >= 4.5:
+            overall_quality = SnowQuality.GOOD
+        elif overall_raw >= 3.5:
+            overall_quality = SnowQuality.FAIR
+        elif overall_raw >= 2.5:
+            overall_quality = SnowQuality.POOR
+        elif overall_raw >= 1.5:
+            overall_quality = SnowQuality.BAD
+        else:
+            overall_quality = SnowQuality.HORRIBLE
+    else:
+        from services.snow_quality_service import SnowQualityService
+
+        overall_quality = SnowQualityService.calculate_overall_quality(conditions)
+        snow_score = None
 
     # Get representative condition data (prefer top, then mid, then first available)
     representative = None
@@ -1103,10 +1153,6 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
             break
     if not representative:
         representative = conditions[0]
-
-    # Compute snow score (0-100) from raw ML score
-    raw_score = representative.quality_score
-    snow_score = score_to_100(raw_score) if raw_score is not None else None
 
     return {
         "resort_id": resort_id,
