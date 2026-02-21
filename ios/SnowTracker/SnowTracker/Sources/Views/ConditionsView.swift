@@ -272,19 +272,19 @@ struct QualityInfoSheet: View {
                         Text("How Quality is Calculated")
                             .font(.headline)
 
-                        Text("Quality ratings are based on **fresh powder since the last thaw-freeze event** — snow that hasn't turned to ice.")
+                        Text("Quality ratings use an **ML model** trained on real snow conditions across 129 resorts, analyzing 27 weather features per location.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
 
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 12) {
-                                Image(systemName: "ruler")
+                                Image(systemName: "snowflake")
                                     .foregroundStyle(.blue)
                                 VStack(alignment: .leading) {
-                                    Text("Fresh snow thresholds:")
+                                    Text("Key factors:")
                                         .font(.caption)
                                         .fontWeight(.medium)
-                                    Text("3\"+ = Excellent, 2\"+ = Good, 1\"+ = Fair")
+                                    Text("Fresh snow since last thaw-freeze, temperature, snowfall history, wind, and elevation")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -297,7 +297,20 @@ struct QualityInfoSheet: View {
                                     Text("Ice forms (thaw-freeze) when:")
                                         .font(.caption)
                                         .fontWeight(.medium)
-                                    Text("3h @ +3°C, 6h @ +2°C, or 8h @ +1°C")
+                                    Text("Sustained warm temps above freezing cause snow to melt and refreeze")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+
+                            HStack(spacing: 12) {
+                                Image(systemName: "mountain.2")
+                                    .foregroundStyle(.green)
+                                VStack(alignment: .leading) {
+                                    Text("Overall score:")
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                    Text("Weighted average: 50% summit, 35% mid, 15% base")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
