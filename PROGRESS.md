@@ -36,6 +36,10 @@
 
 | Feature | Date |
 |---------|------|
+| Add 39 snow_summary_service tests | 2026-02-21 |
+| Fix conditions endpoint returning 50 entries instead of 3 | 2026-02-21 |
+| Fix batch API resort_count reporting requested vs returned count | 2026-02-21 |
+| Add timeline snow depth smoothing (prevent impossible forecast drops) | 2026-02-21 |
 | Add retry button to resort detail no-data state | 2026-02-21 |
 | Add 60 notification_service tests, fix thaw alert timezone bug | 2026-02-21 |
 | Remove duplicate resorts (silverstar, northstar-california-resort) | 2026-02-21 |
@@ -114,8 +118,8 @@
 ## Architecture
 
 ### Snow Quality Algorithm
-ML model v8: ensemble of 10 neural networks (27 features → quality score 1-6).
-Val MAE 0.299, R² 0.870, 100% within-1 quality level. Trained on 2207 samples (1677 real, 409 synthetic, 121 historical) across 129 resorts. See `ml/ALGORITHM.md` for details.
+ML model v9: ensemble of 10 neural networks (29 features incl. snow_depth → quality score 1-6).
+Val MAE 0.180, R² 0.952, 83.5% exact, 100% within-1. Trained on 2207 samples across 129 resorts. See `ml/ALGORITHM.md` for details.
 
 Quality levels: EXCELLENT (6) → GOOD (5) → FAIR (4) → POOR (3) → BAD (2) → HORRIBLE (1)
 
