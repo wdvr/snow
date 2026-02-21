@@ -144,3 +144,6 @@
 "No Resorts Found" = "Inga skidorter hittades";
 "Pull to refresh" = "Dra för att uppdatera";
 "Try Again" = "Försök igen";
+
+/* MapView Date Selector */
+"Today" = "Idag";

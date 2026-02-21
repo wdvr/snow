@@ -144,3 +144,6 @@
 "No Resorts Found" = "리조트를 찾을 수 없음";
 "Pull to refresh" = "당겨서 새로고침";
 "Try Again" = "다시 시도";
+
+/* MapView Date Selector */
+"Today" = "오늘";

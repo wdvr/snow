@@ -144,3 +144,6 @@
 "No Resorts Found" = "Nie znaleziono ośrodków";
 "Pull to refresh" = "Pociągnij, aby odświeżyć";
 "Try Again" = "Spróbuj ponownie";
+
+/* MapView Date Selector */
+"Today" = "Dziś";

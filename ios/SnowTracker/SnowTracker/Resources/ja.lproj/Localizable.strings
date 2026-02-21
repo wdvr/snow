@@ -144,3 +144,6 @@
 "No Resorts Found" = "スキー場が見つかりません";
 "Pull to refresh" = "下に引いて更新";
 "Try Again" = "再試行";
+
+/* MapView Date Selector */
+"Today" = "今日";
