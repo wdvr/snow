@@ -594,7 +594,7 @@ struct TripDetailView: View {
     }
 
     private func formatSnow(_ cm: Double) -> String {
-        if useMetric {
+        if userPreferencesManager.preferredUnits.snowDepth == .centimeters {
             return String(format: "%.0f cm", cm)
         } else {
             return String(format: "%.1f\"", cm / 2.54)
@@ -602,7 +602,7 @@ struct TripDetailView: View {
     }
 
     private func formatTemp(_ celsius: Double) -> String {
-        if useMetric {
+        if userPreferencesManager.preferredUnits.temperature == .celsius {
             return String(format: "%.0f°C", celsius)
         } else {
             return String(format: "%.0f°F", celsius * 9/5 + 32)

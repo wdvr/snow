@@ -47,6 +47,7 @@ RAW_FEATURE_COLUMNS = [
     "cur_wind_kmh",
     "max_wind_24h",
     "avg_wind_24h",
+    "snow_depth_cm",
 ]
 
 
@@ -81,6 +82,9 @@ def engineer_features(raw_features: dict) -> list[float]:
     avg_wind = raw_features.get("avg_wind_24h", 0.0)
     max_wind = raw_features.get("max_wind_24h", 0.0)
 
+    # Snow depth feature
+    snow_depth = raw_features.get("snow_depth_cm", 0.0) or 0.0
+
     return [
         # Temperature features (4)
         ct,
@@ -98,6 +102,9 @@ def engineer_features(raw_features: dict) -> list[float]:
         snow72 - snow24,  # older snow accumulation
         # Elevation (1)
         elev / 1000.0,  # normalize to km
+        # Snow depth (2) - total snow on ground + interaction with fresh snow
+        snow_depth / 100.0,  # normalize to meters
+        snow_ft / max(snow_depth, 1.0),  # fresh-to-total ratio (how much is new)
         # Warm hours since freeze-thaw (condensed from 7 to 3)
         ha0,  # any above-freezing exposure
         ha3,  # significant warming
@@ -136,6 +143,8 @@ ENGINEERED_FEATURE_NAMES = [
     "snowfall_72h_cm",
     "older_snow_accum",
     "elevation_km",
+    "snow_depth_m",
+    "fresh_to_total_ratio",
     "hours_above_0C_ft",
     "hours_above_3C_ft",
     "hours_above_6C_ft",

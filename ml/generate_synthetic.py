@@ -43,8 +43,21 @@ def make_sample(
     cur_wind_kmh: float = 0.0,
     max_wind_24h: float = 0.0,
     avg_wind_24h: float = 0.0,
+    snow_depth_cm: float | None = None,
 ) -> tuple[dict, dict]:
     """Create a synthetic feature vector and score pair."""
+    # Auto-compute realistic snow depth if not provided
+    if snow_depth_cm is None:
+        # Base depth: higher elevation + colder temps = more snow
+        # Typical range: 0-400cm at ski resorts
+        if cur_temp > 10 and freeze_thaw_days_ago < 1:
+            snow_depth_cm = 0.0  # Summer/no-snow
+        else:
+            base = max(0, (elevation_m - 1000) / 10)  # 0-200 based on elevation
+            fresh_contrib = snow_since_freeze_cm * 0.8
+            snow_depth_cm = max(0, base + fresh_contrib + random.uniform(-20, 40))
+            snow_depth_cm = round(snow_depth_cm, 1)
+
     features = {
         "resort_id": resort_id,
         "date": date,
@@ -68,6 +81,7 @@ def make_sample(
     features["cur_wind_kmh"] = round(cur_wind_kmh, 1)
     features["max_wind_24h"] = round(max_wind_24h, 1)
     features["avg_wind_24h"] = round(avg_wind_24h, 1)
+    features["snow_depth_cm"] = round(snow_depth_cm, 1)
 
     score_entry = {
         "resort_id": resort_id,

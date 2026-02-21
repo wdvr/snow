@@ -2,38 +2,38 @@
 Model Evaluation Report (v2 - Neural Network)
 ============================================================
 Samples: 442
-MAE: 0.299
-RMSE: 0.404
-R²: 0.870
-Exact quality match: 70.6%
+MAE: 0.180
+RMSE: 0.242
+R²: 0.952
+Exact quality match: 83.5%
 Within-1 quality level: 100.0%
 
 Score distribution:
-  True  - mean: 3.77, std: 1.12
-  Pred  - mean: 3.74, std: 1.09
+  True  - mean: 3.76, std: 1.11
+  Pred  - mean: 3.75, std: 1.11
 
 Quality confusion (true → predicted):
-    horrible ( 26): horrible=24, bad=2
-         bad ( 22): bad=19, poor=3
-        poor ( 86): poor=54, fair=24, bad=8
-        fair (187): fair=145, poor=33, good=9
-        good ( 88): good=44, fair=40, excellent=4
-   excellent ( 33): excellent=26, good=7
+    horrible ( 26): horrible=25, bad=1
+         bad ( 21): bad=20, poor=1
+        poor ( 87): poor=74, fair=8, bad=5
+        fair (189): fair=163, poor=22, good=4
+        good ( 86): good=62, fair=23, excellent=1
+   excellent ( 33): excellent=25, good=8
 
 Worst 15 predictions:
   Resort                              Date          True  Pred Error
-  crested-butte                       2026-02-13     3.0   4.3  1.28
-  aspen-highlands                     2026-02-17     2.2   3.4  1.24
-  steamboat                           2026-02-14     2.5   3.7  1.21
-  bald-mountain-sun-valley            2026-02-18     3.9   5.1  1.21
-  mount-seymour                       2026-02-15     3.8   5.0  1.20
-  crested-butte                       2026-02-21     4.9   3.7  1.18
-  wolf-creek                          2026-02-20     4.0   5.2  1.17
-  kirkwood                            2026-02-14     3.9   2.7  1.17
-  snoqualmie-pass                     2026-02-14     5.0   3.9  1.07
-  palisades-tahoe                     2026-02-14     3.9   2.9  1.03
-  sun-peaks                           2026-02-17     3.5   4.5  1.02
-  sun-peaks                           2026-02-15     3.5   4.5  0.99
-  big-bear                            2026-02-20     4.8   5.8  0.98
-  crystal-mountain-wa                 2026-02-12     3.7   2.7  0.98
-  bald-mountain-sun-valley            2026-02-12     3.3   4.3  0.98
+  synth-light-dusting-37              2026-02-10     4.9   3.8  1.12
+  winter-park-resort                  2026-02-18     4.4   3.3  1.07
+  crested-butte                       2026-02-21     4.9   4.1  0.84
+  grouse-mountain                     2026-02-12     3.7   2.9  0.78
+  synth-packed-19                     2026-01-19     3.6   4.3  0.76
+  synth-fresh-covers-ice-8            2026-02-09     4.5   5.2  0.68
+  synth-thin-on-ice-22                2026-02-07     2.2   2.8  0.67
+  bald-mountain-sun-valley            2026-02-11     3.9   3.3  0.64
+  crested-butte                       2026-02-18     4.4   5.0  0.62
+  blue-mountain-resort-collingwood    2026-02-12     4.5   3.9  0.60
+  synth-fresh-covers-ice-3            2026-02-04     4.8   5.4  0.60
+  synth-warm-aging-10                 2026-02-15     3.1   2.5  0.59
+  sugar-bowl                          2026-02-16     4.3   3.8  0.53
+  stevens-pass                        2026-02-09     3.7   3.2  0.52
+  synth-powder-3                      2026-01-04     5.9   5.4  0.50

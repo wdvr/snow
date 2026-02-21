@@ -33,6 +33,7 @@ def compute_features_for_day(
     day_index: int,
     elevation_m: float,
     hourly_wind: list[float] | None = None,
+    hourly_snow_depth: list[float] | None = None,
 ) -> dict | None:
     """Compute all ML features for a specific day from hourly data.
 
@@ -43,6 +44,7 @@ def compute_features_for_day(
         day_index: Which day (0 = oldest, each day = 24 hours)
         elevation_m: Elevation in meters
         hourly_wind: Full array of hourly wind speed (km/h), optional
+        hourly_snow_depth: Full array of hourly snow depth (cm), optional
 
     Returns:
         Feature dict or None if insufficient data
@@ -160,6 +162,13 @@ def compute_features_for_day(
         avg_wind_24h = 0.0
         max_wind_24h = 0.0
 
+    # Snow depth feature (Open-Meteo returns snow_depth in meters)
+    if hourly_snow_depth and len(hourly_snow_depth) > target_hour:
+        sd = hourly_snow_depth[target_hour]
+        snow_depth_cm = sd * 100.0 if sd is not None else 0.0
+    else:
+        snow_depth_cm = 0.0
+
     return {
         "cur_temp": round(cur_temp, 1),
         "max_temp_24h": round(max_temp_24h, 1),
@@ -188,6 +197,7 @@ def compute_features_for_day(
         "cur_wind_kmh": round(cur_wind, 1),
         "max_wind_24h": round(max_wind_24h, 1),
         "avg_wind_24h": round(avg_wind_24h, 1),
+        "snow_depth_cm": round(snow_depth_cm, 1),
     }
 
 
@@ -207,7 +217,7 @@ async def fetch_resort_data(
             "latitude": lat,
             "longitude": lon,
             "elevation": elev_top,
-            "hourly": "temperature_2m,snowfall,wind_speed_10m",
+            "hourly": "temperature_2m,snowfall,wind_speed_10m,snow_depth",
             "past_days": 14,
             "forecast_days": 1,
             "timezone": "GMT",
@@ -237,6 +247,7 @@ async def fetch_resort_data(
         snowfall = hourly.get("snowfall", [])
         times = hourly.get("time", [])
         wind = hourly.get("wind_speed_10m", [])
+        snow_depth = hourly.get("snow_depth", [])
 
         if not temps:
             print(f"  NO DATA {resort_id}")
@@ -248,7 +259,7 @@ async def fetch_resort_data(
         # Compute features for each full day (skip first 2 days for lookback)
         for day_idx in range(2, n_days):
             features = compute_features_for_day(
-                temps, snowfall, times, day_idx, elev_top, wind
+                temps, snowfall, times, day_idx, elev_top, wind, snow_depth
             )
             if features:
                 # Determine the date for this day

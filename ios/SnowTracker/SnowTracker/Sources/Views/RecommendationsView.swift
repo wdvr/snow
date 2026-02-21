@@ -319,6 +319,7 @@ struct RecommendationCard: View {
     let recommendation: ResortRecommendation
     let showDistance: Bool
     let useMetric: Bool
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -395,7 +396,7 @@ struct RecommendationCard: View {
     }
 
     private func formatSnow(_ cm: Double) -> String {
-        if useMetric {
+        if userPreferencesManager.preferredUnits.snowDepth == .centimeters {
             return String(format: "%.0f cm", cm)
         } else {
             return String(format: "%.1f\"", cm / 2.54)
@@ -403,7 +404,7 @@ struct RecommendationCard: View {
     }
 
     private func formatTemp(_ celsius: Double) -> String {
-        if useMetric {
+        if userPreferencesManager.preferredUnits.temperature == .celsius {
             return String(format: "%.0f°C", celsius)
         } else {
             return String(format: "%.0f°F", celsius * 9/5 + 32)

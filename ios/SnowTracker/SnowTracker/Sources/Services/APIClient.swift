@@ -1040,16 +1040,23 @@ struct SnowQualitySummaryLight: Codable {
         SnowQuality(rawValue: overallQuality) ?? .unknown
     }
 
-    /// Formatted temperature string (e.g., "-5°C (21°F)")
-    var formattedTemperature: String? {
+    /// Formatted temperature string respecting unit preferences
+    func formattedTemperature(_ prefs: UnitPreferences) -> String? {
         guard let temp = temperatureC else { return nil }
-        let fahrenheit = temp * 9 / 5 + 32
-        return String(format: "%.0f°C (%.0f°F)", temp, fahrenheit)
+        if prefs.temperature == .fahrenheit {
+            let fahrenheit = temp * 9 / 5 + 32
+            return String(format: "%.0f°F", fahrenheit)
+        }
+        return String(format: "%.0f°C", temp)
     }
 
-    /// Formatted fresh snow depth - shows the meaningful "fresh snow on ice" metric
-    var formattedFreshSnow: String? {
+    /// Formatted fresh snow depth respecting unit preferences
+    func formattedFreshSnow(_ prefs: UnitPreferences) -> String? {
         guard let snow = snowfallFreshCm else { return nil }
+        if prefs.snowDepth == .inches {
+            let inches = snow / 2.54
+            return String(format: "%.1f\"", inches)
+        }
         return String(format: "%.1fcm", snow)
     }
 

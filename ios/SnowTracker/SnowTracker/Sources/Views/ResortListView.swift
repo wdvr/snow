@@ -278,6 +278,7 @@ struct ResortRowView: View {
     var userLocation: CLLocation? = nil
     var useMetric: Bool = true
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
 
     private var latestCondition: WeatherCondition? {
         snowConditionsManager.getLatestCondition(for: resort.id)
@@ -389,14 +390,14 @@ struct ResortRowView: View {
             // Quick stats - prefer full condition, fall back to summary
             if let condition = latestCondition {
                 HStack {
-                    Label(condition.formattedCurrentTemp, systemImage: "thermometer")
+                    Label(condition.formattedTemperature(userPreferencesManager.preferredUnits), systemImage: "thermometer")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     Spacer()
 
                     // Use fresh snow (snowfall_after_freeze) which is more meaningful than 24h
-                    Label(condition.formattedFreshSnow, systemImage: "snowflake")
+                    Label(condition.formattedFreshSnowWithPrefs(userPreferencesManager.preferredUnits), systemImage: "snowflake")
                         .font(.caption)
                         .foregroundStyle(.blue)
 
@@ -409,7 +410,7 @@ struct ResortRowView: View {
             } else if let summary = snowQualitySummary,
                       summary.temperatureC != nil || summary.snowfallFreshCm != nil {
                 HStack {
-                    if let temp = summary.formattedTemperature {
+                    if let temp = summary.formattedTemperature(userPreferencesManager.preferredUnits) {
                         Label(temp, systemImage: "thermometer")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -417,7 +418,7 @@ struct ResortRowView: View {
 
                     Spacer()
 
-                    if let snow = summary.formattedFreshSnow {
+                    if let snow = summary.formattedFreshSnow(userPreferencesManager.preferredUnits) {
                         Label(snow, systemImage: "snowflake")
                             .font(.caption)
                             .foregroundStyle(.blue)
