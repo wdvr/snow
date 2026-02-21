@@ -558,7 +558,9 @@ class RecommendationService:
         elif total_predicted_snow >= 15:
             parts.append(f"More snow expected ({total_predicted_snow:.0f}cm)")
 
-        # Add location context
-        parts.append(f"at {resort.name}, {resort.country}")
-
-        return ". ".join(parts) + "."
+        # Add location context - attach to last part to avoid "at" starting a sentence
+        location = f"at {resort.name}, {resort.country}"
+        if parts:
+            return ". ".join(parts) + f" {location}."
+        else:
+            return f"Recommended resort: {resort.name}, {resort.country}."
