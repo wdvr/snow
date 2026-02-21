@@ -115,6 +115,17 @@ def process_elevation_point(
                 weather_data, scraped_data, elevation_level=level
             )
 
+        # Ensure cumulative snowfall windows are consistent after all merges
+        # (scraper may override 24h but not 48h/72h, creating inconsistency)
+        s24 = weather_data.get("snowfall_24h_cm", 0.0)
+        s48 = weather_data.get("snowfall_48h_cm", 0.0)
+        s72 = weather_data.get("snowfall_72h_cm", 0.0)
+        if s48 < s24:
+            weather_data["snowfall_48h_cm"] = s24
+            s48 = s24
+        if s72 < s48:
+            weather_data["snowfall_72h_cm"] = s48
+
         # Update snow summary based on weather data
         if snow_summary_service and existing_summary:
             freeze_detected = weather_data.get("freeze_event_detected", False)
