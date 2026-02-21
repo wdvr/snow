@@ -465,6 +465,44 @@ def _apply_snow_aging_penalty(
     return max(1.0, score - age_penalty)
 
 
+def _apply_cold_accumulation_boost(
+    score: float,
+    snow_since_freeze_cm: float,
+    freeze_thaw_days_ago: float,
+    cur_temp: float,
+) -> float:
+    """Boost score for accumulated unrefrozen snow at cold temps.
+
+    The ML model underestimates quality when there's no recent 24h snowfall
+    but significant accumulated snow since the last freeze-thaw event, combined
+    with very cold temps that preserve powder quality. This is because the
+    training data has limited examples of this specific pattern.
+
+    Only applies when:
+    - No recent freeze-thaw (>= 10 days)
+    - Significant accumulated snow (>= 15cm since freeze)
+    - Cold temps (<= -8°C) preserving snow quality
+    """
+    if freeze_thaw_days_ago < 10 or snow_since_freeze_cm < 15 or cur_temp > -8:
+        return score
+
+    # Boost based on accumulated snow depth
+    if snow_since_freeze_cm >= 40:
+        boost = 0.6
+    elif snow_since_freeze_cm >= 25:
+        boost = 0.4
+    elif snow_since_freeze_cm >= 15:
+        boost = 0.2
+
+    # Colder temps preserve powder better → larger boost
+    if cur_temp < -20:
+        boost *= 1.3
+    elif cur_temp < -15:
+        boost *= 1.15
+
+    return min(6.0, score + boost)
+
+
 def predict_quality(
     condition: Any,
     elevation_m: float | None = None,
@@ -515,6 +553,14 @@ def predict_quality(
     cur_temp = getattr(condition, "current_temp_celsius", 0.0) or 0.0
     snow_24h = getattr(condition, "snowfall_24h_cm", 0.0) or 0.0
     score = _apply_snow_aging_penalty(score, hours_since, snow_24h, cur_temp)
+
+    # Post-ML adjustment: boost for accumulated unrefrozen snow at cold temps.
+    # The model underestimates quality when there's no recent 24h snowfall but
+    # significant snow has accumulated since the last freeze-thaw and temps are
+    # very cold (preserving powder quality).
+    snow_since_ft = raw_features.get("snow_since_freeze_cm", 0.0)
+    ft_days = raw_features.get("freeze_thaw_days_ago", 0.0)
+    score = _apply_cold_accumulation_boost(score, snow_since_ft, ft_days, cur_temp)
 
     # Map to quality
     thresholds = model["quality_thresholds"]
@@ -596,6 +642,11 @@ def predict_quality_at_hour(
             break
     cur_temp = temps[target_hour_index] if temps[target_hour_index] is not None else 0.0
     score = _apply_snow_aging_penalty(score, hours_since_snow, snow_24h, cur_temp)
+
+    # Cold accumulation boost for timeline predictions
+    snow_since_ft = raw_features.get("snow_since_freeze_cm", 0.0)
+    ft_days = raw_features.get("freeze_thaw_days_ago", 0.0)
+    score = _apply_cold_accumulation_boost(score, snow_since_ft, ft_days, cur_temp)
 
     thresholds = model["quality_thresholds"]
     if score >= thresholds["excellent"]:

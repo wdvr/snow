@@ -266,6 +266,81 @@ class TestSnowAgingPenalty:
         assert score >= 3.2  # Max penalty is 0.8
 
 
+class TestColdAccumulationBoost:
+    """Tests for post-ML cold accumulation boost."""
+
+    def test_no_boost_recent_freeze_thaw(self):
+        """No boost when freeze-thaw was recent (< 10 days)."""
+        from services.ml_scorer import _apply_cold_accumulation_boost
+
+        score = _apply_cold_accumulation_boost(
+            3.5, snow_since_freeze_cm=30.0, freeze_thaw_days_ago=5.0, cur_temp=-15.0
+        )
+        assert score == 3.5
+
+    def test_no_boost_low_accumulated_snow(self):
+        """No boost when accumulated snow is < 15cm."""
+        from services.ml_scorer import _apply_cold_accumulation_boost
+
+        score = _apply_cold_accumulation_boost(
+            3.5, snow_since_freeze_cm=10.0, freeze_thaw_days_ago=14.0, cur_temp=-15.0
+        )
+        assert score == 3.5
+
+    def test_no_boost_warm_temps(self):
+        """No boost when temps are above -8C."""
+        from services.ml_scorer import _apply_cold_accumulation_boost
+
+        score = _apply_cold_accumulation_boost(
+            3.5, snow_since_freeze_cm=30.0, freeze_thaw_days_ago=14.0, cur_temp=-5.0
+        )
+        assert score == 3.5
+
+    def test_boost_for_cold_accumulated_snow(self):
+        """Boost applied for 25cm+ snow, 14+ days since FT, very cold."""
+        from services.ml_scorer import _apply_cold_accumulation_boost
+
+        score = _apply_cold_accumulation_boost(
+            3.4, snow_since_freeze_cm=27.0, freeze_thaw_days_ago=14.0, cur_temp=-23.0
+        )
+        # Should get 0.4 * 1.3 = 0.52 boost
+        assert score > 3.8
+        assert score < 4.2
+
+    def test_deeper_snow_gets_larger_boost(self):
+        """More accumulated snow means larger quality boost."""
+        from services.ml_scorer import _apply_cold_accumulation_boost
+
+        moderate = _apply_cold_accumulation_boost(
+            3.5, snow_since_freeze_cm=20.0, freeze_thaw_days_ago=14.0, cur_temp=-15.0
+        )
+        deep = _apply_cold_accumulation_boost(
+            3.5, snow_since_freeze_cm=45.0, freeze_thaw_days_ago=14.0, cur_temp=-15.0
+        )
+        assert deep > moderate
+
+    def test_colder_temps_increase_boost(self):
+        """Colder temps preserve powder better, increasing the boost."""
+        from services.ml_scorer import _apply_cold_accumulation_boost
+
+        cold = _apply_cold_accumulation_boost(
+            3.5, snow_since_freeze_cm=30.0, freeze_thaw_days_ago=14.0, cur_temp=-10.0
+        )
+        very_cold = _apply_cold_accumulation_boost(
+            3.5, snow_since_freeze_cm=30.0, freeze_thaw_days_ago=14.0, cur_temp=-22.0
+        )
+        assert very_cold > cold
+
+    def test_boost_capped_at_6(self):
+        """Boost should not exceed 6.0 max score."""
+        from services.ml_scorer import _apply_cold_accumulation_boost
+
+        score = _apply_cold_accumulation_boost(
+            5.8, snow_since_freeze_cm=50.0, freeze_thaw_days_ago=14.0, cur_temp=-25.0
+        )
+        assert score <= 6.0
+
+
 class TestFernieResortData:
     """Tests for Fernie resort data in resorts.json."""
 
