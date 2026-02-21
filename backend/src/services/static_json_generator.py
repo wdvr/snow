@@ -19,6 +19,10 @@ from botocore.exceptions import ClientError
 
 from models.resort import Resort
 from models.weather import SnowQuality
+from services.quality_explanation_service import (
+    generate_quality_explanation,
+    score_to_100,
+)
 from services.resort_service import ResortService
 from services.weather_service import WeatherService
 
@@ -232,21 +236,24 @@ class StaticJsonGenerator:
 
         overall_quality = SnowQualityService.calculate_overall_quality(conditions)
 
-        # Get representative condition (prefer mid elevation)
+        # Get representative condition (prefer top elevation for best quality view)
         representative = None
-        for c in conditions:
-            level = c.elevation_level
-            if level == "mid":
-                representative = c
-                break
-        if not representative:
+        for pref_level in ["top", "mid", "base"]:
             for c in conditions:
-                level = c.elevation_level
-                if level == "base":
+                if c.elevation_level == pref_level:
                     representative = c
                     break
+            if representative:
+                break
         if not representative and conditions:
             representative = conditions[0]
+
+        # Compute snow score and explanation
+        raw_score = representative.quality_score if representative else None
+        snow_score = score_to_100(raw_score) if raw_score is not None else None
+        explanation = (
+            generate_quality_explanation(representative) if representative else None
+        )
 
         return {
             "resort_id": resort.resort_id,
@@ -255,6 +262,8 @@ class StaticJsonGenerator:
                 if hasattr(overall_quality, "value")
                 else overall_quality
             ),
+            "snow_score": snow_score,
+            "explanation": explanation,
             "last_updated": max(c.timestamp for c in conditions)
             if conditions
             else None,
