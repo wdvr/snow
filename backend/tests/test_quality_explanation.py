@@ -4,6 +4,7 @@ import pytest
 
 from models.weather import SnowQuality, WeatherCondition
 from services.quality_explanation_service import (
+    generate_overall_explanation,
     generate_quality_explanation,
     generate_timeline_explanation,
     score_to_100,
@@ -353,3 +354,100 @@ class TestScoreTo100:
         assert score_to_100(4.25) == 65
         # excellent threshold (5.0) = 80
         assert score_to_100(5.0) == 80
+
+
+# MARK: - Overall explanation tests
+
+
+class TestOverallExplanation:
+    """Tests for generate_overall_explanation with mixed elevations."""
+
+    def test_matching_elevation_uses_standard_explanation(self):
+        """When an elevation matches overall quality, use its standard explanation."""
+        conditions = [
+            _make_condition(
+                elevation_level="top",
+                snow_quality=SnowQuality.GOOD,
+                fresh_snow_cm=80.0,
+                current_temp_celsius=-5.0,
+            ),
+            _make_condition(
+                elevation_level="base",
+                snow_quality=SnowQuality.POOR,
+                current_temp_celsius=2.0,
+            ),
+        ]
+        result = generate_overall_explanation(conditions, SnowQuality.GOOD)
+        # Should use top elevation's standard explanation (deep base text)
+        assert "non-refrozen" in result or "80cm" in result
+
+    def test_no_match_synthesizes_mixed(self):
+        """When no elevation matches overall quality, synthesize mixed description."""
+        # Niseko-like: top=fair, mid=bad, base=bad → overall=poor
+        conditions = [
+            _make_condition(
+                elevation_level="top",
+                snow_quality=SnowQuality.FAIR,
+                fresh_snow_cm=48.0,
+                current_temp_celsius=-3.0,
+                snow_depth_cm=88.0,
+            ),
+            _make_condition(
+                elevation_level="mid",
+                snow_quality=SnowQuality.BAD,
+                current_temp_celsius=0.4,
+                last_freeze_thaw_hours_ago=1.0,
+            ),
+            _make_condition(
+                elevation_level="base",
+                snow_quality=SnowQuality.BAD,
+                current_temp_celsius=3.8,
+                last_freeze_thaw_hours_ago=1.0,
+            ),
+        ]
+        result = generate_overall_explanation(conditions, SnowQuality.POOR)
+        assert result is not None
+        # Should mention summit conditions AND lower elevation issues
+        assert "summit" in result.lower()
+        assert "lower" in result.lower() or "icy" in result.lower()
+
+    def test_mixed_excellent_top_poor_lower(self):
+        """Excellent at top but poor lower → synthesized explanation."""
+        conditions = [
+            _make_condition(
+                elevation_level="top",
+                snow_quality=SnowQuality.EXCELLENT,
+                snowfall_24h_cm=20.0,
+                current_temp_celsius=-10.0,
+                snow_depth_cm=200.0,
+            ),
+            _make_condition(
+                elevation_level="base",
+                snow_quality=SnowQuality.POOR,
+                current_temp_celsius=-2.0,
+            ),
+        ]
+        # Overall good (between excellent and poor)
+        result = generate_overall_explanation(conditions, SnowQuality.GOOD)
+        assert result is not None
+        # Should not just show the "excellent" explanation
+        assert "summit" in result.lower()
+
+    def test_empty_conditions_returns_none(self):
+        """Empty conditions list returns None."""
+        result = generate_overall_explanation([], SnowQuality.FAIR)
+        assert result is None
+
+    def test_single_matching_condition(self):
+        """Single condition matching quality uses standard explanation."""
+        conditions = [
+            _make_condition(
+                elevation_level="top",
+                snow_quality=SnowQuality.FAIR,
+                fresh_snow_cm=10.0,
+            ),
+        ]
+        result = generate_overall_explanation(conditions, SnowQuality.FAIR)
+        assert result is not None
+        # Should use standard fair explanation
+        assert "10cm" in result or "fresh" in result.lower()

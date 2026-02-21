@@ -291,6 +291,138 @@ def generate_timeline_explanation(
     return " ".join(parts)
 
 
+def generate_overall_explanation(
+    conditions: list[WeatherCondition],
+    overall_quality: SnowQuality,
+) -> str | None:
+    """Generate an overall explanation that accounts for all elevations.
+
+    Prefers an elevation whose quality matches the overall quality level.
+    When no match exists (common with weighted averaging across elevations),
+    synthesizes a description acknowledging the mixed conditions.
+    """
+    if not conditions:
+        return None
+
+    if isinstance(overall_quality, str):
+        overall_quality = SnowQuality(overall_quality)
+
+    # Try to find an elevation matching overall quality (prefer top > mid > base)
+    for pref in ["top", "mid", "base"]:
+        for c in conditions:
+            if (
+                c.elevation_level == pref
+                and _norm_quality(c.snow_quality) == overall_quality
+            ):
+                return generate_quality_explanation(c)
+
+    # No match — synthesize from multiple elevations
+    level_map: dict[str, WeatherCondition] = {}
+    for c in conditions:
+        if c.elevation_level not in level_map:
+            level_map[c.elevation_level] = c
+
+    top = level_map.get("top")
+    mid = level_map.get("mid")
+    base = level_map.get("base")
+
+    if not top:
+        # No top data — use whatever we have
+        best = mid or base
+        return generate_quality_explanation(best) if best else None
+
+    # Summit is typically better than overall; lower elevations drag it down
+    parts = []
+
+    summit_desc = _brief_summit(top)
+    lower = base or mid
+    lower_desc = _brief_lower_issue(lower) if lower else None
+
+    if summit_desc and lower_desc:
+        parts.append(f"{summit_desc}, but {lower_desc}.")
+    elif summit_desc:
+        parts.append(f"{summit_desc}.")
+    else:
+        return generate_quality_explanation(top)
+
+    # Temperature from top elevation
+    temp = _describe_temperature(top)
+    if temp:
+        parts.append(temp)
+
+    # Base depth from top elevation
+    base_desc = _describe_base(top)
+    if base_desc:
+        parts.append(base_desc)
+
+    # Forecast from top elevation
+    forecast = _describe_forecast(top)
+    if forecast:
+        parts.append(forecast)
+
+    return " ".join(parts) if parts else _default_explanation(overall_quality)
+
+
+def _norm_quality(q: SnowQuality | str) -> SnowQuality:
+    """Normalize quality to SnowQuality enum."""
+    return SnowQuality(q) if isinstance(q, str) else q
+
+
+def _brief_summit(condition: WeatherCondition) -> str:
+    """Brief description of summit conditions for mixed-elevation text."""
+    quality = _norm_quality(condition.snow_quality)
+    fresh_cm = condition.fresh_snow_cm or 0
+    snow_24h = condition.snowfall_24h_cm or 0
+
+    if quality == SnowQuality.EXCELLENT:
+        if snow_24h >= 10:
+            return f"Fresh powder at summit ({snow_24h:.0f}cm in 24h)"
+        if fresh_cm >= 8:
+            return f"Fresh powder at summit ({fresh_cm:.0f}cm uncompacted)"
+        return "Fresh powder at summit"
+
+    if quality == SnowQuality.GOOD:
+        if fresh_cm >= 30:
+            return f"Good snow at summit ({fresh_cm:.0f}cm non-refrozen)"
+        if snow_24h >= 5:
+            return f"Soft surface at summit ({snow_24h:.0f}cm recent)"
+        return "Good, soft surface at summit"
+
+    if quality == SnowQuality.FAIR:
+        if fresh_cm >= 30:
+            return f"Fair at summit ({fresh_cm:.0f}cm non-refrozen)"
+        if fresh_cm >= 3:
+            return f"Some fresh snow at summit ({fresh_cm:.0f}cm)"
+        return "Firm surface at summit"
+
+    if quality == SnowQuality.POOR:
+        return "Hard packed at summit"
+
+    if quality == SnowQuality.BAD:
+        return "Icy at summit"
+
+    return ""
+
+
+def _brief_lower_issue(condition: WeatherCondition) -> str:
+    """Brief description of the issue at lower elevations."""
+    quality = _norm_quality(condition.snow_quality)
+    temp = condition.current_temp_celsius
+
+    if quality in (SnowQuality.HORRIBLE, SnowQuality.BAD):
+        if temp is not None and temp > 0:
+            return f"icy at lower elevations ({temp:.0f}°C)"
+        return "icy at lower elevations"
+
+    if quality == SnowQuality.POOR:
+        return "hard packed at lower elevations"
+
+    if quality == SnowQuality.FAIR:
+        return "firmer conditions at lower elevations"
+
+    return "variable conditions at lower elevations"
+
+
 def score_to_100(raw_score: float) -> int:
     """Convert ML model raw score (1.0-6.0) to a 0-100 scale.
 

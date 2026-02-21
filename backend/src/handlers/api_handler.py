@@ -25,6 +25,7 @@ from services.auth_service import AuthenticationError, AuthProvider, AuthService
 from services.ml_scorer import raw_score_to_quality
 from services.openmeteo_service import OpenMeteoService
 from services.quality_explanation_service import (
+    generate_overall_explanation,
     generate_quality_explanation,
     score_to_100,
 )
@@ -959,30 +960,10 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
         # Get explanation for overall quality
         quality_explanation = SNOW_QUALITY_EXPLANATIONS.get(overall_quality, {})
 
-        # Generate overall explanation from the elevation whose quality best matches
-        # the weighted overall quality (avoids mismatch where top="excellent" but
-        # overall="good" and the explanation sounds like excellent conditions).
-        overall_explanation = None
-        best_cond = None
-        for pref_level in ["top", "mid", "base"]:
-            cond = next(
-                (c for c in conditions if c.elevation_level == pref_level), None
-            )
-            if cond and cond.snow_quality == overall_quality:
-                best_cond = cond
-                break
-        if best_cond is None:
-            # No exact match — fall back to top > mid > base
-            for pref_level in ["top", "mid", "base"]:
-                cond = next(
-                    (c for c in conditions if c.elevation_level == pref_level),
-                    None,
-                )
-                if cond:
-                    best_cond = cond
-                    break
-        if best_cond:
-            overall_explanation = generate_quality_explanation(best_cond)
+        # Generate overall explanation matching the weighted quality level.
+        # When no elevation matches overall quality (common with weighted
+        # averaging), synthesizes a mixed-elevation description.
+        overall_explanation = generate_overall_explanation(conditions, overall_quality)
 
         # Set cache headers - 1 hour since weather updates hourly
         response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC_LONG
@@ -1135,24 +1116,15 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
         overall_quality = SnowQualityService.calculate_overall_quality(conditions)
         snow_score = None
 
-    # Get representative condition matching overall quality for explanation
+    # Get representative condition for temperature/snowfall fields (prefer top)
     representative = None
     for pref in ["top", "mid", "base"]:
         for c in conditions:
-            if c.elevation_level == pref and c.snow_quality == overall_quality:
+            if c.elevation_level == pref:
                 representative = c
                 break
         if representative:
             break
-    # Fallback to top > mid > base if no quality match
-    if not representative:
-        for pref in ["top", "mid", "base"]:
-            for c in conditions:
-                if c.elevation_level == pref:
-                    representative = c
-                    break
-            if representative:
-                break
     if not representative:
         representative = conditions[0]
 
@@ -1160,7 +1132,7 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
         "resort_id": resort_id,
         "overall_quality": overall_quality.value,
         "snow_score": snow_score,
-        "explanation": generate_quality_explanation(representative),
+        "explanation": generate_overall_explanation(conditions, overall_quality),
         "last_updated": max(c.timestamp for c in conditions) if conditions else None,
         "temperature_c": representative.current_temp_celsius
         if representative

@@ -21,7 +21,7 @@ from models.resort import Resort
 from models.weather import SnowQuality
 from services.ml_scorer import raw_score_to_quality
 from services.quality_explanation_service import (
-    generate_quality_explanation,
+    generate_overall_explanation,
     score_to_100,
 )
 from services.resort_service import ResortService
@@ -252,32 +252,20 @@ class StaticJsonGenerator:
             overall_quality = SnowQualityService.calculate_overall_quality(conditions)
             snow_score = None
 
-        # Get representative condition matching overall quality for explanation
+        # Generate overall explanation matching weighted quality level
+        explanation = generate_overall_explanation(conditions, overall_quality)
+
+        # Get representative condition for temperature/snowfall fields (prefer top)
         representative = None
         for pref_level in ["top", "mid", "base"]:
             for c in conditions:
-                if (
-                    c.elevation_level == pref_level
-                    and c.snow_quality == overall_quality
-                ):
+                if c.elevation_level == pref_level:
                     representative = c
                     break
             if representative:
                 break
-        # Fallback to top > mid > base if no quality match
-        if not representative:
-            for pref_level in ["top", "mid", "base"]:
-                for c in conditions:
-                    if c.elevation_level == pref_level:
-                        representative = c
-                        break
-                if representative:
-                    break
         if not representative and conditions:
             representative = conditions[0]
-        explanation = (
-            generate_quality_explanation(representative) if representative else None
-        )
 
         return {
             "resort_id": resort.resort_id,
