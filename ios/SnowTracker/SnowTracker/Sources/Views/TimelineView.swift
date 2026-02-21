@@ -14,7 +14,7 @@ struct TimelineCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "calendar.badge.clock")
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
                 Text("Conditions Timeline")
                     .font(.headline)
                 Spacer()
@@ -31,12 +31,12 @@ struct TimelineCard: View {
             } else if error != nil {
                 Text("Unable to load timeline")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 2)
         .task(id: "\(resortId)-\(elevation.rawValue)") {
             await loadTimeline()
@@ -105,14 +105,18 @@ struct TimelineView: View {
         return points.first?.dayOfWeek ?? ""
     }
 
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
     /// Find the current time slot index for "Now" indicator
     private var currentPointIndex: Int? {
         let now = Date()
         let calendar = Calendar.current
         let currentHour = calendar.component(.hour, from: now)
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        let todayStr = formatter.string(from: now)
+        let todayStr = Self.dateFormatter.string(from: now)
 
         // Find the closest time slot to now
         for (index, point) in points.enumerated() {
@@ -187,8 +191,9 @@ struct TimelinePointCard: View {
                 .foregroundColor(point.snowQuality.color)
 
             Text(point.snowQuality.displayName)
-                .font(.system(size: 9, weight: .medium))
-                .foregroundColor(point.snowQuality.color)
+                .font(.caption2)
+                .fontWeight(.medium)
+                .foregroundStyle(point.snowQuality.color)
                 .lineLimit(1)
 
             Divider()
@@ -203,22 +208,22 @@ struct TimelinePointCard: View {
             if let wind = point.windSpeedKmh {
                 HStack(spacing: 2) {
                     Image(systemName: "wind")
-                        .font(.system(size: 8))
+                        .font(.system(size: 9))
                     Text("\(Int(wind))")
-                        .font(.system(size: 10))
+                        .font(.caption2)
                 }
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             }
 
             // Snowfall
             if point.snowfallCm > 0.1 {
                 HStack(spacing: 2) {
                     Image(systemName: "snowflake")
-                        .font(.system(size: 8))
+                        .font(.system(size: 9))
                     Text(WeatherCondition.formatSnowShort(point.snowfallCm, prefs: prefs))
-                        .font(.system(size: 10))
+                        .font(.caption2)
                 }
-                .foregroundColor(.cyan)
+                .foregroundStyle(.cyan)
             }
 
             Divider()
@@ -226,14 +231,16 @@ struct TimelinePointCard: View {
 
             // Time label
             Text(point.timeDisplay)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.secondary)
+                .font(.caption2)
+                .fontWeight(.medium)
+                .foregroundStyle(.secondary)
 
             // "Now" indicator
             if isCurrentSlot {
                 Text("Now")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(.white)
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(Capsule().fill(Color.blue))
@@ -245,7 +252,7 @@ struct TimelinePointCard: View {
                     showExplanation = true
                 } label: {
                     Image(systemName: "eye.fill")
-                        .font(.system(size: 10))
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)

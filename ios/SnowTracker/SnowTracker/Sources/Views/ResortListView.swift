@@ -142,7 +142,7 @@ struct ResortListView: View {
                         HStack {
                             Text("Sort:")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
 
                             ForEach(ResortSortOption.allCases, id: \.self) { option in
                                 // Only show distance option if location is available
@@ -240,12 +240,12 @@ struct ResortListView: View {
                     VStack(spacing: 16) {
                         Image(systemName: "wifi.exclamationmark")
                             .font(.system(size: 50))
-                            .foregroundColor(.orange)
+                            .foregroundStyle(.orange)
                         Text("Unable to Load Resorts")
                             .font(.headline)
                         Text(errorMessage)
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                         Button("Try Again") {
                             Task {
@@ -259,12 +259,12 @@ struct ResortListView: View {
                     VStack(spacing: 16) {
                         Image(systemName: "mountain.2")
                             .font(.system(size: 50))
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                         Text("No Resorts Found")
                             .font(.headline)
                         Text("Pull to refresh")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -318,7 +318,7 @@ struct ResortRowView: View {
                     HStack {
                         Text(resort.name)
                             .font(.headline)
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.primary)
 
                         // Distance badge when sorting by distance
                         if let distance = formattedDistance {
@@ -328,18 +328,18 @@ struct ResortRowView: View {
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .background(Color.blue.opacity(0.15))
-                                .foregroundColor(.blue)
+                                .foregroundStyle(.blue)
                                 .cornerRadius(4)
                         }
                     }
 
                     Text(resort.displayLocation)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
 
                     Text(resort.elevationRange)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 Spacer()
@@ -369,17 +369,17 @@ struct ResortRowView: View {
 
                         Text("Loading")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 } else {
                     VStack {
                         Image(systemName: "questionmark.circle")
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                             .font(.title2)
 
                         Text("No data")
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                     }
                 }
             }
@@ -389,20 +389,20 @@ struct ResortRowView: View {
                 HStack {
                     Label(condition.formattedCurrentTemp, systemImage: "thermometer")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
 
                     Spacer()
 
                     // Use fresh snow (snowfall_after_freeze) which is more meaningful than 24h
                     Label(condition.formattedFreshSnow, systemImage: "snowflake")
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
 
                     Spacer()
 
                     Label(condition.formattedTimestamp, systemImage: "clock")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             } else if let summary = snowQualitySummary,
                       summary.temperatureC != nil || summary.snowfallFreshCm != nil {
@@ -410,7 +410,7 @@ struct ResortRowView: View {
                     if let temp = summary.formattedTemperature {
                         Label(temp, systemImage: "thermometer")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
 
                     Spacer()
@@ -418,7 +418,7 @@ struct ResortRowView: View {
                     if let snow = summary.formattedFreshSnow {
                         Label(snow, systemImage: "snowflake")
                             .font(.caption)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
                     }
 
                     Spacer()
@@ -426,7 +426,7 @@ struct ResortRowView: View {
                     if let timestamp = summary.formattedTimestamp {
                         Label(timestamp, systemImage: "clock")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
             } else {
@@ -434,19 +434,19 @@ struct ResortRowView: View {
                 HStack {
                     Label("--\u{00B0}C", systemImage: "thermometer")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
 
                     Spacer()
 
                     Label("-- cm", systemImage: "snowflake")
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
 
                     Spacer()
 
                     Label("--:--", systemImage: "clock")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .redacted(reason: .placeholder)
             }
@@ -485,7 +485,7 @@ struct FilterChip: View {
                 Capsule()
                     .fill(isSelected ? Color.blue : Color.gray.opacity(0.2))
             )
-            .foregroundColor(isSelected ? .white : .primary)
+            .foregroundStyle(isSelected ? .white : .primary)
         }
         .buttonStyle(PlainButtonStyle())
         .accessibilityAddTraits(isSelected ? .isSelected : [])

@@ -46,7 +46,7 @@ struct FavoritesView: View {
         VStack(spacing: 20) {
             Image(systemName: "heart.slash")
                 .font(.system(size: 60))
-                .foregroundColor(.gray)
+                .foregroundStyle(.gray)
 
             Text("No Favorites Yet")
                 .font(.title2)
@@ -54,7 +54,7 @@ struct FavoritesView: View {
 
             Text("Tap the heart icon on any resort to add it to your favorites for quick access.")
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
 
@@ -63,8 +63,8 @@ struct FavoritesView: View {
                     .font(.headline)
                     .padding()
                     .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
     }
@@ -117,7 +117,7 @@ struct FavoriteResortRow: View {
 
                     Image(systemName: displayQuality.icon)
                         .font(.title2)
-                        .foregroundColor(displayQuality.color)
+                        .foregroundStyle(displayQuality.color)
                 }
             } else {
                 ZStack {
@@ -127,7 +127,7 @@ struct FavoriteResortRow: View {
 
                     Image(systemName: "questionmark")
                         .font(.title2)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                 }
             }
 
@@ -138,7 +138,7 @@ struct FavoriteResortRow: View {
 
                 Text(resort.displayLocation)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
 
                 if let condition = topCondition {
                     HStack(spacing: 8) {
@@ -146,7 +146,7 @@ struct FavoriteResortRow: View {
                         Label(condition.formattedFreshSnowWithPrefs(userPreferencesManager.preferredUnits), systemImage: "snowflake")
                     }
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 }
             }
 
@@ -154,7 +154,7 @@ struct FavoriteResortRow: View {
 
             // Arrow indicator
             Image(systemName: "chevron.right")
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .font(.caption)
         }
         .padding(.vertical, 8)
