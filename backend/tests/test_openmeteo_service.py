@@ -861,5 +861,111 @@ class TestGetEra5SnowDepth(unittest.TestCase):
         self.assertIsNone(result)
 
 
+class TestSmoothTimelineSnowDepth(unittest.TestCase):
+    """Tests for _smooth_timeline_snow_depth."""
+
+    def _import_fn(self):
+        from services.openmeteo_service import _smooth_timeline_snow_depth
+
+        return _smooth_timeline_snow_depth
+
+    def test_no_smoothing_needed(self):
+        """Gradual depth changes should not be modified."""
+        smooth = self._import_fn()
+        points = [
+            {"date": "2026-02-21", "hour": 7, "snow_depth_cm": 100.0},
+            {"date": "2026-02-21", "hour": 12, "snow_depth_cm": 95.0},
+            {"date": "2026-02-21", "hour": 16, "snow_depth_cm": 90.0},
+        ]
+        smooth(points)
+        assert points[1]["snow_depth_cm"] == 95.0
+        assert points[2]["snow_depth_cm"] == 90.0
+
+    def test_smooth_impossible_drop(self):
+        """A 115cm drop in 5 hours should be capped."""
+        smooth = self._import_fn()
+        points = [
+            {"date": "2026-02-21", "hour": 7, "snow_depth_cm": 165.0},
+            {"date": "2026-02-21", "hour": 12, "snow_depth_cm": 50.0},
+        ]
+        smooth(points)
+        # 5 hours × 10cm/hour = 50cm max drop → 165 - 50 = 115
+        assert points[1]["snow_depth_cm"] == 115.0
+
+    def test_increases_not_modified(self):
+        """Snow depth increases (new snowfall) should never be smoothed."""
+        smooth = self._import_fn()
+        points = [
+            {"date": "2026-02-21", "hour": 7, "snow_depth_cm": 50.0},
+            {"date": "2026-02-21", "hour": 12, "snow_depth_cm": 120.0},
+        ]
+        smooth(points)
+        assert points[1]["snow_depth_cm"] == 120.0
+
+    def test_none_depths_skipped(self):
+        """None depth values should be left alone."""
+        smooth = self._import_fn()
+        points = [
+            {"date": "2026-02-21", "hour": 7, "snow_depth_cm": 100.0},
+            {"date": "2026-02-21", "hour": 12, "snow_depth_cm": None},
+            {"date": "2026-02-21", "hour": 16, "snow_depth_cm": 90.0},
+        ]
+        smooth(points)
+        assert points[1]["snow_depth_cm"] is None
+        assert points[2]["snow_depth_cm"] == 90.0
+
+    def test_cross_day_boundary(self):
+        """Smoothing should work across day boundaries."""
+        smooth = self._import_fn()
+        points = [
+            {"date": "2026-02-21", "hour": 16, "snow_depth_cm": 150.0},
+            {"date": "2026-02-22", "hour": 7, "snow_depth_cm": 10.0},
+        ]
+        smooth(points)
+        # (24 - 16) + 7 = 15 hours × 10cm/hour = 150cm max drop → no smoothing needed
+        assert points[1]["snow_depth_cm"] == 10.0
+
+    def test_short_cross_day_gap(self):
+        """Short overnight gaps should still be smoothed if drop is too large."""
+        smooth = self._import_fn()
+        points = [
+            {"date": "2026-02-21", "hour": 16, "snow_depth_cm": 200.0},
+            {"date": "2026-02-22", "hour": 7, "snow_depth_cm": 10.0},
+        ]
+        smooth(points)
+        # 15 hours × 10cm/hour = 150cm max drop → 200 - 150 = 50
+        assert points[1]["snow_depth_cm"] == 50.0
+
+    def test_cascading_smoothing(self):
+        """Multiple consecutive impossible drops should be smoothed in sequence."""
+        smooth = self._import_fn()
+        points = [
+            {"date": "2026-02-21", "hour": 7, "snow_depth_cm": 200.0},
+            {"date": "2026-02-21", "hour": 12, "snow_depth_cm": 100.0},
+            {"date": "2026-02-21", "hour": 16, "snow_depth_cm": 20.0},
+        ]
+        smooth(points)
+        # First: 200 → 100 (100cm drop in 5h, max 50) → smoothed to 150
+        assert points[1]["snow_depth_cm"] == 150.0
+        # Second: 150 → 20 (130cm drop in 4h, max 40) → smoothed to 110
+        assert points[2]["snow_depth_cm"] == 110.0
+
+    def test_empty_and_single_point(self):
+        """Edge cases: empty list and single point should not crash."""
+        smooth = self._import_fn()
+        smooth([])  # No error
+        smooth([{"date": "2026-02-21", "hour": 7, "snow_depth_cm": 100.0}])  # No error
+
+    def test_depth_never_goes_negative(self):
+        """Smoothed depth should never go below 0."""
+        smooth = self._import_fn()
+        points = [
+            {"date": "2026-02-21", "hour": 12, "snow_depth_cm": 5.0},
+            {"date": "2026-02-21", "hour": 16, "snow_depth_cm": 0.0},
+        ]
+        smooth(points)
+        assert points[1]["snow_depth_cm"] >= 0
+
+
 if __name__ == "__main__":
     unittest.main()

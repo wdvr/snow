@@ -76,6 +76,52 @@ def _request_with_retry(
     raise last_exception
 
 
+# Max snow depth drop per hour (cm) considered physically realistic.
+# Even extreme conditions rarely exceed 5cm/hour melt rate.
+_MAX_DEPTH_DROP_PER_HOUR = 10.0
+
+
+def _smooth_timeline_snow_depth(points: list[dict]) -> None:
+    """Smooth unrealistic snow depth drops between consecutive timeline points.
+
+    Open-Meteo forecast models can splice different data sources, producing
+    physically impossible snow depth drops (e.g., 165cm to 50cm in 4 hours).
+    This applies a max-drop-rate cap to prevent misleading timeline data.
+    Increases (new snowfall) are never modified.
+    """
+    if len(points) < 2:
+        return
+
+    for i in range(1, len(points)):
+        prev_depth = points[i - 1].get("snow_depth_cm")
+        curr_depth = points[i].get("snow_depth_cm")
+
+        if prev_depth is None or curr_depth is None:
+            continue
+
+        # Only smooth drops, not increases
+        if curr_depth >= prev_depth:
+            continue
+
+        # Estimate hours between points from their hour field and date
+        prev_hour = points[i - 1].get("hour", 12)
+        curr_hour = points[i].get("hour", 12)
+        prev_date = points[i - 1].get("date", "")
+        curr_date = points[i].get("date", "")
+
+        if prev_date == curr_date:
+            hours_gap = max(1, curr_hour - prev_hour)
+        else:
+            hours_gap = max(1, (24 - prev_hour) + curr_hour)
+
+        max_drop = hours_gap * _MAX_DEPTH_DROP_PER_HOUR
+        actual_drop = prev_depth - curr_depth
+
+        if actual_drop > max_drop:
+            smoothed = round(prev_depth - max_drop, 1)
+            points[i]["snow_depth_cm"] = max(0, smoothed)
+
+
 class OpenMeteoService:
     """Service for fetching elevation-aware weather data from Open-Meteo API.
 
@@ -407,6 +453,12 @@ class OpenMeteoService:
                     }
 
                     timeline_points.append(point)
+
+            # Smooth unrealistic snow depth drops in the timeline.
+            # Open-Meteo forecasts can splice different model outputs, causing
+            # physically impossible drops (e.g., 165cm to 50cm in hours).
+            # Max realistic melt rate: ~10cm/hour; timeline points are 4-8h apart.
+            _smooth_timeline_snow_depth(timeline_points)
 
             return {
                 "timeline": timeline_points,

@@ -1,7 +1,7 @@
 """Weather data service for fetching and processing weather information."""
 
 import os
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -206,29 +206,40 @@ class WeatherService:
     def get_conditions_for_resort(
         self, resort_id: str, hours_back: int = 24
     ) -> list[WeatherCondition]:
-        """Get historical conditions for a resort from DynamoDB."""
+        """Get conditions for a resort, returning latest per elevation.
+
+        Queries DynamoDB for recent items and deduplicates by elevation level,
+        keeping only the most recent condition per elevation.
+        """
         if not self.conditions_table:
             return []
 
         try:
-            # Query by resort_id (partition key), sorted by timestamp (sort key)
+            # Calculate cutoff timestamp for time filtering
+            cutoff = datetime.now(UTC) - timedelta(hours=hours_back)
+            cutoff_str = cutoff.isoformat()
+
             response = self.conditions_table.query(
-                KeyConditionExpression=Key("resort_id").eq(resort_id),
+                KeyConditionExpression=Key("resort_id").eq(resort_id)
+                & Key("timestamp").gte(cutoff_str),
                 ScanIndexForward=False,  # Most recent first
-                Limit=50,  # Reasonable limit for conditions
             )
 
             items = response.get("Items", [])
-            conditions = []
 
+            # Group by elevation, keeping only the first (latest) per elevation
+            seen_elevations: set[str] = set()
+            conditions = []
             for item in items:
                 parsed_item = parse_from_dynamodb(item)
-                conditions.append(WeatherCondition(**parsed_item))
+                elevation = parsed_item.get("elevation_level", "")
+                if elevation not in seen_elevations:
+                    seen_elevations.add(elevation)
+                    conditions.append(WeatherCondition(**parsed_item))
 
             return conditions
 
         except Exception as e:
-            # Log error but don't crash - return empty list
             import logging
 
             logging.getLogger(__name__).error(
