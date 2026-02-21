@@ -1,6 +1,7 @@
 import Foundation
 import Alamofire
 import KeychainSwift
+import os.log
 
 // MARK: - API Client
 
@@ -10,6 +11,7 @@ final class APIClient {
 
     private let baseURL: URL
     private let session: Session
+    private let log = Logger(subsystem: "com.snowtracker.app", category: "APIClient")
 
     private init() {
         self.baseURL = AppConfiguration.shared.apiBaseURL
@@ -18,12 +20,22 @@ final class APIClient {
         configuration.timeoutIntervalForRequest = 30
         configuration.timeoutIntervalForResource = 60
 
-        self.session = Session(configuration: configuration)
+        // Retry transient failures with exponential backoff
+        let retryPolicy = RetryPolicy(
+            retryLimit: 2,
+            exponentialBackoffBase: 2,
+            exponentialBackoffScale: 0.5,
+            retryableHTTPStatusCodes: Set([408, 500, 502, 503, 504])
+        )
+
+        self.session = Session(
+            configuration: configuration,
+            interceptor: retryPolicy
+        )
     }
 
     static func configure() {
-        // Perform any initial configuration
-        print("API Client configured with base URL: \(shared.baseURL)")
+        _ = shared
     }
 
     // MARK: - Resort API
@@ -37,10 +49,10 @@ final class APIClient {
                 .responseDecodable(of: ResortsResponse.self) { response in
                     switch response.result {
                     case .success(let resortsResponse):
-                        print("Successfully decoded \(resortsResponse.resorts.count) resorts from API")
+                        self.log.debug("Decoded \(resortsResponse.resorts.count) resorts")
                         continuation.resume(returning: resortsResponse.resorts)
                     case .failure(let error):
-                        print("API Error decoding resorts: \(error)")
+                        self.log.error("Error decoding resorts: \(error)")
                         continuation.resume(throwing: self.mapError(error))
                     }
                 }
@@ -84,10 +96,10 @@ final class APIClient {
                 .responseDecodable(of: NearbyResortsResponse.self) { response in
                     switch response.result {
                     case .success(let nearbyResponse):
-                        print("Successfully fetched \(nearbyResponse.count) nearby resorts")
+                        self.log.debug("Fetched \(nearbyResponse.count) nearby resorts")
                         continuation.resume(returning: nearbyResponse)
                     case .failure(let error):
-                        print("API Error fetching nearby resorts: \(error)")
+                        self.log.error("Error fetching nearby resorts: \(error)")
                         continuation.resume(throwing: self.mapError(error))
                     }
                 }
@@ -105,10 +117,10 @@ final class APIClient {
                 .responseDecodable(of: ConditionsResponse.self) { response in
                     switch response.result {
                     case .success(let conditionsResponse):
-                        print("Successfully decoded \(conditionsResponse.conditions.count) conditions for \(resortId)")
+                        self.log.debug("Decoded \(conditionsResponse.conditions.count) conditions for \(resortId)")
                         continuation.resume(returning: conditionsResponse.conditions)
                     case .failure(let error):
-                        print("API Error decoding conditions for \(resortId): \(error)")
+                        self.log.error("Error decoding conditions for \(resortId): \(error)")
                         continuation.resume(throwing: self.mapError(error))
                     }
                 }
@@ -155,10 +167,10 @@ final class APIClient {
                         for (resortId, resortResult) in batchResponse.results {
                             result[resortId] = resortResult.conditions
                         }
-                        print("Successfully fetched batch conditions for \(batchResponse.resortCount) resorts")
+                        self.log.debug("Fetched batch conditions for \(batchResponse.resortCount) resorts")
                         continuation.resume(returning: result)
                     case .failure(let error):
-                        print("API Error fetching batch conditions: \(error)")
+                        self.log.error("Error fetching batch conditions: \(error)")
                         continuation.resume(throwing: self.mapError(error))
                     }
                 }
@@ -201,7 +213,7 @@ final class APIClient {
                     case .success(let timelineResponse):
                         continuation.resume(returning: timelineResponse)
                     case .failure(let error):
-                        print("API Error fetching timeline for \(resortId): \(error)")
+                        self.log.error("Error fetching timeline for \(resortId): \(error)")
                         continuation.resume(throwing: self.mapError(error))
                     }
                 }
@@ -232,7 +244,7 @@ final class APIClient {
                     case .success(let batchResponse):
                         continuation.resume(returning: batchResponse.results)
                     case .failure(let error):
-                        print("API Error fetching batch snow quality: \(error)")
+                        self.log.error("Error fetching batch snow quality: \(error)")
                         continuation.resume(throwing: self.mapError(error))
                     }
                 }
@@ -312,10 +324,10 @@ final class APIClient {
                 .responseDecodable(of: RecommendationsResponse.self) { response in
                     switch response.result {
                     case .success(let recommendationsResponse):
-                        print("Successfully fetched \(recommendationsResponse.recommendations.count) recommendations")
+                        self.log.debug("Fetched \(recommendationsResponse.recommendations.count) recommendations")
                         continuation.resume(returning: recommendationsResponse)
                     case .failure(let error):
-                        print("API Error fetching recommendations: \(error)")
+                        self.log.error("Error fetching recommendations: \(error)")
                         continuation.resume(throwing: self.mapError(error))
                     }
                 }
@@ -341,10 +353,10 @@ final class APIClient {
                 .responseDecodable(of: RecommendationsResponse.self) { response in
                     switch response.result {
                     case .success(let recommendationsResponse):
-                        print("Successfully fetched \(recommendationsResponse.recommendations.count) best conditions")
+                        self.log.debug("Fetched \(recommendationsResponse.recommendations.count) best conditions")
                         continuation.resume(returning: recommendationsResponse)
                     case .failure(let error):
-                        print("API Error fetching best conditions: \(error)")
+                        self.log.error("Error fetching best conditions: \(error)")
                         continuation.resume(throwing: self.mapError(error))
                     }
                 }
@@ -375,10 +387,10 @@ final class APIClient {
             .responseDecodable(of: AuthResponse.self) { response in
                 switch response.result {
                 case .success(let authResponse):
-                    print("Successfully authenticated with Apple")
+                    self.log.debug("Authenticated with Apple")
                     continuation.resume(returning: authResponse)
                 case .failure(let error):
-                    print("API Error authenticating with Apple: \(error)")
+                    self.log.error("Error authenticating with Apple: \(error)")
                     continuation.resume(throwing: self.mapError(error))
                 }
             }
@@ -402,10 +414,10 @@ final class APIClient {
             .responseDecodable(of: AuthResponse.self) { response in
                 switch response.result {
                 case .success(let authResponse):
-                    print("Successfully authenticated as guest")
+                    self.log.debug("Authenticated as guest")
                     continuation.resume(returning: authResponse)
                 case .failure(let error):
-                    print("API Error authenticating as guest: \(error)")
+                    self.log.error("Error authenticating as guest: \(error)")
                     continuation.resume(throwing: self.mapError(error))
                 }
             }
@@ -429,10 +441,10 @@ final class APIClient {
             .responseDecodable(of: AuthResponse.self) { response in
                 switch response.result {
                 case .success(let authResponse):
-                    print("Successfully refreshed tokens")
+                    self.log.debug("Refreshed tokens")
                     continuation.resume(returning: authResponse)
                 case .failure(let error):
-                    print("API Error refreshing tokens: \(error)")
+                    self.log.error("Error refreshing tokens: \(error)")
                     continuation.resume(throwing: self.mapError(error))
                 }
             }
@@ -475,10 +487,10 @@ final class APIClient {
             .responseDecodable(of: Trip.self) { response in
                 switch response.result {
                 case .success(let trip):
-                    print("Successfully created trip: \(trip.tripId)")
+                    self.log.debug("Created trip: \(trip.tripId)")
                     continuation.resume(returning: trip)
                 case .failure(let error):
-                    print("API Error creating trip: \(error)")
+                    self.log.error("Error creating trip: \(error)")
                     continuation.resume(throwing: self.mapError(error))
                 }
             }
@@ -505,10 +517,10 @@ final class APIClient {
                 .responseDecodable(of: TripsResponse.self) { response in
                     switch response.result {
                     case .success(let tripsResponse):
-                        print("Successfully fetched \(tripsResponse.trips.count) trips")
+                        self.log.debug("Fetched \(tripsResponse.trips.count) trips")
                         continuation.resume(returning: tripsResponse)
                     case .failure(let error):
-                        print("API Error fetching trips: \(error)")
+                        self.log.error("Error fetching trips: \(error)")
                         continuation.resume(throwing: self.mapError(error))
                     }
                 }
@@ -549,10 +561,10 @@ final class APIClient {
             .responseDecodable(of: Trip.self) { response in
                 switch response.result {
                 case .success(let trip):
-                    print("Successfully updated trip: \(trip.tripId)")
+                    self.log.debug("Updated trip: \(trip.tripId)")
                     continuation.resume(returning: trip)
                 case .failure(let error):
-                    print("API Error updating trip: \(error)")
+                    self.log.error("Error updating trip: \(error)")
                     continuation.resume(throwing: self.mapError(error))
                 }
             }
@@ -570,7 +582,7 @@ final class APIClient {
                     if let error = response.error {
                         continuation.resume(throwing: self.mapError(error))
                     } else {
-                        print("Successfully deleted trip: \(tripId)")
+                        self.log.debug("Deleted trip: \(tripId)")
                         continuation.resume()
                     }
                 }
@@ -587,10 +599,10 @@ final class APIClient {
                 .responseDecodable(of: Trip.self) { response in
                     switch response.result {
                     case .success(let trip):
-                        print("Successfully refreshed trip conditions")
+                        self.log.debug("Refreshed trip conditions")
                         continuation.resume(returning: trip)
                     case .failure(let error):
-                        print("API Error refreshing trip conditions: \(error)")
+                        self.log.error("Error refreshing trip conditions: \(error)")
                         continuation.resume(throwing: self.mapError(error))
                     }
                 }
@@ -615,10 +627,10 @@ final class APIClient {
             .responseDecodable(of: Trip.self) { response in
                 switch response.result {
                 case .success(let trip):
-                    print("Successfully marked alerts as read")
+                    self.log.debug("Marked alerts as read")
                     continuation.resume(returning: trip)
                 case .failure(let error):
-                    print("API Error marking alerts read: \(error)")
+                    self.log.error("Error marking alerts read: \(error)")
                     continuation.resume(throwing: self.mapError(error))
                 }
             }

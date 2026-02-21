@@ -1,5 +1,8 @@
 import SwiftUI
 import Combine
+import os.log
+
+private let managerLog = Logger(subsystem: "com.snowtracker.app", category: "Managers")
 
 // MARK: - Snow Conditions Manager
 
@@ -29,7 +32,7 @@ class SnowConditionsManager: ObservableObject {
     func loadInitialData() {
         // Prevent multiple calls (can happen with tab switching)
         guard !hasLoadedInitialData else {
-            print("loadInitialData already called, skipping")
+            managerLog.debug("loadInitialData already called, skipping")
             return
         }
         hasLoadedInitialData = true
@@ -61,13 +64,13 @@ class SnowConditionsManager: ObservableObject {
             resorts = cachedResorts.data
             isUsingCachedData = true
             cachedDataAge = cachedResorts.ageDescription
-            print("loadCachedDataSynchronously: Loaded \(resorts.count) resorts from cache (stale: \(cachedResorts.isStale))")
+            managerLog.debug("loadCachedDataSynchronously: Loaded \(self.resorts.count) resorts from cache (stale: \(cachedResorts.isStale))")
         }
 
         // Load cached snow quality summaries
         if let cachedSummaries = cacheService.getCachedSnowQualitySummaries() {
             snowQualitySummaries = cachedSummaries.data
-            print("loadCachedDataSynchronously: Loaded \(cachedSummaries.data.count) snow quality summaries from cache")
+            managerLog.debug("loadCachedDataSynchronously: Loaded \(cachedSummaries.data.count) snow quality summaries from cache")
         }
 
         // Load cached conditions for favorites
@@ -78,7 +81,7 @@ class SnowConditionsManager: ObservableObject {
             }
         }
         if !favoriteIds.isEmpty {
-            print("loadCachedDataSynchronously: Loaded cached conditions for \(favoriteIds.count) favorites")
+            managerLog.debug("loadCachedDataSynchronously: Loaded cached conditions for \(favoriteIds.count) favorites")
         }
     }
 
@@ -90,20 +93,20 @@ class SnowConditionsManager: ObservableObject {
     /// - Parameter forceRefresh: If true, bypasses cache and fetches fresh data from API
     func fetchAllSnowQualitySummaries(forceRefresh: Bool = false) async {
         guard !resorts.isEmpty else {
-            print("fetchAllSnowQualitySummaries: No resorts loaded, skipping")
+            managerLog.debug("fetchAllSnowQualitySummaries: No resorts loaded, skipping")
             return
         }
 
         // Check cache first - use if not stale (controlled by useSnowQualityCache flag)
         // Skip cache check if forceRefresh is true
         if !forceRefresh, useSnowQualityCache, let cached = cacheService.getCachedSnowQualitySummaries(), !cached.isStale {
-            print("fetchAllSnowQualitySummaries: Using cached data (\(cached.data.count) summaries, age: \(cached.ageDescription))")
+            managerLog.debug("fetchAllSnowQualitySummaries: Using cached data (\(cached.data.count) summaries, age: \(cached.ageDescription))")
             snowQualitySummaries = cached.data
             return
         }
 
         if forceRefresh {
-            print("fetchAllSnowQualitySummaries: Force refresh requested, bypassing cache")
+            managerLog.debug("fetchAllSnowQualitySummaries: Force refresh requested, bypassing cache")
         }
 
         isLoadingSnowQuality = true
@@ -126,9 +129,9 @@ class SnowConditionsManager: ObservableObject {
         let resortIds = Array(sortedIds.prefix(maxSnowQualityFetchCount))
 
         if allResortIds.count > maxSnowQualityFetchCount {
-            print("fetchAllSnowQualitySummaries: Limiting from \(allResortIds.count) to \(resortIds.count) resorts (favorites prioritized)")
+            managerLog.debug("fetchAllSnowQualitySummaries: Limiting from \(allResortIds.count) to \(resortIds.count) resorts (favorites prioritized)")
         }
-        print("fetchAllSnowQualitySummaries: Fetching summaries for \(resortIds.count) resorts from API")
+        managerLog.debug("fetchAllSnowQualitySummaries: Fetching summaries for \(resortIds.count) resorts from API")
 
         // Batch fetch in chunks of 200 (API limit), updating UI progressively
         let batchSize = 200
@@ -139,7 +142,7 @@ class SnowConditionsManager: ObservableObject {
             let batchEnd = min(batchStart + batchSize, resortIds.count)
             let batchIds = Array(resortIds[batchStart..<batchEnd])
             let batchNumber = batchStart/batchSize + 1
-            print("fetchAllSnowQualitySummaries: Fetching batch \(batchNumber) with \(batchIds.count) resorts")
+            managerLog.debug("fetchAllSnowQualitySummaries: Fetching batch \(batchNumber) with \(batchIds.count) resorts")
 
             do {
                 let batchResults = try await apiClient.getBatchSnowQuality(for: batchIds)
@@ -147,23 +150,23 @@ class SnowConditionsManager: ObservableObject {
                     allResults[resortId] = summary
                 }
                 totalLoaded += batchResults.count
-                print("fetchAllSnowQualitySummaries: Batch \(batchNumber) loaded \(batchResults.count) summaries")
+                managerLog.debug("fetchAllSnowQualitySummaries: Batch \(batchNumber) loaded \(batchResults.count) summaries")
 
                 // Update UI progressively after each batch so users see data faster
                 snowQualitySummaries = allResults
             } catch {
-                print("fetchAllSnowQualitySummaries: Batch \(batchNumber) failed: \(error.localizedDescription)")
+                managerLog.debug("fetchAllSnowQualitySummaries: Batch \(batchNumber) failed: \(error.localizedDescription)")
                 // Continue with next batch rather than failing completely
             }
         }
 
         // Cache the final results
         if !allResults.isEmpty {
-            print("fetchAllSnowQualitySummaries: Caching \(allResults.count) summaries")
+            managerLog.debug("fetchAllSnowQualitySummaries: Caching \(allResults.count) summaries")
             cacheService.cacheSnowQualitySummaries(allResults)
         }
 
-        print("fetchAllSnowQualitySummaries: Complete. Loaded \(totalLoaded) summaries total")
+        managerLog.debug("fetchAllSnowQualitySummaries: Complete. Loaded \(totalLoaded) summaries total")
     }
 
     /// Get cached snow quality for a resort (from summary or conditions)
@@ -189,12 +192,12 @@ class SnowConditionsManager: ObservableObject {
         if let lastRefresh = lastRefreshTime {
             let timeSinceLastRefresh = Date().timeIntervalSince(lastRefresh)
             if timeSinceLastRefresh < refreshRateLimitSeconds {
-                print("refreshData: Rate limited, only \(String(format: "%.1f", timeSinceLastRefresh))s since last refresh")
+                managerLog.debug("refreshData: Rate limited, only \(String(format: "%.1f", timeSinceLastRefresh))s since last refresh")
                 return
             }
         }
 
-        print("refreshData: Starting full refresh (bypassing cache)")
+        managerLog.debug("refreshData: Starting full refresh (bypassing cache)")
         lastRefreshTime = Date()
 
         // Refresh snow quality summaries for all resorts (used by list view)
@@ -203,7 +206,7 @@ class SnowConditionsManager: ObservableObject {
         await fetchConditionsForAllResorts(forceRefresh: true)
 
         lastUpdated = Date()
-        print("refreshData: Complete")
+        managerLog.debug("refreshData: Complete")
     }
 
     func refreshConditions() async {
@@ -250,11 +253,11 @@ class SnowConditionsManager: ObservableObject {
         }
 
         guard !idsToFetch.isEmpty else {
-            print("fetchConditionsForAllResorts: All \(sortedIds.count) resorts have fresh cached conditions")
+            managerLog.debug("fetchConditionsForAllResorts: All \(sortedIds.count) resorts have fresh cached conditions")
             return
         }
 
-        print("fetchConditionsForAllResorts: Fetching conditions for \(idsToFetch.count) resorts (\(sortedIds.count - idsToFetch.count) already cached)")
+        managerLog.debug("fetchConditionsForAllResorts: Fetching conditions for \(idsToFetch.count) resorts (\(sortedIds.count - idsToFetch.count) already cached)")
         await fetchConditionsForResorts(resortIds: idsToFetch)
     }
 
@@ -321,7 +324,7 @@ class SnowConditionsManager: ObservableObject {
             // Try to fetch from API
             let fetchedResorts = try await apiClient.getResorts()
             resorts = fetchedResorts
-            print("Loaded \(resorts.count) resorts from API")
+            managerLog.debug("Loaded \(self.resorts.count) resorts from API")
             errorMessage = nil
             isUsingCachedData = false
             cachedDataAge = nil
@@ -329,7 +332,7 @@ class SnowConditionsManager: ObservableObject {
             // Cache the fresh data
             cacheService.cacheResorts(fetchedResorts)
         } catch {
-            print("API error: \(error.localizedDescription)")
+            managerLog.error("API error: \(error.localizedDescription)")
 
             // Try to load from cache
             if let cachedData = cacheService.getCachedResorts() {
@@ -342,7 +345,7 @@ class SnowConditionsManager: ObservableObject {
                 } else {
                     errorMessage = nil
                 }
-                print("Loaded \(resorts.count) resorts from cache (stale: \(cachedData.isStale))")
+                managerLog.debug("Loaded \(self.resorts.count) resorts from cache (stale: \(cachedData.isStale))")
             } else {
                 // No cache available
                 resorts = []
@@ -377,10 +380,10 @@ class SnowConditionsManager: ObservableObject {
                     // Cache the fresh data
                     cacheService.cacheConditions(resortConditions, for: resortId)
                 }
-                print("Successfully fetched batch conditions for \(batchIds.count) resorts")
+                managerLog.debug("Fetched batch conditions for \(batchIds.count) resorts")
             } catch {
                 // Batch endpoint failed - fall back to individual API calls
-                print("Batch API error: \(error.localizedDescription). Falling back to individual calls.")
+                managerLog.warning("Batch API error: \(error.localizedDescription). Falling back to individual calls.")
 
                 for resortId in batchIds {
                     do {
@@ -389,19 +392,19 @@ class SnowConditionsManager: ObservableObject {
                         conditions[resortId] = resortConditions
                         // Cache the fresh data
                         cacheService.cacheConditions(resortConditions, for: resortId)
-                        print("Successfully fetched conditions for \(resortId) via individual call")
+                        managerLog.debug("Fetched conditions for \(resortId) via individual call")
                     } catch {
                         // Individual call also failed - try cache
-                        print("Individual API error for \(resortId): \(error.localizedDescription)")
+                        managerLog.warning("Individual API error for \(resortId): \(error.localizedDescription)")
                         allSucceeded = false
 
                         if let cachedData = cacheService.getCachedConditions(for: resortId) {
                             conditions[resortId] = cachedData.data
                             anyFromCache = true
-                            print("Using cached conditions for \(resortId) (stale: \(cachedData.isStale))")
+                            managerLog.debug("Using cached conditions for \(resortId) (stale: \(cachedData.isStale))")
                         } else {
                             conditions[resortId] = []
-                            print("No cached data available for \(resortId)")
+                            managerLog.debug("No cached data available for \(resortId)")
                         }
                     }
                 }
@@ -644,7 +647,7 @@ class UserPreferencesManager: ObservableObject {
     private func syncPreferencesToBackend() async {
         // Check if user is authenticated before syncing
         guard AuthenticationService.shared.isAuthenticated else {
-            print("UserPreferencesManager: Not authenticated, skipping backend sync")
+            managerLog.debug("UserPreferencesManager: Not authenticated, skipping backend sync")
             return
         }
 
@@ -675,10 +678,10 @@ class UserPreferencesManager: ObservableObject {
             )
 
             try await apiClient.updateUserPreferences(preferences)
-            print("UserPreferencesManager: Successfully synced preferences to backend")
+            managerLog.debug("UserPreferencesManager: Synced preferences to backend")
         } catch {
             // Log the error but don't block UI - local preferences are still saved
-            print("UserPreferencesManager: Failed to sync preferences to backend: \(error.localizedDescription)")
+            managerLog.error("UserPreferencesManager: Failed to sync preferences: \(error.localizedDescription)")
         }
     }
 

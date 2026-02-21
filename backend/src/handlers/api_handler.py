@@ -1,7 +1,9 @@
 """Main FastAPI application handler for Lambda deployment."""
 
 import json
+import logging
 import os
+import time
 from datetime import UTC, datetime, timezone
 from typing import Annotated, Dict, List, Optional
 
@@ -39,6 +41,8 @@ from utils.cache import (
     get_timeline_cache,
 )
 
+logger = logging.getLogger(__name__)
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Snow Quality Tracker API",
@@ -48,9 +52,8 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 
-# Configure CORS
-# TODO: For production, replace "*" with specific origins like:
-# ["https://your-app-domain.com", "https://api.your-domain.com"]
+# Configure CORS - wildcard is fine since this is a mobile API backend
+# (CORS only applies to browsers, not native apps)
 CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -59,6 +62,44 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    """Log all API requests with timing for CloudWatch monitoring."""
+    start = time.time()
+    response = await call_next(request)
+    duration_ms = (time.time() - start) * 1000
+
+    # Log slow requests (>1s) at WARNING level for monitoring
+    path = request.url.path
+    if duration_ms > 1000:
+        logger.warning(
+            "[SLOW] %s %s %.0fms status=%d",
+            request.method,
+            path,
+            duration_ms,
+            response.status_code,
+        )
+    elif response.status_code >= 500:
+        logger.error(
+            "[ERROR] %s %s %.0fms status=%d",
+            request.method,
+            path,
+            duration_ms,
+            response.status_code,
+        )
+    elif response.status_code >= 400:
+        logger.info(
+            "[CLIENT_ERROR] %s %s %.0fms status=%d",
+            request.method,
+            path,
+            duration_ms,
+            response.status_code,
+        )
+
+    return response
+
 
 # Lazy-initialized AWS clients and services
 # Required for Lambda SnapStart - connections must be re-established after restore
@@ -135,8 +176,6 @@ def _get_static_resorts_from_s3() -> list[dict] | None:
 
     Returns None if static file is not available (falls back to DynamoDB).
     """
-    import time
-
     # Check cache first
     now = time.time()
     if _static_resorts_cache["data"] and now < _static_resorts_cache["expires"]:
@@ -157,14 +196,18 @@ def _get_static_resorts_from_s3() -> list[dict] | None:
         _static_resorts_cache["data"] = data.get("resorts", [])
         _static_resorts_cache["expires"] = now + STATIC_CACHE_TTL_SECONDS
 
+        logger.info(
+            "Loaded %d resorts from S3 static JSON", len(_static_resorts_cache["data"])
+        )
         return _static_resorts_cache["data"]
     except ClientError as e:
         # File doesn't exist or access denied - fall back to DynamoDB
         if e.response["Error"]["Code"] in ("NoSuchKey", "AccessDenied"):
+            logger.info("Static resorts.json not found in S3, falling back to DynamoDB")
             return None
         raise
-    except Exception:
-        # Any other error - fall back to DynamoDB
+    except Exception as e:
+        logger.warning("Error fetching static resorts from S3: %s", e)
         return None
 
 
@@ -173,8 +216,6 @@ def _get_static_snow_quality_from_s3() -> dict | None:
 
     Returns None if static file is not available (falls back to DynamoDB).
     """
-    import time
-
     # Check cache first
     now = time.time()
     if (
@@ -198,14 +239,18 @@ def _get_static_snow_quality_from_s3() -> dict | None:
         _static_snow_quality_cache["data"] = data.get("results", {})
         _static_snow_quality_cache["expires"] = now + STATIC_CACHE_TTL_SECONDS
 
+        logger.info(
+            "Loaded snow quality for %d resorts from S3",
+            len(_static_snow_quality_cache["data"]),
+        )
         return _static_snow_quality_cache["data"]
     except ClientError as e:
         # File doesn't exist or access denied - fall back to DynamoDB
         if e.response["Error"]["Code"] in ("NoSuchKey", "AccessDenied"):
             return None
         raise
-    except Exception:
-        # Any other error - fall back to DynamoDB
+    except Exception as e:
+        logger.warning("Error fetching static snow quality from S3: %s", e)
         return None
 
 
@@ -847,8 +892,10 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
                 condition = _get_latest_condition_cached(resort_id, level)
                 if condition:
                     conditions.append(condition)
-            except Exception:
-                pass  # Skip failed elevations
+            except Exception as e:
+                logger.warning(
+                    "Failed to fetch condition for %s/%s: %s", resort_id, level, e
+                )
 
         if not conditions:
             return {
@@ -985,6 +1032,9 @@ async def get_resort_timeline(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(
+            "Timeline error for %s/%s: %s", resort_id, elevation, e, exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve timeline: {str(e)}",
@@ -1006,8 +1056,8 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
             condition = _get_latest_condition_cached(resort_id, level)
             if condition:
                 conditions.append(condition)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Failed to fetch quality for %s/%s: %s", resort_id, level, e)
 
     if not conditions:
         return {
@@ -1145,6 +1195,9 @@ async def get_batch_snow_quality(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(
+            "Batch snow quality error for %d resorts: %s", len(ids), e, exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve batch snow quality: {str(e)}",
@@ -1827,6 +1880,7 @@ async def sign_in_with_apple(request: AppleSignInRequest):
             detail=str(e),
         )
     except Exception as e:
+        logger.error("Apple Sign In error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Authentication failed: {str(e)}",
@@ -1957,6 +2011,9 @@ async def get_recommendations(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(
+            "Recommendations error (lat=%s, lng=%s): %s", lat, lng, e, exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate recommendations: {str(e)}",
@@ -2020,6 +2077,7 @@ async def get_best_conditions(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error("Best conditions error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get best conditions: {str(e)}",
