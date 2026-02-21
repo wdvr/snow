@@ -236,6 +236,50 @@ class WeatherService:
             )
             return []
 
+    def get_latest_conditions_all_elevations(
+        self, resort_id: str
+    ) -> list[WeatherCondition]:
+        """Get the latest condition for each elevation level in a single DynamoDB query.
+
+        Returns up to one condition per elevation level (the most recent).
+        This is more efficient than calling get_latest_condition() per elevation
+        since it uses a single query instead of 3.
+        """
+        if not self.conditions_table:
+            return []
+
+        try:
+            # Single query: fetch recent items for this resort, enough to cover all elevations
+            response = self.conditions_table.query(
+                KeyConditionExpression=Key("resort_id").eq(resort_id),
+                ScanIndexForward=False,  # Most recent first
+                Limit=15,  # 3 elevations × 5 timestamps = enough headroom
+            )
+
+            items = response.get("Items", [])
+            if not items:
+                return []
+
+            # Group by elevation, keeping only the first (latest) per elevation
+            seen_elevations: set[str] = set()
+            conditions: list[WeatherCondition] = []
+            for item in items:
+                parsed_item = parse_from_dynamodb(item)
+                elevation = parsed_item.get("elevation_level", "")
+                if elevation not in seen_elevations:
+                    seen_elevations.add(elevation)
+                    conditions.append(WeatherCondition(**parsed_item))
+
+            return conditions
+
+        except Exception as e:
+            import logging
+
+            logging.getLogger(__name__).error(
+                f"Error fetching conditions for {resort_id}: {e}"
+            )
+            return []
+
     def get_latest_condition(
         self, resort_id: str, elevation_level: str
     ) -> WeatherCondition | None:

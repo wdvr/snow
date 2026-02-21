@@ -34,10 +34,11 @@ struct ResortListView: View {
         userPreferencesManager.preferredUnits.distance == .metric
     }
 
-    var filteredAndSortedResorts: [Resort] {
-        // Start with resorts filtered by user's visible regions preference
-        let visibleResorts = userPreferencesManager.filterByVisibleRegions(snowConditionsManager.resorts)
+    private var visibleResorts: [Resort] {
+        userPreferencesManager.filterByVisibleRegions(snowConditionsManager.resorts)
+    }
 
+    var filteredAndSortedResorts: [Resort] {
         // Apply region filter (selected chip filter)
         let regionFiltered: [Resort]
         if let region = selectedRegion {
@@ -70,14 +71,20 @@ struct ResortListView: View {
             guard let userLocation = locationManager.userLocation else {
                 return resorts.sorted { $0.name < $1.name }
             }
+            // Pre-compute distances to avoid O(n log n) distance calculations during sort
+            let distances = Dictionary(uniqueKeysWithValues: resorts.map {
+                ($0.id, $0.distance(from: userLocation))
+            })
             return resorts.sorted {
-                $0.distance(from: userLocation) < $1.distance(from: userLocation)
+                (distances[$0.id] ?? .infinity) < (distances[$1.id] ?? .infinity)
             }
         case .snowQuality:
-            return resorts.sorted { resort1, resort2 in
-                let quality1 = snowConditionsManager.getSnowQuality(for: resort1.id).sortOrder
-                let quality2 = snowConditionsManager.getSnowQuality(for: resort2.id).sortOrder
-                return quality1 < quality2
+            // Pre-compute quality to avoid O(n log n) lookups during sort
+            let qualities = Dictionary(uniqueKeysWithValues: resorts.map {
+                ($0.id, snowConditionsManager.getSnowQuality(for: $0.id).sortOrder)
+            })
+            return resorts.sorted {
+                (qualities[$0.id] ?? 99) < (qualities[$1.id] ?? 99)
             }
         }
     }
@@ -88,8 +95,6 @@ struct ResortListView: View {
     }
 
     var availableRegions: [SkiRegion] {
-        // Only show regions that have resorts AND are visible in user preferences
-        let visibleResorts = userPreferencesManager.filterByVisibleRegions(snowConditionsManager.resorts)
         let resortRegions = Set(visibleResorts.map { $0.inferredRegion })
         return SkiRegion.allCases.filter { resortRegions.contains($0) }
     }

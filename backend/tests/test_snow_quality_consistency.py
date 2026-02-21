@@ -58,13 +58,15 @@ class TestSnowQualityApiConsistency:
     def test_batch_endpoint_weighted_quality(self, mock_conditions_horrible_base):
         """Test that batch endpoint uses weighted elevation scoring (top/mid weighted higher than base)."""
         from handlers.api_handler import _get_snow_quality_for_resort
+        from utils.cache import clear_all_caches
+
+        # Clear caches to avoid stale cached results
+        clear_all_caches()
 
         # Mock the dependencies
         with (
             patch("handlers.api_handler._get_resort_cached") as mock_resort,
-            patch(
-                "handlers.api_handler._get_latest_condition_cached"
-            ) as mock_condition,
+            patch("handlers.api_handler.get_weather_service") as mock_weather_svc,
         ):
             # Setup mock resort with base and top elevations
             mock_resort_obj = MagicMock()
@@ -74,14 +76,8 @@ class TestSnowQualityApiConsistency:
             ]
             mock_resort.return_value = mock_resort_obj
 
-            # Return conditions based on elevation
-            def get_condition(resort_id, level):
-                for c in mock_conditions_horrible_base:
-                    if c.elevation_level == level:
-                        return c
-                return None
-
-            mock_condition.side_effect = get_condition
+            # Mock single-query method to return all conditions at once
+            mock_weather_svc.return_value.get_latest_conditions_all_elevations.return_value = mock_conditions_horrible_base
 
             # Call the function
             result = _get_snow_quality_for_resort("test-resort")

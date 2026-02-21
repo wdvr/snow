@@ -187,35 +187,35 @@ class MapViewModel: ObservableObject {
         snowQualitySummaries: [String: SnowQualitySummaryLight] = [:],
         hiddenRegions: Set<String> = []
     ) {
-        // Filter out resorts from hidden regions
-        let visibleResorts = resorts.filter { resort in
-            !hiddenRegions.contains(resort.inferredRegion.rawValue)
-        }
+        let filterQualities = selectedFilter.qualities
 
-        let allAnnotations = visibleResorts.map { resort in
-            // Prefer top elevation for snow quality (best conditions), fall back to mid, then any
+        // Single pass: filter hidden regions + build annotations + apply quality filter
+        var result: [ResortAnnotation] = []
+        result.reserveCapacity(resorts.count)
+
+        for resort in resorts {
+            guard !hiddenRegions.contains(resort.inferredRegion.rawValue) else { continue }
+
             let resortConditions = conditions[resort.id] ?? []
             let condition = resortConditions.first { $0.elevationLevel == "top" }
                 ?? resortConditions.first { $0.elevationLevel == "mid" }
                 ?? resortConditions.first
-            // Use snow quality summary as fallback if no full condition available
             let fallbackQuality = snowQualitySummaries[resort.id]?.overallSnowQuality
-            return ResortAnnotation(resort: resort, condition: condition, fallbackQuality: fallbackQuality)
+            let annotation = ResortAnnotation(resort: resort, condition: condition, fallbackQuality: fallbackQuality)
+
+            guard filterQualities.contains(annotation.snowQuality) else { continue }
+            result.append(annotation)
         }
 
-        // Apply quality filter
-        annotations = allAnnotations.filter { annotation in
-            selectedFilter.qualities.contains(annotation.snowQuality)
-        }
-
-        // Sort by distance if enabled and location available
+        // Sort by distance if enabled, pre-computing distances
         if sortByDistance, let userLocation = locationManager.userLocation {
-            annotations.sort { a, b in
-                let distA = a.resort.distance(from: userLocation)
-                let distB = b.resort.distance(from: userLocation)
-                return distA < distB
-            }
+            let distances = Dictionary(uniqueKeysWithValues: result.map {
+                ($0.id, $0.resort.distance(from: userLocation))
+            })
+            result.sort { (distances[$0.id] ?? .infinity) < (distances[$1.id] ?? .infinity) }
         }
+
+        annotations = result
     }
 
     func selectAnnotation(_ annotation: ResortAnnotation?) {
@@ -328,12 +328,17 @@ class MapViewModel: ObservableObject {
             ?? timeline.timeline.first { $0.date == dateStr }?.snowQuality
     }
 
+    /// Sort annotations by distance, pre-computing distances to avoid O(n log n) calculations
+    private func sortedByDistance(_ items: [ResortAnnotation], from location: CLLocation) -> [ResortAnnotation] {
+        let distances = Dictionary(uniqueKeysWithValues: items.map {
+            ($0.id, $0.resort.distance(from: location))
+        })
+        return items.sorted { (distances[$0.id] ?? .infinity) < (distances[$1.id] ?? .infinity) }
+    }
+
     private func nearbyResortIds(limit: Int = 5) -> [String] {
         guard let userLocation = locationManager.userLocation else { return [] }
-        return annotations
-            .sorted { $0.resort.distance(from: userLocation) < $1.resort.distance(from: userLocation) }
-            .prefix(limit)
-            .map { $0.id }
+        return Array(sortedByDistance(annotations, from: userLocation).prefix(limit).map { $0.id })
     }
 
     // MARK: - Nearby Resorts
@@ -341,12 +346,10 @@ class MapViewModel: ObservableObject {
     func nearbyResorts(limit: Int = 5) -> [ResortAnnotation] {
         guard let userLocation = locationManager.userLocation else { return [] }
 
-        let sorted = annotations
-            .sorted { $0.resort.distance(from: userLocation) < $1.resort.distance(from: userLocation) }
-            .prefix(limit)
+        let sorted = Array(sortedByDistance(annotations, from: userLocation).prefix(limit))
 
         guard let forecastDate = selectedForecastDate else {
-            return sorted.map { $0 }
+            return sorted
         }
 
         return sorted.map { annotation in

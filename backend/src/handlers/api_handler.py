@@ -883,19 +883,10 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
                 detail=f"Resort {resort_id} not found",
             )
 
-        # Get latest conditions for all elevations
-        conditions = []
-        elevation_levels = [ep.level.value for ep in resort.elevation_points]
-
-        for level in elevation_levels:
-            try:
-                condition = _get_latest_condition_cached(resort_id, level)
-                if condition:
-                    conditions.append(condition)
-            except Exception as e:
-                logger.warning(
-                    "Failed to fetch condition for %s/%s: %s", resort_id, level, e
-                )
+        # Get latest conditions for all elevations in a single query
+        conditions = get_weather_service().get_latest_conditions_all_elevations(
+            resort_id
+        )
 
         if not conditions:
             return {
@@ -1048,16 +1039,8 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
     if not resort:
         return None
 
-    conditions = []
-    elevation_levels = [ep.level.value for ep in resort.elevation_points]
-
-    for level in elevation_levels:
-        try:
-            condition = _get_latest_condition_cached(resort_id, level)
-            if condition:
-                conditions.append(condition)
-        except Exception as e:
-            logger.warning("Failed to fetch quality for %s/%s: %s", resort_id, level, e)
+    # Single query to get latest condition per elevation (instead of 3 separate queries)
+    conditions = get_weather_service().get_latest_conditions_all_elevations(resort_id)
 
     if not conditions:
         return {
