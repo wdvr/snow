@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-/// Environment configuration for the Snow Tracker app
+/// Environment configuration for the Powder Chaser app
 /// Maps to Pulumi stacks: dev, staging, prod
 enum AppEnvironment: String, CaseIterable {
     case development = "dev"

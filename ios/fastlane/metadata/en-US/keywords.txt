@@ -1,1 +1,1 @@
-ski,snow,powder,conditions,resort,skiing,snowboard,weather,mountain,winter
+ski,snow,powder,conditions,resort,skiing,snowboard,weather,mountain,forecast,quality,fresh,tracking,alerts

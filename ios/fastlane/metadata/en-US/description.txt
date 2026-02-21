@@ -1,41 +1,40 @@
-Powder Chaser - The Smart Way to Find Fresh Snow
+Powder Chaser — Stop guessing. Start chasing.
 
-Track real-time snow conditions at 28+ ski resorts worldwide with our proprietary snow quality algorithm. Unlike other apps, we don't just show snowfall - we track fresh powder since the last ice layer formed, so you know the actual skiing conditions before you go.
+Other apps tell you it snowed. We tell you if it's actually good. Our ML-powered snow quality algorithm analyzes 29 data points — from fresh powder depth to freeze-thaw cycles to wind conditions — to give you a simple answer: is it worth the drive?
 
-PROPRIETARY SNOW QUALITY ALGORITHM
-Our unique algorithm tracks:
-- Fresh powder accumulation since the last thaw-freeze cycle
-- Real snow depth vs. just snowfall amounts
-- Temperature patterns that affect snow quality
-- Surface conditions at multiple elevations
+WHY POWDER CHASER IS DIFFERENT
+Most ski apps show snowfall numbers. But 10cm of snow means nothing if it fell on an ice layer, got wind-packed, or melted the next day. Powder Chaser tracks what actually matters:
 
-REAL-TIME CONDITIONS
-- Current temperature and weather at base, mid, and summit elevations
-- 24h, 48h, and 72h snowfall tracking
-- Snow depth and fresh powder measurements
-- Snow quality ratings: Excellent, Good, Fair, Poor, Bad, or Not Skiable
+• Fresh powder since the last thaw-freeze — not just total snowfall
+• Real snow quality ratings from Excellent to Not Skiable
+• ML-predicted quality scores trained on thousands of real conditions
+• Multi-elevation analysis at base, mid, and summit
 
-PLAN YOUR TRIPS
-- Create trips to track conditions leading up to your ski days
-- Get alerts when fresh powder falls at your favorite resorts
-- Receive thaw/freeze notifications that indicate icy conditions ahead
-- View 72-hour snow forecasts
+7-DAY SNOW QUALITY FORECAST
+Plan your powder days with confidence. Our forecast doesn't just show snowfall predictions — it predicts actual snow quality for each day, so you can pick the best day to go.
 
-REGIONS COVERED
-- North America West: Whistler, Mammoth, Palisades Tahoe, Big White
-- North America Rockies: Vail, Park City, Jackson Hole, Aspen, Telluride
-- North America East: Stowe, Killington, Sunday River
-- Alps: Chamonix, Zermatt, St. Anton, Verbier, Val d'Isere
-- Japan: Niseko, Hakuba
-- Oceania: Remarkables (NZ), Thredbo (AU)
-- South America: Portillo (Chile)
+900+ RESORTS, 23 COUNTRIES
+• North America: Whistler, Vail, Jackson Hole, Mammoth, Park City, Aspen + hundreds more
+• Europe: Chamonix, Zermatt, St. Anton, Verbier, Val d'Isère, Courchevel
+• Japan: Niseko, Hakuba
+• Scandinavia, Oceania, South America
 
-FEATURES
-- Beautiful map view with color-coded quality indicators
-- Cluster view showing quality distribution across regions
-- Offline support - cached data works without internet
-- Filter by region to focus on your preferred ski areas
-- Favorites list for quick access to your go-to resorts
-- Share conditions with friends
+SMART NOTIFICATIONS
+• Fresh powder alerts when your favorite resorts get dumped on
+• Thaw-freeze warnings before icy conditions develop
+• Customizable thresholds — get notified only when it matters
 
-Perfect for planning your next powder day or checking conditions before heading to the mountain. Download now and never miss the best snow again!
+BEAUTIFUL MAP VIEW
+• Color-coded quality pins across all regions
+• Cluster view showing quality distribution at a glance
+• Nearby resort carousel with distance and quality
+• Date selector to preview future snow quality on the map
+
+BUILT FOR SKIERS, BY SKIERS
+• Favorites list for quick access to your go-to resorts
+• Share conditions with your ski crew
+• Works offline with smart caching
+• Metric and imperial units
+• 13 languages supported
+
+Download Powder Chaser and never miss a powder day again.

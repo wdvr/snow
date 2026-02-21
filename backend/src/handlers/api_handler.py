@@ -2403,7 +2403,7 @@ async def trigger_notifications(
 async def test_push_notification(
     user_id: str | None = Depends(get_optional_user_id),
     title: str = "Test Notification",
-    body: str = "This is a test push notification from Snow Tracker",
+    body: str = "This is a test push notification from Powder Chaser",
 ):
     """
     Send a test push notification to devices.
