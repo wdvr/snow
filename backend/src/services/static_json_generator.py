@@ -255,9 +255,11 @@ class StaticJsonGenerator:
         # Generate overall explanation matching weighted quality level
         explanation = generate_overall_explanation(conditions, overall_quality)
 
-        # Get representative condition for temperature/snowfall fields (prefer top)
+        # Get representative condition for temperature/snowfall fields (prefer mid)
+        # Mid elevation best represents typical skiing conditions and aligns with
+        # the weighted quality rating (50% top + 35% mid + 15% base)
         representative = None
-        for pref_level in ["top", "mid", "base"]:
+        for pref_level in ["mid", "top", "base"]:
             for c in conditions:
                 if c.elevation_level == pref_level:
                     representative = c
