@@ -1,5 +1,8 @@
 import SwiftUI
 import CoreLocation
+import os.log
+
+private let recsLog = Logger(subsystem: "com.snowtracker.app", category: "Recommendations")
 
 // MARK: - Recommendations Manager
 
@@ -28,7 +31,7 @@ class RecommendationsManager: ObservableObject {
             lastUpdated = Date()
         } catch {
             errorMessage = error.localizedDescription
-            print("Error loading recommendations: \(error)")
+            recsLog.error("Failed to load recommendations: \(error)")
         }
 
         isLoading = false
@@ -44,7 +47,7 @@ class RecommendationsManager: ObservableObject {
             lastUpdated = Date()
         } catch {
             errorMessage = error.localizedDescription
-            print("Error loading best conditions: \(error)")
+            recsLog.error("Failed to load best conditions: \(error)")
         }
 
         isLoading = false

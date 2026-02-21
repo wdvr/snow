@@ -345,14 +345,14 @@ class WeatherService:
         start_time = time.time()
 
         try:
-            # Calculate timestamp cutoff (last 6 hours)
-            cutoff = datetime.now(UTC) - timedelta(hours=6)
+            # Use 2-hour cutoff to limit data volume while covering all resorts
+            # (weather updates run hourly, so 2h ensures at least 1 reading per resort)
+            cutoff = datetime.now(UTC) - timedelta(hours=2)
             cutoff_str = cutoff.isoformat()
 
             conditions_by_resort: dict[str, list[WeatherCondition]] = defaultdict(list)
 
             # Query each elevation level using the ElevationIndex GSI
-            # This is more efficient than scanning the entire table
             elevation_levels = ["base", "mid", "top"]
 
             def query_elevation(elevation_level: str):
@@ -370,11 +370,13 @@ class WeatherService:
                     response = self.conditions_table.query(**query_params)
                     results.extend(response.get("Items", []))
 
-                    # Paginate through all results
-                    while "LastEvaluatedKey" in response:
+                    # Paginate if needed, cap at 3 pages to prevent Lambda timeout
+                    pages = 1
+                    while "LastEvaluatedKey" in response and pages < 3:
                         query_params["ExclusiveStartKey"] = response["LastEvaluatedKey"]
                         response = self.conditions_table.query(**query_params)
                         results.extend(response.get("Items", []))
+                        pages += 1
 
                 except Exception as e:
                     logger.warning(f"Error querying elevation {elevation_level}: {e}")

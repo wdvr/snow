@@ -1,4 +1,7 @@
 import SwiftUI
+import os.log
+
+private let tripLog = Logger(subsystem: "com.snowtracker.app", category: "TripPlanning")
 
 // MARK: - Trip Planning Manager
 
@@ -29,7 +32,7 @@ class TripPlanningManager: ObservableObject {
             trips = response.trips
         } catch {
             errorMessage = error.localizedDescription
-            print("Error loading trips: \(error)")
+            tripLog.error("Failed to load trips: \(error)")
         }
 
         isLoading = false

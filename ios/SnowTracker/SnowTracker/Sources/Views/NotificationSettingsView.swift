@@ -1,4 +1,7 @@
 import SwiftUI
+import os.log
+
+private let notifSettingsLog = Logger(subsystem: "com.snowtracker.app", category: "NotificationSettings")
 
 struct NotificationSettingsView: View {
     @StateObject private var viewModel = NotificationSettingsViewModel()
@@ -385,7 +388,7 @@ class NotificationSettingsViewModel: ObservableObject {
             gracePeriodHours = settings.gracePeriodHours
             resortSettings = settings.resortSettings
         } catch {
-            print("Failed to load notification settings: \(error)")
+            notifSettingsLog.error("Failed to load notification settings: \(error)")
             // Use defaults if loading fails
         }
     }
@@ -404,7 +407,7 @@ class NotificationSettingsViewModel: ObservableObject {
                 )
                 try await apiClient.updateNotificationSettings(update)
             } catch {
-                print("Failed to save notification settings: \(error)")
+                notifSettingsLog.error("Failed to save notification settings: \(error)")
             }
         }
     }
@@ -452,7 +455,7 @@ class NotificationSettingsViewModel: ObservableObject {
                     settings: update
                 )
             } catch {
-                print("Failed to save resort notification settings: \(error)")
+                notifSettingsLog.error("Failed to save resort notification settings: \(error)")
             }
         }
     }
