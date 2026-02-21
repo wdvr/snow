@@ -467,7 +467,7 @@ extension AuthenticationService: ASAuthorizationControllerDelegate {
                     errorMessage = "Sign in requires interaction."
                 case .unknown:
                     errorMessage = "An unknown error occurred."
-                @unknown default:
+                default:
                     errorMessage = "An error occurred: \(authError.localizedDescription)"
                 }
             } else {

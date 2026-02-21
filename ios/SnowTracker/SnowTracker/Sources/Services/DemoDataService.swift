@@ -173,7 +173,6 @@ class DemoDataService {
     /// Generate beautiful demo conditions for all demo resorts
     func demoConditions(for resortId: String? = nil) -> [String: [WeatherCondition]] {
         let currentTime = ISO8601DateFormatter().string(from: Date())
-        let recentTime = ISO8601DateFormatter().string(from: Date().addingTimeInterval(-3600)) // 1 hour ago
 
         var allConditions: [String: [WeatherCondition]] = [:]
 

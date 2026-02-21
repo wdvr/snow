@@ -838,7 +838,7 @@ final class APIClient {
 
     // MARK: - Error Mapping
 
-    private func mapError(_ error: AFError) -> APIError {
+    private nonisolated func mapError(_ error: AFError) -> APIError {
         switch error {
         case .responseValidationFailed(let reason):
             if case .unacceptableStatusCode(let code) = reason {
