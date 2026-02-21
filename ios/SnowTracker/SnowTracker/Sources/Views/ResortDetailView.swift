@@ -191,10 +191,7 @@ struct ResortDetailView: View {
                 })
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(radius: 2)
+        .cardStyle()
     }
 
     // MARK: - Elevation Picker
@@ -276,10 +273,7 @@ struct ResortDetailView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(radius: 2)
+        .cardStyle()
     }
 
     // MARK: - Snow Details Card
@@ -407,10 +401,7 @@ struct ResortDetailView: View {
                 snowfallItem(title: "72h", value: condition.snowfall72hCm)
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(radius: 2)
+        .cardStyle()
     }
 
     private func snowfallItem(title: String, value: Double) -> some View {
@@ -473,10 +464,7 @@ struct ResortDetailView: View {
                 .padding(.top, 4)
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(radius: 2)
+        .cardStyle()
     }
 
     private func predictionItem(title: String, value: Double) -> some View {
@@ -539,10 +527,7 @@ struct ResortDetailView: View {
                 }
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(radius: 2)
+        .cardStyle()
     }
 
     private func weatherDetailItem(icon: String, title: String, value: String) -> some View {
@@ -613,10 +598,7 @@ struct ResortDetailView: View {
                 }
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(radius: 2)
+        .cardStyle()
     }
 
     // MARK: - Loading Card
@@ -634,11 +616,8 @@ struct ResortDetailView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
-        .padding()
         .frame(maxWidth: .infinity)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(radius: 2)
+        .cardStyle()
     }
 
     // MARK: - No Data Card
@@ -657,11 +636,8 @@ struct ResortDetailView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
-        .padding()
         .frame(maxWidth: .infinity)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(radius: 2)
+        .cardStyle()
     }
 }
 

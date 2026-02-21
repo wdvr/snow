@@ -49,6 +49,7 @@
 		B8228CF5A7EED426F2DD89E1 /* ClusteredMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61CA3C498827FBF30FCBE0C5 /* ClusteredMapView.swift */; };
 		BAB8E308D58D61C5454715E2 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA770DE28FAAFB7C82C04D9 /* PushNotificationService.swift */; };
 		C0711EC616F41F08730D790A /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */; };
+		E9108540FE0495AA300A4664 /* CardStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7629DBF912C6AF6C0C5845FA /* CardStyle.swift */; };
 		C440EFF2F7868A9A09A525C2 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A882E15FD24B57516DE0B29E /* Configuration.swift */; };
 		C9503A1D14E11C37EBD585F7 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = BFEBBB03F51632FE030398C0 /* GoogleSignInSwift */; };
 		CA425D6DF761A30E14DAF304 /* GoogleService-Info.plist.template in Resources */ = {isa = PBXBuildFile; fileRef = C9D8809765B1DAE070C75605 /* GoogleService-Info.plist.template */; };
@@ -110,6 +111,7 @@
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* TimelineData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineData.swift; sourceTree = "<group>"; };
 		B2C3D4E5F6A7B8C9D0E1F2A3 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		1C3612902D14F964CD974A7E /* AuthenticationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationViews.swift; sourceTree = "<group>"; };
+		7629DBF912C6AF6C0C5845FA /* CardStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardStyle.swift; sourceTree = "<group>"; };
 		1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
 		22ECDCF89993D8220437C43C /* ResortDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResortDetailView.swift; sourceTree = "<group>"; };
 		279D40CEA622F25142C8FD65 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
@@ -228,6 +230,7 @@
 				61CA3C498827FBF30FCBE0C5 /* ClusteredMapView.swift */,
 				E42DC701CEC0DFCAD7762C72 /* ConditionsView.swift */,
 				1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */,
+				7629DBF912C6AF6C0C5845FA /* CardStyle.swift */,
 				D94F3FDE9BBCEF47C3DC8547 /* FeedbackView.swift */,
 				279D40CEA622F25142C8FD65 /* NotificationSettingsView.swift */,
 				9C9690886D46EBB22DBF795D /* OnboardingView.swift */,
@@ -505,6 +508,7 @@
 				C440EFF2F7868A9A09A525C2 /* Configuration.swift in Sources */,
 				A79CA1D7F4A1253EFC65CB4B /* DemoDataService.swift in Sources */,
 				C0711EC616F41F08730D790A /* FavoritesView.swift in Sources */,
+				E9108540FE0495AA300A4664 /* CardStyle.swift in Sources */,
 				2699A5371F1EFF464AB8F9E9 /* FeedbackView.swift in Sources */,
 				9BF10F65F1BF8419E4A87267 /* LocationManager.swift in Sources */,
 				8720BD7F787971D36BBEE343 /* Managers.swift in Sources */,

@@ -61,18 +61,19 @@ struct ElevationPoint: Codable, Identifiable, Hashable {
         "\(formattedFeet) (\(formattedMeters))"
     }
 
+    private static let elevationFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.maximumFractionDigits = 0
+        return f
+    }()
+
     var formattedFeet: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        return (formatter.string(from: NSNumber(value: elevationFeet)) ?? "\(Int(elevationFeet))") + " ft"
+        (Self.elevationFormatter.string(from: NSNumber(value: elevationFeet)) ?? "\(Int(elevationFeet))") + " ft"
     }
 
     var formattedMeters: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        return (formatter.string(from: NSNumber(value: elevationMeters)) ?? "\(Int(elevationMeters))") + " m"
+        (Self.elevationFormatter.string(from: NSNumber(value: elevationMeters)) ?? "\(Int(elevationMeters))") + " m"
     }
 }
 

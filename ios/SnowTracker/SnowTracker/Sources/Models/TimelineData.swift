@@ -38,13 +38,22 @@ struct TimelinePoint: Codable, Identifiable, Sendable {
         case isForecast = "is_forecast"
     }
 
+    private static let dateParser: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    private static let dayOfWeekFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEE"
+        return f
+    }()
+
     /// Day of week abbreviation (e.g., "Mon", "Tue")
     var dayOfWeek: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        guard let dateObj = formatter.date(from: date) else { return "" }
-        formatter.dateFormat = "EEE"
-        return formatter.string(from: dateObj)
+        guard let dateObj = Self.dateParser.date(from: date) else { return "" }
+        return Self.dayOfWeekFormatter.string(from: dateObj)
     }
 
     /// Time label for display (AM, Noon, PM)
@@ -59,9 +68,7 @@ struct TimelinePoint: Codable, Identifiable, Sendable {
 
     /// Whether this point represents today
     var isToday: Bool {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        let todayStr = formatter.string(from: Date())
+        let todayStr = Self.dateParser.string(from: Date())
         return date == todayStr
     }
 

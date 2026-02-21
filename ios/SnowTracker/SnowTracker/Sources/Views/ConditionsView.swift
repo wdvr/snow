@@ -99,10 +99,7 @@ struct ConditionsView: View {
                 qualityCountBadge(quality: .poor)
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(radius: 2)
+        .cardStyle()
     }
 
     private func qualityCountBadge(quality: SnowQuality) -> some View {
@@ -212,10 +209,7 @@ struct ResortConditionCard: View {
                 }
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(radius: 2)
+        .cardStyle()
     }
 
     private func elevationCondition(level: ElevationLevel, condition: WeatherCondition) -> some View {
