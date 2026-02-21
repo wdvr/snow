@@ -1,39 +1,39 @@
 ============================================================
 Model Evaluation Report (v2 - Neural Network)
 ============================================================
-Samples: 1173
-MAE: 0.208
-RMSE: 0.284
-R²: 0.946
-Exact quality match: 80.4%
+Samples: 438
+MAE: 0.179
+RMSE: 0.246
+R²: 0.950
+Exact quality match: 83.6%
 Within-1 quality level: 100.0%
 
 Score distribution:
-  True  - mean: 3.73, std: 1.22
-  Pred  - mean: 3.73, std: 1.21
+  True  - mean: 3.78, std: 1.10
+  Pred  - mean: 3.78, std: 1.10
 
 Quality confusion (true → predicted):
-    horrible ( 49): horrible=38, bad=11
-         bad (174): bad=152, horrible=12, poor=10
-        poor (137): poor=94, fair=23, bad=20
-        fair (482): fair=396, poor=53, good=33
-        good (251): good=207, fair=39, excellent=5
-   excellent ( 80): excellent=56, good=24
+    horrible ( 22): horrible=21, bad=1
+         bad ( 26): bad=24, poor=2
+        poor ( 84): poor=68, fair=9, bad=7
+        fair (186): fair=165, poor=18, good=3
+        good ( 86): good=62, fair=24
+   excellent ( 34): excellent=26, good=8
 
 Worst 15 predictions:
   Resort                              Date          True  Pred Error
-  winter-park-resort                  2026-02-18     4.4   3.3  1.12
-  hakuba                              2025-12-15     4.3   5.4  1.11
-  crystal-mountain-wa                 2025-12-19     4.3   5.4  1.10
-  mammoth-mountain                    2025-12-25     4.5   5.6  1.07
-  bald-mountain-sun-valley            2026-02-10     3.9   2.8  1.06
-  hakuba                              2026-02-18     5.8   4.8  1.03
-  marble-mountain-steady-brook-humber-valley 2025-12-16     4.3   5.3  0.98
-  whiteface-lake-placid               2025-12-21     3.3   2.3  0.95
-  hakuba                              2025-12-05     4.3   5.2  0.95
-  purgatory-durango                   2026-02-11     2.7   1.8  0.94
-  blue-mountain-resort-collingwood    2026-02-20     3.7   2.8  0.92
-  mt-baker                            2026-02-12     3.7   2.8  0.91
-  synth-thin-on-ice-9                 2026-02-14     2.8   3.7  0.89
-  coronet-peak                        2025-12-27     3.0   2.1  0.88
-  synth-wet-snow-21                   2026-02-22     4.3   3.5  0.87
+  synth-light-dusting-37              2026-02-10     4.9   3.8  1.12
+  winter-park-resort                  2026-02-18     4.4   3.3  1.07
+  grouse-mountain                     2026-02-12     3.7   2.8  0.86
+  crested-butte                       2026-02-21     4.9   4.1  0.82
+  synth-corn-11                       2026-03-12     3.2   2.5  0.72
+  synth-fresh-covers-ice-8            2026-02-09     4.5   5.2  0.68
+  blue-mountain-resort-collingwood    2026-02-12     4.5   3.8  0.65
+  crested-butte                       2026-02-18     4.4   5.0  0.63
+  synth-borderline-good-7             2026-01-17     4.6   5.2  0.62
+  hakuba                              2026-02-14     2.0   2.6  0.62
+  bald-mountain-sun-valley            2026-02-11     3.9   3.3  0.62
+  blue-mountain-resort-collingwood    2026-02-20     3.7   3.1  0.59
+  synth-thin-on-ice-18                2026-02-23     2.1   2.7  0.58
+  synth-warm-aging-10                 2026-02-15     3.1   2.5  0.57
+  mount-st-louis-moonstone            2026-02-21     4.7   4.1  0.57
