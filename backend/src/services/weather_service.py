@@ -345,8 +345,9 @@ class WeatherService:
         start_time = time.time()
 
         try:
-            # Use 2-hour cutoff to limit data volume while covering all resorts
-            # (weather updates run hourly, so 2h ensures at least 1 reading per resort)
+            # Use 2-hour cutoff to reduce items per query (weather updates hourly)
+            # This means each resort has at most ~2 items per elevation, so a single
+            # DynamoDB page (~1MB) covers ~500 resorts per elevation level.
             cutoff = datetime.now(UTC) - timedelta(hours=2)
             cutoff_str = cutoff.isoformat()
 
@@ -356,31 +357,20 @@ class WeatherService:
             elevation_levels = ["base", "mid", "top"]
 
             def query_elevation(elevation_level: str):
-                """Query conditions for a specific elevation level with pagination."""
-                results = []
+                """Query conditions for a specific elevation level (single page)."""
                 try:
-                    query_params = {
-                        "IndexName": "ElevationIndex",
-                        "KeyConditionExpression": Key("elevation_level").eq(
+                    response = self.conditions_table.query(
+                        IndexName="ElevationIndex",
+                        KeyConditionExpression=Key("elevation_level").eq(
                             elevation_level
                         )
                         & Key("timestamp").gte(cutoff_str),
-                        "ScanIndexForward": False,  # Most recent first
-                    }
-                    response = self.conditions_table.query(**query_params)
-                    results.extend(response.get("Items", []))
-
-                    # Paginate if needed, cap at 3 pages to prevent Lambda timeout
-                    pages = 1
-                    while "LastEvaluatedKey" in response and pages < 3:
-                        query_params["ExclusiveStartKey"] = response["LastEvaluatedKey"]
-                        response = self.conditions_table.query(**query_params)
-                        results.extend(response.get("Items", []))
-                        pages += 1
-
+                        ScanIndexForward=False,  # Most recent first
+                    )
+                    return response.get("Items", [])
                 except Exception as e:
                     logger.warning(f"Error querying elevation {elevation_level}: {e}")
-                return results
+                    return []
 
             # Query all elevation levels in parallel
             all_items = []
