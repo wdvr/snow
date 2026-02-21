@@ -889,8 +889,8 @@ class TestSmoothTimelineSnowDepth(unittest.TestCase):
             {"date": "2026-02-21", "hour": 12, "snow_depth_cm": 50.0},
         ]
         smooth(points)
-        # 5 hours × 10cm/hour = 50cm max drop → 165 - 50 = 115
-        assert points[1]["snow_depth_cm"] == 115.0
+        # 5 hours × 2cm/hour = 10cm max drop → 165 - 10 = 155
+        assert points[1]["snow_depth_cm"] == 155.0
 
     def test_increases_not_modified(self):
         """Snow depth increases (new snowfall) should never be smoothed."""
@@ -922,8 +922,8 @@ class TestSmoothTimelineSnowDepth(unittest.TestCase):
             {"date": "2026-02-22", "hour": 7, "snow_depth_cm": 10.0},
         ]
         smooth(points)
-        # (24 - 16) + 7 = 15 hours × 10cm/hour = 150cm max drop → no smoothing needed
-        assert points[1]["snow_depth_cm"] == 10.0
+        # (24 - 16) + 7 = 15 hours × 2cm/hour = 30cm max drop → 150 - 30 = 120
+        assert points[1]["snow_depth_cm"] == 120.0
 
     def test_short_cross_day_gap(self):
         """Short overnight gaps should still be smoothed if drop is too large."""
@@ -933,8 +933,8 @@ class TestSmoothTimelineSnowDepth(unittest.TestCase):
             {"date": "2026-02-22", "hour": 7, "snow_depth_cm": 10.0},
         ]
         smooth(points)
-        # 15 hours × 10cm/hour = 150cm max drop → 200 - 150 = 50
-        assert points[1]["snow_depth_cm"] == 50.0
+        # 15 hours × 2cm/hour = 30cm max drop → 200 - 30 = 170
+        assert points[1]["snow_depth_cm"] == 170.0
 
     def test_cascading_smoothing(self):
         """Multiple consecutive impossible drops should be smoothed in sequence."""
@@ -945,16 +945,37 @@ class TestSmoothTimelineSnowDepth(unittest.TestCase):
             {"date": "2026-02-21", "hour": 16, "snow_depth_cm": 20.0},
         ]
         smooth(points)
-        # First: 200 → 100 (100cm drop in 5h, max 50) → smoothed to 150
-        assert points[1]["snow_depth_cm"] == 150.0
-        # Second: 150 → 20 (130cm drop in 4h, max 40) → smoothed to 110
-        assert points[2]["snow_depth_cm"] == 110.0
+        # First: 200 → 100 (100cm drop in 5h, max 10) → smoothed to 190
+        assert points[1]["snow_depth_cm"] == 190.0
+        # Second: 190 → 20 (170cm drop in 4h, max 8) → smoothed to 182
+        assert points[2]["snow_depth_cm"] == 182.0
 
     def test_empty_and_single_point(self):
         """Edge cases: empty list and single point should not crash."""
         smooth = self._import_fn()
         smooth([])  # No error
         smooth([{"date": "2026-02-21", "hour": 7, "snow_depth_cm": 100.0}])  # No error
+
+    def test_moderate_drops_smoothed(self):
+        """Drops of 10cm/h that look like model artifacts should be smoothed.
+
+        Regression test for Jackson Hole production data where 50cm/5h and
+        40cm/4h drops (exactly 10cm/h) slipped through the old 10cm/h cap.
+        """
+        smooth = self._import_fn()
+        points = [
+            {"date": "2026-02-23", "hour": 7, "snow_depth_cm": 192.0},
+            {"date": "2026-02-23", "hour": 12, "snow_depth_cm": 142.0},  # -50 in 5h
+            {"date": "2026-02-23", "hour": 16, "snow_depth_cm": 102.0},  # -40 in 4h
+            {"date": "2026-02-24", "hour": 7, "snow_depth_cm": 17.0},  # -85 in 15h
+        ]
+        smooth(points)
+        # 5h × 2cm/h = 10 max drop → 192 - 10 = 182
+        assert points[1]["snow_depth_cm"] == 182.0
+        # 4h × 2cm/h = 8 max drop → 182 - 8 = 174
+        assert points[2]["snow_depth_cm"] == 174.0
+        # 15h × 2cm/h = 30 max drop → 174 - 30 = 144
+        assert points[3]["snow_depth_cm"] == 144.0
 
     def test_depth_never_goes_negative(self):
         """Smoothed depth should never go below 0."""

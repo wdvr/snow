@@ -77,8 +77,10 @@ def _request_with_retry(
 
 
 # Max snow depth drop per hour (cm) considered physically realistic.
-# Even extreme conditions rarely exceed 5cm/hour melt rate.
-_MAX_DEPTH_DROP_PER_HOUR = 10.0
+# Real-world max snowmelt is ~5-10cm/day even in extreme warm/rain-on-snow
+# conditions. 2cm/hour is generous but catches Open-Meteo model splice artifacts
+# (e.g., ERA5→GFS transitions causing 100+ cm phantom drops in hours).
+_MAX_DEPTH_DROP_PER_HOUR = 2.0
 
 
 def _smooth_timeline_snow_depth(points: list[dict]) -> None:
