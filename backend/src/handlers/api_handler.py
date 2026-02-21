@@ -767,7 +767,7 @@ async def get_batch_conditions(
         return {
             "results": results,
             "last_updated": datetime.now(UTC).isoformat(),
-            "resort_count": len(ids),
+            "resort_count": len(results),
         }
 
     except HTTPException:
@@ -1204,7 +1204,7 @@ async def get_batch_snow_quality(
             return {
                 "results": results,
                 "last_updated": datetime.now(UTC).isoformat(),
-                "resort_count": len(ids),
+                "resort_count": len(results),
                 "source": "static",
             }
 
@@ -1233,7 +1233,7 @@ async def get_batch_snow_quality(
         return {
             "results": results,
             "last_updated": datetime.now(UTC).isoformat(),
-            "resort_count": len(ids),
+            "resort_count": len(results),
             "source": "dynamodb",
         }
 

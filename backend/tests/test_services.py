@@ -1,6 +1,6 @@
 """Tests for service layer functionality."""
 
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from unittest.mock import Mock, patch
 
 import pytest
@@ -668,6 +668,93 @@ class TestWeatherService:
         assert "forecast" in forecast
         assert "location" in forecast
         mock_get.assert_called_once()
+
+
+class TestGetConditionsForResort:
+    """Tests for WeatherService.get_conditions_for_resort deduplication and time filtering."""
+
+    @pytest.fixture
+    def mock_table(self):
+        table = Mock()
+        table.query.return_value = {"Items": []}
+        return table
+
+    @pytest.fixture
+    def service(self, mock_table):
+        svc = WeatherService(api_key="test")
+        svc.conditions_table = mock_table
+        return svc
+
+    def _make_item(self, elevation, timestamp, temp=-5.0):
+        return {
+            "resort_id": "test-resort",
+            "timestamp": timestamp,
+            "elevation_level": elevation,
+            "current_temp_celsius": str(temp),
+            "min_temp_celsius": str(temp - 2),
+            "max_temp_celsius": str(temp + 2),
+            "snow_quality": "good",
+            "confidence_level": "medium",
+            "source_confidence": "medium",
+            "data_source": "open-meteo.com",
+        }
+
+    def test_returns_latest_per_elevation(self, service, mock_table):
+        """Should return only the most recent condition per elevation level."""
+        now = datetime.now(UTC)
+        items = [
+            self._make_item("top", (now).isoformat()),
+            self._make_item("mid", (now).isoformat()),
+            self._make_item("base", (now).isoformat()),
+            self._make_item("top", (now - timedelta(hours=1)).isoformat()),
+            self._make_item("mid", (now - timedelta(hours=1)).isoformat()),
+            self._make_item("base", (now - timedelta(hours=1)).isoformat()),
+        ]
+        mock_table.query.return_value = {"Items": items}
+
+        result = service.get_conditions_for_resort("test-resort", hours_back=24)
+
+        assert len(result) == 3
+        elevations = {c.elevation_level for c in result}
+        assert elevations == {"top", "mid", "base"}
+
+    def test_empty_table_returns_empty_list(self, service, mock_table):
+        """No items means empty result."""
+        mock_table.query.return_value = {"Items": []}
+        result = service.get_conditions_for_resort("test-resort")
+        assert result == []
+
+    def test_no_table_returns_empty_list(self):
+        """Service with no conditions_table returns empty."""
+        svc = WeatherService(api_key="test")
+        svc.conditions_table = None
+        assert svc.get_conditions_for_resort("any") == []
+
+    def test_uses_time_filter_in_query(self, service, mock_table):
+        """Query should include timestamp >= cutoff in KeyConditionExpression."""
+        mock_table.query.return_value = {"Items": []}
+        service.get_conditions_for_resort("test-resort", hours_back=48)
+
+        call_kwargs = mock_table.query.call_args.kwargs
+        key_expr = call_kwargs["KeyConditionExpression"]
+        # Should be a compound expression (resort_id AND timestamp)
+        assert "&" in str(key_expr) or "AND" in str(key_expr).upper()
+
+    def test_error_returns_empty_list(self, service, mock_table):
+        """DynamoDB errors should be caught and return empty list."""
+        mock_table.query.side_effect = Exception("DynamoDB error")
+        result = service.get_conditions_for_resort("test-resort")
+        assert result == []
+
+    def test_single_elevation_returns_one(self, service, mock_table):
+        """Resort with only one elevation should return 1 condition."""
+        now = datetime.now(UTC)
+        items = [self._make_item("mid", now.isoformat())]
+        mock_table.query.return_value = {"Items": items}
+
+        result = service.get_conditions_for_resort("test-resort")
+        assert len(result) == 1
+        assert result[0].elevation_level == "mid"
 
 
 class TestUserService:
