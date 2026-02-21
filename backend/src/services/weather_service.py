@@ -359,7 +359,7 @@ class WeatherService:
             # All WeatherCondition fields except raw_data (~15KB).
             # Using ProjectionExpression reduces data transferred per page
             # from ~1MB to ~62KB, preventing Lambda OOM.
-            # 'timestamp' is a DynamoDB reserved word, so use alias.
+            # DynamoDB reserved words need aliases: timestamp, data, source, ttl
             projection_attrs = (
                 "resort_id, elevation_level, #ts, "
                 "current_temp_celsius, min_temp_celsius, max_temp_celsius, "
@@ -371,8 +371,9 @@ class WeatherService:
                 "last_freeze_thaw_hours_ago, currently_warming, "
                 "humidity_percent, wind_speed_kmh, weather_description, "
                 "snow_quality, confidence_level, fresh_snow_cm, "
-                "data_source, source_confidence, ttl"
+                "data_source, source_confidence, #ttl"
             )
+            expression_names = {"#ts": "timestamp", "#ttl": "ttl"}
 
             def query_elevation(elevation_level: str):
                 """Query conditions for a specific elevation level with pagination.
@@ -392,7 +393,7 @@ class WeatherService:
                         & Key("timestamp").gte(cutoff_str),
                         "ScanIndexForward": False,
                         "ProjectionExpression": projection_attrs,
-                        "ExpressionAttributeNames": {"#ts": "timestamp"},
+                        "ExpressionAttributeNames": expression_names,
                     }
 
                     while True:
