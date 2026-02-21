@@ -128,15 +128,21 @@ enum CacheConfiguration {
 
 // MARK: - Cache Status
 
+private enum CacheFormatters {
+    static let relative: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f
+    }()
+}
+
 struct CachedData<T> {
     let data: T
     let isStale: Bool
     let cachedAt: Date
 
     var ageDescription: String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: cachedAt, relativeTo: Date())
+        CacheFormatters.relative.localizedString(for: cachedAt, relativeTo: Date())
     }
 }
 

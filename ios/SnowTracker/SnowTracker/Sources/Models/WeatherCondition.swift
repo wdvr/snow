@@ -336,14 +336,17 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         return max(0, min(100, Int(((score - 1.0) / 5.0 * 100).rounded())))
     }
 
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f
+    }()
+
     var formattedTimestamp: String {
         guard let date = parsedTimestamp else {
             return "Unknown time"
         }
-
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
+        return Self.relativeFormatter.localizedString(for: date, relativeTo: Date())
     }
 
     var currentTempFahrenheit: Double {

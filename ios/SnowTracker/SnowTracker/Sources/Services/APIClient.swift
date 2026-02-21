@@ -1053,18 +1053,23 @@ struct SnowQualitySummaryLight: Codable {
         return String(format: "%.1fcm", snow)
     }
 
+    private static let isoFractionalFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+    private static let isoBasicFormatter = ISO8601DateFormatter()
+
     /// Formatted timestamp relative to now
     var formattedTimestamp: String? {
         guard let lastUpdated = lastUpdated else { return nil }
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        guard let date = formatter.date(from: lastUpdated) else {
-            // Try without fractional seconds
-            formatter.formatOptions = [.withInternetDateTime]
-            guard let date = formatter.date(from: lastUpdated) else { return nil }
+        if let date = Self.isoFractionalFormatter.date(from: lastUpdated) {
             return formatRelativeTime(date)
         }
-        return formatRelativeTime(date)
+        if let date = Self.isoBasicFormatter.date(from: lastUpdated) {
+            return formatRelativeTime(date)
+        }
+        return nil
     }
 
     private func formatRelativeTime(_ date: Date) -> String {
