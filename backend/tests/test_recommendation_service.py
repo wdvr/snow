@@ -415,17 +415,26 @@ class TestRecommendationService:
         )
 
     def test_fresh_snow_score_calculation(self, recommendation_service):
-        """Test fresh/predicted snow score calculation."""
+        """Test fresh/predicted snow score calculation (logarithmic scale)."""
         # No snow = 0
         assert recommendation_service._calculate_fresh_snow_score(0.0, 0.0) == 0.0
 
-        # Some fresh snow
-        score = recommendation_service._calculate_fresh_snow_score(10.0, 0.0)
-        assert 0.4 < score < 0.6
+        # Some fresh snow (10cm ~ 0.32 on log scale)
+        score_10 = recommendation_service._calculate_fresh_snow_score(10.0, 0.0)
+        assert 0.25 < score_10 < 0.5
 
-        # Lots of fresh + predicted
-        score = recommendation_service._calculate_fresh_snow_score(15.0, 20.0)
-        assert score == 1.0
+        # More snow should always score higher
+        score_50 = recommendation_service._calculate_fresh_snow_score(50.0, 0.0)
+        assert score_50 > score_10
+
+        # Heavy snow (100cm ~ 0.91)
+        score_100 = recommendation_service._calculate_fresh_snow_score(100.0, 0.0)
+        assert score_100 > score_50
+        assert score_100 > 0.85
+
+        # Extreme snow (150cm+) approaches 1.0
+        score_150 = recommendation_service._calculate_fresh_snow_score(150.0, 0.0)
+        assert score_150 >= 0.99
 
     def test_recommendation_reason_generation(
         self,

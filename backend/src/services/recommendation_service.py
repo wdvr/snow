@@ -219,8 +219,10 @@ class RecommendationService:
                 )
             )
 
-        # Sort by combined score (descending)
-        recommendations.sort(key=lambda r: r.combined_score, reverse=True)
+        # Sort by combined score (descending), then fresh snow as tiebreaker
+        recommendations.sort(
+            key=lambda r: (r.combined_score, r.fresh_snow_cm), reverse=True
+        )
 
         logger.info(
             f"[PERF] get_recommendations total took {time.time() - start_time:.2f}s, returning {min(limit, len(recommendations))} recommendations"
@@ -319,7 +321,10 @@ class RecommendationService:
                 )
             )
 
-        recommendations.sort(key=lambda r: r.combined_score, reverse=True)
+        # Sort by combined score (descending), then fresh snow as tiebreaker
+        recommendations.sort(
+            key=lambda r: (r.combined_score, r.fresh_snow_cm), reverse=True
+        )
         logger.info(
             f"[PERF] get_best_conditions_globally total took {time.time() - start_time:.2f}s, returning {min(limit, len(recommendations))} recommendations"
         )
@@ -453,22 +458,32 @@ class RecommendationService:
         self, fresh_cm: float, predicted_cm: float
     ) -> float:
         """
-        Calculate fresh/predicted snow score (0-1).
+        Calculate fresh/predicted snow score (0-1) using logarithmic scale.
 
-        Scoring:
+        Uses log scale so there's always meaningful differentiation between
+        resorts with different amounts of snow, even at high values.
+
+        Approximate scores:
         - 0 cm = 0.0
-        - 10 cm = 0.5
-        - 20+ cm = 1.0
+        - 5 cm = 0.30
+        - 10 cm = 0.46
+        - 20 cm = 0.61
+        - 50 cm = 0.79
+        - 100 cm = 0.91
+        - 150+ cm = 1.0
         """
+        import math
+
         # Combine fresh and predicted (predicted counts less)
         combined_cm = fresh_cm + (predicted_cm * 0.5)
 
-        if combined_cm >= 20:
-            return 1.0
-        elif combined_cm <= 0:
+        if combined_cm <= 0:
             return 0.0
-        else:
-            return combined_cm / 20.0
+
+        # Log scale: log(1 + x/5) normalized so 150cm = 1.0
+        max_reference = 150.0  # cm at which score reaches 1.0
+        score = math.log(1 + combined_cm / 5) / math.log(1 + max_reference / 5)
+        return min(1.0, score)
 
     def _build_elevation_summary(
         self, conditions: list[WeatherCondition]
