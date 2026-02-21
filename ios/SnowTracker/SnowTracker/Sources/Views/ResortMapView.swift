@@ -506,6 +506,10 @@ struct ResortMapDetailSheet: View {
         snowConditionsManager.getLatestCondition(for: resort.id)
     }
 
+    private var knownQuality: SnowQuality {
+        snowConditionsManager.getSnowQuality(for: resort.id)
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -577,21 +581,27 @@ struct ResortMapDetailSheet: View {
                 .accessibilityLabel(userPreferencesManager.isFavorite(resortId: resort.id) ? "Remove from favorites" : "Add to favorites")
             }
 
-            if let condition = condition {
-                HStack(spacing: 12) {
-                    // Snow quality badge
-                    Label(condition.snowQuality.displayName, systemImage: condition.snowQuality.icon)
+            HStack(spacing: 12) {
+                // Snow quality badge - show from summary even before conditions load
+                let quality = condition?.snowQuality ?? knownQuality
+                if quality != .unknown {
+                    Label(quality.displayName, systemImage: quality.icon)
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(.white)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(condition.snowQuality.color, in: Capsule())
+                        .background(quality.color, in: Capsule())
+                }
 
-                    // Temperature
+                // Temperature (only when full conditions are loaded)
+                if let condition = condition {
                     Label(condition.formattedTemperature(userPreferencesManager.preferredUnits), systemImage: "thermometer.medium")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                } else if isLoadingConditions {
+                    ProgressView()
+                        .controlSize(.small)
                 }
             }
         }
@@ -774,19 +784,53 @@ struct ClusterResortListSheet: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @Environment(\.dismiss) private var dismiss
+    @State private var isLoadingConditions = false
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(sortedResorts) { resort in
-                    ClusterResortRow(resort: resort, condition: snowConditionsManager.getLatestCondition(for: resort.id))
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            onResortSelected(resort)
+            Group {
+                if sortedResorts.isEmpty && isLoadingConditions {
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .controlSize(.large)
+                        Text("Loading conditions...")
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        ForEach(sortedResorts) { resort in
+                            ClusterResortRow(
+                                resort: resort,
+                                condition: snowConditionsManager.getLatestCondition(for: resort.id),
+                                snowQuality: snowConditionsManager.getSnowQuality(for: resort.id)
+                            )
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                onResortSelected(resort)
+                            }
                         }
+                    }
+                    .listStyle(.plain)
+                    .overlay {
+                        if isLoadingConditions {
+                            VStack {
+                                Spacer()
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                    Text("Updating conditions...")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(8)
+                                .background(.regularMaterial, in: Capsule())
+                                .padding(.bottom, 8)
+                            }
+                        }
+                    }
                 }
             }
-            .listStyle(.plain)
             .navigationTitle("\(resorts.count) Resorts")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -794,6 +838,17 @@ struct ClusterResortListSheet: View {
                     Button("Done") {
                         dismiss()
                     }
+                }
+            }
+            .task {
+                let resortIds = resorts.map { $0.id }
+                let needsFetch = resortIds.contains { id in
+                    snowConditionsManager.getLatestCondition(for: id) == nil
+                }
+                if needsFetch {
+                    isLoadingConditions = true
+                    await snowConditionsManager.fetchConditionsForResorts(resortIds: resortIds)
+                    isLoadingConditions = false
                 }
             }
         }
@@ -814,11 +869,8 @@ struct ClusterResortListSheet: View {
 struct ClusterResortRow: View {
     let resort: Resort
     let condition: WeatherCondition?
+    let snowQuality: SnowQuality
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
-
-    private var snowQuality: SnowQuality {
-        condition?.snowQuality ?? .unknown
-    }
 
     var body: some View {
         HStack(spacing: 12) {
