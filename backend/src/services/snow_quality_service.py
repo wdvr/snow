@@ -463,13 +463,19 @@ class SnowQualityService:
     def _estimate_fresh_snow_simple(self, weather: WeatherCondition) -> float:
         """Simple fresh snow estimate using available fields."""
         snowfall_after_freeze = getattr(weather, "snowfall_after_freeze_cm", 0.0) or 0.0
+        snow_depth = getattr(weather, "snow_depth_cm", None)
         if snowfall_after_freeze > 0:
             # Apply temperature degradation
             currently_warming = getattr(weather, "currently_warming", False)
             if currently_warming and weather.current_temp_celsius > 3.0:
                 degradation = min(0.4, (weather.current_temp_celsius - 3.0) * 0.1)
-                return round(max(0.0, snowfall_after_freeze * (1.0 - degradation)), 1)
-            return round(snowfall_after_freeze, 1)
+                fresh = max(0.0, snowfall_after_freeze * (1.0 - degradation))
+            else:
+                fresh = snowfall_after_freeze
+            # Cap at snow depth (fresh snow can't exceed total depth on ground)
+            if snow_depth and snow_depth > 0:
+                fresh = min(fresh, snow_depth)
+            return round(fresh, 1)
         return round(max(0.0, weather.snowfall_24h_cm or 0.0), 1)
 
     def _estimate_fresh_snow(
@@ -484,6 +490,7 @@ class SnowQualityService:
         # Primary metric: snow that fell after the last ice formation event
         snowfall_after_freeze = getattr(weather, "snowfall_after_freeze_cm", 0.0) or 0.0
         currently_warming = getattr(weather, "currently_warming", False)
+        snow_depth = getattr(weather, "snow_depth_cm", None)
 
         if snowfall_after_freeze > 0:
             fresh_snow = snowfall_after_freeze
@@ -497,6 +504,10 @@ class SnowQualityService:
                     min(0.4, (current_temp - 3.0) * 0.1) if current_temp > 3.0 else 0.0
                 )
                 fresh_snow = fresh_snow * (1.0 - degradation)
+
+            # Cap at snow depth (fresh snow can't exceed total depth on ground)
+            if snow_depth and snow_depth > 0:
+                fresh_snow = min(fresh_snow, snow_depth)
 
             return round(max(0.0, fresh_snow), 1)
         else:
