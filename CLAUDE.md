@@ -185,7 +185,21 @@ GET  /api/v1/trips/{id}               - Get trip details
 PUT  /api/v1/trips/{id}               - Update trip
 DELETE /api/v1/trips/{id}             - Delete trip
 POST /api/v1/feedback                  - Submit feedback
+POST /api/v1/chat                      - AI conditions chat (Bedrock Claude Sonnet 4.6)
+GET  /api/v1/chat/conversations        - List chat conversations
+GET  /api/v1/chat/conversations/{id}   - Get conversation messages
+DELETE /api/v1/chat/conversations/{id} - Delete conversation
+POST /api/v1/resorts/{id}/condition-reports - Submit user condition report
+GET  /api/v1/resorts/{id}/condition-reports - List condition reports for resort
+GET  /api/v1/user/condition-reports    - List user's own condition reports
+DELETE /api/v1/resorts/{id}/condition-reports/{report_id} - Delete condition report
 ```
+
+### Bedrock Configuration
+- Model: Claude Sonnet 4.6 (`us.anthropic.claude-sonnet-4-6-20250514`) via Amazon Bedrock Converse API with tool_use
+- Region: `us-west-2`
+- Chat history table: `snow-tracker-chat-{env}`
+- Condition reports table: `snow-tracker-condition-reports-{env}`
 
 ---
 

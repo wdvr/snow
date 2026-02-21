@@ -161,13 +161,20 @@ struct MainTabView: View {
                 }
                 .tag(3)
 
+            ChatView()
+                .tabItem {
+                    Image(systemName: "bubble.left.and.text.bubble.right")
+                    Text("Ask AI")
+                }
+                .tag(4)
+
             SettingsView()
                 .environmentObject(authService)
                 .tabItem {
                     Image(systemName: "gear")
                     Text("Settings")
                 }
-                .tag(4)
+                .tag(5)
         }
         .tint(.blue)
         .onAppear {

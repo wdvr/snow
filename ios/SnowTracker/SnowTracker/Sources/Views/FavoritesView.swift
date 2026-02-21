@@ -26,6 +26,19 @@ struct FavoritesView: View {
                 }
             }
             .navigationTitle("Favorites")
+            .toolbar {
+                if favoriteResorts.count >= 2 {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink {
+                            ResortComparisonView(initialResorts: favoriteResorts)
+                                .environmentObject(snowConditionsManager)
+                                .environmentObject(userPreferencesManager)
+                        } label: {
+                            Label("Compare", systemImage: "rectangle.split.3x1")
+                        }
+                    }
+                }
+            }
             .onAppear {
                 AnalyticsService.shared.trackScreen("Favorites", screenClass: "FavoritesView")
             }

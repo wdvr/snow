@@ -87,7 +87,7 @@ These features have the highest impact-to-effort ratio and address the most comm
 
 ---
 
-### 1.4 Improved Resort Comparison
+### 1.4 Improved Resort Comparison — *In Progress*
 
 **Description**: Allow users to compare 2-4 resorts side-by-side on key metrics: current snow quality, fresh snow, temperature, wind, forecast, and season totals. Accessible from favorites or search.
 
@@ -209,7 +209,7 @@ These features build on the foundation and move the app toward being a daily-use
 
 ---
 
-### 2.5 Shareable Conditions Cards
+### 2.5 Shareable Conditions Cards — *In Progress*
 
 **Description**: Generate beautiful, branded image cards showing a resort's current conditions (quality rating, fresh snow, temperature, forecast preview) that users can share to Instagram Stories, iMessage, WhatsApp, etc. Include app branding and a deep link.
 
@@ -247,7 +247,7 @@ These features build on the foundation and move the app toward being a daily-use
 
 ---
 
-### 2.7 Elevation Profile Visualization
+### 2.7 Elevation Profile Visualization — *In Progress*
 
 **Description**: Show an elevation profile cross-section for each resort with conditions mapped to elevation bands. Visualize where the snow line is, where it is icy vs. powdery, and how conditions change from base to summit. The data exists (base/mid/top) but is not visualized intuitively.
 
@@ -332,23 +332,23 @@ These are ambitious features that would make Powder Chaser best-in-class. They r
 
 ---
 
-### 3.4 AI Conditions Summary
+### 3.4 AI Conditions Summary — *In Progress*
 
-**Description**: Use an LLM to generate natural language condition summaries for each resort, synthesizing weather data, quality scores, recent trends, and forecast. "Whistler had 18cm overnight and it's still snowing. Expect excellent powder in the alpine with some wind effect on exposed ridges. Base area is firm but skiable. Best day of the week -- go."
+**Description**: Interactive AI chat for resort conditions, powered by Claude Sonnet 4.6 on Amazon Bedrock with tool_use. Rather than static daily summaries, users can ask natural-language questions about any resort's conditions and get conversational responses grounded in real-time weather, quality scores, forecasts, and trends. The model uses tools to fetch live data from existing API endpoints during the conversation.
 
-**User Value**: OpenSnow's human-written daily forecasts are their killer feature and what people pay $30/year for. An AI-generated version at scale (900+ resorts) would be unprecedented. Transforms raw data into advice.
+**User Value**: OpenSnow's human-written daily forecasts are their killer feature and what people pay $30/year for. An interactive AI chat goes further -- users can ask follow-up questions, compare resorts, and get personalized advice. Scales to 900+ resorts without per-resort generation costs since responses are on-demand.
 
 **Estimated Complexity**: M-L
 
-**Dependencies**: All weather and quality data. LLM API (Claude, GPT). Prompt engineering. Cost management for 900+ daily summaries.
+**Dependencies**: All weather and quality data. Amazon Bedrock (Claude Sonnet 4.6 with tool_use). Conversation history storage. Cost management for on-demand usage.
 
 **Implementation Notes**:
-- Backend: Daily Lambda that generates summaries for resorts with active users
-- Backend: Cache summaries in DynamoDB (generate once per day per resort)
-- Backend: Use Claude API with structured prompt including all conditions data
-- iOS: "Today's Summary" card at top of resort detail
-- Cost optimization: Only generate for resorts with favorited users, cache aggressively
-- Start with top 50 resorts, expand based on usage
+- Backend: Chat endpoint with Bedrock Converse API, tool definitions for conditions/quality/timeline/recommendations
+- Backend: DynamoDB table for conversation history (per user, per resort)
+- Backend: Tool implementations that call existing internal service functions
+- iOS: Chat UI in resort detail view with streaming responses
+- Cost optimization: On-demand only (no batch generation), conversation history TTL
+- Rate limiting to control Bedrock costs
 
 ---
 
@@ -467,6 +467,26 @@ These are ambitious features that would make Powder Chaser best-in-class. They r
 
 ---
 
+### 3.14 User Condition Reports — *In Progress*
+
+**Description**: Allow users to submit structured condition reports from the mountain. 8 condition types: powder, packed powder, soft, ice, crud, spring, hardpack, windblown. Each report includes a score (1-10), optional free-text comment, and optional elevation. Reports are tied to the user and resort, visible to other users on the resort detail page.
+
+**User Value**: First-hand reports from people actually skiing are more trusted than any algorithm. Structured condition types feed directly into ML training data, improving quality predictions over time. Builds community engagement and network effects.
+
+**Estimated Complexity**: S-M
+
+**Dependencies**: User authentication (Apple Sign In / Guest). DynamoDB storage. iOS grid UI.
+
+**Implementation Notes**:
+- Backend: New `snow-tracker-condition-reports-{env}` DynamoDB table (user_id, resort_id, timestamp, condition_type, score, comment, elevation)
+- Backend: REST endpoints — `POST /api/v1/resorts/{id}/condition-reports`, `GET /api/v1/resorts/{id}/condition-reports`
+- Backend: Rate limited to 5 reports per day per user per resort
+- iOS: Grid UI for selecting condition type (8 icons), score slider (1-10), optional comment field, optional elevation picker
+- iOS: Recent reports section on resort detail page
+- Future: Feed reports into ML training pipeline as ground-truth labels
+
+---
+
 ## 4. Research Needed
 
 These features need investigation before committing to a development plan.
@@ -567,20 +587,20 @@ These features need investigation before committing to a development plan.
 | 1.1 Enhanced Powder Alerts | High | S-M | **Now** |
 | 1.2 Snow History & Season Totals | High | M | **Now** |
 | 1.3 Webcam Integration | High | M | **Now** |
-| 1.4 Resort Comparison | Medium-High | S-M | **Now** |
+| 1.4 Resort Comparison | Medium-High | S-M | **In Progress** |
 | 1.5 Live Activities | Medium-High | M | **Now** |
 | 2.1 Trip Planning | High | L | **Next** |
 | 2.2 Resort Detail Enrichment | Medium | M | **Next** |
 | 2.3 Snow Depth Map Overlay | Medium-High | M-L | **Next** |
 | 2.4 Weekly Digest | Medium | M | **Next** |
-| 2.5 Shareable Conditions Cards | Medium-High | S-M | **Next** |
+| 2.5 Shareable Conditions Cards | Medium-High | S-M | **In Progress** |
 | 2.6 Favorite Groups | Medium | S | **Next** |
-| 2.7 Elevation Profile Viz | Medium | S-M | **Next** |
+| 2.7 Elevation Profile Viz | Medium | S-M | **In Progress** |
 | 2.8 Android App | High | XL | **Research** |
 | 3.1 Apple Watch | Medium | L | **Later** |
 | 3.2 GPS Tracking | Very High | XL | **Later** |
 | 3.3 Community Reports | High | L | **Later** |
-| 3.4 AI Summaries | Very High | M-L | **Later** |
+| 3.4 AI Chat | Very High | M-L | **In Progress** |
 | 3.5 Social/Friends | High | L-XL | **Later** |
 | 3.6 Gamification | Medium | M-L | **Later** |
 | 3.7 Offline Mode | Medium | M | **Later** |
@@ -590,6 +610,7 @@ These features need investigation before committing to a development plan.
 | 3.11 Road Conditions | Medium | L | **Later** |
 | 3.12 Backcountry Mode | Medium-High | XL | **Later** |
 | 3.13 Season Pass Tracker | Medium | M | **Later** |
+| 3.14 User Condition Reports | High | S-M | **In Progress** |
 
 ---
 

@@ -16,12 +16,18 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from mangum import Mangum
 from pydantic import BaseModel, Field
 
+from models.chat import ChatRequest
+from models.condition_report import (
+    ConditionReportRequest,
+    ConditionReportResponse,
+)
 from models.feedback import Feedback, FeedbackSubmission
 from models.resort import Resort
 from models.trip import Trip, TripCreate, TripStatus, TripUpdate
 from models.user import UserPreferences
 from models.weather import SNOW_QUALITY_EXPLANATIONS, SnowQuality, TimelineResponse
 from services.auth_service import AuthenticationError, AuthProvider, AuthService
+from services.condition_report_service import ConditionReportService
 from services.ml_scorer import raw_score_to_quality
 from services.openmeteo_service import OpenMeteoService
 from services.quality_explanation_service import (
@@ -119,6 +125,8 @@ _auth_service = None
 _recommendation_service = None
 _trip_service = None
 _trips_table = None
+_condition_report_service = None
+_chat_service = None
 
 # Security scheme for bearer token authentication
 security = HTTPBearer(auto_error=False)
@@ -133,7 +141,8 @@ def reset_services():
     """
     global _dynamodb, _resort_service, _weather_service, _snow_quality_service
     global _user_service, _feedback_table, _auth_service, _recommendation_service
-    global _trip_service, _trips_table, _s3_client
+    global _trip_service, _trips_table, _s3_client, _condition_report_service
+    global _chat_service
     _dynamodb = None
     _resort_service = None
     _weather_service = None
@@ -144,6 +153,8 @@ def reset_services():
     _recommendation_service = None
     _trip_service = None
     _trips_table = None
+    _condition_report_service = None
+    _chat_service = None
     _s3_client = None
     # Reset boto3's default session so new clients use the moto mock context
     boto3.DEFAULT_SESSION = None
@@ -371,6 +382,41 @@ def get_trip_service():
             weather_service=get_weather_service(),
         )
     return _trip_service
+
+
+def get_condition_report_service():
+    """Get or create ConditionReportService (lazy init for SnapStart)."""
+    global _condition_report_service
+    if _condition_report_service is None:
+        environment = os.environ.get("ENVIRONMENT", "dev")
+        table = get_dynamodb().Table(
+            os.environ.get(
+                "CONDITION_REPORTS_TABLE",
+                f"snow-tracker-condition-reports-{environment}",
+            )
+        )
+        _condition_report_service = ConditionReportService(table=table)
+    return _condition_report_service
+
+
+def get_chat_service():
+    """Get or create ChatService (lazy init for SnapStart)."""
+    global _chat_service
+    if _chat_service is None:
+        from services.chat_service import ChatService
+
+        environment = os.environ.get("ENVIRONMENT", "dev")
+        chat_table = get_dynamodb().Table(
+            os.environ.get("CHAT_TABLE", f"snow-tracker-chat-{environment}")
+        )
+        _chat_service = ChatService(
+            chat_table=chat_table,
+            resort_service=get_resort_service(),
+            weather_service=get_weather_service(),
+            snow_quality_service=get_snow_quality_service(),
+            recommendation_service=get_recommendation_service(),
+        )
+    return _chat_service
 
 
 # MARK: - Authentication Dependency
@@ -2342,6 +2388,186 @@ async def mark_trip_alerts_read(
 
 
 # =============================================================================
+# MARK: - Condition Report Endpoints
+# =============================================================================
+
+
+@app.post(
+    "/api/v1/resorts/{resort_id}/condition-reports",
+    status_code=status.HTTP_201_CREATED,
+)
+async def submit_condition_report(
+    resort_id: str,
+    report_request: ConditionReportRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Submit a user condition report for a resort.
+
+    Authenticated users can submit reports about current snow conditions.
+    Rate limited to 5 reports per user per resort per day.
+    """
+    try:
+        # Verify resort exists
+        resort = _get_resort_cached(resort_id)
+        if not resort:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Resort {resort_id} not found",
+            )
+
+        report = get_condition_report_service().submit_report(
+            resort_id=resort_id,
+            user_id=user_id,
+            request=report_request,
+        )
+
+        return ConditionReportResponse(
+            report_id=report.report_id,
+            resort_id=report.resort_id,
+            condition_type=report.condition_type,
+            score=report.score,
+            comment=report.comment,
+            elevation_level=report.elevation_level,
+            created_at=report.created_at,
+        ).model_dump()
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(e),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to submit condition report: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to submit condition report",
+        )
+
+
+@app.get("/api/v1/resorts/{resort_id}/condition-reports")
+async def get_resort_condition_reports(
+    resort_id: str,
+    response: Response,
+    limit: int = Query(20, ge=1, le=100, description="Maximum reports to return"),
+):
+    """Get condition reports for a resort.
+
+    Returns recent user-submitted condition reports along with a summary
+    of reports from the last 7 days. This endpoint is public.
+    """
+    try:
+        service = get_condition_report_service()
+
+        reports = service.get_reports_for_resort(resort_id, limit=limit)
+        summary = service.get_report_summary(resort_id)
+
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+
+        return {
+            "reports": [
+                ConditionReportResponse(
+                    report_id=r.report_id,
+                    resort_id=r.resort_id,
+                    condition_type=r.condition_type,
+                    score=r.score,
+                    comment=r.comment,
+                    elevation_level=r.elevation_level,
+                    created_at=r.created_at,
+                ).model_dump()
+                for r in reports
+            ],
+            "summary": summary,
+        }
+
+    except Exception as e:
+        logger.error(
+            "Failed to get condition reports for %s: %s", resort_id, e, exc_info=True
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get condition reports",
+        )
+
+
+@app.get("/api/v1/user/condition-reports")
+async def get_user_condition_reports(
+    response: Response,
+    user_id: str = Depends(get_current_user_id),
+    limit: int = Query(50, ge=1, le=200, description="Maximum reports to return"),
+):
+    """Get condition reports submitted by the authenticated user."""
+    try:
+        reports = get_condition_report_service().get_reports_by_user(
+            user_id, limit=limit
+        )
+
+        response.headers["Cache-Control"] = CACHE_CONTROL_PRIVATE
+
+        return {
+            "reports": [
+                ConditionReportResponse(
+                    report_id=r.report_id,
+                    resort_id=r.resort_id,
+                    condition_type=r.condition_type,
+                    score=r.score,
+                    comment=r.comment,
+                    elevation_level=r.elevation_level,
+                    created_at=r.created_at,
+                ).model_dump()
+                for r in reports
+            ],
+            "count": len(reports),
+        }
+
+    except Exception as e:
+        logger.error("Failed to get user condition reports: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get user condition reports",
+        )
+
+
+@app.delete(
+    "/api/v1/resorts/{resort_id}/condition-reports/{report_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_condition_report(
+    resort_id: str,
+    report_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Delete a condition report.
+
+    Only the user who submitted the report can delete it.
+    """
+    try:
+        deleted = get_condition_report_service().delete_report(
+            resort_id=resort_id,
+            report_id=report_id,
+            user_id=user_id,
+        )
+
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Condition report not found or you are not the author",
+            )
+
+        return None
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to delete condition report: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete condition report",
+        )
+
+
+# =============================================================================
 # MARK: - Test/Debug Endpoints (for development only)
 # =============================================================================
 
@@ -2559,6 +2785,81 @@ async def backfill_geohashes():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to backfill geohashes",
+        )
+
+
+# MARK: - Chat Endpoints
+
+
+@app.post("/api/v1/chat")
+async def send_chat_message(
+    request: ChatRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Send a message to the AI ski conditions assistant.
+
+    Uses AWS Bedrock with tool use to provide real-time resort data.
+    """
+    try:
+        service = get_chat_service()
+        result = service.chat(request.message, request.conversation_id, user_id)
+        return result
+    except Exception as e:
+        logger.error("Chat error for user %s: %s", user_id, e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process chat message",
+        )
+
+
+@app.get("/api/v1/chat/conversations")
+async def list_conversations(
+    user_id: str = Depends(get_current_user_id),
+):
+    """List all chat conversations for the authenticated user."""
+    service = get_chat_service()
+    conversations = service.list_conversations(user_id)
+    return {
+        "conversations": [c.model_dump() for c in conversations],
+        "count": len(conversations),
+    }
+
+
+@app.get("/api/v1/chat/conversations/{conversation_id}")
+async def get_conversation(
+    conversation_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Get all messages in a chat conversation."""
+    try:
+        service = get_chat_service()
+        messages = service.get_conversation(conversation_id, user_id)
+        return {
+            "conversation_id": conversation_id,
+            "messages": [m.model_dump() for m in messages],
+            "count": len(messages),
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+
+@app.delete("/api/v1/chat/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Delete a chat conversation and all its messages."""
+    try:
+        service = get_chat_service()
+        service.delete_conversation(conversation_id, user_id)
+        return {"status": "deleted"}
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
         )
 
 

@@ -637,6 +637,207 @@ final class APIClient {
         }
     }
 
+    // MARK: - Chat API
+
+    /// Send a message to the AI chat
+    func sendChatMessage(_ message: String, conversationId: String?) async throws -> ChatResponse {
+        let url = baseURL.appendingPathComponent("api/v1/chat")
+
+        let request = ChatRequest(message: message, conversationId: conversationId)
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(
+                url,
+                method: .post,
+                parameters: request,
+                encoder: JSONParameterEncoder.default,
+                headers: authHeaders()
+            )
+            .validate()
+            .responseDecodable(of: ChatResponse.self) { response in
+                switch response.result {
+                case .success(let chatResponse):
+                    self.log.debug("Chat message sent, conversation: \(chatResponse.conversationId)")
+                    continuation.resume(returning: chatResponse)
+                case .failure(let error):
+                    self.log.error("Error sending chat message: \(error)")
+                    continuation.resume(throwing: self.mapError(error))
+                }
+            }
+        }
+    }
+
+    /// Get all chat conversations for the current user
+    func getConversations() async throws -> [ChatConversation] {
+        let url = baseURL.appendingPathComponent("api/v1/chat/conversations")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, headers: authHeaders())
+                .validate()
+                .responseDecodable(of: ChatConversationsResponse.self) { response in
+                    switch response.result {
+                    case .success(let conversationsResponse):
+                        self.log.debug("Fetched \(conversationsResponse.conversations.count) conversations")
+                        continuation.resume(returning: conversationsResponse.conversations)
+                    case .failure(let error):
+                        self.log.error("Error fetching conversations: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
+    /// Get messages for a specific conversation
+    func getConversation(_ conversationId: String) async throws -> [ChatMessage] {
+        let url = baseURL.appendingPathComponent("api/v1/chat/conversations/\(conversationId)")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, headers: authHeaders())
+                .validate()
+                .responseDecodable(of: ChatMessagesResponse.self) { response in
+                    switch response.result {
+                    case .success(let messagesResponse):
+                        self.log.debug("Fetched \(messagesResponse.messages.count) messages")
+                        continuation.resume(returning: messagesResponse.messages)
+                    case .failure(let error):
+                        self.log.error("Error fetching conversation \(conversationId): \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
+    /// Delete a conversation
+    func deleteConversation(_ conversationId: String) async throws {
+        let url = baseURL.appendingPathComponent("api/v1/chat/conversations/\(conversationId)")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, method: .delete, headers: authHeaders())
+                .validate()
+                .response { response in
+                    if let error = response.error {
+                        continuation.resume(throwing: self.mapError(error))
+                    } else {
+                        self.log.debug("Deleted conversation: \(conversationId)")
+                        continuation.resume()
+                    }
+                }
+        }
+    }
+
+    // MARK: - Condition Reports API
+
+    /// Submit a condition report for a resort
+    func submitConditionReport(
+        resortId: String,
+        conditionType: String,
+        score: Int,
+        comment: String?,
+        elevationLevel: String?
+    ) async throws {
+        let url = baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/condition-reports")
+
+        let request = SubmitConditionReportRequest(
+            conditionType: conditionType,
+            score: score,
+            comment: comment,
+            elevationLevel: elevationLevel
+        )
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(
+                url,
+                method: .post,
+                parameters: request,
+                encoder: JSONParameterEncoder.default,
+                headers: authHeaders()
+            )
+            .validate()
+            .response { response in
+                if let error = response.error {
+                    self.log.error("Error submitting condition report: \(error)")
+                    continuation.resume(throwing: self.mapError(error))
+                } else {
+                    self.log.debug("Submitted condition report for \(resortId)")
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
+    /// Get condition reports for a resort
+    func getConditionReports(resortId: String, limit: Int = 10) async throws -> ConditionReportsResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/condition-reports"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "limit", value: String(limit))
+        ]
+
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, headers: authHeaders())
+                .validate()
+                .responseDecodable(of: ConditionReportsResponse.self) { response in
+                    switch response.result {
+                    case .success(let reportsResponse):
+                        self.log.debug("Fetched \(reportsResponse.reports.count) condition reports for \(resortId)")
+                        continuation.resume(returning: reportsResponse)
+                    case .failure(let error):
+                        self.log.error("Error fetching condition reports: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
+    /// Get condition reports submitted by the current user
+    func getUserConditionReports(limit: Int = 20) async throws -> ConditionReportsResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/user/condition-reports"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "limit", value: String(limit))
+        ]
+
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, headers: authHeaders())
+                .validate()
+                .responseDecodable(of: ConditionReportsResponse.self) { response in
+                    switch response.result {
+                    case .success(let reportsResponse):
+                        self.log.debug("Fetched \(reportsResponse.reports.count) user condition reports")
+                        continuation.resume(returning: reportsResponse)
+                    case .failure(let error):
+                        self.log.error("Error fetching user condition reports: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
+    /// Delete a condition report
+    func deleteConditionReport(resortId: String, reportId: String) async throws {
+        let url = baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/condition-reports/\(reportId)")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, method: .delete, headers: authHeaders())
+                .validate()
+                .response { response in
+                    if let error = response.error {
+                        self.log.error("Error deleting condition report: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    } else {
+                        self.log.debug("Deleted condition report \(reportId)")
+                        continuation.resume()
+                    }
+                }
+        }
+    }
+
     // MARK: - Feedback API
 
     func submitFeedback(_ feedback: FeedbackSubmission) async throws {
@@ -1156,6 +1357,16 @@ struct UserPreferences: Codable {
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
+}
+
+// MARK: - Chat Response Models
+
+struct ChatConversationsResponse: Codable {
+    let conversations: [ChatConversation]
+}
+
+struct ChatMessagesResponse: Codable {
+    let messages: [ChatMessage]
 }
 
 // MARK: - Feedback Submission Model

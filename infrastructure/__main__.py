@@ -230,6 +230,56 @@ resort_events_table = aws.dynamodb.Table(
     tags=tags,
 )
 
+# Chat table for AI-powered resort chat conversations
+chat_table = aws.dynamodb.Table(
+    f"{app_name}-chat-{environment}",
+    name=f"{app_name}-chat-{environment}",
+    billing_mode="PAY_PER_REQUEST",
+    hash_key="conversation_id",
+    range_key="message_id",
+    attributes=[
+        {"name": "conversation_id", "type": "S"},
+        {"name": "message_id", "type": "S"},
+        {"name": "user_id", "type": "S"},
+        {"name": "created_at", "type": "S"},
+    ],
+    global_secondary_indexes=[
+        {
+            "name": "user_id-index",
+            "hash_key": "user_id",
+            "range_key": "created_at",
+            "projection_type": "ALL",
+        }
+    ],
+    ttl={"attribute_name": "expires_at", "enabled": True},
+    tags=tags,
+)
+
+# Condition reports table for user-submitted resort condition reports
+condition_reports_table = aws.dynamodb.Table(
+    f"{app_name}-condition-reports-{environment}",
+    name=f"{app_name}-condition-reports-{environment}",
+    billing_mode="PAY_PER_REQUEST",
+    hash_key="resort_id",
+    range_key="report_id",
+    attributes=[
+        {"name": "resort_id", "type": "S"},
+        {"name": "report_id", "type": "S"},
+        {"name": "user_id", "type": "S"},
+        {"name": "created_at", "type": "S"},
+    ],
+    global_secondary_indexes=[
+        {
+            "name": "user_id-index",
+            "hash_key": "user_id",
+            "range_key": "created_at",
+            "projection_type": "ALL",
+        }
+    ],
+    ttl={"attribute_name": "expires_at", "enabled": True},
+    tags=tags,
+)
+
 # IAM Role for Lambda functions
 lambda_role = aws.iam.Role(
     f"{app_name}-lambda-role-{environment}",
@@ -263,6 +313,8 @@ lambda_policy = aws.iam.RolePolicy(
         device_tokens_table.arn,
         resort_events_table.arn,
         snow_summary_table.arn,
+        chat_table.arn,
+        condition_reports_table.arn,
     ).apply(
         lambda arns: f"""{{
         "Version": "2012-10-17",
@@ -285,7 +337,8 @@ lambda_policy = aws.iam.RolePolicy(
                     "dynamodb:DeleteItem",
                     "dynamodb:Query",
                     "dynamodb:Scan",
-                    "dynamodb:BatchGetItem"
+                    "dynamodb:BatchGetItem",
+                    "dynamodb:BatchWriteItem"
                 ],
                 "Resource": [
                     "{arns[0]}",
@@ -295,13 +348,17 @@ lambda_policy = aws.iam.RolePolicy(
                     "{arns[4]}",
                     "{arns[5]}",
                     "{arns[6]}",
+                    "{arns[7]}",
+                    "{arns[8]}",
                     "{arns[0]}/index/*",
                     "{arns[1]}/index/*",
                     "{arns[2]}/index/*",
                     "{arns[3]}/index/*",
                     "{arns[4]}/index/*",
                     "{arns[5]}/index/*",
-                    "{arns[6]}/index/*"
+                    "{arns[6]}/index/*",
+                    "{arns[7]}/index/*",
+                    "{arns[8]}/index/*"
                 ]
             }},
             {{
@@ -342,6 +399,16 @@ lambda_policy = aws.iam.RolePolicy(
                     "cloudwatch:PutMetricData"
                 ],
                 "Resource": "*"
+            }},
+            {{
+                "Effect": "Allow",
+                "Action": [
+                    "bedrock:InvokeModel"
+                ],
+                "Resource": [
+                    "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-sonnet-4-6-20250514",
+                    "arn:aws:bedrock:us-west-2:*:inference-profile/us.anthropic.claude-sonnet-4-6-20250514"
+                ]
             }}
         ]
     }}"""
@@ -1087,6 +1154,8 @@ def get_conditions(resort_id, headers):
             "FEEDBACK_TABLE": f"{app_name}-feedback-{environment}",
             "DEVICE_TOKENS_TABLE": f"{app_name}-device-tokens-{environment}",
             "RESORT_EVENTS_TABLE": f"{app_name}-resort-events-{environment}",
+            "CHAT_TABLE": f"{app_name}-chat-{environment}",
+            "CONDITION_REPORTS_TABLE": f"{app_name}-condition-reports-{environment}",
             "AWS_REGION_NAME": aws_region,
         }
     ),
@@ -2638,6 +2707,8 @@ pulumi.export("feedback_table_name", feedback_table.name)
 pulumi.export("device_tokens_table_name", device_tokens_table.name)
 pulumi.export("resort_events_table_name", resort_events_table.name)
 pulumi.export("snow_summary_table_name", snow_summary_table.name)
+pulumi.export("chat_table_name", chat_table.name)
+pulumi.export("condition_reports_table_name", condition_reports_table.name)
 pulumi.export("lambda_role_arn", lambda_role.arn)
 pulumi.export("api_gateway_id", api_gateway.id)
 pulumi.export("api_gateway_url", api_deployment.invoke_url)

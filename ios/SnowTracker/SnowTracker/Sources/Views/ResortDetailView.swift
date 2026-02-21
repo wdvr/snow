@@ -57,6 +57,18 @@ struct ResortDetailView: View {
                     noDataCard
                 }
 
+                // Elevation profile visualization
+                if !conditions.isEmpty {
+                    ElevationProfileView(
+                        resort: resort,
+                        conditions: conditions,
+                        prefs: userPreferencesManager.preferredUnits
+                    )
+                }
+
+                // Community condition reports
+                ConditionReportSection(resortId: resort.id)
+
                 // All elevations summary
                 allElevationsSummary
             }
@@ -94,7 +106,14 @@ struct ResortDetailView: View {
             }
         }
         .sheet(isPresented: $showingShareSheet) {
-            ShareSheet(items: [shareText])
+            let image = ConditionsCardRenderer.render(
+                resort: resort,
+                condition: conditionForSelectedElevation,
+                quality: snowConditionsManager.getSnowQuality(for: resort.id),
+                snowScore: snowConditionsManager.getSnowScore(for: resort.id),
+                prefs: userPreferencesManager.preferredUnits
+            )
+            ShareSheet(items: [image, shareText])
         }
         .refreshable {
             AnalyticsService.shared.trackPullToRefresh(screen: "ResortDetail")
