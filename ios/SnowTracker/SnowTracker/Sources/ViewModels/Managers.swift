@@ -460,6 +460,56 @@ class SnowConditionsManager: ObservableObject {
         conditions[resortId]?.first { $0.elevationLevel == elevation.rawValue }
     }
 
+    /// Pre-fetch conditions, snow quality, and timeline data for all favorite
+    /// resorts. Call this when the app enters the foreground and the network is
+    /// available so that detail views are ready instantly.
+    func prefetchFavoriteData() async {
+        let favoriteIds = Array(UserPreferencesManager.shared.favoriteResorts)
+        guard !favoriteIds.isEmpty else { return }
+
+        managerLog.debug("prefetchFavoriteData: Starting pre-fetch for \(favoriteIds.count) favorites")
+
+        // 1. Conditions — only if stale
+        let staleConditionIds = favoriteIds.filter { resortId in
+            guard let cached = cacheService.getCachedConditions(for: resortId), !cached.isStale else {
+                return true
+            }
+            // Make sure in-memory dict is populated
+            if conditions[resortId] == nil {
+                conditions[resortId] = cached.data
+            }
+            return false
+        }
+        if !staleConditionIds.isEmpty {
+            managerLog.debug("prefetchFavoriteData: Fetching conditions for \(staleConditionIds.count) stale favorites")
+            await fetchConditionsForResorts(resortIds: staleConditionIds)
+        }
+
+        // 2. Snow quality summaries — only if stale
+        if let cached = cacheService.getCachedSnowQualitySummaries(), !cached.isStale {
+            if snowQualitySummaries.isEmpty {
+                snowQualitySummaries = cached.data
+            }
+        } else {
+            await fetchAllSnowQualitySummaries()
+        }
+
+        // 3. Timelines — only if stale
+        for resortId in favoriteIds {
+            if let cached = cacheService.getCachedTimeline(for: resortId), !cached.isStale {
+                continue
+            }
+            do {
+                let timeline = try await apiClient.getTimeline(for: resortId)
+                cacheService.cacheTimeline(timeline, for: resortId)
+            } catch {
+                managerLog.debug("prefetchFavoriteData: Failed to fetch timeline for \(resortId): \(error.localizedDescription)")
+            }
+        }
+
+        managerLog.debug("prefetchFavoriteData: Complete")
+    }
+
     func clearCache() {
         cacheService.clearAllCache()
         isUsingCachedData = false

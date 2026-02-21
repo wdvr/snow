@@ -117,12 +117,32 @@ final class CachedSnowQualitySummary {
     }
 }
 
+@Model
+final class CachedTimeline {
+    @Attribute(.unique) var resortId: String
+    var timelineData: Data
+    var cachedAt: Date
+
+    init(resortId: String, timeline: TimelineResponse) {
+        self.resortId = resortId
+        let encoder = JSONEncoder()
+        self.timelineData = (try? encoder.encode(timeline)) ?? Data()
+        self.cachedAt = Date()
+    }
+
+    func toTimelineResponse() -> TimelineResponse? {
+        let decoder = JSONDecoder()
+        return try? decoder.decode(TimelineResponse.self, from: timelineData)
+    }
+}
+
 // MARK: - Cache Configuration
 
 enum CacheConfiguration {
     static let resortCacheDuration: TimeInterval = 24 * 60 * 60  // 24 hours
     static let conditionCacheDuration: TimeInterval = 30 * 60    // 30 minutes
     static let snowQualityCacheDuration: TimeInterval = 60 * 60  // 1 hour
+    static let timelineCacheDuration: TimeInterval = 60 * 60     // 1 hour
     static let staleCacheDuration: TimeInterval = 7 * 24 * 60 * 60 // 7 days (max age for stale data)
 }
 
@@ -164,7 +184,8 @@ class CacheService {
             let schema = Schema([
                 CachedResort.self,
                 CachedWeatherCondition.self,
-                CachedSnowQualitySummary.self
+                CachedSnowQualitySummary.self,
+                CachedTimeline.self
             ])
             let modelConfiguration = ModelConfiguration(
                 schema: schema,
@@ -333,6 +354,44 @@ class CacheService {
         return CachedData(data: summaries, isStale: isStale, cachedAt: oldestCache)
     }
 
+    // MARK: - Timeline Caching
+
+    func cacheTimeline(_ timeline: TimelineResponse, for resortId: String) {
+        guard let context = modelContext else { return }
+
+        let descriptor = FetchDescriptor<CachedTimeline>(
+            predicate: #Predicate { $0.resortId == resortId }
+        )
+
+        if let existing = try? context.fetch(descriptor).first {
+            let encoder = JSONEncoder()
+            existing.timelineData = (try? encoder.encode(timeline)) ?? Data()
+            existing.cachedAt = Date()
+        } else {
+            context.insert(CachedTimeline(resortId: resortId, timeline: timeline))
+        }
+
+        try? context.save()
+        cacheLog.debug("CacheService: Cached timeline for \(resortId)")
+    }
+
+    func getCachedTimeline(for resortId: String) -> CachedData<TimelineResponse>? {
+        guard let context = modelContext else { return nil }
+
+        let descriptor = FetchDescriptor<CachedTimeline>(
+            predicate: #Predicate { $0.resortId == resortId }
+        )
+
+        guard let cachedTimeline = try? context.fetch(descriptor).first,
+              let timeline = cachedTimeline.toTimelineResponse() else {
+            return nil
+        }
+
+        let isStale = Date().timeIntervalSince(cachedTimeline.cachedAt) > CacheConfiguration.timelineCacheDuration
+
+        return CachedData(data: timeline, isStale: isStale, cachedAt: cachedTimeline.cachedAt)
+    }
+
     // MARK: - Cache Cleanup
 
     func cleanupStaleCache() {
@@ -371,6 +430,17 @@ class CacheService {
                 context.delete(summary)
             }
             cacheLog.debug("CacheService: Deleted \(staleSummaries.count) stale snow quality entries")
+        }
+
+        // Delete stale timelines
+        let timelineDescriptor = FetchDescriptor<CachedTimeline>(
+            predicate: #Predicate { $0.cachedAt < staleDate }
+        )
+        if let staleTimelines = try? context.fetch(timelineDescriptor) {
+            for timeline in staleTimelines {
+                context.delete(timeline)
+            }
+            cacheLog.debug("CacheService: Deleted \(staleTimelines.count) stale timeline entries")
         }
 
         try? context.save()
@@ -417,6 +487,14 @@ class CacheService {
         if let allSummaries = try? context.fetch(summaryDescriptor) {
             for summary in allSummaries {
                 context.delete(summary)
+            }
+        }
+
+        // Delete all cached timelines
+        let timelineDescriptor = FetchDescriptor<CachedTimeline>()
+        if let allTimelines = try? context.fetch(timelineDescriptor) {
+            for timeline in allTimelines {
+                context.delete(timeline)
             }
         }
 

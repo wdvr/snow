@@ -128,55 +128,64 @@ struct MainTabView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @ObservedObject private var authService = AuthenticationService.shared
     @ObservedObject private var pushService = PushNotificationService.shared
+    @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @State private var selectedTab = 0
     @State private var deepLinkResort: Resort?
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            ResortListView(deepLinkResort: $deepLinkResort)
-                .tabItem {
-                    Image(systemName: "mountain.2")
-                    Text("Resorts")
-                }
-                .tag(0)
+        VStack(spacing: 0) {
+            if !networkMonitor.isConnected {
+                OfflineBanner(cachedDataAge: snowConditionsManager.cachedDataAge)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
 
-            ResortMapView()
-                .tabItem {
-                    Image(systemName: "map.fill")
-                    Text("Map")
-                }
-                .tag(1)
+            TabView(selection: $selectedTab) {
+                ResortListView(deepLinkResort: $deepLinkResort)
+                    .tabItem {
+                        Image(systemName: "mountain.2")
+                        Text("Resorts")
+                    }
+                    .tag(0)
 
-            BestSnowNearYouView()
-                .tabItem {
-                    Image(systemName: "star.fill")
-                    Text("Best Snow")
-                }
-                .tag(2)
+                ResortMapView()
+                    .tabItem {
+                        Image(systemName: "map.fill")
+                        Text("Map")
+                    }
+                    .tag(1)
 
-            FavoritesView()
-                .tabItem {
-                    Image(systemName: "heart")
-                    Text("Favorites")
-                }
-                .tag(3)
+                BestSnowNearYouView()
+                    .tabItem {
+                        Image(systemName: "star.fill")
+                        Text("Best Snow")
+                    }
+                    .tag(2)
 
-            ChatView()
-                .tabItem {
-                    Image(systemName: "bubble.left.and.text.bubble.right")
-                    Text("Ask AI")
-                }
-                .tag(4)
+                FavoritesView()
+                    .tabItem {
+                        Image(systemName: "heart")
+                        Text("Favorites")
+                    }
+                    .tag(3)
 
-            SettingsView()
-                .environmentObject(authService)
-                .tabItem {
-                    Image(systemName: "gear")
-                    Text("Settings")
-                }
-                .tag(5)
+                ChatView()
+                    .tabItem {
+                        Image(systemName: "bubble.left.and.text.bubble.right")
+                        Text("Ask AI")
+                    }
+                    .tag(4)
+
+                SettingsView()
+                    .environmentObject(authService)
+                    .tabItem {
+                        Image(systemName: "gear")
+                        Text("Settings")
+                    }
+                    .tag(5)
+            }
+            .tint(.blue)
         }
-        .tint(.blue)
+        .animation(.easeInOut(duration: 0.3), value: networkMonitor.isConnected)
         .onAppear {
             snowConditionsManager.loadInitialData()
         }
@@ -188,6 +197,14 @@ struct MainTabView: View {
                 deepLinkResort = resort
             }
             pushService.pendingResortId = nil
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // Pre-fetch favorite data when returning to foreground
+            if networkMonitor.isConnected {
+                Task {
+                    await snowConditionsManager.prefetchFavoriteData()
+                }
+            }
         }
     }
 }

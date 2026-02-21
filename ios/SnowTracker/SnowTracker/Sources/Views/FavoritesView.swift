@@ -363,12 +363,27 @@ struct FavoriteResortRow: View {
             if displayQuality != .unknown {
                 ZStack {
                     Circle()
-                        .fill(displayQuality.color.opacity(0.2))
+                        .fill(
+                            LinearGradient(
+                                colors: [displayQuality.color.opacity(0.25), displayQuality.color.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
                         .frame(width: 50, height: 50)
 
-                    Image(systemName: displayQuality.icon)
-                        .font(.title2)
-                        .foregroundStyle(displayQuality.color)
+                    VStack(spacing: 0) {
+                        if let score = snowConditionsManager.getSnowScore(for: resort.id) {
+                            Text("\(score)")
+                                .font(.caption.weight(.bold))
+                                .fontDesign(.rounded)
+                                .foregroundStyle(displayQuality.color)
+                        } else {
+                            Image(systemName: displayQuality.icon)
+                                .font(.title3)
+                                .foregroundStyle(displayQuality.color)
+                        }
+                    }
                 }
             } else {
                 ZStack {

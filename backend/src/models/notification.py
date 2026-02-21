@@ -16,6 +16,7 @@ class NotificationType(str, Enum):
     CONDITIONS_IMPROVED = "conditions_improved"
     THAW_ALERT = "thaw_alert"  # Temperature went from minus to plus for 4+ hours
     FREEZE_ALERT = "freeze_alert"  # Temperature went from plus to minus
+    WEEKLY_SUMMARY = "weekly_summary"  # Weekly snow digest
 
 
 # Funny messages for thaw alerts (rotate through these)

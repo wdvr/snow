@@ -983,6 +983,37 @@ notification_schedule_target = aws.cloudwatch.EventTarget(
     arn=notification_processor_lambda.arn,
 )
 
+# =============================================================================
+# Weekly Snow Digest Schedule - Sends weekly summary every Monday 1am UTC
+# (Sunday 5pm PST) reusing the notification processor Lambda
+# =============================================================================
+
+weekly_digest_schedule_rule = aws.cloudwatch.EventRule(
+    f"{app_name}-weekly-digest-schedule-{environment}",
+    name=f"{app_name}-weekly-digest-schedule-{environment}",
+    description="Trigger weekly snow digest every Monday at 1am UTC (Sunday 5pm PST)",
+    schedule_expression="cron(0 1 ? * MON *)",
+    tags=tags,
+)
+
+# Permission for CloudWatch Events to invoke the notification Lambda for weekly digest
+weekly_digest_schedule_permission = aws.lambda_.Permission(
+    f"{app_name}-weekly-digest-schedule-permission-{environment}",
+    action="lambda:InvokeFunction",
+    function=notification_processor_lambda.name,
+    principal="events.amazonaws.com",
+    source_arn=weekly_digest_schedule_rule.arn,
+)
+
+# CloudWatch Events target with weekly_digest flag in the input payload
+weekly_digest_schedule_target = aws.cloudwatch.EventTarget(
+    f"{app_name}-weekly-digest-schedule-target-{environment}",
+    rule=weekly_digest_schedule_rule.name,
+    target_id=f"weekly-digest-{environment}",
+    arn=notification_processor_lambda.arn,
+    input='{"weekly_digest": true}',
+)
+
 # API Gateway REST API
 api_gateway = aws.apigateway.RestApi(
     f"{app_name}-api-{environment}",
@@ -3098,6 +3129,7 @@ pulumi.export("scraper_schedule_rule_name", scraper_schedule_rule.name)
 pulumi.export("api_handler_lambda_name", api_handler_lambda.name)
 pulumi.export("notification_processor_lambda_name", notification_processor_lambda.name)
 pulumi.export("notification_schedule_rule_name", notification_schedule_rule.name)
+pulumi.export("weekly_digest_schedule_rule_name", weekly_digest_schedule_rule.name)
 pulumi.export("static_json_lambda_name", static_json_lambda.name)
 pulumi.export("static_json_schedule_rule_name", static_json_schedule_rule.name)
 if apns_platform_app:

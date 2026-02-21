@@ -28,7 +28,7 @@ Open issues: Trip Planning (#23), Webcam Integration (#24), Apple Watch (#25), A
 
 These features have the highest impact-to-effort ratio and address the most common reasons skiers open a ski app.
 
-### 1.1 Powder Alerts with Custom Thresholds (Enhanced Notifications) — *In Progress*
+### 1.1 Powder Alerts with Custom Thresholds (Enhanced Notifications) — *Done*
 
 **Description**: Upgrade the notification system so users can set precise snowfall thresholds per resort (e.g., "Notify me when Whistler gets 15+ cm in 24h") and add a "Powder Day" alert type that triggers when conditions align: heavy fresh snow + cold temps + low wind. Currently the app sends fresh snow alerts at a flat 1cm threshold -- this makes alerts much more actionable.
 
@@ -47,7 +47,7 @@ These features have the highest impact-to-effort ratio and address the most comm
 
 ---
 
-### 1.2 Snow History & Season Totals — *In Progress*
+### 1.2 Snow History & Season Totals — *Done*
 
 **Description**: Track and display cumulative snowfall over the season for each resort. Show a snow history chart (daily snowfall bars + cumulative line) and compare current season to historical averages. Display season-to-date totals prominently on resort detail pages.
 
@@ -87,7 +87,7 @@ These features have the highest impact-to-effort ratio and address the most comm
 
 ---
 
-### 1.4 Improved Resort Comparison — *In Progress*
+### 1.4 Improved Resort Comparison — *Done*
 
 **Description**: Allow users to compare 2-4 resorts side-by-side on key metrics: current snow quality, fresh snow, temperature, wind, forecast, and season totals. Accessible from favorites or search.
 
@@ -209,7 +209,7 @@ These features build on the foundation and move the app toward being a daily-use
 
 ---
 
-### 2.5 Shareable Conditions Cards — *In Progress*
+### 2.5 Shareable Conditions Cards — *Done*
 
 **Description**: Generate beautiful, branded image cards showing a resort's current conditions (quality rating, fresh snow, temperature, forecast preview) that users can share to Instagram Stories, iMessage, WhatsApp, etc. Include app branding and a deep link.
 
@@ -228,7 +228,7 @@ These features build on the foundation and move the app toward being a daily-use
 
 ---
 
-### 2.6 Favorite Resort Groups / Tags — *In Progress*
+### 2.6 Favorite Resort Groups / Tags — *Done*
 
 **Description**: Allow users to organize favorites into groups: "Home Mountains," "Bucket List," "Weekend Trips," "Europe Trip 2026." Groups can be reordered and color-coded.
 
@@ -247,7 +247,7 @@ These features build on the foundation and move the app toward being a daily-use
 
 ---
 
-### 2.7 Elevation Profile Visualization — *In Progress*
+### 2.7 Elevation Profile Visualization — *Done*
 
 **Description**: Show an elevation profile cross-section for each resort with conditions mapped to elevation bands. Visualize where the snow line is, where it is icy vs. powdery, and how conditions change from base to summit. The data exists (base/mid/top) but is not visualized intuitively.
 
@@ -332,7 +332,7 @@ These are ambitious features that would make Powder Chaser best-in-class. They r
 
 ---
 
-### 3.4 AI Conditions Summary — *In Progress*
+### 3.4 AI Conditions Summary — *Done*
 
 **Description**: Interactive AI chat for resort conditions, powered by Claude Sonnet 4.6 on Amazon Bedrock with tool_use. Rather than static daily summaries, users can ask natural-language questions about any resort's conditions and get conversational responses grounded in real-time weather, quality scores, forecasts, and trends. The model uses tools to fetch live data from existing API endpoints during the conversation.
 
@@ -467,7 +467,7 @@ These are ambitious features that would make Powder Chaser best-in-class. They r
 
 ---
 
-### 3.14 User Condition Reports — *In Progress*
+### 3.14 User Condition Reports — *Done*
 
 **Description**: Allow users to submit structured condition reports from the mountain. 8 condition types: powder, packed powder, soft, ice, crud, spring, hardpack, windblown. Each report includes a score (1-10), optional free-text comment, and optional elevation. Reports are tied to the user and resort, visible to other users on the resort detail page.
 
@@ -584,33 +584,33 @@ These features need investigation before committing to a development plan.
 
 | Feature | Impact | Effort | Priority |
 |---------|--------|--------|----------|
-| 1.1 Enhanced Powder Alerts | High | S-M | **In Progress** |
-| 1.2 Snow History & Season Totals | High | M | **In Progress** |
+| 1.1 Enhanced Powder Alerts | High | S-M | **Done** |
+| 1.2 Snow History & Season Totals | High | M | **Done** |
 | 1.3 Webcam Integration | High | M | **Now** |
-| 1.4 Resort Comparison | Medium-High | S-M | **In Progress** |
+| 1.4 Resort Comparison | Medium-High | S-M | **Done** |
 | 1.5 Live Activities | Medium-High | M | **Now** |
 | 2.1 Trip Planning | High | L | **Next** |
 | 2.2 Resort Detail Enrichment | Medium | M | **Next** |
 | 2.3 Snow Depth Map Overlay | Medium-High | M-L | **Next** |
-| 2.4 Weekly Digest | Medium | M | **Next** |
-| 2.5 Shareable Conditions Cards | Medium-High | S-M | **In Progress** |
-| 2.6 Favorite Groups | Medium | S | **In Progress** |
-| 2.7 Elevation Profile Viz | Medium | S-M | **In Progress** |
+| 2.4 Weekly Digest | Medium | M | **In Progress** |
+| 2.5 Shareable Conditions Cards | Medium-High | S-M | **Done** |
+| 2.6 Favorite Groups | Medium | S | **Done** |
+| 2.7 Elevation Profile Viz | Medium | S-M | **Done** |
 | 2.8 Android App | High | XL | **Research** |
 | 3.1 Apple Watch | Medium | L | **Later** |
 | 3.2 GPS Tracking | Very High | XL | **Later** |
 | 3.3 Community Reports | High | L | **Later** |
-| 3.4 AI Chat | Very High | M-L | **In Progress** |
+| 3.4 AI Chat | Very High | M-L | **Done** |
 | 3.5 Social/Friends | High | L-XL | **Later** |
 | 3.6 Gamification | Medium | M-L | **Later** |
-| 3.7 Offline Mode | Medium | M | **Later** |
+| 3.7 Offline Mode | Medium | M | **In Progress** |
 | 3.8 Storm Tracker | High | L | **Later** |
 | 3.9 Resort Reviews | Medium | M-L | **Later** |
 | 3.10 Multi-Source Data | High | L | **Later** |
 | 3.11 Road Conditions | Medium | L | **Later** |
 | 3.12 Backcountry Mode | Medium-High | XL | **Later** |
 | 3.13 Season Pass Tracker | Medium | M | **Later** |
-| 3.14 User Condition Reports | High | S-M | **In Progress** |
+| 3.14 User Condition Reports | High | S-M | **Done** |
 
 ---
 

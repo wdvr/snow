@@ -74,6 +74,8 @@
 		DD01EE02FF03AA04BB05CC06 /* SnowHistoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE01FF02AA03BB04CC05DD06 /* SnowHistoryModels.swift */; };
 		DD07EE08FF09AA10BB11CC12 /* SnowHistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE07FF08AA09BB10CC11DD12 /* SnowHistoryViewModel.swift */; };
 		DD13EE14FF15AA16BB17CC18 /* SnowHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE13FF14AA15BB16CC17DD18 /* SnowHistoryView.swift */; };
+		EE19FF20AA21BB22CC23DD24 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF19AA20BB21CC22DD23EE24 /* NetworkMonitor.swift */; };
+		EE25FF26AA27BB28CC29DD30 /* OfflineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF25AA26BB27CC28DD29EE30 /* OfflineBanner.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -195,6 +197,8 @@
 		EE01FF02AA03BB04CC05DD06 /* SnowHistoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowHistoryModels.swift; sourceTree = "<group>"; };
 		EE07FF08AA09BB10CC11DD12 /* SnowHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowHistoryViewModel.swift; sourceTree = "<group>"; };
 		EE13FF14AA15BB16CC17DD18 /* SnowHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowHistoryView.swift; sourceTree = "<group>"; };
+		FF19AA20BB21CC22DD23EE24 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		FF25AA26BB27CC28DD29EE30 /* OfflineBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineBanner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -248,6 +252,7 @@
 				A882E15FD24B57516DE0B29E /* Configuration.swift */,
 				6C1BA087DD0B345FC02441ED /* DemoDataService.swift */,
 				F6DA2B806F38369F0414AA36 /* LocationManager.swift */,
+				FF19AA20BB21CC22DD23EE24 /* NetworkMonitor.swift */,
 				7EA770DE28FAAFB7C82C04D9 /* PushNotificationService.swift */,
 			);
 			path = Services;
@@ -256,6 +261,7 @@
 		2B26478395424C45EDF16B48 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				FF31AA32BB33CC34DD35EE36 /* Components */,
 				1C3612902D14F964CD974A7E /* AuthenticationViews.swift */,
 				E5F6A7B8C9D0E1F2A3B4C5D6 /* ChatView.swift */,
 				61CA3C498827FBF30FCBE0C5 /* ClusteredMapView.swift */,
@@ -281,6 +287,14 @@
 				34B3DE91A8041E068949717A /* TripPlanningViews.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		FF31AA32BB33CC34DD35EE36 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				FF25AA26BB27CC28DD29EE30 /* OfflineBanner.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		4B34CFC995865095770F7B83 /* SnowTrackerWidget */ = {
@@ -581,6 +595,8 @@
 				DD01EE02FF03AA04BB05CC06 /* SnowHistoryModels.swift in Sources */,
 				DD07EE08FF09AA10BB11CC12 /* SnowHistoryViewModel.swift in Sources */,
 				DD13EE14FF15AA16BB17CC18 /* SnowHistoryView.swift in Sources */,
+				EE19FF20AA21BB22CC23DD24 /* NetworkMonitor.swift in Sources */,
+				EE25FF26AA27BB28CC29DD30 /* OfflineBanner.swift in Sources */,
 				67445A37BBAF5CF523504776 /* WeatherCondition.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

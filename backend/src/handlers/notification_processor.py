@@ -4,6 +4,8 @@ This Lambda runs hourly to check for conditions that warrant notifications:
 1. Fresh snow at favorite resorts (>= threshold, default 1cm)
 2. New resort events
 
+It also handles weekly digest processing when triggered by the weekly schedule.
+
 It respects a 24-hour grace period per resort to avoid notification spam.
 """
 
@@ -56,10 +58,29 @@ def get_notification_service() -> NotificationService:
     return _notification_service
 
 
+def _is_weekly_digest_event(event: dict) -> bool:
+    """Check if the event is a weekly digest trigger.
+
+    The weekly digest CloudWatch rule includes a specific input payload
+    to distinguish it from the hourly notification trigger.
+
+    Args:
+        event: Lambda event
+
+    Returns:
+        True if this is a weekly digest trigger
+    """
+    return event.get("weekly_digest") is True
+
+
 def notification_handler(event, context):
     """Lambda handler for notification processing.
 
-    This handler is triggered hourly by CloudWatch Events.
+    This handler is triggered hourly by CloudWatch Events for regular
+    notifications, and weekly for the snow digest.
+
+    If the event contains {"weekly_digest": true}, it runs the weekly
+    digest processing instead of the regular hourly notifications.
 
     Args:
         event: CloudWatch Events scheduled event
@@ -70,17 +91,25 @@ def notification_handler(event, context):
     """
     logger.info(f"Notification processor started at {datetime.now(UTC).isoformat()}")
     logger.info(f"Environment: {ENVIRONMENT}")
+    logger.info(f"Event: {event}")
 
     try:
         service = get_notification_service()
-        summary = service.process_all_notifications()
 
-        logger.info(f"Notification processing complete: {summary}")
+        if _is_weekly_digest_event(event):
+            logger.info("Processing weekly digest")
+            summary = service.process_weekly_digest()
+            message = "Weekly digest processing complete"
+        else:
+            summary = service.process_all_notifications()
+            message = "Notification processing complete"
+
+        logger.info(f"{message}: {summary}")
 
         return {
             "statusCode": 200,
             "body": {
-                "message": "Notification processing complete",
+                "message": message,
                 "summary": summary,
                 "timestamp": datetime.now(UTC).isoformat(),
             },
@@ -92,6 +121,48 @@ def notification_handler(event, context):
             "statusCode": 500,
             "body": {
                 "message": f"Error processing notifications: {str(e)}",
+                "timestamp": datetime.now(UTC).isoformat(),
+            },
+        }
+
+
+def weekly_digest_handler(event, context):
+    """Lambda handler for weekly digest processing.
+
+    This is an alternative entry point that can be used if a separate
+    Lambda is preferred over reusing the notification handler.
+
+    Args:
+        event: CloudWatch Events scheduled event
+        context: Lambda context
+
+    Returns:
+        Summary of weekly digest processing
+    """
+    logger.info(f"Weekly digest processor started at {datetime.now(UTC).isoformat()}")
+    logger.info(f"Environment: {ENVIRONMENT}")
+
+    try:
+        service = get_notification_service()
+        summary = service.process_weekly_digest()
+
+        logger.info(f"Weekly digest processing complete: {summary}")
+
+        return {
+            "statusCode": 200,
+            "body": {
+                "message": "Weekly digest processing complete",
+                "summary": summary,
+                "timestamp": datetime.now(UTC).isoformat(),
+            },
+        }
+
+    except Exception as e:
+        logger.error(f"Error in weekly digest processor: {e}", exc_info=True)
+        return {
+            "statusCode": 500,
+            "body": {
+                "message": f"Error processing weekly digest: {str(e)}",
                 "timestamp": datetime.now(UTC).isoformat(),
             },
         }

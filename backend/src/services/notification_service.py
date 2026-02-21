@@ -679,6 +679,308 @@ class NotificationService:
 
         return notifications
 
+    # =========================================================================
+    # Weekly Snow Digest
+    # =========================================================================
+
+    def get_resort_conditions_last_7_days(self, resort_id: str) -> list[dict]:
+        """Get weather conditions for a resort over the last 7 days.
+
+        Args:
+            resort_id: Resort ID
+
+        Returns:
+            List of condition records from the last 7 days
+        """
+        try:
+            seven_days_ago = (datetime.now(UTC) - timedelta(days=7)).isoformat()
+            now = datetime.now(UTC).isoformat()
+
+            response = self.weather_conditions_table.query(
+                KeyConditionExpression="resort_id = :rid AND #ts BETWEEN :start AND :end",
+                ExpressionAttributeNames={"#ts": "timestamp"},
+                ExpressionAttributeValues={
+                    ":rid": resort_id,
+                    ":start": seven_days_ago,
+                    ":end": now,
+                },
+            )
+
+            items = response.get("Items", [])
+
+            # Handle pagination
+            while "LastEvaluatedKey" in response:
+                response = self.weather_conditions_table.query(
+                    KeyConditionExpression="resort_id = :rid AND #ts BETWEEN :start AND :end",
+                    ExpressionAttributeNames={"#ts": "timestamp"},
+                    ExpressionAttributeValues={
+                        ":rid": resort_id,
+                        ":start": seven_days_ago,
+                        ":end": now,
+                    },
+                    ExclusiveStartKey=response["LastEvaluatedKey"],
+                )
+                items.extend(response.get("Items", []))
+
+            return items
+
+        except Exception as e:
+            logger.error(f"Error getting 7-day conditions for {resort_id}: {e}")
+            return []
+
+    def get_resort_forecast_next_3_days(self, resort_id: str) -> dict:
+        """Get forecast data for the next 3 days for a resort.
+
+        Uses the most recent weather record which contains predicted snowfall.
+
+        Args:
+            resort_id: Resort ID
+
+        Returns:
+            Dict with predicted_snow_24h_cm, predicted_snow_48h_cm, predicted_snow_72h_cm
+        """
+        try:
+            response = self.weather_conditions_table.query(
+                KeyConditionExpression="resort_id = :rid",
+                ExpressionAttributeValues={":rid": resort_id},
+                ScanIndexForward=False,
+                Limit=1,
+            )
+
+            items = response.get("Items", [])
+            if not items:
+                return {}
+
+            item = items[0]
+            return {
+                "predicted_snow_24h_cm": float(item.get("predicted_snow_24h_cm", 0.0)),
+                "predicted_snow_48h_cm": float(item.get("predicted_snow_48h_cm", 0.0)),
+                "predicted_snow_72h_cm": float(item.get("predicted_snow_72h_cm", 0.0)),
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting forecast for {resort_id}: {e}")
+            return {}
+
+    def generate_weekly_digest(
+        self, user_id: str, prefs: "UserPreferences"
+    ) -> NotificationPayload | None:
+        """Generate a weekly snow digest for a user.
+
+        Aggregates data from the last 7 days across all favorite resorts:
+        - Total snowfall per resort
+        - Number of powder days (>15cm in 24h)
+        - Best day/resort combo
+        - Top 3 resorts by fresh snow
+        - Upcoming storm potential (next 3 days forecast)
+
+        Args:
+            user_id: User ID
+            prefs: User preferences with favorite resorts
+
+        Returns:
+            NotificationPayload with digest, or None if no data available
+        """
+        if not prefs.favorite_resorts:
+            return None
+
+        notification_settings = prefs.get_notification_settings()
+        powder_threshold = notification_settings.powder_snow_threshold_cm
+
+        resort_summaries = []
+
+        for resort_id in prefs.favorite_resorts:
+            resort_name = self.get_resort_name(resort_id)
+            conditions = self.get_resort_conditions_last_7_days(resort_id)
+
+            if not conditions:
+                continue
+
+            # Aggregate snowfall and find powder days
+            total_snowfall = 0.0
+            powder_days = 0
+            best_day_snow = 0.0
+            best_day_date = None
+
+            # Track daily snowfall by grouping conditions by date
+            daily_snowfall: dict[str, float] = {}
+            for condition in conditions:
+                timestamp_str = condition.get("timestamp", "")
+                date_str = timestamp_str[:10] if len(timestamp_str) >= 10 else ""
+                snowfall_24h = float(condition.get("snowfall_24h_cm", 0.0))
+
+                if date_str:
+                    # Keep the maximum 24h snowfall reading for each day
+                    if (
+                        date_str not in daily_snowfall
+                        or snowfall_24h > daily_snowfall[date_str]
+                    ):
+                        daily_snowfall[date_str] = snowfall_24h
+
+            for date_str, snow in daily_snowfall.items():
+                total_snowfall += snow
+                if snow >= powder_threshold:
+                    powder_days += 1
+                if snow > best_day_snow:
+                    best_day_snow = snow
+                    best_day_date = date_str
+
+            # Get forecast for upcoming storm potential
+            forecast = self.get_resort_forecast_next_3_days(resort_id)
+            upcoming_snow = (
+                forecast.get("predicted_snow_24h_cm", 0.0)
+                + forecast.get("predicted_snow_48h_cm", 0.0)
+                + forecast.get("predicted_snow_72h_cm", 0.0)
+            )
+
+            resort_summaries.append(
+                {
+                    "resort_id": resort_id,
+                    "resort_name": resort_name,
+                    "total_snowfall_cm": round(total_snowfall, 1),
+                    "powder_days": powder_days,
+                    "best_day_snow_cm": round(best_day_snow, 1),
+                    "best_day_date": best_day_date,
+                    "upcoming_snow_cm": round(upcoming_snow, 1),
+                }
+            )
+
+        if not resort_summaries:
+            return None
+
+        # Sort by total snowfall to find top resorts
+        top_resorts = sorted(
+            resort_summaries, key=lambda r: r["total_snowfall_cm"], reverse=True
+        )[:3]
+
+        # Find overall best day/resort combo
+        best_combo = max(resort_summaries, key=lambda r: r["best_day_snow_cm"])
+
+        # Find biggest upcoming storm
+        storm_resort = max(resort_summaries, key=lambda r: r["upcoming_snow_cm"])
+
+        # Build digest body
+        lines = ["Your weekly snow report is here!\n"]
+
+        # Top resorts section
+        lines.append("Top resorts by snowfall (7 days):")
+        for i, resort in enumerate(top_resorts, 1):
+            powder_info = (
+                f" ({resort['powder_days']} powder day{'s' if resort['powder_days'] != 1 else ''})"
+                if resort["powder_days"] > 0
+                else ""
+            )
+            lines.append(
+                f"  {i}. {resort['resort_name']}: {resort['total_snowfall_cm']}cm{powder_info}"
+            )
+
+        # Best single day
+        if best_combo["best_day_snow_cm"] > 0:
+            lines.append(
+                f"\nBest day: {best_combo['resort_name']} on {best_combo['best_day_date']} "
+                f"with {best_combo['best_day_snow_cm']}cm"
+            )
+
+        # Upcoming storm potential
+        if storm_resort["upcoming_snow_cm"] > 0:
+            lines.append(
+                f"\nStorm watch: {storm_resort['resort_name']} expecting "
+                f"{storm_resort['upcoming_snow_cm']}cm in the next 3 days"
+            )
+        else:
+            lines.append("\nNo significant storms forecast for the next 3 days.")
+
+        body = "\n".join(lines)
+
+        # Calculate total powder days across all resorts
+        total_powder_days = sum(r["powder_days"] for r in resort_summaries)
+
+        return NotificationPayload(
+            notification_type=NotificationType.WEEKLY_SUMMARY,
+            title="Weekly Snow Summary",
+            body=body,
+            data={
+                "top_resorts": top_resorts,
+                "total_powder_days": total_powder_days,
+                "best_resort": best_combo["resort_name"],
+                "best_day_snow_cm": best_combo["best_day_snow_cm"],
+                "storm_resort": storm_resort["resort_name"],
+                "storm_snow_cm": storm_resort["upcoming_snow_cm"],
+            },
+        )
+
+    def process_weekly_digest(self) -> dict:
+        """Process weekly digest for all users who have opted in.
+
+        Scans all users where weekly_summary=True, generates digest per user,
+        and sends via push notification.
+
+        Returns:
+            Summary of weekly digest processing
+        """
+        summary = {
+            "users_processed": 0,
+            "digests_sent": 0,
+            "errors": 0,
+        }
+
+        try:
+            # Scan all user preferences
+            response = self.user_preferences_table.scan()
+            users = response.get("Items", [])
+
+            # Handle pagination
+            while "LastEvaluatedKey" in response:
+                response = self.user_preferences_table.scan(
+                    ExclusiveStartKey=response["LastEvaluatedKey"]
+                )
+                users.extend(response.get("Items", []))
+
+            logger.info(f"Processing weekly digest for {len(users)} total users")
+
+            for user_data in users:
+                try:
+                    prefs = UserPreferences(**user_data)
+                    user_id = prefs.user_id
+                    notification_settings = prefs.get_notification_settings()
+
+                    # Skip users without weekly summary enabled
+                    if not notification_settings.weekly_summary:
+                        continue
+
+                    # Skip users with notifications disabled globally
+                    if not notification_settings.notifications_enabled:
+                        continue
+
+                    # Skip users with no favorites
+                    if not prefs.favorite_resorts:
+                        continue
+
+                    # Generate digest
+                    digest = self.generate_weekly_digest(user_id, prefs)
+
+                    if digest:
+                        sent = self.send_notification_to_user(user_id, digest)
+                        summary["digests_sent"] += sent
+                        summary["users_processed"] += 1
+                    else:
+                        # No data for digest, still count as processed
+                        summary["users_processed"] += 1
+
+                except Exception as e:
+                    logger.error(
+                        f"Error generating weekly digest for user "
+                        f"{user_data.get('user_id')}: {e}"
+                    )
+                    summary["errors"] += 1
+
+        except Exception as e:
+            logger.error(f"Error in process_weekly_digest: {e}")
+            summary["errors"] += 1
+
+        logger.info(f"Weekly digest processing complete: {summary}")
+        return summary
+
     def _save_user_preferences(self, prefs: UserPreferences) -> None:
         """Save user preferences to DynamoDB."""
         try:
