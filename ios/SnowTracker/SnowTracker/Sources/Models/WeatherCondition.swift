@@ -147,26 +147,26 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
         case .excellent:
             return (
                 title: "Excellent - Fresh Powder",
-                description: "3+ inches of fresh powder on top. No recent thaw-freeze events. Great conditions for all types of skiing.",
-                criteria: "3+ inches (7.6+ cm) of snow since last thaw-freeze, currently cold"
+                description: "Deep fresh powder with no recent thaw-freeze events. Great conditions for all types of skiing.",
+                criteria: "High ML score from abundant fresh snow, cold temps, and no recent thaw-freeze"
             )
         case .good:
             return (
-                title: "Good - Fresh Snow",
-                description: "2+ inches of non-refrozen snow. Surface hasn't iced over. Enjoyable skiing on and off-piste.",
-                criteria: "2-3 inches (5-7.6 cm) of snow since last thaw-freeze, temps staying cold"
+                title: "Good - Soft Surface",
+                description: "Good coverage of non-refrozen snow. Surface hasn't iced over. Enjoyable skiing on and off-piste.",
+                criteria: "Strong ML score from fresh snow, stable cold temps, limited warming"
             )
         case .fair:
             return (
                 title: "Fair - Some Fresh",
-                description: "About 1 inch of fresh snow on top of older base. May have thin crust in places. Groomed runs in good shape.",
-                criteria: "1-2 inches (2.5-5 cm) since last thaw-freeze, or currently warming"
+                description: "Some fresh snow on top of older base. May have thin crust in places. Groomed runs in good shape.",
+                criteria: "Moderate ML score — some fresh snow but aging, or mild warming trends"
             )
         case .poor:
             return (
-                title: "Soft - Thawing",
-                description: "Snow is softening in warm temperatures. Conditions are still skiable but deteriorating. Best skiing early morning.",
-                criteria: "Above freezing temps, snow actively softening but not yet slushy"
+                title: "Poor - Thin Cover",
+                description: "Limited fresh snow since last ice event. Harder surface with some soft spots.",
+                criteria: "Low ML score — minimal fresh snow after thaw-freeze, or surface aging"
             )
         case .slushy:
             return (
@@ -178,13 +178,13 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
             return (
                 title: "Icy - Refrozen",
                 description: "No fresh snow on top of icy base. Recent warm periods have created hard, refrozen surface. Challenging conditions.",
-                criteria: "No snow since last thaw-freeze cycle, surface has refrozen"
+                criteria: "Very low ML score — recent thaw-freeze with no fresh snow to cover ice"
             )
         case .horrible:
             return (
                 title: "Not Skiable",
                 description: "Dangerous conditions. No snow cover, actively melting, or exposed rocks/grass. Resort may be closed or limited.",
-                criteria: "No skiable snow, warm temps actively melting remaining cover"
+                criteria: "Minimal ML score — no skiable snow, warm temps melting remaining cover"
             )
         case .unknown:
             return (
