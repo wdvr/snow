@@ -36,6 +36,16 @@
 
 | Feature | Date |
 |---------|------|
+| Add retry button to resort detail no-data state | 2026-02-21 |
+| Add 60 notification_service tests, fix thaw alert timezone bug | 2026-02-21 |
+| Remove duplicate resorts (silverstar, northstar-california-resort) | 2026-02-21 |
+| Fix batch API snowfall_fresh_cm returning wrong field | 2026-02-21 |
+| Add 43 weather_processor tests | 2026-02-21 |
+| Add 58 openmeteo_service tests | 2026-02-21 |
+| Cap fresh_snow_cm at snow_depth_cm to prevent contradictory explanations | 2026-02-21 |
+| Add 65 ml_scorer tests | 2026-02-21 |
+| ML model v9: snow_depth feature, MAE 0.180, 83.5% exact | 2026-02-21 |
+| Fix all remaining iOS hardcoded unit calls | 2026-02-21 |
 | Update quality info sheet and descriptions to match ML model approach | 2026-02-21 |
 | Fix notification threshold display to respect unit preference | 2026-02-21 |
 | Fix ForecastBadge hardcoding cm instead of respecting unit preference | 2026-02-21 |
