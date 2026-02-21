@@ -385,15 +385,6 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         snowfallAfterFreezeCm ?? freshSnowCm
     }
 
-    /// Formatted fresh snow since freeze in inches
-    var formattedSnowSinceFreezeInches: String {
-        let inches = snowSinceFreeze / 2.54
-        if inches < 0.1 {
-            return "No fresh snow"
-        }
-        return String(format: "%.1f\" fresh", inches)
-    }
-
     /// Hours since last thaw-freeze event
     var formattedTimeSinceFreeze: String {
         guard let hours = lastFreezeThawHoursAgo else {
@@ -470,21 +461,6 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         }
 
         return .icy
-    }
-
-    /// Formatted snow since freeze in cm
-    var formattedSnowSinceFreezeCm: String {
-        let cm = snowSinceFreeze
-        if cm < 0.1 {
-            return "0 cm"
-        }
-        return String(format: "%.1f cm", cm)
-    }
-
-    var formattedWindSpeed: String {
-        guard let windSpeed = windSpeedKmh else { return "No wind data" }
-        let windSpeedMph = windSpeed * 0.621371
-        return "\(Int(windSpeed))km/h (\(Int(windSpeedMph))mph)"
     }
 
     var formattedHumidity: String {
