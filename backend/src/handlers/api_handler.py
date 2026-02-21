@@ -36,6 +36,7 @@ from utils.cache import (
     cached_resorts,
     cached_snow_quality,
     get_recommendations_cache,
+    get_timeline_cache,
 )
 
 # Initialize FastAPI app
@@ -952,7 +953,15 @@ async def get_resort_timeline(
                 detail=f"Elevation level '{elevation}' not found for resort {resort_id}",
             )
 
-        # Fetch timeline data
+        # Check server-side cache first
+        timeline_cache = get_timeline_cache()
+        cache_key = f"{resort_id}:{elevation}"
+        if cache_key in timeline_cache:
+            response.headers["Cache-Control"] = "public, max-age=1800"
+            response.headers["X-Cache"] = "HIT"
+            return timeline_cache[cache_key]
+
+        # Fetch timeline data from Open-Meteo
         service = OpenMeteoService()
         timeline_data = service.get_timeline_data(
             latitude=elevation_point.latitude,
@@ -964,8 +973,12 @@ async def get_resort_timeline(
         # Add resort_id to the response
         timeline_data["resort_id"] = resort_id
 
+        # Cache the result (30-min TTL)
+        timeline_cache[cache_key] = timeline_data
+
         # Set cache headers (30 min cache)
         response.headers["Cache-Control"] = "public, max-age=1800"
+        response.headers["X-Cache"] = "MISS"
 
         return timeline_data
 

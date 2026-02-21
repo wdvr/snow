@@ -19,6 +19,8 @@ _all_conditions_cache: TTLCache = TTLCache(maxsize=1, ttl=CACHE_TTL_SECONDS)
 # Sized for 10K+ resorts to support large databases
 _snow_quality_cache: TTLCache = TTLCache(maxsize=15000, ttl=CACHE_TTL_LONG_SECONDS)
 _recommendations_cache: TTLCache = TTLCache(maxsize=100, ttl=CACHE_TTL_LONG_SECONDS)
+# Timeline cache - 30-min TTL, sized for 200 resorts * 3 elevations
+_timeline_cache: TTLCache = TTLCache(maxsize=600, ttl=1800)
 # Resort metadata cache - names, countries, etc. (rarely changes)
 _resort_metadata_cache: TTLCache = TTLCache(
     maxsize=15000, ttl=CACHE_TTL_VERY_LONG_SECONDS
@@ -107,6 +109,11 @@ def get_resort_metadata_cache():
     return _resort_metadata_cache
 
 
+def get_timeline_cache():
+    """Get the timeline cache for direct access."""
+    return _timeline_cache
+
+
 def clear_all_caches() -> None:
     """Clear all caches. Useful for testing."""
     _resorts_cache.clear()
@@ -114,6 +121,7 @@ def clear_all_caches() -> None:
     _all_conditions_cache.clear()
     _snow_quality_cache.clear()
     _recommendations_cache.clear()
+    _timeline_cache.clear()
     _resort_metadata_cache.clear()
 
 
