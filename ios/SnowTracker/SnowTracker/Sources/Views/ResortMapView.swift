@@ -544,8 +544,8 @@ struct ResortMapDetailSheet: View {
                 if condition == nil {
                     isLoadingConditions = true
                 }
+                defer { isLoadingConditions = false }
                 await snowConditionsManager.fetchConditionsForResort(resort.id)
-                isLoadingConditions = false
             }
         }
     }

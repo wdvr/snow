@@ -1339,6 +1339,69 @@ final class SnowTrackerTests: XCTestCase {
         XCTAssertEqual(response.resortId, "whistler-blackcomb")
     }
 
+    // MARK: - MapViewModel Forecast Date Tests
+
+    @MainActor
+    func testMapViewModelForecastDatesGeneration() async {
+        let viewModel = MapViewModel()
+        let dates = viewModel.forecastDates
+
+        // Should always have 7 days (today + 6)
+        XCTAssertEqual(dates.count, 7)
+
+        // First date should be today
+        XCTAssertTrue(Calendar.current.isDateInToday(dates[0]))
+
+        // Dates should be consecutive days
+        for i in 1..<dates.count {
+            let diff = Calendar.current.dateComponents([.day], from: dates[i - 1], to: dates[i])
+            XCTAssertEqual(diff.day, 1)
+        }
+    }
+
+    @MainActor
+    func testMapViewModelSelectForecastDateNilMeansToday() async {
+        let viewModel = MapViewModel()
+
+        // Default is nil (today)
+        XCTAssertNil(viewModel.selectedForecastDate)
+
+        // Select a future date
+        let futureDate = Calendar.current.date(byAdding: .day, value: 2, to: Date())!
+        viewModel.selectForecastDate(futureDate)
+        XCTAssertNotNil(viewModel.selectedForecastDate)
+
+        // Select nil again = back to today
+        viewModel.selectForecastDate(nil)
+        XCTAssertNil(viewModel.selectedForecastDate)
+    }
+
+    @MainActor
+    func testMapViewModelNearbyResortsWithoutForecast() async {
+        let viewModel = MapViewModel()
+        let resorts = Resort.sampleResorts
+        viewModel.updateAnnotations(resorts: resorts, conditions: [:])
+
+        // Without location, nearbyResorts returns empty
+        let nearby = viewModel.nearbyResorts(limit: 5)
+        XCTAssertTrue(nearby.isEmpty)
+    }
+
+    @MainActor
+    func testMapViewModelPredictedQualityWithoutCache() async {
+        let viewModel = MapViewModel()
+
+        // No timeline cache = returns nil
+        let quality = viewModel.predictedQuality(for: "test-resort", on: Date())
+        XCTAssertNil(quality)
+    }
+
+    @MainActor
+    func testMapViewModelIsFetchingTimelinesDefault() async {
+        let viewModel = MapViewModel()
+        XCTAssertFalse(viewModel.isFetchingTimelines)
+    }
+
     func testTimelinePointWithNullOptionals() throws {
         // Test decoding when optional fields are null
         let json = """

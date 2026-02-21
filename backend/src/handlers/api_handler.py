@@ -535,7 +535,7 @@ async def get_regions(response: Response):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve regions: {str(e)}",
+            detail="Failed to retrieve regions",
         )
 
 
@@ -601,7 +601,7 @@ async def get_resorts(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve resorts: {str(e)}",
+            detail="Failed to retrieve resorts",
         )
 
 
@@ -670,7 +670,7 @@ async def get_nearby_resorts(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to find nearby resorts: {str(e)}",
+            detail="Failed to find nearby resorts",
         )
 
 
@@ -695,7 +695,7 @@ async def get_resort(resort_id: str, response: Response):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve resort: {str(e)}",
+            detail="Failed to retrieve resort",
         )
 
 
@@ -753,10 +753,10 @@ async def get_batch_conditions(
                 return resort_id, {"conditions": [], "error": str(e)}
 
         # Use ThreadPoolExecutor for true parallel execution
-        with ThreadPoolExecutor(max_workers=min(len(ids), 20)) as executor:
+        with ThreadPoolExecutor(max_workers=min(len(ids), 10)) as executor:
             futures = {executor.submit(fetch_one, rid): rid for rid in ids}
-            for future in as_completed(futures):
-                resort_id, result = future.result()
+            for future in as_completed(futures, timeout=30):
+                resort_id, result = future.result(timeout=5)
                 results[resort_id] = result
 
         # Set cache headers
@@ -771,9 +771,12 @@ async def get_batch_conditions(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(
+            "Batch conditions error for %d resorts: %s", len(ids), e, exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve batch conditions: {str(e)}",
+            detail="Failed to retrieve batch conditions",
         )
 
 
@@ -815,7 +818,7 @@ async def get_resort_conditions(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve conditions: {str(e)}",
+            detail="Failed to retrieve conditions",
         )
 
 
@@ -865,7 +868,7 @@ async def get_elevation_condition(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve condition: {str(e)}",
+            detail="Failed to retrieve condition",
         )
 
 
@@ -977,7 +980,7 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve snow quality summary: {str(e)}",
+            detail="Failed to retrieve snow quality summary",
         )
 
 
@@ -1060,7 +1063,7 @@ async def get_resort_timeline(
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve timeline: {str(e)}",
+            detail="Failed to retrieve timeline",
         )
 
 
@@ -1224,7 +1227,7 @@ async def get_batch_snow_quality(
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve batch snow quality: {str(e)}",
+            detail="Failed to retrieve batch snow quality",
         )
 
 
@@ -1295,7 +1298,7 @@ async def get_user_preferences(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve user preferences: {str(e)}",
+            detail="Failed to retrieve user preferences",
         )
 
 
@@ -1316,7 +1319,7 @@ async def update_user_preferences(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update user preferences: {str(e)}",
+            detail="Failed to update user preferences",
         )
 
 
@@ -1406,7 +1409,7 @@ async def register_device_token(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to register device token: {str(e)}",
+            detail="Failed to register device token",
         )
 
 
@@ -1428,7 +1431,7 @@ async def unregister_device_token(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to unregister device token: {str(e)}",
+            detail="Failed to unregister device token",
         )
 
 
@@ -1459,7 +1462,7 @@ async def get_device_tokens(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve device tokens: {str(e)}",
+            detail="Failed to retrieve device tokens",
         )
 
 
@@ -1524,7 +1527,7 @@ async def get_notification_settings(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve notification settings: {str(e)}",
+            detail="Failed to retrieve notification settings",
         )
 
 
@@ -1573,7 +1576,7 @@ async def update_notification_settings(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update notification settings: {str(e)}",
+            detail="Failed to update notification settings",
         )
 
 
@@ -1633,7 +1636,7 @@ async def update_resort_notification_settings(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update resort notification settings: {str(e)}",
+            detail="Failed to update resort notification settings",
         )
 
 
@@ -1662,7 +1665,7 @@ async def delete_resort_notification_settings(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete resort notification settings: {str(e)}",
+            detail="Failed to delete resort notification settings",
         )
 
 
@@ -1734,7 +1737,7 @@ async def get_resort_events(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve resort events: {str(e)}",
+            detail="Failed to retrieve resort events",
         )
 
 
@@ -1778,7 +1781,7 @@ async def create_resort_event(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create resort event: {str(e)}",
+            detail="Failed to create resort event",
         )
 
 
@@ -1804,7 +1807,7 @@ async def delete_resort_event(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete resort event: {str(e)}",
+            detail="Failed to delete resort event",
         )
 
 
@@ -1843,7 +1846,7 @@ async def submit_feedback(submission: FeedbackSubmission):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to submit feedback: {str(e)}",
+            detail="Failed to submit feedback",
         )
 
 
@@ -1907,7 +1910,7 @@ async def sign_in_with_apple(request: AppleSignInRequest):
         logger.error("Apple Sign In error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Authentication failed: {str(e)}",
+            detail="Authentication failed",
         )
 
 
@@ -1940,7 +1943,7 @@ async def sign_in_as_guest(request: GuestAuthRequest):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Guest authentication failed: {str(e)}",
+            detail="Guest authentication failed",
         )
 
 
@@ -1975,7 +1978,7 @@ async def get_current_user(user_id: str = Depends(get_current_user_id)):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get user info: {str(e)}",
+            detail="Failed to get user info",
         )
 
 
@@ -2040,7 +2043,7 @@ async def get_recommendations(
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate recommendations: {str(e)}",
+            detail="Failed to generate recommendations",
         )
 
 
@@ -2104,7 +2107,7 @@ async def get_best_conditions(
         logger.error("Best conditions error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get best conditions: {str(e)}",
+            detail="Failed to get best conditions",
         )
 
 
@@ -2134,7 +2137,7 @@ async def create_trip(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create trip: {str(e)}",
+            detail="Failed to create trip",
         )
 
 
@@ -2181,7 +2184,7 @@ async def get_user_trips(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get trips: {str(e)}",
+            detail="Failed to get trips",
         )
 
 
@@ -2209,7 +2212,7 @@ async def get_trip(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get trip: {str(e)}",
+            detail="Failed to get trip",
         )
 
 
@@ -2232,7 +2235,7 @@ async def update_trip(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update trip: {str(e)}",
+            detail="Failed to update trip",
         )
 
 
@@ -2256,7 +2259,7 @@ async def delete_trip(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete trip: {str(e)}",
+            detail="Failed to delete trip",
         )
 
 
@@ -2288,7 +2291,7 @@ async def refresh_trip_conditions(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to refresh conditions: {str(e)}",
+            detail="Failed to refresh conditions",
         )
 
 
@@ -2314,7 +2317,7 @@ async def mark_trip_alerts_read(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to mark alerts read: {str(e)}",
+            detail="Failed to mark alerts read",
         )
 
 
@@ -2374,7 +2377,7 @@ async def trigger_notifications(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to trigger notification processor: {str(e)}",
+            detail="Failed to trigger notification processor",
         )
 
 
@@ -2499,7 +2502,7 @@ async def test_push_notification(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to send test notification: {str(e)}",
+            detail="Failed to send test notification",
         )
 
 
@@ -2535,7 +2538,7 @@ async def backfill_geohashes():
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to backfill geohashes: {str(e)}",
+            detail="Failed to backfill geohashes",
         )
 
 
