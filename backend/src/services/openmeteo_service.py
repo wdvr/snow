@@ -368,6 +368,7 @@ class OpenMeteoService:
                         hourly_wind,
                         idx,
                         elevation_meters,
+                        hourly_snow_depth,
                     )
 
                     quality_val = (

@@ -173,6 +173,7 @@ def engineer_features(raw: dict[str, float]) -> list[float]:
     ca6 = _f("cur_hours_above_6C")
     avg_wind = _f("avg_wind_24h")
     max_wind = _f("max_wind_24h")
+    snow_depth = _f("snow_depth_cm")
 
     return [
         ct,
@@ -187,6 +188,8 @@ def engineer_features(raw: dict[str, float]) -> list[float]:
         snow72,
         snow72 - snow24,
         elev / 1000.0,
+        snow_depth / 100.0,  # normalize to meters
+        snow_ft / max(snow_depth, 1.0),  # fresh-to-total ratio
         ha0,
         ha3,
         ha6,
@@ -262,6 +265,9 @@ def extract_features_from_condition(
     # Wind approximation from condition fields
     wind_speed = getattr(condition, "wind_speed_kmh", 0.0) or 0.0
 
+    # Snow depth from condition (if available)
+    snow_depth_cm = getattr(condition, "snow_depth_cm", None) or 0.0
+
     return {
         "cur_temp": cur_temp,
         "max_temp_24h": max_temp,
@@ -291,6 +297,7 @@ def extract_features_from_condition(
         "cur_wind_kmh": float(wind_speed),
         "max_wind_24h": float(wind_speed) * 1.5,  # approximate
         "avg_wind_24h": float(wind_speed),
+        "snow_depth_cm": float(snow_depth_cm),
     }
 
 
@@ -300,10 +307,11 @@ def _extract_features_at_hour(
     wind_speeds: list[float | None],
     target_hour: int,
     elevation_m: float,
+    snow_depth_arr: list[float | None] | None = None,
 ) -> dict[str, float] | None:
     """Core feature extraction at a specific hour index.
 
-    Computes the 27 ML input features (pre-engineering) from hourly weather
+    Computes the ML input features (pre-engineering) from hourly weather
     arrays centered on target_hour. Used by both real-time conditions and
     timeline predictions.
     """
@@ -392,6 +400,13 @@ def _extract_features_at_hour(
         avg_wind_24h = 0.0
         max_wind_24h = 0.0
 
+    # Snow depth at target hour (Open-Meteo returns snow_depth in meters)
+    if snow_depth_arr and len(snow_depth_arr) > target_hour:
+        sd = snow_depth_arr[target_hour]
+        snow_depth_cm = float(sd) * 100.0 if sd is not None else 0.0
+    else:
+        snow_depth_cm = 0.0
+
     return {
         "cur_temp": cur_temp,
         "max_temp_24h": max_temp_24h,
@@ -420,6 +435,7 @@ def _extract_features_at_hour(
         "cur_wind_kmh": cur_wind,
         "max_wind_24h": max_wind_24h,
         "avg_wind_24h": avg_wind_24h,
+        "snow_depth_cm": snow_depth_cm,
     }
 
 
@@ -440,6 +456,7 @@ def extract_features_from_raw_data(
     temps = hourly.get("temperature_2m", [])
     snowfall = hourly.get("snowfall", [])
     wind_speeds = hourly.get("wind_speed_10m", [])
+    snow_depth_arr = hourly.get("snow_depth", [])
 
     if not temps or len(temps) < 48:
         return None
@@ -457,7 +474,9 @@ def extract_features_from_raw_data(
             break
 
     elev = float(elevation_m or raw_data.get("elevation_meters", 1500.0))
-    return _extract_features_at_hour(temps, snowfall, wind_speeds, current_index, elev)
+    return _extract_features_at_hour(
+        temps, snowfall, wind_speeds, current_index, elev, snow_depth_arr
+    )
 
 
 def _apply_snow_aging_penalty(
@@ -643,6 +662,7 @@ def predict_quality_at_hour(
     wind_speeds: list[float | None],
     target_hour_index: int,
     elevation_m: float,
+    snow_depth_arr: list[float | None] | None = None,
 ) -> tuple[SnowQuality, float]:
     """Predict snow quality at a specific hour index using the ML model.
 
@@ -656,6 +676,7 @@ def predict_quality_at_hour(
         wind_speeds: Hourly wind speed array (km/h)
         target_hour_index: Index into the arrays for the target hour
         elevation_m: Elevation in meters
+        snow_depth_arr: Hourly snow depth array (cm), optional
 
     Returns:
         Tuple of (SnowQuality, raw_score)
@@ -665,7 +686,7 @@ def predict_quality_at_hour(
         return SnowQuality.UNKNOWN, 3.5
 
     raw_features = _extract_features_at_hour(
-        temps, snowfall, wind_speeds, target_hour_index, elevation_m
+        temps, snowfall, wind_speeds, target_hour_index, elevation_m, snow_depth_arr
     )
     if raw_features is None:
         return SnowQuality.UNKNOWN, 3.5

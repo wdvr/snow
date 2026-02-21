@@ -589,7 +589,7 @@ struct ResortMapDetailSheet: View {
                         .background(condition.snowQuality.color, in: Capsule())
 
                     // Temperature
-                    Label(condition.formattedCurrentTemp, systemImage: "thermometer.medium")
+                    Label(condition.formattedTemperature(userPreferencesManager.preferredUnits), systemImage: "thermometer.medium")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -814,6 +814,7 @@ struct ClusterResortListSheet: View {
 struct ClusterResortRow: View {
     let resort: Resort
     let condition: WeatherCondition?
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
 
     private var snowQuality: SnowQuality {
         condition?.snowQuality ?? .unknown
@@ -844,7 +845,7 @@ struct ClusterResortRow: View {
                     .fontWeight(.medium)
                     .foregroundStyle(snowQuality.color)
 
-                if let temp = condition?.formattedCurrentTemp {
+                if let temp = condition?.formattedTemperature(userPreferencesManager.preferredUnits) {
                     Text(temp)
                         .font(.caption)
                         .foregroundStyle(.secondary)

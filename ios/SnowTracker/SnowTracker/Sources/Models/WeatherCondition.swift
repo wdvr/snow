@@ -96,7 +96,7 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
         case .poor: return Color(.systemOrange)
         case .slushy: return Color(.systemOrange)
         case .bad: return .red
-        case .horrible: return .black
+        case .horrible: return Color(.label)
         case .unknown: return .gray
         }
     }
@@ -432,7 +432,7 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
             case .freshPowder: return .cyan
             case .oldPowder: return .blue
             case .icy: return .orange
-            case .notSkiable: return .black
+            case .notSkiable: return Color(.label)
             case .unknown: return .gray
             }
         }
