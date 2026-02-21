@@ -248,7 +248,7 @@ class TestMergeEndToEnd:
         )
 
         quality_service = SnowQualityService()
-        quality, _, _ = quality_service.assess_snow_quality(condition)
+        quality, _, _, _ = quality_service.assess_snow_quality(condition)
 
         # At 8.5°C with 71cm base, should be POOR (soft/warm) not HORRIBLE
         assert quality.value != "horrible", (
@@ -287,7 +287,7 @@ class TestMergeEndToEnd:
         )
 
         quality_service = SnowQualityService()
-        quality, _, _ = quality_service.assess_snow_quality(condition)
+        quality, _, _, _ = quality_service.assess_snow_quality(condition)
 
         # With 57" (144.78cm) scraped depth, should NOT be HORRIBLE
         assert quality.value != "horrible", (

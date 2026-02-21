@@ -370,7 +370,7 @@ class WeatherService:
                 "snowfall_after_freeze_cm, hours_since_last_snowfall, "
                 "last_freeze_thaw_hours_ago, currently_warming, "
                 "humidity_percent, wind_speed_kmh, weather_description, "
-                "snow_quality, confidence_level, fresh_snow_cm, "
+                "snow_quality, quality_score, confidence_level, fresh_snow_cm, "
                 "data_source, source_confidence, #ttl"
             )
             expression_names = {"#ts": "timestamp", "#ttl": "ttl"}

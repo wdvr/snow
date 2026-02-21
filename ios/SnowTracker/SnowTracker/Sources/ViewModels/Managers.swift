@@ -184,6 +184,28 @@ class SnowConditionsManager: ObservableObject {
         return .unknown
     }
 
+    /// Get snow score (0-100) for a resort
+    func getSnowScore(for resortId: String) -> Int? {
+        if let summary = snowQualitySummaries[resortId] {
+            return summary.snowScore
+        }
+        if let resortConditions = conditions[resortId], !resortConditions.isEmpty {
+            // Prefer top elevation
+            for level in ["top", "mid", "base"] {
+                if let cond = resortConditions.first(where: { $0.elevationLevel == level }),
+                   let score = cond.snowScore {
+                    return score
+                }
+            }
+        }
+        return nil
+    }
+
+    /// Get quality explanation for a resort
+    func getExplanation(for resortId: String) -> String? {
+        snowQualitySummaries[resortId]?.explanation
+    }
+
     /// Refresh all data - called by pull-to-refresh
     /// This bypasses cache to ensure fresh data is fetched
     /// Rate-limited to prevent API spam (5 second minimum between refreshes)

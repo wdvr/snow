@@ -23,6 +23,10 @@ from models.user import UserPreferences
 from models.weather import SNOW_QUALITY_EXPLANATIONS, SnowQuality, TimelineResponse
 from services.auth_service import AuthenticationError, AuthProvider, AuthService
 from services.openmeteo_service import OpenMeteoService
+from services.quality_explanation_service import (
+    generate_quality_explanation,
+    score_to_100,
+)
 from services.recommendation_service import RecommendationService
 from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
@@ -906,12 +910,19 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
             confidence_val = (
                 confidence.value if hasattr(confidence, "value") else str(confidence)
             )
+            # Compute 0-100 snow score from ML model raw score
+            raw_score = condition.quality_score
+            snow_score = score_to_100(raw_score) if raw_score is not None else None
+            # Generate natural language explanation
+            explanation = generate_quality_explanation(condition)
             elevation_summaries[condition.elevation_level] = {
                 "quality": quality_val,
+                "snow_score": snow_score,
                 "fresh_snow_cm": condition.fresh_snow_cm,
                 "confidence": confidence_val,
                 "temperature_celsius": condition.current_temp_celsius,
                 "snowfall_24h_cm": condition.snowfall_24h_cm,
+                "explanation": explanation,
                 "timestamp": condition.timestamp,
             }
 
@@ -923,6 +934,25 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
         # Get explanation for overall quality
         quality_explanation = SNOW_QUALITY_EXPLANATIONS.get(overall_quality, {})
 
+        # Compute overall snow_score: weighted average of per-elevation scores
+        # Use top elevation's score as overall if available, else best available
+        overall_snow_score = None
+        for pref_level in ["top", "mid", "base"]:
+            if pref_level in elevation_summaries:
+                overall_snow_score = elevation_summaries[pref_level].get("snow_score")
+                if overall_snow_score is not None:
+                    break
+
+        # Generate overall explanation from top elevation condition
+        overall_explanation = None
+        for pref_level in ["top", "mid", "base"]:
+            cond = next(
+                (c for c in conditions if c.elevation_level == pref_level), None
+            )
+            if cond:
+                overall_explanation = generate_quality_explanation(cond)
+                break
+
         # Set cache headers - 1 hour since weather updates hourly
         response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC_LONG
 
@@ -930,6 +960,8 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
             "resort_id": resort_id,
             "elevations": elevation_summaries,
             "overall_quality": overall_quality.value,
+            "overall_snow_score": overall_snow_score,
+            "overall_explanation": overall_explanation,
             "quality_info": {
                 "title": quality_explanation.get("title", overall_quality.value),
                 "description": quality_explanation.get("description", ""),
@@ -1057,18 +1089,27 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
 
     overall_quality = SnowQualityService.calculate_overall_quality(conditions)
 
-    # Get representative condition data (prefer mid elevation, then first available)
+    # Get representative condition data (prefer top, then mid, then first available)
     representative = None
-    for c in conditions:
-        if c.elevation_level == "mid":
-            representative = c
+    for pref in ["top", "mid", "base"]:
+        for c in conditions:
+            if c.elevation_level == pref:
+                representative = c
+                break
+        if representative:
             break
     if not representative:
         representative = conditions[0]
 
+    # Compute snow score (0-100) from raw ML score
+    raw_score = representative.quality_score
+    snow_score = score_to_100(raw_score) if raw_score is not None else None
+
     return {
         "resort_id": resort_id,
         "overall_quality": overall_quality.value,
+        "snow_score": snow_score,
+        "explanation": generate_quality_explanation(representative),
         "last_updated": max(c.timestamp for c in conditions) if conditions else None,
         "temperature_c": representative.current_temp_celsius
         if representative

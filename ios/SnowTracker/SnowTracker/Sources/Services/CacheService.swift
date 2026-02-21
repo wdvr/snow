@@ -83,6 +83,8 @@ final class CachedWeatherCondition {
 final class CachedSnowQualitySummary {
     @Attribute(.unique) var resortId: String
     var overallQuality: String
+    var snowScore: Int?
+    var explanation: String?
     var lastUpdated: String?
     var temperatureC: Double?
     var snowfallFreshCm: Double?
@@ -92,6 +94,8 @@ final class CachedSnowQualitySummary {
     init(resortId: String, summary: SnowQualitySummaryLight) {
         self.resortId = resortId
         self.overallQuality = summary.overallQuality
+        self.snowScore = summary.snowScore
+        self.explanation = summary.explanation
         self.lastUpdated = summary.lastUpdated
         self.temperatureC = summary.temperatureC
         self.snowfallFreshCm = summary.snowfallFreshCm
@@ -103,6 +107,8 @@ final class CachedSnowQualitySummary {
         SnowQualitySummaryLight(
             resortId: resortId,
             overallQuality: overallQuality,
+            snowScore: snowScore,
+            explanation: explanation,
             lastUpdated: lastUpdated,
             temperatureC: temperatureC,
             snowfallFreshCm: snowfallFreshCm,

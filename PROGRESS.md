@@ -36,6 +36,8 @@
 
 | Feature | Date |
 |---------|------|
+| Fix all resorts missing from recommendations (GSI pagination + ProjectionExpression) | 2026-02-21 |
+| Increase API Lambda memory to 512MB | 2026-02-21 |
 | Fix recommendation scoring plateau (log scale for fresh snow) | 2026-02-21 |
 | Optimize iOS sort performance (pre-compute lookups) | 2026-02-21 |
 | Reduce DynamoDB queries 3x (single-query per resort) | 2026-02-21 |

@@ -126,6 +126,18 @@ struct ResortDetailView: View {
         return qualities.min(by: { $0.sortOrder < $1.sortOrder })
     }
 
+    /// Snow score (0-100) for the best elevation (top preferred)
+    private var bestElevationSnowScore: Int? {
+        let preferred = ["top", "mid", "base"]
+        for level in preferred {
+            if let condition = conditions.first(where: { $0.elevationLevel == level }),
+               let score = condition.snowScore {
+                return score
+            }
+        }
+        return conditions.first?.snowScore
+    }
+
     private var resortHeader: some View {
         VStack(spacing: 8) {
             HStack {
@@ -143,14 +155,20 @@ struct ResortDetailView: View {
 
                 // Overall snow quality badge - use best quality across elevations
                 if let quality = bestElevationQuality {
-                    VStack {
+                    VStack(spacing: 4) {
+                        // Numeric snow score (0-100) from ML model
+                        if let score = bestElevationSnowScore {
+                            Text("\(score)")
+                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .foregroundStyle(quality.color)
+                        }
                         Image(systemName: quality.icon)
-                            .font(.title)
-                            .foregroundColor(quality.color)
+                            .font(.title2)
+                            .foregroundStyle(quality.color)
                         Text(quality.displayName)
                             .font(.caption)
                             .fontWeight(.semibold)
-                            .foregroundColor(quality.color)
+                            .foregroundStyle(quality.color)
                     }
                     .padding()
                     .background(
@@ -222,18 +240,20 @@ struct ResortDetailView: View {
                 }
                 .frame(maxWidth: .infinity)
 
-                // Snow Quality
-                VStack {
+                // Snow Quality with score
+                VStack(spacing: 2) {
+                    if let score = condition.snowScore {
+                        Text("\(score)")
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundStyle(condition.snowQuality.color)
+                    }
                     Image(systemName: condition.snowQuality.icon)
                         .font(.title2)
-                        .foregroundColor(condition.snowQuality.color)
+                        .foregroundStyle(condition.snowQuality.color)
                     Text(condition.snowQuality.displayName)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(condition.snowQuality.color)
-                    Text(condition.confidenceLevel.displayName)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(condition.snowQuality.color)
                 }
                 .frame(maxWidth: .infinity)
 
@@ -357,6 +377,19 @@ struct ResortDetailView: View {
                 }
             }
             .padding(.vertical, 4)
+
+            // Quality explanation from backend
+            if let explanation = snowConditionsManager.getExplanation(for: resort.id) {
+                Divider()
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "info.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                    Text(explanation)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             Divider()
 

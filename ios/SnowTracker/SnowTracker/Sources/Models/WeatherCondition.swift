@@ -283,6 +283,7 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
 
     // Snow quality assessment
     let snowQuality: SnowQuality
+    let qualityScore: Double?
     let confidenceLevel: ConfidenceLevel
     let freshSnowCm: Double
 
@@ -315,6 +316,7 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         case windSpeedKmh = "wind_speed_kmh"
         case weatherDescription = "weather_description"
         case snowQuality = "snow_quality"
+        case qualityScore = "quality_score"
         case confidenceLevel = "confidence_level"
         case freshSnowCm = "fresh_snow_cm"
         case dataSource = "data_source"
@@ -326,6 +328,12 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
 
     var elevationLevelEnum: ElevationLevel? {
         ElevationLevel(rawValue: elevationLevel)
+    }
+
+    /// Snow score on 0-100 scale (derived from ML model's 1.0-6.0 raw score)
+    var snowScore: Int? {
+        guard let score = qualityScore else { return nil }
+        return max(0, min(100, Int(((score - 1.0) / 5.0 * 100).rounded())))
     }
 
     var formattedTimestamp: String {
@@ -664,6 +672,7 @@ extension WeatherCondition {
             windSpeedKmh: 15.0,
             weatherDescription: "Heavy snow",
             snowQuality: .excellent,
+            qualityScore: 5.8,
             confidenceLevel: .high,
             freshSnowCm: 18.5,
             dataSource: "weatherapi",
@@ -694,6 +703,7 @@ extension WeatherCondition {
             windSpeedKmh: 20.0,
             weatherDescription: "Light snow",
             snowQuality: .good,
+            qualityScore: 4.6,
             confidenceLevel: .medium,
             freshSnowCm: 8.5,
             dataSource: "weatherapi",

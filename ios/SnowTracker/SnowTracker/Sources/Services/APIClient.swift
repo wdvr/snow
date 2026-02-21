@@ -967,12 +967,16 @@ struct SnowQualitySummary: Codable {
     let resortId: String
     let elevations: [String: ElevationSummary]
     let overallQuality: String
+    let overallSnowScore: Int?
+    let overallExplanation: String?
     let lastUpdated: String?
 
     private enum CodingKeys: String, CodingKey {
         case resortId = "resort_id"
         case elevations
         case overallQuality = "overall_quality"
+        case overallSnowScore = "overall_snow_score"
+        case overallExplanation = "overall_explanation"
         case lastUpdated = "last_updated"
     }
 
@@ -984,6 +988,8 @@ struct SnowQualitySummary: Codable {
 struct SnowQualitySummaryLight: Codable {
     let resortId: String
     let overallQuality: String
+    let snowScore: Int?
+    let explanation: String?
     let lastUpdated: String?
     let temperatureC: Double?
     let snowfallFreshCm: Double?
@@ -992,6 +998,8 @@ struct SnowQualitySummaryLight: Codable {
     private enum CodingKeys: String, CodingKey {
         case resortId = "resort_id"
         case overallQuality = "overall_quality"
+        case snowScore = "snow_score"
+        case explanation
         case lastUpdated = "last_updated"
         case temperatureC = "temperature_c"
         case snowfallFreshCm = "snowfall_fresh_cm"
@@ -999,10 +1007,13 @@ struct SnowQualitySummaryLight: Codable {
     }
 
     // Explicit initializer for cache reconstruction
-    init(resortId: String, overallQuality: String, lastUpdated: String?,
+    init(resortId: String, overallQuality: String, snowScore: Int? = nil,
+         explanation: String? = nil, lastUpdated: String?,
          temperatureC: Double? = nil, snowfallFreshCm: Double? = nil, snowfall24hCm: Double? = nil) {
         self.resortId = resortId
         self.overallQuality = overallQuality
+        self.snowScore = snowScore
+        self.explanation = explanation
         self.lastUpdated = lastUpdated
         self.temperatureC = temperatureC
         self.snowfallFreshCm = snowfallFreshCm
@@ -1087,18 +1098,22 @@ struct BatchSnowQualityResponse: Codable {
 
 struct ElevationSummary: Codable {
     let quality: String
+    let snowScore: Int?
     let freshSnowCm: Double
     let confidence: String
     let temperatureCelsius: Double
     let snowfall24hCm: Double
+    let explanation: String?
     let timestamp: String
 
     private enum CodingKeys: String, CodingKey {
         case quality
+        case snowScore = "snow_score"
         case freshSnowCm = "fresh_snow_cm"
         case confidence
         case temperatureCelsius = "temperature_celsius"
         case snowfall24hCm = "snowfall_24h_cm"
+        case explanation
         case timestamp
     }
 

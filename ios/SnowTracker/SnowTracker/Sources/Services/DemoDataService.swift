@@ -233,6 +233,7 @@ class DemoDataService {
             windSpeedKmh: getWindSpeedForElevation(elevation.level),
             weatherDescription: getWeatherDescription(quality),
             snowQuality: quality,
+            qualityScore: nil,
             confidenceLevel: getConfidenceLevel(quality),
             freshSnowCm: snowData.freshSnow,
             dataSource: "demo-service",

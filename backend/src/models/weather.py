@@ -151,6 +151,9 @@ class WeatherCondition(BaseModel):
     snow_quality: SnowQuality = Field(
         default=SnowQuality.UNKNOWN, description="Calculated snow quality"
     )
+    quality_score: float | None = Field(
+        None, description="Numeric quality score from ML model (1.0-6.0)"
+    )
     confidence_level: ConfidenceLevel = Field(
         default=ConfidenceLevel.LOW, description="Confidence in the assessment"
     )

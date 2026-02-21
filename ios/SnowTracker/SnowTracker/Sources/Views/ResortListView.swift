@@ -343,14 +343,19 @@ struct ResortRowView: View {
                 // (latestCondition is a single elevation which may differ from overall)
                 let displayQuality = snowConditionsManager.getSnowQuality(for: resort.id)
                 if displayQuality != .unknown {
-                    VStack {
+                    VStack(spacing: 2) {
+                        if let score = snowConditionsManager.getSnowScore(for: resort.id) {
+                            Text("\(score)")
+                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                .foregroundStyle(displayQuality.color)
+                        }
                         Image(systemName: displayQuality.icon)
-                            .foregroundColor(displayQuality.color)
-                            .font(.title2)
+                            .foregroundStyle(displayQuality.color)
+                            .font(.title3)
 
                         Text(displayQuality.displayName)
-                            .font(.caption)
-                            .foregroundColor(displayQuality.color)
+                            .font(.caption2)
+                            .foregroundStyle(displayQuality.color)
                     }
                 } else if snowConditionsManager.isLoadingSnowQuality {
                     VStack {
@@ -439,6 +444,14 @@ struct ResortRowView: View {
                         .foregroundColor(.secondary)
                 }
                 .redacted(reason: .placeholder)
+            }
+
+            // Quality explanation (one-liner)
+            if let explanation = snowConditionsManager.getExplanation(for: resort.id) {
+                Text(explanation)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
             }
         }
         .padding(.vertical, 4)

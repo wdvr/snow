@@ -208,7 +208,7 @@ def process_elevation_point(
 
         # Assess snow quality (pass elevation for ML model)
         elev_m = getattr(elevation_point, "elevation_meters", None)
-        snow_quality, fresh_snow_cm, confidence = (
+        snow_quality, fresh_snow_cm, confidence, quality_score = (
             snow_quality_service.assess_snow_quality(
                 weather_condition, elevation_m=elev_m
             )
@@ -218,6 +218,7 @@ def process_elevation_point(
         weather_condition.snow_quality = snow_quality
         weather_condition.fresh_snow_cm = fresh_snow_cm
         weather_condition.confidence_level = confidence
+        weather_condition.quality_score = quality_score
 
         # Set TTL (expire after 60 days - extended from 7 days)
         weather_condition.ttl = int(

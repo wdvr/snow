@@ -20,7 +20,7 @@ class SnowQualityService:
 
     def assess_snow_quality(
         self, weather: WeatherCondition, elevation_m: float | None = None
-    ) -> tuple[SnowQuality, float, ConfidenceLevel]:
+    ) -> tuple[SnowQuality, float, ConfidenceLevel, float]:
         """
         Assess snow quality based on weather conditions.
 
@@ -28,7 +28,8 @@ class SnowQualityService:
         falls back to heuristic algorithm.
 
         Returns:
-            tuple: (snow_quality, fresh_snow_estimate_cm, confidence_level)
+            tuple: (snow_quality, fresh_snow_estimate_cm, confidence_level, raw_score)
+            raw_score is on 1.0-6.0 scale (1=horrible, 6=excellent)
         """
         # Try ML-based scoring when we have raw hourly data (exact features).
         # The model was trained on features computed from raw Open-Meteo hourly data,
@@ -61,7 +62,7 @@ class SnowQualityService:
                             weather.source_confidence, 0.5
                         ),
                     )
-                    return ml_quality, fresh_snow_cm, confidence
+                    return ml_quality, fresh_snow_cm, confidence, ml_score
         except Exception as e:
             import logging
 
@@ -257,7 +258,10 @@ class SnowQualityService:
         # Calculate confidence level
         confidence = self._calculate_confidence_level(weather, source_multiplier)
 
-        return snow_quality, fresh_snow_cm, confidence
+        # Convert heuristic 0-1 score to ML-equivalent 1-6 scale
+        raw_score = adjusted_score * 5.0 + 1.0
+
+        return snow_quality, fresh_snow_cm, confidence, raw_score
 
     def _calculate_fresh_powder_score(
         self,
@@ -580,7 +584,9 @@ class SnowQualityService:
         """
         results = {}
         for condition in conditions:
-            quality, fresh_snow, confidence = self.assess_snow_quality(condition)
+            quality, fresh_snow, confidence, raw_score = self.assess_snow_quality(
+                condition
+            )
             if condition.elevation_level not in results:
                 results[condition.elevation_level] = []
             results[condition.elevation_level].append((quality, fresh_snow, confidence))

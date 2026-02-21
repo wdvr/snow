@@ -15,7 +15,7 @@ class TestSnowQualityService:
         """Test assessment of excellent snow conditions."""
         service = SnowQualityService(snow_quality_algorithm)
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(
             sample_weather_condition
         )
 
@@ -29,7 +29,7 @@ class TestSnowQualityService:
         """Test assessment of poor snow conditions."""
         service = SnowQualityService(snow_quality_algorithm)
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(
             poor_weather_condition
         )
 
@@ -98,7 +98,7 @@ class TestSnowQualityService:
         service = SnowQualityService(snow_quality_algorithm)
 
         # Good conditions should preserve snow since last freeze-thaw
-        quality, fresh_snow, confidence = service.assess_snow_quality(
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(
             sample_weather_condition
         )
         # Fresh snow is based on snowfall_after_freeze_cm (non-refrozen snow)
@@ -110,7 +110,7 @@ class TestSnowQualityService:
         poor_condition.hours_above_ice_threshold = 8.0
         poor_condition.currently_warming = True
 
-        quality, degraded_fresh_snow, confidence = service.assess_snow_quality(
+        quality, degraded_fresh_snow, confidence, _ = service.assess_snow_quality(
             poor_condition
         )
         assert degraded_fresh_snow < fresh_snow
@@ -125,7 +125,7 @@ class TestSnowQualityService:
         complete_condition = sample_weather_condition.model_copy()
         complete_condition.source_confidence = ConfidenceLevel.VERY_HIGH
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(
             complete_condition
         )
         assert confidence in [ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH]
@@ -137,7 +137,7 @@ class TestSnowQualityService:
         incomplete_condition.snowfall_48h_cm = None
         incomplete_condition.source_confidence = ConfidenceLevel.LOW
 
-        quality, fresh_snow, low_confidence = service.assess_snow_quality(
+        quality, fresh_snow, low_confidence, _ = service.assess_snow_quality(
             incomplete_condition
         )
         assert low_confidence in [ConfidenceLevel.LOW, ConfidenceLevel.VERY_LOW]
@@ -256,7 +256,7 @@ class TestSnowQualityService:
         )
 
         # Should not crash and should return reasonable values
-        quality, fresh_snow, confidence = service.assess_snow_quality(
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(
             invalid_timestamp_condition
         )
         # Quality might be enum or string (due to use_enum_values)
@@ -302,7 +302,7 @@ class TestQualityCappingLogic:
             source_confidence=ConfidenceLevel.HIGH,
         )
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(cold_but_icy)
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(cold_but_icy)
 
         # Should be capped at Bad despite cold temps (no fresh snow = icy)
         quality_value = quality.value if hasattr(quality, "value") else quality
@@ -335,7 +335,7 @@ class TestQualityCappingLogic:
             source_confidence=ConfidenceLevel.HIGH,
         )
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(thin_cover)
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(thin_cover)
 
         # Should be capped at Fair or below
         quality_value = quality.value if hasattr(quality, "value") else quality
@@ -372,7 +372,7 @@ class TestQualityCappingLogic:
             source_confidence=ConfidenceLevel.HIGH,
         )
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(good_cover)
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(good_cover)
 
         # Should be Good or better
         quality_value = quality.value if hasattr(quality, "value") else quality
@@ -408,7 +408,7 @@ class TestQualityCappingLogic:
             source_confidence=ConfidenceLevel.HIGH,
         )
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(deep_powder)
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(deep_powder)
 
         # Should be Excellent
         quality_value = quality.value if hasattr(quality, "value") else quality
@@ -441,7 +441,7 @@ class TestQualityCappingLogic:
             source_confidence=ConfidenceLevel.HIGH,
         )
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(
             warming_conditions
         )
 
@@ -503,7 +503,7 @@ class TestSnowDepthReliability:
             source_confidence=ConfidenceLevel.MEDIUM,  # Open-Meteo = MEDIUM
         )
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(big_white_like)
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(big_white_like)
 
         quality_value = quality.value if hasattr(quality, "value") else quality
         # Should NOT be BAD/Icy! With 27.5cm fresh powder at -6°C, should be GOOD+
@@ -549,7 +549,7 @@ class TestSnowDepthReliability:
             source_confidence=ConfidenceLevel.HIGH,
         )
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(
             resort_reported_thin
         )
 
@@ -590,7 +590,7 @@ class TestSnowDepthReliability:
             source_confidence=ConfidenceLevel.HIGH,
         )
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(inconsistent)
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(inconsistent)
 
         quality_value = quality.value if hasattr(quality, "value") else quality
         # Should NOT be capped by the inconsistent snow_depth
@@ -630,7 +630,7 @@ class TestSnowDepthReliability:
             source_confidence=ConfidenceLevel.HIGH,  # Reliable source
         )
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(no_snow)
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(no_snow)
 
         quality_value = quality.value if hasattr(quality, "value") else quality
         assert quality_value == SnowQuality.HORRIBLE.value
@@ -663,7 +663,9 @@ class TestSnowDepthReliability:
             source_confidence=ConfidenceLevel.MEDIUM,
         )
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(model_says_zero)
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(
+            model_says_zero
+        )
 
         quality_value = quality.value if hasattr(quality, "value") else quality
         # Should NOT be HORRIBLE - model snow_depth=0 contradicts fresh snow data
@@ -700,7 +702,7 @@ class TestSnowDepthReliability:
             source_confidence=ConfidenceLevel.HIGH,  # Reliable source
         )
 
-        quality, fresh_snow, confidence = service.assess_snow_quality(deep_base)
+        quality, fresh_snow, confidence, _ = service.assess_snow_quality(deep_base)
 
         quality_value = quality.value if hasattr(quality, "value") else quality
         # Deep base + lots of fresh = Excellent
@@ -755,7 +757,7 @@ class TestFreezeThawAndQualityEdgeCases:
             source_confidence=ConfidenceLevel.MEDIUM,  # Unreliable
         )
 
-        quality, _, _ = service.assess_snow_quality(vail_like)
+        quality, _, _, _ = service.assess_snow_quality(vail_like)
         quality_value = quality.value if hasattr(quality, "value") else quality
 
         # Should NOT be HORRIBLE - depth data is unreliable
@@ -798,7 +800,7 @@ class TestFreezeThawAndQualityEdgeCases:
             source_confidence=ConfidenceLevel.HIGH,
         )
 
-        quality, _, _ = service.assess_snow_quality(jackson_top)
+        quality, _, _, _ = service.assess_snow_quality(jackson_top)
         quality_value = quality.value if hasattr(quality, "value") else quality
 
         # Should be FAIR (packed powder), not BAD (icy)
@@ -838,7 +840,7 @@ class TestFreezeThawAndQualityEdgeCases:
             source_confidence=ConfidenceLevel.HIGH,
         )
 
-        quality, _, _ = service.assess_snow_quality(cold_old)
+        quality, _, _, _ = service.assess_snow_quality(cold_old)
         quality_value = quality.value if hasattr(quality, "value") else quality
 
         assert quality_value == SnowQuality.FAIR.value, (
@@ -900,8 +902,8 @@ class TestFreezeThawAndQualityEdgeCases:
             source_confidence=ConfidenceLevel.HIGH,
         )
 
-        quality_above, _, _ = service.assess_snow_quality(at_half_degree)
-        quality_below, _, _ = service.assess_snow_quality(at_minus_half)
+        quality_above, _, _, _ = service.assess_snow_quality(at_half_degree)
+        quality_below, _, _, _ = service.assess_snow_quality(at_minus_half)
 
         q_above = (
             quality_above.value if hasattr(quality_above, "value") else quality_above
@@ -941,7 +943,7 @@ class TestFreezeThawAndQualityEdgeCases:
             source_confidence=ConfidenceLevel.HIGH,
         )
 
-        quality, _, _ = service.assess_snow_quality(warm_after_freeze)
+        quality, _, _, _ = service.assess_snow_quality(warm_after_freeze)
         quality_value = quality.value if hasattr(quality, "value") else quality
 
         assert quality_value == SnowQuality.POOR.value, (
@@ -988,7 +990,7 @@ class TestSnowConditionMatrix:
 
     def _assess(self, condition, algorithm):
         service = SnowQualityService(algorithm)
-        quality, _, _ = service.assess_snow_quality(condition)
+        quality, _, _, _ = service.assess_snow_quality(condition)
         return quality.value if hasattr(quality, "value") else quality
 
     # === POWDER / EXCELLENT scenarios ===
