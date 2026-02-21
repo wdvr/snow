@@ -262,15 +262,27 @@ class StaticJsonGenerator:
             overall_quality = SnowQualityService.calculate_overall_quality(conditions)
             snow_score = None
 
-        # Get representative condition (prefer top elevation for best quality view)
+        # Get representative condition matching overall quality for explanation
         representative = None
         for pref_level in ["top", "mid", "base"]:
             for c in conditions:
-                if c.elevation_level == pref_level:
+                if (
+                    c.elevation_level == pref_level
+                    and c.snow_quality == overall_quality
+                ):
                     representative = c
                     break
             if representative:
                 break
+        # Fallback to top > mid > base if no quality match
+        if not representative:
+            for pref_level in ["top", "mid", "base"]:
+                for c in conditions:
+                    if c.elevation_level == pref_level:
+                        representative = c
+                        break
+                if representative:
+                    break
         if not representative and conditions:
             representative = conditions[0]
         explanation = (
