@@ -36,6 +36,11 @@
 
 | Feature | Date |
 |---------|------|
+| ML model v8: MAE 0.299, within-1 100%, R² 0.870 | 2026-02-21 |
+| Fix recommendation reason text to match quality labels | 2026-02-21 |
+| Match overall explanation to weighted quality level | 2026-02-21 |
+| Use weighted elevation quality in recommendations (consistency fix) | 2026-02-21 |
+| Improve cold accumulation boost and explanation text for deep snow | 2026-02-21 |
 | Fix all resorts missing from recommendations (GSI pagination + ProjectionExpression) | 2026-02-21 |
 | Increase API Lambda memory to 512MB | 2026-02-21 |
 | Fix recommendation scoring plateau (log scale for fresh snow) | 2026-02-21 |
@@ -95,8 +100,8 @@
 ## Architecture
 
 ### Snow Quality Algorithm
-ML model v7: ensemble of 10 neural networks (27 features → quality score 1-6).
-88.2% exact accuracy, 100% within-1 quality level. Retrained on corrected elevation data. See `ml/ALGORITHM.md` for details.
+ML model v8: ensemble of 10 neural networks (27 features → quality score 1-6).
+Val MAE 0.299, R² 0.870, 100% within-1 quality level. Trained on 2207 samples (1677 real, 409 synthetic, 121 historical) across 129 resorts. See `ml/ALGORITHM.md` for details.
 
 Quality levels: EXCELLENT (6) → GOOD (5) → FAIR (4) → POOR (3) → BAD (2) → HORRIBLE (1)
 
