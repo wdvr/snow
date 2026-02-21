@@ -193,6 +193,21 @@ POST /api/v1/resorts/{id}/condition-reports - Submit user condition report
 GET  /api/v1/resorts/{id}/condition-reports - List condition reports for resort
 GET  /api/v1/user/condition-reports    - List user's own condition reports
 DELETE /api/v1/resorts/{id}/condition-reports/{report_id} - Delete condition report
+GET  /api/v1/resorts/{id}/history      - Snow history (daily snowfall chart data + season summary)
+```
+
+### DynamoDB Tables
+```
+snow-tracker-resorts-{env}                 - Resort master data
+snow-tracker-weather-conditions-{env}      - Hourly weather conditions (60d TTL)
+snow-tracker-snow-summary-{env}            - Season snowfall totals (no TTL)
+snow-tracker-daily-history-{env}           - Daily snow history snapshots (no TTL)
+snow-tracker-user-preferences-{env}        - User preferences & notification settings
+snow-tracker-device-tokens-{env}           - APNs device tokens (90d TTL)
+snow-tracker-resort-events-{env}           - Resort events
+snow-tracker-feedback-{env}                - User feedback
+snow-tracker-chat-{env}                    - AI chat conversations (30d TTL)
+snow-tracker-condition-reports-{env}       - User condition reports (90d TTL)
 ```
 
 ### Bedrock Configuration
