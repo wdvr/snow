@@ -72,8 +72,8 @@ struct NotificationSettingsView: View {
                                     viewModel.saveSettings()
                                 }
 
-                                Text("\(Int(viewModel.snowThresholdCm)) cm")
-                                    .frame(width: 50, alignment: .trailing)
+                                Text(formatThreshold(viewModel.snowThresholdCm))
+                                    .frame(width: 55, alignment: .trailing)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -216,6 +216,14 @@ struct NotificationSettingsView: View {
             await viewModel.loadSettings()
         }
     }
+
+    private func formatThreshold(_ cm: Double) -> String {
+        if userPreferencesManager.preferredUnits.snowDepth == .inches {
+            let inches = cm / 2.54
+            return String(format: "%.0f\"", inches)
+        }
+        return "\(Int(cm)) cm"
+    }
 }
 
 // MARK: - Resort Notification Row
@@ -223,6 +231,7 @@ struct NotificationSettingsView: View {
 struct ResortNotificationRow: View {
     let resortId: String
     @ObservedObject var viewModel: NotificationSettingsViewModel
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @State private var isExpanded = false
 
     var body: some View {
@@ -244,8 +253,8 @@ struct ResortNotificationRow: View {
                                 step: 1
                             )
 
-                            Text("\(Int(viewModel.getResortSetting(resortId)?.freshSnowThresholdCm ?? viewModel.snowThresholdCm)) cm")
-                                .frame(width: 50, alignment: .trailing)
+                            Text(formatThreshold(viewModel.getResortSetting(resortId)?.freshSnowThresholdCm ?? viewModel.snowThresholdCm))
+                                .frame(width: 55, alignment: .trailing)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -326,6 +335,14 @@ struct ResortNotificationRow: View {
                 }
             }
         )
+    }
+
+    private func formatThreshold(_ cm: Double) -> String {
+        if userPreferencesManager.preferredUnits.snowDepth == .inches {
+            let inches = cm / 2.54
+            return String(format: "%.0f\"", inches)
+        }
+        return "\(Int(cm)) cm"
     }
 }
 
