@@ -1119,6 +1119,33 @@ api_v1_resource = aws.apigateway.Resource(
     path_part="v1",
 )
 
+# Regions resource: /api/v1/regions
+regions_resource = aws.apigateway.Resource(
+    f"{app_name}-regions-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="regions",
+)
+
+# GET /api/v1/regions
+regions_method = aws.apigateway.Method(
+    f"{app_name}-regions-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=regions_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+regions_integration = aws.apigateway.Integration(
+    f"{app_name}-regions-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=regions_resource.id,
+    http_method=regions_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # Resorts resource: /api/v1/resorts
 resorts_resource = aws.apigateway.Resource(
     f"{app_name}-resorts-resource-{environment}",
@@ -1141,6 +1168,33 @@ resorts_integration = aws.apigateway.Integration(
     rest_api=api_gateway.id,
     resource_id=resorts_resource.id,
     http_method=resorts_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Nearby resorts resource: /api/v1/resorts/nearby
+nearby_resource = aws.apigateway.Resource(
+    f"{app_name}-nearby-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=resorts_resource.id,
+    path_part="nearby",
+)
+
+# GET /api/v1/resorts/nearby
+nearby_method = aws.apigateway.Method(
+    f"{app_name}-nearby-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=nearby_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+nearby_integration = aws.apigateway.Integration(
+    f"{app_name}-nearby-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=nearby_resource.id,
+    http_method=nearby_method.http_method,
     integration_http_method="POST",
     type="AWS_PROXY",
     uri=api_handler_lambda.invoke_arn,
@@ -1195,6 +1249,60 @@ conditions_integration = aws.apigateway.Integration(
     rest_api=api_gateway.id,
     resource_id=conditions_resource.id,
     http_method=conditions_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Conditions by elevation: /api/v1/resorts/{resortId}/conditions/{elevationLevel}
+conditions_elevation_resource = aws.apigateway.Resource(
+    f"{app_name}-conditions-elevation-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=conditions_resource.id,
+    path_part="{elevationLevel}",
+)
+
+# GET /api/v1/resorts/{resortId}/conditions/{elevationLevel}
+conditions_elevation_method = aws.apigateway.Method(
+    f"{app_name}-conditions-elevation-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=conditions_elevation_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+conditions_elevation_integration = aws.apigateway.Integration(
+    f"{app_name}-conditions-elevation-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=conditions_elevation_resource.id,
+    http_method=conditions_elevation_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Snow quality resource: /api/v1/resorts/{resortId}/snow-quality
+resort_snow_quality_resource = aws.apigateway.Resource(
+    f"{app_name}-resort-snow-quality-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=resort_resource.id,
+    path_part="snow-quality",
+)
+
+# GET /api/v1/resorts/{resortId}/snow-quality
+resort_snow_quality_method = aws.apigateway.Method(
+    f"{app_name}-resort-snow-quality-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=resort_snow_quality_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+resort_snow_quality_integration = aws.apigateway.Integration(
+    f"{app_name}-resort-snow-quality-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=resort_snow_quality_resource.id,
+    http_method=resort_snow_quality_method.http_method,
     integration_http_method="POST",
     type="AWS_PROXY",
     uri=api_handler_lambda.invoke_arn,
@@ -1629,6 +1737,334 @@ resort_notification_setting_delete_integration = aws.apigateway.Integration(
 )
 
 # =============================================================================
+# Quality Explanations API Route
+# =============================================================================
+
+# Quality explanations resource: /api/v1/quality-explanations
+quality_explanations_resource = aws.apigateway.Resource(
+    f"{app_name}-quality-explanations-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="quality-explanations",
+)
+
+# GET /api/v1/quality-explanations
+quality_explanations_method = aws.apigateway.Method(
+    f"{app_name}-quality-explanations-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=quality_explanations_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+quality_explanations_integration = aws.apigateway.Integration(
+    f"{app_name}-quality-explanations-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=quality_explanations_resource.id,
+    http_method=quality_explanations_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# =============================================================================
+# Auth API Routes
+# =============================================================================
+
+# Auth resource: /api/v1/auth
+auth_resource = aws.apigateway.Resource(
+    f"{app_name}-auth-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="auth",
+)
+
+# Apple auth resource: /api/v1/auth/apple
+auth_apple_resource = aws.apigateway.Resource(
+    f"{app_name}-auth-apple-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=auth_resource.id,
+    path_part="apple",
+)
+
+# POST /api/v1/auth/apple
+auth_apple_method = aws.apigateway.Method(
+    f"{app_name}-auth-apple-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=auth_apple_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+auth_apple_integration = aws.apigateway.Integration(
+    f"{app_name}-auth-apple-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=auth_apple_resource.id,
+    http_method=auth_apple_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Guest auth resource: /api/v1/auth/guest
+auth_guest_resource = aws.apigateway.Resource(
+    f"{app_name}-auth-guest-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=auth_resource.id,
+    path_part="guest",
+)
+
+# POST /api/v1/auth/guest
+auth_guest_method = aws.apigateway.Method(
+    f"{app_name}-auth-guest-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=auth_guest_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+auth_guest_integration = aws.apigateway.Integration(
+    f"{app_name}-auth-guest-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=auth_guest_resource.id,
+    http_method=auth_guest_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Refresh auth resource: /api/v1/auth/refresh
+auth_refresh_resource = aws.apigateway.Resource(
+    f"{app_name}-auth-refresh-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=auth_resource.id,
+    path_part="refresh",
+)
+
+# POST /api/v1/auth/refresh
+auth_refresh_method = aws.apigateway.Method(
+    f"{app_name}-auth-refresh-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=auth_refresh_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+auth_refresh_integration = aws.apigateway.Integration(
+    f"{app_name}-auth-refresh-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=auth_refresh_resource.id,
+    http_method=auth_refresh_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Me auth resource: /api/v1/auth/me
+auth_me_resource = aws.apigateway.Resource(
+    f"{app_name}-auth-me-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=auth_resource.id,
+    path_part="me",
+)
+
+# GET /api/v1/auth/me
+auth_me_method = aws.apigateway.Method(
+    f"{app_name}-auth-me-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=auth_me_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+auth_me_integration = aws.apigateway.Integration(
+    f"{app_name}-auth-me-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=auth_me_resource.id,
+    http_method=auth_me_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# =============================================================================
+# Trips API Routes
+# =============================================================================
+
+# Trips resource: /api/v1/trips
+trips_resource = aws.apigateway.Resource(
+    f"{app_name}-trips-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="trips",
+)
+
+# POST /api/v1/trips
+trips_post_method = aws.apigateway.Method(
+    f"{app_name}-trips-post-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trips_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+trips_post_integration = aws.apigateway.Integration(
+    f"{app_name}-trips-post-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trips_resource.id,
+    http_method=trips_post_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# GET /api/v1/trips
+trips_get_method = aws.apigateway.Method(
+    f"{app_name}-trips-get-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trips_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+trips_get_integration = aws.apigateway.Integration(
+    f"{app_name}-trips-get-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trips_resource.id,
+    http_method=trips_get_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Single trip resource: /api/v1/trips/{tripId}
+trip_resource = aws.apigateway.Resource(
+    f"{app_name}-trip-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=trips_resource.id,
+    path_part="{tripId}",
+)
+
+# GET /api/v1/trips/{tripId}
+trip_get_method = aws.apigateway.Method(
+    f"{app_name}-trip-get-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trip_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+trip_get_integration = aws.apigateway.Integration(
+    f"{app_name}-trip-get-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trip_resource.id,
+    http_method=trip_get_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# PUT /api/v1/trips/{tripId}
+trip_put_method = aws.apigateway.Method(
+    f"{app_name}-trip-put-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trip_resource.id,
+    http_method="PUT",
+    authorization="NONE",
+)
+
+trip_put_integration = aws.apigateway.Integration(
+    f"{app_name}-trip-put-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trip_resource.id,
+    http_method=trip_put_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# DELETE /api/v1/trips/{tripId}
+trip_delete_method = aws.apigateway.Method(
+    f"{app_name}-trip-delete-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trip_resource.id,
+    http_method="DELETE",
+    authorization="NONE",
+)
+
+trip_delete_integration = aws.apigateway.Integration(
+    f"{app_name}-trip-delete-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trip_resource.id,
+    http_method=trip_delete_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Refresh conditions resource: /api/v1/trips/{tripId}/refresh-conditions
+trip_refresh_resource = aws.apigateway.Resource(
+    f"{app_name}-trip-refresh-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=trip_resource.id,
+    path_part="refresh-conditions",
+)
+
+# POST /api/v1/trips/{tripId}/refresh-conditions
+trip_refresh_method = aws.apigateway.Method(
+    f"{app_name}-trip-refresh-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trip_refresh_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+trip_refresh_integration = aws.apigateway.Integration(
+    f"{app_name}-trip-refresh-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trip_refresh_resource.id,
+    http_method=trip_refresh_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Alerts resource: /api/v1/trips/{tripId}/alerts
+trip_alerts_resource = aws.apigateway.Resource(
+    f"{app_name}-trip-alerts-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=trip_resource.id,
+    path_part="alerts",
+)
+
+# Read alerts resource: /api/v1/trips/{tripId}/alerts/read
+trip_alerts_read_resource = aws.apigateway.Resource(
+    f"{app_name}-trip-alerts-read-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=trip_alerts_resource.id,
+    path_part="read",
+)
+
+# POST /api/v1/trips/{tripId}/alerts/read
+trip_alerts_read_method = aws.apigateway.Method(
+    f"{app_name}-trip-alerts-read-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trip_alerts_read_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+trip_alerts_read_integration = aws.apigateway.Integration(
+    f"{app_name}-trip-alerts-read-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=trip_alerts_read_resource.id,
+    http_method=trip_alerts_read_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# =============================================================================
 # Feedback API Route
 # =============================================================================
 
@@ -1774,17 +2210,33 @@ api_deployment = aws.apigateway.Deployment(
         # Force redeployment when any integration changes
         "redeployment": pulumi.Output.all(
             health_integration_response.id,
+            regions_integration.id,
             resorts_integration.id,
+            nearby_integration.id,
             resort_integration.id,
             conditions_integration.id,
+            conditions_elevation_integration.id,
             timeline_integration.id,
             events_get_integration.id,
             events_post_integration.id,
             event_delete_integration.id,
             batch_conditions_integration.id,
+            resort_snow_quality_integration.id,
             snow_quality_batch_integration.id,
+            quality_explanations_integration.id,
             recommendations_integration.id,
             recommendations_best_integration.id,
+            auth_apple_integration.id,
+            auth_guest_integration.id,
+            auth_refresh_integration.id,
+            auth_me_integration.id,
+            trips_post_integration.id,
+            trips_get_integration.id,
+            trip_get_integration.id,
+            trip_put_integration.id,
+            trip_delete_integration.id,
+            trip_refresh_integration.id,
+            trip_alerts_read_integration.id,
             user_preferences_get_integration.id,
             user_preferences_put_integration.id,
             device_tokens_post_integration.id,
@@ -1802,17 +2254,33 @@ api_deployment = aws.apigateway.Deployment(
     opts=pulumi.ResourceOptions(
         depends_on=[
             health_integration_response,
+            regions_integration,
             resorts_integration,
+            nearby_integration,
             resort_integration,
             conditions_integration,
+            conditions_elevation_integration,
             timeline_integration,
             events_get_integration,
             events_post_integration,
             event_delete_integration,
             batch_conditions_integration,
+            resort_snow_quality_integration,
             snow_quality_batch_integration,
+            quality_explanations_integration,
             recommendations_integration,
             recommendations_best_integration,
+            auth_apple_integration,
+            auth_guest_integration,
+            auth_refresh_integration,
+            auth_me_integration,
+            trips_post_integration,
+            trips_get_integration,
+            trip_get_integration,
+            trip_put_integration,
+            trip_delete_integration,
+            trip_refresh_integration,
+            trip_alerts_read_integration,
             user_preferences_get_integration,
             user_preferences_put_integration,
             device_tokens_post_integration,
