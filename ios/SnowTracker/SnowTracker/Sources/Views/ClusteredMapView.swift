@@ -289,6 +289,11 @@ final class ResortAnnotationView: MKAnnotationView {
         self.annotation = annotation
         let image = createMarkerImage(color: annotation.markerColor, quality: annotation.snowQuality)
         markerImageView.image = image
+
+        // Accessibility
+        isAccessibilityElement = true
+        accessibilityLabel = "\(annotation.resort.name), \(annotation.snowQuality.displayName) snow quality"
+        accessibilityTraits = .button
     }
 
     private func createMarkerImage(color: UIColor, quality: SnowQuality) -> UIImage {
@@ -400,6 +405,16 @@ final class ResortClusterAnnotationView: MKAnnotationView {
         drawPieChart(green: greenCount, orange: orangeCount, red: redCount, black: blackCount, total: count)
 
         countLabel.text = count > 99 ? "99+" : "\(count)"
+
+        // Accessibility
+        isAccessibilityElement = true
+        var qualityParts: [String] = []
+        if greenCount > 0 { qualityParts.append("\(greenCount) excellent or good") }
+        if orangeCount > 0 { qualityParts.append("\(orangeCount) fair or soft") }
+        if redCount > 0 { qualityParts.append("\(redCount) icy") }
+        if blackCount > 0 { qualityParts.append("\(blackCount) not skiable") }
+        accessibilityLabel = "Cluster of \(count) resorts: \(qualityParts.joined(separator: ", "))"
+        accessibilityTraits = .button
 
         // Add white border
         layer.cornerRadius = clusterSize / 2

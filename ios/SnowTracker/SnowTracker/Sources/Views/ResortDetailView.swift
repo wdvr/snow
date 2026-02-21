@@ -31,7 +31,7 @@ struct ResortDetailView: View {
             text += "No current conditions available.\n"
         }
 
-        text += "\n📱 Tracked with Snow Tracker"
+        text += "\n📱 Tracked with Powder Chaser"
         return text
     }
 

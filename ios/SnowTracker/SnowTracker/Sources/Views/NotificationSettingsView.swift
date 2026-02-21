@@ -45,7 +45,7 @@ struct NotificationSettingsView: View {
             } header: {
                 Text("Master Switch")
             } footer: {
-                Text("Turn off to disable all push notifications from Snow Tracker.")
+                Text("Turn off to disable all push notifications from Powder Chaser.")
             }
 
             // Notification Types Section
