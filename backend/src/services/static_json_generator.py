@@ -231,10 +231,36 @@ class StaticJsonGenerator:
                 "snowfall_24h_cm": None,
             }
 
-        # Calculate overall quality using weighted elevation scoring
-        from services.snow_quality_service import SnowQualityService
+        # Calculate overall quality from weighted raw scores (top 50%, mid 35%, base 15%)
+        elevation_weights = {"top": 0.50, "mid": 0.35, "base": 0.15}
+        weighted_raw = 0.0
+        total_w = 0.0
+        for c in conditions:
+            if c.quality_score is not None:
+                w = elevation_weights.get(c.elevation_level, 0.15)
+                weighted_raw += c.quality_score * w
+                total_w += w
 
-        overall_quality = SnowQualityService.calculate_overall_quality(conditions)
+        if total_w > 0:
+            overall_raw = weighted_raw / total_w
+            snow_score = score_to_100(overall_raw)
+            if overall_raw >= 5.5:
+                overall_quality = SnowQuality.EXCELLENT
+            elif overall_raw >= 4.5:
+                overall_quality = SnowQuality.GOOD
+            elif overall_raw >= 3.5:
+                overall_quality = SnowQuality.FAIR
+            elif overall_raw >= 2.5:
+                overall_quality = SnowQuality.POOR
+            elif overall_raw >= 1.5:
+                overall_quality = SnowQuality.BAD
+            else:
+                overall_quality = SnowQuality.HORRIBLE
+        else:
+            from services.snow_quality_service import SnowQualityService
+
+            overall_quality = SnowQualityService.calculate_overall_quality(conditions)
+            snow_score = None
 
         # Get representative condition (prefer top elevation for best quality view)
         representative = None
@@ -247,10 +273,6 @@ class StaticJsonGenerator:
                 break
         if not representative and conditions:
             representative = conditions[0]
-
-        # Compute snow score and explanation
-        raw_score = representative.quality_score if representative else None
-        snow_score = score_to_100(raw_score) if raw_score is not None else None
         explanation = (
             generate_quality_explanation(representative) if representative else None
         )
