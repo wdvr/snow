@@ -357,17 +357,37 @@ class WeatherService:
             elevation_levels = ["base", "mid", "top"]
 
             def query_elevation(elevation_level: str):
-                """Query conditions for a specific elevation level (single page)."""
+                """Query conditions for a specific elevation level with pagination.
+
+                Each item stores ~15KB raw_data, so only ~62 items fit per 1MB
+                DynamoDB page. With 130+ resorts, we need multiple pages.
+                We strip raw_data from results to keep Lambda memory low.
+                """
                 try:
-                    response = self.conditions_table.query(
-                        IndexName="ElevationIndex",
-                        KeyConditionExpression=Key("elevation_level").eq(
+                    items = []
+                    query_params = {
+                        "IndexName": "ElevationIndex",
+                        "KeyConditionExpression": Key("elevation_level").eq(
                             elevation_level
                         )
                         & Key("timestamp").gte(cutoff_str),
-                        ScanIndexForward=False,  # Most recent first
-                    )
-                    return response.get("Items", [])
+                        "ScanIndexForward": False,  # Most recent first
+                    }
+
+                    while True:
+                        response = self.conditions_table.query(**query_params)
+                        for item in response.get("Items", []):
+                            # Strip raw_data (~15KB) to reduce memory usage
+                            item.pop("raw_data", None)
+                            items.append(item)
+
+                        # Check for more pages
+                        last_key = response.get("LastEvaluatedKey")
+                        if not last_key:
+                            break
+                        query_params["ExclusiveStartKey"] = last_key
+
+                    return items
                 except Exception as e:
                     logger.warning(f"Error querying elevation {elevation_level}: {e}")
                     return []
