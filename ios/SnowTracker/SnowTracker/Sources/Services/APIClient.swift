@@ -1392,16 +1392,18 @@ struct Trip: Codable, Identifiable, Sendable {
         TripStatus(rawValue: status) ?? .planned
     }
 
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
     var startDateFormatted: Date? {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: startDate)
+        Self.dateFormatter.date(from: startDate)
     }
 
     var endDateFormatted: Date? {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: endDate)
+        Self.dateFormatter.date(from: endDate)
     }
 
     var daysUntilTrip: Int? {

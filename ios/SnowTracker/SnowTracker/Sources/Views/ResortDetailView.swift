@@ -74,6 +74,7 @@ struct ResortDetailView: View {
                         Image(systemName: "square.and.arrow.up")
                             .foregroundStyle(.blue)
                     }
+                    .accessibilityLabel("Share \(resort.name)")
 
                     Button {
                         let wasFavorite = userPreferencesManager.isFavorite(resortId: resort.id)
@@ -88,6 +89,7 @@ struct ResortDetailView: View {
                             .foregroundStyle(userPreferencesManager.isFavorite(resortId: resort.id) ? .red : .gray)
                     }
                     .sensoryFeedback(.impact(weight: .light), trigger: userPreferencesManager.isFavorite(resortId: resort.id))
+                    .accessibilityLabel(userPreferencesManager.isFavorite(resortId: resort.id) ? "Remove from favorites" : "Add to favorites")
                 }
             }
         }
@@ -321,6 +323,7 @@ struct ResortDetailView: View {
                             .font(.caption)
                             .foregroundStyle(.blue)
                     }
+                    .accessibilityLabel("Thaw-freeze cycle information")
                     .popover(isPresented: $showThawFreezeInfo) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Thaw-Freeze Cycles")

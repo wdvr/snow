@@ -170,9 +170,11 @@ class DemoDataService {
 
     // MARK: - Demo Weather Conditions
 
+    private static let isoFormatter = ISO8601DateFormatter()
+
     /// Generate beautiful demo conditions for all demo resorts
     func demoConditions(for resortId: String? = nil) -> [String: [WeatherCondition]] {
-        let currentTime = ISO8601DateFormatter().string(from: Date())
+        let currentTime = Self.isoFormatter.string(from: Date())
 
         var allConditions: [String: [WeatherCondition]] = [:]
 
