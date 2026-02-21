@@ -18,7 +18,7 @@ enum ResortSortOption: String, CaseIterable {
 struct ResortListView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
-    @StateObject private var locationManager = LocationManager.shared
+    @ObservedObject private var locationManager = LocationManager.shared
     @Binding var deepLinkResort: Resort?
 
     init(deepLinkResort: Binding<Resort?> = .constant(nil)) {
@@ -189,6 +189,11 @@ struct ResortListView: View {
                 }
                 .listStyle(PlainListStyle())
                 .searchable(text: $searchText, prompt: "Search resorts...")
+                .overlay {
+                    if !searchText.isEmpty && filteredResorts.isEmpty && !snowConditionsManager.resorts.isEmpty {
+                        ContentUnavailableView.search(text: searchText)
+                    }
+                }
             }
             .navigationTitle("Snow Resorts")
             .onAppear {
@@ -483,6 +488,7 @@ struct FilterChip: View {
             .foregroundColor(isSelected ? .white : .primary)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

@@ -58,7 +58,7 @@ struct SplashView: View {
 
                     // App title
                     VStack(spacing: 8) {
-                        Text("Snow Tracker")
+                        Text("Powder Chaser")
                             .font(.system(size: 36, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
                             .opacity(showTitle ? 1 : 0)

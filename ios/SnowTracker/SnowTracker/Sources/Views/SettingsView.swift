@@ -358,7 +358,7 @@ struct AboutView: View {
                     .foregroundStyle(.blue)
                     .padding(.top, 40)
 
-                Text("Snow Quality Tracker")
+                Text("Powder Chaser")
                     .font(.title)
                     .fontWeight(.bold)
 
@@ -371,10 +371,17 @@ struct AboutView: View {
                     .padding(.horizontal)
 
                 VStack(spacing: 8) {
-                    Text("Initial Resorts")
+                    Text("Supported Resorts")
                         .font(.headline)
 
-                    Text("Big White, Lake Louise, Silver Star")
+                    Text("28+ resorts across 8 regions worldwide")
+                        .foregroundStyle(.secondary)
+                }
+
+                VStack(spacing: 4) {
+                    Text("Version")
+                        .font(.headline)
+                    Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
                         .foregroundStyle(.secondary)
                 }
 

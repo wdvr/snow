@@ -520,7 +520,7 @@ struct ResortDetailView: View {
                     weatherDetailItem(
                         icon: "wind",
                         title: "Wind",
-                        value: "\(Int(wind)) km/h"
+                        value: condition.formattedWindSpeedWithPrefs(userPreferencesManager.preferredUnits)
                     )
                 }
             }

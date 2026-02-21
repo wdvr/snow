@@ -6,11 +6,12 @@ struct ConditionsView: View {
     @State private var showingQualityInfo = false
 
     var sortedResorts: [Resort] {
-        snowConditionsManager.resorts.sorted { resort1, resort2 in
-            let quality1 = snowConditionsManager.getSnowQuality(for: resort1.id)
-            let quality2 = snowConditionsManager.getSnowQuality(for: resort2.id)
-            return quality1.sortOrder < quality2.sortOrder
-        }
+        userPreferencesManager.filterByVisibleRegions(snowConditionsManager.resorts)
+            .sorted { resort1, resort2 in
+                let quality1 = snowConditionsManager.getSnowQuality(for: resort1.id)
+                let quality2 = snowConditionsManager.getSnowQuality(for: resort2.id)
+                return quality1.sortOrder < quality2.sortOrder
+            }
     }
 
     /// Only show offline indicator if data is actually stale (> 5 minutes old)
@@ -105,7 +106,7 @@ struct ConditionsView: View {
     }
 
     private func qualityCountBadge(quality: SnowQuality) -> some View {
-        let count = snowConditionsManager.resorts.filter { resort in
+        let count = sortedResorts.filter { resort in
             snowConditionsManager.getSnowQuality(for: resort.id) == quality
         }.count
 

@@ -90,7 +90,7 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
 
     var color: Color {
         switch self {
-        case .excellent: return .green
+        case .excellent: return Color(red: 0.0, green: 0.65, blue: 0.35) // Emerald green
         case .good: return Color(.systemGreen)
         case .fair: return .orange
         case .poor: return Color(.systemOrange)
@@ -633,6 +633,18 @@ extension WeatherCondition {
             return "No fresh snow"
         }
         return "\(Self.formatSnow(cm, prefs: prefs)) fresh"
+    }
+
+    /// Format wind speed according to user preferences
+    func formattedWindSpeedWithPrefs(_ prefs: UnitPreferences) -> String {
+        guard let wind = windSpeedKmh else { return "No wind data" }
+        switch prefs.distance {
+        case .metric:
+            return "\(Int(wind)) km/h"
+        case .imperial:
+            let mph = wind * 0.621371
+            return "\(Int(mph)) mph"
+        }
     }
 
     /// Format 24h snowfall according to user preferences

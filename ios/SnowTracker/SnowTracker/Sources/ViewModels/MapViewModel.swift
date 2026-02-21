@@ -285,9 +285,13 @@ class MapViewModel: ObservableObject {
 
     // MARK: - Distance Helpers
 
-    func formattedDistance(to resort: Resort) -> String? {
+    func formattedDistance(to resort: Resort, prefs: UnitPreferences? = nil) -> String? {
         guard let userLocation = locationManager.userLocation else { return nil }
         let distance = resort.distance(from: userLocation)
+        if let prefs = prefs, prefs.distance == .imperial {
+            let miles = distance / 1609.344
+            return String(format: "%.0f mi", miles)
+        }
         return String(format: "%.0f km", distance / 1000)
     }
 

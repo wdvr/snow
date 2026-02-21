@@ -14,7 +14,7 @@ struct FeedbackView: View {
         Form {
             Section {
                 TextField("Subject", text: $subject)
-                    .autocapitalization(.sentences)
+                    .textInputAutocapitalization(.sentences)
 
                 TextEditor(text: $message)
                     .frame(minHeight: 150)

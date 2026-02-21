@@ -5,9 +5,14 @@ struct FavoritesView: View {
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
 
     private var favoriteResorts: [Resort] {
-        snowConditionsManager.resorts.filter { resort in
-            userPreferencesManager.favoriteResorts.contains(resort.id)
-        }
+        snowConditionsManager.resorts
+            .filter { userPreferencesManager.favoriteResorts.contains($0.id) }
+            .sorted { resort1, resort2 in
+                let q1 = snowConditionsManager.getSnowQuality(for: resort1.id).sortOrder
+                let q2 = snowConditionsManager.getSnowQuality(for: resort2.id).sortOrder
+                if q1 != q2 { return q1 < q2 }
+                return resort1.name < resort2.name
+            }
     }
 
     var body: some View {

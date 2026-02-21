@@ -241,7 +241,7 @@ struct ResortMapView: View {
                     ForEach(mapViewModel.nearbyResorts(limit: 5)) { annotation in
                         NearbyResortCard(
                             annotation: annotation,
-                            distance: mapViewModel.formattedDistance(to: annotation.resort)
+                            distance: mapViewModel.formattedDistance(to: annotation.resort, prefs: userPreferencesManager.preferredUnits)
                         ) {
                             selectedResort = annotation.resort
                             showResortDetail = true
@@ -282,10 +282,14 @@ struct ResortMapView: View {
         }
     }
 
-    private func dayAbbreviation(_ date: Date) -> String {
+    private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE"
-        return formatter.string(from: date)
+        return formatter
+    }()
+
+    private func dayAbbreviation(_ date: Date) -> String {
+        Self.dayFormatter.string(from: date)
     }
 
     // MARK: - Helpers
@@ -396,6 +400,7 @@ struct MapFilterChip: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -594,14 +599,14 @@ struct ResortMapDetailSheet: View {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 ConditionCard(
                     title: "Fresh Snow",
-                    value: condition.formattedSnowSinceFreezeInches,
+                    value: condition.formattedSnowSinceFreezeWithPrefs(userPreferencesManager.preferredUnits),
                     icon: "snowflake",
                     color: .cyan
                 )
 
                 ConditionCard(
                     title: "24h Snowfall",
-                    value: condition.formattedSnowfall24h,
+                    value: condition.formattedSnowfall24hWithPrefs(userPreferencesManager.preferredUnits),
                     icon: "cloud.snow",
                     color: .blue
                 )
@@ -857,13 +862,26 @@ private struct MapChangeHandlers: ViewModifier {
     let onAnnotationsUpdate: () -> Void
     let onFilterChange: (MapFilterOption) -> Void
 
+    /// Content-aware hash that detects quality changes, not just count changes
+    private var contentHash: Int {
+        var hasher = Hasher()
+        hasher.combine(resorts.count)
+        hasher.combine(summaryCount)
+        hasher.combine(hiddenRegions)
+        for (key, conds) in conditions {
+            hasher.combine(key)
+            for c in conds {
+                hasher.combine(c.snowQuality)
+                hasher.combine(c.timestamp)
+            }
+        }
+        return hasher.finalize()
+    }
+
     func body(content: Content) -> some View {
         content
-            .onChange(of: resorts.count) { _, _ in onAnnotationsUpdate() }
-            .onChange(of: conditions.count) { _, _ in onAnnotationsUpdate() }
-            .onChange(of: summaryCount) { _, _ in onAnnotationsUpdate() }
+            .onChange(of: contentHash) { _, _ in onAnnotationsUpdate() }
             .onChange(of: selectedFilter) { _, newValue in onFilterChange(newValue) }
-            .onChange(of: hiddenRegions.count) { _, _ in onAnnotationsUpdate() }
     }
 }
 

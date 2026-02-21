@@ -15,7 +15,7 @@ struct WelcomeView: View {
                     .font(.system(size: 80))
                     .foregroundColor(.blue)
 
-                Text("Snow Tracker")
+                Text("Powder Chaser")
                     .font(.largeTitle)
                     .fontWeight(.bold)
 
@@ -49,9 +49,6 @@ struct WelcomeView: View {
                 .frame(height: 50)
                 .cornerRadius(12)
                 .padding(.horizontal, 40)
-                .onTapGesture {
-                    authService.signInWithApple()
-                }
 
                 // Sign in with Google - using standard Google branding
                 Button {
