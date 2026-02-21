@@ -641,12 +641,12 @@ struct ResortMapDetailSheet: View {
                         .fontWeight(.medium)
 
                     HStack(spacing: 16) {
-                        ForecastBadge(hours: 24, cm: pred24)
+                        ForecastBadge(hours: 24, cm: pred24, prefs: userPreferencesManager.preferredUnits)
                         if let pred48 = condition.predictedSnow48hCm, pred48 > 0 {
-                            ForecastBadge(hours: 48, cm: pred48)
+                            ForecastBadge(hours: 48, cm: pred48, prefs: userPreferencesManager.preferredUnits)
                         }
                         if let pred72 = condition.predictedSnow72hCm, pred72 > 0 {
-                            ForecastBadge(hours: 72, cm: pred72)
+                            ForecastBadge(hours: 72, cm: pred72, prefs: userPreferencesManager.preferredUnits)
                         }
                     }
                 }
@@ -747,13 +747,14 @@ struct ConditionCard: View {
 struct ForecastBadge: View {
     let hours: Int
     let cm: Double
+    let prefs: UnitPreferences
 
     var body: some View {
         VStack(spacing: 2) {
             Text("\(hours)h")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-            Text(String(format: "%.0f cm", cm))
+            Text(WeatherCondition.formatSnowShort(cm, prefs: prefs))
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundStyle(.cyan)
