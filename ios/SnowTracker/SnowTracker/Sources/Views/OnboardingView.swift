@@ -168,8 +168,11 @@ struct RegionGroupView: View {
                     )
                 }
             }
+            .sensoryFeedback(.selection, trigger: selectionTrigger)
         }
     }
+
+    @State private var selectionTrigger = false
 
     private func toggleRegion(_ region: SkiRegion) {
         let wasSelected = selectedRegions.contains(region.rawValue)
@@ -180,6 +183,7 @@ struct RegionGroupView: View {
                 selectedRegions.insert(region.rawValue)
             }
         }
+        selectionTrigger.toggle()
         AnalyticsService.shared.trackOnboardingRegionToggled(region: region.rawValue, selected: !wasSelected)
     }
 }
@@ -231,6 +235,9 @@ struct RegionSelectionCard: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(region.displayName), \(region.fullName)")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityHint(isSelected ? "Double tap to deselect" : "Double tap to select")
     }
 }
 

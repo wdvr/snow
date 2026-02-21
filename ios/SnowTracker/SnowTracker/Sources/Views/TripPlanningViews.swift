@@ -501,7 +501,7 @@ struct TripDetailView: View {
                 Spacer()
                 Button("Mark all read") {
                     Task {
-                        try? await tripManager.markAlertsRead(trip)
+                        _ = try? await tripManager.markAlertsRead(trip)
                         AnalyticsService.shared.trackTripAlertsMarkedRead(tripId: trip.tripId, alertCount: trip.unreadAlertCount)
                     }
                 }

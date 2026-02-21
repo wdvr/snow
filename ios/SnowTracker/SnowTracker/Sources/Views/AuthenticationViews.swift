@@ -105,91 +105,6 @@ struct WelcomeView: View {
     }
 }
 
-struct ProfileView: View {
-    @ObservedObject private var authService = AuthenticationService.shared
-
-    var body: some View {
-        NavigationStack {
-            List {
-                if let user = authService.currentUser {
-                    Section {
-                        HStack {
-                            // User avatar
-                            ZStack {
-                                Circle()
-                                    .fill(Color.blue.opacity(0.2))
-                                    .frame(width: 60, height: 60)
-
-                                Text(user.initials)
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(.blue)
-                            }
-
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(user.displayName)
-                                    .font(.headline)
-
-                                // Always show email or a placeholder
-                                Text(user.emailDisplay)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
-                                // Show auth provider
-                                HStack(spacing: 4) {
-                                    Image(systemName: user.provider == .apple ? "apple.logo" : "g.circle.fill")
-                                        .font(.caption2)
-                                    Text("Signed in with \(user.provider == .apple ? "Apple" : "Google")")
-                                        .font(.caption2)
-                                }
-                                .foregroundStyle(.secondary)
-                            }
-                            .padding(.leading, 8)
-                        }
-                        .padding(.vertical, 8)
-                    }
-                }
-
-                Section("Preferences") {
-                    NavigationLink {
-                        SettingsView()
-                    } label: {
-                        Label("Settings", systemImage: "gear")
-                    }
-
-                    NavigationLink {
-                        NotificationSettingsView()
-                    } label: {
-                        Label("Notifications", systemImage: "bell")
-                    }
-                }
-
-                Section("Account") {
-                    Button(role: .destructive) {
-                        authService.signOut()
-                    } label: {
-                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                    }
-                }
-
-                Section("About") {
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .navigationTitle("Profile")
-            .task {
-                // Refresh user info from backend to get latest email
-                await authService.refreshUserInfo()
-            }
-        }
-    }
-}
-
 // NotificationSettingsView moved to NotificationSettingsView.swift
 
 // MARK: - Google Logo View
@@ -205,8 +120,4 @@ struct GoogleLogoView: View {
 
 #Preview("Welcome") {
     WelcomeView()
-}
-
-#Preview("Profile") {
-    ProfileView()
 }

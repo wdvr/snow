@@ -3,6 +3,7 @@ import SwiftUI
 struct FavoritesView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @State private var resortToRemove: Resort?
 
     private var favoriteResorts: [Resort] {
         snowConditionsManager.resorts
@@ -82,16 +83,30 @@ struct FavoritesView: View {
                         source: "favorites"
                     )
                 })
+                .accessibilityLabel("\(resort.name), \(snowConditionsManager.getSnowQuality(for: resort.id).displayName)")
             }
-            .onDelete(perform: removeFavorites)
+            .onDelete { offsets in
+                if let index = offsets.first {
+                    resortToRemove = favoriteResorts[index]
+                }
+            }
         }
         .listStyle(PlainListStyle())
-    }
-
-    private func removeFavorites(at offsets: IndexSet) {
-        for index in offsets {
-            let resort = favoriteResorts[index]
-            userPreferencesManager.toggleFavorite(resortId: resort.id)
+        .alert("Remove Favorite?", isPresented: Binding(
+            get: { resortToRemove != nil },
+            set: { if !$0 { resortToRemove = nil } }
+        )) {
+            Button("Cancel", role: .cancel) { resortToRemove = nil }
+            Button("Remove", role: .destructive) {
+                if let resort = resortToRemove {
+                    userPreferencesManager.toggleFavorite(resortId: resort.id)
+                }
+                resortToRemove = nil
+            }
+        } message: {
+            if let resort = resortToRemove {
+                Text("Remove \(resort.name) from your favorites?")
+            }
         }
     }
 }

@@ -531,7 +531,7 @@ class NotificationSettingsViewModel: ObservableObject {
         case .forbidden:
             return "Debug features not available in this environment."
         default:
-            return error.localizedDescription ?? "An error occurred"
+            return error.localizedDescription
         }
     }
 }

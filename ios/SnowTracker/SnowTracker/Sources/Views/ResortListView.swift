@@ -362,6 +362,8 @@ struct ResortRowView: View {
                             .font(.caption2)
                             .foregroundStyle(displayQuality.color)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Snow quality: \(displayQuality.displayName)\(snowConditionsManager.getSnowScore(for: resort.id).map { ", score \($0)" } ?? "")")
                 } else if snowConditionsManager.isLoadingSnowQuality {
                     VStack {
                         ProgressView()
@@ -488,7 +490,9 @@ struct FilterChip: View {
             .foregroundStyle(isSelected ? .white : .primary)
         }
         .buttonStyle(PlainButtonStyle())
+        .sensoryFeedback(.selection, trigger: isSelected)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityLabel("\(title)\(isSelected ? ", selected" : "")")
     }
 }
 

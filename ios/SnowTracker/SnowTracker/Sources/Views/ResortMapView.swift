@@ -400,7 +400,9 @@ struct MapFilterChip: View {
             )
         }
         .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: isSelected)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityLabel("\(title), \(count) resorts\(isSelected ? ", selected" : "")")
     }
 }
 
@@ -428,6 +430,7 @@ struct ResortMapMarker: View {
                 .frame(width: 12, height: 8)
                 .offset(y: -1)
         }
+        .accessibilityLabel("\(annotation.resort.name), \(annotation.snowQuality.displayName)")
     }
 }
 
@@ -485,6 +488,7 @@ struct NearbyResortCard: View {
             .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(annotation.resort.name), \(annotation.snowQuality.displayName)\(distance.map { ", \($0) away" } ?? "")")
     }
 }
 
@@ -568,6 +572,7 @@ struct ResortMapDetailSheet: View {
                         .font(.title2)
                         .foregroundStyle(userPreferencesManager.isFavorite(resortId: resort.id) ? .red : .secondary)
                 }
+                .sensoryFeedback(.impact(weight: .light), trigger: userPreferencesManager.isFavorite(resortId: resort.id))
             }
 
             if let condition = condition {

@@ -87,6 +87,7 @@ struct ResortDetailView: View {
                         Image(systemName: userPreferencesManager.isFavorite(resortId: resort.id) ? "heart.fill" : "heart")
                             .foregroundStyle(userPreferencesManager.isFavorite(resortId: resort.id) ? .red : .gray)
                     }
+                    .sensoryFeedback(.impact(weight: .light), trigger: userPreferencesManager.isFavorite(resortId: resort.id))
                 }
             }
         }
@@ -175,6 +176,8 @@ struct ResortDetailView: View {
                         RoundedRectangle(cornerRadius: 12)
                             .fill(quality.color.opacity(0.1))
                     )
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Snow quality: \(quality.displayName)\(bestElevationSnowScore.map { ", score \($0) out of 100" } ?? "")")
                 }
             }
 
@@ -210,6 +213,7 @@ struct ResortDetailView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .sensoryFeedback(.selection, trigger: selectedElevation)
         }
     }
 
@@ -516,7 +520,7 @@ struct ResortDetailView: View {
                     )
                 }
 
-                if let wind = condition.windSpeedKmh {
+                if condition.windSpeedKmh != nil {
                     weatherDetailItem(
                         icon: "wind",
                         title: "Wind",
