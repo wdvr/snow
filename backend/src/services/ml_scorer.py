@@ -424,6 +424,46 @@ def extract_features_from_raw_data(
     return _extract_features_at_hour(temps, snowfall, wind_speeds, current_index, elev)
 
 
+def _apply_snow_aging_penalty(
+    score: float,
+    hours_since_snowfall: float | None,
+    snowfall_24h: float,
+    cur_temp: float,
+) -> float:
+    """Apply a post-ML penalty for aged snow conditions.
+
+    The ML model doesn't directly see hours_since_last_snowfall as a feature.
+    Old snow (>3 days) without fresh accumulation densifies and hardens, even
+    without freeze-thaw cycles. This adjustment nudges the score down.
+
+    Args:
+        score: Raw ML score (1.0-6.0)
+        hours_since_snowfall: Hours since last significant snowfall
+        snowfall_24h: Recent snowfall in cm (last 24h)
+        cur_temp: Current temperature in Celsius
+
+    Returns:
+        Adjusted score (1.0-6.0)
+    """
+    if hours_since_snowfall is None or hours_since_snowfall <= 72:
+        return score
+    if snowfall_24h >= 0.5:
+        # Recent snow — no aging penalty
+        return score
+
+    # Penalty: -0.08 per day beyond 3 days, max -0.5
+    days_since = hours_since_snowfall / 24.0
+    age_penalty = min(0.5, (days_since - 3.0) * 0.08)
+
+    # Cold temps slow densification: reduce penalty at very cold temps
+    if cur_temp < -15:
+        age_penalty *= 0.5
+    elif cur_temp < -8:
+        age_penalty *= 0.7
+
+    return max(1.0, score - age_penalty)
+
+
 def predict_quality(
     condition: Any,
     elevation_m: float | None = None,
@@ -468,6 +508,12 @@ def predict_quality(
     else:
         score = _forward_single(normalized, model["weights"])
     score = max(1.0, min(6.0, score))
+
+    # Post-ML adjustment: penalize aged snow
+    hours_since = getattr(condition, "hours_since_last_snowfall", None)
+    cur_temp = getattr(condition, "current_temp_celsius", 0.0) or 0.0
+    snow_24h = getattr(condition, "snowfall_24h_cm", 0.0) or 0.0
+    score = _apply_snow_aging_penalty(score, hours_since, snow_24h, cur_temp)
 
     # Map to quality
     thresholds = model["quality_thresholds"]
@@ -535,6 +581,20 @@ def predict_quality_at_hour(
     else:
         score = _forward_single(normalized, model["weights"])
     score = max(1.0, min(6.0, score))
+
+    # Post-ML adjustment: penalize aged snow
+    # Compute hours since last significant snowfall from the array
+    hours_since_snow = None
+    snow_24h = raw_features.get("snowfall_24h_cm", 0.0)
+    for h in range(target_hour_index, max(target_hour_index - 336, -1), -1):
+        if h < 0 or h >= len(snowfall):
+            break
+        s = snowfall[h]
+        if s is not None and s > 0.1:
+            hours_since_snow = float(target_hour_index - h)
+            break
+    cur_temp = temps[target_hour_index] if temps[target_hour_index] is not None else 0.0
+    score = _apply_snow_aging_penalty(score, hours_since_snow, snow_24h, cur_temp)
 
     thresholds = model["quality_thresholds"]
     if score >= thresholds["excellent"]:

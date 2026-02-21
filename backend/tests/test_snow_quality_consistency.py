@@ -202,6 +202,70 @@ class TestSnowQualityApiConsistency:
         assert overall_quality == SnowQuality.GOOD
 
 
+class TestSnowAgingPenalty:
+    """Tests for post-ML snow aging penalty."""
+
+    def test_no_penalty_for_recent_snow(self):
+        """No penalty when snow fell within 72 hours."""
+        from services.ml_scorer import _apply_snow_aging_penalty
+
+        score = _apply_snow_aging_penalty(
+            4.0, hours_since_snowfall=48.0, snowfall_24h=0.0, cur_temp=-10.0
+        )
+        assert score == 4.0
+
+    def test_no_penalty_with_active_snowfall(self):
+        """No penalty when there's active snowfall even if base is old."""
+        from services.ml_scorer import _apply_snow_aging_penalty
+
+        score = _apply_snow_aging_penalty(
+            4.0, hours_since_snowfall=120.0, snowfall_24h=2.0, cur_temp=-5.0
+        )
+        assert score == 4.0
+
+    def test_penalty_for_old_snow(self):
+        """Score degrades when snow is >3 days old with no new accumulation."""
+        from services.ml_scorer import _apply_snow_aging_penalty
+
+        # 7 days old, no new snow, -5°C
+        score = _apply_snow_aging_penalty(
+            4.0, hours_since_snowfall=168.0, snowfall_24h=0.0, cur_temp=-5.0
+        )
+        assert score < 4.0
+        assert score >= 3.5  # Penalty capped
+
+    def test_cold_reduces_penalty(self):
+        """Very cold temperatures slow densification and reduce the penalty."""
+        from services.ml_scorer import _apply_snow_aging_penalty
+
+        mild = _apply_snow_aging_penalty(
+            4.0, hours_since_snowfall=168.0, snowfall_24h=0.0, cur_temp=-5.0
+        )
+        cold = _apply_snow_aging_penalty(
+            4.0, hours_since_snowfall=168.0, snowfall_24h=0.0, cur_temp=-18.0
+        )
+        assert cold > mild  # Cold temps preserve snow better
+
+    def test_no_penalty_when_hours_unknown(self):
+        """No penalty when hours_since_snowfall is None."""
+        from services.ml_scorer import _apply_snow_aging_penalty
+
+        score = _apply_snow_aging_penalty(
+            4.0, hours_since_snowfall=None, snowfall_24h=0.0, cur_temp=-5.0
+        )
+        assert score == 4.0
+
+    def test_max_penalty_capped(self):
+        """Penalty is capped at 0.5 even for very old snow."""
+        from services.ml_scorer import _apply_snow_aging_penalty
+
+        # 30 days old
+        score = _apply_snow_aging_penalty(
+            4.0, hours_since_snowfall=720.0, snowfall_24h=0.0, cur_temp=0.0
+        )
+        assert score >= 3.5  # Max penalty is 0.5
+
+
 class TestFernieResortData:
     """Tests for Fernie resort data in resorts.json."""
 
