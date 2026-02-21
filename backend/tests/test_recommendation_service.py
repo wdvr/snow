@@ -528,3 +528,87 @@ class TestRecommendationService:
         assert "top" in elevation_summary
         assert elevation_summary["base"]["quality"] == "fair"
         assert elevation_summary["top"]["quality"] == "excellent"
+
+    def test_weighted_quality_multi_elevation(
+        self,
+        recommendation_service,
+        mock_resort_service,
+        mock_weather_service,
+        sample_resorts,
+    ):
+        """Test that displayed quality uses weighted elevation averaging, not best-of."""
+        # Top=excellent (5.8), mid=fair (3.6), base=poor (2.8)
+        # Weighted: 5.8*0.50 + 3.6*0.35 + 2.8*0.15 = 2.90 + 1.26 + 0.42 = 4.58 → GOOD
+        # Best-of would be EXCELLENT — weighted should give GOOD instead
+        conditions = [
+            WeatherCondition(
+                resort_id="nearby-resort",
+                elevation_level="top",
+                timestamp=datetime.now(UTC).isoformat(),
+                current_temp_celsius=-10.0,
+                min_temp_celsius=-15.0,
+                max_temp_celsius=-5.0,
+                snowfall_24h_cm=15.0,
+                snowfall_48h_cm=25.0,
+                snowfall_72h_cm=35.0,
+                snowfall_after_freeze_cm=15.0,
+                snow_quality=SnowQuality.EXCELLENT,
+                quality_score=5.8,
+                confidence_level=ConfidenceLevel.HIGH,
+                fresh_snow_cm=15.0,
+                data_source="test",
+                source_confidence=ConfidenceLevel.HIGH,
+            ),
+            WeatherCondition(
+                resort_id="nearby-resort",
+                elevation_level="mid",
+                timestamp=datetime.now(UTC).isoformat(),
+                current_temp_celsius=-3.0,
+                min_temp_celsius=-6.0,
+                max_temp_celsius=0.0,
+                snowfall_24h_cm=5.0,
+                snowfall_48h_cm=10.0,
+                snowfall_72h_cm=15.0,
+                snowfall_after_freeze_cm=5.0,
+                snow_quality=SnowQuality.FAIR,
+                quality_score=3.6,
+                confidence_level=ConfidenceLevel.MEDIUM,
+                fresh_snow_cm=5.0,
+                data_source="test",
+                source_confidence=ConfidenceLevel.MEDIUM,
+            ),
+            WeatherCondition(
+                resort_id="nearby-resort",
+                elevation_level="base",
+                timestamp=datetime.now(UTC).isoformat(),
+                current_temp_celsius=1.0,
+                min_temp_celsius=-2.0,
+                max_temp_celsius=3.0,
+                snowfall_24h_cm=1.0,
+                snowfall_48h_cm=3.0,
+                snowfall_72h_cm=5.0,
+                snowfall_after_freeze_cm=1.0,
+                snow_quality=SnowQuality.POOR,
+                quality_score=2.8,
+                confidence_level=ConfidenceLevel.LOW,
+                fresh_snow_cm=1.0,
+                data_source="test",
+                source_confidence=ConfidenceLevel.LOW,
+            ),
+        ]
+
+        mock_resort_service.get_nearby_resorts.return_value = [
+            (sample_resorts[0], 50.0),
+        ]
+        mock_weather_service.get_all_latest_conditions.return_value = {
+            "nearby-resort": conditions,
+        }
+
+        recommendations = recommendation_service.get_recommendations(
+            latitude=49.28,
+            longitude=-123.12,
+        )
+
+        assert len(recommendations) == 1
+        # Weighted quality should be GOOD (4.58), not EXCELLENT (best-of)
+        assert recommendations[0].snow_quality == SnowQuality.GOOD

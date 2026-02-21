@@ -163,20 +163,20 @@ class RecommendationService:
                 continue
 
             # Calculate aggregate metrics across elevations
-            best_quality = self._get_best_quality(conditions)
+            weighted_quality = self._get_weighted_overall_quality(conditions)
             avg_fresh_snow = self._get_average_fresh_snow(conditions)
             total_predicted_snow = self._get_total_predicted_snow(conditions)
             avg_temp = self._get_average_temperature(conditions)
             best_confidence = self._get_best_confidence(conditions)
 
             # Apply minimum quality filter
-            if min_quality and self._quality_rank(best_quality) < self._quality_rank(
-                min_quality
-            ):
+            if min_quality and self._quality_rank(
+                weighted_quality
+            ) < self._quality_rank(min_quality):
                 continue
 
             # Calculate scores
-            quality_score = self._calculate_quality_score(best_quality)
+            quality_score = self._calculate_quality_score(weighted_quality)
             distance_score = self._calculate_distance_score(distance_km)
             fresh_snow_score = self._calculate_fresh_snow_score(
                 avg_fresh_snow, total_predicted_snow
@@ -196,7 +196,7 @@ class RecommendationService:
             reason = self._generate_reason(
                 resort=resort,
                 distance_km=distance_km,
-                best_quality=best_quality,
+                best_quality=weighted_quality,
                 avg_fresh_snow=avg_fresh_snow,
                 total_predicted_snow=total_predicted_snow,
             )
@@ -206,7 +206,7 @@ class RecommendationService:
                     resort=resort,
                     distance_km=round(distance_km, 1),
                     distance_miles=round(distance_km * 0.621371, 1),
-                    snow_quality=best_quality,
+                    snow_quality=weighted_quality,
                     quality_score=round(quality_score, 3),
                     distance_score=round(distance_score, 3),
                     combined_score=round(combined_score, 3),
@@ -274,11 +274,11 @@ class RecommendationService:
             if not resort or not conditions:
                 continue
 
-            best_quality = self._get_best_quality(conditions)
+            weighted_quality = self._get_weighted_overall_quality(conditions)
 
-            if min_quality and self._quality_rank(best_quality) < self._quality_rank(
-                min_quality
-            ):
+            if min_quality and self._quality_rank(
+                weighted_quality
+            ) < self._quality_rank(min_quality):
                 continue
 
             avg_fresh_snow = self._get_average_fresh_snow(conditions)
@@ -286,7 +286,7 @@ class RecommendationService:
             avg_temp = self._get_average_temperature(conditions)
             best_confidence = self._get_best_confidence(conditions)
 
-            quality_score = self._calculate_quality_score(best_quality)
+            quality_score = self._calculate_quality_score(weighted_quality)
             fresh_snow_score = self._calculate_fresh_snow_score(
                 avg_fresh_snow, total_predicted_snow
             )
@@ -298,7 +298,7 @@ class RecommendationService:
 
             reason = self._generate_global_reason(
                 resort=resort,
-                best_quality=best_quality,
+                best_quality=weighted_quality,
                 avg_fresh_snow=avg_fresh_snow,
                 total_predicted_snow=total_predicted_snow,
             )
@@ -308,7 +308,7 @@ class RecommendationService:
                     resort=resort,
                     distance_km=0,  # N/A for global
                     distance_miles=0,
-                    snow_quality=best_quality,
+                    snow_quality=weighted_quality,
                     quality_score=round(quality_score, 3),
                     distance_score=1.0,  # N/A for global
                     combined_score=round(combined_score, 3),
@@ -340,7 +340,7 @@ class RecommendationService:
             return []
 
     def _get_best_quality(self, conditions: list[WeatherCondition]) -> SnowQuality:
-        """Get the best snow quality across all elevations."""
+        """Get the best snow quality across all elevations (used for ranking)."""
         if not conditions:
             return SnowQuality.UNKNOWN
 
@@ -354,6 +354,44 @@ class RecommendationService:
                 best = condition.snow_quality
 
         return best
+
+    def _get_weighted_overall_quality(
+        self, conditions: list[WeatherCondition]
+    ) -> SnowQuality:
+        """Compute weighted overall quality using same logic as batch/detail endpoints.
+
+        Uses elevation weights: top 50%, mid 35%, base 15%.
+        Falls back to best quality if raw scores not available.
+        """
+        if not conditions:
+            return SnowQuality.UNKNOWN
+
+        elevation_weights = {"top": 0.50, "mid": 0.35, "base": 0.15}
+        weighted_raw = 0.0
+        total_w = 0.0
+
+        for c in conditions:
+            if c.quality_score is not None:
+                w = elevation_weights.get(c.elevation_level, 0.15)
+                weighted_raw += c.quality_score * w
+                total_w += w
+
+        if total_w == 0:
+            return self._get_best_quality(conditions)
+
+        overall_raw = weighted_raw / total_w
+        if overall_raw >= 5.5:
+            return SnowQuality.EXCELLENT
+        elif overall_raw >= 4.5:
+            return SnowQuality.GOOD
+        elif overall_raw >= 3.5:
+            return SnowQuality.FAIR
+        elif overall_raw >= 2.5:
+            return SnowQuality.POOR
+        elif overall_raw >= 1.5:
+            return SnowQuality.BAD
+        else:
+            return SnowQuality.HORRIBLE
 
     def _quality_rank(self, quality: SnowQuality | str) -> int:
         """Convert quality to numeric rank for comparison."""
