@@ -321,8 +321,10 @@ def generate_overall_explanation(
     if isinstance(overall_quality, str):
         overall_quality = SnowQuality(overall_quality)
 
-    # Try to find an elevation matching overall quality (prefer top > mid > base)
-    for pref in ["top", "mid", "base"]:
+    # Try to find an elevation matching overall quality (prefer mid > top > base)
+    # Mid is preferred because the batch endpoint uses mid for temperature_c,
+    # so the explanation temperature should match.
+    for pref in ["mid", "top", "base"]:
         for c in conditions:
             if (
                 c.elevation_level == pref
@@ -359,18 +361,18 @@ def generate_overall_explanation(
     else:
         return generate_quality_explanation(top)
 
-    # Temperature from top elevation
-    temp = _describe_temperature(top)
+    # Use representative elevation (mid preferred) for temperature, base, forecast
+    # to match the batch endpoint's temperature_c field
+    representative = mid or top
+    temp = _describe_temperature(representative)
     if temp:
         parts.append(temp)
 
-    # Base depth from top elevation
-    base_desc = _describe_base(top)
+    base_desc = _describe_base(representative)
     if base_desc:
         parts.append(base_desc)
 
-    # Forecast from top elevation
-    forecast = _describe_forecast(top)
+    forecast = _describe_forecast(representative)
     if forecast:
         parts.append(forecast)
 
