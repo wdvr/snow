@@ -599,10 +599,12 @@ class RecommendationService:
         if best_quality == SnowQuality.EXCELLENT:
             parts.append("Top-rated powder conditions")
         elif best_quality == SnowQuality.GOOD:
-            parts.append("Excellent snow coverage")
+            parts.append("Good snow conditions")
+        elif best_quality == SnowQuality.FAIR:
+            parts.append("Fair conditions")
 
         if avg_fresh_snow >= 15:
-            parts.append(f"{avg_fresh_snow:.0f}cm of fresh powder")
+            parts.append(f"{avg_fresh_snow:.0f}cm of unrefrozen snow")
         elif avg_fresh_snow >= 5:
             parts.append(f"{avg_fresh_snow:.0f}cm fresh snow")
 
