@@ -558,8 +558,18 @@ def predict_quality(
     # The model underestimates quality when there's no recent 24h snowfall but
     # significant snow has accumulated since the last freeze-thaw and temps are
     # very cold (preserving powder quality).
-    snow_since_ft = raw_features.get("snow_since_freeze_cm", 0.0)
-    ft_days = raw_features.get("freeze_thaw_days_ago", 0.0)
+    # Use condition's snowfall_after_freeze_cm (derived from snow depth changes)
+    # rather than raw_features (from hourly API snowfall) since the latter often
+    # shows 0 for snow that fell outside the API's hourly data window.
+    snow_since_ft = getattr(condition, "snowfall_after_freeze_cm", None)
+    if snow_since_ft is None:
+        snow_since_ft = raw_features.get("snow_since_freeze_cm", 0.0)
+    ft_hours = getattr(condition, "last_freeze_thaw_hours_ago", None)
+    ft_days = (
+        ft_hours / 24.0
+        if ft_hours is not None
+        else raw_features.get("freeze_thaw_days_ago", 0.0)
+    )
     score = _apply_cold_accumulation_boost(score, snow_since_ft, ft_days, cur_temp)
 
     # Map to quality
