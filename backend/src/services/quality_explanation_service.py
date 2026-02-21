@@ -71,24 +71,22 @@ def _describe_surface(condition: WeatherCondition) -> str:
         if snow_24h >= 5:
             return f"Soft surface with {snow_24h:.0f}cm of recent snow."
         elif fresh_cm >= 80:
-            return f"Deep base with {fresh_cm:.0f}cm of non-refrozen snow."
+            return f"Deep base with {fresh_cm:.0f}cm of fresh snow."
         elif fresh_cm >= 5:
             if hours_since and hours_since > 48:
                 return f"Settled powder: {fresh_cm:.0f}cm of snow, last snowfall {_format_hours(hours_since)} ago."
-            return f"Good coverage with {fresh_cm:.0f}cm of non-refrozen snow."
+            return f"Good coverage with {fresh_cm:.0f}cm of fresh snow."
         return "Soft, rideable surface."
 
     if quality == SnowQuality.FAIR:
         if fresh_cm >= 80:
-            return f"Substantial base with {fresh_cm:.0f}cm of non-refrozen snow."
+            return f"Substantial base with {fresh_cm:.0f}cm of fresh snow."
         elif hours_since and hours_since > 72 and fresh_cm > 5:
             return f"Packed powder: {fresh_cm:.0f}cm of aged snow (last snowfall {_format_hours(hours_since)} ago)."
         elif fresh_cm >= 30:
             if warming:
-                return (
-                    f"Good base ({fresh_cm:.0f}cm non-refrozen) but currently warming."
-                )
-            return f"Good base with {fresh_cm:.0f}cm of non-refrozen snow."
+                return f"Good base ({fresh_cm:.0f}cm fresh) but currently warming."
+            return f"Good base with {fresh_cm:.0f}cm of fresh snow."
         elif fresh_cm >= 2.5:
             if warming:
                 return f"Some fresh snow ({fresh_cm:.0f}cm) but currently warming — surface softening."
@@ -383,14 +381,14 @@ def _brief_summit(condition: WeatherCondition) -> str:
 
     if quality == SnowQuality.GOOD:
         if fresh_cm >= 30:
-            return f"Good snow at summit ({fresh_cm:.0f}cm non-refrozen)"
+            return f"Good snow at summit ({fresh_cm:.0f}cm fresh)"
         if snow_24h >= 5:
             return f"Soft surface at summit ({snow_24h:.0f}cm recent)"
         return "Good, soft surface at summit"
 
     if quality == SnowQuality.FAIR:
         if fresh_cm >= 30:
-            return f"Fair at summit ({fresh_cm:.0f}cm non-refrozen)"
+            return f"Fair at summit ({fresh_cm:.0f}cm fresh)"
         if fresh_cm >= 3:
             return f"Some fresh snow at summit ({fresh_cm:.0f}cm)"
         return "Firm surface at summit"

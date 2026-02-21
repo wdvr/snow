@@ -594,7 +594,7 @@ class RecommendationService:
             parts.append("Fair conditions")
 
         if avg_fresh_snow >= 15:
-            parts.append(f"{avg_fresh_snow:.0f}cm of unrefrozen snow")
+            parts.append(f"{avg_fresh_snow:.0f}cm of fresh snow")
         elif avg_fresh_snow >= 5:
             parts.append(f"{avg_fresh_snow:.0f}cm fresh snow")
 
