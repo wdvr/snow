@@ -165,8 +165,25 @@ GET  /api/v1/resorts?region=alps       - Filter by region (na_west, na_rockies, 
 GET  /api/v1/resorts?country=CA        - Filter by country code
 GET  /api/v1/resorts/nearby?lat=X&lon=Y&radius=200&limit=20 - Find resorts near location
 GET  /api/v1/resorts/{id}              - Resort details
-GET  /api/v1/resorts/{id}/conditions   - Weather conditions
-GET  /api/v1/resorts/{id}/snow-quality - Snow quality summary
+GET  /api/v1/resorts/{id}/conditions   - Weather conditions (all elevations)
+GET  /api/v1/resorts/{id}/conditions/{level} - Conditions for specific elevation (base/mid/top)
+GET  /api/v1/resorts/{id}/snow-quality - Snow quality summary (all elevations + overall)
+GET  /api/v1/resorts/{id}/timeline     - 7-day forecast timeline
+GET  /api/v1/resorts/{id}/events       - Resort events
+GET  /api/v1/snow-quality/batch?resort_ids=a,b,c - Batch snow quality
+GET  /api/v1/conditions/batch?resort_ids=a,b,c   - Batch conditions
+GET  /api/v1/quality-explanations      - Quality level descriptions
+GET  /api/v1/recommendations?lat=X&lon=Y - Nearby recommendations
+GET  /api/v1/recommendations/best      - Best conditions globally
+POST /api/v1/auth/apple                - Apple Sign In
+POST /api/v1/auth/guest                - Guest authentication
+POST /api/v1/auth/refresh              - Refresh auth token
+GET  /api/v1/auth/me                   - Current user info
+POST /api/v1/trips                     - Create trip
+GET  /api/v1/trips                     - List trips
+GET  /api/v1/trips/{id}               - Get trip details
+PUT  /api/v1/trips/{id}               - Update trip
+DELETE /api/v1/trips/{id}             - Delete trip
 POST /api/v1/feedback                  - Submit feedback
 ```
 
