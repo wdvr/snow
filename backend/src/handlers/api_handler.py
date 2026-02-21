@@ -1137,9 +1137,7 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
         "temperature_c": representative.current_temp_celsius
         if representative
         else None,
-        "snowfall_fresh_cm": representative.snowfall_after_freeze_cm
-        if representative
-        else None,
+        "snowfall_fresh_cm": representative.fresh_snow_cm if representative else None,
         "snowfall_24h_cm": representative.snowfall_24h_cm if representative else None,
     }
 
