@@ -263,13 +263,24 @@ def score_snow_quality(d: dict) -> float:
         # No fresh snow at all in the last 24h
         # Score depends on accumulated unrefrozen snow and temperature.
         # Cold temps preserve powder quality even days after snowfall.
-        if snow_since_freeze_cm >= 50:
+        if snow_since_freeze_cm >= 100:
+            # Very deep unrefrozen snow — exceptional base
+            base = 5.0
+            if cur_temp < -15:
+                base += 0.3
+            elif cur_temp < -10:
+                base += 0.2
+            elif cur_temp < -5:
+                base += 0.1
+        elif snow_since_freeze_cm >= 50:
             # Deep unrefrozen snow — great skiing even without fresh
             base = 4.5
             if cur_temp < -15:
                 base += 0.3
             elif cur_temp < -10:
                 base += 0.2
+            elif cur_temp < -5:
+                base += 0.1
         elif snow_since_freeze_cm >= 20:
             # Solid unrefrozen snow pack — good preserved conditions
             base = 4.0
