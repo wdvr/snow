@@ -356,12 +356,31 @@ class WeatherService:
             # Query each elevation level using the ElevationIndex GSI
             elevation_levels = ["base", "mid", "top"]
 
+            # All WeatherCondition fields except raw_data (~15KB).
+            # Using ProjectionExpression reduces data transferred per page
+            # from ~1MB to ~62KB, preventing Lambda OOM.
+            # 'timestamp' is a DynamoDB reserved word, so use alias.
+            projection_attrs = (
+                "resort_id, elevation_level, #ts, "
+                "current_temp_celsius, min_temp_celsius, max_temp_celsius, "
+                "snowfall_24h_cm, snowfall_48h_cm, snowfall_72h_cm, "
+                "snow_depth_cm, "
+                "predicted_snow_24h_cm, predicted_snow_48h_cm, predicted_snow_72h_cm, "
+                "hours_above_ice_threshold, max_consecutive_warm_hours, "
+                "snowfall_after_freeze_cm, hours_since_last_snowfall, "
+                "last_freeze_thaw_hours_ago, currently_warming, "
+                "humidity_percent, wind_speed_kmh, weather_description, "
+                "snow_quality, confidence_level, fresh_snow_cm, "
+                "data_source, source_confidence, ttl"
+            )
+
             def query_elevation(elevation_level: str):
                 """Query conditions for a specific elevation level with pagination.
 
                 Each item stores ~15KB raw_data, so only ~62 items fit per 1MB
-                DynamoDB page. With 130+ resorts, we need multiple pages.
-                We strip raw_data from results to keep Lambda memory low.
+                DynamoDB evaluation limit. With 130+ resorts, we need multiple
+                pages. ProjectionExpression excludes raw_data from results,
+                reducing transferred data from ~1MB to ~62KB per page.
                 """
                 try:
                     items = []
@@ -371,15 +390,14 @@ class WeatherService:
                             elevation_level
                         )
                         & Key("timestamp").gte(cutoff_str),
-                        "ScanIndexForward": False,  # Most recent first
+                        "ScanIndexForward": False,
+                        "ProjectionExpression": projection_attrs,
+                        "ExpressionAttributeNames": {"#ts": "timestamp"},
                     }
 
                     while True:
                         response = self.conditions_table.query(**query_params)
-                        for item in response.get("Items", []):
-                            # Strip raw_data (~15KB) to reduce memory usage
-                            item.pop("raw_data", None)
-                            items.append(item)
+                        items.extend(response.get("Items", []))
 
                         # Check for more pages
                         last_key = response.get("LastEvaluatedKey")
