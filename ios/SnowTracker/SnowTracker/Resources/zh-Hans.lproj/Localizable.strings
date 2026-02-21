@@ -144,3 +144,6 @@
 "No Resorts Found" = "未找到滑雪场";
 "Pull to refresh" = "下拉刷新";
 "Try Again" = "重试";
+
+/* MapView Date Selector */
+"Today" = "今天";

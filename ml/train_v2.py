@@ -215,7 +215,9 @@ def load_data(historical_weight=1.0):
             scores = json.load(f)
         for item in scores:
             key = (item["resort_id"], item["date"])
-            scores_by_key[key] = item["score"]
+            score = item.get("score") or item.get("quality_score")
+            if score is not None:
+                scores_by_key[key] = score
 
     print(f"Loaded {len(features_by_key)} features and {len(scores_by_key)} scores")
 

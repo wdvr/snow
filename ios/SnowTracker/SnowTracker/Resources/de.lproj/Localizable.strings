@@ -144,3 +144,6 @@
 "No Resorts Found" = "Keine Skigebiete gefunden";
 "Pull to refresh" = "Zum Aktualisieren ziehen";
 "Try Again" = "Erneut versuchen";
+
+/* MapView Date Selector */
+"Today" = "Heute";

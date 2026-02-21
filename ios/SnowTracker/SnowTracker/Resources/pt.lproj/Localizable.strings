@@ -144,3 +144,6 @@
 "No Resorts Found" = "Nenhuma Estância Encontrada";
 "Pull to refresh" = "Puxe para atualizar";
 "Try Again" = "Tentar Novamente";
+
+/* MapView Date Selector */
+"Today" = "Hoje";

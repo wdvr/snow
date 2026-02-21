@@ -144,3 +144,6 @@
 "No Resorts Found" = "No Resorts Found";
 "Pull to refresh" = "Pull to refresh";
 "Try Again" = "Try Again";
+
+/* MapView Date Selector */
+"Today" = "Today";

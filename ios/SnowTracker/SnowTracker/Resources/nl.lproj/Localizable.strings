@@ -144,3 +144,6 @@
 "No Resorts Found" = "Geen skigebieden gevonden";
 "Pull to refresh" = "Trek om te vernieuwen";
 "Try Again" = "Opnieuw proberen";
+
+/* MapView Date Selector */
+"Today" = "Vandaag";

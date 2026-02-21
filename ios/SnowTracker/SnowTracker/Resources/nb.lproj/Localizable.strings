@@ -2,7 +2,7 @@
   Localizable.strings
   SnowTracker
 
-  Norwegian Bokmal
+  Norwegian Bokmål
 */
 
 /* Common */
@@ -15,17 +15,17 @@
 "Loading" = "Laster";
 "Refresh" = "Oppdater";
 "Settings" = "Innstillinger";
-"Search" = "Sok";
+"Search" = "Søk";
 
 /* Tabs */
 "Favorites" = "Favoritter";
 "Map" = "Kart";
-"Best Snow" = "Beste sno";
-"Nearby" = "I naerheten";
+"Best Snow" = "Beste snø";
+"Nearby" = "I nærheten";
 
 /* FavoritesView */
-"No Favorites Yet" = "Ingen favoritter enna";
-"Tap the heart icon on any resort to add it to your favorites." = "Trykk pa hjerteikonet pa et skisted for a legge det til i favorittene dine.";
+"No Favorites Yet" = "Ingen favoritter ennå";
+"Tap the heart icon on any resort to add it to your favorites." = "Trykk på hjerteikonet på et skisted for å legge det til i favorittene dine.";
 "Browse Resorts" = "Bla gjennom skisteder";
 
 /* SplashView */
@@ -34,11 +34,11 @@
 "Loading conditions..." = "Laster forhold...";
 
 /* ConditionsView */
-"Snow Conditions" = "Snoforhold";
+"Snow Conditions" = "Snøforhold";
 "Offline mode - showing cached data" = "Frakoblet modus - viser bufrede data";
 "Last updated: %@" = "Sist oppdatert: %@";
-"Snow Quality Guide" = "Snokvalitetsguide";
-"Quality Levels" = "Kvalitetsnivaer";
+"Snow Quality Guide" = "Snøkvalitetsguide";
+"Quality Levels" = "Kvalitetsnivåer";
 "Warming" = "Oppvarming";
 "since last thaw" = "siden siste tining";
 
@@ -46,18 +46,18 @@
 "Excellent" = "Utmerket";
 "Good" = "Bra";
 "Fair" = "Middels";
-"Poor" = "Darlig";
+"Poor" = "Dårlig";
 "Icy" = "Isete";
 
 /* ResortDetailView */
-"Select Elevation" = "Velg hoyde";
+"Select Elevation" = "Velg høyde";
 "Loading Conditions..." = "Laster forhold...";
 "No Data Available" = "Ingen data tilgjengelig";
-"All Elevations" = "Alle hoyder";
-"Visit Website" = "Besok nettsted";
-"Recent Snowfall" = "Nylig snofall";
-"Snow Forecast" = "Snovarsel";
-"Weather Details" = "Vaerdetaljer";
+"All Elevations" = "Alle høyder";
+"Visit Website" = "Besøk nettsted";
+"Recent Snowfall" = "Nylig snøfall";
+"Snow Forecast" = "Snøvarsel";
+"Weather Details" = "Værdetaljer";
 "Min Temp" = "Min temp";
 "Max Temp" = "Maks temp";
 "Humidity" = "Luftfuktighet";
@@ -68,8 +68,8 @@
 "Next 24h" = "Neste 24t";
 "Next 48h" = "Neste 48t";
 "Next 72h" = "Neste 72t";
-"Heavy snowfall expected!" = "Kraftig snofall ventet!";
-"Light snow expected" = "Lett snofall ventet";
+"Heavy snowfall expected!" = "Kraftig snøfall ventet!";
+"Light snow expected" = "Lett snøfall ventet";
 "Fresh" = "Fersk";
 "Temp" = "Temp";
 
@@ -86,7 +86,7 @@
 "Notifications" = "Varsler";
 "All Notifications" = "Alle varsler";
 "Fresh Snow Alerts" = "Varsler om nysnø";
-"Snow Threshold" = "Snogrense";
+"Snow Threshold" = "Snøgrense";
 "Event Alerts" = "Hendelsesvarsler";
 "Thaw/Freeze Alerts" = "Tine-/frysevarsel";
 "Enable" = "Aktiver";
@@ -105,29 +105,29 @@
 "Centimeters" = "Centimeter";
 "Inches" = "Tommer";
 "Data & Storage" = "Data og lagring";
-"Clear Offline Cache" = "Tom frakoblet hurtigbuffer";
-"Support" = "Brukerstotte";
+"Clear Offline Cache" = "Tøm frakoblet hurtigbuffer";
+"Support" = "Brukerstøtte";
 "Privacy Policy" = "Personvernerklæring";
-"Terms of Service" = "Vilkar for bruk";
+"Terms of Service" = "Vilkår for bruk";
 "About" = "Om";
 "App Version" = "Appversjon";
 
 /* AuthenticationViews */
 "Sign in with Google" = "Logg inn med Google";
-"Continue without signing in" = "Fortsett uten a logge inn";
+"Continue without signing in" = "Fortsett uten å logge inn";
 "Profile" = "Profil";
 
 /* RecommendationsView */
-"Near You" = "I naerheten";
+"Near You" = "I nærheten";
 "Best Globally" = "Best globalt";
-"Search Radius" = "Sokeradius";
+"Search Radius" = "Søkeradius";
 "Location Access" = "Posisjonstilgang";
-"Enable location to see nearby recommendations" = "Aktiver posisjon for a se anbefalinger i naerheten";
-"Open Settings" = "Apne innstillinger";
+"Enable location to see nearby recommendations" = "Aktiver posisjon for å se anbefalinger i nærheten";
+"Open Settings" = "Åpne innstillinger";
 "No Recommendations" = "Ingen anbefalinger";
 
 /* ResortMapView */
-"Snow Quality Legend" = "Snokvalitetsforklaring";
+"Snow Quality Legend" = "Snøkvalitetsforklaring";
 "Standard" = "Standard";
 "Satellite" = "Satellitt";
 "Hybrid" = "Hybrid";
@@ -139,8 +139,11 @@
 /* ResortListView */
 "Snow Resorts" = "Skisteder";
 "All Regions" = "Alle regioner";
-"Search resorts..." = "Sok etter skisteder...";
+"Search resorts..." = "Søk etter skisteder...";
 "Loading resorts..." = "Laster skisteder...";
 "No Resorts Found" = "Ingen skisteder funnet";
-"Pull to refresh" = "Dra ned for a oppdatere";
-"Try Again" = "Prov igjen";
+"Pull to refresh" = "Dra ned for å oppdatere";
+"Try Again" = "Prøv igjen";
+
+/* MapView Date Selector */
+"Today" = "I dag";
