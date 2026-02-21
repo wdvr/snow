@@ -209,8 +209,13 @@ struct TimelinePointCard: View {
                 HStack(spacing: 2) {
                     Image(systemName: "wind")
                         .font(.system(size: 9))
-                    Text("\(Int(wind))")
-                        .font(.caption2)
+                    if prefs.distance == .metric {
+                        Text("\(Int(wind))")
+                            .font(.caption2)
+                    } else {
+                        Text("\(Int(wind * 0.621371))")
+                            .font(.caption2)
+                    }
                 }
                 .foregroundStyle(.secondary)
             }

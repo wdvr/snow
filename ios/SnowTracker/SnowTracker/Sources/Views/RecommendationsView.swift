@@ -115,10 +115,12 @@ struct BestSnowNearYouView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Section("Search Radius") {
-                            Button("250 km / 155 mi") { searchRadius = 250; Task { await refreshNearby() } }
-                            Button("500 km / 310 mi") { searchRadius = 500; Task { await refreshNearby() } }
-                            Button("750 km / 465 mi") { searchRadius = 750; Task { await refreshNearby() } }
-                            Button("1000 km / 620 mi (Recommended)") { searchRadius = 1000; Task { await refreshNearby() } }
+                            ForEach([250.0, 500.0, 750.0, 1000.0], id: \.self) { radius in
+                                let label = useMetric
+                                    ? "\(Int(radius)) km\(radius == 1000 ? " (Recommended)" : "")"
+                                    : "\(Int(radius * 0.621371)) mi\(radius == 1000 ? " (Recommended)" : "")"
+                                Button(label) { searchRadius = radius; Task { await refreshNearby() } }
+                            }
                         }
                     } label: {
                         Image(systemName: "slider.horizontal.3")
@@ -242,7 +244,7 @@ struct BestSnowNearYouView: View {
             if let error = recommendationsManager.errorMessage {
                 Text(error)
             } else {
-                Text("No resorts found within \(Int(searchRadius)) km. Try increasing the search radius.")
+                Text("No resorts found within \(useMetric ? "\(Int(searchRadius)) km" : "\(Int(searchRadius * 0.621371)) mi"). Try increasing the search radius.")
             }
         } actions: {
             Button("Refresh") {
