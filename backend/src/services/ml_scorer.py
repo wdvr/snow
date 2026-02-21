@@ -445,21 +445,22 @@ def _apply_snow_aging_penalty(
     Returns:
         Adjusted score (1.0-6.0)
     """
-    if hours_since_snowfall is None or hours_since_snowfall <= 72:
+    if hours_since_snowfall is None or hours_since_snowfall <= 48:
         return score
     if snowfall_24h >= 0.5:
         # Recent snow — no aging penalty
         return score
 
-    # Penalty: -0.08 per day beyond 3 days, max -0.5
+    # Penalty: -0.15 per day beyond 2 days, max -0.8
+    # Snow compacts ~30% per day; after 5 days it's hard packed
     days_since = hours_since_snowfall / 24.0
-    age_penalty = min(0.5, (days_since - 3.0) * 0.08)
+    age_penalty = min(0.8, (days_since - 2.0) * 0.15)
 
     # Cold temps slow densification: reduce penalty at very cold temps
     if cur_temp < -15:
-        age_penalty *= 0.5
+        age_penalty *= 0.6
     elif cur_temp < -8:
-        age_penalty *= 0.7
+        age_penalty *= 0.8
 
     return max(1.0, score - age_penalty)
 
