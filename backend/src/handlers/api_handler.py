@@ -22,6 +22,7 @@ from models.trip import Trip, TripCreate, TripStatus, TripUpdate
 from models.user import UserPreferences
 from models.weather import SNOW_QUALITY_EXPLANATIONS, SnowQuality, TimelineResponse
 from services.auth_service import AuthenticationError, AuthProvider, AuthService
+from services.ml_scorer import raw_score_to_quality
 from services.openmeteo_service import OpenMeteoService
 from services.quality_explanation_service import (
     generate_quality_explanation,
@@ -945,24 +946,12 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
         else:
             overall_raw_score = None
 
-        # Derive quality label from weighted raw score
+        # Derive quality label from weighted raw score using model thresholds
         from services.snow_quality_service import SnowQualityService
 
         if overall_raw_score is not None:
             overall_snow_score = score_to_100(overall_raw_score)
-            # Map weighted raw score to quality using same thresholds
-            if overall_raw_score >= 5.5:
-                overall_quality = SnowQuality.EXCELLENT
-            elif overall_raw_score >= 4.5:
-                overall_quality = SnowQuality.GOOD
-            elif overall_raw_score >= 3.5:
-                overall_quality = SnowQuality.FAIR
-            elif overall_raw_score >= 2.5:
-                overall_quality = SnowQuality.POOR
-            elif overall_raw_score >= 1.5:
-                overall_quality = SnowQuality.BAD
-            else:
-                overall_quality = SnowQuality.HORRIBLE
+            overall_quality = raw_score_to_quality(overall_raw_score)
         else:
             overall_quality = SnowQualityService.calculate_overall_quality(conditions)
             overall_snow_score = None
@@ -1139,18 +1128,7 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
     if total_w > 0:
         overall_raw = weighted_raw / total_w
         snow_score = score_to_100(overall_raw)
-        if overall_raw >= 5.5:
-            overall_quality = SnowQuality.EXCELLENT
-        elif overall_raw >= 4.5:
-            overall_quality = SnowQuality.GOOD
-        elif overall_raw >= 3.5:
-            overall_quality = SnowQuality.FAIR
-        elif overall_raw >= 2.5:
-            overall_quality = SnowQuality.POOR
-        elif overall_raw >= 1.5:
-            overall_quality = SnowQuality.BAD
-        else:
-            overall_quality = SnowQuality.HORRIBLE
+        overall_quality = raw_score_to_quality(overall_raw)
     else:
         from services.snow_quality_service import SnowQualityService
 

@@ -64,6 +64,42 @@ def _load_model() -> dict:
         return None
 
 
+def get_quality_thresholds() -> dict[str, float]:
+    """Get quality thresholds from the loaded model.
+
+    Returns optimized thresholds for mapping raw scores to quality labels.
+    Falls back to default thresholds if model is not loaded.
+    """
+    model = _load_model()
+    if model and "quality_thresholds" in model:
+        return model["quality_thresholds"]
+    return {
+        "excellent": 5.5,
+        "good": 4.5,
+        "fair": 3.5,
+        "poor": 2.5,
+        "bad": 1.5,
+        "horrible": 0.0,
+    }
+
+
+def raw_score_to_quality(score: float) -> SnowQuality:
+    """Convert a raw ML score to a SnowQuality enum using model thresholds."""
+    t = get_quality_thresholds()
+    if score >= t["excellent"]:
+        return SnowQuality.EXCELLENT
+    elif score >= t["good"]:
+        return SnowQuality.GOOD
+    elif score >= t["fair"]:
+        return SnowQuality.FAIR
+    elif score >= t["poor"]:
+        return SnowQuality.POOR
+    elif score >= t["bad"]:
+        return SnowQuality.BAD
+    else:
+        return SnowQuality.HORRIBLE
+
+
 def _relu(x: float) -> float:
     return max(0.0, x)
 

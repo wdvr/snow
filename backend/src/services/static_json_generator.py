@@ -19,6 +19,7 @@ from botocore.exceptions import ClientError
 
 from models.resort import Resort
 from models.weather import SnowQuality
+from services.ml_scorer import raw_score_to_quality
 from services.quality_explanation_service import (
     generate_quality_explanation,
     score_to_100,
@@ -244,18 +245,7 @@ class StaticJsonGenerator:
         if total_w > 0:
             overall_raw = weighted_raw / total_w
             snow_score = score_to_100(overall_raw)
-            if overall_raw >= 5.5:
-                overall_quality = SnowQuality.EXCELLENT
-            elif overall_raw >= 4.5:
-                overall_quality = SnowQuality.GOOD
-            elif overall_raw >= 3.5:
-                overall_quality = SnowQuality.FAIR
-            elif overall_raw >= 2.5:
-                overall_quality = SnowQuality.POOR
-            elif overall_raw >= 1.5:
-                overall_quality = SnowQuality.BAD
-            else:
-                overall_quality = SnowQuality.HORRIBLE
+            overall_quality = raw_score_to_quality(overall_raw)
         else:
             from services.snow_quality_service import SnowQualityService
 

@@ -6,6 +6,7 @@ from typing import Any
 
 from models.resort import Resort
 from models.weather import ConfidenceLevel, SnowQuality, WeatherCondition
+from services.ml_scorer import raw_score_to_quality
 from utils.geo_utils import haversine_distance
 
 
@@ -380,18 +381,7 @@ class RecommendationService:
             return self._get_best_quality(conditions)
 
         overall_raw = weighted_raw / total_w
-        if overall_raw >= 5.5:
-            return SnowQuality.EXCELLENT
-        elif overall_raw >= 4.5:
-            return SnowQuality.GOOD
-        elif overall_raw >= 3.5:
-            return SnowQuality.FAIR
-        elif overall_raw >= 2.5:
-            return SnowQuality.POOR
-        elif overall_raw >= 1.5:
-            return SnowQuality.BAD
-        else:
-            return SnowQuality.HORRIBLE
+        return raw_score_to_quality(overall_raw)
 
     def _quality_rank(self, quality: SnowQuality | str) -> int:
         """Convert quality to numeric rank for comparison."""
