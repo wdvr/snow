@@ -77,8 +77,15 @@ struct SnowTrackerApp: App {
                 }
             }
             .onAppear {
-                // Check if onboarding is needed
-                showOnboarding = !userPreferencesManager.hasCompletedOnboarding
+                // Auto-authenticate in screenshot/demo mode
+                if ProcessInfo.processInfo.arguments.contains("SCREENSHOT_MODE") ||
+                   ProcessInfo.processInfo.arguments.contains("DEMO_DATA") {
+                    authService.continueWithoutSignIn()
+                    showOnboarding = false
+                } else {
+                    // Check if onboarding is needed
+                    showOnboarding = !userPreferencesManager.hasCompletedOnboarding
+                }
 
                 // Show splash for minimum duration while data loads
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
@@ -93,8 +100,10 @@ struct SnowTrackerApp: App {
             }
             .onChange(of: authService.isAuthenticated) { _, isAuthenticated in
                 if isAuthenticated {
-                    // Check if onboarding is needed when user signs in
-                    showOnboarding = !userPreferencesManager.hasCompletedOnboarding
+                    // Skip onboarding in screenshot/demo mode
+                    let isTestMode = ProcessInfo.processInfo.arguments.contains("SCREENSHOT_MODE") ||
+                                     ProcessInfo.processInfo.arguments.contains("DEMO_DATA")
+                    showOnboarding = isTestMode ? false : !userPreferencesManager.hasCompletedOnboarding
 
                     // Request notification permissions when user is authenticated
                     Task {
