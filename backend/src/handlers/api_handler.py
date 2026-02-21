@@ -1272,10 +1272,10 @@ async def get_quality_explanations(response: Response):
     return {
         "explanations": explanations,
         "algorithm_info": {
-            "description": "Quality is based on non-refrozen snow - snow that fell after the last ice formation event.",
-            "ice_threshold_celsius": 3.0,
-            "ice_formation_hours": 4,
-            "note": "Ice forms when temperatures stay at or above 3°C for 4+ consecutive hours. Snow that falls after such events is considered 'fresh' and non-refrozen.",
+            "description": "Quality is predicted by an ML model (ensemble of 10 neural networks) trained on 2200+ real snow conditions across 129 resorts.",
+            "features": "27 features including fresh snow, temperature, freeze-thaw history, wind, snowfall trends, and elevation",
+            "elevation_weights": "Overall score weighted: 50% summit, 35% mid-mountain, 15% base",
+            "note": "Thaw-freeze events (sustained above-freezing temps) reset the fresh snow counter. Snow quality degrades when surface refreezes after warming.",
         },
     }
 
