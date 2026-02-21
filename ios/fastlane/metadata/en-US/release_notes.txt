@@ -1,21 +1,19 @@
-Version 4.0 - Major Feature Release
+Version 1.1 — Smarter Snow Quality
 
-NEW FEATURES:
-- Comprehensive analytics to help us improve your experience
-- Improved "Not Skiable" detection for warm weather resorts
-- Smarter snow quality calculations based on actual snow depth
-- Region-based filtering in onboarding - choose your ski regions
-- Improved map with pie chart clusters showing quality distribution
-- Enhanced pull-to-refresh with rate limiting for faster updates
+NEW:
+- Map cluster tap now shows snow quality for all resorts in the cluster
+- Single resort tap on map shows quality immediately while loading details
+- 7-day snow quality forecast on map view with day selector
+- Temperature-aware descriptions: cold snow correctly described as "dry packed powder"
 
 IMPROVEMENTS:
-- Better offline caching of snow quality summaries
-- Faster loading with batch API queries
-- More accurate temperature displays
-- Improved algorithm messaging in onboarding
+- Snow quality explanations now match actual conditions (no more "soft" at -20°C)
+- Better loading states throughout the map experience
+- Smoother timeline forecasts with improved data smoothing
+- 1100+ backend tests ensuring reliability
 
 BUG FIXES:
-- Fixed pull-to-refresh not updating the resort list
-- Fixed detail view showing incorrect surface type
-- Fixed warm temperature quality override logic
-- Various stability improvements
+- Fixed map cluster list showing empty snow quality
+- Fixed resort detail sheet not showing quality badge until conditions loaded
+- Fixed timeline snow depth drops from weather model artifacts
+- Fixed conditions endpoint returning too many entries

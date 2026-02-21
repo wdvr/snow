@@ -1,4 +1,4 @@
-# Snow Quality Tracker - Progress
+# Powder Chaser - Progress
 
 ## Status: LIVE
 **Last Updated**: 2026-02-21
@@ -36,6 +36,16 @@
 
 | Feature | Date |
 |---------|------|
+| Rename app to "Powder Chaser" across iOS + 13 languages | 2026-02-21 |
+| Rewrite App Store metadata (description, subtitle, keywords) | 2026-02-21 |
+| Fix "soft" quality explanation at cold temps (<-5°C) | 2026-02-21 |
+| Fix map cluster tap showing empty screen (no loading state) | 2026-02-21 |
+| Fix map cluster/detail not showing snow quality from summaries | 2026-02-21 |
+| Add 63 new production training samples to ML dataset (1740 total) | 2026-02-21 |
+| Add 213 tests: scraper_worker, version_consolidator, weather_worker | 2026-02-21 |
+| Add 205 tests for api_handler, cache, resort_loader | 2026-02-21 |
+| Remove unused non-prefs-aware formatting methods from iOS | 2026-02-21 |
+| Lower timeline smoothing rate to 2cm/h (fix production drops) | 2026-02-21 |
 | Add 39 snow_summary_service tests | 2026-02-21 |
 | Fix conditions endpoint returning 50 entries instead of 3 | 2026-02-21 |
 | Fix batch API resort_count reporting requested vs returned count | 2026-02-21 |

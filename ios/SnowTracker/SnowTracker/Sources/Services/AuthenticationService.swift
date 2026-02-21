@@ -499,7 +499,7 @@ struct AuthenticatedUser: Identifiable, Codable {
         if let email = email {
             return email
         }
-        return "Snow Tracker User"
+        return "Powder Chaser User"
     }
 
     var initials: String {
