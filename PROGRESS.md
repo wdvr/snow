@@ -36,6 +36,8 @@
 
 | Feature | Date |
 |---------|------|
+| Update quality info sheet and descriptions to match ML model approach | 2026-02-21 |
+| Fix notification threshold display to respect unit preference | 2026-02-21 |
 | Fix ForecastBadge hardcoding cm instead of respecting unit preference | 2026-02-21 |
 | Synthesize mixed-elevation explanations when no elevation matches overall | 2026-02-21 |
 | ML model v8: MAE 0.299, within-1 100%, R² 0.870 | 2026-02-21 |
