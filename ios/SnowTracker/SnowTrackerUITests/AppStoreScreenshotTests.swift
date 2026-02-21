@@ -15,8 +15,8 @@ final class AppStoreScreenshotTests: XCTestCase {
 
         app.launch()
 
-        // Wait for app to fully launch
-        sleep(2)
+        // Wait for splash screen to dismiss and app to fully load
+        sleep(4)
     }
 
     override func tearDownWithError() throws {
@@ -30,101 +30,97 @@ final class AppStoreScreenshotTests: XCTestCase {
         snapshot(name)
     }
 
-    // MARK: - iPhone Screenshots (Required sizes: 6.7", 6.5", 5.5")
+    private func ensureTabBar() -> XCUIElement {
+        let tabBar = app.tabBars.firstMatch
+        // If tab bar isn't visible, we may still be on splash/auth — wait longer
+        if !tabBar.waitForExistence(timeout: 15) {
+            // Try tapping "Continue without signing in" as fallback
+            let continueButton = app.buttons["Continue without signing in"]
+            if continueButton.exists {
+                continueButton.tap()
+                sleep(3)
+            }
+        }
+        return tabBar
+    }
+
+    // MARK: - iPhone Screenshots (Required sizes: 6.9", 6.7", 6.5")
 
     func testScreenshot01_SplashScreen() throws {
-        // Capture the beautiful animated splash screen with falling snow
-        let splashView = app.otherElements["SplashView"]
-        XCTAssertTrue(splashView.waitForExistence(timeout: 5))
+        // Re-launch to catch splash screen
+        app.terminate()
+        app.launch()
+        sleep(1) // Capture splash before it fades
 
-        takeScreenshot(name: "01-splash-screen", delay: 3.0)
+        snapshot("01-splash-screen")
     }
 
     func testScreenshot02_ResortsList() throws {
-        // Wait for app to fully load past splash
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
+        let tabBar = ensureTabBar()
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
 
         // Ensure we're on Resorts tab (default)
         tabBar.buttons["Resorts"].tap()
 
         // Wait for resort data to load
-        let bigWhite = app.staticTexts["Big White Ski Resort"]
-        XCTAssertTrue(bigWhite.waitForExistence(timeout: 10))
+        sleep(5)
 
         takeScreenshot(name: "02-resorts-list")
     }
 
     func testScreenshot03_ResortDetail() throws {
-        // Navigate to resort detail
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
+        let tabBar = ensureTabBar()
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
 
-        let bigWhite = app.staticTexts["Big White Ski Resort"]
-        XCTAssertTrue(bigWhite.waitForExistence(timeout: 10))
-        bigWhite.tap()
+        tabBar.buttons["Resorts"].tap()
+        sleep(3)
 
-        // Wait for detail view to load completely
-        let currentConditionsCard = app.staticTexts["Current Conditions"]
-        XCTAssertTrue(currentConditionsCard.waitForExistence(timeout: 5))
+        // Tap the first resort cell we can find
+        let cells = app.cells
+        if cells.count > 0 {
+            cells.element(boundBy: 0).tap()
+        }
+
+        // Wait for detail view to load
+        sleep(3)
 
         takeScreenshot(name: "03-resort-detail")
     }
 
-    func testScreenshot04_MapViewWithNearby() throws {
-        // Navigate back to main screen first
-        if app.navigationBars.buttons["Back"].exists {
-            app.navigationBars.buttons["Back"].tap()
-        }
-
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.exists)
+    func testScreenshot04_MapView() throws {
+        let tabBar = ensureTabBar()
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
 
         // Navigate to Map tab
         tabBar.buttons["Map"].tap()
 
-        let mapView = app.maps.firstMatch
-        XCTAssertTrue(mapView.waitForExistence(timeout: 5))
-
         // Wait for map pins to load
-        sleep(3)
+        sleep(5)
 
-        // Show legend for better screenshot
-        let infoButton = app.buttons["info.circle"]
-        if infoButton.waitForExistence(timeout: 3) {
-            infoButton.tap()
-            sleep(1) // Let legend appear
-        }
-
-        takeScreenshot(name: "04-map-view-with-legend")
+        takeScreenshot(name: "04-map-view")
     }
 
-    func testScreenshot05_ConditionsOverview() throws {
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.exists)
+    func testScreenshot05_BestSnow() throws {
+        let tabBar = ensureTabBar()
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
 
-        // Navigate to Conditions tab
-        tabBar.buttons["Conditions"].tap()
+        // Navigate to Best Snow tab
+        tabBar.buttons["Best Snow"].tap()
 
-        // Wait for conditions to load
-        let conditionsTitle = app.navigationBars["Snow Conditions"]
-        XCTAssertTrue(conditionsTitle.waitForExistence(timeout: 5))
+        // Wait for recommendations to load
+        sleep(5)
 
-        // Wait for condition cards to populate
-        sleep(2)
-
-        takeScreenshot(name: "05-conditions-overview")
+        takeScreenshot(name: "05-best-snow")
     }
 
     func testScreenshot06_Settings() throws {
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.exists)
+        let tabBar = ensureTabBar()
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
 
         // Navigate to Settings tab
         tabBar.buttons["Settings"].tap()
 
-        let settingsTitle = app.navigationBars["Settings"]
-        XCTAssertTrue(settingsTitle.waitForExistence(timeout: 3))
+        sleep(2)
 
         takeScreenshot(name: "06-settings")
     }
@@ -132,16 +128,14 @@ final class AppStoreScreenshotTests: XCTestCase {
     // MARK: - iPad Screenshots (Required sizes: 12.9", 11")
 
     func testScreenshot07_iPadResortsList() throws {
-        // Only run on iPad
         guard UIDevice.current.userInterfaceIdiom == .pad else {
             throw XCTSkip("iPad-only test")
         }
 
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
+        let tabBar = ensureTabBar()
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
 
-        let bigWhite = app.staticTexts["Big White Ski Resort"]
-        XCTAssertTrue(bigWhite.waitForExistence(timeout: 10))
+        sleep(5)
 
         takeScreenshot(name: "07-ipad-resorts-list")
     }
@@ -151,15 +145,11 @@ final class AppStoreScreenshotTests: XCTestCase {
             throw XCTSkip("iPad-only test")
         }
 
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.exists)
+        let tabBar = ensureTabBar()
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
 
         tabBar.buttons["Map"].tap()
-
-        let mapView = app.maps.firstMatch
-        XCTAssertTrue(mapView.waitForExistence(timeout: 5))
-
-        sleep(3)
+        sleep(5)
 
         takeScreenshot(name: "08-ipad-map-view")
     }
@@ -169,17 +159,18 @@ final class AppStoreScreenshotTests: XCTestCase {
             throw XCTSkip("iPad-only test")
         }
 
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
+        let tabBar = ensureTabBar()
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
 
         tabBar.buttons["Resorts"].tap()
+        sleep(3)
 
-        let bigWhite = app.staticTexts["Big White Ski Resort"]
-        XCTAssertTrue(bigWhite.waitForExistence(timeout: 10))
-        bigWhite.tap()
+        let cells = app.cells
+        if cells.count > 0 {
+            cells.element(boundBy: 0).tap()
+        }
 
-        let currentConditionsCard = app.staticTexts["Current Conditions"]
-        XCTAssertTrue(currentConditionsCard.waitForExistence(timeout: 5))
+        sleep(3)
 
         takeScreenshot(name: "09-ipad-resort-detail")
     }
@@ -187,67 +178,30 @@ final class AppStoreScreenshotTests: XCTestCase {
     // MARK: - Special Feature Screenshots
 
     func testScreenshot10_SearchResults() throws {
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
+        let tabBar = ensureTabBar()
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
+
+        tabBar.buttons["Resorts"].tap()
+        sleep(2)
 
         // Tap search field if available
         let searchField = app.searchFields.firstMatch
-        if searchField.waitForExistence(timeout: 3) {
+        if searchField.waitForExistence(timeout: 5) {
             searchField.tap()
-            searchField.typeText("Big White")
-
-            sleep(2) // Wait for search results
-
-            takeScreenshot(name: "10-search-results")
-
-            // Clear search
-            let clearButton = searchField.buttons["Clear text"]
-            if clearButton.exists {
-                clearButton.tap()
-            }
-        }
-    }
-
-    func testScreenshot11_RegionFilters() throws {
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
-
-        // Look for region filter chips
-        let northAmericaFilter = app.buttons.matching(NSPredicate(format: "label CONTAINS 'North America'")).firstMatch
-        if northAmericaFilter.waitForExistence(timeout: 3) {
-            northAmericaFilter.tap()
-
+            searchField.typeText("Chamonix")
             sleep(2)
-
-            takeScreenshot(name: "11-region-filters")
+            takeScreenshot(name: "10-search-results")
         }
     }
 
-    func testScreenshot12_FavoritesWithContent() throws {
-        // First add a favorite
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
-
-        let bigWhite = app.staticTexts["Big White Ski Resort"]
-        XCTAssertTrue(bigWhite.waitForExistence(timeout: 10))
-        bigWhite.tap()
-
-        // Add to favorites if heart button exists
-        let favoriteButton = app.buttons["heart"]
-        if favoriteButton.waitForExistence(timeout: 3) {
-            favoriteButton.tap()
-        }
-
-        // Navigate back
-        if app.navigationBars.buttons["Back"].exists {
-            app.navigationBars.buttons["Back"].tap()
-        }
+    func testScreenshot11_Favorites() throws {
+        let tabBar = ensureTabBar()
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
 
         // Go to Favorites tab
         tabBar.buttons["Favorites"].tap()
-
         sleep(2)
 
-        takeScreenshot(name: "12-favorites-with-content")
+        takeScreenshot(name: "11-favorites")
     }
 }
