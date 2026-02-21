@@ -634,10 +634,19 @@ struct ResortDetailView: View {
             Text("No Data Available")
                 .font(.headline)
 
-            Text("Weather conditions for this elevation are not currently available. Pull to refresh.")
+            Text("Weather conditions for this elevation are not currently available.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+
+            Button {
+                Task {
+                    await snowConditionsManager.refreshData()
+                }
+            } label: {
+                Label("Retry", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.borderedProminent)
         }
         .frame(maxWidth: .infinity)
         .cardStyle()
