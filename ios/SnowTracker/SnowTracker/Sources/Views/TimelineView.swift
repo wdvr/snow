@@ -139,7 +139,7 @@ struct TimelineView: View {
                             Text(group.dayLabel)
                                 .font(.caption2)
                                 .fontWeight(.semibold)
-                                .foregroundColor(group.points.first?.isToday == true ? .blue : .secondary)
+                                .foregroundStyle(group.points.first?.isToday == true ? .blue : .secondary)
                                 .padding(.leading, 4)
 
                             HStack(spacing: 6) {
@@ -188,7 +188,7 @@ struct TimelinePointCard: View {
 
             Image(systemName: point.snowQuality.icon)
                 .font(.title3)
-                .foregroundColor(point.snowQuality.color)
+                .foregroundStyle(point.snowQuality.color)
 
             Text(point.snowQuality.displayName)
                 .font(.caption2)

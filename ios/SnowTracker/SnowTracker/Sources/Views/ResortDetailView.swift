@@ -72,7 +72,7 @@ struct ResortDetailView: View {
                         showingShareSheet = true
                     } label: {
                         Image(systemName: "square.and.arrow.up")
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
                     }
 
                     Button {
@@ -85,7 +85,7 @@ struct ResortDetailView: View {
                         }
                     } label: {
                         Image(systemName: userPreferencesManager.isFavorite(resortId: resort.id) ? "heart.fill" : "heart")
-                            .foregroundColor(userPreferencesManager.isFavorite(resortId: resort.id) ? .red : .gray)
+                            .foregroundStyle(userPreferencesManager.isFavorite(resortId: resort.id) ? .red : .gray)
                     }
                 }
             }
@@ -144,11 +144,11 @@ struct ResortDetailView: View {
                 VStack(alignment: .leading) {
                     Text(resort.displayLocation)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
 
                     Text(resort.elevationRange)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 Spacer()
@@ -190,7 +190,7 @@ struct ResortDetailView: View {
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 2)
     }
 
@@ -225,7 +225,7 @@ struct ResortDetailView: View {
 
                 Text(condition.formattedTimestamp)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
 
             HStack(spacing: 20) {
@@ -233,7 +233,7 @@ struct ResortDetailView: View {
                 VStack {
                     Image(systemName: "thermometer")
                         .font(.title2)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                     Text(condition.formattedTemperature(userPreferencesManager.preferredUnits))
                         .font(.title2)
                         .fontWeight(.bold)
@@ -261,20 +261,20 @@ struct ResortDetailView: View {
                 VStack {
                     Image(systemName: "snowflake")
                         .font(.title2)
-                        .foregroundColor(.cyan)
+                        .foregroundStyle(.cyan)
                     Text(WeatherCondition.formatSnowShort(condition.freshSnowCm, prefs: userPreferencesManager.preferredUnits))
                         .font(.title2)
                         .fontWeight(.bold)
                     Text("Fresh")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
             }
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 2)
     }
 
@@ -286,10 +286,10 @@ struct ResortDetailView: View {
             HStack {
                 HStack(spacing: 6) {
                     Image(systemName: condition.surfaceType.icon)
-                        .foregroundColor(condition.surfaceType.color)
+                        .foregroundStyle(condition.surfaceType.color)
                     Text(condition.surfaceType.rawValue)
                         .font(.headline)
-                        .foregroundColor(condition.surfaceType.color)
+                        .foregroundStyle(condition.surfaceType.color)
                 }
 
                 Spacer()
@@ -297,11 +297,11 @@ struct ResortDetailView: View {
                 if condition.currentlyWarming == true {
                     HStack(spacing: 4) {
                         Image(systemName: "thermometer.sun.fill")
-                            .foregroundColor(.orange)
+                            .foregroundStyle(.orange)
                         Text("Warming")
                             .font(.caption)
                             .fontWeight(.medium)
-                            .foregroundColor(.orange)
+                            .foregroundStyle(.orange)
                     }
                 }
             }
@@ -312,7 +312,7 @@ struct ResortDetailView: View {
                 HStack {
                     Text("Last thaw/freeze:")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text(condition.formattedTimeSinceFreeze)
                         .font(.subheadline)
                         .fontWeight(.semibold)
@@ -321,7 +321,7 @@ struct ResortDetailView: View {
                     } label: {
                         Image(systemName: "info.circle")
                             .font(.caption)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
                     }
                     .popover(isPresented: $showThawFreezeInfo) {
                         VStack(alignment: .leading, spacing: 8) {
@@ -331,7 +331,7 @@ struct ResortDetailView: View {
                                 .font(.subheadline)
                             Text("Fresh snow that falls after a thaw-freeze covers the ice and creates good skiing conditions. The more snow since the last cycle, the better the quality.")
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                         .padding()
                         .frame(maxWidth: 300)
@@ -343,7 +343,7 @@ struct ResortDetailView: View {
                 HStack {
                     Text("Snow since then:")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text(WeatherCondition.formatSnow(condition.snowSinceFreeze, prefs: userPreferencesManager.preferredUnits))
                         .font(.subheadline)
                         .fontWeight(.semibold)
@@ -354,7 +354,7 @@ struct ResortDetailView: View {
                     HStack {
                         Text("Base depth:")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                         Text(WeatherCondition.formatSnow(depth, prefs: userPreferencesManager.preferredUnits))
                             .font(.subheadline)
                             .fontWeight(.semibold)
@@ -362,17 +362,17 @@ struct ResortDetailView: View {
                         if depth < 50 {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .font(.caption)
-                                .foregroundColor(depth < 20 ? .red : .orange)
+                                .foregroundStyle(depth < 20 ? .red : .orange)
                         }
                     }
                 } else {
                     HStack {
                         Text("Base depth:")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                         Text("No data")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -395,7 +395,7 @@ struct ResortDetailView: View {
 
             Text("Recent Snowfall")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
 
             HStack(spacing: 20) {
                 snowfallItem(title: "24h", value: condition.snowfall24hCm)
@@ -405,7 +405,7 @@ struct ResortDetailView: View {
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 2)
     }
 
@@ -413,7 +413,7 @@ struct ResortDetailView: View {
         VStack {
             Text(title)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             Text(WeatherCondition.formatSnow(value, prefs: userPreferencesManager.preferredUnits))
                 .font(.title3)
                 .fontWeight(.semibold)
@@ -427,7 +427,7 @@ struct ResortDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "chart.line.uptrend.xyaxis")
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
                 Text("Snow Forecast")
                     .font(.headline)
             }
@@ -451,27 +451,27 @@ struct ResortDetailView: View {
             if let predicted24h = condition.predictedSnow24hCm, predicted24h > 10 {
                 HStack {
                     Image(systemName: "snowflake.circle.fill")
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                     Text("Heavy snowfall expected!")
                         .font(.subheadline)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                         .fontWeight(.medium)
                 }
                 .padding(.top, 4)
             } else if let predicted24h = condition.predictedSnow24hCm, predicted24h > 5 {
                 HStack {
                     Image(systemName: "cloud.snow")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text("Light snow expected")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .padding(.top, 4)
             }
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 2)
     }
 
@@ -479,11 +479,11 @@ struct ResortDetailView: View {
         VStack {
             Text(title)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             Text(WeatherCondition.formatSnow(value, prefs: userPreferencesManager.preferredUnits))
                 .font(.title3)
                 .fontWeight(.semibold)
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
         }
         .frame(maxWidth: .infinity)
     }
@@ -528,29 +528,29 @@ struct ResortDetailView: View {
             if let description = condition.weatherDescription {
                 HStack {
                     Image(systemName: "cloud")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text(description)
                         .font(.body)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 2)
     }
 
     private func weatherDetailItem(icon: String, title: String, value: String) -> some View {
         HStack {
             Image(systemName: icon)
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
                 .frame(width: 24)
 
             VStack(alignment: .leading) {
                 Text(title)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Text(value)
                     .font(.body)
                     .fontWeight(.medium)
@@ -573,7 +573,7 @@ struct ResortDetailView: View {
                    let condition = conditions.first(where: { $0.elevationLevel == level.rawValue }) {
                     HStack {
                         Image(systemName: level.icon)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
                             .frame(width: 24)
 
                         VStack(alignment: .leading) {
@@ -582,7 +582,7 @@ struct ResortDetailView: View {
                                 .fontWeight(.medium)
                             Text(point.formattedFeet)
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
 
                         Spacer()
@@ -590,15 +590,15 @@ struct ResortDetailView: View {
                         VStack(alignment: .trailing) {
                             HStack(spacing: 4) {
                                 Image(systemName: condition.snowQuality.icon)
-                                    .foregroundColor(condition.snowQuality.color)
+                                    .foregroundStyle(condition.snowQuality.color)
                                 Text(condition.snowQuality.displayName)
-                                    .foregroundColor(condition.snowQuality.color)
+                                    .foregroundStyle(condition.snowQuality.color)
                             }
                             .font(.subheadline)
 
                             Text(condition.formattedTemperature(userPreferencesManager.preferredUnits))
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .padding(.vertical, 8)
@@ -611,7 +611,7 @@ struct ResortDetailView: View {
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 2)
     }
 
@@ -627,13 +627,13 @@ struct ResortDetailView: View {
 
             Text("Fetching the latest weather data for this resort.")
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
         .padding()
         .frame(maxWidth: .infinity)
         .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 2)
     }
 
@@ -643,20 +643,20 @@ struct ResortDetailView: View {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.largeTitle)
-                .foregroundColor(.orange)
+                .foregroundStyle(.orange)
 
             Text("No Data Available")
                 .font(.headline)
 
             Text("Weather conditions for this elevation are not currently available. Pull to refresh.")
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
         .padding()
         .frame(maxWidth: .infinity)
         .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 2)
     }
 }

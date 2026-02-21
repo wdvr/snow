@@ -223,16 +223,16 @@ struct TripRowView: View {
                 HStack {
                     Image(systemName: "calendar")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text(formatDateRange())
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 if let days = trip.daysUntilTrip, days >= 0 {
                     Text(daysUntilText(days))
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                 }
             }
 
@@ -245,8 +245,8 @@ struct TripRowView: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
                     .background(statusColor.opacity(0.2))
-                    .foregroundColor(statusColor)
-                    .cornerRadius(4)
+                    .foregroundStyle(statusColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
 
                 // Alert badge
                 if trip.unreadAlertCount > 0 {
@@ -256,7 +256,7 @@ struct TripRowView: View {
                         Text("\(trip.unreadAlertCount)")
                             .font(.caption2)
                     }
-                    .foregroundColor(.orange)
+                    .foregroundStyle(.orange)
                 }
             }
         }
@@ -376,7 +376,7 @@ struct TripDetailView: View {
             // Date range
             HStack {
                 Image(systemName: "calendar")
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
                 Text(formatDateRange())
                     .font(.title3)
                     .fontWeight(.semibold)
@@ -389,10 +389,10 @@ struct TripDetailView: View {
                         Text("\(days)")
                             .font(.title)
                             .fontWeight(.bold)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
                         Text("days until")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -402,7 +402,7 @@ struct TripDetailView: View {
                         .fontWeight(.bold)
                     Text("day\(trip.tripDurationDays == 1 ? "" : "s")")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 VStack {
@@ -411,14 +411,14 @@ struct TripDetailView: View {
                         .fontWeight(.bold)
                     Text("people")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
         .padding()
         .frame(maxWidth: .infinity)
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private func conditionsCard(_ conditions: TripConditionSnapshot) -> some View {
@@ -433,36 +433,36 @@ struct TripDetailView: View {
             HStack(spacing: 20) {
                 VStack {
                     Image(systemName: "snowflake")
-                        .foregroundColor(.cyan)
+                        .foregroundStyle(.cyan)
                     Text(formatSnow(conditions.freshSnowCm))
                         .font(.subheadline)
                         .fontWeight(.semibold)
                     Text("Fresh")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 VStack {
                     Image(systemName: "cloud.snow")
-                        .foregroundColor(.purple)
+                        .foregroundStyle(.purple)
                     Text("+\(formatSnow(conditions.predictedSnowCm))")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                     Text("Expected")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 if let temp = conditions.temperatureCelsius {
                     VStack {
                         Image(systemName: "thermometer.medium")
-                            .foregroundColor(temp < 0 ? .blue : .orange)
+                            .foregroundStyle(temp < 0 ? .blue : .orange)
                         Text(formatTemp(temp))
                             .font(.subheadline)
                             .fontWeight(.semibold)
                         Text("Temp")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -485,7 +485,7 @@ struct TripDetailView: View {
         }
         .padding()
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var alertsSection: some View {
@@ -496,7 +496,7 @@ struct TripDetailView: View {
                 if trip.unreadAlertCount > 0 {
                     Text("\(trip.unreadAlertCount) new")
                         .font(.caption)
-                        .foregroundColor(.orange)
+                        .foregroundStyle(.orange)
                 }
                 Spacer()
                 Button("Mark all read") {
@@ -518,7 +518,7 @@ struct TripDetailView: View {
         }
         .padding()
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var detailsSection: some View {
@@ -530,7 +530,7 @@ struct TripDetailView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Notes")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text(notes)
                         .font(.subheadline)
                 }
@@ -539,7 +539,7 @@ struct TripDetailView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Created")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Text(trip.createdAt)
                     .font(.subheadline)
             }
@@ -547,7 +547,7 @@ struct TripDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var actionsSection: some View {
@@ -640,16 +640,16 @@ struct AlertRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: alert.type.icon)
-                .foregroundColor(alert.isRead ? .secondary : .orange)
+                .foregroundStyle(alert.isRead ? Color.secondary : Color.orange)
                 .frame(width: 24)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(alert.message)
                     .font(.subheadline)
-                    .foregroundColor(alert.isRead ? .secondary : .primary)
+                    .foregroundStyle(alert.isRead ? .secondary : .primary)
                 Text(alert.createdAt)
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
@@ -697,7 +697,7 @@ struct CreateTripView: View {
                     } else {
                         NavigationLink(destination: ResortPickerView(selectedResort: $selectedResort)) {
                             Text("Select a Resort")
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -722,7 +722,7 @@ struct CreateTripView: View {
                 if let error = errorMessage {
                     Section {
                         Text(error)
-                            .foregroundColor(.red)
+                            .foregroundStyle(.red)
                     }
                 }
             }
@@ -746,7 +746,7 @@ struct CreateTripView: View {
                     ProgressView("Creating trip...")
                         .padding()
                         .background(Color(.systemBackground))
-                        .cornerRadius(8)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                         .shadow(radius: 4)
                 }
             }
@@ -818,7 +818,7 @@ struct EditTripView: View {
             Form {
                 Section("Resort") {
                     Text(trip.resortName)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section("Dates") {
@@ -838,7 +838,7 @@ struct EditTripView: View {
                 if let error = errorMessage {
                     Section {
                         Text(error)
-                            .foregroundColor(.red)
+                            .foregroundStyle(.red)
                     }
                 }
             }
@@ -915,16 +915,16 @@ struct ResortPickerView: View {
                             .font(.headline)
                         Text(resort.displayLocation)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     Spacer()
                     if selectedResort?.id == resort.id {
                         Image(systemName: "checkmark")
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
                     }
                 }
             }
-            .foregroundColor(.primary)
+            .foregroundStyle(.primary)
         }
         .searchable(text: $searchText, prompt: "Search resorts")
         .navigationTitle("Select Resort")
@@ -946,7 +946,7 @@ struct UpcomingTripsCard: View {
                 NavigationLink(destination: TripsListView()) {
                     Text("See All")
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                 }
             }
 
@@ -964,12 +964,12 @@ struct UpcomingTripsCard: View {
                             Text(nextTrip.resortName)
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
-                                .foregroundColor(.primary)
+                                .foregroundStyle(.primary)
 
                             if let days = nextTrip.daysUntilTrip {
                                 Text(days == 0 ? "Today!" : days == 1 ? "Tomorrow" : "In \(days) days")
                                     .font(.caption)
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(.blue)
                             }
                         }
 
@@ -982,7 +982,7 @@ struct UpcomingTripsCard: View {
                                 Text("\(nextTrip.unreadAlertCount)")
                                     .font(.caption)
                             }
-                            .foregroundColor(.orange)
+                            .foregroundStyle(.orange)
                         }
                     }
                 }
@@ -990,16 +990,16 @@ struct UpcomingTripsCard: View {
             } else {
                 HStack {
                     Image(systemName: "calendar.badge.plus")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text("No trips planned")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
         .padding()
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .task {
             await tripManager.loadTrips()
         }

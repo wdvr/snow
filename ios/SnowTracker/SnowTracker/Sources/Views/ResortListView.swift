@@ -329,7 +329,7 @@ struct ResortRowView: View {
                                 .padding(.vertical, 2)
                                 .background(Color.blue.opacity(0.15))
                                 .foregroundStyle(.blue)
-                                .cornerRadius(4)
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
                         }
                     }
 

@@ -91,7 +91,7 @@ struct OnboardingView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
                         .background(selectedRegions.isEmpty ? Color.gray : Color.blue)
-                        .cornerRadius(12)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .disabled(selectedRegions.isEmpty)
                 .padding(.horizontal, 20)

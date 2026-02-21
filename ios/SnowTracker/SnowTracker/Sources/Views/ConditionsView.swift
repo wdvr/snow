@@ -65,29 +65,29 @@ struct ConditionsView: View {
             if snowConditionsManager.isUsingCachedData && isDataStale {
                 HStack {
                     Image(systemName: "arrow.triangle.2.circlepath")
-                        .foregroundColor(.orange)
+                        .foregroundStyle(.orange)
                     Text("Offline mode - showing cached data")
                         .font(.caption)
-                        .foregroundColor(.orange)
+                        .foregroundStyle(.orange)
                     if let age = snowConditionsManager.cachedDataAge {
                         Text("(\(age))")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(Color.orange.opacity(0.1))
-                .cornerRadius(8)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
 
             if let lastUpdated = snowConditionsManager.lastUpdated {
                 HStack {
                     Image(systemName: "clock")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text("Last updated: \(lastUpdated.formatted(.relative(presentation: .named)))")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -101,7 +101,7 @@ struct ConditionsView: View {
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 2)
     }
 
@@ -112,13 +112,13 @@ struct ConditionsView: View {
 
         return VStack {
             Image(systemName: quality.icon)
-                .foregroundColor(quality.color)
+                .foregroundStyle(quality.color)
             Text("\(count)")
                 .font(.title3)
                 .fontWeight(.bold)
             Text(quality.displayName)
                 .font(.caption2)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
         .onTapGesture {
@@ -151,10 +151,10 @@ struct ResortConditionCard: View {
                 VStack(alignment: .leading) {
                     Text(resort.name)
                         .font(.headline)
-                        .foregroundColor(.primary)
+                        .foregroundStyle(.primary)
                     Text(resort.displayLocation)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 Spacer()
@@ -164,11 +164,11 @@ struct ResortConditionCard: View {
                     VStack {
                         Image(systemName: displayQuality.icon)
                             .font(.title2)
-                            .foregroundColor(displayQuality.color)
+                            .foregroundStyle(displayQuality.color)
                         Text(displayQuality.displayName)
                             .font(.caption)
                             .fontWeight(.semibold)
-                            .foregroundColor(displayQuality.color)
+                            .foregroundStyle(displayQuality.color)
                     }
                 }
             }
@@ -191,10 +191,10 @@ struct ResortConditionCard: View {
                 HStack {
                     if top.snowSinceFreeze > 0 {
                         Image(systemName: "snowflake")
-                            .foregroundColor(.cyan)
+                            .foregroundStyle(.cyan)
                         Text("\(top.formattedSnowSinceFreezeWithPrefs(userPreferencesManager.preferredUnits)) since last thaw")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
 
                     Spacer()
@@ -203,10 +203,10 @@ struct ResortConditionCard: View {
                     if top.currentlyWarming == true {
                         HStack(spacing: 4) {
                             Image(systemName: "thermometer.sun.fill")
-                                .foregroundColor(.orange)
+                                .foregroundStyle(.orange)
                             Text("Warming")
                                 .font(.caption)
-                                .foregroundColor(.orange)
+                                .foregroundStyle(.orange)
                         }
                     }
                 }
@@ -214,7 +214,7 @@ struct ResortConditionCard: View {
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 2)
     }
 
@@ -222,10 +222,10 @@ struct ResortConditionCard: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Image(systemName: level.icon)
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
                 Text(level.displayName)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
 
             HStack {
@@ -236,7 +236,7 @@ struct ResortConditionCard: View {
                 Spacer()
 
                 Image(systemName: condition.snowQuality.icon)
-                    .foregroundColor(condition.snowQuality.color)
+                    .foregroundStyle(condition.snowQuality.color)
                     .font(.caption)
             }
 
@@ -245,19 +245,19 @@ struct ResortConditionCard: View {
                 HStack(spacing: 4) {
                     Image(systemName: "arrow.down.to.line")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text(WeatherCondition.formatSnowShort(depth, prefs: userPreferencesManager.preferredUnits))
                         .font(.caption)
-                        .foregroundColor(.primary)
+                        .foregroundStyle(.primary)
                     Text("base")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
 
             Text(condition.formattedSnowfall24hWithPrefs(userPreferencesManager.preferredUnits))
                 .font(.caption)
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -279,38 +279,38 @@ struct QualityInfoSheet: View {
 
                         Text("Quality ratings are based on **fresh powder since the last thaw-freeze event** — snow that hasn't turned to ice.")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
 
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 12) {
                                 Image(systemName: "ruler")
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(.blue)
                                 VStack(alignment: .leading) {
                                     Text("Fresh snow thresholds:")
                                         .font(.caption)
                                         .fontWeight(.medium)
                                     Text("3\"+ = Excellent, 2\"+ = Good, 1\"+ = Fair")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
 
                             HStack(spacing: 12) {
                                 Image(systemName: "thermometer.snowflake")
-                                    .foregroundColor(.orange)
+                                    .foregroundStyle(.orange)
                                 VStack(alignment: .leading) {
                                     Text("Ice forms (thaw-freeze) when:")
                                         .font(.caption)
                                         .fontWeight(.medium)
                                     Text("3h @ +3°C, 6h @ +2°C, or 8h @ +1°C")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
                         }
                         .padding()
                         .background(Color.blue.opacity(0.1))
-                        .cornerRadius(8)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                     .padding(.horizontal)
 
@@ -351,10 +351,10 @@ struct QualityInfoRow: View {
             VStack {
                 Image(systemName: quality.icon)
                     .font(.title2)
-                    .foregroundColor(quality.color)
+                    .foregroundStyle(quality.color)
                     .frame(width: 40, height: 40)
                     .background(quality.color.opacity(0.15))
-                    .cornerRadius(8)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
             }
 
             // Quality details
@@ -362,15 +362,15 @@ struct QualityInfoRow: View {
                 Text(quality.detailedInfo.title)
                     .font(.subheadline)
                     .fontWeight(.semibold)
-                    .foregroundColor(quality.color)
+                    .foregroundStyle(quality.color)
 
                 Text(quality.detailedInfo.description)
                     .font(.caption)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
 
                 Text(quality.detailedInfo.criteria)
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .italic()
             }
 

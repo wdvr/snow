@@ -253,7 +253,7 @@ struct SettingsView: View {
             if user.provider == .guest {
                 HStack {
                     Image(systemName: "person.circle")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
 
                     Text("Not signed in")
                         .font(.body)
@@ -270,7 +270,7 @@ struct SettingsView: View {
                 HStack {
                     let isApple = user.provider == .apple
                     Image(systemName: isApple ? "apple.logo" : "g.circle.fill")
-                        .foregroundColor(isApple ? .primary : .blue)
+                        .foregroundStyle(isApple ? Color.primary : Color.blue)
 
                     VStack(alignment: .leading, spacing: 2) {
                         // Show name if available

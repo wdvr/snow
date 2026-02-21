@@ -230,7 +230,7 @@ struct BestSnowNearYouView: View {
         VStack(spacing: 16) {
             ProgressView()
             Text("Finding best snow near you...")
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -259,10 +259,10 @@ struct BestSnowNearYouView: View {
                 if let lastUpdated = recommendationsManager.lastUpdated {
                     HStack {
                         Image(systemName: "clock")
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                         Text("Updated \(lastUpdated.formatted(.relative(presentation: .named)))")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.top, 8)
                 }
@@ -327,11 +327,11 @@ struct RecommendationCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(recommendation.resort.name)
                         .font(.headline)
-                        .foregroundColor(.primary)
+                        .foregroundStyle(.primary)
 
                     Text(recommendation.resort.displayLocation)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 Spacer()
@@ -343,7 +343,7 @@ struct RecommendationCard: View {
             // Reason text
             Text(recommendation.reason)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .lineLimit(2)
 
             // Stats row
@@ -390,7 +390,7 @@ struct RecommendationCard: View {
         }
         .padding()
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(radius: 2)
     }
 
@@ -435,11 +435,11 @@ struct QualityBadge: View {
                 .font(.caption)
                 .fontWeight(.semibold)
         }
-        .foregroundColor(quality.color)
+        .foregroundStyle(quality.color)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(quality.color.opacity(0.15))
-        .cornerRadius(8)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -452,10 +452,10 @@ struct StatItem: View {
         HStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.caption)
-                .foregroundColor(color)
+                .foregroundStyle(color)
             Text(value)
                 .font(.caption)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
         }
     }
 }
@@ -480,10 +480,10 @@ struct ScoreIndicator: View {
             Text(String(format: "%.0f", score * 100))
                 .font(.caption)
                 .fontWeight(.bold)
-                .foregroundColor(scoreColor)
+                .foregroundStyle(scoreColor)
             Text("score")
                 .font(.caption2)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
     }
 }
@@ -516,7 +516,7 @@ struct BestSnowNearYouCard: View {
                 NavigationLink(destination: BestSnowNearYouView()) {
                     Text("See All")
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                 }
             }
 
@@ -535,11 +535,11 @@ struct BestSnowNearYouCard: View {
                             Text(topRecommendation.resort.name)
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
-                                .foregroundColor(.primary)
+                                .foregroundStyle(.primary)
 
                             Text(topRecommendation.formattedDistance(useMetric: useMetric))
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
 
                         Spacer()
@@ -551,30 +551,30 @@ struct BestSnowNearYouCard: View {
 
                 Text(topRecommendation.reason)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(2)
             } else if locationManager.authorizationStatus == .denied ||
                       locationManager.authorizationStatus == .restricted {
                 HStack {
                     Image(systemName: "location.slash")
-                        .foregroundColor(.orange)
+                        .foregroundStyle(.orange)
                     Text("Enable location to see nearby recommendations")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             } else {
                 HStack {
                     Image(systemName: "snowflake")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text("Pull to load recommendations")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
         .padding()
         .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .task {
             await loadRecommendations()
         }

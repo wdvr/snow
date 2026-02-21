@@ -13,7 +13,7 @@ struct WelcomeView: View {
             VStack(spacing: 16) {
                 Image(systemName: "snowflake")
                     .font(.system(size: 80))
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
 
                 Text("Powder Chaser")
                     .font(.largeTitle)
@@ -21,7 +21,7 @@ struct WelcomeView: View {
 
                 Text("Track snow conditions at your favorite ski resorts")
                     .font(.body)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
             }
@@ -47,7 +47,7 @@ struct WelcomeView: View {
                 }
                 .signInWithAppleButtonStyle(.black)
                 .frame(height: 50)
-                .cornerRadius(12)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal, 40)
 
                 // Sign in with Google - using standard Google branding
@@ -65,8 +65,8 @@ struct WelcomeView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
                     .background(Color(.systemBackground))
-                    .foregroundColor(.primary)
-                    .cornerRadius(12)
+                    .foregroundStyle(.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Color(.systemGray4), lineWidth: 1)
@@ -84,7 +84,7 @@ struct WelcomeView: View {
                 if let error = authService.errorMessage {
                     Text(error)
                         .font(.caption)
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
                 }
@@ -95,7 +95,7 @@ struct WelcomeView: View {
                 } label: {
                     Text("Continue without signing in")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .padding(.top, 8)
             }
@@ -123,7 +123,7 @@ struct ProfileView: View {
                                 Text(user.initials)
                                     .font(.title2)
                                     .fontWeight(.semibold)
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(.blue)
                             }
 
                             VStack(alignment: .leading, spacing: 4) {
@@ -133,7 +133,7 @@ struct ProfileView: View {
                                 // Always show email or a placeholder
                                 Text(user.emailDisplay)
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(.secondary)
 
                                 // Show auth provider
                                 HStack(spacing: 4) {
@@ -142,7 +142,7 @@ struct ProfileView: View {
                                     Text("Signed in with \(user.provider == .apple ? "Apple" : "Google")")
                                         .font(.caption2)
                                 }
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                             }
                             .padding(.leading, 8)
                         }
@@ -177,7 +177,7 @@ struct ProfileView: View {
                         Text("Version")
                         Spacer()
                         Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
