@@ -709,6 +709,13 @@ class OpenMeteoService:
                 if len(daily_max_temps) > today_index:
                     result["max_temp_24h"] = daily_max_temps[today_index]
 
+        # Ensure cumulative snowfall windows are consistent
+        # (48h must include 24h, 72h must include 48h)
+        if result["snowfall_48h"] < result["snowfall_24h"]:
+            result["snowfall_48h"] = result["snowfall_24h"]
+        if result["snowfall_72h"] < result["snowfall_48h"]:
+            result["snowfall_72h"] = result["snowfall_48h"]
+
         # Get current snow depth from hourly data at current time
         # IMPORTANT: Do NOT use reversed() on the full array - that picks up
         # future forecast values (3 days ahead) instead of current conditions.
