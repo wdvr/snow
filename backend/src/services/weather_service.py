@@ -356,18 +356,26 @@ class WeatherService:
             elevation_levels = ["base", "mid", "top"]
 
             def query_elevation(elevation_level: str):
-                """Query conditions for a specific elevation level."""
+                """Query conditions for a specific elevation level with pagination."""
                 results = []
                 try:
-                    response = self.conditions_table.query(
-                        IndexName="ElevationIndex",
-                        KeyConditionExpression=Key("elevation_level").eq(
+                    query_params = {
+                        "IndexName": "ElevationIndex",
+                        "KeyConditionExpression": Key("elevation_level").eq(
                             elevation_level
                         )
                         & Key("timestamp").gte(cutoff_str),
-                        ScanIndexForward=False,  # Most recent first
-                    )
-                    results = response.get("Items", [])
+                        "ScanIndexForward": False,  # Most recent first
+                    }
+                    response = self.conditions_table.query(**query_params)
+                    results.extend(response.get("Items", []))
+
+                    # Paginate through all results
+                    while "LastEvaluatedKey" in response:
+                        query_params["ExclusiveStartKey"] = response["LastEvaluatedKey"]
+                        response = self.conditions_table.query(**query_params)
+                        results.extend(response.get("Items", []))
+
                 except Exception as e:
                     logger.warning(f"Error querying elevation {elevation_level}: {e}")
                 return results
@@ -386,14 +394,22 @@ class WeatherService:
                     except Exception:
                         pass
 
-            # Parse and group by resort
+            # Parse and group by resort, keeping only latest per elevation
+            seen_keys: set[str] = set()  # "resort_id:elevation" dedup keys
             for item in all_items:
                 try:
                     parsed_item = parse_from_dynamodb(item)
                     resort_id = parsed_item.get("resort_id")
-                    if resort_id:
-                        condition = WeatherCondition(**parsed_item)
-                        conditions_by_resort[resort_id].append(condition)
+                    elevation = parsed_item.get("elevation_level", "")
+                    if not resort_id:
+                        continue
+                    # Keep only the first (latest, since sorted desc) per resort+elevation
+                    dedup_key = f"{resort_id}:{elevation}"
+                    if dedup_key in seen_keys:
+                        continue
+                    seen_keys.add(dedup_key)
+                    condition = WeatherCondition(**parsed_item)
+                    conditions_by_resort[resort_id].append(condition)
                 except Exception as parse_error:
                     logger.debug(f"Skipping item due to parse error: {parse_error}")
                     continue

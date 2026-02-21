@@ -36,6 +36,9 @@
 
 | Feature | Date |
 |---------|------|
+| Fix recommendation scoring plateau (log scale for fresh snow) | 2026-02-21 |
+| Optimize iOS sort performance (pre-compute lookups) | 2026-02-21 |
+| Reduce DynamoDB queries 3x (single-query per resort) | 2026-02-21 |
 | Add structured logging and request timing middleware | 2026-02-21 |
 | iOS: API retry logic with exponential backoff | 2026-02-21 |
 | iOS: Replace 62 debug prints with os.Logger | 2026-02-21 |
