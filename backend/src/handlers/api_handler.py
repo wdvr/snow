@@ -871,10 +871,16 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
         elevation_summaries = {}
 
         for condition in conditions:
+            quality = condition.snow_quality
+            quality_val = quality.value if hasattr(quality, "value") else str(quality)
+            confidence = condition.confidence_level
+            confidence_val = (
+                confidence.value if hasattr(confidence, "value") else str(confidence)
+            )
             elevation_summaries[condition.elevation_level] = {
-                "quality": condition.snow_quality.value,
+                "quality": quality_val,
                 "fresh_snow_cm": condition.fresh_snow_cm,
-                "confidence": condition.confidence_level.value,
+                "confidence": confidence_val,
                 "temperature_celsius": condition.current_temp_celsius,
                 "snowfall_24h_cm": condition.snowfall_24h_cm,
                 "timestamp": condition.timestamp,
