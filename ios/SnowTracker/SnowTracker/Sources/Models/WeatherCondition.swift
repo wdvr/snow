@@ -503,36 +503,50 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         return Date().timeIntervalSince(date) / 3600.0
     }
 
+    // Static formatters for timestamp parsing (avoid per-call allocation)
+    private static let isoFractionalFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
+    private static let isoBasicFormatter = ISO8601DateFormatter()
+
+    private static let isoFlexFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withTimeZone]
+        return f
+    }()
+
+    private static let posixDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        return f
+    }()
+
     /// Parse timestamp handling multiple ISO8601 formats
     private var parsedTimestamp: Date? {
         // Guard against empty timestamp
         guard !timestamp.isEmpty else { return nil }
 
         // Try parsing with fractional seconds first (API returns timestamps like "2026-01-25T21:18:24.110234+00:00")
-        let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-        if let date = isoFormatter.date(from: timestamp) {
+        if let date = Self.isoFractionalFormatter.date(from: timestamp) {
             return date
         }
 
         // Fallback to standard ISO8601 without fractional seconds
-        let basicFormatter = ISO8601DateFormatter()
-        if let date = basicFormatter.date(from: timestamp) {
+        if let date = Self.isoBasicFormatter.date(from: timestamp) {
             return date
         }
 
         // Try with timezone designator variations
-        let flexFormatter = ISO8601DateFormatter()
-        flexFormatter.formatOptions = [.withInternetDateTime, .withTimeZone]
-        if let date = flexFormatter.date(from: timestamp) {
+        if let date = Self.isoFlexFormatter.date(from: timestamp) {
             return date
         }
 
         // Try DateFormatter for more flexible parsing (handles "Z" suffix, various formats)
-        let dateFormatter = DateFormatter()
-        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-        dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+        let dateFormatter = Self.posixDateFormatter
 
         // Try common API date formats
         let formats = [

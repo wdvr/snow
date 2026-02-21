@@ -3,6 +3,28 @@ import os.log
 
 private let tripLog = Logger(subsystem: "com.snowtracker.app", category: "TripPlanning")
 
+// MARK: - Shared Formatters
+
+private enum TripFormatters {
+    static let dateOnly: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    static let shortDate: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        return f
+    }()
+
+    static let mediumDate: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        return f
+    }()
+}
+
 // MARK: - Trip Planning Manager
 
 @MainActor
@@ -39,13 +61,10 @@ class TripPlanningManager: ObservableObject {
     }
 
     func createTrip(resortId: String, startDate: Date, endDate: Date, notes: String?, partySize: Int) async throws -> Trip {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-
         let request = TripCreateRequest(
             resortId: resortId,
-            startDate: formatter.string(from: startDate),
-            endDate: formatter.string(from: endDate),
+            startDate: TripFormatters.dateOnly.string(from: startDate),
+            endDate: TripFormatters.dateOnly.string(from: endDate),
             notes: notes,
             partySize: partySize,
             alertPreferences: [
@@ -62,12 +81,9 @@ class TripPlanningManager: ObservableObject {
     }
 
     func updateTrip(_ trip: Trip, startDate: Date?, endDate: Date?, notes: String?, partySize: Int?, status: TripStatus?) async throws -> Trip {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-
         let request = TripUpdateRequest(
-            startDate: startDate.map { formatter.string(from: $0) },
-            endDate: endDate.map { formatter.string(from: $0) },
+            startDate: startDate.map { TripFormatters.dateOnly.string(from: $0) },
+            endDate: endDate.map { TripFormatters.dateOnly.string(from: $0) },
             notes: notes,
             partySize: partySize,
             status: status?.rawValue,
@@ -264,14 +280,11 @@ struct TripRowView: View {
     }
 
     private func formatDateRange() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-
         if let start = trip.startDateFormatted, let end = trip.endDateFormatted {
             if start == end {
-                return formatter.string(from: start)
+                return TripFormatters.shortDate.string(from: start)
             }
-            return "\(formatter.string(from: start)) - \(formatter.string(from: end))"
+            return "\(TripFormatters.shortDate.string(from: start)) - \(TripFormatters.shortDate.string(from: end))"
         }
         return "\(trip.startDate) - \(trip.endDate)"
     }
@@ -569,14 +582,11 @@ struct TripDetailView: View {
     }
 
     private func formatDateRange() -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-
         if let start = trip.startDateFormatted, let end = trip.endDateFormatted {
             if start == end {
-                return formatter.string(from: start)
+                return TripFormatters.mediumDate.string(from: start)
             }
-            return "\(formatter.string(from: start)) - \(formatter.string(from: end))"
+            return "\(TripFormatters.mediumDate.string(from: start)) - \(TripFormatters.mediumDate.string(from: end))"
         }
         return "\(trip.startDate) - \(trip.endDate)"
     }
@@ -804,11 +814,8 @@ struct EditTripView: View {
         self.trip = trip
         self.tripManager = tripManager
 
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-
-        _startDate = State(initialValue: formatter.date(from: trip.startDate) ?? Date())
-        _endDate = State(initialValue: formatter.date(from: trip.endDate) ?? Date())
+        _startDate = State(initialValue: TripFormatters.dateOnly.date(from: trip.startDate) ?? Date())
+        _endDate = State(initialValue: TripFormatters.dateOnly.date(from: trip.endDate) ?? Date())
         _notes = State(initialValue: trip.notes ?? "")
         _partySize = State(initialValue: trip.partySize)
     }
