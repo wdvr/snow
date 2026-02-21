@@ -1,7 +1,7 @@
 # Snow Quality Tracker - Progress
 
 ## Status: LIVE
-**Last Updated**: 2026-02-20
+**Last Updated**: 2026-02-21
 
 ### Endpoints & Website
 - **Staging API**: https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging
@@ -36,6 +36,11 @@
 
 | Feature | Date |
 |---------|------|
+| Fix DynamoDB Limit+Filter bug for multi-elevation queries | 2026-02-21 |
+| Add missing API Gateway routes (regions, auth, trips, snow-quality) | 2026-02-21 |
+| Use ML model for timeline quality predictions | 2026-02-21 |
+| Replace deprecated datetime.utcnow() with datetime.now(UTC) | 2026-02-21 |
+| ML model v7: retrained on corrected elevation data | 2026-02-21 |
 | Notification deep linking to resort detail | 2026-02-20 |
 | Thaw-freeze info popover in resort detail | 2026-02-20 |
 | Fix 12 more na_east resort elevations | 2026-02-20 |
