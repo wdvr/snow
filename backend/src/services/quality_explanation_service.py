@@ -214,6 +214,71 @@ def _format_hours(hours: float) -> str:
         return f"{days:.0f} days"
 
 
+def generate_timeline_explanation(
+    quality: str,
+    temperature_c: float,
+    snowfall_cm: float,
+    snow_depth_cm: float | None,
+    wind_speed_kmh: float | None,
+    is_forecast: bool,
+) -> str:
+    """Generate a concise explanation for a timeline point.
+
+    Uses the limited data available from timeline points (no freeze-thaw history,
+    no rolling snowfall windows) to produce a 1-2 sentence explanation.
+    """
+    try:
+        q = SnowQuality(quality) if isinstance(quality, str) else quality
+    except ValueError:
+        return "Conditions data unavailable."
+
+    parts = []
+    prefix = "Expected: " if is_forecast else ""
+
+    # Surface/quality description
+    if q == SnowQuality.EXCELLENT:
+        if snowfall_cm >= 5:
+            parts.append(f"{prefix}Fresh powder with {snowfall_cm:.0f}cm of snowfall.")
+        else:
+            parts.append(f"{prefix}Excellent powder conditions.")
+    elif q == SnowQuality.GOOD:
+        if snowfall_cm >= 2:
+            parts.append(
+                f"{prefix}Soft surface with {snowfall_cm:.0f}cm of recent snow."
+            )
+        else:
+            parts.append(f"{prefix}Good, soft rideable surface.")
+    elif q == SnowQuality.FAIR:
+        if snowfall_cm >= 1:
+            parts.append(
+                f"{prefix}Some fresh snow ({snowfall_cm:.0f}cm) on a firm base."
+            )
+        else:
+            parts.append(f"{prefix}Firm, groomed-type surface.")
+    elif q == SnowQuality.POOR:
+        parts.append(f"{prefix}Hard packed with limited fresh snow.")
+    elif q == SnowQuality.BAD:
+        parts.append(f"{prefix}Icy, refrozen surface.")
+    elif q == SnowQuality.HORRIBLE:
+        parts.append(f"{prefix}Not skiable.")
+    else:
+        return "Conditions data unavailable."
+
+    # Temperature context (brief)
+    if temperature_c > 3:
+        parts.append(f"Warm ({temperature_c:.0f}°C) — wet snow.")
+    elif temperature_c < -15:
+        parts.append(f"Very cold ({temperature_c:.0f}°C).")
+    elif temperature_c > 0:
+        parts.append(f"Near freezing ({temperature_c:.0f}°C).")
+
+    # Wind context
+    if wind_speed_kmh and wind_speed_kmh > 40:
+        parts.append(f"Strong wind ({wind_speed_kmh:.0f} km/h).")
+
+    return " ".join(parts)
+
+
 def score_to_100(raw_score: float) -> int:
     """Convert ML model raw score (1.0-6.0) to a 0-100 scale.
 

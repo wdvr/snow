@@ -8,6 +8,10 @@ from typing import Any
 import requests
 
 from models.weather import ConfidenceLevel, SnowQuality, WeatherCondition
+from services.quality_explanation_service import (
+    generate_timeline_explanation,
+    score_to_100,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -357,13 +361,28 @@ class OpenMeteoService:
 
                     # Calculate snow quality using ML model directly
                     # This uses the same model as the conditions endpoint
-                    quality, _ = predict_quality_at_hour(
+                    quality, raw_score = predict_quality_at_hour(
                         hourly_times,
                         hourly_temps,
                         hourly_snowfall,
                         hourly_wind,
                         idx,
                         elevation_meters,
+                    )
+
+                    quality_val = (
+                        quality.value if hasattr(quality, "value") else str(quality)
+                    )
+                    snow_score = score_to_100(raw_score)
+                    explanation = generate_timeline_explanation(
+                        quality=quality_val,
+                        temperature_c=temp,
+                        snowfall_cm=round(snowfall_sum, 1),
+                        snow_depth_cm=round(snow_depth, 1)
+                        if snow_depth is not None
+                        else None,
+                        wind_speed_kmh=wind,
+                        is_forecast=is_forecast,
                     )
 
                     point = {
@@ -377,9 +396,10 @@ class OpenMeteoService:
                         "snow_depth_cm": round(snow_depth, 1)
                         if snow_depth is not None
                         else None,
-                        "snow_quality": quality.value
-                        if hasattr(quality, "value")
-                        else str(quality),
+                        "snow_quality": quality_val,
+                        "quality_score": round(raw_score, 2),
+                        "snow_score": snow_score,
+                        "explanation": explanation,
                         "weather_code": wcode,
                         "weather_description": wdesc,
                         "is_forecast": is_forecast,

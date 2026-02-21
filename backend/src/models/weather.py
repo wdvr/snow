@@ -268,6 +268,13 @@ class TimelinePoint(BaseModel):
     )
     snow_depth_cm: float | None = Field(None, description="Snow depth in cm")
     snow_quality: str = Field(default="unknown", description="Snow quality assessment")
+    quality_score: float | None = Field(
+        None, description="ML model raw score (1.0-6.0)"
+    )
+    snow_score: int | None = Field(None, description="Quality score on 0-100 scale")
+    explanation: str | None = Field(
+        None, description="Natural language quality explanation"
+    )
     weather_code: int | None = Field(None, description="WMO weather code")
     weather_description: str | None = Field(None, description="Weather description")
     is_forecast: bool = Field(

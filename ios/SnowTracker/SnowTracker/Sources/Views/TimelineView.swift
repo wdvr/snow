@@ -171,12 +171,19 @@ struct TimelinePointCard: View {
     let point: TimelinePoint
     let prefs: UnitPreferences
     let isCurrentSlot: Bool
+    @State private var showExplanation = false
 
     var body: some View {
         VStack(spacing: 4) {
-            // Snow quality icon (most prominent)
+            // Snow score + quality icon
+            if let score = point.snowScore {
+                Text("\(score)")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundStyle(point.snowQuality.color)
+            }
+
             Image(systemName: point.snowQuality.icon)
-                .font(.title2)
+                .font(.title3)
                 .foregroundColor(point.snowQuality.color)
 
             Text(point.snowQuality.displayName)
@@ -231,6 +238,18 @@ struct TimelinePointCard: View {
                     .padding(.vertical, 2)
                     .background(Capsule().fill(Color.blue))
             }
+
+            // Explanation info button
+            if point.explanation != nil {
+                Button {
+                    showExplanation = true
+                } label: {
+                    Image(systemName: "eye.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .frame(width: 68)
         .padding(.vertical, 8)
@@ -248,6 +267,33 @@ struct TimelinePointCard: View {
                 )
         )
         .opacity(point.isForecast ? 0.85 : 1.0)
+        .popover(isPresented: $showExplanation) {
+            if let explanation = point.explanation {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: point.snowQuality.icon)
+                            .foregroundStyle(point.snowQuality.color)
+                        Text(point.snowQuality.displayName)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(point.snowQuality.color)
+                        if let score = point.snowScore {
+                            Text("\(score)/100")
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                                .foregroundStyle(point.snowQuality.color)
+                        }
+                    }
+                    Text(explanation)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding()
+                .frame(maxWidth: 260)
+                .presentationCompactAdaptation(.popover)
+            }
+        }
     }
 }
 
