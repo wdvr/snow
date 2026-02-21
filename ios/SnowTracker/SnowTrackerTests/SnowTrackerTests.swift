@@ -226,8 +226,10 @@ final class SnowTrackerTests: XCTestCase {
     func testWeatherConditionWindSpeed() {
         let condition = WeatherCondition.sampleConditions.first { $0.windSpeedKmh != nil }
         XCTAssertNotNil(condition)
-        XCTAssertTrue(condition?.formattedWindSpeed.contains("km/h") ?? false)
-        XCTAssertTrue(condition?.formattedWindSpeed.contains("mph") ?? false)
+        let prefs = UnitPreferences(temperature: .celsius, distance: .metric, snowDepth: .centimeters)
+        XCTAssertTrue(condition?.formattedWindSpeedWithPrefs(prefs).contains("km/h") ?? false)
+        let imperialPrefs = UnitPreferences(temperature: .fahrenheit, distance: .imperial, snowDepth: .inches)
+        XCTAssertTrue(condition?.formattedWindSpeedWithPrefs(imperialPrefs).contains("mph") ?? false)
     }
 
     func testWeatherConditionHumidity() {
@@ -268,7 +270,8 @@ final class SnowTrackerTests: XCTestCase {
             sourceConfidence: .high,
             rawData: nil
         )
-        XCTAssertEqual(condition.formattedWindSpeed, "No wind data")
+        let windPrefs = UnitPreferences(temperature: .celsius, distance: .metric, snowDepth: .centimeters)
+        XCTAssertEqual(condition.formattedWindSpeedWithPrefs(windPrefs), "No wind data")
         XCTAssertEqual(condition.formattedHumidity, "No humidity data")
     }
 
