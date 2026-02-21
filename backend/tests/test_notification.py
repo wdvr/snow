@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from models.notification import (
+    POWDER_MESSAGES,
     DeviceToken,
     NotificationPayload,
     NotificationType,
@@ -172,3 +173,72 @@ class TestUserPreferencesIntegration:
         assert settings.fresh_snow_alerts is False  # Migrated from snow_alerts
         assert settings.event_alerts is True  # Migrated from condition_updates
         assert settings.weekly_summary is True
+
+
+class TestPowderAlertModelFields:
+    """Tests for powder alert fields on notification models."""
+
+    def test_user_notification_preferences_powder_defaults(self):
+        """Test that powder alert fields have correct defaults."""
+        prefs = UserNotificationPreferences()
+
+        assert prefs.powder_alerts is True
+        assert prefs.powder_snow_threshold_cm == 15.0
+
+    def test_user_notification_preferences_powder_custom(self):
+        """Test setting custom powder alert values."""
+        prefs = UserNotificationPreferences(
+            powder_alerts=False,
+            powder_snow_threshold_cm=25.0,
+        )
+
+        assert prefs.powder_alerts is False
+        assert prefs.powder_snow_threshold_cm == 25.0
+
+    def test_resort_settings_powder_defaults(self):
+        """Test that resort-level powder alert fields have correct defaults."""
+        settings = ResortNotificationSettings(resort_id="test-resort")
+
+        assert settings.powder_alerts_enabled is True
+        assert settings.powder_threshold_cm is None
+
+    def test_resort_settings_powder_custom(self):
+        """Test setting custom resort-level powder alert values."""
+        settings = ResortNotificationSettings(
+            resort_id="test-resort",
+            powder_alerts_enabled=False,
+            powder_threshold_cm=20.0,
+        )
+
+        assert settings.powder_alerts_enabled is False
+        assert settings.powder_threshold_cm == 20.0
+
+    def test_powder_fields_serialize_deserialize(self):
+        """Test that powder fields survive serialization round-trip."""
+        prefs = UserNotificationPreferences(
+            powder_alerts=False,
+            powder_snow_threshold_cm=30.0,
+            resort_settings={
+                "resort1": ResortNotificationSettings(
+                    resort_id="resort1",
+                    powder_alerts_enabled=False,
+                    powder_threshold_cm=25.0,
+                ),
+            },
+        )
+
+        data = prefs.model_dump()
+        restored = UserNotificationPreferences(**data)
+
+        assert restored.powder_alerts is False
+        assert restored.powder_snow_threshold_cm == 30.0
+        assert restored.resort_settings["resort1"].powder_alerts_enabled is False
+        assert restored.resort_settings["resort1"].powder_threshold_cm == 25.0
+
+    def test_powder_messages_list_exists(self):
+        """Test that POWDER_MESSAGES list is populated."""
+        assert len(POWDER_MESSAGES) >= 5
+        # All messages should contain format placeholders
+        for msg in POWDER_MESSAGES:
+            assert "{resort_name}" in msg
+            assert "{snow_cm}" in msg

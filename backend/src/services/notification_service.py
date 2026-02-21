@@ -12,6 +12,7 @@ from botocore.exceptions import ClientError
 
 from models.notification import (
     FREEZE_MESSAGES,
+    POWDER_MESSAGES,
     THAW_MESSAGES,
     DeviceToken,
     NotificationPayload,
@@ -336,6 +337,101 @@ class NotificationService:
             logger.error(f"Error getting temperature for {resort_id}: {e}")
             return None
 
+    def get_powder_conditions(self, resort_id: str) -> dict:
+        """Get conditions needed for powder day detection.
+
+        Args:
+            resort_id: Resort ID
+
+        Returns:
+            Dict with snowfall_24h_cm, current_temp_celsius, wind_speed_kmh, quality_score
+        """
+        try:
+            response = self.weather_conditions_table.query(
+                KeyConditionExpression="resort_id = :rid",
+                ExpressionAttributeValues={":rid": resort_id},
+                ScanIndexForward=False,
+                Limit=1,
+            )
+
+            items = response.get("Items", [])
+            if not items:
+                return {}
+
+            item = items[0]
+            return {
+                "snowfall_24h_cm": float(item.get("snowfall_24h_cm", 0.0)),
+                "current_temp_celsius": item.get("current_temp_celsius"),
+                "wind_speed_kmh": item.get("wind_speed_kmh"),
+                "quality_score": item.get("quality_score"),
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting powder conditions for {resort_id}: {e}")
+            return {}
+
+    def check_powder_day(
+        self,
+        resort_id: str,
+        resort_name: str,
+        conditions: dict,
+        powder_threshold: float,
+    ) -> NotificationPayload | None:
+        """Check if conditions qualify as a powder day.
+
+        A powder day requires ALL of these:
+        - snowfall_24h_cm >= powder_threshold (default 15cm)
+        - current_temp_celsius < 0 (freezing = powder not wet snow)
+        - wind_speed_kmh < 40 (or None, manageable wind)
+        - quality_score >= 3.5 (ML model says conditions are at least fair)
+
+        Args:
+            resort_id: Resort ID
+            resort_name: Resort name for display
+            conditions: Dict with weather condition values
+            powder_threshold: Minimum snowfall threshold in cm
+
+        Returns:
+            NotificationPayload if powder day detected, None otherwise
+        """
+        snowfall = conditions.get("snowfall_24h_cm", 0.0)
+        temp = conditions.get("current_temp_celsius")
+        wind = conditions.get("wind_speed_kmh")
+        quality = conditions.get("quality_score")
+
+        # All conditions must be met
+        if snowfall < powder_threshold:
+            return None
+
+        if temp is None or temp >= 0:
+            return None
+
+        if wind is not None and wind >= 40:
+            return None
+
+        if quality is None or quality < 3.5:
+            return None
+
+        # All conditions met - it's a powder day!
+        snow_cm = round(snowfall, 0)
+        message = random.choice(POWDER_MESSAGES).format(
+            resort_name=resort_name, snow_cm=int(snow_cm)
+        )
+
+        return NotificationPayload(
+            notification_type=NotificationType.POWDER_ALERT,
+            title=f"Powder Day at {resort_name}!",
+            body=message,
+            resort_id=resort_id,
+            resort_name=resort_name,
+            data={
+                "snowfall_24h_cm": snowfall,
+                "current_temp_celsius": temp,
+                "wind_speed_kmh": wind,
+                "quality_score": quality,
+            },
+        )
+
     def check_thaw_freeze_cycle(
         self,
         resort_id: str,
@@ -549,6 +645,31 @@ class NotificationService:
                     )
                     if thaw_freeze_notification:
                         notifications.append(thaw_freeze_notification)
+                        notification_settings.mark_notified(resort_id)
+
+            # Check for powder day
+            powder_enabled = notification_settings.powder_alerts
+            if resort_settings:
+                powder_enabled = (
+                    powder_enabled and resort_settings.powder_alerts_enabled
+                )
+            if powder_enabled:
+                powder_threshold = (
+                    resort_settings.powder_threshold_cm
+                    if resort_settings
+                    and resort_settings.powder_threshold_cm is not None
+                    else notification_settings.powder_snow_threshold_cm
+                )
+                conditions = self.get_powder_conditions(resort_id)
+                if conditions:
+                    powder_notification = self.check_powder_day(
+                        resort_id=resort_id,
+                        resort_name=resort_name,
+                        conditions=conditions,
+                        powder_threshold=powder_threshold,
+                    )
+                    if powder_notification:
+                        notifications.append(powder_notification)
                         notification_settings.mark_notified(resort_id)
 
         # Save updated notification settings (with last_notified times and temp state)

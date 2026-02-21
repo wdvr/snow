@@ -28,6 +28,7 @@ from models.user import UserPreferences
 from models.weather import SNOW_QUALITY_EXPLANATIONS, SnowQuality, TimelineResponse
 from services.auth_service import AuthenticationError, AuthProvider, AuthService
 from services.condition_report_service import ConditionReportService
+from services.daily_history_service import DailyHistoryService
 from services.ml_scorer import raw_score_to_quality
 from services.openmeteo_service import OpenMeteoService
 from services.quality_explanation_service import (
@@ -127,6 +128,7 @@ _trip_service = None
 _trips_table = None
 _condition_report_service = None
 _chat_service = None
+_daily_history_service = None
 
 # Security scheme for bearer token authentication
 security = HTTPBearer(auto_error=False)
@@ -142,7 +144,7 @@ def reset_services():
     global _dynamodb, _resort_service, _weather_service, _snow_quality_service
     global _user_service, _feedback_table, _auth_service, _recommendation_service
     global _trip_service, _trips_table, _s3_client, _condition_report_service
-    global _chat_service
+    global _chat_service, _daily_history_service
     _dynamodb = None
     _resort_service = None
     _weather_service = None
@@ -155,6 +157,7 @@ def reset_services():
     _trips_table = None
     _condition_report_service = None
     _chat_service = None
+    _daily_history_service = None
     _s3_client = None
     # Reset boto3's default session so new clients use the moto mock context
     boto3.DEFAULT_SESSION = None
@@ -417,6 +420,18 @@ def get_chat_service():
             recommendation_service=get_recommendation_service(),
         )
     return _chat_service
+
+
+def get_daily_history_service():
+    """Get or create DailyHistoryService (lazy init for SnapStart)."""
+    global _daily_history_service
+    if _daily_history_service is None:
+        _daily_history_service = DailyHistoryService(
+            get_dynamodb().Table(
+                os.environ.get("DAILY_HISTORY_TABLE", "snow-tracker-daily-history-dev")
+            )
+        )
+    return _daily_history_service
 
 
 # MARK: - Authentication Dependency
@@ -1039,6 +1054,104 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
         )
 
 
+@app.get("/api/v1/resorts/{resort_id}/history")
+async def get_resort_history(
+    resort_id: str,
+    response: Response,
+    start_date: str | None = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="End date (YYYY-MM-DD)"),
+    season: str | None = Query(
+        None, description="Season (e.g. '2025-2026'), overrides start/end dates"
+    ),
+):
+    """Get daily snow history and season summary for a resort.
+
+    Returns daily snowfall history records and season summary statistics.
+    If season is provided (e.g. "2025-2026"), computes Oct 1 to Apr 30 range.
+    """
+    try:
+        # Verify resort exists
+        resort = _get_resort_cached(resort_id)
+        if not resort:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Resort {resort_id} not found",
+            )
+
+        # If season is provided, compute date range
+        season_start = None
+        if season:
+            try:
+                parts = season.split("-")
+                start_year = int(parts[0])
+                end_year = int(parts[1])
+                start_date = f"{start_year}-10-01"
+                end_date = f"{end_year}-04-30"
+                season_start = start_date
+            except (ValueError, IndexError):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid season format. Expected 'YYYY-YYYY' (e.g. '2025-2026')",
+                )
+
+        daily_history_svc = get_daily_history_service()
+
+        # Get history records
+        history = daily_history_svc.get_history(
+            resort_id=resort_id,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        # Get season summary
+        if not season_start:
+            # Default to current season (Oct of previous year or current year)
+            now = datetime.now(UTC)
+            if now.month >= 10:
+                season_start = f"{now.year}-10-01"
+            else:
+                season_start = f"{now.year - 1}-10-01"
+
+        season_summary = daily_history_svc.get_season_summary(
+            resort_id=resort_id,
+            season_start=season_start,
+        )
+
+        # Also get the season total from snow_summary table for mid elevation
+        try:
+            snow_summary_table = get_dynamodb().Table(
+                os.environ.get("SNOW_SUMMARY_TABLE", "snow-tracker-snow-summary-dev")
+            )
+            from services.snow_summary_service import SnowSummaryService
+
+            snow_summary_svc = SnowSummaryService(snow_summary_table)
+            mid_summary = snow_summary_svc.get_summary(resort_id, "mid")
+            if mid_summary and mid_summary.get("total_season_snowfall_cm"):
+                season_summary["total_season_snowfall_cm_accumulated"] = mid_summary[
+                    "total_season_snowfall_cm"
+                ]
+        except Exception:
+            pass  # Non-critical: accumulated total is a bonus field
+
+        # Set cache headers - 1 hour
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC_LONG
+
+        return {
+            "resort_id": resort_id,
+            "history": history,
+            "season_summary": season_summary,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching history for {resort_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve snow history",
+        )
+
+
 @app.get("/api/v1/resorts/{resort_id}/timeline")
 async def get_resort_timeline(
     resort_id: str,
@@ -1547,9 +1660,15 @@ class NotificationSettingsRequest(BaseModel):
     event_alerts: bool | None = Field(
         None, description="Enable resort event notifications"
     )
+    powder_alerts: bool | None = Field(
+        None, description="Enable powder day notifications"
+    )
     weekly_summary: bool | None = Field(None, description="Enable weekly summary")
     default_snow_threshold_cm: float | None = Field(
         None, description="Default minimum snow in cm to trigger notification"
+    )
+    powder_snow_threshold_cm: float | None = Field(
+        None, description="Fresh snow threshold for powder day alert (cm)"
     )
     grace_period_hours: int | None = Field(
         None, description="Minimum hours between notifications for same resort"
@@ -1567,6 +1686,12 @@ class ResortNotificationSettingsRequest(BaseModel):
     )
     event_notifications_enabled: bool | None = Field(
         None, description="Enable event notifications for this resort"
+    )
+    powder_alerts_enabled: bool | None = Field(
+        None, description="Enable powder alerts for this resort"
+    )
+    powder_threshold_cm: float | None = Field(
+        None, description="Per-resort powder threshold override (cm)"
     )
 
 
@@ -1625,10 +1750,14 @@ async def update_notification_settings(
             settings.fresh_snow_alerts = request.fresh_snow_alerts
         if request.event_alerts is not None:
             settings.event_alerts = request.event_alerts
+        if request.powder_alerts is not None:
+            settings.powder_alerts = request.powder_alerts
         if request.weekly_summary is not None:
             settings.weekly_summary = request.weekly_summary
         if request.default_snow_threshold_cm is not None:
             settings.default_snow_threshold_cm = request.default_snow_threshold_cm
+        if request.powder_snow_threshold_cm is not None:
+            settings.powder_snow_threshold_cm = request.powder_snow_threshold_cm
         if request.grace_period_hours is not None:
             settings.grace_period_hours = request.grace_period_hours
 
@@ -1688,6 +1817,10 @@ async def update_resort_notification_settings(
             resort_settings.event_notifications_enabled = (
                 request.event_notifications_enabled
             )
+        if request.powder_alerts_enabled is not None:
+            resort_settings.powder_alerts_enabled = request.powder_alerts_enabled
+        if request.powder_threshold_cm is not None:
+            resort_settings.powder_threshold_cm = request.powder_threshold_cm
 
         # Save updated settings
         settings.resort_settings[resort_id] = resort_settings

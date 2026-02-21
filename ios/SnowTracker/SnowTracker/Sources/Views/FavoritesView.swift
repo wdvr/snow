@@ -4,6 +4,9 @@ struct FavoritesView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @State private var resortToRemove: Resort?
+    @State private var showingGroupManager = false
+    @State private var showingMoveSheet = false
+    @State private var resortToMove: Resort?
 
     private var favoriteResorts: [Resort] {
         snowConditionsManager.resorts
@@ -27,6 +30,15 @@ struct FavoritesView: View {
             }
             .navigationTitle("Favorites")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if !favoriteResorts.isEmpty {
+                        Button {
+                            showingGroupManager = true
+                        } label: {
+                            Label("Groups", systemImage: "folder")
+                        }
+                    }
+                }
                 if favoriteResorts.count >= 2 {
                     ToolbarItem(placement: .topBarTrailing) {
                         NavigationLink {
@@ -50,8 +62,17 @@ struct FavoritesView: View {
                 await snowConditionsManager.fetchConditionsForFavorites()
             }
             .task {
-                // Fetch conditions for favorites when view appears
                 await snowConditionsManager.fetchConditionsForFavorites()
+            }
+            .sheet(isPresented: $showingGroupManager) {
+                FavoriteGroupsManagerView()
+                    .environmentObject(userPreferencesManager)
+            }
+            .sheet(isPresented: $showingMoveSheet) {
+                if let resort = resortToMove {
+                    MoveToGroupSheet(resort: resort)
+                        .environmentObject(userPreferencesManager)
+                }
             }
         }
     }
@@ -85,23 +106,29 @@ struct FavoritesView: View {
 
     private var favoritesList: some View {
         List {
-            ForEach(favoriteResorts) { resort in
-                NavigationLink(destination: ResortDetailView(resort: resort)) {
-                    FavoriteResortRow(resort: resort)
+            // Show grouped sections if any groups exist
+            if !userPreferencesManager.favoriteGroups.isEmpty {
+                // Grouped resorts
+                ForEach(userPreferencesManager.favoriteGroups) { group in
+                    let groupResorts = favoriteResorts.filter { group.resortIds.contains($0.id) }
+                    if !groupResorts.isEmpty {
+                        Section(group.name) {
+                            resortRows(groupResorts)
+                        }
+                    }
                 }
-                .simultaneousGesture(TapGesture().onEnded {
-                    AnalyticsService.shared.trackResortClicked(
-                        resortId: resort.id,
-                        resortName: resort.name,
-                        source: "favorites"
-                    )
-                })
-                .accessibilityLabel("\(resort.name), \(snowConditionsManager.getSnowQuality(for: resort.id).displayName)")
-            }
-            .onDelete { offsets in
-                if let index = offsets.first {
-                    resortToRemove = favoriteResorts[index]
+
+                // Ungrouped resorts
+                let ungroupedIds = userPreferencesManager.ungroupedFavoriteResortIds()
+                let ungrouped = favoriteResorts.filter { ungroupedIds.contains($0.id) }
+                if !ungrouped.isEmpty {
+                    Section("Other") {
+                        resortRows(ungrouped)
+                    }
                 }
+            } else {
+                // No groups - flat list
+                resortRows(favoriteResorts)
             }
         }
         .listStyle(PlainListStyle())
@@ -122,7 +149,203 @@ struct FavoritesView: View {
             }
         }
     }
+
+    private func resortRows(_ resorts: [Resort]) -> some View {
+        ForEach(resorts) { resort in
+            NavigationLink(destination: ResortDetailView(resort: resort)) {
+                FavoriteResortRow(resort: resort)
+            }
+            .simultaneousGesture(TapGesture().onEnded {
+                AnalyticsService.shared.trackResortClicked(
+                    resortId: resort.id,
+                    resortName: resort.name,
+                    source: "favorites"
+                )
+            })
+            .accessibilityLabel("\(resort.name), \(snowConditionsManager.getSnowQuality(for: resort.id).displayName)")
+            .swipeActions(edge: .leading) {
+                if !userPreferencesManager.favoriteGroups.isEmpty {
+                    Button {
+                        resortToMove = resort
+                        showingMoveSheet = true
+                    } label: {
+                        Label("Move", systemImage: "folder")
+                    }
+                    .tint(.blue)
+                }
+            }
+            .swipeActions(edge: .trailing) {
+                Button(role: .destructive) {
+                    resortToRemove = resort
+                } label: {
+                    Label("Remove", systemImage: "heart.slash")
+                }
+            }
+        }
+    }
 }
+
+// MARK: - Favorite Groups Manager
+
+struct FavoriteGroupsManagerView: View {
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @Environment(\.dismiss) private var dismiss
+    @State private var newGroupName = ""
+    @State private var editingGroup: FavoriteGroup?
+    @State private var editName = ""
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    HStack {
+                        TextField("New group name", text: $newGroupName)
+                            .textInputAutocapitalization(.words)
+                        Button {
+                            guard !newGroupName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+                            userPreferencesManager.createGroup(name: newGroupName.trimmingCharacters(in: .whitespaces))
+                            newGroupName = ""
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(.blue)
+                        }
+                        .disabled(newGroupName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                } header: {
+                    Text("Create Group")
+                }
+
+                if !userPreferencesManager.favoriteGroups.isEmpty {
+                    Section {
+                        ForEach(userPreferencesManager.favoriteGroups) { group in
+                            HStack {
+                                Image(systemName: "folder.fill")
+                                    .foregroundStyle(.blue)
+                                VStack(alignment: .leading) {
+                                    Text(group.name)
+                                        .font(.body)
+                                    Text("\(group.resortIds.count) resorts")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                            }
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    userPreferencesManager.deleteGroup(id: group.id)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                                Button {
+                                    editingGroup = group
+                                    editName = group.name
+                                } label: {
+                                    Label("Rename", systemImage: "pencil")
+                                }
+                                .tint(.orange)
+                            }
+                        }
+                        .onMove { from, to in
+                            userPreferencesManager.favoriteGroups.move(fromOffsets: from, toOffset: to)
+                            userPreferencesManager.saveFavoriteGroups()
+                        }
+                    } header: {
+                        Text("Your Groups")
+                    }
+                }
+            }
+            .navigationTitle("Manage Groups")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    EditButton()
+                }
+            }
+            .alert("Rename Group", isPresented: Binding(
+                get: { editingGroup != nil },
+                set: { if !$0 { editingGroup = nil } }
+            )) {
+                TextField("Group name", text: $editName)
+                Button("Cancel", role: .cancel) { editingGroup = nil }
+                Button("Save") {
+                    if let group = editingGroup {
+                        userPreferencesManager.renameGroup(id: group.id, name: editName)
+                    }
+                    editingGroup = nil
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Move to Group Sheet
+
+struct MoveToGroupSheet: View {
+    let resort: Resort
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @Environment(\.dismiss) private var dismiss
+
+    private var currentGroup: FavoriteGroup? {
+        userPreferencesManager.groupForResort(resort.id)
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Button {
+                        if let group = currentGroup {
+                            userPreferencesManager.removeResortFromGroup(resortId: resort.id, groupId: group.id)
+                        }
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Label("No Group", systemImage: "tray")
+                            Spacer()
+                            if currentGroup == nil {
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(.blue)
+                            }
+                        }
+                    }
+                    .foregroundStyle(.primary)
+
+                    ForEach(userPreferencesManager.favoriteGroups) { group in
+                        Button {
+                            userPreferencesManager.addResortToGroup(resortId: resort.id, groupId: group.id)
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Label(group.name, systemImage: "folder.fill")
+                                Spacer()
+                                if currentGroup?.id == group.id {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                        }
+                        .foregroundStyle(.primary)
+                    }
+                } header: {
+                    Text("Move \"\(resort.name)\" to:")
+                }
+            }
+            .navigationTitle("Move to Group")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+// MARK: - Favorite Resort Row
 
 struct FavoriteResortRow: View {
     let resort: Resort

@@ -66,6 +66,9 @@ struct ResortDetailView: View {
                     )
                 }
 
+                // Snow history chart
+                SnowHistoryView(resortId: resort.id)
+
                 // Community condition reports
                 ConditionReportSection(resortId: resort.id)
 

@@ -1022,6 +1022,39 @@ final class APIClient {
         }
     }
 
+    // MARK: - Snow History
+
+    /// Fetch daily snow history and season summary for a resort
+    func getSnowHistory(resortId: String, season: String? = nil) async throws -> SnowHistoryResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/history"), resolvingAgainstBaseURL: false)!
+        var queryItems: [URLQueryItem] = []
+        if let season {
+            queryItems.append(URLQueryItem(name: "season", value: season))
+        }
+        if !queryItems.isEmpty {
+            components.queryItems = queryItems
+        }
+
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url)
+                .validate()
+                .responseDecodable(of: SnowHistoryResponse.self) { response in
+                    switch response.result {
+                    case .success(let historyResponse):
+                        self.log.debug("Fetched \(historyResponse.history.count) history records for \(resortId)")
+                        continuation.resume(returning: historyResponse)
+                    case .failure(let error):
+                        self.log.error("Error fetching snow history for \(resortId): \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
     // MARK: - Authentication
 
     private func authHeaders() -> HTTPHeaders {
@@ -1849,8 +1882,10 @@ struct NotificationSettingsUpdate: Codable {
     var freshSnowAlerts: Bool?
     var eventAlerts: Bool?
     var thawFreezeAlerts: Bool?
+    var powderAlerts: Bool?
     var weeklySummary: Bool?
     var defaultSnowThresholdCm: Double?
+    var powderSnowThresholdCm: Double?
     var gracePeriodHours: Int?
 
     private enum CodingKeys: String, CodingKey {
@@ -1858,8 +1893,10 @@ struct NotificationSettingsUpdate: Codable {
         case freshSnowAlerts = "fresh_snow_alerts"
         case eventAlerts = "event_alerts"
         case thawFreezeAlerts = "thaw_freeze_alerts"
+        case powderAlerts = "powder_alerts"
         case weeklySummary = "weekly_summary"
         case defaultSnowThresholdCm = "default_snow_threshold_cm"
+        case powderSnowThresholdCm = "powder_snow_threshold_cm"
         case gracePeriodHours = "grace_period_hours"
     }
 }
@@ -1868,11 +1905,15 @@ struct ResortNotificationSettingsUpdate: Codable {
     var freshSnowEnabled: Bool?
     var freshSnowThresholdCm: Double?
     var eventNotificationsEnabled: Bool?
+    var powderAlertsEnabled: Bool?
+    var powderThresholdCm: Double?
 
     private enum CodingKeys: String, CodingKey {
         case freshSnowEnabled = "fresh_snow_enabled"
         case freshSnowThresholdCm = "fresh_snow_threshold_cm"
         case eventNotificationsEnabled = "event_notifications_enabled"
+        case powderAlertsEnabled = "powder_alerts_enabled"
+        case powderThresholdCm = "powder_threshold_cm"
     }
 }
 

@@ -9,6 +9,7 @@ from botocore.exceptions import ClientError
 
 from models.notification import (
     FREEZE_MESSAGES,
+    POWDER_MESSAGES,
     THAW_MESSAGES,
     DeviceToken,
     NotificationPayload,
@@ -1302,3 +1303,536 @@ class TestProcessAllNotifications:
         # Both users have no favorites so 0 processed, but scan should be called twice
         assert service.user_preferences_table.scan.call_count == 2
         assert summary["errors"] == 0
+
+
+class TestGetPowderConditions:
+    """Tests for get_powder_conditions."""
+
+    @pytest.fixture
+    def service(self):
+        return NotificationService(
+            device_tokens_table=MagicMock(),
+            user_preferences_table=MagicMock(),
+            resort_events_table=MagicMock(),
+            weather_conditions_table=MagicMock(),
+            resorts_table=MagicMock(),
+            sns_client=MagicMock(),
+            apns_platform_arn="arn:test",
+        )
+
+    def test_get_powder_conditions_returns_values(self, service):
+        """Test get_powder_conditions returns the right fields."""
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "snowfall_24h_cm": 25.0,
+                    "current_temp_celsius": -5.0,
+                    "wind_speed_kmh": 15.0,
+                    "quality_score": 4.5,
+                }
+            ]
+        }
+
+        result = service.get_powder_conditions("whistler-blackcomb")
+        assert result["snowfall_24h_cm"] == 25.0
+        assert result["current_temp_celsius"] == -5.0
+        assert result["wind_speed_kmh"] == 15.0
+        assert result["quality_score"] == 4.5
+
+    def test_get_powder_conditions_no_data(self, service):
+        """Test get_powder_conditions returns empty dict when no data."""
+        service.weather_conditions_table.query.return_value = {"Items": []}
+        result = service.get_powder_conditions("no-data-resort")
+        assert result == {}
+
+    def test_get_powder_conditions_exception(self, service):
+        """Test get_powder_conditions returns empty dict on exception."""
+        service.weather_conditions_table.query.side_effect = Exception("DB error")
+        result = service.get_powder_conditions("whistler-blackcomb")
+        assert result == {}
+
+
+class TestCheckPowderDay:
+    """Tests for check_powder_day."""
+
+    @pytest.fixture
+    def service(self):
+        return NotificationService(
+            device_tokens_table=MagicMock(),
+            user_preferences_table=MagicMock(),
+            resort_events_table=MagicMock(),
+            weather_conditions_table=MagicMock(),
+            resorts_table=MagicMock(),
+            sns_client=MagicMock(),
+            apns_platform_arn="arn:test",
+        )
+
+    def test_powder_day_all_conditions_met(self, service):
+        """Test powder day triggers correctly with all conditions met."""
+        conditions = {
+            "snowfall_24h_cm": 25.0,
+            "current_temp_celsius": -5.0,
+            "wind_speed_kmh": 15.0,
+            "quality_score": 4.5,
+        }
+
+        with patch(
+            "services.notification_service.random.choice",
+            return_value=POWDER_MESSAGES[0],
+        ):
+            result = service.check_powder_day(
+                resort_id="whistler-blackcomb",
+                resort_name="Whistler Blackcomb",
+                conditions=conditions,
+                powder_threshold=15.0,
+            )
+
+        assert result is not None
+        assert result.notification_type == NotificationType.POWDER_ALERT
+        assert "Whistler Blackcomb" in result.title
+        assert result.resort_id == "whistler-blackcomb"
+        assert result.data["snowfall_24h_cm"] == 25.0
+
+    def test_powder_day_snow_below_threshold(self, service):
+        """Test powder day doesn't trigger when snow below threshold."""
+        conditions = {
+            "snowfall_24h_cm": 10.0,
+            "current_temp_celsius": -5.0,
+            "wind_speed_kmh": 15.0,
+            "quality_score": 4.5,
+        }
+
+        result = service.check_powder_day(
+            resort_id="whistler-blackcomb",
+            resort_name="Whistler Blackcomb",
+            conditions=conditions,
+            powder_threshold=15.0,
+        )
+
+        assert result is None
+
+    def test_powder_day_temp_above_zero(self, service):
+        """Test powder day doesn't trigger when temp above 0."""
+        conditions = {
+            "snowfall_24h_cm": 25.0,
+            "current_temp_celsius": 2.0,
+            "wind_speed_kmh": 15.0,
+            "quality_score": 4.5,
+        }
+
+        result = service.check_powder_day(
+            resort_id="whistler-blackcomb",
+            resort_name="Whistler Blackcomb",
+            conditions=conditions,
+            powder_threshold=15.0,
+        )
+
+        assert result is None
+
+    def test_powder_day_temp_exactly_zero(self, service):
+        """Test powder day doesn't trigger when temp is exactly 0."""
+        conditions = {
+            "snowfall_24h_cm": 25.0,
+            "current_temp_celsius": 0.0,
+            "wind_speed_kmh": 15.0,
+            "quality_score": 4.5,
+        }
+
+        result = service.check_powder_day(
+            resort_id="whistler-blackcomb",
+            resort_name="Whistler Blackcomb",
+            conditions=conditions,
+            powder_threshold=15.0,
+        )
+
+        assert result is None
+
+    def test_powder_day_temp_none(self, service):
+        """Test powder day doesn't trigger when temp is None."""
+        conditions = {
+            "snowfall_24h_cm": 25.0,
+            "current_temp_celsius": None,
+            "wind_speed_kmh": 15.0,
+            "quality_score": 4.5,
+        }
+
+        result = service.check_powder_day(
+            resort_id="whistler-blackcomb",
+            resort_name="Whistler Blackcomb",
+            conditions=conditions,
+            powder_threshold=15.0,
+        )
+
+        assert result is None
+
+    def test_powder_day_wind_too_high(self, service):
+        """Test powder day doesn't trigger when wind too high."""
+        conditions = {
+            "snowfall_24h_cm": 25.0,
+            "current_temp_celsius": -5.0,
+            "wind_speed_kmh": 45.0,
+            "quality_score": 4.5,
+        }
+
+        result = service.check_powder_day(
+            resort_id="whistler-blackcomb",
+            resort_name="Whistler Blackcomb",
+            conditions=conditions,
+            powder_threshold=15.0,
+        )
+
+        assert result is None
+
+    def test_powder_day_wind_none_is_ok(self, service):
+        """Test powder day triggers when wind is None (no data = assume ok)."""
+        conditions = {
+            "snowfall_24h_cm": 25.0,
+            "current_temp_celsius": -5.0,
+            "wind_speed_kmh": None,
+            "quality_score": 4.5,
+        }
+
+        with patch(
+            "services.notification_service.random.choice",
+            return_value=POWDER_MESSAGES[0],
+        ):
+            result = service.check_powder_day(
+                resort_id="whistler-blackcomb",
+                resort_name="Whistler Blackcomb",
+                conditions=conditions,
+                powder_threshold=15.0,
+            )
+
+        assert result is not None
+        assert result.notification_type == NotificationType.POWDER_ALERT
+
+    def test_powder_day_quality_too_low(self, service):
+        """Test powder day doesn't trigger when quality score too low."""
+        conditions = {
+            "snowfall_24h_cm": 25.0,
+            "current_temp_celsius": -5.0,
+            "wind_speed_kmh": 15.0,
+            "quality_score": 2.5,
+        }
+
+        result = service.check_powder_day(
+            resort_id="whistler-blackcomb",
+            resort_name="Whistler Blackcomb",
+            conditions=conditions,
+            powder_threshold=15.0,
+        )
+
+        assert result is None
+
+    def test_powder_day_quality_none(self, service):
+        """Test powder day doesn't trigger when quality score is None."""
+        conditions = {
+            "snowfall_24h_cm": 25.0,
+            "current_temp_celsius": -5.0,
+            "wind_speed_kmh": 15.0,
+            "quality_score": None,
+        }
+
+        result = service.check_powder_day(
+            resort_id="whistler-blackcomb",
+            resort_name="Whistler Blackcomb",
+            conditions=conditions,
+            powder_threshold=15.0,
+        )
+
+        assert result is None
+
+    def test_powder_day_custom_threshold(self, service):
+        """Test per-resort powder threshold override."""
+        conditions = {
+            "snowfall_24h_cm": 20.0,
+            "current_temp_celsius": -5.0,
+            "wind_speed_kmh": 15.0,
+            "quality_score": 4.5,
+        }
+
+        # With default threshold of 25, should NOT trigger
+        result = service.check_powder_day(
+            resort_id="whistler-blackcomb",
+            resort_name="Whistler Blackcomb",
+            conditions=conditions,
+            powder_threshold=25.0,
+        )
+        assert result is None
+
+        # With lower threshold of 15, should trigger
+        with patch(
+            "services.notification_service.random.choice",
+            return_value=POWDER_MESSAGES[0],
+        ):
+            result = service.check_powder_day(
+                resort_id="whistler-blackcomb",
+                resort_name="Whistler Blackcomb",
+                conditions=conditions,
+                powder_threshold=15.0,
+            )
+        assert result is not None
+
+    def test_powder_day_at_exact_threshold(self, service):
+        """Test powder day triggers at exactly the threshold."""
+        conditions = {
+            "snowfall_24h_cm": 15.0,
+            "current_temp_celsius": -1.0,
+            "wind_speed_kmh": 10.0,
+            "quality_score": 3.5,
+        }
+
+        with patch(
+            "services.notification_service.random.choice",
+            return_value=POWDER_MESSAGES[0],
+        ):
+            result = service.check_powder_day(
+                resort_id="whistler-blackcomb",
+                resort_name="Whistler Blackcomb",
+                conditions=conditions,
+                powder_threshold=15.0,
+            )
+
+        assert result is not None
+        assert result.notification_type == NotificationType.POWDER_ALERT
+
+    def test_powder_day_at_quality_boundary(self, service):
+        """Test powder day triggers at exactly quality score 3.5."""
+        conditions = {
+            "snowfall_24h_cm": 20.0,
+            "current_temp_celsius": -3.0,
+            "wind_speed_kmh": 10.0,
+            "quality_score": 3.5,
+        }
+
+        with patch(
+            "services.notification_service.random.choice",
+            return_value=POWDER_MESSAGES[0],
+        ):
+            result = service.check_powder_day(
+                resort_id="whistler-blackcomb",
+                resort_name="Whistler Blackcomb",
+                conditions=conditions,
+                powder_threshold=15.0,
+            )
+
+        assert result is not None
+
+    def test_powder_day_below_quality_boundary(self, service):
+        """Test powder day doesn't trigger just below quality score 3.5."""
+        conditions = {
+            "snowfall_24h_cm": 20.0,
+            "current_temp_celsius": -3.0,
+            "wind_speed_kmh": 10.0,
+            "quality_score": 3.4,
+        }
+
+        result = service.check_powder_day(
+            resort_id="whistler-blackcomb",
+            resort_name="Whistler Blackcomb",
+            conditions=conditions,
+            powder_threshold=15.0,
+        )
+
+        assert result is None
+
+
+class TestPowderDayProcessing:
+    """Tests for powder day detection in process_user_notifications."""
+
+    @pytest.fixture
+    def service(self):
+        svc = NotificationService(
+            device_tokens_table=MagicMock(),
+            user_preferences_table=MagicMock(),
+            resort_events_table=MagicMock(),
+            weather_conditions_table=MagicMock(),
+            resorts_table=MagicMock(),
+            sns_client=MagicMock(),
+            apns_platform_arn="arn:test",
+        )
+        svc.resorts_table.get_item.return_value = {
+            "Item": {"resort_id": "whistler-blackcomb", "name": "Whistler Blackcomb"}
+        }
+        return svc
+
+    def _make_prefs(
+        self, user_id="user1", favorite_resorts=None, notification_settings=None
+    ):
+        """Helper to create UserPreferences."""
+        now = datetime.now(UTC).isoformat()
+        return UserPreferences(
+            user_id=user_id,
+            favorite_resorts=favorite_resorts or [],
+            notification_settings=notification_settings,
+            created_at=now,
+            updated_at=now,
+        )
+
+    def test_powder_alert_in_processing(self, service):
+        """Test that powder alerts are generated during user notification processing."""
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            powder_alerts=True,
+            powder_snow_threshold_cm=15.0,
+        )
+        prefs = self._make_prefs(
+            favorite_resorts=["whistler-blackcomb"],
+            notification_settings=settings,
+        )
+        # Return powder-worthy conditions
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "snowfall_24h_cm": 25.0,
+                    "current_temp_celsius": -5.0,
+                    "wind_speed_kmh": 15.0,
+                    "quality_score": 4.5,
+                }
+            ]
+        }
+
+        with patch(
+            "services.notification_service.random.choice",
+            return_value=POWDER_MESSAGES[0],
+        ):
+            result = service.process_user_notifications("user1", prefs)
+
+        assert len(result) == 1
+        assert result[0].notification_type == NotificationType.POWDER_ALERT
+
+    def test_powder_alerts_disabled_globally(self, service):
+        """Test powder alerts disabled globally."""
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            powder_alerts=False,  # Disabled
+            powder_snow_threshold_cm=15.0,
+        )
+        prefs = self._make_prefs(
+            favorite_resorts=["whistler-blackcomb"],
+            notification_settings=settings,
+        )
+        # Return powder-worthy conditions
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "snowfall_24h_cm": 25.0,
+                    "current_temp_celsius": -5.0,
+                    "wind_speed_kmh": 15.0,
+                    "quality_score": 4.5,
+                }
+            ]
+        }
+
+        result = service.process_user_notifications("user1", prefs)
+        assert len(result) == 0
+
+    def test_powder_alerts_disabled_per_resort(self, service):
+        """Test powder alerts disabled per-resort."""
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            powder_alerts=True,  # Globally enabled
+            powder_snow_threshold_cm=15.0,
+            resort_settings={
+                "whistler-blackcomb": ResortNotificationSettings(
+                    resort_id="whistler-blackcomb",
+                    powder_alerts_enabled=False,  # Per-resort disabled
+                ),
+            },
+        )
+        prefs = self._make_prefs(
+            favorite_resorts=["whistler-blackcomb"],
+            notification_settings=settings,
+        )
+        # Return powder-worthy conditions
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "snowfall_24h_cm": 25.0,
+                    "current_temp_celsius": -5.0,
+                    "wind_speed_kmh": 15.0,
+                    "quality_score": 4.5,
+                }
+            ]
+        }
+
+        result = service.process_user_notifications("user1", prefs)
+        assert len(result) == 0
+
+    def test_powder_per_resort_threshold_override(self, service):
+        """Test per-resort powder threshold override."""
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            powder_alerts=True,
+            powder_snow_threshold_cm=30.0,  # Global threshold: 30cm
+            resort_settings={
+                "whistler-blackcomb": ResortNotificationSettings(
+                    resort_id="whistler-blackcomb",
+                    powder_alerts_enabled=True,
+                    powder_threshold_cm=15.0,  # Per-resort: only 15cm needed
+                ),
+            },
+        )
+        prefs = self._make_prefs(
+            favorite_resorts=["whistler-blackcomb"],
+            notification_settings=settings,
+        )
+        # 20cm snow: above per-resort (15) but below global (30)
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "snowfall_24h_cm": 20.0,
+                    "current_temp_celsius": -5.0,
+                    "wind_speed_kmh": 15.0,
+                    "quality_score": 4.5,
+                }
+            ]
+        }
+
+        with patch(
+            "services.notification_service.random.choice",
+            return_value=POWDER_MESSAGES[0],
+        ):
+            result = service.process_user_notifications("user1", prefs)
+
+        # Should trigger because per-resort threshold (15) is used, not global (30)
+        assert len(result) == 1
+        assert result[0].notification_type == NotificationType.POWDER_ALERT
+
+    def test_powder_alert_respects_grace_period(self, service):
+        """Test that powder alerts respect the grace period."""
+        just_now = datetime.now(UTC).isoformat()
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            powder_alerts=True,
+            powder_snow_threshold_cm=15.0,
+            last_notified={"whistler-blackcomb": just_now},
+            grace_period_hours=24,
+        )
+        prefs = self._make_prefs(
+            favorite_resorts=["whistler-blackcomb"],
+            notification_settings=settings,
+        )
+
+        result = service.process_user_notifications("user1", prefs)
+        assert len(result) == 0

@@ -16,6 +16,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 from models.weather import WeatherCondition
+from services.daily_history_service import DailyHistoryService
 from services.onthesnow_scraper import OnTheSnowScraper
 from services.openmeteo_service import OpenMeteoService
 from services.snow_quality_service import SnowQualityService
@@ -35,6 +36,9 @@ WEATHER_CONDITIONS_TABLE = os.environ.get(
 )
 SNOW_SUMMARY_TABLE = os.environ.get(
     "SNOW_SUMMARY_TABLE", "snow-tracker-snow-summary-dev"
+)
+DAILY_HISTORY_TABLE = os.environ.get(
+    "DAILY_HISTORY_TABLE", "snow-tracker-daily-history-dev"
 )
 ENABLE_SCRAPING = os.environ.get("ENABLE_SCRAPING", "true").lower() == "true"
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
@@ -67,6 +71,7 @@ def process_elevation_point(
     scraper: OnTheSnowScraper | None,
     scraped_data: Any | None,
     snow_summary_service: SnowSummaryService | None = None,
+    daily_history_service: DailyHistoryService | None = None,
 ) -> dict[str, Any]:
     """Process a single elevation point and save the weather condition.
 
@@ -239,6 +244,31 @@ def process_elevation_point(
         # Save to DynamoDB
         save_weather_condition(weather_conditions_table, weather_condition)
 
+        # Record daily history snapshot for mid elevation only
+        # (one record per resort per day for charting)
+        if daily_history_service and level == "mid":
+            try:
+                snow_quality_str = (
+                    snow_quality.value
+                    if hasattr(snow_quality, "value")
+                    else str(snow_quality)
+                )
+                daily_history_service.record_daily_snapshot(
+                    resort_id=resort_id,
+                    date=datetime.now(UTC).strftime("%Y-%m-%d"),
+                    snowfall_24h_cm=weather_condition.snowfall_24h_cm,
+                    snow_depth_cm=weather_condition.snow_depth_cm,
+                    temp_min_c=weather_condition.min_temp_celsius,
+                    temp_max_c=weather_condition.max_temp_celsius,
+                    quality_score=weather_condition.quality_score,
+                    snow_quality=snow_quality_str,
+                    wind_speed_kmh=weather_condition.wind_speed_kmh,
+                )
+            except Exception as hist_err:
+                logger.warning(
+                    f"Failed to record daily history for {resort_id}: {hist_err}"
+                )
+
         result["success"] = True
         logger.debug(
             f"Processed {resort_id} {level}: Quality="
@@ -297,14 +327,19 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
         resorts_table = dynamodb.Table(RESORTS_TABLE)
         weather_conditions_table = dynamodb.Table(WEATHER_CONDITIONS_TABLE)
         snow_summary_table = dynamodb.Table(SNOW_SUMMARY_TABLE)
+        daily_history_table = dynamodb.Table(DAILY_HISTORY_TABLE)
         weather_service = OpenMeteoService()
         snow_quality_service = SnowQualityService()
         snow_summary_service = SnowSummaryService(snow_summary_table)
+        daily_history_service = DailyHistoryService(daily_history_table)
 
         # Initialize scraper if enabled
         scraper = OnTheSnowScraper() if ENABLE_SCRAPING else None
         logger.info(
             f"Snow summary service initialized with table: {SNOW_SUMMARY_TABLE}"
+        )
+        logger.info(
+            f"Daily history service initialized with table: {DAILY_HISTORY_TABLE}"
         )
 
         # Fetch resorts by ID using batch get
@@ -366,6 +401,7 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
                             scraper,
                             scraped_data,
                             snow_summary_service,
+                            daily_history_service,
                         ): elevation_point
                         for elevation_point in elevation_points
                     }

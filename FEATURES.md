@@ -28,7 +28,7 @@ Open issues: Trip Planning (#23), Webcam Integration (#24), Apple Watch (#25), A
 
 These features have the highest impact-to-effort ratio and address the most common reasons skiers open a ski app.
 
-### 1.1 Powder Alerts with Custom Thresholds (Enhanced Notifications)
+### 1.1 Powder Alerts with Custom Thresholds (Enhanced Notifications) — *In Progress*
 
 **Description**: Upgrade the notification system so users can set precise snowfall thresholds per resort (e.g., "Notify me when Whistler gets 15+ cm in 24h") and add a "Powder Day" alert type that triggers when conditions align: heavy fresh snow + cold temps + low wind. Currently the app sends fresh snow alerts at a flat 1cm threshold -- this makes alerts much more actionable.
 
@@ -47,7 +47,7 @@ These features have the highest impact-to-effort ratio and address the most comm
 
 ---
 
-### 1.2 Snow History & Season Totals
+### 1.2 Snow History & Season Totals — *In Progress*
 
 **Description**: Track and display cumulative snowfall over the season for each resort. Show a snow history chart (daily snowfall bars + cumulative line) and compare current season to historical averages. Display season-to-date totals prominently on resort detail pages.
 
@@ -228,7 +228,7 @@ These features build on the foundation and move the app toward being a daily-use
 
 ---
 
-### 2.6 Favorite Resort Groups / Tags
+### 2.6 Favorite Resort Groups / Tags — *In Progress*
 
 **Description**: Allow users to organize favorites into groups: "Home Mountains," "Bucket List," "Weekend Trips," "Europe Trip 2026." Groups can be reordered and color-coded.
 
@@ -584,8 +584,8 @@ These features need investigation before committing to a development plan.
 
 | Feature | Impact | Effort | Priority |
 |---------|--------|--------|----------|
-| 1.1 Enhanced Powder Alerts | High | S-M | **Now** |
-| 1.2 Snow History & Season Totals | High | M | **Now** |
+| 1.1 Enhanced Powder Alerts | High | S-M | **In Progress** |
+| 1.2 Snow History & Season Totals | High | M | **In Progress** |
 | 1.3 Webcam Integration | High | M | **Now** |
 | 1.4 Resort Comparison | Medium-High | S-M | **In Progress** |
 | 1.5 Live Activities | Medium-High | M | **Now** |
@@ -594,7 +594,7 @@ These features need investigation before committing to a development plan.
 | 2.3 Snow Depth Map Overlay | Medium-High | M-L | **Next** |
 | 2.4 Weekly Digest | Medium | M | **Next** |
 | 2.5 Shareable Conditions Cards | Medium-High | S-M | **In Progress** |
-| 2.6 Favorite Groups | Medium | S | **Next** |
+| 2.6 Favorite Groups | Medium | S | **In Progress** |
 | 2.7 Elevation Profile Viz | Medium | S-M | **In Progress** |
 | 2.8 Android App | High | XL | **Research** |
 | 3.1 Apple Watch | Medium | L | **Later** |

@@ -206,6 +206,21 @@ snow_summary_table = aws.dynamodb.Table(
     tags=tags,
 )
 
+# Daily snow history table - stores one record per resort per day for charting
+daily_history_table = aws.dynamodb.Table(
+    f"{app_name}-daily-history-{environment}",
+    name=f"{app_name}-daily-history-{environment}",
+    hash_key="resort_id",
+    range_key="date",
+    billing_mode="PAY_PER_REQUEST",
+    attributes=[
+        {"name": "resort_id", "type": "S"},
+        {"name": "date", "type": "S"},  # YYYY-MM-DD format
+    ],
+    # NO TTL - this data persists for season-over-season comparisons
+    tags=tags,
+)
+
 # Resort events table for tracking events at resorts
 resort_events_table = aws.dynamodb.Table(
     f"{app_name}-resort-events-{environment}",
@@ -315,6 +330,7 @@ lambda_policy = aws.iam.RolePolicy(
         snow_summary_table.arn,
         chat_table.arn,
         condition_reports_table.arn,
+        daily_history_table.arn,
     ).apply(
         lambda arns: f"""{{
         "Version": "2012-10-17",
@@ -350,6 +366,7 @@ lambda_policy = aws.iam.RolePolicy(
                     "{arns[6]}",
                     "{arns[7]}",
                     "{arns[8]}",
+                    "{arns[9]}",
                     "{arns[0]}/index/*",
                     "{arns[1]}/index/*",
                     "{arns[2]}/index/*",
@@ -358,7 +375,8 @@ lambda_policy = aws.iam.RolePolicy(
                     "{arns[5]}/index/*",
                     "{arns[6]}/index/*",
                     "{arns[7]}/index/*",
-                    "{arns[8]}/index/*"
+                    "{arns[8]}/index/*",
+                    "{arns[9]}/index/*"
                 ]
             }},
             {{
@@ -483,6 +501,7 @@ weather_processor_lambda = aws.lambda_.Function(
             # Static JSON API generation (uploads to website bucket)
             "ENABLE_STATIC_JSON": config.get("enableStaticJson") or "true",
             "WEBSITE_BUCKET": website_bucket_name,
+            "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
         }
     ),
     tags=tags,
@@ -518,6 +537,7 @@ weather_worker_lambda = aws.lambda_.Function(
             "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
             "AWS_REGION_NAME": aws_region,
             "ENABLE_SCRAPING": "true",
+            "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
         }
     ),
     tags=tags,
@@ -1156,6 +1176,7 @@ def get_conditions(resort_id, headers):
             "RESORT_EVENTS_TABLE": f"{app_name}-resort-events-{environment}",
             "CHAT_TABLE": f"{app_name}-chat-{environment}",
             "CONDITION_REPORTS_TABLE": f"{app_name}-condition-reports-{environment}",
+            "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
             "AWS_REGION_NAME": aws_region,
         }
     ),
@@ -2709,6 +2730,7 @@ pulumi.export("resort_events_table_name", resort_events_table.name)
 pulumi.export("snow_summary_table_name", snow_summary_table.name)
 pulumi.export("chat_table_name", chat_table.name)
 pulumi.export("condition_reports_table_name", condition_reports_table.name)
+pulumi.export("daily_history_table_name", daily_history_table.name)
 pulumi.export("lambda_role_arn", lambda_role.arn)
 pulumi.export("api_gateway_id", api_gateway.id)
 pulumi.export("api_gateway_url", api_deployment.invoke_url)
