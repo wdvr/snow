@@ -837,27 +837,17 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
                 detail=f"Resort {resort_id} not found",
             )
 
-        # Get latest conditions for all elevations IN PARALLEL using cached lookups
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-
+        # Get latest conditions for all elevations
         conditions = []
         elevation_levels = [ep.level.value for ep in resort.elevation_points]
 
-        def fetch_condition(level: str):
-            return _get_latest_condition_cached(resort_id, level)
-
-        # Fetch all elevations in parallel
-        with ThreadPoolExecutor(max_workers=min(len(elevation_levels), 5)) as executor:
-            futures = [
-                executor.submit(fetch_condition, level) for level in elevation_levels
-            ]
-            for future in as_completed(futures):
-                try:
-                    condition = future.result()
-                    if condition:
-                        conditions.append(condition)
-                except Exception:
-                    pass  # Skip failed elevations
+        for level in elevation_levels:
+            try:
+                condition = _get_latest_condition_cached(resort_id, level)
+                if condition:
+                    conditions.append(condition)
+            except Exception:
+                pass  # Skip failed elevations
 
         if not conditions:
             return {
