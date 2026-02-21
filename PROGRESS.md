@@ -36,6 +36,8 @@
 
 | Feature | Date |
 |---------|------|
+| Fix ForecastBadge hardcoding cm instead of respecting unit preference | 2026-02-21 |
+| Synthesize mixed-elevation explanations when no elevation matches overall | 2026-02-21 |
 | ML model v8: MAE 0.299, within-1 100%, R² 0.870 | 2026-02-21 |
 | Fix recommendation reason text to match quality labels | 2026-02-21 |
 | Match overall explanation to weighted quality level | 2026-02-21 |
