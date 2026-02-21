@@ -1,6 +1,9 @@
 import Foundation
 import UserNotifications
 import UIKit
+import os.log
+
+private let pushLog = Logger(subsystem: "com.snowtracker.app", category: "PushNotifications")
 
 // MARK: - Push Notification Service
 
@@ -48,7 +51,7 @@ final class PushNotificationService: NSObject, ObservableObject {
 
             return granted
         } catch {
-            print("Error requesting notification authorization: \(error)")
+            pushLog.error("Error requesting notification authorization: \(error)")
             return false
         }
     }
@@ -66,7 +69,7 @@ final class PushNotificationService: NSObject, ObservableObject {
     func didRegisterForRemoteNotifications(withDeviceToken deviceToken: Data) {
         let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
         self.deviceToken = tokenString
-        print("APNs device token: \(tokenString)")
+        pushLog.debug("APNs device token registered")
 
         // Register token with backend
         Task {
@@ -76,13 +79,13 @@ final class PushNotificationService: NSObject, ObservableObject {
 
     /// Called when registration fails
     func didFailToRegisterForRemoteNotifications(withError error: Error) {
-        print("Failed to register for remote notifications: \(error)")
+        pushLog.error("Failed to register for remote notifications: \(error)")
     }
 
     /// Register token with backend API
     private func registerTokenWithBackend(_ token: String) async {
         guard AuthenticationService.shared.isAuthenticated else {
-            print("Not authenticated, skipping token registration")
+            pushLog.debug("Not authenticated, skipping token registration")
             return
         }
 
@@ -93,9 +96,9 @@ final class PushNotificationService: NSObject, ObservableObject {
                 platform: "ios",
                 appVersion: getAppVersion()
             )
-            print("Device token registered with backend")
+            pushLog.debug("Device token registered with backend")
         } catch {
-            print("Failed to register device token with backend: \(error)")
+            pushLog.error("Failed to register device token with backend: \(error)")
         }
     }
 
@@ -105,9 +108,9 @@ final class PushNotificationService: NSObject, ObservableObject {
 
         do {
             try await apiClient.unregisterDeviceToken(deviceId: getDeviceId())
-            print("Device token unregistered from backend")
+            pushLog.debug("Device token unregistered from backend")
         } catch {
-            print("Failed to unregister device token: \(error)")
+            pushLog.error("Failed to unregister device token: \(error)")
         }
     }
 
@@ -127,7 +130,7 @@ final class PushNotificationService: NSObject, ObservableObject {
     func clearBadge() {
         UNUserNotificationCenter.current().setBadgeCount(0) { error in
             if let error = error {
-                print("Error clearing badge: \(error)")
+                pushLog.error("Error clearing badge: \(error)")
             }
         }
     }
@@ -166,10 +169,10 @@ extension PushNotificationService: UNUserNotificationCenterDelegate {
     }
 
     private func handleNotificationTap(type: String, resortId: String?) {
-        print("Notification tapped: \(type)")
+        pushLog.debug("Notification tapped: \(type)")
 
         if let resortId = resortId {
-            print("Navigating to resort: \(resortId)")
+            pushLog.debug("Navigating to resort: \(resortId)")
             pendingResortId = resortId
         }
     }

@@ -1,5 +1,8 @@
 import Foundation
 import SwiftData
+import os.log
+
+private let cacheLog = Logger(subsystem: "com.snowtracker.app", category: "CacheService")
 
 // MARK: - Cache Models
 
@@ -160,9 +163,9 @@ class CacheService {
                 configurations: [modelConfiguration]
             )
             modelContext = modelContainer?.mainContext
-            print("CacheService: SwiftData container initialized successfully")
+            cacheLog.debug("CacheService: SwiftData container initialized successfully")
         } catch {
-            print("CacheService: Failed to initialize SwiftData container: \(error)")
+            cacheLog.debug("CacheService: Failed to initialize SwiftData container: \(error)")
         }
     }
 
@@ -195,7 +198,7 @@ class CacheService {
         }
 
         try? context.save()
-        print("CacheService: Cached \(resorts.count) resorts")
+        cacheLog.debug("CacheService: Cached \(resorts.count) resorts")
     }
 
     func getCachedResorts() -> CachedData<[Resort]>? {
@@ -243,7 +246,7 @@ class CacheService {
         }
 
         try? context.save()
-        print("CacheService: Cached \(conditions.count) conditions for \(resortId)")
+        cacheLog.debug("CacheService: Cached \(conditions.count) conditions for \(resortId)")
     }
 
     func getCachedConditions(for resortId: String) -> CachedData<[WeatherCondition]>? {
@@ -293,7 +296,7 @@ class CacheService {
         }
 
         try? context.save()
-        print("CacheService: Cached \(summaries.count) snow quality summaries")
+        cacheLog.debug("CacheService: Cached \(summaries.count) snow quality summaries")
     }
 
     func getCachedSnowQualitySummaries() -> CachedData<[String: SnowQualitySummaryLight]>? {
@@ -333,7 +336,7 @@ class CacheService {
             for resort in staleResorts {
                 context.delete(resort)
             }
-            print("CacheService: Deleted \(staleResorts.count) stale resort entries")
+            cacheLog.debug("CacheService: Deleted \(staleResorts.count) stale resort entries")
         }
 
         // Delete stale conditions
@@ -344,7 +347,7 @@ class CacheService {
             for condition in staleConditions {
                 context.delete(condition)
             }
-            print("CacheService: Deleted \(staleConditions.count) stale condition entries")
+            cacheLog.debug("CacheService: Deleted \(staleConditions.count) stale condition entries")
         }
 
         // Delete stale snow quality summaries
@@ -355,7 +358,7 @@ class CacheService {
             for summary in staleSummaries {
                 context.delete(summary)
             }
-            print("CacheService: Deleted \(staleSummaries.count) stale snow quality entries")
+            cacheLog.debug("CacheService: Deleted \(staleSummaries.count) stale snow quality entries")
         }
 
         try? context.save()
@@ -372,7 +375,7 @@ class CacheService {
         let currentURL = AppConfiguration.shared.apiBaseURL.absoluteString
         let lastURL = UserDefaults.standard.string(forKey: lastAPIURLKey)
         if let lastURL, lastURL != currentURL {
-            print("CacheService: API URL changed from \(lastURL) to \(currentURL) — clearing all cache")
+            cacheLog.debug("CacheService: API URL changed from \(lastURL) to \(currentURL) — clearing all cache")
             clearAllCache()
         }
         UserDefaults.standard.set(currentURL, forKey: lastAPIURLKey)
@@ -406,6 +409,6 @@ class CacheService {
         }
 
         try? context.save()
-        print("CacheService: Cleared all cache")
+        cacheLog.debug("CacheService: Cleared all cache")
     }
 }

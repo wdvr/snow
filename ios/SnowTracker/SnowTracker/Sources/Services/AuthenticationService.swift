@@ -3,6 +3,9 @@ import AuthenticationServices
 import GoogleSignIn
 import KeychainSwift
 import UIKit
+import os.log
+
+private let authLog = Logger(subsystem: "com.snowtracker.app", category: "Auth")
 
 // MARK: - Authentication Provider
 
@@ -47,7 +50,7 @@ class AuthenticationService: NSObject, ObservableObject {
 
     private func configureGoogleSignIn() {
         guard Self.googleClientID != "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com" else {
-            print("⚠️ Google Sign-In: Client ID not configured. Update AuthenticationService.googleClientID")
+            authLog.warning("Google Sign-In: Client ID not configured")
             return
         }
         // Google Sign-In is configured via Info.plist URL schemes
@@ -343,7 +346,7 @@ class AuthenticationService: NSObject, ObservableObject {
             isAuthenticated = true
 
         } catch {
-            print("Backend authentication failed: \(error). Using local auth.")
+            authLog.warning("Backend auth failed: \(error.localizedDescription). Using local auth.")
             // Fallback to local-only authentication - notifications still work without backend auth
             keychain.set(identityToken, forKey: Keys.authToken)
 
@@ -401,7 +404,7 @@ class AuthenticationService: NSObject, ObservableObject {
 
             return true
         } catch {
-            print("Failed to refresh user info: \(error)")
+            authLog.error("Failed to refresh user info: \(error)")
             return false
         }
     }
