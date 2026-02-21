@@ -435,13 +435,15 @@ struct ResortRowView: View {
             } else {
                 // Loading skeleton while weather data is being fetched
                 HStack {
-                    Label("--\u{00B0}C", systemImage: "thermometer")
+                    let tempUnit = userPreferencesManager.preferredUnits.temperature == .celsius ? "C" : "F"
+                    Label("--\u{00B0}\(tempUnit)", systemImage: "thermometer")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     Spacer()
 
-                    Label("-- cm", systemImage: "snowflake")
+                    let snowUnit = userPreferencesManager.preferredUnits.snowDepth == .centimeters ? "cm" : "\""
+                    Label("-- \(snowUnit)", systemImage: "snowflake")
                         .font(.caption)
                         .foregroundStyle(.blue)
 
