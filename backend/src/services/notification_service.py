@@ -378,9 +378,7 @@ class NotificationService:
                     thaw_start = datetime.fromisoformat(
                         thaw_start_str.replace("Z", "+00:00")
                     )
-                    hours_thawed = (
-                        now - thaw_start.replace(tzinfo=None)
-                    ).total_seconds() / 3600
+                    hours_thawed = (now - thaw_start).total_seconds() / 3600
 
                     # Check if we've been thawing for 4+ hours and haven't sent notification
                     if hours_thawed >= 4:
