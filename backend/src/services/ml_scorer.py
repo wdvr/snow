@@ -471,34 +471,44 @@ def _apply_cold_accumulation_boost(
     freeze_thaw_days_ago: float,
     cur_temp: float,
 ) -> float:
-    """Boost score for accumulated unrefrozen snow at cold temps.
+    """Boost score for accumulated unrefrozen snow at sub-zero temps.
 
     The ML model underestimates quality when there's no recent 24h snowfall
     but significant accumulated snow since the last freeze-thaw event, combined
-    with very cold temps that preserve powder quality. This is because the
-    training data has limited examples of this specific pattern.
+    with sub-zero temps that preserve snow quality.
 
     Only applies when:
-    - No recent freeze-thaw (>= 10 days)
+    - No recent freeze-thaw (>= 5 days)
     - Significant accumulated snow (>= 15cm since freeze)
-    - Cold temps (<= -8°C) preserving snow quality
+    - Sub-zero temps (< 0°C) preserving snow
     """
-    if freeze_thaw_days_ago < 10 or snow_since_freeze_cm < 15 or cur_temp > -8:
+    if freeze_thaw_days_ago < 5 or snow_since_freeze_cm < 15 or cur_temp >= 0:
         return score
 
-    # Boost based on accumulated snow depth
-    if snow_since_freeze_cm >= 40:
+    # Base boost from accumulated snow depth
+    if snow_since_freeze_cm >= 120:
+        boost = 1.0
+    elif snow_since_freeze_cm >= 80:
+        boost = 0.8
+    elif snow_since_freeze_cm >= 40:
         boost = 0.6
     elif snow_since_freeze_cm >= 25:
         boost = 0.4
     elif snow_since_freeze_cm >= 15:
         boost = 0.2
 
-    # Colder temps preserve powder better → larger boost
+    # Temperature multiplier — colder = better preservation
     if cur_temp < -20:
         boost *= 1.3
     elif cur_temp < -15:
         boost *= 1.15
+    elif cur_temp < -8:
+        boost *= 1.0
+    elif cur_temp < -3:
+        boost *= 0.7
+    else:
+        # 0 to -3°C: marginal preservation
+        boost *= 0.4
 
     return min(6.0, score + boost)
 

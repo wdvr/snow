@@ -70,6 +70,8 @@ def _describe_surface(condition: WeatherCondition) -> str:
     if quality == SnowQuality.GOOD:
         if snow_24h >= 5:
             return f"Soft surface with {snow_24h:.0f}cm of recent snow."
+        elif fresh_cm >= 80:
+            return f"Deep base with {fresh_cm:.0f}cm of non-refrozen snow."
         elif fresh_cm >= 5:
             if hours_since and hours_since > 48:
                 return f"Settled powder: {fresh_cm:.0f}cm of snow, last snowfall {_format_hours(hours_since)} ago."
@@ -77,8 +79,16 @@ def _describe_surface(condition: WeatherCondition) -> str:
         return "Soft, rideable surface."
 
     if quality == SnowQuality.FAIR:
-        if hours_since and hours_since > 72 and fresh_cm > 5:
+        if fresh_cm >= 80:
+            return f"Substantial base with {fresh_cm:.0f}cm of non-refrozen snow."
+        elif hours_since and hours_since > 72 and fresh_cm > 5:
             return f"Packed powder: {fresh_cm:.0f}cm of aged snow (last snowfall {_format_hours(hours_since)} ago)."
+        elif fresh_cm >= 30:
+            if warming:
+                return (
+                    f"Good base ({fresh_cm:.0f}cm non-refrozen) but currently warming."
+                )
+            return f"Good base with {fresh_cm:.0f}cm of non-refrozen snow."
         elif fresh_cm >= 2.5:
             if warming:
                 return f"Some fresh snow ({fresh_cm:.0f}cm) but currently warming — surface softening."

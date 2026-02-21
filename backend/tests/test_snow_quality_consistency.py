@@ -270,11 +270,11 @@ class TestColdAccumulationBoost:
     """Tests for post-ML cold accumulation boost."""
 
     def test_no_boost_recent_freeze_thaw(self):
-        """No boost when freeze-thaw was recent (< 10 days)."""
+        """No boost when freeze-thaw was very recent (< 5 days)."""
         from services.ml_scorer import _apply_cold_accumulation_boost
 
         score = _apply_cold_accumulation_boost(
-            3.5, snow_since_freeze_cm=30.0, freeze_thaw_days_ago=5.0, cur_temp=-15.0
+            3.5, snow_since_freeze_cm=30.0, freeze_thaw_days_ago=3.0, cur_temp=-15.0
         )
         assert score == 3.5
 
@@ -287,14 +287,25 @@ class TestColdAccumulationBoost:
         )
         assert score == 3.5
 
-    def test_no_boost_warm_temps(self):
-        """No boost when temps are above -8C."""
+    def test_no_boost_above_zero(self):
+        """No boost when temps are at or above 0°C."""
+        from services.ml_scorer import _apply_cold_accumulation_boost
+
+        score = _apply_cold_accumulation_boost(
+            3.5, snow_since_freeze_cm=30.0, freeze_thaw_days_ago=14.0, cur_temp=0.0
+        )
+        assert score == 3.5
+
+    def test_boost_at_moderate_cold(self):
+        """Boost applies at -5°C with reduced multiplier."""
         from services.ml_scorer import _apply_cold_accumulation_boost
 
         score = _apply_cold_accumulation_boost(
             3.5, snow_since_freeze_cm=30.0, freeze_thaw_days_ago=14.0, cur_temp=-5.0
         )
-        assert score == 3.5
+        # 0.4 base * 0.7 temp multiplier = 0.28 boost
+        assert score > 3.5
+        assert score < 3.9
 
     def test_boost_for_cold_accumulated_snow(self):
         """Boost applied for 25cm+ snow, 14+ days since FT, very cold."""
@@ -319,6 +330,22 @@ class TestColdAccumulationBoost:
         )
         assert deep > moderate
 
+    def test_very_deep_snow_boost(self):
+        """Very deep accumulated snow (>80cm, >120cm) gets larger boosts."""
+        from services.ml_scorer import _apply_cold_accumulation_boost
+
+        deep = _apply_cold_accumulation_boost(
+            3.5, snow_since_freeze_cm=45.0, freeze_thaw_days_ago=14.0, cur_temp=-10.0
+        )
+        very_deep = _apply_cold_accumulation_boost(
+            3.5, snow_since_freeze_cm=90.0, freeze_thaw_days_ago=14.0, cur_temp=-10.0
+        )
+        extreme = _apply_cold_accumulation_boost(
+            3.5, snow_since_freeze_cm=130.0, freeze_thaw_days_ago=14.0, cur_temp=-10.0
+        )
+        assert very_deep > deep
+        assert extreme > very_deep
+
     def test_colder_temps_increase_boost(self):
         """Colder temps preserve powder better, increasing the boost."""
         from services.ml_scorer import _apply_cold_accumulation_boost
@@ -331,12 +358,25 @@ class TestColdAccumulationBoost:
         )
         assert very_cold > cold
 
+    def test_marginal_cold_gives_small_boost(self):
+        """Near-zero temps (-1°C) give smaller boost than cold temps."""
+        from services.ml_scorer import _apply_cold_accumulation_boost
+
+        marginal = _apply_cold_accumulation_boost(
+            3.5, snow_since_freeze_cm=30.0, freeze_thaw_days_ago=14.0, cur_temp=-1.0
+        )
+        cold = _apply_cold_accumulation_boost(
+            3.5, snow_since_freeze_cm=30.0, freeze_thaw_days_ago=14.0, cur_temp=-10.0
+        )
+        assert marginal > 3.5  # Still gets some boost
+        assert cold > marginal  # But less than cold temps
+
     def test_boost_capped_at_6(self):
         """Boost should not exceed 6.0 max score."""
         from services.ml_scorer import _apply_cold_accumulation_boost
 
         score = _apply_cold_accumulation_boost(
-            5.8, snow_since_freeze_cm=50.0, freeze_thaw_days_ago=14.0, cur_temp=-25.0
+            5.8, snow_since_freeze_cm=150.0, freeze_thaw_days_ago=14.0, cur_temp=-25.0
         )
         assert score <= 6.0
 
