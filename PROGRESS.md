@@ -36,6 +36,10 @@
 
 | Feature | Date |
 |---------|------|
+| Add structured logging and request timing middleware | 2026-02-21 |
+| iOS: API retry logic with exponential backoff | 2026-02-21 |
+| iOS: Replace 62 debug prints with os.Logger | 2026-02-21 |
+| Fix recommendation reason text formatting | 2026-02-21 |
 | Fix DynamoDB Limit+Filter bug for multi-elevation queries | 2026-02-21 |
 | Add missing API Gateway routes (regions, auth, trips, snow-quality) | 2026-02-21 |
 | Use ML model for timeline quality predictions | 2026-02-21 |
