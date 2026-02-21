@@ -1,0 +1,51 @@
+[
+  {
+    "resort_id": "canada-olympic-park-calgary",
+    "date": "2026-02-21",
+    "score": 1.0,
+    "quality_label": "horrible",
+    "source": "production_api_collected"
+  },
+  {
+    "resort_id": "craigleith-ski-club",
+    "date": "2026-02-21",
+    "score": 1.0,
+    "quality_label": "horrible",
+    "source": "production_api_collected"
+  },
+  {
+    "resort_id": "fortress-mountain",
+    "date": "2026-02-21",
+    "score": 4.71,
+    "quality_label": "fair",
+    "source": "production_api_collected"
+  },
+  {
+    "resort_id": "northstar-california-resort",
+    "date": "2026-02-21",
+    "score": 5.11,
+    "quality_label": "good",
+    "source": "production_api_collected"
+  },
+  {
+    "resort_id": "osler-bluff-ski-club",
+    "date": "2026-02-21",
+    "score": 1.0,
+    "quality_label": "horrible",
+    "source": "production_api_collected"
+  },
+  {
+    "resort_id": "revelstoke-mountain-resort",
+    "date": "2026-02-21",
+    "score": 4.21,
+    "quality_label": "fair",
+    "source": "production_api_collected"
+  },
+  {
+    "resort_id": "silverstar",
+    "date": "2026-02-21",
+    "score": 3.41,
+    "quality_label": "poor",
+    "source": "production_api_collected"
+  }
+]

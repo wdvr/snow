@@ -11446,5 +11446,35 @@
       "humidity_percent": 12.0,
       "quality_label": "excellent"
     }
+  },
+  {
+    "resort_id": "canada-olympic-park-calgary",
+    "date": "2026-02-21",
+    "score": 1.0,
+    "source": "production_api_collected"
+  },
+  {
+    "resort_id": "craigleith-ski-club",
+    "date": "2026-02-21",
+    "score": 1.0,
+    "source": "production_api_collected"
+  },
+  {
+    "resort_id": "fortress-mountain",
+    "date": "2026-02-21",
+    "score": 4.71,
+    "source": "production_api_collected"
+  },
+  {
+    "resort_id": "osler-bluff-ski-club",
+    "date": "2026-02-21",
+    "score": 1.0,
+    "source": "production_api_collected"
+  },
+  {
+    "resort_id": "revelstoke-mountain-resort",
+    "date": "2026-02-21",
+    "score": 4.21,
+    "source": "production_api_collected"
   }
 ]
