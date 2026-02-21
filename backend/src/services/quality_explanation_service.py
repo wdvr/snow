@@ -98,7 +98,9 @@ def _describe_surface(condition: WeatherCondition) -> str:
     if quality == SnowQuality.POOR:
         if freeze_thaw_ago and freeze_thaw_ago < 72:
             return f"Thin cover over refrozen base. Last thaw-freeze {_format_hours(freeze_thaw_ago)} ago."
-        return f"Hard packed surface with {fresh_cm:.0f}cm of aged snow."
+        if fresh_cm >= 2.5:
+            return f"Hard packed surface with {fresh_cm:.0f}cm of aged snow."
+        return "Hard packed surface. No significant fresh snow."
 
     if quality == SnowQuality.BAD:
         if freeze_thaw_ago and freeze_thaw_ago < 48:
