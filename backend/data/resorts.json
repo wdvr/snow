@@ -1684,20 +1684,6 @@
       "annual_snowfall_cm": 890
     },
     {
-      "resort_id": "northstar-california-resort",
-      "name": "Northstar California Resort",
-      "country": "US",
-      "region": "na_west",
-      "state_province": "CA",
-      "elevation_base_m": 1943,
-      "elevation_top_m": 2865,
-      "latitude": 39.2746,
-      "longitude": -120.121,
-      "timezone": "America/Los_Angeles",
-      "website": "https://www.northstarcalifornia.com",
-      "features": []
-    },
-    {
       "resort_id": "palisades-tahoe",
       "name": "Palisades Tahoe",
       "country": "US",
@@ -1787,20 +1773,6 @@
       "longitude": -120.0768961,
       "timezone": "America/Los_Angeles",
       "website": "https://sierraattahoe.com",
-      "features": []
-    },
-    {
-      "resort_id": "silverstar",
-      "name": "SilverStar",
-      "country": "CA",
-      "region": "na_west",
-      "state_province": "BC",
-      "elevation_base_m": 1616,
-      "elevation_top_m": 1915,
-      "latitude": 50.3598,
-      "longitude": -119.0589,
-      "timezone": "America/Vancouver",
-      "website": "https://www.skisilverstar.com",
       "features": []
     },
     {
