@@ -149,6 +149,7 @@ struct TripsListView: View {
                     Button(action: { showingCreateTrip = true }) {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Plan a new trip")
                 }
             }
             .onAppear {
@@ -355,6 +356,7 @@ struct TripDetailView: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityLabel("Trip options")
             }
         }
         .onAppear {

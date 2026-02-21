@@ -315,6 +315,7 @@ struct ResortMapView: View {
             } label: {
                 Image(systemName: showLegend ? "info.circle.fill" : "info.circle")
             }
+            .accessibilityLabel(showLegend ? "Hide legend" : "Show legend")
 
             regionMenu
         }
@@ -573,6 +574,7 @@ struct ResortMapDetailSheet: View {
                         .foregroundStyle(userPreferencesManager.isFavorite(resortId: resort.id) ? .red : .secondary)
                 }
                 .sensoryFeedback(.impact(weight: .light), trigger: userPreferencesManager.isFavorite(resortId: resort.id))
+                .accessibilityLabel(userPreferencesManager.isFavorite(resortId: resort.id) ? "Remove from favorites" : "Add to favorites")
             }
 
             if let condition = condition {

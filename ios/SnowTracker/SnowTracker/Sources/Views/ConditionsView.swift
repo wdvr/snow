@@ -43,6 +43,7 @@ struct ConditionsView: View {
                     Button(action: { showingQualityInfo = true }) {
                         Image(systemName: "info.circle")
                     }
+                    .accessibilityLabel("Snow quality information")
                 }
             }
             .refreshable {
