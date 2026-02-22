@@ -306,6 +306,7 @@ async def fetch_resort_data(
             "timezone": "GMT",
         }
 
+        data = None
         for attempt in range(3):
             try:
                 async with session.get(
@@ -324,6 +325,10 @@ async def fetch_resort_data(
                     print(f"  FAILED {resort_id}: {e}")
                     return []
                 await asyncio.sleep(1)
+
+        if data is None:
+            print(f"  RATE LIMITED {resort_id}")
+            return []
 
         hourly = data.get("hourly", {})
         temps = hourly.get("temperature_2m", [])
