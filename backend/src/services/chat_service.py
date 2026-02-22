@@ -110,7 +110,9 @@ SYSTEM_PROMPT = (
     "snow_depth_cm (total base depth), current_temp_celsius.\n"
     "Each resort has 3 elevations: base, mid, top. "
     "Overall quality is a weighted average (50% top, 35% mid, 15% base). "
-    "When conditions vary significantly by elevation, mention the difference."
+    "When conditions vary significantly by elevation, mention the difference.\n"
+    "You can also check user-submitted condition reports — real on-the-ground feedback "
+    "from skiers. Mention these when available, as they add a human perspective."
 )
 
 TOOL_DEFINITIONS = [
@@ -230,6 +232,24 @@ TOOL_DEFINITIONS = [
             },
         }
     },
+    {
+        "toolSpec": {
+            "name": "get_condition_reports",
+            "description": "Get recent user-submitted condition reports for a resort. These are on-the-ground reports from real skiers.",
+            "inputSchema": {
+                "json": {
+                    "type": "object",
+                    "properties": {
+                        "resort_id": {
+                            "type": "string",
+                            "description": "The resort identifier",
+                        }
+                    },
+                    "required": ["resort_id"],
+                }
+            },
+        }
+    },
 ]
 
 # Max tool use iterations to prevent infinite loops
@@ -249,6 +269,7 @@ class ChatService:
         weather_service,
         snow_quality_service,
         recommendation_service,
+        condition_report_service=None,
     ):
         """Initialize the chat service.
 
@@ -258,12 +279,14 @@ class ChatService:
             weather_service: WeatherService for conditions data
             snow_quality_service: SnowQualityService for quality assessment
             recommendation_service: RecommendationService for best conditions
+            condition_report_service: ConditionReportService for user reports
         """
         self.chat_table = chat_table
         self.resort_service = resort_service
         self.weather_service = weather_service
         self.snow_quality_service = snow_quality_service
         self.recommendation_service = recommendation_service
+        self.condition_report_service = condition_report_service
         self.bedrock = boto3.client("bedrock-runtime", region_name="us-west-2")
 
     def chat(
@@ -676,6 +699,8 @@ class ChatService:
             return self._tool_get_best_conditions(tool_input.get("limit", 10))
         elif tool_name == "get_resort_info":
             return self._tool_get_resort_info(tool_input["resort_id"])
+        elif tool_name == "get_condition_reports":
+            return self._tool_get_condition_reports(tool_input["resort_id"])
         else:
             raise ValueError(f"Unknown tool: {tool_name}")
 
@@ -856,6 +881,42 @@ class ChatService:
             "elevation_points": elevations,
         }
 
+    def _tool_get_condition_reports(self, resort_id: str) -> dict:
+        """Get recent user-submitted condition reports for a resort."""
+        if not self.condition_report_service:
+            return {"reports": [], "note": "Condition reports not available."}
+
+        try:
+            reports = self.condition_report_service.get_reports_for_resort(
+                resort_id, limit=10
+            )
+            if not reports:
+                return {
+                    "resort_id": resort_id,
+                    "reports": [],
+                    "note": "No recent condition reports from users.",
+                }
+
+            return {
+                "resort_id": resort_id,
+                "reports": [
+                    {
+                        "condition_type": r.condition_type.value
+                        if hasattr(r.condition_type, "value")
+                        else str(r.condition_type),
+                        "score": r.score,
+                        "comment": r.comment,
+                        "elevation_level": r.elevation_level,
+                        "created_at": r.created_at,
+                    }
+                    for r in reports
+                ],
+                "count": len(reports),
+            }
+        except Exception as e:
+            logger.error("Condition reports error for %s: %s", resort_id, e)
+            return {"error": f"Could not fetch condition reports for '{resort_id}'."}
+
     def _save_message(
         self,
         conversation_id: str,
@@ -943,10 +1004,17 @@ class ChatService:
                 resort = self.resort_service.get_resort(resort_id)
                 resort_name = resort.name if resort else resort_id
 
-                context_parts.append(
+                part = (
                     f"Resort: {resort_name} ({resort_id})\n"
                     f"Conditions: {json.dumps(conditions, default=str)}\n"
                 )
+
+                # Also include recent condition reports if available
+                reports = self._tool_get_condition_reports(resort_id)
+                if reports.get("reports"):
+                    part += f"User Reports: {json.dumps(reports, default=str)}\n"
+
+                context_parts.append(part)
             except Exception as e:
                 logger.warning("Error pre-fetching conditions for %s: %s", resort_id, e)
 

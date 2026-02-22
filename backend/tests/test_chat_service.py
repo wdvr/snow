@@ -134,12 +134,21 @@ def mock_bedrock_client():
 
 
 @pytest.fixture
+def mock_condition_report_service():
+    """Create a mock ConditionReportService."""
+    service = Mock()
+    service.get_reports_for_resort.return_value = []
+    return service
+
+
+@pytest.fixture
 def chat_service(
     mock_chat_table,
     mock_resort_service,
     mock_weather_service,
     mock_quality_service,
     mock_recommendation_service,
+    mock_condition_report_service,
     mock_bedrock_client,
 ):
     """Create a ChatService with all mocked dependencies."""
@@ -149,6 +158,7 @@ def chat_service(
         weather_service=mock_weather_service,
         snow_quality_service=mock_quality_service,
         recommendation_service=mock_recommendation_service,
+        condition_report_service=mock_condition_report_service,
     )
     service.bedrock = mock_bedrock_client
     return service
@@ -487,6 +497,48 @@ class TestToolExecution:
         result = chat_service._execute_tool("get_best_conditions", {"limit": 5})
         assert "results" in result
         assert result["count"] == 0
+
+    def test_get_condition_reports_tool_empty(self, chat_service):
+        """get_condition_reports should return empty when no reports."""
+        result = chat_service._execute_tool(
+            "get_condition_reports", {"resort_id": "big-white"}
+        )
+        assert result["resort_id"] == "big-white"
+        assert result["reports"] == []
+
+    def test_get_condition_reports_tool_with_data(
+        self, chat_service, mock_condition_report_service
+    ):
+        """get_condition_reports should return user reports."""
+        mock_report = Mock()
+        mock_report.condition_type = Mock(value="powder")
+        mock_report.score = 5
+        mock_report.comment = "Amazing fresh powder today!"
+        mock_report.elevation_level = "top"
+        mock_report.created_at = "2026-02-22T08:00:00Z"
+        mock_condition_report_service.get_reports_for_resort.return_value = [
+            mock_report
+        ]
+
+        result = chat_service._execute_tool(
+            "get_condition_reports", {"resort_id": "big-white"}
+        )
+        assert result["count"] == 1
+        assert result["reports"][0]["condition_type"] == "powder"
+        assert result["reports"][0]["comment"] == "Amazing fresh powder today!"
+
+    def test_get_condition_reports_no_service(self):
+        """get_condition_reports should handle missing service gracefully."""
+        service = ChatService(
+            chat_table=Mock(),
+            resort_service=Mock(),
+            weather_service=Mock(),
+            snow_quality_service=Mock(),
+            recommendation_service=Mock(),
+            condition_report_service=None,
+        )
+        result = service._tool_get_condition_reports("big-white")
+        assert result["reports"] == []
 
     def test_unknown_tool_raises(self, chat_service):
         """Unknown tool should raise ValueError."""
