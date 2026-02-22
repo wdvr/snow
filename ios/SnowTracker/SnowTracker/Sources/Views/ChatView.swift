@@ -117,7 +117,14 @@ struct ChatView: View {
                     }
 
                     if let error = viewModel.errorMessage {
-                        ErrorBannerView(message: error)
+                        ErrorBannerView(message: error) {
+                            viewModel.errorMessage = nil
+                            if let lastUserMessage = viewModel.messages.last(where: { $0.isFromUser }) {
+                                Task {
+                                    await viewModel.sendMessage(lastUserMessage.content)
+                                }
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal)
@@ -247,6 +254,7 @@ private struct MessageBubbleView: View {
                         .foregroundStyle(.tertiary)
                         .padding(.leading, 4)
                         .transition(.opacity)
+                        .accessibilityLabel("Tap to skip streaming animation")
                 }
             }
             .contentShape(Rectangle())
@@ -328,6 +336,7 @@ private struct SuggestionChip: View {
 
 private struct ErrorBannerView: View {
     let message: String
+    var onRetry: (() -> Void)?
 
     var body: some View {
         HStack {
@@ -336,6 +345,18 @@ private struct ErrorBannerView: View {
             Text(message)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if let onRetry {
+                Spacer()
+                Button {
+                    onRetry()
+                } label: {
+                    Label("Retry", systemImage: "arrow.clockwise")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

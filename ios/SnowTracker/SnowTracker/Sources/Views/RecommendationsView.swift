@@ -273,7 +273,7 @@ struct BestSnowNearYouView: View {
                 }
 
                 // Recommendations
-                ForEach(Array(recommendations.enumerated()), id: \.element.id) { index, recommendation in
+                ForEach(recommendations, id: \.id) { recommendation in
                     NavigationLink(value: recommendation.resort) {
                         RecommendationCard(
                             recommendation: recommendation,
@@ -483,6 +483,8 @@ struct ScoreIndicator: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Recommendation score: \(String(format: "%.0f", score * 100)) out of 100")
     }
 }
 

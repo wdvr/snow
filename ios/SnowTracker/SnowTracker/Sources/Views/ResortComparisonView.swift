@@ -268,6 +268,8 @@ struct ResortComparisonView: View {
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(bestIds.contains(resort.id) ? Color.green.opacity(0.5) : Color.clear, lineWidth: 1)
                     )
+                    .accessibilityLabel("\(resort.name): \(title)")
+                    .accessibilityValue(bestIds.contains(resort.id) ? "Best" : "")
                 }
             }
         }
@@ -293,11 +295,10 @@ struct ResortPickerSheet: View {
         if searchText.isEmpty {
             return available
         }
-        let query = searchText.lowercased()
         return available.filter {
-            $0.name.lowercased().contains(query) ||
-            $0.country.lowercased().contains(query) ||
-            $0.region.lowercased().contains(query)
+            $0.name.localizedCaseInsensitiveContains(searchText) ||
+            $0.country.localizedCaseInsensitiveContains(searchText) ||
+            $0.region.localizedCaseInsensitiveContains(searchText)
         }
     }
 
