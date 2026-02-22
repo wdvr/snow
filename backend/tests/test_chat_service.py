@@ -540,6 +540,87 @@ class TestToolExecution:
         result = service._tool_get_condition_reports("big-white")
         assert result["reports"] == []
 
+    def test_get_snow_history_tool(self, chat_service):
+        """get_snow_history should return summarized history data."""
+        mock_history = Mock()
+        mock_history.get_history.return_value = [
+            {
+                "date": "2026-02-20",
+                "snowfall_24h_cm": 15.0,
+                "snow_depth_cm": 120,
+                "snow_quality": "excellent",
+                "temp_min_c": -12.0,
+                "temp_max_c": -5.0,
+            },
+            {
+                "date": "2026-02-21",
+                "snowfall_24h_cm": 5.0,
+                "snow_depth_cm": 125,
+                "snow_quality": "good",
+                "temp_min_c": -8.0,
+                "temp_max_c": -2.0,
+            },
+        ]
+        chat_service.daily_history_service = mock_history
+        result = chat_service._execute_tool(
+            "get_snow_history", {"resort_id": "big-white"}
+        )
+        assert result["resort_id"] == "big-white"
+        assert result["total_snowfall_cm"] == 20.0
+        assert result["snow_days"] == 2
+        assert result["current_snow_depth_cm"] == 125
+        assert len(result["recent_days"]) == 2
+
+    def test_get_snow_history_no_service(self):
+        """get_snow_history should handle missing service gracefully."""
+        service = ChatService(
+            chat_table=Mock(),
+            resort_service=Mock(),
+            weather_service=Mock(),
+            snow_quality_service=Mock(),
+            recommendation_service=Mock(),
+            daily_history_service=None,
+        )
+        result = service._tool_get_snow_history("big-white")
+        assert "error" in result
+
+    def test_get_snow_history_empty(self, chat_service):
+        """get_snow_history should handle no data gracefully."""
+        mock_history = Mock()
+        mock_history.get_history.return_value = []
+        chat_service.daily_history_service = mock_history
+        result = chat_service._tool_get_snow_history("big-white")
+        assert result["history"] == []
+
+    def test_compare_resorts_tool(self, chat_service):
+        """compare_resorts should return side-by-side data."""
+        chat_service.snow_quality_service.get_snow_quality.return_value = {
+            "overall": {
+                "snow_quality": "excellent",
+                "quality_score": 5.5,
+                "fresh_snow_cm": 20.0,
+                "temperature_c": -8.0,
+                "explanation": "Deep powder",
+            }
+        }
+        result = chat_service._execute_tool(
+            "compare_resorts", {"resort_ids": ["big-white", "whistler-blackcomb"]}
+        )
+        assert result["resort_count"] == 2
+        assert len(result["comparison"]) == 2
+        assert result["comparison"][0]["name"] == "Big White Ski Resort"
+
+    def test_compare_resorts_too_few(self, chat_service):
+        """compare_resorts should require at least 2 resorts."""
+        result = chat_service._tool_compare_resorts(["big-white"])
+        assert "error" in result
+
+    def test_compare_resorts_caps_at_four(self, chat_service):
+        """compare_resorts should cap at 4 resorts."""
+        chat_service.snow_quality_service.get_snow_quality.return_value = {}
+        result = chat_service._tool_compare_resorts(["a", "b", "c", "d", "e"])
+        assert result["resort_count"] <= 4
+
     def test_unknown_tool_raises(self, chat_service):
         """Unknown tool should raise ValueError."""
         with pytest.raises(ValueError, match="Unknown tool"):
