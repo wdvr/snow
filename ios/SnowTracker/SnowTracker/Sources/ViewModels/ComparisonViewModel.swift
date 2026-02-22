@@ -116,10 +116,24 @@ final class ComparisonViewModel: ObservableObject {
             }
             guard let best = values.min(by: { $0.1 < $1.1 }) else { return [] }
             return Set(values.filter { $0.1 == best.1 }.map { $0.0 })
+
+        case .snowDepth:
+            let values = selectedResorts.compactMap { r in
+                topCondition(for: r.id)?.snowDepthCm.map { (r.id, $0) }
+            }
+            guard let best = values.max(by: { $0.1 < $1.1 }), best.1 > 0 else { return [] }
+            return Set(values.filter { $0.1 == best.1 }.map { $0.0 })
+
+        case .forecast:
+            let values = selectedResorts.compactMap { r in
+                topCondition(for: r.id)?.predictedSnow48hCm.map { (r.id, $0) }
+            }
+            guard let best = values.max(by: { $0.1 < $1.1 }), best.1 > 0 else { return [] }
+            return Set(values.filter { $0.1 == best.1 }.map { $0.0 })
         }
     }
 }
 
 enum ComparisonMetric {
-    case quality, snowScore, freshSnow, temperature, wind
+    case quality, snowScore, freshSnow, temperature, wind, snowDepth, forecast
 }

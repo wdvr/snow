@@ -173,6 +173,39 @@ struct ResortComparisonView: View {
                     }
                 }
 
+                // Snow depth
+                comparisonSection("Snow Depth", metric: .snowDepth) { resortId in
+                    if let condition = viewModel.topCondition(for: resortId),
+                       let depth = condition.snowDepthCm, depth > 0 {
+                        VStack(spacing: 4) {
+                            Text(WeatherCondition.formatSnow(depth, prefs: userPreferencesManager.preferredUnits))
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
+                    } else {
+                        Text("--")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                // 48h forecast
+                comparisonSection("48h Forecast", metric: .forecast) { resortId in
+                    if let condition = viewModel.topCondition(for: resortId),
+                       let predicted = condition.predictedSnow48hCm, predicted > 0 {
+                        VStack(spacing: 4) {
+                            Text("+\(WeatherCondition.formatSnow(predicted, prefs: userPreferencesManager.preferredUnits))")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.blue)
+                        }
+                    } else {
+                        Text("--")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 // 24h snowfall
                 comparisonSection("24h Snowfall", metric: .freshSnow) { resortId in
                     if let condition = viewModel.topCondition(for: resortId) {
@@ -224,6 +257,17 @@ struct ResortComparisonView: View {
                     Text(resort.country)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+
+                    if resort.epicPass != nil || resort.ikonPass != nil {
+                        HStack(spacing: 4) {
+                            if resort.epicPass != nil {
+                                PassBadge(passName: "Epic", color: .indigo)
+                            }
+                            if resort.ikonPass != nil {
+                                PassBadge(passName: "Ikon", color: .orange)
+                            }
+                        }
+                    }
 
                     Button {
                         withAnimation { viewModel.removeResort(resort) }
