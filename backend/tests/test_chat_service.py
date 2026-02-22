@@ -12,6 +12,7 @@ from models.weather import ConfidenceLevel, SnowQuality, WeatherCondition
 from services.chat_service import (
     MAX_TOOL_ITERATIONS,
     MESSAGE_TTL_DAYS,
+    RESORT_ALIASES,
     SYSTEM_PROMPT,
     TOOL_DEFINITIONS,
     ChatService,
@@ -766,3 +767,103 @@ class TestHistoryLoading:
         assert len(result) == 2
         assert result[0]["content"] == "Question"
         assert result[1]["content"] == "Response"
+
+
+# ---------------------------------------------------------------------------
+# Auto-detect resort tests
+# ---------------------------------------------------------------------------
+
+
+class TestAutoDetectResorts:
+    """Test cases for resort auto-detection in user messages."""
+
+    def test_detects_alias_match(self, chat_service):
+        """Should detect resorts by alias (e.g., 'whistler' → whistler-blackcomb)."""
+        result = chat_service._auto_detect_resorts("How's Whistler today?")
+        assert result is not None
+        assert "whistler-blackcomb" in result
+
+    def test_detects_multi_word_alias(self, chat_service):
+        """Should detect multi-word aliases like 'big white'."""
+        result = chat_service._auto_detect_resorts("Is Big White any good right now?")
+        assert result is not None
+        assert "big-white" in result
+
+    def test_detects_short_alias(self, chat_service):
+        """Should detect short aliases like 'breck'."""
+        result = chat_service._auto_detect_resorts("What's breck looking like?")
+        assert result is not None
+        assert "breckenridge" in result
+
+    def test_no_detection_for_generic_message(self, chat_service):
+        """Should return None for messages without resort mentions."""
+        result = chat_service._auto_detect_resorts("What's the best snow right now?")
+        assert result is None
+
+    def test_detects_multiple_resorts(self, chat_service):
+        """Should detect multiple resort mentions."""
+        result = chat_service._auto_detect_resorts(
+            "Should I go to Whistler or Vail this weekend?"
+        )
+        assert result is not None
+        assert "whistler-blackcomb" in result
+        assert "vail" in result
+
+    def test_limits_to_three_resorts(self, chat_service):
+        """Should limit pre-fetching to 3 resorts."""
+        result = chat_service._auto_detect_resorts(
+            "Compare Whistler, Vail, Chamonix, Niseko, and Steamboat"
+        )
+        assert result is not None
+        # Count resort blocks (each starts with "Resort:")
+        resort_count = result.count("Resort:")
+        assert resort_count <= 3
+
+    def test_case_insensitive(self, chat_service):
+        """Detection should be case-insensitive."""
+        result = chat_service._auto_detect_resorts("WHISTLER conditions?")
+        assert result is not None
+        assert "whistler-blackcomb" in result
+
+    def test_word_boundary_matching(self, chat_service):
+        """Should not match partial words (e.g., 'vailed' should not match 'vail')."""
+        result = chat_service._auto_detect_resorts("I was prevailed upon to ski today")
+        # "prevailed" contains "vail" but shouldn't match at word boundary
+        assert result is None or "vail" not in (result or "")
+
+    def test_context_includes_conditions(self, chat_service, mock_weather_service):
+        """Pre-fetched context should include conditions data."""
+        result = chat_service._auto_detect_resorts("How's Whistler?")
+        assert result is not None
+        assert "Conditions:" in result
+        # Should include actual weather data from mock
+        mock_weather_service.get_conditions_for_resort.assert_called_with(
+            "whistler-blackcomb"
+        )
+
+    def test_auto_detect_injected_into_system_prompt(
+        self, chat_service, mock_bedrock_client
+    ):
+        """Auto-detected resort data should be in the system prompt."""
+        chat_service.chat("How's Whistler?", None, "user_123")
+
+        call_kwargs = mock_bedrock_client.converse.call_args[1]
+        system_text = call_kwargs["system"][0]["text"]
+        assert "PRE-FETCHED DATA" in system_text
+        assert "whistler-blackcomb" in system_text.lower()
+
+    def test_no_injection_for_generic_message(self, chat_service, mock_bedrock_client):
+        """Generic messages should not add context to system prompt."""
+        chat_service.chat("Hello", None, "user_123")
+
+        call_kwargs = mock_bedrock_client.converse.call_args[1]
+        system_text = call_kwargs["system"][0]["text"]
+        assert system_text == SYSTEM_PROMPT
+
+    def test_aliases_dict_has_common_resorts(self):
+        """RESORT_ALIASES should include common resort names."""
+        assert "whistler" in RESORT_ALIASES
+        assert "vail" in RESORT_ALIASES
+        assert "mammoth" in RESORT_ALIASES
+        assert "chamonix" in RESORT_ALIASES
+        assert "niseko" in RESORT_ALIASES

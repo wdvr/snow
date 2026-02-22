@@ -1,6 +1,8 @@
 """AI chat service using AWS Bedrock with tool use for ski conditions."""
 
+import json
 import logging
+import re
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -12,6 +14,50 @@ from ulid import ULID
 from models.chat import ChatMessage, ChatResponse, ConversationSummary
 
 logger = logging.getLogger(__name__)
+
+# Common name aliases for resorts (maps alias → resort_id)
+RESORT_ALIASES: dict[str, str] = {
+    "whistler": "whistler-blackcomb",
+    "blackcomb": "whistler-blackcomb",
+    "palisades": "palisades-tahoe",
+    "squaw": "palisades-tahoe",
+    "squaw valley": "palisades-tahoe",
+    "mammoth": "mammoth-mountain",
+    "jackson": "jackson-hole",
+    "jh": "jackson-hole",
+    "vail": "vail",
+    "park city": "park-city",
+    "big white": "big-white",
+    "big sky": "big-sky-resort",
+    "revelstoke": "revelstoke",
+    "lake louise": "lake-louise",
+    "chamonix": "chamonix",
+    "zermatt": "zermatt",
+    "st anton": "st-anton",
+    "st. anton": "st-anton",
+    "verbier": "verbier",
+    "niseko": "niseko",
+    "hakuba": "hakuba",
+    "aspen": "aspen-snowmass",
+    "snowbird": "snowbird",
+    "telluride": "telluride",
+    "steamboat": "steamboat",
+    "breckenridge": "breckenridge",
+    "breck": "breckenridge",
+    "bachelor": "mt-bachelor",
+    "mt bachelor": "mt-bachelor",
+    "killington": "killington",
+    "stowe": "stowe",
+    "jay peak": "jay-peak",
+    "sun peaks": "sun-peaks",
+    "silver star": "silver-star",
+    "cortina": "cortina",
+    "val disere": "val-disere",
+    "val d'isere": "val-disere",
+    "courchevel": "courchevel",
+    "kitzbuhel": "kitzbuehel",
+    "kitzbühel": "kitzbuehel",
+}
 
 SYSTEM_PROMPT = (
     "You are Powder Chaser AI, a knowledgeable ski conditions assistant. "
@@ -212,8 +258,14 @@ class ChatService:
             title=title,
         )
 
+        # Auto-detect resort mentions and pre-inject conditions data
+        # This reduces Bedrock round trips from 2-3 to 1 for simple queries
+        context_data = self._auto_detect_resorts(user_message)
+
         # Call Bedrock with tool use loop
-        assistant_text, tool_calls = self._call_bedrock_with_tools(messages)
+        assistant_text, tool_calls = self._call_bedrock_with_tools(
+            messages, context_data=context_data
+        )
 
         # Save assistant message
         assistant_message_id = str(ULID())
@@ -436,19 +488,37 @@ class ChatService:
         return messages
 
     def _call_bedrock_with_tools(
-        self, messages: list[dict]
+        self,
+        messages: list[dict],
+        context_data: str | None = None,
     ) -> tuple[str, list[dict[str, Any]] | None]:
         """Call Bedrock converse API with tool use loop.
+
+        Args:
+            messages: Conversation messages for Bedrock
+            context_data: Pre-fetched resort conditions data to inject into
+                system prompt, reducing the need for tool calls.
 
         Returns:
             Tuple of (assistant_text, tool_calls_list)
         """
         all_tool_calls = []
 
+        # Build system prompt with optional pre-injected context
+        system_text = SYSTEM_PROMPT
+        if context_data:
+            system_text += (
+                "\n\n--- PRE-FETCHED DATA ---\n"
+                "The following resort data was auto-detected from the user's message. "
+                "Use this data directly instead of calling tools for these resorts. "
+                "You may still use tools for additional resorts or data not covered here.\n\n"
+                + context_data
+            )
+
         for _iteration in range(MAX_TOOL_ITERATIONS):
             response = self.bedrock.converse(
                 modelId="us.anthropic.claude-sonnet-4-6",
-                system=[{"text": SYSTEM_PROMPT}],
+                system=[{"text": system_text}],
                 messages=messages,
                 toolConfig={"tools": TOOL_DEFINITIONS},
                 inferenceConfig={"maxTokens": 1024, "temperature": 0.3},
@@ -775,6 +845,73 @@ class ChatService:
             self.chat_table.put_item(Item=item)
         except Exception as e:
             logger.error("Error saving message %s: %s", message_id, e)
+
+    def _auto_detect_resorts(self, user_message: str) -> str | None:
+        """Detect resort mentions in user message and pre-fetch conditions.
+
+        Matches against known aliases and all resort names from the database.
+        Returns formatted context string or None if no resorts detected.
+        """
+        message_lower = user_message.lower()
+        detected_ids: set[str] = set()
+
+        # Check against static aliases first (fast)
+        for alias, resort_id in RESORT_ALIASES.items():
+            # Word boundary matching to avoid false positives
+            pattern = r"\b" + re.escape(alias) + r"\b"
+            if re.search(pattern, message_lower):
+                detected_ids.add(resort_id)
+
+        # If no alias match, try matching against all resort names
+        if not detected_ids:
+            try:
+                all_resorts = self.resort_service.get_all_resorts()
+                for resort in all_resorts:
+                    # Match on name (at least 4 chars to avoid false positives)
+                    name_lower = resort.name.lower()
+                    if len(name_lower) >= 4:
+                        # Try full name first
+                        if name_lower in message_lower:
+                            detected_ids.add(resort.resort_id)
+                            continue
+                        # Try first word of multi-word names (e.g., "Revelstoke" from "Revelstoke Mountain Resort")
+                        first_word = name_lower.split()[0]
+                        if len(first_word) >= 5:
+                            pattern = r"\b" + re.escape(first_word) + r"\b"
+                            if re.search(pattern, message_lower):
+                                detected_ids.add(resort.resort_id)
+            except Exception as e:
+                logger.warning("Error in resort auto-detect: %s", e)
+
+        if not detected_ids:
+            return None
+
+        # Limit to 3 resorts to keep context manageable
+        resort_ids = list(detected_ids)[:3]
+        context_parts = []
+
+        for resort_id in resort_ids:
+            try:
+                conditions = self._tool_get_resort_conditions(resort_id)
+                resort = self.resort_service.get_resort(resort_id)
+                resort_name = resort.name if resort else resort_id
+
+                context_parts.append(
+                    f"Resort: {resort_name} ({resort_id})\n"
+                    f"Conditions: {json.dumps(conditions, default=str)}\n"
+                )
+            except Exception as e:
+                logger.warning("Error pre-fetching conditions for %s: %s", resort_id, e)
+
+        if not context_parts:
+            return None
+
+        logger.info(
+            "Auto-detected %d resort(s) in message: %s",
+            len(context_parts),
+            ", ".join(resort_ids),
+        )
+        return "\n".join(context_parts)
 
     def _generate_title(self, first_message: str) -> str:
         """Generate a conversation title from the first user message."""

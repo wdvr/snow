@@ -1,39 +1,39 @@
 ============================================================
 Model Evaluation Report (v2 - Neural Network)
 ============================================================
-Samples: 411
-MAE: 0.189
-RMSE: 0.263
-R²: 0.947
-Exact quality match: 80.0%
+Samples: 437
+MAE: 0.195
+RMSE: 0.258
+R²: 0.944
+Exact quality match: 81.0%
 Within-1 quality level: 100.0%
 
 Score distribution:
-  True  - mean: 3.72, std: 1.14
-  Pred  - mean: 3.71, std: 1.15
+  True  - mean: 3.75, std: 1.09
+  Pred  - mean: 3.75, std: 1.11
 
 Quality confusion (true → predicted):
-    horrible ( 27): horrible=26, bad=1
-         bad ( 24): bad=24
-        poor ( 76): poor=57, fair=11, bad=8
-        fair (174): fair=140, poor=29, good=5
-        good ( 79): good=56, fair=23
-   excellent ( 31): excellent=26, good=5
+    horrible ( 21): horrible=21
+         bad ( 31): bad=31
+        poor ( 79): poor=60, bad=11, fair=8
+        fair (197): fair=165, poor=25, good=7
+        good ( 85): good=56, fair=26, excellent=3
+   excellent ( 24): excellent=21, good=3
 
 Worst 15 predictions:
   Resort                              Date          True  Pred Error
-  taos                                2026-02-15     4.0   2.9  1.14
-  mt-hood-meadows                     2026-02-12     3.8   2.7  1.06
-  sugar-bowl                          2026-02-14     3.9   3.1  0.83
-  dollar-mountain-sun-valley          2026-02-19     3.8   3.0  0.81
-  mt-baker                            2026-02-12     3.7   2.9  0.80
-  synth-warm-aging-23                 2026-02-08     3.3   2.5  0.77
-  beaver-creek                        2026-02-21     4.9   4.2  0.73
-  heavenly                            2026-02-15     3.9   3.2  0.72
-  mount-seymour                       2026-02-17     4.5   5.2  0.71
-  buttermilk-mountain                 2026-02-13     4.0   3.3  0.70
-  synth-fresh-covers-ice-5            2026-02-06     5.4   4.7  0.70
-  synth-powder-33                     2026-01-04     5.8   5.2  0.66
-  whitefish-mountain-resort           2026-02-10     2.8   3.4  0.63
-  synth-powder-3                      2026-01-04     5.9   5.3  0.61
-  synth-good-9                        2026-02-10     4.9   4.3  0.60
+  synth-light-dusting-37              2026-02-10     4.9   3.8  1.14
+  mt-hood-meadows                     2026-02-12     3.8   2.7  1.08
+  synth-icy-38                        2026-01-28     1.6   2.4  0.84
+  aspen-highlands                     2026-02-18     4.4   5.2  0.81
+  keystone                            2026-02-18     4.4   3.7  0.74
+  synth-thin-on-ice-14                2026-02-19     2.9   2.1  0.71
+  kitzbuehel                          2026-02-21     4.4   5.1  0.70
+  winter-park-resort                  2026-02-19     2.5   3.2  0.66
+  synth-aging-cold-17                 2026-02-18     3.3   2.6  0.62
+  synth-warm-aging-10                 2026-02-15     3.1   2.5  0.61
+  synth-packed-12                     2026-01-27     3.6   4.2  0.60
+  steamboat                           2026-02-16     3.4   2.8  0.60
+  synth-good-9                        2026-02-10     4.9   4.3  0.59
+  mount-st-louis-moonstone            2026-02-19     3.9   4.5  0.58
+  copper-mountain                     2026-02-20     4.2   3.6  0.57
