@@ -90,7 +90,8 @@
       "trail_map_url": "https://www.chamonix.com/ski-areas",
       "green_runs_pct": 20,
       "blue_runs_pct": 45,
-      "black_runs_pct": 35
+      "black_runs_pct": 35,
+      "ikon_pass": "7 days"
     },
     {
       "resort_id": "cortina",
@@ -134,7 +135,8 @@
       "trail_map_url": "https://www.courchevel.com/en/interactive-map/",
       "green_runs_pct": 23,
       "blue_runs_pct": 45,
-      "black_runs_pct": 32
+      "black_runs_pct": 32,
+      "epic_pass": "7 days"
     },
     {
       "resort_id": "kitzbuehel",
@@ -156,7 +158,8 @@
       "trail_map_url": "https://www.kitzski.at/en/service-info/publications-amp-downloads.html",
       "green_runs_pct": 33,
       "blue_runs_pct": 45,
-      "black_runs_pct": 22
+      "black_runs_pct": 22,
+      "ikon_pass": "7 days"
     },
     {
       "resort_id": "st-anton",
@@ -178,7 +181,8 @@
       "trail_map_url": "https://www.skiarlberg.at/en/Ski-Arlberg/Live-Info/Interactive-map",
       "green_runs_pct": 36,
       "blue_runs_pct": 40,
-      "black_runs_pct": 24
+      "black_runs_pct": 24,
+      "ikon_pass": "7 days"
     },
     {
       "resort_id": "val-disere",
@@ -222,7 +226,8 @@
       "trail_map_url": "https://www.verbier.ch/en/winter/skiing/piste-map/",
       "green_runs_pct": 22,
       "blue_runs_pct": 50,
-      "black_runs_pct": 28
+      "black_runs_pct": 28,
+      "epic_pass": "5 consecutive days"
     },
     {
       "resort_id": "zermatt",
@@ -245,7 +250,8 @@
       "trail_map_url": "https://www.matterhornparadise.ch/en/experience/skiing/piste-map",
       "green_runs_pct": 22,
       "blue_runs_pct": 60,
-      "black_runs_pct": 18
+      "black_runs_pct": 18,
+      "ikon_pass": "7 days"
     },
     {
       "resort_id": "furano",
@@ -290,7 +296,8 @@
       "trail_map_url": "https://www.hakubavalley.com/en/ski_resort/",
       "green_runs_pct": 30,
       "blue_runs_pct": 40,
-      "black_runs_pct": 30
+      "black_runs_pct": 30,
+      "epic_pass": "5 days"
     },
     {
       "resort_id": "niseko",
@@ -313,7 +320,8 @@
       "trail_map_url": "https://www.niseko.ne.jp/en/mountain/",
       "green_runs_pct": 30,
       "blue_runs_pct": 40,
-      "black_runs_pct": 30
+      "black_runs_pct": 30,
+      "ikon_pass": "7 days"
     },
     {
       "resort_id": "blue-mountain-resort-collingwood",
@@ -853,7 +861,8 @@
       "trail_map_url": "https://www.aspensnowmass.com/four-mountains/snowmass/trail-maps",
       "green_runs_pct": 6,
       "blue_runs_pct": 47,
-      "black_runs_pct": 47
+      "black_runs_pct": 47,
+      "ikon_pass": "7 days"
     },
     {
       "resort_id": "bald-mountain-sun-valley",
@@ -931,7 +940,8 @@
       "trail_map_url": "https://www.breckenridge.com/the-mountain/about-the-mountain/trail-map.aspx",
       "green_runs_pct": 11,
       "blue_runs_pct": 31,
-      "black_runs_pct": 58
+      "black_runs_pct": 58,
+      "epic_pass": "Unlimited"
     },
     {
       "resort_id": "brighton",
@@ -1066,7 +1076,8 @@
       "trail_map_url": "https://www.jacksonhole.com/maps/mountain-winter",
       "green_runs_pct": 10,
       "blue_runs_pct": 40,
-      "black_runs_pct": 50
+      "black_runs_pct": 50,
+      "ikon_pass": "Unlimited"
     },
     {
       "resort_id": "keystone",
@@ -1101,7 +1112,8 @@
       "trail_map_url": "https://www.skilouise.com/explore-winter/winter-ski-ride/lift-runs-parks-status/",
       "green_runs_pct": 25,
       "blue_runs_pct": 45,
-      "black_runs_pct": 30
+      "black_runs_pct": 30,
+      "ikon_pass": "7 days"
     },
     {
       "resort_id": "marmot-basin-jasper",
@@ -1165,7 +1177,8 @@
       "trail_map_url": "https://www.parkcitymountain.com/the-mountain/about-the-mountain/trail-map",
       "green_runs_pct": 8,
       "blue_runs_pct": 41,
-      "black_runs_pct": 51
+      "black_runs_pct": 51,
+      "epic_pass": "Unlimited"
     },
     {
       "resort_id": "purgatory-durango",
@@ -1271,7 +1284,8 @@
       "trail_map_url": "https://www.steamboat.com/the-mountain/trail-map",
       "green_runs_pct": 12,
       "blue_runs_pct": 43,
-      "black_runs_pct": 45
+      "black_runs_pct": 45,
+      "ikon_pass": "Unlimited"
     },
     {
       "resort_id": "sunshine-village",
@@ -1324,7 +1338,8 @@
       "trail_map_url": "https://www.tellurideskiresort.com/the-mountain/trail-maps/",
       "green_runs_pct": 23,
       "blue_runs_pct": 36,
-      "black_runs_pct": 41
+      "black_runs_pct": 41,
+      "epic_pass": "7 days"
     },
     {
       "resort_id": "vail",
@@ -1346,7 +1361,8 @@
       "trail_map_url": "https://www.vail.com/the-mountain/about-the-mountain/trail-map.aspx",
       "green_runs_pct": 18,
       "blue_runs_pct": 29,
-      "black_runs_pct": 53
+      "black_runs_pct": 53,
+      "epic_pass": "Unlimited"
     },
     {
       "resort_id": "whitefish-mountain-resort",
@@ -1471,7 +1487,8 @@
       "trail_map_url": "https://www.bigwhite.com/the-mountain/trail-map",
       "green_runs_pct": 18,
       "blue_runs_pct": 54,
-      "black_runs_pct": 28
+      "black_runs_pct": 28,
+      "epic_pass": "7 days"
     },
     {
       "resort_id": "crystal-mountain-wa",
@@ -1665,7 +1682,8 @@
       "trail_map_url": "https://www.mammothmountain.com/on-the-mountain/winter-trail-map",
       "green_runs_pct": 25,
       "blue_runs_pct": 40,
-      "black_runs_pct": 35
+      "black_runs_pct": 35,
+      "ikon_pass": "Unlimited"
     },
     {
       "resort_id": "mount-seymour",
@@ -1787,7 +1805,8 @@
       "trail_map_url": "https://www.palisadestahoe.com/mountain-information/trail-maps",
       "green_runs_pct": 6,
       "blue_runs_pct": 41,
-      "black_runs_pct": 53
+      "black_runs_pct": 53,
+      "ikon_pass": "Unlimited"
     },
     {
       "resort_id": "panorama",
@@ -2006,7 +2025,8 @@
       "trail_map_url": "https://www.whistlerblackcomb.com/the-mountain/trail-maps",
       "green_runs_pct": 20,
       "blue_runs_pct": 55,
-      "black_runs_pct": 25
+      "black_runs_pct": 25,
+      "epic_pass": "Unlimited"
     },
     {
       "resort_id": "whitewater-nelson",
@@ -2092,7 +2112,9 @@
         "longest_runs_australia",
         "terrain_park"
       ],
-      "annual_snowfall_cm": 200
+      "annual_snowfall_cm": 200,
+      "epic_pass": "Unlimited",
+      "ikon_pass": "7 days"
     },
     {
       "resort_id": "las-lenas",
@@ -2128,7 +2150,8 @@
         "iconic_hotel",
         "steep_terrain"
       ],
-      "annual_snowfall_cm": 700
+      "annual_snowfall_cm": 700,
+      "ikon_pass": "7 days"
     },
     {
       "resort_id": "valle-nevado",

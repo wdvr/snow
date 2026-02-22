@@ -89,6 +89,8 @@ struct Resort: Codable, Identifiable, Hashable {
     let greenRunsPct: Int?
     let blueRunsPct: Int?
     let blackRunsPct: Int?
+    let epicPass: String?
+    let ikonPass: String?
     let weatherSources: [String]
     let createdAt: String?
     let updatedAt: String?
@@ -105,6 +107,8 @@ struct Resort: Codable, Identifiable, Hashable {
         case greenRunsPct = "green_runs_pct"
         case blueRunsPct = "blue_runs_pct"
         case blackRunsPct = "black_runs_pct"
+        case epicPass = "epic_pass"
+        case ikonPass = "ikon_pass"
         case weatherSources = "weather_sources"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
@@ -200,6 +204,8 @@ extension Resort {
             greenRunsPct: 18,
             blueRunsPct: 56,
             blackRunsPct: 26,
+            epicPass: "7 days",
+            ikonPass: nil,
             weatherSources: ["weatherapi", "snow-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-20T08:00:00Z"
@@ -241,6 +247,8 @@ extension Resort {
             greenRunsPct: 25,
             blueRunsPct: 45,
             blackRunsPct: 30,
+            epicPass: nil,
+            ikonPass: "7 days",
             weatherSources: ["weatherapi", "snow-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-20T08:00:00Z"
@@ -282,6 +290,8 @@ extension Resort {
             greenRunsPct: 20,
             blueRunsPct: 50,
             blackRunsPct: 30,
+            epicPass: nil,
+            ikonPass: nil,
             weatherSources: ["weatherapi", "snow-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-20T08:00:00Z"

@@ -18,6 +18,8 @@ final class CachedResort {
     var greenRunsPct: Int?
     var blueRunsPct: Int?
     var blackRunsPct: Int?
+    var epicPass: String?
+    var ikonPass: String?
     var elevationPointsData: Data
     var weatherSourcesData: Data
     var cachedAt: Date
@@ -33,6 +35,8 @@ final class CachedResort {
         self.greenRunsPct = resort.greenRunsPct
         self.blueRunsPct = resort.blueRunsPct
         self.blackRunsPct = resort.blackRunsPct
+        self.epicPass = resort.epicPass
+        self.ikonPass = resort.ikonPass
 
         // Encode elevation points
         let encoder = JSONEncoder()
@@ -60,6 +64,8 @@ final class CachedResort {
             greenRunsPct: greenRunsPct,
             blueRunsPct: blueRunsPct,
             blackRunsPct: blackRunsPct,
+            epicPass: epicPass,
+            ikonPass: ikonPass,
             weatherSources: weatherSources,
             createdAt: nil,
             updatedAt: nil
@@ -232,6 +238,8 @@ class CacheService {
                 existing.region = resort.region
                 existing.timezone = resort.timezone
                 existing.officialWebsite = resort.officialWebsite
+                existing.epicPass = resort.epicPass
+                existing.ikonPass = resort.ikonPass
                 let encoder = JSONEncoder()
                 existing.elevationPointsData = (try? encoder.encode(resort.elevationPoints)) ?? Data()
                 existing.weatherSourcesData = (try? encoder.encode(resort.weatherSources)) ?? Data()

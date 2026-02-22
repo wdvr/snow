@@ -186,7 +186,7 @@ struct ResortDetailView: View {
     private var resortHeader: some View {
         VStack(spacing: 8) {
             HStack {
-                VStack(alignment: .leading) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(resort.displayLocation)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -194,6 +194,18 @@ struct ResortDetailView: View {
                     Text(resort.elevationRange)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+
+                    // Pass affiliation badges
+                    if resort.epicPass != nil || resort.ikonPass != nil {
+                        HStack(spacing: 6) {
+                            if let epicPass = resort.epicPass {
+                                PassBadge(passName: "Epic", detail: epicPass, color: .indigo)
+                            }
+                            if let ikonPass = resort.ikonPass {
+                                PassBadge(passName: "Ikon", detail: ikonPass, color: .orange)
+                            }
+                        }
+                    }
                 }
 
                 Spacer()
@@ -764,6 +776,33 @@ struct ResortDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .cardStyle()
+    }
+}
+
+// MARK: - Pass Badge
+
+private struct PassBadge: View {
+    let passName: String
+    let detail: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Text(passName)
+                .font(.caption2)
+                .fontWeight(.bold)
+            if detail != "Unlimited" {
+                Text(detail)
+                    .font(.caption2)
+            }
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .foregroundStyle(color)
+        .background(color.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(passName) Pass: \(detail)")
     }
 }
 

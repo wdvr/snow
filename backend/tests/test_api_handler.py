@@ -877,12 +877,15 @@ class TestAuthEndpoints:
         user = MagicMock()
         user.to_dict.return_value = {"user_id": "guest_123", "is_guest": True}
         user.is_new_user = True
+        user.user_id = "guest_123"
 
         auth = MagicMock()
         auth.create_guest_session.return_value = user
         auth.create_session_tokens.return_value = {
             "access_token": "at",
             "refresh_token": "rt",
+            "token_type": "Bearer",
+            "expires_in": 604800,
         }
         mock_auth_svc.return_value = auth
 
@@ -890,7 +893,8 @@ class TestAuthEndpoints:
         assert resp.status_code == 200
         data = resp.json()
         assert "user" in data
-        assert "tokens" in data
+        assert "access_token" in data
+        assert "refresh_token" in data
         assert "is_new_user" in data
 
     @patch("handlers.api_handler.get_auth_service")
@@ -915,7 +919,7 @@ class TestAuthEndpoints:
 
         resp = client.post("/api/v1/auth/refresh", json={"refresh_token": "old_rt"})
         assert resp.status_code == 200
-        assert "tokens" in resp.json()
+        assert "access_token" in resp.json()
 
     @patch("handlers.api_handler.get_auth_service")
     def test_refresh_token_invalid(self, mock_auth_svc, client):
@@ -955,12 +959,15 @@ class TestAuthEndpoints:
         user = MagicMock()
         user.to_dict.return_value = {"user_id": "apple_123"}
         user.is_new_user = False
+        user.user_id = "apple_123"
 
         auth = MagicMock()
         auth.verify_apple_token.return_value = user
         auth.create_session_tokens.return_value = {
             "access_token": "at",
             "refresh_token": "rt",
+            "token_type": "Bearer",
+            "expires_in": 604800,
         }
         mock_auth_svc.return_value = auth
 
@@ -971,7 +978,7 @@ class TestAuthEndpoints:
         assert resp.status_code == 200
         data = resp.json()
         assert "user" in data
-        assert "tokens" in data
+        assert "access_token" in data
         assert data["is_new_user"] is False
 
     @patch("handlers.api_handler.get_auth_service")

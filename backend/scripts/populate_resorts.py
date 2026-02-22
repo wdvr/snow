@@ -348,6 +348,8 @@ class ResortPopulator:
             green_runs_pct=data.get("green_runs_pct"),
             blue_runs_pct=data.get("blue_runs_pct"),
             black_runs_pct=data.get("black_runs_pct"),
+            epic_pass=data.get("epic_pass"),
+            ikon_pass=data.get("ikon_pass"),
             weather_sources=["weatherapi"],
             created_at=now,
             updated_at=now,

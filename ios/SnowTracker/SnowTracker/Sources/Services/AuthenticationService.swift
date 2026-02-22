@@ -516,12 +516,9 @@ struct AuthenticatedUser: Identifiable, Codable {
         if let email = email, !email.isEmpty {
             return email
         }
-        // For Apple users without email, show Apple ID reference
+        // For Apple users without email, show a friendly message
         if provider == .apple {
-            // The user ID for Apple is their Apple user identifier
-            // Show a truncated version or a friendly message
-            let shortId = String(id.prefix(8))
-            return "Apple ID (\(shortId)...)"
+            return "Signed in with Apple"
         }
         return "Email not available"
     }

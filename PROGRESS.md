@@ -21,10 +21,10 @@
 ### 🟡 Medium
 | Issue | Description | Status |
 |-------|-------------|--------|
+| Chat requires Bedrock model access form | Bedrock Claude Sonnet 4.6 requires User action | User action needed |
 | Auto-suggest resort in chat | "How's Whistler" → auto-detect nearest famous resort or user favorite | Backlog |
 | Pass affiliation | Epic/Ikon pass info per resort | Research needed |
 | Apple Sign In Email | Shows "Apple ID (000495...)" instead of email | Backlog |
-| App Store Release | Need provisioning profile with Push Notifications | User action needed |
 
 ### 🟢 Future Features
 | Issue | Description |
@@ -42,6 +42,12 @@
 
 | Feature | Date |
 |---------|------|
+| Fix elevation profile shape (mountain not Christmas tree) | 2026-02-22 |
+| Fix NavigationLink eager view creation causing list view hang | 2026-02-22 |
+| Fix Bedrock IAM policy for cross-region inference profiles | 2026-02-22 |
+| Fix trail map populate script missing new fields | 2026-02-22 |
+| Fix chat Bedrock model ID and IAM permissions | 2026-02-22 |
+| App Store Release | 2026-02-22 |
 | Add trail map links + run difficulty bars (green/blue/black %) to detail view | 2026-02-21 |
 | Add run breakdown data for 26 core resorts | 2026-02-21 |
 | Fix chat Bedrock model ID (us.anthropic.claude-sonnet-4-6) | 2026-02-21 |

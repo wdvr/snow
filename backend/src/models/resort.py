@@ -62,6 +62,13 @@ class Resort(BaseModel):
     updated_at: str | None = Field(
         None, description="ISO timestamp when resort was last updated"
     )
+    # Pass affiliations
+    epic_pass: str | None = Field(
+        None, description="Epic Pass access (e.g., 'Unlimited', '7 days', '5 days')"
+    )
+    ikon_pass: str | None = Field(
+        None, description="Ikon Pass access (e.g., 'Unlimited', '7 days', '5 days')"
+    )
     # Scraper metadata
     source: str | None = Field(
         None, description="Data source (manual, skiresort.info, wikipedia)"

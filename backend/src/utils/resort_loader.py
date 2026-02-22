@@ -151,6 +151,8 @@ class ResortLoader:
             green_runs_pct=raw.get("green_runs_pct"),
             blue_runs_pct=raw.get("blue_runs_pct"),
             black_runs_pct=raw.get("black_runs_pct"),
+            epic_pass=raw.get("epic_pass"),
+            ikon_pass=raw.get("ikon_pass"),
             weather_sources=["weatherapi"],
             created_at=now,
             updated_at=now,

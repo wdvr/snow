@@ -86,9 +86,13 @@ class AuthService:
             apple_client_id: Apple App Bundle ID
         """
         self.user_table = user_table
-        self.jwt_secret = jwt_secret or os.environ.get("JWT_SECRET_KEY", "dev-secret-change-in-prod")
+        self.jwt_secret = jwt_secret or os.environ.get(
+            "JWT_SECRET_KEY", "dev-secret-change-in-prod"
+        )
         self.apple_team_id = apple_team_id or os.environ.get("APPLE_SIGNIN_TEAM_ID")
-        self.apple_client_id = apple_client_id or os.environ.get("APPLE_SIGNIN_CLIENT_ID", "com.snowtracker.app")
+        self.apple_client_id = apple_client_id or os.environ.get(
+            "APPLE_SIGNIN_CLIENT_ID", "com.snowtracker.app"
+        )
 
     # ============================================
     # Apple Sign In
@@ -122,7 +126,9 @@ class AuthService:
             # Extract user info from claims
             apple_user_id = claims.get("sub")
             email = claims.get("email")
-            email_verified = claims.get("email_verified", False)
+            # Apple may send email_verified as bool or string "true"/"false"
+            raw_verified = claims.get("email_verified", False)
+            email_verified = raw_verified in (True, "true")
 
             if not apple_user_id:
                 raise AuthenticationError("Missing user ID in Apple token")
@@ -243,7 +249,8 @@ class AuthService:
         # Check cache
         if (
             self._apple_keys_cache
-            and time.time() - self._apple_keys_cache_time < self.APPLE_KEYS_CACHE_DURATION
+            and time.time() - self._apple_keys_cache_time
+            < self.APPLE_KEYS_CACHE_DURATION
         ):
             return self._apple_keys_cache
 
@@ -282,7 +289,9 @@ class AuthService:
             "iat": now,
             "exp": now + timedelta(hours=self.JWT_EXPIRATION_HOURS),
         }
-        access_token = jwt.encode(access_payload, self.jwt_secret, algorithm=self.JWT_ALGORITHM)
+        access_token = jwt.encode(
+            access_payload, self.jwt_secret, algorithm=self.JWT_ALGORITHM
+        )
 
         # Refresh token
         refresh_payload = {
@@ -291,7 +300,9 @@ class AuthService:
             "iat": now,
             "exp": now + timedelta(days=self.JWT_REFRESH_EXPIRATION_DAYS),
         }
-        refresh_token = jwt.encode(refresh_payload, self.jwt_secret, algorithm=self.JWT_ALGORITHM)
+        refresh_token = jwt.encode(
+            refresh_payload, self.jwt_secret, algorithm=self.JWT_ALGORITHM
+        )
 
         return {
             "access_token": access_token,

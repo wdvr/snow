@@ -43,6 +43,8 @@ class DemoDataService {
             greenRunsPct: 20,
             blueRunsPct: 55,
             blackRunsPct: 25,
+            epicPass: "Unlimited",
+            ikonPass: nil,
             weatherSources: ["weatherapi", "avalanche-canada", "resort-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-27T10:30:00Z"
@@ -64,6 +66,8 @@ class DemoDataService {
             greenRunsPct: 25,
             blueRunsPct: 40,
             blackRunsPct: 35,
+            epicPass: nil,
+            ikonPass: "Unlimited",
             weatherSources: ["noaa", "weatherapi", "resort-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-27T10:30:00Z"
@@ -86,6 +90,8 @@ class DemoDataService {
             greenRunsPct: 25,
             blueRunsPct: 45,
             blackRunsPct: 30,
+            epicPass: nil,
+            ikonPass: "7 days",
             weatherSources: ["environment-canada", "avalanche-canada", "resort-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-27T10:30:00Z"
@@ -107,6 +113,8 @@ class DemoDataService {
             greenRunsPct: 10,
             blueRunsPct: 40,
             blackRunsPct: 50,
+            epicPass: nil,
+            ikonPass: "Unlimited",
             weatherSources: ["noaa", "weatherapi", "resort-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-27T10:30:00Z"
@@ -129,6 +137,8 @@ class DemoDataService {
             greenRunsPct: 15,
             blueRunsPct: 40,
             blackRunsPct: 45,
+            epicPass: nil,
+            ikonPass: "7 days",
             weatherSources: ["meteofrance", "weatherapi", "resort-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-27T10:30:00Z"
@@ -150,6 +160,8 @@ class DemoDataService {
             greenRunsPct: 20,
             blueRunsPct: 55,
             blackRunsPct: 25,
+            epicPass: nil,
+            ikonPass: "7 days",
             weatherSources: ["meteosuisse", "weatherapi", "resort-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-27T10:30:00Z"
@@ -172,6 +184,8 @@ class DemoDataService {
             greenRunsPct: 30,
             blueRunsPct: 40,
             blackRunsPct: 30,
+            epicPass: nil,
+            ikonPass: "7 days",
             weatherSources: ["jma", "weatherapi", "resort-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-27T10:30:00Z"
@@ -194,6 +208,8 @@ class DemoDataService {
             greenRunsPct: 30,
             blueRunsPct: 40,
             blackRunsPct: 30,
+            epicPass: nil,
+            ikonPass: nil,
             weatherSources: ["metservice", "weatherapi", "resort-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-27T10:30:00Z"

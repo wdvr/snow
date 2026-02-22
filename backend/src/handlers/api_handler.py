@@ -2094,9 +2094,13 @@ async def sign_in_with_apple(request: AppleSignInRequest):
         # Create session tokens
         tokens = auth_service.create_session_tokens(user.user_id)
 
+        # Return user info with tokens at top level (iOS expects flat structure)
         return {
             "user": user.to_dict(),
-            "tokens": tokens,
+            "access_token": tokens["access_token"],
+            "refresh_token": tokens["refresh_token"],
+            "token_type": tokens["token_type"],
+            "expires_in": tokens["expires_in"],
             "is_new_user": user.is_new_user,
         }
 
@@ -2128,9 +2132,13 @@ async def sign_in_as_guest(request: GuestAuthRequest):
         # Create session tokens
         tokens = auth_service.create_session_tokens(user.user_id)
 
+        # Return user info with tokens at top level (iOS expects flat structure)
         return {
             "user": user.to_dict(),
-            "tokens": tokens,
+            "access_token": tokens["access_token"],
+            "refresh_token": tokens["refresh_token"],
+            "token_type": tokens["token_type"],
+            "expires_in": tokens["expires_in"],
             "is_new_user": user.is_new_user,
         }
 
@@ -2152,7 +2160,7 @@ async def refresh_token(request: RefreshTokenRequest):
     try:
         auth_service = get_auth_service()
         tokens = auth_service.refresh_tokens(request.refresh_token)
-        return {"tokens": tokens}
+        return tokens
 
     except AuthenticationError as e:
         raise HTTPException(
@@ -2165,12 +2173,29 @@ async def refresh_token(request: RefreshTokenRequest):
 async def get_current_user(user_id: str = Depends(get_current_user_id)):
     """Get current authenticated user info."""
     try:
-        # Get user from database
+        auth_service = get_auth_service()
+        user = auth_service._get_user(user_id)
+
+        # Get auth_provider from raw DynamoDB item
+        provider = None
+        try:
+            raw_response = auth_service.user_table.get_item(Key={"user_id": user_id})
+            raw_item = raw_response.get("Item", {})
+            provider = raw_item.get("auth_provider")
+        except Exception:
+            pass
+
+        # Get user preferences
         user_service = get_user_service()
         prefs = user_service.get_user_preferences(user_id)
 
         return {
             "user_id": user_id,
+            "email": user.email if user else None,
+            "first_name": user.first_name if user else None,
+            "last_name": user.last_name if user else None,
+            "provider": provider,
+            "is_new_user": False,
             "preferences": prefs.model_dump() if prefs else None,
         }
 

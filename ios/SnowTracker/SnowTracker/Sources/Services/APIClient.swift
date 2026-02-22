@@ -1582,7 +1582,7 @@ struct AuthenticatedUserInfo: Codable {
     let email: String?
     let firstName: String?
     let lastName: String?
-    let provider: String
+    let provider: String?
     let isNewUser: Bool
 
     private enum CodingKeys: String, CodingKey {
