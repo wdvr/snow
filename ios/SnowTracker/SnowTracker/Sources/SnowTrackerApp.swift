@@ -131,59 +131,94 @@ struct MainTabView: View {
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @State private var selectedTab = 0
     @State private var deepLinkResort: Resort?
+    @State private var showingChat = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            if !networkMonitor.isConnected {
-                OfflineBanner(cachedDataAge: snowConditionsManager.cachedDataAge)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+        ZStack(alignment: .bottomTrailing) {
+            VStack(spacing: 0) {
+                if !networkMonitor.isConnected {
+                    OfflineBanner(cachedDataAge: snowConditionsManager.cachedDataAge)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
+                TabView(selection: $selectedTab) {
+                    ResortListView(deepLinkResort: $deepLinkResort)
+                        .tabItem {
+                            Image(systemName: "mountain.2")
+                            Text("Resorts")
+                        }
+                        .tag(0)
+
+                    ResortMapView()
+                        .tabItem {
+                            Image(systemName: "map.fill")
+                            Text("Map")
+                        }
+                        .tag(1)
+
+                    BestSnowNearYouView()
+                        .tabItem {
+                            Image(systemName: "star.fill")
+                            Text("Best Snow")
+                        }
+                        .tag(2)
+
+                    FavoritesView()
+                        .tabItem {
+                            Image(systemName: "heart")
+                            Text("Favorites")
+                        }
+                        .tag(3)
+
+                    SettingsView()
+                        .environmentObject(authService)
+                        .tabItem {
+                            Image(systemName: "gear")
+                            Text("Settings")
+                        }
+                        .tag(4)
+                }
+                .tint(.blue)
             }
 
-            TabView(selection: $selectedTab) {
-                ResortListView(deepLinkResort: $deepLinkResort)
-                    .tabItem {
-                        Image(systemName: "mountain.2")
-                        Text("Resorts")
-                    }
-                    .tag(0)
+            // Floating AI chat bubble
+            Button {
+                showingChat = true
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [.blue, .purple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 56, height: 56)
+                        .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
 
-                ResortMapView()
-                    .tabItem {
-                        Image(systemName: "map.fill")
-                        Text("Map")
-                    }
-                    .tag(1)
-
-                BestSnowNearYouView()
-                    .tabItem {
-                        Image(systemName: "star.fill")
-                        Text("Best Snow")
-                    }
-                    .tag(2)
-
-                FavoritesView()
-                    .tabItem {
-                        Image(systemName: "heart")
-                        Text("Favorites")
-                    }
-                    .tag(3)
-
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 24, weight: .medium))
+                        .foregroundStyle(.white)
+                }
+            }
+            .padding(.trailing, 16)
+            .padding(.bottom, 72) // Above the tab bar
+            .accessibilityLabel("Ask AI about snow conditions")
+        }
+        .sheet(isPresented: $showingChat) {
+            NavigationStack {
                 ChatView()
-                    .tabItem {
-                        Image(systemName: "bubble.left.and.text.bubble.right")
-                        Text("Ask AI")
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Close") {
+                                showingChat = false
+                            }
+                        }
                     }
-                    .tag(4)
-
-                SettingsView()
-                    .environmentObject(authService)
-                    .tabItem {
-                        Image(systemName: "gear")
-                        Text("Settings")
-                    }
-                    .tag(5)
             }
-            .tint(.blue)
+            .environmentObject(snowConditionsManager)
+            .environmentObject(UserPreferencesManager.shared)
         }
         .animation(.easeInOut(duration: 0.3), value: networkMonitor.isConnected)
         .onAppear {

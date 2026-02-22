@@ -376,6 +376,24 @@ struct AboutView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Divider()
+                    .padding(.horizontal)
+
+                VStack(spacing: 12) {
+                    Link(destination: URL(string: "https://powderchaserapp.com")!) {
+                        Label("Website", systemImage: "globe")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Link(destination: URL(string: "https://github.com/wdvr/snow")!) {
+                        Label("GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .padding(.horizontal, 40)
+
                 Spacer()
             }
             .padding()
