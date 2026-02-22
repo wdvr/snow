@@ -109,6 +109,20 @@ struct FavoritesView: View {
 
     private var favoritesList: some View {
         List {
+            // Conditions summary card
+            if favoriteResorts.count >= 2 {
+                Section {
+                    FavoritesSummaryCard(
+                        resorts: favoriteResorts,
+                        snowConditionsManager: snowConditionsManager,
+                        userPreferencesManager: userPreferencesManager
+                    )
+                }
+                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            }
+
             // Show grouped sections if any groups exist
             if !userPreferencesManager.favoriteGroups.isEmpty {
                 // Grouped resorts
@@ -443,6 +457,128 @@ struct FavoriteResortRow: View {
                 .font(.caption)
         }
         .padding(.vertical, 8)
+    }
+}
+
+// MARK: - Favorites Summary Card
+
+struct FavoritesSummaryCard: View {
+    let resorts: [Resort]
+    let snowConditionsManager: SnowConditionsManager
+    let userPreferencesManager: UserPreferencesManager
+
+    private var qualityCounts: [(quality: SnowQuality, count: Int)] {
+        var counts: [SnowQuality: Int] = [:]
+        for resort in resorts {
+            let quality = snowConditionsManager.getSnowQuality(for: resort.id)
+            if quality != .unknown {
+                counts[quality, default: 0] += 1
+            }
+        }
+        return counts.sorted { $0.key.sortOrder < $1.key.sortOrder }
+            .map { (quality: $0.key, count: $0.value) }
+    }
+
+    private var bestResort: (resort: Resort, score: Int)? {
+        resorts.compactMap { resort -> (Resort, Int)? in
+            guard let score = snowConditionsManager.getSnowScore(for: resort.id) else { return nil }
+            return (resort, score)
+        }
+        .max { $0.1 < $1.1 }
+    }
+
+    private var averageScore: Int? {
+        let scores = resorts.compactMap { snowConditionsManager.getSnowScore(for: $0.id) }
+        guard !scores.isEmpty else { return nil }
+        return scores.reduce(0, +) / scores.count
+    }
+
+    private var totalFreshSnow: Double {
+        resorts.compactMap { snowConditionsManager.snowQualitySummaries[$0.id]?.snowfallFreshCm }
+            .reduce(0, +)
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            // Header row
+            HStack {
+                Label("Conditions Overview", systemImage: "chart.bar.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Spacer()
+            }
+
+            // Best resort highlight
+            if let best = bestResort {
+                let quality = snowConditionsManager.getSnowQuality(for: best.resort.id)
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(quality.color.opacity(0.15))
+                            .frame(width: 36, height: 36)
+                        Text("\(best.score)")
+                            .font(.caption.weight(.bold))
+                            .fontDesign(.rounded)
+                            .foregroundStyle(quality.color)
+                    }
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Best conditions")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Text(best.resort.name)
+                            .font(.caption.weight(.medium))
+                    }
+
+                    Spacer()
+
+                    if let avg = averageScore {
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text("Avg score")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Text("\(avg)")
+                                .font(.caption.weight(.medium))
+                                .fontDesign(.rounded)
+                        }
+                    }
+                }
+            }
+
+            // Quality distribution bar
+            if !qualityCounts.isEmpty {
+                let total = qualityCounts.reduce(0) { $0 + $1.count }
+                VStack(spacing: 4) {
+                    GeometryReader { geometry in
+                        HStack(spacing: 1) {
+                            ForEach(qualityCounts, id: \.quality) { item in
+                                let width = max(8, geometry.size.width * CGFloat(item.count) / CGFloat(total))
+                                RoundedRectangle(cornerRadius: 3)
+                                    .fill(item.quality.color)
+                                    .frame(width: width, height: 8)
+                            }
+                        }
+                    }
+                    .frame(height: 8)
+
+                    // Legend
+                    HStack(spacing: 8) {
+                        ForEach(qualityCounts, id: \.quality) { item in
+                            HStack(spacing: 3) {
+                                Circle()
+                                    .fill(item.quality.color)
+                                    .frame(width: 6, height: 6)
+                                Text("\(item.count) \(item.quality.displayName)")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        Spacer()
+                    }
+                }
+            }
+        }
+        .cardStyle()
     }
 }
 
