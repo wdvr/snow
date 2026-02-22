@@ -811,11 +811,25 @@ struct ClusterResortListSheet: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if sortedResorts.isEmpty {
-                    ContentUnavailableView(
-                        "No Data Available",
-                        systemImage: "snowflake.slash",
-                        description: Text("Could not load conditions for these resorts.")
-                    )
+                    VStack(spacing: 16) {
+                        ContentUnavailableView(
+                            "No Data Available",
+                            systemImage: "snowflake.slash",
+                            description: Text("Could not load conditions for these resorts.")
+                        )
+
+                        Button {
+                            Task {
+                                isLoadingConditions = true
+                                let resortIds = resorts.map { $0.id }
+                                await snowConditionsManager.fetchConditionsForResorts(resortIds: resortIds)
+                                isLoadingConditions = false
+                            }
+                        } label: {
+                            Label("Try Again", systemImage: "arrow.clockwise")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                 } else {
                     List {
                         ForEach(sortedResorts) { resort in

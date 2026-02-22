@@ -549,6 +549,8 @@ struct ResortDetailView: View {
                 .fontWeight(.semibold)
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title) snowfall: \(WeatherCondition.formatSnow(value, prefs: userPreferencesManager.preferredUnits))")
     }
 
     // MARK: - Predictions Card

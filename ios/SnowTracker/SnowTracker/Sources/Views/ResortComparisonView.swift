@@ -70,11 +70,18 @@ struct ResortComparisonView: View {
                 .font(.title2)
                 .fontWeight(.semibold)
 
-            Text("Select up to 4 resorts to compare conditions side by side.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+            VStack(spacing: 8) {
+                Text("Select up to 4 resorts to compare conditions side by side.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+
+                Text("Compare snow quality, temperature, fresh snow, and forecasts at a glance.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 40)
 
             Button {
                 showResortPicker = true
