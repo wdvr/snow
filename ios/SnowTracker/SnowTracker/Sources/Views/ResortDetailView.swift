@@ -18,21 +18,34 @@ struct ResortDetailView: View {
     }
 
     private var shareText: String {
-        var text = "🏔️ \(resort.name) Snow Report\n"
-        text += "📍 \(resort.displayLocation)\n\n"
+        var text = "\(resort.name) Snow Report\n"
+        text += "\(resort.displayLocation)\n\n"
 
         if let condition = conditionForSelectedElevation {
             let prefs = userPreferencesManager.preferredUnits
-            text += "Current Conditions (\(selectedElevation.displayName)):\n"
-            text += "❄️ Snow Quality: \(condition.snowQuality.displayName)\n"
-            text += "🌡️ Temperature: \(condition.formattedTemperature(prefs))\n"
-            text += "🆕 Fresh Snow: \(WeatherCondition.formatSnow(condition.freshSnowCm, prefs: prefs))\n"
-            text += "📊 24h Snowfall: \(WeatherCondition.formatSnow(condition.snowfall24hCm, prefs: prefs))\n"
+
+            // Snow score if available
+            if let score = snowConditionsManager.getSnowScore(for: resort.id) {
+                text += "Snow Score: \(score)/100 (\(condition.snowQuality.displayName))\n"
+            } else {
+                text += "Snow Quality: \(condition.snowQuality.displayName)\n"
+            }
+
+            text += "Temperature: \(condition.formattedTemperature(prefs))\n"
+            text += "Fresh Snow: \(WeatherCondition.formatSnow(condition.freshSnowCm, prefs: prefs))\n"
+
+            if let depth = condition.snowDepthCm, depth > 0 {
+                text += "Snow Depth: \(WeatherCondition.formatSnow(depth, prefs: prefs))\n"
+            }
+
+            if let predicted = condition.predictedSnow48hCm, predicted >= 5 {
+                text += "48h Forecast: +\(WeatherCondition.formatSnow(predicted, prefs: prefs))\n"
+            }
         } else {
             text += "No current conditions available.\n"
         }
 
-        text += "\n📱 Tracked with Powder Chaser"
+        text += "\nTracked with Powder Chaser"
         return text
     }
 
