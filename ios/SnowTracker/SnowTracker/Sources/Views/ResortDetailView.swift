@@ -711,7 +711,7 @@ struct ResortDetailView: View {
 
                         Spacer()
 
-                        VStack(alignment: .trailing) {
+                        VStack(alignment: .trailing, spacing: 4) {
                             HStack(spacing: 4) {
                                 Image(systemName: condition.snowQuality.icon)
                                     .foregroundStyle(condition.snowQuality.color)
@@ -720,9 +720,19 @@ struct ResortDetailView: View {
                             }
                             .font(.subheadline)
 
-                            Text(condition.formattedTemperature(userPreferencesManager.preferredUnits))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            HStack(spacing: 8) {
+                                Text(condition.formattedTemperature(userPreferencesManager.preferredUnits))
+                                if condition.freshSnowCm > 0 {
+                                    HStack(spacing: 2) {
+                                        Image(systemName: "snowflake")
+                                            .font(.caption2)
+                                        Text(WeatherCondition.formatSnowShort(condition.freshSnowCm, prefs: userPreferencesManager.preferredUnits))
+                                    }
+                                    .foregroundStyle(.cyan)
+                                }
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                         }
                     }
                     .padding(.vertical, 8)

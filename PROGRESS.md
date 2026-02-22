@@ -39,6 +39,14 @@
 
 | Feature | Date |
 |---------|------|
+| Add snow depth, forecast, and pass badges to resort comparison | 2026-02-22 |
+| Fix elevation display to respect user unit preferences (meters/feet) | 2026-02-22 |
+| Add pass badges to recommendation cards | 2026-02-22 |
+| Enhance share card with snow depth and 48h forecast stats | 2026-02-22 |
+| Extract PassBadge to shared component, reduce 30 LoC duplication | 2026-02-22 |
+| Optimize widget API calls (7 requests → 1-2 batch requests) | 2026-02-22 |
+| Fix elevation picker fallback when selected elevation has no data | 2026-02-22 |
+| Add accessibility labels to favorites quality indicators | 2026-02-22 |
 | Improve share text with snow score, depth, and forecast | 2026-02-22 |
 | Add storm badge to Favorites tab when significant snow predicted | 2026-02-22 |
 | Improve resort search to match country codes and pass types | 2026-02-22 |
