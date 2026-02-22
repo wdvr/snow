@@ -1,8 +1,9 @@
 name: iOS Build
 
-# Inline build workflow (mirrors footprint approach) to avoid certificate
-# creation issues with the shared ios-infra workflow.
-# Uses App Store Connect API for automatic signing without creating new certs.
+# Inline build workflow using App Store Connect API for automatic signing.
+# A cert cleanup step runs before each archive to revoke excess development
+# certificates (Xcode creates a new one per ephemeral CI build). This keeps
+# the certificate count under Apple's limit automatically.
 
 on:
   push:
@@ -104,6 +105,76 @@ jobs:
         mkdir -p $RUNNER_TEMP/private_keys
         echo "${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}" | tr -d '\r' > $RUNNER_TEMP/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
         chmod 600 $RUNNER_TEMP/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
+
+    - name: Cleanup excess certificates
+      if: github.event_name != 'pull_request'
+      run: |
+        # Revoke excess development certificates to prevent hitting Apple's limit.
+        # Xcode automatic signing creates a new dev cert on each CI build because
+        # ephemeral runners have no certs in their keychain. This step keeps only
+        # the newest dev cert and removes the rest via the ASC API.
+        python3 - "${{ secrets.APP_STORE_CONNECT_KEY_ID }}" "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" "$RUNNER_TEMP/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8" << 'PYTHON_SCRIPT'
+        import sys, json, time, base64, struct, urllib.request, urllib.error
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import ec, utils
+
+        key_id, issuer_id, key_path = sys.argv[1], sys.argv[2], sys.argv[3]
+
+        def b64url(data):
+            return base64.urlsafe_b64encode(data).rstrip(b'=').decode()
+
+        # Generate ASC API JWT
+        with open(key_path, 'rb') as f:
+            private_key = serialization.load_pem_private_key(f.read(), password=None)
+        header = b64url(json.dumps({"alg": "ES256", "kid": key_id, "typ": "JWT"}).encode())
+        now = int(time.time())
+        payload = b64url(json.dumps({"iss": issuer_id, "iat": now, "exp": now + 600, "aud": "appstoreconnect-v1"}).encode())
+        signing_input = f"{header}.{payload}".encode()
+        der_sig = private_key.sign(signing_input, ec.ECDSA(hashes.SHA256()))
+        r, s = utils.decode_dss_signature(der_sig)
+        sig = r.to_bytes(32, 'big') + s.to_bytes(32, 'big')
+        token = f"{header}.{payload}.{b64url(sig)}"
+
+        headers = {"Authorization": f"Bearer {token}"}
+
+        def api_get(url):
+            req = urllib.request.Request(url, headers=headers)
+            return json.loads(urllib.request.urlopen(req).read())
+
+        def api_delete(url):
+            req = urllib.request.Request(url, headers=headers, method='DELETE')
+            try:
+                urllib.request.urlopen(req)
+                return True
+            except urllib.error.HTTPError:
+                return False
+
+        # List all certificates
+        data = api_get("https://api.appstoreconnect.apple.com/v1/certificates?limit=200")
+        certs = data.get("data", [])
+
+        # Separate by type: keep 1 dev cert, keep 2 distribution certs
+        dev_certs = [c for c in certs if "DEVELOPMENT" in c["attributes"]["certificateType"]]
+        dist_certs = [c for c in certs if "DISTRIBUTION" in c["attributes"]["certificateType"]]
+
+        dev_certs.sort(key=lambda c: c["attributes"].get("expirationDate", ""), reverse=True)
+        dist_certs.sort(key=lambda c: c["attributes"].get("expirationDate", ""), reverse=True)
+
+        revoked = 0
+        for cert in dev_certs[1:]:  # Keep newest 1
+            name = cert["attributes"].get("name", cert["id"])
+            if api_delete(f"https://api.appstoreconnect.apple.com/v1/certificates/{cert['id']}"):
+                print(f"Revoked dev cert: {name}")
+                revoked += 1
+
+        for cert in dist_certs[2:]:  # Keep newest 2
+            name = cert["attributes"].get("name", cert["id"])
+            if api_delete(f"https://api.appstoreconnect.apple.com/v1/certificates/{cert['id']}"):
+                print(f"Revoked dist cert: {name}")
+                revoked += 1
+
+        print(f"Certificate cleanup: {len(dev_certs)} dev, {len(dist_certs)} dist found; {revoked} revoked")
+        PYTHON_SCRIPT
 
     - name: Build (PR - no signing)
       if: github.event_name == 'pull_request'
