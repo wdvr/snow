@@ -14,7 +14,17 @@ struct ResortDetailView: View {
     }
 
     private var conditionForSelectedElevation: WeatherCondition? {
-        conditions.first { $0.elevationLevel == selectedElevation.rawValue }
+        // Try exact match first, then fall back through elevations
+        if let exact = conditions.first(where: { $0.elevationLevel == selectedElevation.rawValue }) {
+            return exact
+        }
+        // Fallback: top > mid > base
+        for level in ["top", "mid", "base"] where level != selectedElevation.rawValue {
+            if let fallback = conditions.first(where: { $0.elevationLevel == level }) {
+                return fallback
+            }
+        }
+        return conditions.first
     }
 
     private var shareText: String {
