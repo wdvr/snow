@@ -39,6 +39,8 @@
 
 | Feature | Date |
 |---------|------|
+| Improve share text with snow score, depth, and forecast | 2026-02-22 |
+| Add storm badge to Favorites tab when significant snow predicted | 2026-02-22 |
 | Improve resort search to match country codes and pass types | 2026-02-22 |
 | Add storms incoming section to favorites summary card | 2026-02-22 |
 | Add Snow Depth and Predicted Snow sort options to resort list | 2026-02-22 |
