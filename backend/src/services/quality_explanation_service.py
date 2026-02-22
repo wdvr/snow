@@ -44,9 +44,19 @@ def generate_quality_explanation(condition: WeatherCondition) -> str:
     return " ".join(parts) if parts else _default_explanation(quality)
 
 
-def _describe_surface(condition: WeatherCondition) -> str:
-    """Describe the likely surface condition based on data."""
-    quality = condition.snow_quality
+def _describe_surface(
+    condition: WeatherCondition,
+    quality_override: SnowQuality | None = None,
+) -> str:
+    """Describe the likely surface condition based on data.
+
+    Args:
+        condition: Weather condition with snow data
+        quality_override: If provided, use this quality level instead of
+            the condition's own quality. Used when the overall quality
+            differs from the representative elevation's quality.
+    """
+    quality = quality_override or condition.snow_quality
     if isinstance(quality, str):
         quality = SnowQuality(quality)
 
@@ -308,12 +318,19 @@ def generate_timeline_explanation(
 def generate_overall_explanation(
     conditions: list[WeatherCondition],
     overall_quality: SnowQuality,
+    representative: WeatherCondition | None = None,
 ) -> str | None:
     """Generate an overall explanation that accounts for all elevations.
 
-    Prefers an elevation whose quality matches the overall quality level.
-    When no match exists (common with weighted averaging across elevations),
-    synthesizes a description acknowledging the mixed conditions.
+    Uses the representative condition (mid > top > base) for all weather
+    data (temperature, base depth, forecast) to ensure consistency with
+    the temperature_c field in the API response.
+
+    Args:
+        conditions: All elevation conditions for the resort
+        overall_quality: Weighted overall quality level
+        representative: The condition used for temperature_c/snowfall fields.
+            If not provided, will find one using mid > top > base preference.
     """
     if not conditions:
         return None
@@ -321,57 +338,48 @@ def generate_overall_explanation(
     if isinstance(overall_quality, str):
         overall_quality = SnowQuality(overall_quality)
 
-    # Try to find an elevation matching overall quality (prefer mid > top > base)
-    # Mid is preferred because the batch endpoint uses mid for temperature_c,
-    # so the explanation temperature should match.
-    for pref in ["mid", "top", "base"]:
-        for c in conditions:
-            if (
-                c.elevation_level == pref
-                and _norm_quality(c.snow_quality) == overall_quality
-            ):
-                return generate_quality_explanation(c)
+    # Find representative if not provided (same order as temperature_c selection)
+    if representative is None:
+        for pref in ["mid", "top", "base"]:
+            for c in conditions:
+                if c.elevation_level == pref:
+                    representative = c
+                    break
+            if representative:
+                break
+        if not representative:
+            representative = conditions[0]
 
-    # No match — synthesize from multiple elevations
-    level_map: dict[str, WeatherCondition] = {}
-    for c in conditions:
-        if c.elevation_level not in level_map:
-            level_map[c.elevation_level] = c
+    # If representative's quality matches overall, use it directly
+    if _norm_quality(representative.snow_quality) == overall_quality:
+        return generate_quality_explanation(representative)
 
-    top = level_map.get("top")
-    mid = level_map.get("mid")
-    base = level_map.get("base")
-
-    if not top:
-        # No top data — use whatever we have
-        best = mid or base
-        return generate_quality_explanation(best) if best else None
-
-    # Summit is typically better than overall; lower elevations drag it down
+    # Quality differs — generate explanation using representative's weather data
+    # with the overall quality level for surface description.
+    # This ensures the temperature in the explanation matches temperature_c.
     parts = []
 
-    summit_desc = _brief_summit(top)
-    lower = base or mid
-    lower_desc = _brief_lower_issue(lower) if lower else None
+    # Surface description uses overall quality + representative's snow amounts
+    surface = _describe_surface(representative, quality_override=overall_quality)
+    if surface:
+        parts.append(surface)
 
-    if summit_desc and lower_desc:
-        parts.append(f"{summit_desc}, but {lower_desc}.")
-    elif summit_desc:
-        parts.append(f"{summit_desc}.")
-    else:
-        return generate_quality_explanation(top)
+    # Fresh snow context from representative
+    fresh = _describe_fresh_snow(representative)
+    if fresh:
+        parts.append(fresh)
 
-    # Use representative elevation (mid preferred) for temperature, base, forecast
-    # to match the batch endpoint's temperature_c field
-    representative = mid or top
+    # Temperature from representative (matches temperature_c in API response)
     temp = _describe_temperature(representative)
     if temp:
         parts.append(temp)
 
+    # Base depth from representative
     base_desc = _describe_base(representative)
     if base_desc:
         parts.append(base_desc)
 
+    # Forecast from representative
     forecast = _describe_forecast(representative)
     if forecast:
         parts.append(forecast)
