@@ -505,6 +505,15 @@ struct FavoritesSummaryCard: View {
             .reduce(0, +)
     }
 
+    private var stormsIncoming: [(resort: Resort, cm: Double)] {
+        resorts.compactMap { resort -> (Resort, Double)? in
+            guard let predicted = snowConditionsManager.snowQualitySummaries[resort.id]?.predictedSnow48hCm,
+                  predicted >= 10 else { return nil }
+            return (resort, predicted)
+        }
+        .sorted { $0.1 > $1.1 }
+    }
+
     var body: some View {
         VStack(spacing: 12) {
             // Header row
@@ -581,6 +590,29 @@ struct FavoritesSummaryCard: View {
                             }
                         }
                         Spacer()
+                    }
+                }
+            }
+
+            // Storms incoming
+            if !stormsIncoming.isEmpty {
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(
+                        stormsIncoming.count == 1 ? "Storm incoming" : "\(stormsIncoming.count) storms incoming",
+                        systemImage: "cloud.snow.fill"
+                    )
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.cyan)
+
+                    ForEach(stormsIncoming.prefix(3), id: \.resort.id) { item in
+                        HStack(spacing: 6) {
+                            Text(item.resort.name)
+                                .font(.caption)
+                            Spacer()
+                            ForecastBadge(hours: 48, cm: item.cm, prefs: userPreferencesManager.preferredUnits)
+                        }
                     }
                 }
             }
