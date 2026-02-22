@@ -117,6 +117,23 @@ struct ElevationProfileView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityDescription(level: level, elevation: elevation, condition: condition))
+    }
+
+    private func accessibilityDescription(level: String, elevation: ElevationPoint?, condition: WeatherCondition?) -> String {
+        var parts = ["\(level.capitalized) elevation"]
+        if let elevation {
+            parts.append(elevation.formattedElevation(prefs: prefs))
+        }
+        if let condition {
+            parts.append(condition.snowQuality.displayName)
+            parts.append(condition.formattedTemperature(prefs))
+            parts.append("fresh snow \(WeatherCondition.formatSnow(condition.freshSnowCm, prefs: prefs))")
+        } else {
+            parts.append("no data available")
+        }
+        return parts.joined(separator: ", ")
     }
 }
 
