@@ -1,7 +1,7 @@
 # Powder Chaser - Progress
 
 ## Status: LIVE
-**Last Updated**: 2026-02-21
+**Last Updated**: 2026-02-22
 
 ### Endpoints & Website
 - **Staging API**: https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging
@@ -21,7 +21,6 @@
 ### 🟡 Medium
 | Issue | Description | Status |
 |-------|-------------|--------|
-| Auto-suggest resort in chat | "How's Whistler" → auto-detect nearest famous resort or user favorite | Backlog |
 | App Store Release | Need provisioning profile with Push Notifications | User action needed |
 
 ### 🟢 Future Features
@@ -40,6 +39,14 @@
 
 | Feature | Date |
 |---------|------|
+| Enhance chat AI system prompt with quality definitions + 20 new aliases | 2026-02-22 |
+| Add chat retry button, accessibility labels, fix diacritics search | 2026-02-22 |
+| Fix global recommendations favoring tiny resorts (vertical drop weight) | 2026-02-22 |
+| Add Epic/Ikon pass badges to resort list and favorites views | 2026-02-22 |
+| Add chat auto-suggest: pre-detect resort mentions for faster responses | 2026-02-22 |
+| Fix elevation consistency: explanation temperature matches temperature_c | 2026-02-22 |
+| Replace silent exception handlers with warning-level logging | 2026-02-22 |
+| Retrain ML model with 127 new samples (2181 total, MAE=0.176) | 2026-02-22 |
 | Fix elevation profile shape (mountain not Christmas tree) | 2026-02-22 |
 | Fix NavigationLink eager view creation causing list view hang | 2026-02-22 |
 | Fix Bedrock IAM policy for cross-region inference profiles | 2026-02-22 |
