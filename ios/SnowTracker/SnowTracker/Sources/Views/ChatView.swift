@@ -238,9 +238,16 @@ private struct MessageBubbleView: View {
             }
 
             VStack(alignment: message.isFromUser ? .trailing : .leading, spacing: 4) {
-                Text(displayedText)
-                    .font(.body)
-                    .foregroundStyle(message.isFromUser ? .white : .primary)
+                Group {
+                    if message.isFromUser {
+                        Text(displayedText)
+                            .font(.body)
+                            .foregroundStyle(.white)
+                    } else {
+                        MarkdownTextView(displayedText, foregroundColor: .primary)
+                            .font(.body)
+                    }
+                }
                     .textSelection(.enabled)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
