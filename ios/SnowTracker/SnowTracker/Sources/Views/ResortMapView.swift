@@ -44,6 +44,19 @@ struct ResortMapView: View {
         ZStack {
             mapContent
             mapOverlays
+
+            // Loading overlay when resorts are loading
+            if snowConditionsManager.isLoading && mapViewModel.annotations.isEmpty {
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .controlSize(.large)
+                    Text("Loading resorts...")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.ultraThinMaterial)
+            }
         }
     }
 
@@ -789,7 +802,7 @@ struct ClusterResortListSheet: View {
     var body: some View {
         NavigationStack {
             Group {
-                if sortedResorts.isEmpty && isLoadingConditions {
+                if isLoadingConditions && sortedResorts.isEmpty {
                     VStack(spacing: 12) {
                         ProgressView()
                             .controlSize(.large)
@@ -797,6 +810,12 @@ struct ClusterResortListSheet: View {
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if sortedResorts.isEmpty {
+                    ContentUnavailableView(
+                        "No Data Available",
+                        systemImage: "snowflake.slash",
+                        description: Text("Could not load conditions for these resorts.")
+                    )
                 } else {
                     List {
                         ForEach(sortedResorts) { resort in
