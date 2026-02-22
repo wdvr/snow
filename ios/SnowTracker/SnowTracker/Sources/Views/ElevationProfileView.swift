@@ -5,6 +5,7 @@ struct ElevationProfileView: View {
     let resort: Resort
     let conditions: [WeatherCondition]
     let prefs: UnitPreferences
+    @Environment(\.colorScheme) private var colorScheme
 
     private var baseCondition: WeatherCondition? {
         conditions.first { $0.elevationLevel == "base" }
@@ -75,11 +76,12 @@ struct ElevationProfileView: View {
 
     private func elevationBand(level: String, elevation: ElevationPoint?, condition: WeatherCondition?) -> some View {
         let quality = condition?.snowQuality ?? .unknown
+        let isDark = colorScheme == .dark
         return Rectangle()
-            .fill(quality.color.opacity(0.3))
+            .fill(quality.color.opacity(isDark ? 0.45 : 0.3))
             .overlay(
                 Rectangle()
-                    .fill(quality.color.opacity(0.15))
+                    .fill(quality.color.opacity(isDark ? 0.25 : 0.15))
             )
             .frame(height: 160.0 / 3.0)
     }

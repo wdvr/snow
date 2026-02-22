@@ -115,7 +115,7 @@ private struct SunOverlay: View {
                 )
             }
         }
-        .opacity(0.12)
+        .opacity(0.18)
         .allowsHitTesting(false)
     }
 }

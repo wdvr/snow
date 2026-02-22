@@ -29,6 +29,7 @@ struct ChatView: View {
                     } label: {
                         Image(systemName: "clock.arrow.circlepath")
                     }
+                    .accessibilityLabel("Conversation history")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -36,6 +37,7 @@ struct ChatView: View {
                     } label: {
                         Image(systemName: "square.and.pencil")
                     }
+                    .accessibilityLabel("New conversation")
                 }
             }
             .sheet(isPresented: $viewModel.showConversationList) {
@@ -310,6 +312,7 @@ private struct TypingIndicatorView: View {
             .onAppear {
                 dotOffset = 1
             }
+            .accessibilityLabel("AI is typing")
 
             Spacer(minLength: 60)
         }

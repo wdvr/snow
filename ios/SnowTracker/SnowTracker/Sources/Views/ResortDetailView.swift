@@ -664,6 +664,8 @@ struct ResortDetailView: View {
                 .foregroundStyle(.blue)
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title) forecast: \(WeatherCondition.formatSnow(value, prefs: userPreferencesManager.preferredUnits))")
     }
 
     // MARK: - Weather Details Card
@@ -734,6 +736,8 @@ struct ResortDetailView: View {
             Spacer()
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
     }
 
     // MARK: - All Elevations Summary
