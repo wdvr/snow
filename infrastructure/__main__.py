@@ -118,6 +118,7 @@ resorts_table = aws.dynamodb.Table(
         {"name": "CountryIndex", "hash_key": "country", "projection_type": "ALL"},
         {"name": "GeoHashIndex", "hash_key": "geo_hash", "projection_type": "ALL"},
     ],
+    point_in_time_recovery=aws.dynamodb.TablePointInTimeRecoveryArgs(enabled=True),
     tags=tags,
 )
 
@@ -150,6 +151,7 @@ user_preferences_table = aws.dynamodb.Table(
     billing_mode="PAY_PER_REQUEST",
     hash_key="user_id",
     attributes=[{"name": "user_id", "type": "S"}],
+    point_in_time_recovery=aws.dynamodb.TablePointInTimeRecoveryArgs(enabled=True),
     tags=tags,
 )
 
@@ -203,6 +205,7 @@ snow_summary_table = aws.dynamodb.Table(
         {"name": "elevation_level", "type": "S"},
     ],
     # NO TTL - this data persists forever for season-long tracking
+    point_in_time_recovery=aws.dynamodb.TablePointInTimeRecoveryArgs(enabled=True),
     tags=tags,
 )
 
@@ -218,6 +221,7 @@ daily_history_table = aws.dynamodb.Table(
         {"name": "date", "type": "S"},  # YYYY-MM-DD format
     ],
     # NO TTL - this data persists for season-over-season comparisons
+    point_in_time_recovery=aws.dynamodb.TablePointInTimeRecoveryArgs(enabled=True),
     tags=tags,
 )
 
@@ -267,6 +271,7 @@ chat_table = aws.dynamodb.Table(
         }
     ],
     ttl={"attribute_name": "expires_at", "enabled": True},
+    point_in_time_recovery=aws.dynamodb.TablePointInTimeRecoveryArgs(enabled=True),
     tags=tags,
 )
 
@@ -292,6 +297,7 @@ condition_reports_table = aws.dynamodb.Table(
         }
     ],
     ttl={"attribute_name": "expires_at", "enabled": True},
+    point_in_time_recovery=aws.dynamodb.TablePointInTimeRecoveryArgs(enabled=True),
     tags=tags,
 )
 
@@ -1529,6 +1535,106 @@ timeline_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# History resource: /api/v1/resorts/{resortId}/history
+history_resource = aws.apigateway.Resource(
+    f"{app_name}-history-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=resort_resource.id,
+    path_part="history",
+)
+
+# GET /api/v1/resorts/{resortId}/history
+history_method = aws.apigateway.Method(
+    f"{app_name}-history-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=history_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+history_integration = aws.apigateway.Integration(
+    f"{app_name}-history-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=history_resource.id,
+    http_method=history_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Condition reports resource: /api/v1/resorts/{resortId}/condition-reports
+condition_reports_resource = aws.apigateway.Resource(
+    f"{app_name}-condition-reports-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=resort_resource.id,
+    path_part="condition-reports",
+)
+
+# GET /api/v1/resorts/{resortId}/condition-reports
+condition_reports_get_method = aws.apigateway.Method(
+    f"{app_name}-condition-reports-get-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=condition_reports_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+condition_reports_get_integration = aws.apigateway.Integration(
+    f"{app_name}-condition-reports-get-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=condition_reports_resource.id,
+    http_method=condition_reports_get_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# POST /api/v1/resorts/{resortId}/condition-reports
+condition_reports_post_method = aws.apigateway.Method(
+    f"{app_name}-condition-reports-post-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=condition_reports_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+condition_reports_post_integration = aws.apigateway.Integration(
+    f"{app_name}-condition-reports-post-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=condition_reports_resource.id,
+    http_method=condition_reports_post_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Single condition report resource: /api/v1/resorts/{resortId}/condition-reports/{reportId}
+condition_report_resource = aws.apigateway.Resource(
+    f"{app_name}-condition-report-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=condition_reports_resource.id,
+    path_part="{reportId}",
+)
+
+# DELETE /api/v1/resorts/{resortId}/condition-reports/{reportId}
+condition_report_delete_method = aws.apigateway.Method(
+    f"{app_name}-condition-report-delete-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=condition_report_resource.id,
+    http_method="DELETE",
+    authorization="NONE",
+)
+
+condition_report_delete_integration = aws.apigateway.Integration(
+    f"{app_name}-condition-report-delete-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=condition_report_resource.id,
+    http_method=condition_report_delete_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # Batch conditions resource: /api/v1/conditions
 batch_conditions_parent_resource = aws.apigateway.Resource(
     f"{app_name}-batch-conditions-parent-resource-{environment}",
@@ -1852,6 +1958,33 @@ resort_notification_setting_delete_integration = aws.apigateway.Integration(
     rest_api=api_gateway.id,
     resource_id=resort_notification_setting_resource.id,
     http_method=resort_notification_setting_delete_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# User condition reports: /api/v1/user/condition-reports
+user_condition_reports_resource = aws.apigateway.Resource(
+    f"{app_name}-user-condition-reports-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=user_resource.id,
+    path_part="condition-reports",
+)
+
+# GET /api/v1/user/condition-reports
+user_condition_reports_get_method = aws.apigateway.Method(
+    f"{app_name}-user-condition-reports-get-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=user_condition_reports_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+user_condition_reports_get_integration = aws.apigateway.Integration(
+    f"{app_name}-user-condition-reports-get-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=user_condition_reports_resource.id,
+    http_method=user_condition_reports_get_method.http_method,
     integration_http_method="POST",
     type="AWS_PROXY",
     uri=api_handler_lambda.invoke_arn,
@@ -2442,6 +2575,11 @@ api_deployment = aws.apigateway.Deployment(
             conditions_integration.id,
             conditions_elevation_integration.id,
             timeline_integration.id,
+            history_integration.id,
+            condition_reports_get_integration.id,
+            condition_reports_post_integration.id,
+            condition_report_delete_integration.id,
+            user_condition_reports_get_integration.id,
             events_get_integration.id,
             events_post_integration.id,
             event_delete_integration.id,
@@ -2490,6 +2628,11 @@ api_deployment = aws.apigateway.Deployment(
             conditions_integration,
             conditions_elevation_integration,
             timeline_integration,
+            history_integration,
+            condition_reports_get_integration,
+            condition_reports_post_integration,
+            condition_report_delete_integration,
+            user_condition_reports_get_integration,
             events_get_integration,
             events_post_integration,
             event_delete_integration,
