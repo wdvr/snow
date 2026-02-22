@@ -128,22 +128,39 @@ private struct ElevationMountainShape: Shape {
         let w = rect.width
         let h = rect.height
 
-        // Simple mountain silhouette: peak at top-center, widens toward base
-        path.move(to: CGPoint(x: w * 0.5, y: 0)) // Peak
-        path.addLine(to: CGPoint(x: w * 0.65, y: h * 0.15))
-        path.addLine(to: CGPoint(x: w * 0.55, y: h * 0.2)) // Small notch
-        path.addLine(to: CGPoint(x: w * 0.75, y: h * 0.35))
-        path.addLine(to: CGPoint(x: w * 0.85, y: h * 0.5))
-        path.addLine(to: CGPoint(x: w * 0.95, y: h * 0.7))
-        path.addLine(to: CGPoint(x: w, y: h)) // Base right
-        path.addLine(to: CGPoint(x: 0, y: h)) // Base left
-        path.addLine(to: CGPoint(x: w * 0.05, y: h * 0.7))
-        path.addLine(to: CGPoint(x: w * 0.15, y: h * 0.5))
-        path.addLine(to: CGPoint(x: w * 0.25, y: h * 0.35))
-        path.addLine(to: CGPoint(x: w * 0.45, y: h * 0.2))
-        path.addLine(to: CGPoint(x: w * 0.35, y: h * 0.15))
-        path.closeSubpath()
+        // Natural mountain silhouette: asymmetric with smooth curves
+        path.move(to: CGPoint(x: w * 0.45, y: 0)) // Peak (slightly left of center)
 
+        // Right slope — steeper face with gentle curve
+        path.addQuadCurve(
+            to: CGPoint(x: w * 0.72, y: h * 0.4),
+            control: CGPoint(x: w * 0.58, y: h * 0.15)
+        )
+        // Right shoulder — subtle ridge
+        path.addQuadCurve(
+            to: CGPoint(x: w * 0.88, y: h * 0.65),
+            control: CGPoint(x: w * 0.78, y: h * 0.48)
+        )
+        // Right foot — gentle runout
+        path.addQuadCurve(
+            to: CGPoint(x: w, y: h),
+            control: CGPoint(x: w * 0.95, y: h * 0.82)
+        )
+
+        // Base
+        path.addLine(to: CGPoint(x: 0, y: h))
+
+        // Left slope — gentler, longer approach
+        path.addQuadCurve(
+            to: CGPoint(x: w * 0.18, y: h * 0.55),
+            control: CGPoint(x: w * 0.06, y: h * 0.78)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: w * 0.45, y: 0),
+            control: CGPoint(x: w * 0.3, y: h * 0.18)
+        )
+
+        path.closeSubpath()
         return path
     }
 }
