@@ -214,7 +214,7 @@ struct ResortDetailView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
-                    Text(resort.elevationRange)
+                    Text(resort.elevationRange(prefs: userPreferencesManager.preferredUnits))
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -337,7 +337,7 @@ struct ResortDetailView: View {
             Picker("Elevation", selection: $selectedElevation) {
                 ForEach(ElevationLevel.allCases, id: \.self) { level in
                     if let point = resort.elevationPoint(for: level) {
-                        Text("\(level.displayName) - \(point.formattedFeet)")
+                        Text("\(level.displayName) - \(point.formattedElevation(prefs: userPreferencesManager.preferredUnits))")
                             .tag(level)
                     }
                 }
@@ -704,7 +704,7 @@ struct ResortDetailView: View {
                             Text(level.displayName)
                                 .font(.body)
                                 .fontWeight(.medium)
-                            Text(point.formattedFeet)
+                            Text(point.formattedElevation(prefs: userPreferencesManager.preferredUnits))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
