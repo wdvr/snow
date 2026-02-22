@@ -7,6 +7,7 @@ from typing import Any
 from models.resort import Resort
 from models.weather import ConfidenceLevel, SnowQuality, WeatherCondition
 from services.ml_scorer import raw_score_to_quality
+from services.quality_explanation_service import score_to_100
 from utils.geo_utils import haversine_distance
 
 
@@ -18,6 +19,7 @@ class ResortRecommendation:
     distance_km: float
     distance_miles: float
     snow_quality: SnowQuality
+    snow_score: int | None
     quality_score: float
     distance_score: float
     combined_score: float
@@ -39,6 +41,7 @@ class ResortRecommendation:
             "snow_quality": self.snow_quality.value
             if isinstance(self.snow_quality, SnowQuality)
             else self.snow_quality,
+            "snow_score": self.snow_score,
             "quality_score": self.quality_score,
             "distance_score": self.distance_score,
             "combined_score": self.combined_score,
@@ -165,6 +168,7 @@ class RecommendationService:
 
             # Calculate aggregate metrics across elevations
             weighted_quality = self._get_weighted_overall_quality(conditions)
+            snow_score = self._get_weighted_snow_score(conditions)
             avg_fresh_snow = self._get_average_fresh_snow(conditions)
             total_predicted_snow = self._get_total_predicted_snow(conditions)
             avg_temp = self._get_average_temperature(conditions)
@@ -208,6 +212,7 @@ class RecommendationService:
                     distance_km=round(distance_km, 1),
                     distance_miles=round(distance_km * 0.621371, 1),
                     snow_quality=weighted_quality,
+                    snow_score=snow_score,
                     quality_score=round(quality_score, 3),
                     distance_score=round(distance_score, 3),
                     combined_score=round(combined_score, 3),
@@ -276,6 +281,7 @@ class RecommendationService:
                 continue
 
             weighted_quality = self._get_weighted_overall_quality(conditions)
+            snow_score = self._get_weighted_snow_score(conditions)
 
             if min_quality and self._quality_rank(
                 weighted_quality
@@ -312,6 +318,7 @@ class RecommendationService:
                     distance_km=0,  # N/A for global
                     distance_miles=0,
                     snow_quality=weighted_quality,
+                    snow_score=snow_score,
                     quality_score=round(quality_score, 3),
                     distance_score=1.0,  # N/A for global
                     combined_score=round(combined_score, 3),
@@ -357,6 +364,26 @@ class RecommendationService:
                 best = condition.snow_quality
 
         return best
+
+    def _get_weighted_snow_score(
+        self, conditions: list[WeatherCondition]
+    ) -> int | None:
+        """Compute weighted 0-100 snow score using same elevation weights as batch endpoint."""
+        elevation_weights = {"top": 0.50, "mid": 0.35, "base": 0.15}
+        weighted_raw = 0.0
+        total_w = 0.0
+
+        for c in conditions:
+            if c.quality_score is not None:
+                w = elevation_weights.get(c.elevation_level, 0.15)
+                weighted_raw += c.quality_score * w
+                total_w += w
+
+        if total_w == 0:
+            return None
+
+        overall_raw = weighted_raw / total_w
+        return score_to_100(overall_raw)
 
     def _get_weighted_overall_quality(
         self, conditions: list[WeatherCondition]

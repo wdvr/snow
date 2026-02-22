@@ -146,12 +146,22 @@ struct BestResortsWidgetView: View {
         }
     }
 
+    private var resortCount: Int {
+        switch widgetFamily {
+        case .systemLarge: return 5
+        case .systemMedium: return 2
+        default: return 1
+        }
+    }
+
     var body: some View {
         switch widgetFamily {
         case .systemSmall:
             smallView
+        case .systemLarge:
+            largeView
         default:
-            mediumLargeView
+            mediumView
         }
     }
 
@@ -180,9 +190,16 @@ struct BestResortsWidgetView: View {
                     .lineLimit(1)
 
                 HStack(spacing: 4) {
-                    Image(systemName: resort.snowQuality.icon)
-                        .foregroundStyle(resort.snowQuality.color)
-                        .font(.title2)
+                    if let score = resort.snowScore {
+                        Text("\(score)")
+                            .font(.title2.weight(.bold))
+                            .fontDesign(.rounded)
+                            .foregroundStyle(resort.snowQuality.color)
+                    } else {
+                        Image(systemName: resort.snowQuality.icon)
+                            .foregroundStyle(resort.snowQuality.color)
+                            .font(.title2)
+                    }
                     Text(resort.snowQuality.displayName)
                         .font(.caption)
                         .fontWeight(.medium)
@@ -219,7 +236,7 @@ struct BestResortsWidgetView: View {
         .padding()
     }
 
-    private var mediumLargeView: some View {
+    private var mediumView: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "trophy.fill")
@@ -250,21 +267,11 @@ struct BestResortsWidgetView: View {
             } else {
                 ForEach(Array(entry.resorts.prefix(2).enumerated()), id: \.element.resortId) { index, resort in
                     HStack(spacing: 8) {
-                        // Rank badge
-                        ZStack {
-                            Circle()
-                                .fill(index == 0 ? Color.yellow : Color.gray.opacity(0.3))
-                                .frame(width: 24, height: 24)
-                            Text("\(index + 1)")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundStyle(index == 0 ? .black : .primary)
-                        }
-
+                        rankBadge(index: index)
                         ResortConditionRow(resort: resort, unitPreferences: unitPreferences)
                     }
 
-                    if index < entry.resorts.prefix(2).count - 1 {
+                    if index < 1 {
                         Divider()
                     }
                 }
@@ -274,15 +281,76 @@ struct BestResortsWidgetView: View {
         }
         .padding()
     }
+
+    private var largeView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Image(systemName: "trophy.fill")
+                    .foregroundStyle(.yellow)
+                    .font(.caption)
+                Text(regionTitle)
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+
+            if entry.resorts.isEmpty {
+                Spacer()
+                HStack {
+                    Spacer()
+                    VStack(spacing: 4) {
+                        Image(systemName: "cloud.snow")
+                            .font(.title2)
+                            .foregroundStyle(.secondary)
+                        Text("No data available")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                Spacer()
+            } else {
+                ForEach(Array(entry.resorts.prefix(5).enumerated()), id: \.element.resortId) { index, resort in
+                    HStack(spacing: 8) {
+                        rankBadge(index: index)
+                        ResortConditionRow(resort: resort, unitPreferences: unitPreferences)
+                    }
+
+                    if index < entry.resorts.prefix(5).count - 1 {
+                        Divider()
+                    }
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding()
+    }
+
+    private func rankBadge(index: Int) -> some View {
+        ZStack {
+            Circle()
+                .fill(index == 0 ? Color.yellow : Color.gray.opacity(0.3))
+                .frame(width: 24, height: 24)
+            Text("\(index + 1)")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundStyle(index == 0 ? .black : .primary)
+        }
+    }
 }
 
 // MARK: - Preview
 
-#Preview(as: .systemMedium) {
+#Preview(as: .systemLarge) {
     BestResortsWidget()
 } timeline: {
     BestResortsEntry(date: .now, resorts: [
         ResortConditionData.sample,
-        ResortConditionData.sample2
+        ResortConditionData.sample2,
+        ResortConditionData.sample3,
+        ResortConditionData.sample4,
+        ResortConditionData.sample5
     ], region: .all)
 }

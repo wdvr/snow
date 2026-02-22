@@ -33,7 +33,7 @@ final class WidgetDataService: @unchecked Sendable {
         }
 
         var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/recommendations/best"), resolvingAgainstBaseURL: false)!
-        var queryItems = [URLQueryItem(name: "limit", value: "3")]
+        var queryItems = [URLQueryItem(name: "limit", value: "5")]
         if let region = region {
             queryItems.append(URLQueryItem(name: "region", value: region))
         }
@@ -63,6 +63,7 @@ final class WidgetDataService: @unchecked Sendable {
                     resortName: rec.resort.name,
                     location: "\(rec.resort.region), \(rec.resort.country)",
                     snowQuality: WidgetSnowQuality(rawValue: rec.snowQuality) ?? .unknown,
+                    snowScore: rec.snowScore,
                     temperature: rec.currentTempCelsius,
                     freshSnow: rec.freshSnowCm,
                     predictedSnow24h: rec.predictedSnow72hCm / 3.0 // Approximate 24h from 72h
@@ -109,6 +110,7 @@ final class WidgetDataService: @unchecked Sendable {
                 resortName: name.name,
                 location: name.location,
                 snowQuality: WidgetSnowQuality(rawValue: summary.overallQuality) ?? .unknown,
+                snowScore: summary.snowScore,
                 temperature: summary.temperatureC ?? 0,
                 freshSnow: summary.snowfallFreshCm ?? 0,
                 predictedSnow24h: (summary.predictedSnow48hCm ?? 0) / 2.0
@@ -127,7 +129,7 @@ final class WidgetDataService: @unchecked Sendable {
             return a.freshSnow > b.freshSnow
         }
 
-        return Array(sorted.prefix(2))
+        return Array(sorted.prefix(5))
     }
 
     // MARK: - Private Methods
@@ -226,6 +228,7 @@ private struct RecommendationsAPIResponse: Codable {
 private struct Recommendation: Codable {
     let resort: RecommendationResort
     let snowQuality: String
+    let snowScore: Int?
     let freshSnowCm: Double
     let predictedSnow72hCm: Double
     let currentTempCelsius: Double
@@ -233,6 +236,7 @@ private struct Recommendation: Codable {
     enum CodingKeys: String, CodingKey {
         case resort
         case snowQuality = "snow_quality"
+        case snowScore = "snow_score"
         case freshSnowCm = "fresh_snow_cm"
         case predictedSnow72hCm = "predicted_snow_72h_cm"
         case currentTempCelsius = "current_temp_celsius"
@@ -261,6 +265,7 @@ private struct BatchQualityResponse: Codable {
 
 private struct BatchSummary: Codable {
     let overallQuality: String
+    let snowScore: Int?
     let temperatureC: Double?
     let snowfallFreshCm: Double?
     let snowDepthCm: Double?
@@ -268,6 +273,7 @@ private struct BatchSummary: Codable {
 
     enum CodingKeys: String, CodingKey {
         case overallQuality = "overall_quality"
+        case snowScore = "snow_score"
         case temperatureC = "temperature_c"
         case snowfallFreshCm = "snowfall_fresh_cm"
         case snowDepthCm = "snow_depth_cm"

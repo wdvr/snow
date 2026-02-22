@@ -57,6 +57,7 @@ struct ResortConditionData: Identifiable, Sendable {
     let resortName: String
     let location: String
     let snowQuality: WidgetSnowQuality
+    let snowScore: Int?
     let temperature: Double
     let freshSnow: Double
     let predictedSnow24h: Double
@@ -122,6 +123,7 @@ extension ResortConditionData {
         resortName: "Big White",
         location: "BC, Canada",
         snowQuality: .excellent,
+        snowScore: 92,
         temperature: -8,
         freshSnow: 20,
         predictedSnow24h: 15
@@ -132,8 +134,42 @@ extension ResortConditionData {
         resortName: "Vail",
         location: "CO, USA",
         snowQuality: .good,
+        snowScore: 72,
         temperature: -5,
         freshSnow: 12,
         predictedSnow24h: 8
+    )
+
+    static let sample3 = ResortConditionData(
+        resortId: "chamonix",
+        resortName: "Chamonix",
+        location: "Haute-Savoie, FR",
+        snowQuality: .good,
+        snowScore: 68,
+        temperature: -6,
+        freshSnow: 15,
+        predictedSnow24h: 10
+    )
+
+    static let sample4 = ResortConditionData(
+        resortId: "zermatt",
+        resortName: "Zermatt",
+        location: "Valais, CH",
+        snowQuality: .fair,
+        snowScore: 55,
+        temperature: -3,
+        freshSnow: 8,
+        predictedSnow24h: 5
+    )
+
+    static let sample5 = ResortConditionData(
+        resortId: "niseko",
+        resortName: "Niseko United",
+        location: "Hokkaido, JP",
+        snowQuality: .excellent,
+        snowScore: 95,
+        temperature: -12,
+        freshSnow: 35,
+        predictedSnow24h: 20
     )
 }
