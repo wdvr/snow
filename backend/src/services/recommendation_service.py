@@ -292,8 +292,10 @@ class RecommendationService:
                 avg_fresh_snow, total_predicted_snow
             )
 
-            # For global ranking, only quality matters
-            combined_score = 0.7 * quality_score + 0.3 * fresh_snow_score
+            # For global ranking, quality + fresh snow weighted by resort significance
+            base_score = 0.7 * quality_score + 0.3 * fresh_snow_score
+            significance = self._calculate_significance(resort)
+            combined_score = base_score * significance
 
             elevation_conditions = self._build_elevation_summary(conditions)
 
@@ -512,6 +514,23 @@ class RecommendationService:
         max_reference = 150.0  # cm at which score reaches 1.0
         score = math.log(1 + combined_cm / 5) / math.log(1 + max_reference / 5)
         return min(1.0, score)
+
+    def _calculate_significance(self, resort: Resort) -> float:
+        """Calculate resort significance weight based on vertical drop.
+
+        Larger resorts with more vertical are weighted higher in global rankings
+        to prevent tiny resorts from dominating when they happen to have good snow.
+
+        Scale: 0.15 (tiny, <200m drop) to 1.0 (major, 2000m+ drop).
+        """
+        if not resort.elevation_points or len(resort.elevation_points) < 2:
+            return 0.5  # Unknown size, neutral weight
+
+        elevations = [p.elevation_meters for p in resort.elevation_points]
+        vertical_drop = max(elevations) - min(elevations)
+
+        # Linear scale: 200m = 0.15, 2000m = 1.0
+        return min(1.0, 0.15 + (vertical_drop / 2000.0) * 0.85)
 
     def _build_elevation_summary(
         self, conditions: list[WeatherCondition]

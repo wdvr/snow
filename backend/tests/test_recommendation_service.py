@@ -529,6 +529,178 @@ class TestRecommendationService:
         assert elevation_summary["base"]["quality"] == "fair"
         assert elevation_summary["top"]["quality"] == "excellent"
 
+    def test_global_ranking_significance_weighting(
+        self,
+        recommendation_service,
+        mock_resort_service,
+        mock_weather_service,
+        excellent_conditions,
+    ):
+        """Test that tiny resorts rank lower than large ones with same quality."""
+        tiny_resort = Resort(
+            resort_id="cape-smokey",
+            name="Cape Smokey",
+            country="CA",
+            region="NS",
+            elevation_points=[
+                ElevationPoint(
+                    level=ElevationLevel.BASE,
+                    elevation_meters=208,
+                    elevation_feet=682,
+                    latitude=46.6,
+                    longitude=-60.9,
+                ),
+                ElevationPoint(
+                    level=ElevationLevel.TOP,
+                    elevation_meters=340,
+                    elevation_feet=1115,
+                    latitude=46.6,
+                    longitude=-60.9,
+                ),
+            ],
+            timezone="America/Halifax",
+        )
+        major_resort = Resort(
+            resort_id="revelstoke",
+            name="Revelstoke",
+            country="CA",
+            region="BC",
+            elevation_points=[
+                ElevationPoint(
+                    level=ElevationLevel.BASE,
+                    elevation_meters=510,
+                    elevation_feet=1673,
+                    latitude=51.0,
+                    longitude=-118.2,
+                ),
+                ElevationPoint(
+                    level=ElevationLevel.TOP,
+                    elevation_meters=2225,
+                    elevation_feet=7300,
+                    latitude=51.0,
+                    longitude=-118.2,
+                ),
+            ],
+            timezone="America/Vancouver",
+        )
+
+        mock_resort_service.get_all_resorts.return_value = [tiny_resort, major_resort]
+        mock_weather_service.get_all_latest_conditions.return_value = {
+            "cape-smokey": excellent_conditions,
+            "revelstoke": excellent_conditions,
+        }
+
+        recommendations = recommendation_service.get_best_conditions_globally(limit=10)
+
+        assert len(recommendations) == 2
+        # Major resort should rank higher despite identical conditions
+        assert recommendations[0].resort.resort_id == "revelstoke"
+        assert recommendations[1].resort.resort_id == "cape-smokey"
+        # The tiny resort should have a significantly lower score
+        assert recommendations[0].combined_score > recommendations[1].combined_score * 2
+
+    def test_significance_calculation(self, recommendation_service):
+        """Test vertical drop significance weight calculation."""
+        # Tiny resort: 132m drop
+        tiny = Resort(
+            resort_id="tiny",
+            name="Tiny",
+            country="CA",
+            region="NS",
+            elevation_points=[
+                ElevationPoint(
+                    level=ElevationLevel.BASE,
+                    elevation_meters=208,
+                    elevation_feet=682,
+                    latitude=0,
+                    longitude=0,
+                ),
+                ElevationPoint(
+                    level=ElevationLevel.TOP,
+                    elevation_meters=340,
+                    elevation_feet=1115,
+                    latitude=0,
+                    longitude=0,
+                ),
+            ],
+            timezone="UTC",
+        )
+        # Major resort: 1715m drop
+        major = Resort(
+            resort_id="major",
+            name="Major",
+            country="CA",
+            region="BC",
+            elevation_points=[
+                ElevationPoint(
+                    level=ElevationLevel.BASE,
+                    elevation_meters=510,
+                    elevation_feet=1673,
+                    latitude=0,
+                    longitude=0,
+                ),
+                ElevationPoint(
+                    level=ElevationLevel.TOP,
+                    elevation_meters=2225,
+                    elevation_feet=7300,
+                    latitude=0,
+                    longitude=0,
+                ),
+            ],
+            timezone="UTC",
+        )
+        # Mega resort: 2263m drop (Zermatt-scale)
+        mega = Resort(
+            resort_id="mega",
+            name="Mega",
+            country="CH",
+            region="VS",
+            elevation_points=[
+                ElevationPoint(
+                    level=ElevationLevel.BASE,
+                    elevation_meters=1620,
+                    elevation_feet=5315,
+                    latitude=0,
+                    longitude=0,
+                ),
+                ElevationPoint(
+                    level=ElevationLevel.TOP,
+                    elevation_meters=3883,
+                    elevation_feet=12739,
+                    latitude=0,
+                    longitude=0,
+                ),
+            ],
+            timezone="UTC",
+        )
+        # Single elevation point
+        unknown = Resort(
+            resort_id="unknown",
+            name="Unknown",
+            country="CA",
+            region="BC",
+            elevation_points=[
+                ElevationPoint(
+                    level=ElevationLevel.MID,
+                    elevation_meters=1500,
+                    elevation_feet=4921,
+                    latitude=0,
+                    longitude=0,
+                ),
+            ],
+            timezone="UTC",
+        )
+
+        tiny_sig = recommendation_service._calculate_significance(tiny)
+        major_sig = recommendation_service._calculate_significance(major)
+        mega_sig = recommendation_service._calculate_significance(mega)
+        unknown_sig = recommendation_service._calculate_significance(unknown)
+
+        assert tiny_sig < 0.25  # ~0.21 for 132m
+        assert major_sig > 0.85  # ~0.88 for 1715m
+        assert mega_sig == 1.0  # Capped at 1.0 for 2263m
+        assert unknown_sig == 0.5  # Default for single elevation point
+
     def test_weighted_quality_multi_elevation(
         self,
         recommendation_service,
