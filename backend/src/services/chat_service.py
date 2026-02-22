@@ -637,13 +637,26 @@ class ChatService:
             )
 
         for _iteration in range(MAX_TOOL_ITERATIONS):
-            response = self.bedrock.converse(
-                modelId="us.anthropic.claude-sonnet-4-6",
-                system=[{"text": system_text}],
-                messages=messages,
-                toolConfig={"tools": TOOL_DEFINITIONS},
-                inferenceConfig={"maxTokens": 1024, "temperature": 0.3},
-            )
+            try:
+                response = self.bedrock.converse(
+                    modelId="us.anthropic.claude-sonnet-4-6",
+                    system=[{"text": system_text}],
+                    messages=messages,
+                    toolConfig={"tools": TOOL_DEFINITIONS},
+                    inferenceConfig={"maxTokens": 1024, "temperature": 0.3},
+                )
+            except self.bedrock.exceptions.ThrottlingException:
+                logger.warning("Bedrock rate limit hit")
+                return (
+                    "I'm experiencing high demand right now. Please try again in a moment.",
+                    all_tool_calls if all_tool_calls else None,
+                )
+            except Exception as e:
+                logger.error("Bedrock API error: %s", e, exc_info=True)
+                return (
+                    "I'm having trouble connecting to the AI service. Please try again.",
+                    all_tool_calls if all_tool_calls else None,
+                )
 
             # Extract the response
             output = response.get("output", {})
