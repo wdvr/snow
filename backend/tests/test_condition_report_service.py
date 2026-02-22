@@ -429,6 +429,41 @@ class TestConditionReportService:
         assert summary["report_count"] == 3
         assert summary["average_score"] == 6.0  # (5+6+7)/3
 
+    def test_get_report_summary_uses_limit(self, service, mock_table):
+        """Verify summary query uses Limit to prevent unbounded reads."""
+        mock_table.query.return_value = {"Items": []}
+
+        service.get_report_summary("big-white")
+
+        call_kwargs = mock_table.query.call_args[1]
+        assert "Limit" in call_kwargs
+        assert call_kwargs["Limit"] == 100
+
+    def test_get_report_summary_empty_condition_types(self, service, mock_table):
+        """Summary handles reports with empty/missing condition_type gracefully."""
+        now = datetime.now(UTC)
+        items = [
+            {
+                "resort_id": "big-white",
+                "report_id": "report_1",
+                "user_id": "user_1",
+                "condition_type": "",
+                "score": Decimal("5"),
+                "comment": None,
+                "elevation_level": None,
+                "created_at": now.isoformat(),
+                "expires_at": Decimal("9999999999"),
+            }
+        ]
+        mock_table.query.return_value = {"Items": items}
+
+        summary = service.get_report_summary("big-white")
+
+        assert summary["report_count"] == 1
+        assert summary["average_score"] == 5.0
+        # Empty string is still a valid type count entry
+        assert summary["most_common_type"] == ""
+
     # -----------------------------------------------------------------------
     # _is_rate_limited
     # -----------------------------------------------------------------------
