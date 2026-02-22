@@ -39,6 +39,10 @@
 
 | Feature | Date |
 |---------|------|
+| Add error handling for Bedrock API calls in chat service | 2026-02-22 |
+| Add VoiceOver accessibility to elevation profile bands | 2026-02-22 |
+| Update quality info sheet to reflect current ML model stats | 2026-02-22 |
+| Add VoiceOver labels to quality count badges and season stats | 2026-02-22 |
 | Fix batch endpoint timeouts and None safety in recommendations | 2026-02-22 |
 | Add retry button to map cluster view when data fails to load | 2026-02-22 |
 | Improve comparison empty state with feature description | 2026-02-22 |
