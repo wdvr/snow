@@ -39,6 +39,7 @@
 
 | Feature | Date |
 |---------|------|
+| Fix chat service: parallelize resort auto-detect, re-raise save errors | 2026-02-22 |
 | Add VoiceOver accessibility to condition report section | 2026-02-22 |
 | Add timeline retry button and snow history chart accessibility | 2026-02-22 |
 | Add error handling for Bedrock API calls in chat service | 2026-02-22 |

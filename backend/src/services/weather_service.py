@@ -299,15 +299,15 @@ class WeatherService:
             return None
 
         try:
-            # Query by resort_id, sorted by timestamp descending, filter by elevation
-            # Limit=10 because DynamoDB applies Limit before FilterExpression,
-            # so we need to read enough items to find one matching the elevation
+            # Query by resort_id, sorted by timestamp descending, filter by elevation.
+            # DynamoDB applies Limit BEFORE FilterExpression, so we read enough items
+            # to guarantee finding a match (3 elevations × ~5 recent timestamps = ~15 rows).
             response = self.conditions_table.query(
                 KeyConditionExpression=Key("resort_id").eq(resort_id),
                 FilterExpression="elevation_level = :level",
                 ExpressionAttributeValues={":level": elevation_level},
                 ScanIndexForward=False,  # Most recent first
-                Limit=10,
+                Limit=20,
             )
 
             items = response.get("Items", [])
