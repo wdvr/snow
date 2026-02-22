@@ -98,7 +98,10 @@ struct ResortListView: View {
             searchFiltered = passFiltered.filter { resort in
                 resort.name.localizedCaseInsensitiveContains(searchText) ||
                 resort.countryName.localizedCaseInsensitiveContains(searchText) ||
-                resort.region.localizedCaseInsensitiveContains(searchText)
+                resort.country.localizedCaseInsensitiveContains(searchText) ||
+                resort.region.localizedCaseInsensitiveContains(searchText) ||
+                (resort.epicPass != nil && "epic".localizedCaseInsensitiveContains(searchText)) ||
+                (resort.ikonPass != nil && "ikon".localizedCaseInsensitiveContains(searchText))
             }
         }
 
