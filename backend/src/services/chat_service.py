@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -1126,6 +1127,7 @@ class ChatService:
             self.chat_table.put_item(Item=item)
         except Exception as e:
             logger.error("Error saving message %s: %s", message_id, e)
+            raise
 
     def _auto_detect_resorts(self, user_message: str) -> str | None:
         """Detect resort mentions in user message and pre-fetch conditions.
@@ -1171,7 +1173,7 @@ class ChatService:
         resort_ids = list(detected_ids)[:3]
         context_parts = []
 
-        for resort_id in resort_ids:
+        def _fetch_resort_context(resort_id: str) -> str | None:
             try:
                 conditions = self._tool_get_resort_conditions(resort_id)
                 resort = self.resort_service.get_resort(resort_id)
@@ -1182,14 +1184,24 @@ class ChatService:
                     f"Conditions: {json.dumps(conditions, default=str)}\n"
                 )
 
-                # Also include recent condition reports if available
                 reports = self._tool_get_condition_reports(resort_id)
                 if reports.get("reports"):
                     part += f"User Reports: {json.dumps(reports, default=str)}\n"
 
-                context_parts.append(part)
+                return part
             except Exception as e:
                 logger.warning("Error pre-fetching conditions for %s: %s", resort_id, e)
+                return None
+
+        # Fetch all resort data in parallel to reduce latency
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            futures = {
+                executor.submit(_fetch_resort_context, rid): rid for rid in resort_ids
+            }
+            for future in as_completed(futures):
+                result = future.result()
+                if result:
+                    context_parts.append(result)
 
         if not context_parts:
             return None
