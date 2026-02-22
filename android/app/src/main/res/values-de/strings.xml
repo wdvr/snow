@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Powder Chaser</string>
+
+    <!-- Common -->
+    <string name="done">Fertig</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="delete">Löschen</string>
+    <string name="save">Speichern</string>
+    <string name="ok">OK</string>
+    <string name="error">Fehler</string>
+    <string name="loading">Laden</string>
+    <string name="refresh">Aktualisieren</string>
+    <string name="settings">Einstellungen</string>
+    <string name="search">Suchen</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="try_again">Erneut versuchen</string>
+
+    <!-- Tabs -->
+    <string name="tab_resorts">Skigebiete</string>
+    <string name="tab_map">Karte</string>
+    <string name="tab_best_snow">Bester Schnee</string>
+    <string name="tab_favorites">Favoriten</string>
+    <string name="tab_settings">Einstellungen</string>
+    <string name="tab_nearby">In der Nähe</string>
+
+    <!-- Favorites -->
+    <string name="no_favorites_yet">Noch keine Favoriten</string>
+    <string name="no_favorites_description">Tippe auf das Herz-Symbol bei einem Skigebiet, um es zu deinen Favoriten hinzuzufügen.</string>
+    <string name="browse_resorts">Skigebiete durchsuchen</string>
+    <string name="compare">Vergleichen</string>
+
+    <!-- Splash -->
+    <string name="snow_tracker">Powder Chaser</string>
+    <string name="fresh_powder_awaits">Frischer Pulverschnee wartet</string>
+    <string name="loading_conditions">Bedingungen werden geladen\u2026</string>
+
+    <!-- Conditions -->
+    <string name="snow_conditions">Schneeverhältnisse</string>
+    <string name="offline_mode">Offline-Modus - gespeicherte Daten werden angezeigt</string>
+    <string name="last_updated">Zuletzt aktualisiert: %1$s</string>
+    <string name="snow_quality_guide">Schneequalitäts-Ratgeber</string>
+    <string name="quality_levels">Qualitätsstufen</string>
+    <string name="warming">Erwärmung</string>
+    <string name="since_last_thaw">seit letztem Tauwetter</string>
+    <string name="current_conditions">Aktuelle Bedingungen</string>
+    <string name="snow_quality">Schneequalität</string>
+
+    <!-- Quality Ratings -->
+    <string name="quality_excellent">Ausgezeichnet</string>
+    <string name="quality_good">Gut</string>
+    <string name="quality_fair">Mäßig</string>
+    <string name="quality_poor">Schlecht</string>
+    <string name="quality_icy">Eisig</string>
+
+    <!-- Resort Detail -->
+    <string name="select_elevation">Höhenlage wählen</string>
+    <string name="loading_conditions_detail">Bedingungen werden geladen\u2026</string>
+    <string name="no_data_available">Keine Daten verfügbar</string>
+    <string name="all_elevations">Alle Höhenlagen</string>
+    <string name="visit_website">Website besuchen</string>
+    <string name="recent_snowfall">Neuschnee</string>
+    <string name="snow_forecast">Schneeprognose</string>
+    <string name="weather_details">Wetterdetails</string>
+    <string name="min_temp">Min. Temp.</string>
+    <string name="max_temp">Max. Temp.</string>
+    <string name="humidity">Luftfeuchtigkeit</string>
+    <string name="wind">Wind</string>
+    <string name="snowfall_24h">24 Std.</string>
+    <string name="snowfall_48h">48 Std.</string>
+    <string name="snowfall_72h">72 Std.</string>
+    <string name="next_24h">Nächste 24 Std.</string>
+    <string name="next_48h">Nächste 48 Std.</string>
+    <string name="next_72h">Nächste 72 Std.</string>
+    <string name="heavy_snowfall_expected">Starker Schneefall erwartet!</string>
+    <string name="light_snow_expected">Leichter Schneefall erwartet</string>
+    <string name="fresh">Frisch</string>
+    <string name="temp">Temp.</string>
+    <string name="share">Teilen</string>
+    <string name="run_difficulty">Pistenschwierigkeit</string>
+    <string name="seven_day_forecast">7-Tage-Vorhersage</string>
+    <string name="snow_details">Schneedetails</string>
+    <string name="base_depth">Grundschneedecke</string>
+    <string name="snow_since_freeze">Schnee seitdem</string>
+    <string name="last_thaw_freeze">Letztes Tauwetter/Frost</string>
+    <string name="condition_reports">Zustandsberichte</string>
+
+    <!-- Feedback -->
+    <string name="send_feedback">Feedback senden</string>
+    <string name="subject">Betreff</string>
+    <string name="your_feedback">Dein Feedback</string>
+    <string name="submit_feedback">Feedback absenden</string>
+    <string name="feedback_sent">Feedback gesendet!</string>
+    <string name="thank_you_feedback">Vielen Dank für dein Feedback!</string>
+    <string name="email_optional">E-Mail (optional)</string>
+
+    <!-- Notifications -->
+    <string name="notifications">Benachrichtigungen</string>
+    <string name="all_notifications">Alle Benachrichtigungen</string>
+    <string name="fresh_snow_alerts">Neuschnee-Meldungen</string>
+    <string name="snow_threshold">Schnee-Schwellenwert</string>
+    <string name="event_alerts">Ereignis-Meldungen</string>
+    <string name="thaw_freeze_alerts">Tau-/Frost-Warnungen</string>
+    <string name="enable">Aktivieren</string>
+
+    <!-- Settings -->
+    <string name="account">Konto</string>
+    <string name="sign_in">Anmelden</string>
+    <string name="sign_out">Abmelden</string>
+    <string name="preferences">Einstellungen</string>
+    <string name="units">Einheiten</string>
+    <string name="celsius">Celsius</string>
+    <string name="fahrenheit">Fahrenheit</string>
+    <string name="metric_km">Metrisch (km)</string>
+    <string name="imperial_mi">Imperial (mi)</string>
+    <string name="centimeters">Zentimeter</string>
+    <string name="inches">Zoll</string>
+    <string name="data_storage">Daten &amp; Speicher</string>
+    <string name="clear_offline_cache">Offline-Cache leeren</string>
+    <string name="support">Support</string>
+    <string name="privacy_policy">Datenschutzrichtlinie</string>
+    <string name="terms_of_service">Nutzungsbedingungen</string>
+    <string name="about">Über</string>
+    <string name="app_version">App-Version</string>
+    <string name="temperature">Temperatur</string>
+    <string name="distance">Entfernung</string>
+    <string name="snow_depth">Schneehöhe</string>
+    <string name="developer_settings">Entwicklereinstellungen</string>
+    <string name="environment">Umgebung</string>
+    <string name="version">Version</string>
+
+    <!-- Auth -->
+    <string name="sign_in_with_google">Mit Google anmelden</string>
+    <string name="continue_without_signing_in">Ohne Anmeldung fortfahren</string>
+    <string name="profile">Profil</string>
+
+    <!-- Recommendations -->
+    <string name="near_you">In deiner Nähe</string>
+    <string name="best_globally">Weltweit beste</string>
+    <string name="search_radius">Suchradius</string>
+    <string name="location_access">Standortzugriff</string>
+    <string name="enable_location_recommendations">Aktiviere den Standort, um Empfehlungen in der Nähe zu sehen</string>
+    <string name="open_settings">Einstellungen öffnen</string>
+    <string name="no_recommendations">Keine Empfehlungen</string>
+
+    <!-- Map -->
+    <string name="snow_quality_legend">Schneequalität Legende</string>
+    <string name="standard">Standard</string>
+    <string name="satellite">Satellit</string>
+    <string name="hybrid">Hybrid</string>
+    <string name="show_all_resorts">Alle Skigebiete anzeigen</string>
+    <string name="view_full_details">Alle Details ansehen</string>
+    <string name="forecast">Vorhersage</string>
+    <string name="resorts_count">%1$d Skigebiete</string>
+
+    <!-- Resort List -->
+    <string name="snow_resorts">Skigebiete</string>
+    <string name="all_regions">Alle Regionen</string>
+    <string name="search_resorts_hint">Skigebiete suchen\u2026</string>
+    <string name="loading_resorts">Skigebiete werden geladen\u2026</string>
+    <string name="no_resorts_found">Keine Skigebiete gefunden</string>
+    <string name="pull_to_refresh">Zum Aktualisieren ziehen</string>
+
+    <!-- Sort Options -->
+    <string name="sort_name">Name</string>
+    <string name="sort_distance">Entfernung</string>
+    <string name="sort_quality">Schneequalität</string>
+    <string name="sort_fresh_snow">Neuschnee</string>
+    <string name="sort_snow_depth">Schneehöhe</string>
+    <string name="sort_predicted">Vorhergesagter Schnee</string>
+    <string name="sort_temperature">Temperatur</string>
+
+    <!-- Pass Filter -->
+    <string name="pass_all">Alle</string>
+    <string name="pass_epic">Epic</string>
+    <string name="pass_ikon">Ikon</string>
+
+    <!-- Chat -->
+    <string name="ask_ai">KI fragen</string>
+    <string name="ask_about_conditions">Frage nach Schneeverhältnissen!</string>
+    <string name="ask_conditions_hint">Frage zu Bedingungen\u2026</string>
+    <string name="thinking">Denke nach\u2026</string>
+    <string name="new_conversation">Neues Gespräch</string>
+    <string name="conversation_history">Gesprächsverlauf</string>
+
+    <!-- Date -->
+    <string name="today">Heute</string>
+
+    <!-- Offline Banner -->
+    <string name="you_are_offline">Du bist offline</string>
+    <string name="showing_cached_data">Gespeicherte Daten werden angezeigt</string>
+</resources>

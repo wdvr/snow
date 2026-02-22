@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Powder Chaser</string>
+
+    <!-- Common -->
+    <string name="done">Done</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="save">Save</string>
+    <string name="ok">OK</string>
+    <string name="error">Error</string>
+    <string name="loading">Loading</string>
+    <string name="refresh">Refresh</string>
+    <string name="settings">Settings</string>
+    <string name="search">Search</string>
+    <string name="retry">Retry</string>
+    <string name="try_again">Try Again</string>
+
+    <!-- Tabs -->
+    <string name="tab_resorts">Resorts</string>
+    <string name="tab_map">Map</string>
+    <string name="tab_best_snow">Best Snow</string>
+    <string name="tab_favorites">Favorites</string>
+    <string name="tab_settings">Settings</string>
+    <string name="tab_nearby">Nearby</string>
+
+    <!-- Favorites -->
+    <string name="no_favorites_yet">No Favorites Yet</string>
+    <string name="no_favorites_description">Tap the heart icon on any resort to add it to your favorites.</string>
+    <string name="browse_resorts">Browse Resorts</string>
+    <string name="compare">Compare</string>
+
+    <!-- Splash -->
+    <string name="snow_tracker">Powder Chaser</string>
+    <string name="fresh_powder_awaits">Fresh powder awaits</string>
+    <string name="loading_conditions">Loading conditions\u2026</string>
+
+    <!-- Conditions -->
+    <string name="snow_conditions">Snow Conditions</string>
+    <string name="offline_mode">Offline mode - showing cached data</string>
+    <string name="last_updated">Last updated: %1$s</string>
+    <string name="snow_quality_guide">Snow Quality Guide</string>
+    <string name="quality_levels">Quality Levels</string>
+    <string name="warming">Warming</string>
+    <string name="since_last_thaw">since last thaw</string>
+    <string name="current_conditions">Current Conditions</string>
+    <string name="snow_quality">Snow Quality</string>
+
+    <!-- Quality Ratings -->
+    <string name="quality_excellent">Excellent</string>
+    <string name="quality_good">Good</string>
+    <string name="quality_fair">Fair</string>
+    <string name="quality_poor">Poor</string>
+    <string name="quality_icy">Icy</string>
+
+    <!-- Resort Detail -->
+    <string name="select_elevation">Select Elevation</string>
+    <string name="loading_conditions_detail">Loading Conditions\u2026</string>
+    <string name="no_data_available">No Data Available</string>
+    <string name="all_elevations">All Elevations</string>
+    <string name="visit_website">Visit Website</string>
+    <string name="recent_snowfall">Recent Snowfall</string>
+    <string name="snow_forecast">Snow Forecast</string>
+    <string name="weather_details">Weather Details</string>
+    <string name="min_temp">Min Temp</string>
+    <string name="max_temp">Max Temp</string>
+    <string name="humidity">Humidity</string>
+    <string name="wind">Wind</string>
+    <string name="snowfall_24h">24h</string>
+    <string name="snowfall_48h">48h</string>
+    <string name="snowfall_72h">72h</string>
+    <string name="next_24h">Next 24h</string>
+    <string name="next_48h">Next 48h</string>
+    <string name="next_72h">Next 72h</string>
+    <string name="heavy_snowfall_expected">Heavy snowfall expected!</string>
+    <string name="light_snow_expected">Light snow expected</string>
+    <string name="fresh">Fresh</string>
+    <string name="temp">Temp</string>
+    <string name="share">Share</string>
+    <string name="run_difficulty">Run Difficulty</string>
+    <string name="seven_day_forecast">7-Day Forecast</string>
+    <string name="snow_details">Snow Details</string>
+    <string name="base_depth">Base depth</string>
+    <string name="snow_since_freeze">Snow since then</string>
+    <string name="last_thaw_freeze">Last thaw/freeze</string>
+    <string name="condition_reports">Condition Reports</string>
+
+    <!-- Feedback -->
+    <string name="send_feedback">Send Feedback</string>
+    <string name="subject">Subject</string>
+    <string name="your_feedback">Your Feedback</string>
+    <string name="submit_feedback">Submit Feedback</string>
+    <string name="feedback_sent">Feedback Sent!</string>
+    <string name="thank_you_feedback">Thank you for your feedback!</string>
+    <string name="email_optional">Email (optional)</string>
+
+    <!-- Notifications -->
+    <string name="notifications">Notifications</string>
+    <string name="all_notifications">All Notifications</string>
+    <string name="fresh_snow_alerts">Fresh Snow Alerts</string>
+    <string name="snow_threshold">Snow Threshold</string>
+    <string name="event_alerts">Event Alerts</string>
+    <string name="thaw_freeze_alerts">Thaw/Freeze Alerts</string>
+    <string name="enable">Enable</string>
+
+    <!-- Settings -->
+    <string name="account">Account</string>
+    <string name="sign_in">Sign In</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="preferences">Preferences</string>
+    <string name="units">Units</string>
+    <string name="celsius">Celsius</string>
+    <string name="fahrenheit">Fahrenheit</string>
+    <string name="metric_km">Metric (km)</string>
+    <string name="imperial_mi">Imperial (mi)</string>
+    <string name="centimeters">Centimeters</string>
+    <string name="inches">Inches</string>
+    <string name="data_storage">Data &amp; Storage</string>
+    <string name="clear_offline_cache">Clear Offline Cache</string>
+    <string name="support">Support</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="about">About</string>
+    <string name="app_version">App Version</string>
+    <string name="temperature">Temperature</string>
+    <string name="distance">Distance</string>
+    <string name="snow_depth">Snow Depth</string>
+    <string name="developer_settings">Developer Settings</string>
+    <string name="environment">Environment</string>
+    <string name="version">Version</string>
+
+    <!-- Auth -->
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="continue_without_signing_in">Continue without signing in</string>
+    <string name="profile">Profile</string>
+
+    <!-- Recommendations -->
+    <string name="near_you">Near You</string>
+    <string name="best_globally">Best Globally</string>
+    <string name="search_radius">Search Radius</string>
+    <string name="location_access">Location Access</string>
+    <string name="enable_location_recommendations">Enable location to see nearby recommendations</string>
+    <string name="open_settings">Open Settings</string>
+    <string name="no_recommendations">No Recommendations</string>
+
+    <!-- Map -->
+    <string name="snow_quality_legend">Snow Quality Legend</string>
+    <string name="standard">Standard</string>
+    <string name="satellite">Satellite</string>
+    <string name="hybrid">Hybrid</string>
+    <string name="show_all_resorts">Show All Resorts</string>
+    <string name="view_full_details">View Full Details</string>
+    <string name="forecast">Forecast</string>
+    <string name="resorts_count">%1$d Resorts</string>
+
+    <!-- Resort List -->
+    <string name="snow_resorts">Snow Resorts</string>
+    <string name="all_regions">All Regions</string>
+    <string name="search_resorts_hint">Search resorts\u2026</string>
+    <string name="loading_resorts">Loading resorts\u2026</string>
+    <string name="no_resorts_found">No Resorts Found</string>
+    <string name="pull_to_refresh">Pull to refresh</string>
+
+    <!-- Sort Options -->
+    <string name="sort_name">Name</string>
+    <string name="sort_distance">Distance</string>
+    <string name="sort_quality">Snow Quality</string>
+    <string name="sort_fresh_snow">Fresh Snow</string>
+    <string name="sort_snow_depth">Snow Depth</string>
+    <string name="sort_predicted">Predicted Snow</string>
+    <string name="sort_temperature">Temperature</string>
+
+    <!-- Pass Filter -->
+    <string name="pass_all">All</string>
+    <string name="pass_epic">Epic</string>
+    <string name="pass_ikon">Ikon</string>
+
+    <!-- Chat -->
+    <string name="ask_ai">Ask AI</string>
+    <string name="ask_about_conditions">Ask about snow conditions at any resort!</string>
+    <string name="ask_conditions_hint">Ask about conditions\u2026</string>
+    <string name="thinking">Thinking\u2026</string>
+    <string name="new_conversation">New Conversation</string>
+    <string name="conversation_history">Conversation History</string>
+
+    <!-- Date -->
+    <string name="today">Today</string>
+
+    <!-- Offline Banner -->
+    <string name="you_are_offline">You are offline</string>
+    <string name="showing_cached_data">Showing cached data</string>
+</resources>
