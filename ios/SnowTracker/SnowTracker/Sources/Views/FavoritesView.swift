@@ -451,6 +451,13 @@ struct FavoriteResortRow: View {
 
             Spacer()
 
+            // Forecast badge when significant snow is expected
+            if let condition = topCondition,
+               let predicted48h = condition.predictedSnow48hCm,
+               predicted48h >= 5 {
+                ForecastBadge(hours: 48, cm: predicted48h, prefs: userPreferencesManager.preferredUnits)
+            }
+
             // Arrow indicator
             Image(systemName: "chevron.right")
                 .foregroundStyle(.secondary)
