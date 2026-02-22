@@ -205,28 +205,10 @@ class StaticJsonGenerator:
 
         This mirrors the API's _get_snow_quality_for_resort function logic.
         """
-        conditions = []
-
-        # Get latest conditions for each elevation level
-        for elevation_point in resort.elevation_points:
-            level = (
-                elevation_point.level.value
-                if hasattr(elevation_point.level, "value")
-                else elevation_point.level
-            )
-            try:
-                condition = self.weather_service.get_latest_condition(
-                    resort.resort_id, level
-                )
-                if condition:
-                    conditions.append(condition)
-            except Exception as e:
-                logger.warning(
-                    "Failed to get %s condition for %s: %s",
-                    level,
-                    resort.resort_id,
-                    e,
-                )
+        # Single query to get latest condition per elevation (instead of 3 separate)
+        conditions = self.weather_service.get_latest_conditions_all_elevations(
+            resort.resort_id
+        )
 
         if not conditions:
             return {

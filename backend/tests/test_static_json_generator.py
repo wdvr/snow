@@ -247,49 +247,48 @@ class TestStaticJsonGenerator:
 
         conditions_table = MagicMock()
 
-        # Return conditions based on elevation level
+        now_str = datetime.now(UTC).isoformat()
+        top_condition = {
+            "resort_id": "test-resort",
+            "elevation_level": "top",
+            "timestamp": now_str,
+            "current_temp_celsius": Decimal("-10.0"),
+            "min_temp_celsius": Decimal("-15.0"),
+            "max_temp_celsius": Decimal("-5.0"),
+            "snowfall_24h_cm": Decimal("30.0"),
+            "hours_above_ice_threshold": Decimal("0.0"),
+            "snow_quality": "excellent",
+            "source_confidence": "high",
+            "snowfall_after_freeze_cm": Decimal("30.0"),
+            "data_source": "open-meteo",
+        }
+        base_condition = {
+            "resort_id": "test-resort",
+            "elevation_level": "base",
+            "timestamp": now_str,
+            "current_temp_celsius": Decimal("10.0"),
+            "min_temp_celsius": Decimal("5.0"),
+            "max_temp_celsius": Decimal("15.0"),
+            "snowfall_24h_cm": Decimal("0.0"),
+            "hours_above_ice_threshold": Decimal("24.0"),
+            "snow_quality": "horrible",
+            "source_confidence": "high",
+            "data_source": "open-meteo",
+        }
+
+        # Return conditions based on query type
         def mock_query(**kwargs):
-            if ":level" in str(kwargs.get("ExpressionAttributeValues", {})):
-                level = kwargs["ExpressionAttributeValues"].get(":level", "")
+            expr_vals = kwargs.get("ExpressionAttributeValues", {})
+            if ":level" in str(expr_vals):
+                # Per-elevation query (get_latest_condition)
+                level = expr_vals.get(":level", "")
                 if level == "base":
-                    # Base has HORRIBLE conditions
-                    return {
-                        "Items": [
-                            {
-                                "resort_id": "test-resort",
-                                "elevation_level": "base",
-                                "timestamp": datetime.now(UTC).isoformat(),
-                                "current_temp_celsius": Decimal("10.0"),
-                                "min_temp_celsius": Decimal("5.0"),
-                                "max_temp_celsius": Decimal("15.0"),
-                                "snowfall_24h_cm": Decimal("0.0"),
-                                "hours_above_ice_threshold": Decimal("24.0"),
-                                "snow_quality": "horrible",
-                                "source_confidence": "high",
-                                "data_source": "open-meteo",
-                            }
-                        ]
-                    }
+                    return {"Items": [base_condition]}
                 elif level == "top":
-                    # Top has EXCELLENT conditions
-                    return {
-                        "Items": [
-                            {
-                                "resort_id": "test-resort",
-                                "elevation_level": "top",
-                                "timestamp": datetime.now(UTC).isoformat(),
-                                "current_temp_celsius": Decimal("-10.0"),
-                                "min_temp_celsius": Decimal("-15.0"),
-                                "max_temp_celsius": Decimal("-5.0"),
-                                "snowfall_24h_cm": Decimal("30.0"),
-                                "hours_above_ice_threshold": Decimal("0.0"),
-                                "snow_quality": "excellent",
-                                "source_confidence": "high",
-                                "snowfall_after_freeze_cm": Decimal("30.0"),
-                                "data_source": "open-meteo",
-                            }
-                        ]
-                    }
+                    return {"Items": [top_condition]}
+            else:
+                # All-elevations query (get_latest_conditions_all_elevations)
+                return {"Items": [top_condition, base_condition]}
             return {"Items": []}
 
         conditions_table.query = mock_query

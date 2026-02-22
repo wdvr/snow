@@ -419,13 +419,18 @@ class ChatService:
             List of ConversationSummary objects sorted by last_message_at descending
         """
         try:
-            response = self.chat_table.query(
-                IndexName="UserIndex",
-                KeyConditionExpression=Key("user_id").eq(user_id),
-                ScanIndexForward=False,
-            )
-
-            items = response.get("Items", [])
+            items = []
+            query_params = {
+                "IndexName": "UserIndex",
+                "KeyConditionExpression": Key("user_id").eq(user_id),
+                "ScanIndexForward": False,
+            }
+            while True:
+                response = self.chat_table.query(**query_params)
+                items.extend(response.get("Items", []))
+                if "LastEvaluatedKey" not in response:
+                    break
+                query_params["ExclusiveStartKey"] = response["LastEvaluatedKey"]
 
             # Group by conversation_id to build summaries
             conversations: dict[str, dict[str, Any]] = {}
@@ -793,7 +798,9 @@ class ChatService:
                 "snowfall_24h_cm": c.snowfall_24h_cm,
                 "snowfall_72h_cm": c.snowfall_72h_cm,
                 "snow_quality": quality_val,
+                "quality_score": c.quality_score,
                 "fresh_snow_cm": c.fresh_snow_cm,
+                "snow_depth_cm": c.snow_depth_cm,
                 "wind_speed_kmh": c.wind_speed_kmh,
                 "weather_description": c.weather_description,
             }
@@ -1058,7 +1065,6 @@ class ChatService:
                 continue
 
             conditions = self.weather_service.get_conditions_for_resort(resort_id)
-            quality = self.snow_quality_service.get_snow_quality(resort_id)
 
             entry = {
                 "resort_id": resort_id,
@@ -1066,15 +1072,43 @@ class ChatService:
                 "country": resort.country,
             }
 
-            if quality:
-                overall = quality.get("overall", {})
-                entry["overall_quality"] = overall.get("snow_quality", "unknown")
-                entry["quality_score"] = overall.get("quality_score")
-                entry["fresh_snow_cm"] = overall.get("fresh_snow_cm")
-                entry["temperature_c"] = overall.get("temperature_c")
-                entry["explanation"] = overall.get("explanation")
-
             if conditions:
+                # Compute overall quality from weighted raw scores
+                from services.ml_scorer import raw_score_to_quality
+                from services.quality_explanation_service import score_to_100
+                from utils.constants import DEFAULT_ELEVATION_WEIGHT, ELEVATION_WEIGHTS
+
+                weighted_raw = 0.0
+                total_w = 0.0
+                for c in conditions:
+                    if c.quality_score is not None:
+                        w = ELEVATION_WEIGHTS.get(
+                            c.elevation_level, DEFAULT_ELEVATION_WEIGHT
+                        )
+                        weighted_raw += c.quality_score * w
+                        total_w += w
+
+                if total_w > 0:
+                    overall_raw = weighted_raw / total_w
+                    entry["overall_quality"] = raw_score_to_quality(overall_raw).value
+                    entry["quality_score"] = score_to_100(overall_raw)
+
+                # Pick representative condition (mid > top > base)
+                representative = None
+                for pref in ["mid", "top", "base"]:
+                    for c in conditions:
+                        if c.elevation_level == pref:
+                            representative = c
+                            break
+                    if representative:
+                        break
+                if not representative:
+                    representative = conditions[0]
+
+                entry["fresh_snow_cm"] = representative.fresh_snow_cm
+                entry["temperature_c"] = representative.current_temp_celsius
+                entry["snow_depth_cm"] = representative.snow_depth_cm
+
                 entry["elevations"] = {}
                 for c in conditions:
                     level = c.elevation_level
@@ -1082,9 +1116,11 @@ class ChatService:
                         "snow_quality": c.snow_quality.value
                         if hasattr(c.snow_quality, "value")
                         else str(c.snow_quality),
+                        "quality_score": c.quality_score,
                         "fresh_snow_cm": c.fresh_snow_cm,
                         "temperature_c": c.current_temp_celsius,
                         "snowfall_24h_cm": c.snowfall_24h_cm,
+                        "snow_depth_cm": c.snow_depth_cm,
                     }
 
             results.append(entry)

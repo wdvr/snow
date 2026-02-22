@@ -1272,6 +1272,8 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
             "temperature_c": None,
             "snowfall_fresh_cm": None,
             "snowfall_24h_cm": None,
+            "snow_depth_cm": None,
+            "predicted_snow_48h_cm": None,
         }
 
     # Calculate overall quality from weighted raw scores (consistent with detail endpoint)
@@ -1320,6 +1322,10 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
         else None,
         "snowfall_fresh_cm": representative.fresh_snow_cm if representative else None,
         "snowfall_24h_cm": representative.snowfall_24h_cm if representative else None,
+        "snow_depth_cm": representative.snow_depth_cm if representative else None,
+        "predicted_snow_48h_cm": representative.predicted_snow_48h_cm
+        if representative
+        else None,
     }
 
 
