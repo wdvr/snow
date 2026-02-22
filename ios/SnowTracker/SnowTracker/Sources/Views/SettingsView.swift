@@ -169,6 +169,13 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+            .onChange(of: config.selectedEnvironment) { _, _ in
+                // Immediately clear cache and re-fetch when switching environments
+                snowConditionsManager.clearCache()
+                Task {
+                    await snowConditionsManager.refreshData()
+                }
+            }
             .onAppear {
                 customURL = config.customAPIURLString
                 AnalyticsService.shared.trackScreen("Settings", screenClass: "SettingsView")
@@ -190,6 +197,10 @@ struct SettingsView: View {
                     config.resetToDefault()
                     customURL = ""
                     urlValidationError = nil
+                    snowConditionsManager.clearCache()
+                    Task {
+                        await snowConditionsManager.refreshData()
+                    }
                 }
             } message: {
                 Text("This will reset the API URL to the default endpoint.")
