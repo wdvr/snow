@@ -323,9 +323,18 @@ struct RecommendationCard: View {
             // Header with resort name and quality badge
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(recommendation.resort.name)
-                        .font(.headline)
-                        .foregroundStyle(.primary)
+                    HStack(spacing: 6) {
+                        Text(recommendation.resort.name)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+
+                        if recommendation.resort.epicPass != nil {
+                            PassBadge(passName: "Epic", color: .indigo)
+                        }
+                        if recommendation.resort.ikonPass != nil {
+                            PassBadge(passName: "Ikon", color: .orange)
+                        }
+                    }
 
                     Text(recommendation.resort.displayLocation)
                         .font(.caption)

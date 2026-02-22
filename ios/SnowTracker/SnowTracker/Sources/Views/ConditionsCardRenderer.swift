@@ -119,20 +119,36 @@ private struct ConditionsCardView: View {
                 Divider()
 
                 HStack(spacing: 0) {
-                    statCell(
-                        icon: "cloud.snow",
-                        label: "24h Snowfall",
-                        value: condition.formattedSnowfall24hWithPrefs(prefs)
-                    )
+                    if let depth = condition.snowDepthCm, depth > 0 {
+                        statCell(
+                            icon: "mountain.2.fill",
+                            label: "Snow Depth",
+                            value: WeatherCondition.formatSnow(depth, prefs: prefs)
+                        )
+                    } else {
+                        statCell(
+                            icon: "cloud.snow",
+                            label: "24h Snowfall",
+                            value: condition.formattedSnowfall24hWithPrefs(prefs)
+                        )
+                    }
 
                     Divider()
                         .frame(height: 50)
 
-                    statCell(
-                        icon: "wind",
-                        label: "Wind",
-                        value: condition.formattedWindSpeedWithPrefs(prefs)
-                    )
+                    if let predicted = condition.predictedSnow48hCm, predicted >= 5 {
+                        statCell(
+                            icon: "cloud.snow.fill",
+                            label: "48h Forecast",
+                            value: "+\(WeatherCondition.formatSnow(predicted, prefs: prefs))"
+                        )
+                    } else {
+                        statCell(
+                            icon: "wind",
+                            label: "Wind",
+                            value: condition.formattedWindSpeedWithPrefs(prefs)
+                        )
+                    }
                 }
                 .padding(.vertical, 12)
                 .background(Color(.systemBackground))
