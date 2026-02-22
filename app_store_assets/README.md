@@ -1,6 +1,6 @@
-# Snow Tracker - App Store Submission Package
+# Powder Chaser - App Store Submission Package
 
-Complete App Store submission package for Snow Tracker, a professional ski resort snow conditions tracking app.
+Complete App Store submission package for Powder Chaser, a professional ski resort snow conditions tracking app.
 
 ## 📋 What's Included
 
@@ -32,7 +32,7 @@ Complete App Store submission package for Snow Tracker, a professional ski resor
 
 ## 🎯 Key Features Highlighted
 
-### 🏔️ Global Resort Coverage (28+ Resorts)
+### 🏔️ Global Resort Coverage (130+ Resorts)
 - **North America West Coast**: Whistler Blackcomb, Mammoth Mountain, Palisades Tahoe
 - **North America Rockies**: Lake Louise, Jackson Hole, Vail, Aspen, Telluride
 - **European Alps**: Chamonix, Zermatt, St. Anton, Verbier, Val d'Isère

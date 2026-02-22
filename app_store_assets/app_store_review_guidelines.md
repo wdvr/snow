@@ -137,7 +137,7 @@ The app includes comprehensive error handling and works reliably offline.
 ### App Description
 - **Lead with benefits** not just features
 - **Use keywords naturally** without keyword stuffing
-- **Include specific numbers** (28+ resorts, 8 regions)
+- **Include specific numbers** (130+ resorts, 11 countries)
 - **Address user pain points** (finding fresh powder)
 - **End with clear call-to-action**
 

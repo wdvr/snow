@@ -352,6 +352,20 @@ struct UnitsSettingsView: View {
 // MARK: - About View
 
 struct AboutView: View {
+    @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+
+    private var resortCount: Int {
+        snowConditionsManager.resorts.count
+    }
+
+    private var regionCount: Int {
+        Set(snowConditionsManager.resorts.map { $0.inferredRegion }).count
+    }
+
+    private var countryCount: Int {
+        Set(snowConditionsManager.resorts.map { $0.country }).count
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -376,8 +390,13 @@ struct AboutView: View {
                     Text("Supported Resorts")
                         .font(.headline)
 
-                    Text("28+ resorts across 8 regions worldwide")
-                        .foregroundStyle(.secondary)
+                    if resortCount > 0 {
+                        Text("\(resortCount) resorts across \(countryCount) countries")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Loading...")
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 VStack(spacing: 4) {
@@ -397,8 +416,8 @@ struct AboutView: View {
                     }
                     .buttonStyle(.bordered)
 
-                    Link(destination: URL(string: "https://github.com/wdvr/snow")!) {
-                        Label("GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
+                    Link(destination: URL(string: "https://powderchaserapp.com/support")!) {
+                        Label("Support", systemImage: "questionmark.circle")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
