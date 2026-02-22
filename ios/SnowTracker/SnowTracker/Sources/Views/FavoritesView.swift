@@ -417,24 +417,10 @@ struct FavoriteResortRow: View {
                         .font(.headline)
 
                     if resort.epicPass != nil {
-                        Text("Epic")
-                            .font(.caption2)
-                            .fontWeight(.semibold)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .foregroundStyle(.indigo)
-                            .background(Color.indigo.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                        PassBadge(passName: "Epic", color: .indigo)
                     }
                     if resort.ikonPass != nil {
-                        Text("Ikon")
-                            .font(.caption2)
-                            .fontWeight(.semibold)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .foregroundStyle(.orange)
-                            .background(Color.orange.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                        PassBadge(passName: "Ikon", color: .orange)
                     }
                 }
 

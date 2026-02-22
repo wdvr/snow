@@ -802,33 +802,6 @@ struct ResortDetailView: View {
     }
 }
 
-// MARK: - Pass Badge
-
-private struct PassBadge: View {
-    let passName: String
-    let detail: String
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 3) {
-            Text(passName)
-                .font(.caption2)
-                .fontWeight(.bold)
-            if detail != "Unlimited" {
-                Text(detail)
-                    .font(.caption2)
-            }
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 2)
-        .foregroundStyle(color)
-        .background(color.opacity(0.12))
-        .clipShape(RoundedRectangle(cornerRadius: 4))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(passName) Pass: \(detail)")
-    }
-}
-
 // MARK: - Share Sheet
 
 struct ShareSheet: UIViewControllerRepresentable {
