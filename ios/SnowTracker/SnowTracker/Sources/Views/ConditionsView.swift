@@ -122,6 +122,8 @@ struct ConditionsView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(count) resorts with \(quality.displayName) conditions")
         .onTapGesture {
             showingQualityInfo = true
         }
@@ -275,7 +277,7 @@ struct QualityInfoSheet: View {
                         Text("How Quality is Calculated")
                             .font(.headline)
 
-                        Text("Quality ratings use an **ML model** trained on real snow conditions across 129 resorts, analyzing 27 weather features per location.")
+                        Text("Quality ratings use an **ML model** trained on real snow conditions across 134 resorts, analyzing 29 weather features per location.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
 
