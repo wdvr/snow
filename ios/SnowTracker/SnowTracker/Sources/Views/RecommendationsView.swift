@@ -391,8 +391,10 @@ struct RecommendationCard: View {
 
                 Spacer()
 
-                // Score indicator
-                ScoreIndicator(score: recommendation.combinedScore)
+                // Snow score
+                if let score = recommendation.snowScore {
+                    SnowScoreBadge(score: score, quality: recommendation.quality)
+                }
             }
         }
         .padding()
@@ -467,33 +469,22 @@ struct StatItem: View {
     }
 }
 
-struct ScoreIndicator: View {
-    let score: Double
-
-    private var scoreColor: Color {
-        if score >= 0.8 {
-            return .green
-        } else if score >= 0.6 {
-            return .yellow
-        } else if score >= 0.4 {
-            return .orange
-        } else {
-            return .red
-        }
-    }
+struct SnowScoreBadge: View {
+    let score: Int
+    let quality: SnowQuality
 
     var body: some View {
         VStack(spacing: 2) {
-            Text(String(format: "%.0f", score * 100))
-                .font(.caption)
-                .fontWeight(.bold)
-                .foregroundStyle(scoreColor)
+            Text("\(score)")
+                .font(.title3.weight(.bold))
+                .fontDesign(.rounded)
+                .foregroundStyle(quality.color)
             Text("score")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Recommendation score: \(String(format: "%.0f", score * 100)) out of 100")
+        .accessibilityLabel("Snow score: \(score) out of 100, \(quality.displayName)")
     }
 }
 

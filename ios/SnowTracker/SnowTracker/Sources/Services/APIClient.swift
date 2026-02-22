@@ -1459,6 +1459,7 @@ struct ResortRecommendation: Codable, Identifiable {
     let distanceKm: Double
     let distanceMiles: Double
     let snowQuality: String
+    let snowScore: Int?
     let qualityScore: Double
     let distanceScore: Double
     let combinedScore: Double
@@ -1476,6 +1477,7 @@ struct ResortRecommendation: Codable, Identifiable {
         case distanceKm = "distance_km"
         case distanceMiles = "distance_miles"
         case snowQuality = "snow_quality"
+        case snowScore = "snow_score"
         case qualityScore = "quality_score"
         case distanceScore = "distance_score"
         case combinedScore = "combined_score"
