@@ -114,6 +114,20 @@ struct ConditionReportSection: View {
             Spacer()
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(summaryAccessibilityLabel(summary))
+    }
+
+    private func summaryAccessibilityLabel(_ summary: ConditionReportSummary) -> String {
+        var parts: [String] = []
+        if let avgScore = summary.averageScore {
+            parts.append("Average score \(String(format: "%.1f", avgScore))")
+        }
+        if let dominant = summary.dominant {
+            parts.append("Most reported: \(dominant.displayName)")
+        }
+        parts.append("\(summary.reportsLast24h) reports in last 24 hours")
+        return parts.joined(separator: ". ")
     }
 
     // MARK: - Report Card
@@ -171,6 +185,20 @@ struct ConditionReportSection: View {
                 .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(reportAccessibilityLabel(report))
+    }
+
+    private func reportAccessibilityLabel(_ report: ConditionReport) -> String {
+        var parts = ["\(report.condition.displayName) conditions", "score \(report.score) out of 10"]
+        if let elevation = report.elevation {
+            parts.append("at \(elevation.displayName)")
+        }
+        if let comment = report.comment, !comment.isEmpty {
+            parts.append(comment)
+        }
+        parts.append(report.formattedTimestamp)
+        return parts.joined(separator: ", ")
     }
 
     // MARK: - Helpers
