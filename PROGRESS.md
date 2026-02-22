@@ -39,6 +39,12 @@
 
 | Feature | Date |
 |---------|------|
+| Improve VoiceOver accessibility across chat, timeline, and recommendations | 2026-02-22 |
+| Show ML snow scores in recommendations view (replace ranking score) | 2026-02-22 |
+| Add snow scores to widgets, large widget shows 5 resorts | 2026-02-22 |
+| Add snow_score to recommendations API response | 2026-02-22 |
+| Replace deprecated foregroundColor with foregroundStyle in widgets | 2026-02-22 |
+| Add fresh snow indicator to all-elevations summary | 2026-02-22 |
 | Add snow depth, forecast, and pass badges to resort comparison | 2026-02-22 |
 | Fix elevation display to respect user unit preferences (meters/feet) | 2026-02-22 |
 | Add pass badges to recommendation cards | 2026-02-22 |
