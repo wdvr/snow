@@ -67,7 +67,7 @@ struct BestResortsWidget: Widget {
         }
         .configurationDisplayName("Best Snow Right Now")
         .description("Top resorts with the best snow conditions. Configure to filter by region.")
-        .supportedFamilies([.systemMedium, .systemLarge])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
@@ -126,6 +126,7 @@ struct BestResortsEntry: TimelineEntry {
 // MARK: - Widget View
 
 struct BestResortsWidgetView: View {
+    @Environment(\.widgetFamily) var widgetFamily
     var entry: BestResortsEntry
     private let unitPreferences = WidgetUnitPreferences.load()
 
@@ -137,7 +138,88 @@ struct BestResortsWidgetView: View {
         }
     }
 
+    private var smallRegionTitle: String {
+        if entry.region == .all {
+            return "Best Snow"
+        } else {
+            return entry.region.displayName
+        }
+    }
+
     var body: some View {
+        switch widgetFamily {
+        case .systemSmall:
+            smallView
+        default:
+            mediumLargeView
+        }
+    }
+
+    private var smallView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Image(systemName: "trophy.fill")
+                    .foregroundColor(.yellow)
+                    .font(.caption2)
+                Text(smallRegionTitle)
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+
+            if let resort = entry.resorts.first {
+                Text(resort.resortName)
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .lineLimit(1)
+
+                Text(resort.location)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+
+                HStack(spacing: 4) {
+                    Image(systemName: resort.snowQuality.icon)
+                        .foregroundColor(resort.snowQuality.color)
+                        .font(.title2)
+                    Text(resort.snowQuality.displayName)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(resort.snowQuality.color)
+                }
+
+                Spacer(minLength: 0)
+
+                HStack(spacing: 12) {
+                    Label(unitPreferences.formatTemperature(resort.temperature), systemImage: "thermometer")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Label(unitPreferences.formatSnow(resort.freshSnow), systemImage: "snowflake")
+                        .font(.caption2)
+                        .foregroundColor(.cyan)
+                }
+            } else {
+                Spacer()
+                HStack {
+                    Spacer()
+                    VStack(spacing: 4) {
+                        Image(systemName: "cloud.snow")
+                            .font(.title3)
+                            .foregroundColor(.secondary)
+                        Text("No data")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                }
+                Spacer()
+            }
+        }
+        .padding()
+    }
+
+    private var mediumLargeView: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "trophy.fill")

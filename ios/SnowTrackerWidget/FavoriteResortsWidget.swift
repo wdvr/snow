@@ -16,7 +16,7 @@ struct FavoriteResortsWidget: Widget {
         }
         .configurationDisplayName("Favorite Resorts")
         .description("Snow conditions at your top 2 favorite resorts.")
-        .supportedFamilies([.systemMedium, .systemLarge])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
@@ -75,10 +75,79 @@ struct FavoriteResortsEntry: TimelineEntry {
 // MARK: - Widget View
 
 struct FavoriteResortsWidgetView: View {
+    @Environment(\.widgetFamily) var widgetFamily
     var entry: FavoriteResortsEntry
     private let unitPreferences = WidgetUnitPreferences.load()
 
     var body: some View {
+        switch widgetFamily {
+        case .systemSmall:
+            smallView
+        default:
+            mediumLargeView
+        }
+    }
+
+    private var smallView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Image(systemName: "heart.fill")
+                    .foregroundColor(.red)
+                    .font(.caption2)
+                Text("Favorite")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+
+            if let resort = entry.resorts.first {
+                Text(resort.resortName)
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .lineLimit(1)
+
+                HStack(spacing: 4) {
+                    Image(systemName: resort.snowQuality.icon)
+                        .foregroundColor(resort.snowQuality.color)
+                        .font(.title2)
+                    Text(resort.snowQuality.displayName)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(resort.snowQuality.color)
+                }
+
+                Spacer(minLength: 0)
+
+                HStack(spacing: 12) {
+                    Label(unitPreferences.formatTemperature(resort.temperature), systemImage: "thermometer")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Label(unitPreferences.formatSnow(resort.freshSnow), systemImage: "snowflake")
+                        .font(.caption2)
+                        .foregroundColor(.cyan)
+                }
+            } else {
+                Spacer()
+                HStack {
+                    Spacer()
+                    VStack(spacing: 4) {
+                        Image(systemName: "heart.slash")
+                            .font(.title3)
+                            .foregroundColor(.secondary)
+                        Text("No favorites")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                }
+                Spacer()
+            }
+        }
+        .padding()
+    }
+
+    private var mediumLargeView: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "heart.fill")
