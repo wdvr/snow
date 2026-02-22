@@ -2277,8 +2277,8 @@ class TestGenerateWeeklyDigest:
                     {
                         "resort_id": "whistler-blackcomb",
                         "predicted_snow_24h_cm": 15.0,
-                        "predicted_snow_48h_cm": 20.0,
-                        "predicted_snow_72h_cm": 10.0,
+                        "predicted_snow_48h_cm": 30.0,
+                        "predicted_snow_72h_cm": 45.0,
                     }
                 ]
             },
@@ -2288,7 +2288,8 @@ class TestGenerateWeeklyDigest:
 
         assert result is not None
         assert "Storm watch" in result.body
-        assert "45.0cm" in result.body  # 15 + 20 + 10
+        # predicted_snow_72h_cm is cumulative (includes 24h and 48h snow)
+        assert "45.0cm" in result.body
         assert result.data["storm_snow_cm"] == 45.0
 
     def test_digest_no_upcoming_storms(self, service):

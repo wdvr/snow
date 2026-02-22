@@ -826,12 +826,9 @@ class NotificationService:
                     best_day_date = date_str
 
             # Get forecast for upcoming storm potential
+            # predicted_snow_72h_cm is cumulative (includes 24h and 48h)
             forecast = self.get_resort_forecast_next_3_days(resort_id)
-            upcoming_snow = (
-                forecast.get("predicted_snow_24h_cm", 0.0)
-                + forecast.get("predicted_snow_48h_cm", 0.0)
-                + forecast.get("predicted_snow_72h_cm", 0.0)
-            )
+            upcoming_snow = forecast.get("predicted_snow_72h_cm", 0.0)
 
             resort_summaries.append(
                 {
