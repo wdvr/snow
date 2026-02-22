@@ -31,6 +31,7 @@ targets:
     sources:
       - path: SnowTracker/SnowTracker/Sources
       - path: SnowTracker/SnowTracker/Resources
+      - path: SnowTrackerWidget/LiveActivity/SnowActivityAttributes.swift
     settings:
       base:
         INFOPLIST_FILE: SnowTracker/Info.plist
@@ -82,6 +83,8 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         # Privacy - Location Usage
         NSLocationWhenInUseUsageDescription: "Snow Tracker uses your location to show nearby ski resorts and calculate distances to resorts."
+        # Live Activities support
+        NSSupportsLiveActivities: true
         # App Store compliance
         ITSAppUsesNonExemptEncryption: false
         # Google Sign-In configuration

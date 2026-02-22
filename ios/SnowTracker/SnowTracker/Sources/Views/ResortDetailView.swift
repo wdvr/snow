@@ -4,6 +4,7 @@ struct ResortDetailView: View {
     let resort: Resort
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @StateObject private var liveActivityService = LiveActivityService.shared
     @State private var selectedElevation: ElevationLevel = .top
     @State private var showingShareSheet: Bool = false
     @State private var showThawFreezeInfo: Bool = false
@@ -124,6 +125,17 @@ struct ResortDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 16) {
+                    if liveActivityService.isSupported {
+                        Button {
+                            toggleLiveActivity()
+                        } label: {
+                            Image(systemName: liveActivityService.isActive(for: resort.id) ? "pin.fill" : "pin")
+                                .foregroundStyle(liveActivityService.isActive(for: resort.id) ? .green : .gray)
+                        }
+                        .sensoryFeedback(.impact(weight: .light), trigger: liveActivityService.isActive(for: resort.id))
+                        .accessibilityLabel(liveActivityService.isActive(for: resort.id) ? "Stop Live Activity" : "Start Live Activity")
+                    }
+
                     Button {
                         AnalyticsService.shared.trackResortShared(resortId: resort.id, resortName: resort.name)
                         showingShareSheet = true
@@ -183,6 +195,43 @@ struct ResortDetailView: View {
         .onChange(of: selectedElevation) { _, newValue in
             AnalyticsService.shared.trackElevationChanged(resortId: resort.id, elevation: newValue.rawValue)
         }
+        .onChange(of: conditions) { _, _ in
+            updateLiveActivityIfNeeded()
+        }
+    }
+
+    // MARK: - Live Activity
+
+    private func toggleLiveActivity() {
+        if liveActivityService.isActive(for: resort.id) {
+            liveActivityService.end(resortId: resort.id)
+        } else {
+            guard let condition = conditionForSelectedElevation else { return }
+            let quality = snowConditionsManager.getSnowQuality(for: resort.id).rawValue ?? condition.snowQuality.rawValue
+            let score = snowConditionsManager.getSnowScore(for: resort.id)
+            liveActivityService.start(
+                resortId: resort.id,
+                resortName: resort.name,
+                resortLocation: resort.displayLocation,
+                freshSnowCm: condition.freshSnowCm,
+                temperatureCelsius: condition.currentTempCelsius,
+                snowQuality: quality,
+                snowScore: score
+            )
+        }
+    }
+
+    private func updateLiveActivityIfNeeded() {
+        guard liveActivityService.isActive(for: resort.id),
+              let condition = conditionForSelectedElevation else { return }
+        let quality = snowConditionsManager.getSnowQuality(for: resort.id).rawValue ?? condition.snowQuality.rawValue
+        let score = snowConditionsManager.getSnowScore(for: resort.id)
+        liveActivityService.update(
+            freshSnowCm: condition.freshSnowCm,
+            temperatureCelsius: condition.currentTempCelsius,
+            snowQuality: quality,
+            snowScore: score
+        )
     }
 
     // MARK: - Resort Header

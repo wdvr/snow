@@ -6,5 +6,6 @@ struct SnowTrackerWidgetBundle: WidgetBundle {
     var body: some Widget {
         FavoriteResortsWidget()
         BestResortsWidget()
+        SnowLiveActivity()
     }
 }
