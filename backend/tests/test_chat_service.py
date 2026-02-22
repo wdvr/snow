@@ -233,6 +233,13 @@ class TestChat:
         assert "title" in user_item
         assert user_item["title"] == "What are conditions at Whistler?"
 
+    def test_save_message_failure_propagates(self, chat_service, mock_chat_table):
+        """DynamoDB save failure should propagate as exception."""
+        mock_chat_table.put_item.side_effect = Exception("DynamoDB write failed")
+
+        with pytest.raises(Exception, match="DynamoDB write failed"):
+            chat_service.chat("Hello", None, "user_123")
+
     def test_subsequent_message_no_title(self, chat_service, mock_chat_table):
         """Subsequent messages should not have a title."""
         mock_chat_table.query.return_value = {
