@@ -98,8 +98,17 @@ struct ChatView: View {
             ScrollView {
                 LazyVStack(spacing: 16) {
                     ForEach(viewModel.messages) { message in
-                        MessageBubbleView(message: message)
-                            .id(message.id)
+                        MessageBubbleView(
+                            message: message,
+                            isStreaming: viewModel.streamingMessageId == message.id,
+                            displayedText: viewModel.streamingMessageId == message.id
+                                ? viewModel.displayedText
+                                : message.content,
+                            onTapToSkip: {
+                                viewModel.skipStreaming()
+                            }
+                        )
+                        .id(message.id)
                     }
 
                     if viewModel.isSending {
@@ -119,6 +128,14 @@ struct ChatView: View {
             }
             .onChange(of: viewModel.isSending) { _, _ in
                 scrollToBottom(proxy: proxy)
+            }
+            .onChange(of: viewModel.displayedText) { _, _ in
+                // Scroll as streaming text is revealed
+                if viewModel.isStreaming, let messageId = viewModel.streamingMessageId {
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        proxy.scrollTo(messageId, anchor: .bottom)
+                    }
+                }
             }
         }
     }
@@ -145,9 +162,14 @@ struct ChatView: View {
                 Button {
                     sendCurrentMessage()
                 } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundStyle(canSend ? .blue : .gray.opacity(0.4))
+                    if viewModel.isSending {
+                        ProgressView()
+                            .frame(width: 32, height: 32)
+                    } else {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 32))
+                            .foregroundStyle(canSend ? .blue : .gray.opacity(0.4))
+                    }
                 }
                 .disabled(!canSend)
                 .sensoryFeedback(.impact, trigger: sendTrigger)
@@ -195,6 +217,9 @@ struct ChatView: View {
 
 private struct MessageBubbleView: View {
     let message: ChatMessage
+    let isStreaming: Bool
+    let displayedText: String
+    let onTapToSkip: () -> Void
 
     var body: some View {
         HStack {
@@ -203,7 +228,7 @@ private struct MessageBubbleView: View {
             }
 
             VStack(alignment: message.isFromUser ? .trailing : .leading, spacing: 4) {
-                Text(message.content)
+                Text(displayedText)
                     .font(.body)
                     .foregroundStyle(message.isFromUser ? .white : .primary)
                     .textSelection(.enabled)
@@ -215,6 +240,20 @@ private struct MessageBubbleView: View {
                             : Color(.secondarySystemBackground)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 18))
+
+                if isStreaming {
+                    Text("Tap to skip")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .padding(.leading, 4)
+                        .transition(.opacity)
+                }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if isStreaming {
+                    onTapToSkip()
+                }
             }
 
             if !message.isFromUser {
