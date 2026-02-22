@@ -1230,6 +1230,8 @@ struct SnowQualitySummaryLight: Codable {
     let temperatureC: Double?
     let snowfallFreshCm: Double?
     let snowfall24hCm: Double?
+    let snowDepthCm: Double?
+    let predictedSnow48hCm: Double?
 
     private enum CodingKeys: String, CodingKey {
         case resortId = "resort_id"
@@ -1240,12 +1242,15 @@ struct SnowQualitySummaryLight: Codable {
         case temperatureC = "temperature_c"
         case snowfallFreshCm = "snowfall_fresh_cm"
         case snowfall24hCm = "snowfall_24h_cm"
+        case snowDepthCm = "snow_depth_cm"
+        case predictedSnow48hCm = "predicted_snow_48h_cm"
     }
 
     // Explicit initializer for cache reconstruction
     init(resortId: String, overallQuality: String, snowScore: Int? = nil,
          explanation: String? = nil, lastUpdated: String?,
-         temperatureC: Double? = nil, snowfallFreshCm: Double? = nil, snowfall24hCm: Double? = nil) {
+         temperatureC: Double? = nil, snowfallFreshCm: Double? = nil, snowfall24hCm: Double? = nil,
+         snowDepthCm: Double? = nil, predictedSnow48hCm: Double? = nil) {
         self.resortId = resortId
         self.overallQuality = overallQuality
         self.snowScore = snowScore
@@ -1254,6 +1259,8 @@ struct SnowQualitySummaryLight: Codable {
         self.temperatureC = temperatureC
         self.snowfallFreshCm = snowfallFreshCm
         self.snowfall24hCm = snowfall24hCm
+        self.snowDepthCm = snowDepthCm
+        self.predictedSnow48hCm = predictedSnow48hCm
     }
 
     /// Snow quality with frontend temperature override

@@ -235,6 +235,8 @@ class StaticJsonGenerator:
                 "temperature_c": None,
                 "snowfall_fresh_cm": None,
                 "snowfall_24h_cm": None,
+                "snow_depth_cm": None,
+                "predicted_snow_48h_cm": None,
             }
 
         # Calculate overall quality from weighted raw scores (top 50%, mid 35%, base 15%)
@@ -297,6 +299,10 @@ class StaticJsonGenerator:
             ),
             "snowfall_24h_cm": (
                 representative.snowfall_24h_cm if representative else None
+            ),
+            "snow_depth_cm": (representative.snow_depth_cm if representative else None),
+            "predicted_snow_48h_cm": (
+                representative.predicted_snow_48h_cm if representative else None
             ),
         }
 
