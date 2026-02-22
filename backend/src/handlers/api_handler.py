@@ -418,6 +418,7 @@ def get_chat_service():
             weather_service=get_weather_service(),
             snow_quality_service=get_snow_quality_service(),
             recommendation_service=get_recommendation_service(),
+            condition_report_service=get_condition_report_service(),
         )
     return _chat_service
 
