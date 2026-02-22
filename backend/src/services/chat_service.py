@@ -3,6 +3,7 @@
 import json
 import logging
 import re
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime, timedelta
@@ -10,6 +11,7 @@ from typing import Any
 
 import boto3
 from boto3.dynamodb.conditions import Key
+from botocore.exceptions import ClientError
 from ulid import ULID
 
 from models.chat import ChatMessage, ChatResponse, ConversationSummary
@@ -338,6 +340,10 @@ TOOL_DEFINITIONS = [
 # Max tool use iterations to prevent infinite loops
 MAX_TOOL_ITERATIONS = 5
 
+# Bedrock retry settings for throttling
+BEDROCK_MAX_RETRIES = 3
+BEDROCK_BASE_DELAY = 1.0  # seconds
+
 # TTL for chat messages: 30 days
 MESSAGE_TTL_DAYS = 30
 
@@ -648,6 +654,52 @@ class ChatService:
 
         return messages
 
+    def _invoke_bedrock(self, system_text: str, messages: list[dict]) -> dict | None:
+        """Invoke Bedrock converse API with retry on throttling.
+
+        Returns the response dict, or None if all retries failed.
+        """
+        for attempt in range(BEDROCK_MAX_RETRIES):
+            try:
+                return self.bedrock.converse(
+                    modelId="us.anthropic.claude-sonnet-4-6",
+                    system=[{"text": system_text}],
+                    messages=messages,
+                    toolConfig={"tools": TOOL_DEFINITIONS},
+                    inferenceConfig={"maxTokens": 2048, "temperature": 0.5},
+                )
+            except ClientError as e:
+                error_code = e.response.get("Error", {}).get("Code", "")
+                if error_code == "ThrottlingException":
+                    delay = BEDROCK_BASE_DELAY * (2**attempt)
+                    logger.warning(
+                        "Bedrock throttled (attempt %d/%d), retrying in %.1fs",
+                        attempt + 1,
+                        BEDROCK_MAX_RETRIES,
+                        delay,
+                    )
+                    if attempt < BEDROCK_MAX_RETRIES - 1:
+                        time.sleep(delay)
+                        continue
+                    logger.error(
+                        "Bedrock throttled after %d retries", BEDROCK_MAX_RETRIES
+                    )
+                    return None
+                elif error_code in (
+                    "ValidationException",
+                    "AccessDeniedException",
+                    "ModelNotReadyException",
+                ):
+                    logger.error("Bedrock %s: %s", error_code, e)
+                    return None
+                else:
+                    logger.error("Bedrock ClientError: %s", e, exc_info=True)
+                    return None
+            except Exception as e:
+                logger.error("Bedrock API error: %s", e, exc_info=True)
+                return None
+        return None
+
     def _call_bedrock_with_tools(
         self,
         messages: list[dict],
@@ -677,22 +729,8 @@ class ChatService:
             )
 
         for _iteration in range(MAX_TOOL_ITERATIONS):
-            try:
-                response = self.bedrock.converse(
-                    modelId="us.anthropic.claude-sonnet-4-6",
-                    system=[{"text": system_text}],
-                    messages=messages,
-                    toolConfig={"tools": TOOL_DEFINITIONS},
-                    inferenceConfig={"maxTokens": 1024, "temperature": 0.3},
-                )
-            except self.bedrock.exceptions.ThrottlingException:
-                logger.warning("Bedrock rate limit hit")
-                return (
-                    "I'm experiencing high demand right now. Please try again in a moment.",
-                    all_tool_calls if all_tool_calls else None,
-                )
-            except Exception as e:
-                logger.error("Bedrock API error: %s", e, exc_info=True)
+            response = self._invoke_bedrock(system_text, messages)
+            if response is None:
                 return (
                     "I'm having trouble connecting to the AI service. Please try again.",
                     all_tool_calls if all_tool_calls else None,
@@ -788,29 +826,54 @@ class ChatService:
     def _execute_tool(self, tool_name: str, tool_input: dict) -> dict:
         """Execute a tool and return the result as a dictionary."""
         if tool_name == "get_resort_conditions":
-            return self._tool_get_resort_conditions(tool_input["resort_id"])
+            resort_id = tool_input.get("resort_id")
+            if not resort_id:
+                return {"error": "Missing required parameter: resort_id"}
+            return self._tool_get_resort_conditions(resort_id)
         elif tool_name == "search_resorts":
-            return self._tool_search_resorts(tool_input["query"])
+            query = tool_input.get("query")
+            if not query:
+                return {"error": "Missing required parameter: query"}
+            return self._tool_search_resorts(query)
         elif tool_name == "get_nearby_resorts":
-            return self._tool_get_nearby_resorts(
-                tool_input["latitude"],
-                tool_input["longitude"],
-                tool_input.get("radius_km", 200),
-            )
+            latitude = tool_input.get("latitude")
+            longitude = tool_input.get("longitude")
+            if latitude is None or longitude is None:
+                return {"error": "Missing required parameters: latitude, longitude"}
+            # Validate coordinate bounds
+            if not (-90 <= latitude <= 90):
+                return {"error": "latitude must be between -90 and 90"}
+            if not (-180 <= longitude <= 180):
+                return {"error": "longitude must be between -180 and 180"}
+            radius_km = min(max(tool_input.get("radius_km", 200), 1), 1000)
+            return self._tool_get_nearby_resorts(latitude, longitude, radius_km)
         elif tool_name == "get_resort_forecast":
-            return self._tool_get_resort_forecast(tool_input["resort_id"])
+            resort_id = tool_input.get("resort_id")
+            if not resort_id:
+                return {"error": "Missing required parameter: resort_id"}
+            return self._tool_get_resort_forecast(resort_id)
         elif tool_name == "get_best_conditions":
             return self._tool_get_best_conditions(tool_input.get("limit", 10))
         elif tool_name == "get_resort_info":
-            return self._tool_get_resort_info(tool_input["resort_id"])
+            resort_id = tool_input.get("resort_id")
+            if not resort_id:
+                return {"error": "Missing required parameter: resort_id"}
+            return self._tool_get_resort_info(resort_id)
         elif tool_name == "get_condition_reports":
-            return self._tool_get_condition_reports(tool_input["resort_id"])
+            resort_id = tool_input.get("resort_id")
+            if not resort_id:
+                return {"error": "Missing required parameter: resort_id"}
+            return self._tool_get_condition_reports(resort_id)
         elif tool_name == "get_snow_history":
-            return self._tool_get_snow_history(
-                tool_input["resort_id"], tool_input.get("days", 30)
-            )
+            resort_id = tool_input.get("resort_id")
+            if not resort_id:
+                return {"error": "Missing required parameter: resort_id"}
+            return self._tool_get_snow_history(resort_id, tool_input.get("days", 30))
         elif tool_name == "compare_resorts":
-            return self._tool_compare_resorts(tool_input["resort_ids"])
+            resort_ids = tool_input.get("resort_ids")
+            if not resort_ids:
+                return {"error": "Missing required parameter: resort_ids"}
+            return self._tool_compare_resorts(resort_ids)
         else:
             raise ValueError(f"Unknown tool: {tool_name}")
 
