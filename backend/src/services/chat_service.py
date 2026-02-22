@@ -105,12 +105,14 @@ SYSTEM_PROMPT = (
     "- POOR: Limited fresh snow, harder surface with some soft spots.\n"
     "- BAD: Icy/refrozen surface, no fresh snow covering the ice layer.\n"
     "- HORRIBLE: Not skiable — no snow, actively melting, or dangerous.\n\n"
-    "Key data fields: snow_quality (overall quality label), quality_score (1-6 ML score), "
+    "Key data fields: snow_quality (overall quality label), quality_score (1-6 ML score where "
+    "6=EXCELLENT, 5=GOOD, 4=FAIR, 3=POOR, 2=BAD, 1=HORRIBLE), "
     "fresh_snow_cm (non-refrozen snow), snowfall_24h_cm (recent snowfall), "
     "snow_depth_cm (total base depth), current_temp_celsius.\n"
     "Each resort has 3 elevations: base, mid, top. "
     "Overall quality is a weighted average (50% top, 35% mid, 15% base). "
     "When conditions vary significantly by elevation, mention the difference.\n"
+    "You can compare resorts side-by-side and check snow history for season context. "
     "You can also check user-submitted condition reports — real on-the-ground feedback "
     "from skiers. Mention these when available, as they add a human perspective."
 )
@@ -250,6 +252,47 @@ TOOL_DEFINITIONS = [
             },
         }
     },
+    {
+        "toolSpec": {
+            "name": "get_snow_history",
+            "description": "Get daily snow history for a resort (snowfall, depth, quality over time). Use this for season totals, trends, and comparing current conditions to recent history.",
+            "inputSchema": {
+                "json": {
+                    "type": "object",
+                    "properties": {
+                        "resort_id": {
+                            "type": "string",
+                            "description": "The resort identifier",
+                        },
+                        "days": {
+                            "type": "integer",
+                            "description": "Number of days of history (default 30, max 90)",
+                        },
+                    },
+                    "required": ["resort_id"],
+                }
+            },
+        }
+    },
+    {
+        "toolSpec": {
+            "name": "compare_resorts",
+            "description": "Compare snow conditions at multiple resorts side by side. Use when user asks to compare 2-4 resorts.",
+            "inputSchema": {
+                "json": {
+                    "type": "object",
+                    "properties": {
+                        "resort_ids": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "List of resort identifiers to compare (2-4 resorts)",
+                        }
+                    },
+                    "required": ["resort_ids"],
+                }
+            },
+        }
+    },
 ]
 
 # Max tool use iterations to prevent infinite loops
@@ -270,6 +313,7 @@ class ChatService:
         snow_quality_service,
         recommendation_service,
         condition_report_service=None,
+        daily_history_service=None,
     ):
         """Initialize the chat service.
 
@@ -280,6 +324,7 @@ class ChatService:
             snow_quality_service: SnowQualityService for quality assessment
             recommendation_service: RecommendationService for best conditions
             condition_report_service: ConditionReportService for user reports
+            daily_history_service: DailyHistoryService for snow history
         """
         self.chat_table = chat_table
         self.resort_service = resort_service
@@ -287,6 +332,7 @@ class ChatService:
         self.snow_quality_service = snow_quality_service
         self.recommendation_service = recommendation_service
         self.condition_report_service = condition_report_service
+        self.daily_history_service = daily_history_service
         self.bedrock = boto3.client("bedrock-runtime", region_name="us-west-2")
 
     def chat(
@@ -701,6 +747,12 @@ class ChatService:
             return self._tool_get_resort_info(tool_input["resort_id"])
         elif tool_name == "get_condition_reports":
             return self._tool_get_condition_reports(tool_input["resort_id"])
+        elif tool_name == "get_snow_history":
+            return self._tool_get_snow_history(
+                tool_input["resort_id"], tool_input.get("days", 30)
+            )
+        elif tool_name == "compare_resorts":
+            return self._tool_compare_resorts(tool_input["resort_ids"])
         else:
             raise ValueError(f"Unknown tool: {tool_name}")
 
@@ -916,6 +968,109 @@ class ChatService:
         except Exception as e:
             logger.error("Condition reports error for %s: %s", resort_id, e)
             return {"error": f"Could not fetch condition reports for '{resort_id}'."}
+
+    def _tool_get_snow_history(self, resort_id: str, days: int = 30) -> dict:
+        """Get daily snow history for a resort."""
+        if not self.daily_history_service:
+            return {"error": "Snow history not available."}
+
+        try:
+            days = min(max(days, 7), 90)
+            start_date = (datetime.now(UTC) - timedelta(days=days)).strftime("%Y-%m-%d")
+            records = self.daily_history_service.get_history(
+                resort_id, start_date=start_date
+            )
+            if not records:
+                return {
+                    "resort_id": resort_id,
+                    "history": [],
+                    "note": "No snow history data available for this resort.",
+                }
+
+            total_snowfall = sum(float(r.get("snowfall_24h_cm", 0)) for r in records)
+            snow_days = sum(
+                1 for r in records if float(r.get("snowfall_24h_cm", 0)) > 1
+            )
+            latest_depth = None
+            for r in reversed(records):
+                if r.get("snow_depth_cm") is not None:
+                    latest_depth = float(r["snow_depth_cm"])
+                    break
+
+            # Summarize rather than returning all daily data
+            recent = records[-7:] if len(records) > 7 else records
+            return {
+                "resort_id": resort_id,
+                "period_days": days,
+                "total_snowfall_cm": round(total_snowfall, 1),
+                "snow_days": snow_days,
+                "current_snow_depth_cm": latest_depth,
+                "records_count": len(records),
+                "recent_days": [
+                    {
+                        "date": r["date"],
+                        "snowfall_24h_cm": float(r.get("snowfall_24h_cm", 0)),
+                        "snow_depth_cm": float(r["snow_depth_cm"])
+                        if r.get("snow_depth_cm") is not None
+                        else None,
+                        "snow_quality": r.get("snow_quality", "unknown"),
+                        "temp_min_c": float(r.get("temp_min_c", 0)),
+                        "temp_max_c": float(r.get("temp_max_c", 0)),
+                    }
+                    for r in recent
+                ],
+            }
+        except Exception as e:
+            logger.error("Snow history error for %s: %s", resort_id, e)
+            return {"error": f"Could not fetch snow history for '{resort_id}'."}
+
+    def _tool_compare_resorts(self, resort_ids: list[str]) -> dict:
+        """Compare conditions at multiple resorts side by side."""
+        if not resort_ids or len(resort_ids) < 2:
+            return {"error": "Please provide at least 2 resort IDs to compare."}
+        if len(resort_ids) > 4:
+            resort_ids = resort_ids[:4]
+
+        results = []
+        for resort_id in resort_ids:
+            resort = self.resort_service.get_resort(resort_id)
+            if not resort:
+                results.append({"resort_id": resort_id, "error": "Resort not found."})
+                continue
+
+            conditions = self.weather_service.get_conditions_for_resort(resort_id)
+            quality = self.snow_quality_service.get_snow_quality(resort_id)
+
+            entry = {
+                "resort_id": resort_id,
+                "name": resort.name,
+                "country": resort.country,
+            }
+
+            if quality:
+                overall = quality.get("overall", {})
+                entry["overall_quality"] = overall.get("snow_quality", "unknown")
+                entry["quality_score"] = overall.get("quality_score")
+                entry["fresh_snow_cm"] = overall.get("fresh_snow_cm")
+                entry["temperature_c"] = overall.get("temperature_c")
+                entry["explanation"] = overall.get("explanation")
+
+            if conditions:
+                entry["elevations"] = {}
+                for c in conditions:
+                    level = c.elevation_level
+                    entry["elevations"][level] = {
+                        "snow_quality": c.snow_quality.value
+                        if hasattr(c.snow_quality, "value")
+                        else str(c.snow_quality),
+                        "fresh_snow_cm": c.fresh_snow_cm,
+                        "temperature_c": c.current_temp_celsius,
+                        "snowfall_24h_cm": c.snowfall_24h_cm,
+                    }
+
+            results.append(entry)
+
+        return {"comparison": results, "resort_count": len(results)}
 
     def _save_message(
         self,
