@@ -7,10 +7,12 @@ For each resort, fetches 14 days of hourly data at top elevation and computes:
 - Current warm spell hours above threshold (0-6°C)
 - Snowfall features (24h, 72h)
 - Elevation
+- Weather comfort features (cloud cover, wind chill, weather codes)
 """
 
 import asyncio
 import json
+import math
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -25,6 +27,49 @@ OUTPUT_FILE = Path(__file__).parent / "training_features.json"
 CONCURRENT_REQUESTS = 10
 REQUEST_DELAY = 0.15  # seconds between batches
 
+# WMO weather codes that indicate clear/sunny conditions
+CLEAR_WEATHER_CODES = {0, 1}  # Clear sky, Mainly clear
+PARTLY_CLOUDY_CODES = {2}  # Partly cloudy
+PRECIPITATION_CODES = {
+    51,
+    53,
+    55,
+    61,
+    63,
+    65,
+    66,
+    67,
+    71,
+    73,
+    75,
+    77,
+    80,
+    81,
+    82,
+    85,
+    86,
+    95,
+    96,
+    99,
+}
+
+
+def compute_wind_chill(temp_c: float, wind_kmh: float) -> float:
+    """Compute wind chill temperature using the North American formula.
+
+    Valid for temps <= 10C and wind >= 4.8 km/h.
+    Returns the effective "feels like" temperature in C.
+    """
+    if temp_c > 10.0 or wind_kmh < 4.8:
+        return temp_c
+    wc = (
+        13.12
+        + 0.6215 * temp_c
+        - 11.37 * (wind_kmh**0.16)
+        + 0.3965 * temp_c * (wind_kmh**0.16)
+    )
+    return round(wc, 1)
+
 
 def compute_features_for_day(
     hourly_temps: list[float],
@@ -34,6 +79,8 @@ def compute_features_for_day(
     elevation_m: float,
     hourly_wind: list[float] | None = None,
     hourly_snow_depth: list[float] | None = None,
+    hourly_weather_code: list[int] | None = None,
+    hourly_cloud_cover: list[float] | None = None,
 ) -> dict | None:
     """Compute all ML features for a specific day from hourly data.
 
@@ -45,6 +92,8 @@ def compute_features_for_day(
         elevation_m: Elevation in meters
         hourly_wind: Full array of hourly wind speed (km/h), optional
         hourly_snow_depth: Full array of hourly snow depth (cm), optional
+        hourly_weather_code: Full array of WMO weather codes, optional
+        hourly_cloud_cover: Full array of cloud cover percentage (0-100), optional
 
     Returns:
         Feature dict or None if insufficient data
@@ -169,6 +218,34 @@ def compute_features_for_day(
     else:
         snow_depth_cm = 0.0
 
+    # --- Weather comfort features ---
+    # Cloud cover at midday (0-100%)
+    if hourly_cloud_cover and len(hourly_cloud_cover) > target_hour:
+        cloud_cover = hourly_cloud_cover[target_hour]
+        cloud_cover = cloud_cover if cloud_cover is not None else 50.0
+    else:
+        cloud_cover = 50.0  # default to partly cloudy
+
+    # Weather code at midday
+    if hourly_weather_code and len(hourly_weather_code) > target_hour:
+        wcode = hourly_weather_code[target_hour]
+        wcode = wcode if wcode is not None else 3
+    else:
+        wcode = 3  # default to overcast
+
+    # is_clear: 1 if clear or mainly clear sky (WMO codes 0-1)
+    is_clear = 1.0 if wcode in CLEAR_WEATHER_CODES else 0.0
+
+    # is_snowing: 1 if actively snowing (helps distinguish fresh powder days)
+    is_snowing = 1.0 if wcode in {71, 73, 75, 77, 85, 86} else 0.0
+
+    # Wind chill temperature
+    wind_chill = compute_wind_chill(cur_temp, cur_wind)
+
+    # Wind chill delta: how much colder it feels vs actual temp
+    # More negative = harsher conditions
+    wind_chill_delta = wind_chill - cur_temp
+
     return {
         "cur_temp": round(cur_temp, 1),
         "max_temp_24h": round(max_temp_24h, 1),
@@ -198,6 +275,12 @@ def compute_features_for_day(
         "max_wind_24h": round(max_wind_24h, 1),
         "avg_wind_24h": round(avg_wind_24h, 1),
         "snow_depth_cm": round(snow_depth_cm, 1),
+        "cloud_cover_pct": round(cloud_cover, 1),
+        "weather_code": int(wcode),
+        "is_clear": is_clear,
+        "is_snowing": is_snowing,
+        "wind_chill_c": wind_chill,
+        "wind_chill_delta": round(wind_chill_delta, 1),
     }
 
 
@@ -217,7 +300,7 @@ async def fetch_resort_data(
             "latitude": lat,
             "longitude": lon,
             "elevation": elev_top,
-            "hourly": "temperature_2m,snowfall,wind_speed_10m,snow_depth",
+            "hourly": "temperature_2m,snowfall,wind_speed_10m,snow_depth,weather_code,cloud_cover",
             "past_days": 14,
             "forecast_days": 1,
             "timezone": "GMT",
@@ -248,6 +331,8 @@ async def fetch_resort_data(
         times = hourly.get("time", [])
         wind = hourly.get("wind_speed_10m", [])
         snow_depth = hourly.get("snow_depth", [])
+        weather_code = hourly.get("weather_code", [])
+        cloud_cover = hourly.get("cloud_cover", [])
 
         if not temps:
             print(f"  NO DATA {resort_id}")
@@ -259,7 +344,15 @@ async def fetch_resort_data(
         # Compute features for each full day (skip first 2 days for lookback)
         for day_idx in range(2, n_days):
             features = compute_features_for_day(
-                temps, snowfall, times, day_idx, elev_top, wind, snow_depth
+                temps,
+                snowfall,
+                times,
+                day_idx,
+                elev_top,
+                wind,
+                snow_depth,
+                weather_code,
+                cloud_cover,
             )
             if features:
                 # Determine the date for this day

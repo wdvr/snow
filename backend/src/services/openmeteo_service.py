@@ -167,7 +167,7 @@ class OpenMeteoService:
                 "longitude": longitude,
                 "elevation": elevation_meters,
                 "current": "temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code",
-                "hourly": "temperature_2m,snowfall,snow_depth",
+                "hourly": "temperature_2m,snowfall,snow_depth,wind_speed_10m,weather_code,cloud_cover",
                 "daily": "temperature_2m_min,temperature_2m_max,snowfall_sum",
                 "past_days": 14,  # Need 14 days for freeze-thaw detection
                 "forecast_days": 3,
@@ -240,6 +240,7 @@ class OpenMeteoService:
                 # Weather conditions
                 "humidity_percent": current.get("relative_humidity_2m", 0.0),
                 "wind_speed_kmh": current.get("wind_speed_10m", 0.0),
+                "weather_code": weather_code,
                 "weather_description": weather_description,
                 # Data source info
                 "data_source": "open-meteo.com",
@@ -291,7 +292,7 @@ class OpenMeteoService:
                 "latitude": latitude,
                 "longitude": longitude,
                 "elevation": elevation_meters,
-                "hourly": "temperature_2m,snowfall,snow_depth,wind_speed_10m,weather_code",
+                "hourly": "temperature_2m,snowfall,snow_depth,wind_speed_10m,weather_code,cloud_cover",
                 "daily": "temperature_2m_min,temperature_2m_max,snowfall_sum",
                 "past_days": 14,
                 "forecast_days": 7,
@@ -312,6 +313,7 @@ class OpenMeteoService:
             hourly_snow_depth = hourly.get("snow_depth", [])
             hourly_wind = hourly.get("wind_speed_10m", [])
             hourly_weather_code = hourly.get("weather_code", [])
+            hourly_cloud_cover = hourly.get("cloud_cover", [])
 
             now = datetime.now(UTC)
 
@@ -417,6 +419,8 @@ class OpenMeteoService:
                         idx,
                         elevation_meters,
                         hourly_snow_depth,
+                        hourly_weather_code,
+                        hourly_cloud_cover,
                     )
 
                     quality_val = (

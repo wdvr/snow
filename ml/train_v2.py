@@ -48,6 +48,12 @@ RAW_FEATURE_COLUMNS = [
     "max_wind_24h",
     "avg_wind_24h",
     "snow_depth_cm",
+    "cloud_cover_pct",
+    "weather_code",
+    "is_clear",
+    "is_snowing",
+    "wind_chill_c",
+    "wind_chill_delta",
 ]
 
 
@@ -84,6 +90,14 @@ def engineer_features(raw_features: dict) -> list[float]:
 
     # Snow depth feature
     snow_depth = raw_features.get("snow_depth_cm", 0.0) or 0.0
+
+    # Weather comfort features
+    cloud_cover = raw_features.get("cloud_cover_pct", 50.0) or 50.0
+    is_clear = raw_features.get("is_clear", 0.0) or 0.0
+    is_snowing = raw_features.get("is_snowing", 0.0) or 0.0
+    wind_chill = raw_features.get("wind_chill_c", ct) or ct
+    wind_chill_delta = raw_features.get("wind_chill_delta", 0.0) or 0.0
+    cur_wind = raw_features.get("cur_wind_kmh", avg_wind) or avg_wind
 
     return [
         # Temperature features (4)
@@ -127,6 +141,14 @@ def engineer_features(raw_features: dict) -> list[float]:
         max(0, max24 - 3) * ha3,  # severe thaw damage
         snow24 * (1.0 if ct < 0 else 0.5),  # fresh snow adjusted for temp
         1.0 if (ct > 10 and ca0 > 48) else 0.0,  # summer/no-snow flag
+        # Weather comfort features (5) - sunny/calm bonus, cold/windy penalty
+        cloud_cover / 100.0,  # normalized 0-1 (0=clear, 1=overcast)
+        is_clear,  # binary: clear or mainly clear sky
+        wind_chill_delta,  # wind chill penalty (always <= 0)
+        # Composite: sunny + calm = comfort bonus (clear sky, low wind, mild-cold)
+        is_clear * max(0.0, 1.0 - cur_wind / 30.0),  # sunny calm indicator
+        # Active snowing + cold + calm = ideal powder day
+        is_snowing * max(0, -ct) / 10.0 * max(0.0, 1.0 - avg_wind / 40.0),
     ]
 
 
@@ -160,6 +182,11 @@ ENGINEERED_FEATURE_NAMES = [
     "severe_thaw_damage",
     "temp_adjusted_fresh_snow",
     "summer_flag",
+    "cloud_cover_norm",
+    "is_clear",
+    "wind_chill_delta",
+    "sunny_calm_indicator",
+    "powder_day_indicator",
 ]
 
 

@@ -248,7 +248,7 @@ class TestChat:
 
         mock_bedrock_client.converse.assert_called_once()
         call_kwargs = mock_bedrock_client.converse.call_args[1]
-        assert call_kwargs["modelId"] == "us.anthropic.claude-sonnet-4-6-20250514"
+        assert call_kwargs["modelId"] == "us.anthropic.claude-sonnet-4-6"
         assert call_kwargs["system"] == [{"text": SYSTEM_PROMPT}]
         assert call_kwargs["toolConfig"]["tools"] == TOOL_DEFINITIONS
         assert call_kwargs["inferenceConfig"]["maxTokens"] == 1024

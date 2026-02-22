@@ -214,7 +214,7 @@ snow-tracker-condition-reports-{env}       - User condition reports (90d TTL)
 ```
 
 ### Bedrock Configuration
-- Model: Claude Sonnet 4.6 (`us.anthropic.claude-sonnet-4-6-20250514`) via Amazon Bedrock Converse API with tool_use
+- Model: Claude Sonnet 4.6 (`us.anthropic.claude-sonnet-4-6`) via Amazon Bedrock Converse API with tool_use
 - Region: `us-west-2`
 - Chat history table: `snow-tracker-chat-{env}`
 - Condition reports table: `snow-tracker-condition-reports-{env}`

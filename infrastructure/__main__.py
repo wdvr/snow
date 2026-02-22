@@ -424,8 +424,8 @@ lambda_policy = aws.iam.RolePolicy(
                     "bedrock:InvokeModel"
                 ],
                 "Resource": [
-                    "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-sonnet-4-6-20250514",
-                    "arn:aws:bedrock:us-west-2:*:inference-profile/us.anthropic.claude-sonnet-4-6-20250514"
+                    "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-sonnet-4-6*",
+                    "arn:aws:bedrock:us-west-2:*:inference-profile/us.anthropic.claude-sonnet-4-6*"
                 ]
             }}
         ]

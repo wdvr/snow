@@ -10,6 +10,7 @@ from models.weather import SnowQuality
 from services.ml_scorer import (
     _apply_cold_accumulation_boost,
     _apply_snow_aging_penalty,
+    _compute_wind_chill,
     _extract_features_at_hour,
     _forward_single,
     _relu,
@@ -110,6 +111,7 @@ def _make_condition(**kwargs):
         "wind_speed_kmh": 15.0,
         "snow_depth_cm": 100.0,
         "hours_since_last_snowfall": None,
+        "weather_code": None,
         "ml_features": None,
         "raw_data": None,
     }
@@ -196,9 +198,9 @@ class TestForwardSingle:
 
 class TestEngineerFeatures:
     def test_output_length(self, sample_raw_features):
-        """Should produce exactly 29 engineered features."""
+        """Should produce exactly 34 engineered features."""
         features = engineer_features(sample_raw_features)
-        assert len(features) == 29
+        assert len(features) == 34
 
     def test_cur_temp_is_first(self, sample_raw_features):
         features = engineer_features(sample_raw_features)
@@ -234,7 +236,7 @@ class TestEngineerFeatures:
     def test_missing_keys_default_to_zero(self):
         """All features should work with empty dict (using defaults)."""
         features = engineer_features({})
-        assert len(features) == 29
+        assert len(features) == 34
         assert all(isinstance(f, float) for f in features)
 
     def test_wind_protected_snow(self, sample_raw_features):
@@ -254,6 +256,84 @@ class TestEngineerFeatures:
         raw = {"cur_temp": 15.0, "cur_hours_above_0C": 72}
         features = engineer_features(raw)
         assert features[28] == 1.0
+
+    def test_cloud_cover_normalized(self, sample_raw_features):
+        """Cloud cover should be normalized to 0-1."""
+        sample_raw_features["cloud_cover_pct"] = 80.0
+        features = engineer_features(sample_raw_features)
+        assert features[29] == pytest.approx(0.8)
+
+    def test_is_clear_feature(self, sample_raw_features):
+        """is_clear should be passed through."""
+        sample_raw_features["is_clear"] = 1.0
+        features = engineer_features(sample_raw_features)
+        assert features[30] == 1.0
+
+    def test_wind_chill_delta(self, sample_raw_features):
+        """Wind chill delta should be <= 0 (wind makes it colder)."""
+        sample_raw_features["wind_chill_delta"] = -5.3
+        features = engineer_features(sample_raw_features)
+        assert features[31] == pytest.approx(-5.3)
+
+    def test_sunny_calm_indicator(self, sample_raw_features):
+        """Sunny + calm wind should produce positive indicator."""
+        sample_raw_features["is_clear"] = 1.0
+        sample_raw_features["cur_wind_kmh"] = 5.0
+        features = engineer_features(sample_raw_features)
+        expected = 1.0 * max(0.0, 1.0 - 5.0 / 30.0)
+        assert features[32] == pytest.approx(expected)
+
+    def test_sunny_calm_zero_when_cloudy(self, sample_raw_features):
+        """Sunny calm indicator should be 0 when sky is not clear."""
+        sample_raw_features["is_clear"] = 0.0
+        sample_raw_features["cur_wind_kmh"] = 5.0
+        features = engineer_features(sample_raw_features)
+        assert features[32] == 0.0
+
+    def test_powder_day_indicator(self):
+        """Active snowing + cold + calm = positive powder day indicator."""
+        raw = {
+            "is_snowing": 1.0,
+            "cur_temp": -8.0,
+            "avg_wind_24h": 10.0,
+        }
+        features = engineer_features(raw)
+        expected = 1.0 * 8.0 / 10.0 * max(0.0, 1.0 - 10.0 / 40.0)
+        assert features[33] == pytest.approx(expected)
+
+
+# ── Wind chill computation ────────────────────────────────────────────────────
+
+
+class TestWindChill:
+    def test_no_chill_warm_temps(self):
+        """No wind chill applied when temp > 10C."""
+        assert _compute_wind_chill(15.0, 30.0) == 15.0
+
+    def test_no_chill_calm_wind(self):
+        """No wind chill applied when wind < 4.8 km/h."""
+        assert _compute_wind_chill(-10.0, 3.0) == -10.0
+
+    def test_chill_applied(self):
+        """Wind chill should make it feel colder."""
+        wc = _compute_wind_chill(-10.0, 30.0)
+        assert wc < -10.0
+
+    def test_stronger_wind_more_chill(self):
+        """Stronger wind should produce more wind chill."""
+        mild = _compute_wind_chill(-5.0, 10.0)
+        strong = _compute_wind_chill(-5.0, 50.0)
+        assert strong < mild
+
+    def test_boundary_conditions(self):
+        """Test at the exact boundary: >10C and <4.8 km/h."""
+        # At 10.1C, formula not applied (> 10)
+        assert _compute_wind_chill(10.1, 20.0) == 10.1
+        # At exactly 10C, formula IS applied (<= 10)
+        wc = _compute_wind_chill(10.0, 20.0)
+        assert wc < 10.0
+        # Wind < 4.8 km/h, no chill applied
+        assert _compute_wind_chill(-5.0, 4.7) == -5.0
 
 
 # ── Extract features from condition ──────────────────────────────────────────
@@ -322,9 +402,36 @@ class TestExtractFeaturesFromCondition:
             "max_wind_24h",
             "avg_wind_24h",
             "snow_depth_cm",
+            "cloud_cover_pct",
+            "weather_code",
+            "is_clear",
+            "is_snowing",
+            "wind_chill_c",
+            "wind_chill_delta",
         ]
         for key in expected_keys:
             assert key in result, f"Missing key: {key}"
+
+    def test_weather_code_clear_sky(self):
+        """Clear sky weather code should set is_clear=1."""
+        condition = _make_condition(weather_code=0)
+        result = extract_features_from_condition(condition, 2000.0)
+        assert result["is_clear"] == 1.0
+        assert result["cloud_cover_pct"] == 10.0
+
+    def test_weather_code_snowing(self):
+        """Snow weather code should set is_snowing=1."""
+        condition = _make_condition(weather_code=73)
+        result = extract_features_from_condition(condition, 2000.0)
+        assert result["is_snowing"] == 1.0
+        assert result["is_clear"] == 0.0
+
+    def test_wind_chill_in_condition(self):
+        """Wind chill should be computed from temp and wind."""
+        condition = _make_condition(current_temp_celsius=-10.0, wind_speed_kmh=30.0)
+        result = extract_features_from_condition(condition, 2000.0)
+        assert result["wind_chill_c"] < -10.0
+        assert result["wind_chill_delta"] < 0.0
 
 
 # ── Extract features at hour ─────────────────────────────────────────────────

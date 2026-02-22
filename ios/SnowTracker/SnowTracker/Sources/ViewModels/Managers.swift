@@ -133,7 +133,9 @@ class SnowConditionsManager: ObservableObject {
         }
         managerLog.debug("fetchAllSnowQualitySummaries: Fetching summaries for \(resortIds.count) resorts from API")
 
-        // Batch fetch in chunks of 200 (API limit), updating UI progressively
+        // Batch fetch in chunks of 200 (API limit)
+        // Update the published property only once at the end to avoid
+        // triggering N full list re-renders (each re-sorts 1000+ resorts)
         let batchSize = 200
         var totalLoaded = 0
         var allResults: [String: SnowQualitySummaryLight] = snowQualitySummaries // Start with existing data
@@ -151,14 +153,14 @@ class SnowConditionsManager: ObservableObject {
                 }
                 totalLoaded += batchResults.count
                 managerLog.debug("fetchAllSnowQualitySummaries: Batch \(batchNumber) loaded \(batchResults.count) summaries")
-
-                // Update UI progressively after each batch so users see data faster
-                snowQualitySummaries = allResults
             } catch {
                 managerLog.debug("fetchAllSnowQualitySummaries: Batch \(batchNumber) failed: \(error.localizedDescription)")
                 // Continue with next batch rather than failing completely
             }
         }
+
+        // Single UI update with all results (avoids multiple re-sorts of 1000+ items)
+        snowQualitySummaries = allResults
 
         // Cache the final results
         if !allResults.isEmpty {
@@ -262,15 +264,24 @@ class SnowConditionsManager: ObservableObject {
             idsToFetch = sortedIds
         } else {
             // Skip resorts that already have fresh cached conditions
+            // Accumulate cache loads to avoid per-resort @Published updates
+            var cachedUpdates: [String: [WeatherCondition]] = [:]
             idsToFetch = sortedIds.filter { resortId in
                 if let cached = cacheService.getCachedConditions(for: resortId), !cached.isStale {
-                    // Already have fresh data, load from cache into memory
                     if conditions[resortId] == nil {
-                        conditions[resortId] = cached.data
+                        cachedUpdates[resortId] = cached.data
                     }
                     return false
                 }
                 return true
+            }
+            // Single batch update for all cached conditions
+            if !cachedUpdates.isEmpty {
+                var merged = conditions
+                for (id, data) in cachedUpdates {
+                    merged[id] = data
+                }
+                conditions = merged
             }
         }
 
@@ -313,23 +324,29 @@ class SnowConditionsManager: ObservableObject {
         }
 
         // Use batch API for efficiency
+        // Accumulate results locally to avoid per-resort @Published updates
         do {
             let batchResults = try await apiClient.getBatchConditions(resortIds: resortIds)
+            var updatedConditions = conditions
             for (resortId, resortConditions) in batchResults {
-                conditions[resortId] = resortConditions
+                updatedConditions[resortId] = resortConditions
                 cacheService.cacheConditions(resortConditions, for: resortId)
             }
+            // Single UI update instead of N individual updates
+            conditions = updatedConditions
             isUsingCachedData = false
             errorMessage = nil
             lastUpdated = Date()
         } catch {
             // Fall back to cache for each resort
+            var updatedConditions = conditions
             for resortId in resortIds {
                 if let cached = cacheService.getCachedConditions(for: resortId) {
-                    conditions[resortId] = cached.data
+                    updatedConditions[resortId] = cached.data
                     isUsingCachedData = true
                 }
             }
+            conditions = updatedConditions
             if isUsingCachedData {
                 errorMessage = "Using cached data"
             }
@@ -386,46 +403,42 @@ class SnowConditionsManager: ObservableObject {
         var anyFromCache = false
         var allSucceeded = true
 
+        // Accumulate all results locally to avoid per-resort @Published updates
+        var updatedConditions = conditions
+
         // Try batch endpoint first, fall back to individual calls if it fails
-        // Note: The batch endpoint may not be available (requires API Gateway configuration)
         let batchSize = 50
         for batchStart in stride(from: 0, to: resortIds.count, by: batchSize) {
             let batchEnd = min(batchStart + batchSize, resortIds.count)
             let batchIds = Array(resortIds[batchStart..<batchEnd])
 
             do {
-                // Try batch endpoint for efficiency (single request per 50 resorts)
                 let batchResults = try await apiClient.getBatchConditions(resortIds: batchIds)
 
                 for (resortId, resortConditions) in batchResults {
-                    conditions[resortId] = resortConditions
-                    // Cache the fresh data
+                    updatedConditions[resortId] = resortConditions
                     cacheService.cacheConditions(resortConditions, for: resortId)
                 }
                 managerLog.debug("Fetched batch conditions for \(batchIds.count) resorts")
             } catch {
-                // Batch endpoint failed - fall back to individual API calls
                 managerLog.warning("Batch API error: \(error.localizedDescription). Falling back to individual calls.")
 
                 for resortId in batchIds {
                     do {
-                        // Try individual API call
                         let resortConditions = try await apiClient.getConditions(for: resortId)
-                        conditions[resortId] = resortConditions
-                        // Cache the fresh data
+                        updatedConditions[resortId] = resortConditions
                         cacheService.cacheConditions(resortConditions, for: resortId)
                         managerLog.debug("Fetched conditions for \(resortId) via individual call")
                     } catch {
-                        // Individual call also failed - try cache
                         managerLog.warning("Individual API error for \(resortId): \(error.localizedDescription)")
                         allSucceeded = false
 
                         if let cachedData = cacheService.getCachedConditions(for: resortId) {
-                            conditions[resortId] = cachedData.data
+                            updatedConditions[resortId] = cachedData.data
                             anyFromCache = true
                             managerLog.debug("Using cached conditions for \(resortId) (stale: \(cachedData.isStale))")
                         } else {
-                            conditions[resortId] = []
+                            updatedConditions[resortId] = []
                             managerLog.debug("No cached data available for \(resortId)")
                         }
                     }
@@ -433,9 +446,10 @@ class SnowConditionsManager: ObservableObject {
             }
         }
 
+        // Single UI update with all accumulated results
+        conditions = updatedConditions
         lastUpdated = Date()
 
-        // Update cached data state based on results
         if anyFromCache {
             isUsingCachedData = true
             cachedDataAge = "some data from cache"
@@ -443,7 +457,6 @@ class SnowConditionsManager: ObservableObject {
                 errorMessage = "Some data from cache"
             }
         } else {
-            // All data is fresh from API
             isUsingCachedData = false
             cachedDataAge = nil
             if allSucceeded {

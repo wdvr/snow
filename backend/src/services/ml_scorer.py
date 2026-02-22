@@ -1,7 +1,7 @@
 """ML-based snow quality scorer.
 
 Loads trained neural network weights and performs inference on weather conditions.
-The model takes 24 engineered features computed from raw hourly weather data
+The model takes engineered features computed from raw hourly weather data
 and outputs a quality score from 1.0 (HORRIBLE) to 6.0 (EXCELLENT).
 
 See ml/ALGORITHM.md for full documentation.
@@ -140,6 +140,28 @@ def _forward_ensemble(normalized: list[float], ensemble: list[dict]) -> float:
     return total / len(ensemble)
 
 
+def _compute_wind_chill(temp_c: float, wind_kmh: float) -> float:
+    """Compute wind chill temperature using the North American formula.
+
+    Valid for temps <= 10C and wind >= 4.8 km/h.
+    Returns the effective "feels like" temperature in C.
+    """
+    if temp_c > 10.0 or wind_kmh < 4.8:
+        return temp_c
+    wc = (
+        13.12
+        + 0.6215 * temp_c
+        - 11.37 * (wind_kmh**0.16)
+        + 0.3965 * temp_c * (wind_kmh**0.16)
+    )
+    return round(wc, 1)
+
+
+# WMO weather codes indicating clear/sunny conditions
+_CLEAR_WEATHER_CODES = {0, 1}  # Clear sky, Mainly clear
+_SNOW_WEATHER_CODES = {71, 73, 75, 77, 85, 86}
+
+
 def engineer_features(raw: dict[str, float]) -> list[float]:
     """Transform raw weather features into engineered features for the model.
 
@@ -147,7 +169,7 @@ def engineer_features(raw: dict[str, float]) -> list[float]:
         raw: Dict with keys matching RAW_FEATURE_COLUMNS from training.
 
     Returns:
-        List of 27 engineered feature values.
+        List of 34 engineered feature values.
     """
 
     # Convert all values to float to handle DynamoDB Decimal types
@@ -174,6 +196,14 @@ def engineer_features(raw: dict[str, float]) -> list[float]:
     avg_wind = _f("avg_wind_24h")
     max_wind = _f("max_wind_24h")
     snow_depth = _f("snow_depth_cm")
+
+    # Weather comfort features
+    cloud_cover = _f("cloud_cover_pct", 50.0)
+    is_clear = _f("is_clear", 0.0)
+    is_snowing = _f("is_snowing", 0.0)
+    wind_chill = _f("wind_chill_c", ct)
+    wind_chill_delta = _f("wind_chill_delta", 0.0)
+    cur_wind = _f("cur_wind_kmh", avg_wind)
 
     return [
         ct,
@@ -205,6 +235,12 @@ def engineer_features(raw: dict[str, float]) -> list[float]:
         max(0, max24 - 3) * ha3,
         snow24 * (1.0 if ct < 0 else 0.5),
         1.0 if (ct > 10 and ca0 > 48) else 0.0,
+        # Weather comfort features (5)
+        cloud_cover / 100.0,  # normalized 0-1
+        is_clear,  # binary: clear or mainly clear sky
+        wind_chill_delta,  # wind chill penalty (always <= 0)
+        is_clear * max(0.0, 1.0 - cur_wind / 30.0),  # sunny calm indicator
+        is_snowing * max(0, -ct) / 10.0 * max(0.0, 1.0 - avg_wind / 40.0),  # powder day
     ]
 
 
@@ -268,6 +304,28 @@ def extract_features_from_condition(
     # Snow depth from condition (if available)
     snow_depth_cm = getattr(condition, "snow_depth_cm", None) or 0.0
 
+    # Weather comfort features from condition
+    weather_code = getattr(condition, "weather_code", None)
+    cloud_cover = 50.0  # default to partly cloudy if unknown
+    is_clear = 0.0
+    is_snowing = 0.0
+    if weather_code is not None:
+        weather_code = int(weather_code)
+        is_clear = 1.0 if weather_code in _CLEAR_WEATHER_CODES else 0.0
+        is_snowing = 1.0 if weather_code in _SNOW_WEATHER_CODES else 0.0
+        # Approximate cloud cover from weather code
+        if weather_code in {0, 1}:
+            cloud_cover = 10.0
+        elif weather_code == 2:
+            cloud_cover = 50.0
+        elif weather_code == 3:
+            cloud_cover = 90.0
+        else:
+            cloud_cover = 75.0  # precipitation usually means cloudy
+
+    wind_chill = _compute_wind_chill(cur_temp, float(wind_speed))
+    wind_chill_delta = wind_chill - cur_temp
+
     return {
         "cur_temp": cur_temp,
         "max_temp_24h": max_temp,
@@ -298,6 +356,12 @@ def extract_features_from_condition(
         "max_wind_24h": float(wind_speed) * 1.5,  # approximate
         "avg_wind_24h": float(wind_speed),
         "snow_depth_cm": float(snow_depth_cm),
+        "cloud_cover_pct": cloud_cover,
+        "weather_code": float(weather_code) if weather_code is not None else 3.0,
+        "is_clear": is_clear,
+        "is_snowing": is_snowing,
+        "wind_chill_c": wind_chill,
+        "wind_chill_delta": wind_chill_delta,
     }
 
 
@@ -308,6 +372,8 @@ def _extract_features_at_hour(
     target_hour: int,
     elevation_m: float,
     snow_depth_arr: list[float | None] | None = None,
+    weather_code_arr: list[int | None] | None = None,
+    cloud_cover_arr: list[float | None] | None = None,
 ) -> dict[str, float] | None:
     """Core feature extraction at a specific hour index.
 
@@ -407,6 +473,24 @@ def _extract_features_at_hour(
     else:
         snow_depth_cm = 0.0
 
+    # Weather comfort features
+    if weather_code_arr and len(weather_code_arr) > target_hour:
+        wcode = weather_code_arr[target_hour]
+        wcode = int(wcode) if wcode is not None else 3
+    else:
+        wcode = 3  # default to overcast
+
+    if cloud_cover_arr and len(cloud_cover_arr) > target_hour:
+        cloud_cover = cloud_cover_arr[target_hour]
+        cloud_cover = float(cloud_cover) if cloud_cover is not None else 50.0
+    else:
+        cloud_cover = 50.0
+
+    is_clear = 1.0 if wcode in _CLEAR_WEATHER_CODES else 0.0
+    is_snowing = 1.0 if wcode in _SNOW_WEATHER_CODES else 0.0
+    wind_chill = _compute_wind_chill(cur_temp, cur_wind)
+    wind_chill_delta = wind_chill - cur_temp
+
     return {
         "cur_temp": cur_temp,
         "max_temp_24h": max_temp_24h,
@@ -436,6 +520,12 @@ def _extract_features_at_hour(
         "max_wind_24h": max_wind_24h,
         "avg_wind_24h": avg_wind_24h,
         "snow_depth_cm": snow_depth_cm,
+        "cloud_cover_pct": cloud_cover,
+        "weather_code": float(wcode),
+        "is_clear": is_clear,
+        "is_snowing": is_snowing,
+        "wind_chill_c": wind_chill,
+        "wind_chill_delta": wind_chill_delta,
     }
 
 
@@ -457,6 +547,8 @@ def extract_features_from_raw_data(
     snowfall = hourly.get("snowfall", [])
     wind_speeds = hourly.get("wind_speed_10m", [])
     snow_depth_arr = hourly.get("snow_depth", [])
+    weather_code_arr = hourly.get("weather_code", [])
+    cloud_cover_arr = hourly.get("cloud_cover", [])
 
     if not temps or len(temps) < 48:
         return None
@@ -475,7 +567,14 @@ def extract_features_from_raw_data(
 
     elev = float(elevation_m or raw_data.get("elevation_meters", 1500.0))
     return _extract_features_at_hour(
-        temps, snowfall, wind_speeds, current_index, elev, snow_depth_arr
+        temps,
+        snowfall,
+        wind_speeds,
+        current_index,
+        elev,
+        snow_depth_arr,
+        weather_code_arr,
+        cloud_cover_arr,
     )
 
 
@@ -663,6 +762,8 @@ def predict_quality_at_hour(
     target_hour_index: int,
     elevation_m: float,
     snow_depth_arr: list[float | None] | None = None,
+    weather_code_arr: list[int | None] | None = None,
+    cloud_cover_arr: list[float | None] | None = None,
 ) -> tuple[SnowQuality, float]:
     """Predict snow quality at a specific hour index using the ML model.
 
@@ -677,6 +778,8 @@ def predict_quality_at_hour(
         target_hour_index: Index into the arrays for the target hour
         elevation_m: Elevation in meters
         snow_depth_arr: Hourly snow depth array (cm), optional
+        weather_code_arr: Hourly WMO weather code array, optional
+        cloud_cover_arr: Hourly cloud cover percentage array (0-100), optional
 
     Returns:
         Tuple of (SnowQuality, raw_score)
@@ -686,7 +789,14 @@ def predict_quality_at_hour(
         return SnowQuality.UNKNOWN, 3.5
 
     raw_features = _extract_features_at_hour(
-        temps, snowfall, wind_speeds, target_hour_index, elevation_m, snow_depth_arr
+        temps,
+        snowfall,
+        wind_speeds,
+        target_hour_index,
+        elevation_m,
+        snow_depth_arr,
+        weather_code_arr,
+        cloud_cover_arr,
     )
     if raw_features is None:
         return SnowQuality.UNKNOWN, 3.5
