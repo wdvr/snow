@@ -312,7 +312,7 @@ pulumi preview --diff
 
 ---
 
-## Current Resorts (28+ across 8 regions)
+## Current Resorts (130+ across 11 countries)
 **NA West Coast**: Whistler Blackcomb, Mammoth, Palisades Tahoe, Big White, Silver Star, Sun Peaks
 **NA Rockies**: Lake Louise, Revelstoke, Vail, Park City, Jackson Hole, Aspen, Telluride, Steamboat, Breckenridge
 **Alps**: Chamonix, Zermatt, St. Anton, Verbier, Val d'Isère, Courchevel, Kitzbühel, Cortina d'Ampezzo

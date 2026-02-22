@@ -1,8 +1,8 @@
-# Snow Tracker Privacy Policy
+# Powder Chaser Privacy Policy
 
 **Last updated:** January 27, 2026
 
-Snow Tracker ("we," "our," or "us") respects your privacy and is committed to protecting your personal data. This Privacy Policy explains how we collect, use, and safeguard your information when you use the Snow Tracker mobile application (the "App").
+Powder Chaser ("we," "our," or "us") respects your privacy and is committed to protecting your personal data. This Privacy Policy explains how we collect, use, and safeguard your information when you use the Powder Chaser mobile application (the "App").
 
 ## Information We Collect
 
@@ -79,7 +79,7 @@ We implement appropriate technical and organizational measures to protect your p
 - **Types:** We only send notifications about snow conditions, never marketing messages
 
 ### Data Portability
-- **Export:** Request a copy of your personal data by contacting us at privacy@snowtracker.app
+- **Export:** Request a copy of your personal data by contacting us at privacy@powderchaserapp.com
 - **Format:** Data will be provided in a common, machine-readable format
 
 ## Data Retention
@@ -90,11 +90,11 @@ We implement appropriate technical and organizational measures to protect your p
 
 ## Children's Privacy
 
-Snow Tracker is designed for general audiences and does not knowingly collect personal information from children under 13. If we become aware that we have collected personal information from a child under 13, we will take steps to delete such information promptly.
+Powder Chaser is designed for general audiences and does not knowingly collect personal information from children under 13. If we become aware that we have collected personal information from a child under 13, we will take steps to delete such information promptly.
 
 ## International Users
 
-Snow Tracker is operated from Canada and complies with applicable privacy laws. If you are located outside Canada, please be aware that information we collect will be transferred to and processed in Canada.
+Powder Chaser is operated from Canada and complies with applicable privacy laws. If you are located outside Canada, please be aware that information we collect will be transferred to and processed in Canada.
 
 ### European Users
 If you are in the European Union, you have additional rights under GDPR:
@@ -105,7 +105,7 @@ If you are in the European Union, you have additional rights under GDPR:
 - Right to data portability
 - Right to object to processing
 
-To exercise these rights, contact us at privacy@snowtracker.app.
+To exercise these rights, contact us at privacy@powderchaserapp.com.
 
 ## California Privacy Rights
 
@@ -122,11 +122,11 @@ California residents have specific rights under the California Consumer Privacy 
 - **Right to Opt-Out:** Opt out of sale of personal information (we do not sell personal information)
 - **Non-Discrimination:** We will not discriminate against you for exercising your rights
 
-To make a request, contact us at privacy@snowtracker.app.
+To make a request, contact us at privacy@powderchaserapp.com.
 
 ## Third-Party Services
 
-Snow Tracker integrates with third-party services:
+Powder Chaser integrates with third-party services:
 
 ### Weather APIs
 - **Open-Meteo:** Open-source weather API (https://open-meteo.com/)
@@ -156,8 +156,8 @@ Your continued use of the app after changes indicates acceptance of the updated 
 
 If you have questions about this Privacy Policy or your personal data, please contact us:
 
-**Email:** privacy@snowtracker.app
-**Subject Line:** Snow Tracker Privacy Inquiry
+**Email:** privacy@powderchaserapp.com
+**Subject Line:** Powder Chaser Privacy Inquiry
 
 **Response Time:** We aim to respond to privacy inquiries within 5 business days.
 
@@ -165,8 +165,8 @@ If you have questions about this Privacy Policy or your personal data, please co
 
 - **Personal Information:** Information that identifies, relates to, or could reasonably be linked with you
 - **Anonymous Data:** Information that cannot identify you individually
-- **Third Party:** Any entity other than Snow Tracker and its users
+- **Third Party:** Any entity other than Powder Chaser and its users
 
 ---
 
-This Privacy Policy is effective as of the "Last updated" date above and applies to all users of the Snow Tracker mobile application.
+This Privacy Policy is effective as of the "Last updated" date above and applies to all users of the Powder Chaser mobile application.

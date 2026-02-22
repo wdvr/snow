@@ -26,7 +26,7 @@ Powder Chaser is an iOS app and serverless backend that tracks real-time snow co
 
 ### Core
 
-- **28+ ski resorts across 8 regions** -- NA West, NA Rockies, NA East, Alps, Scandinavia, Japan, Oceania, South America
+- **130+ ski resorts across 11 countries** -- US, Canada, France, Japan, New Zealand, Austria, Australia, Chile, Switzerland, Italy, Argentina
 - **Real-time weather at 3 elevations** -- Base, mid, and top conditions per resort via Open-Meteo
 - **ML-powered snow quality scoring** -- 0-100 scale with natural language explanations
 - **Quality categories** -- Excellent, Good, Fair, Soft, Icy, Not Skiable, Unknown
@@ -269,7 +269,7 @@ snow/
 |   |   |   +-- daily_history_service.py   # Snow history aggregation
 |   |   +-- models/               # Pydantic data models
 |   |   +-- ml_model/             # Model weights (JSON)
-|   +-- tests/                    # pytest test suite (1100+ tests)
+|   +-- tests/                    # pytest test suite (1300+ tests)
 +-- ml/                           # ML training pipeline
 |   +-- train_v2.py               # Neural network training script
 |   +-- collect_data.py           # Feature collection from Open-Meteo
@@ -309,7 +309,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Run tests (1100+ tests)
+# Run tests (1300+ tests)
 PYTHONPATH=src python3 -m pytest tests/ -x -q
 
 # Run locally
@@ -435,7 +435,7 @@ gh workflow run trigger-weather.yml -f environment=prod
 ## Testing
 
 ```bash
-# Backend (1100+ tests)
+# Backend (1300+ tests)
 cd backend && PYTHONPATH=src python3 -m pytest tests/ -x -q
 
 # iOS (106 tests)

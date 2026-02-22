@@ -1,6 +1,6 @@
-# Snow Tracker - App Store Submission Package
+# Powder Chaser - App Store Submission Package
 
-Complete App Store submission package for Snow Tracker, a professional ski resort snow conditions tracking app.
+Complete App Store submission package for Powder Chaser, a professional ski resort snow conditions tracking app.
 
 ## 📋 What's Included
 
@@ -32,7 +32,7 @@ Complete App Store submission package for Snow Tracker, a professional ski resor
 
 ## 🎯 Key Features Highlighted
 
-### 🏔️ Global Resort Coverage (28+ Resorts)
+### 🏔️ Global Resort Coverage (130+ Resorts)
 - **North America West Coast**: Whistler Blackcomb, Mammoth Mountain, Palisades Tahoe
 - **North America Rockies**: Lake Louise, Jackson Hole, Vail, Aspen, Telluride
 - **European Alps**: Chamonix, Zermatt, St. Anton, Verbier, Val d'Isère
@@ -81,8 +81,8 @@ chmod +x generate_screenshots.sh
 - Upload app binary via Xcode or Transporter
 - Add all metadata from `app_store_metadata.md`
 - Upload screenshots for all required device sizes
-- Set privacy policy URL: `https://snowtracker.app/privacy`
-- Set terms of service URL: `https://snowtracker.app/terms`
+- Set privacy policy URL: `https://powderchaserapp.com/privacy`
+- Set terms of service URL: `https://powderchaserapp.com/terms`
 
 ### 3. Review Submission
 - Follow checklist in `app_store_review_guidelines.md`
@@ -91,8 +91,8 @@ chmod +x generate_screenshots.sh
 - Verify offline functionality
 
 ### 4. Marketing Preparation
-- Set up website at `snowtracker.app`
-- Configure support email: `support@snowtracker.app`
+- Set up website at `powderchaserapp.com`
+- Configure support email: `support@powderchaserapp.com`
 - Prepare press kit and marketing materials
 - Plan launch announcement and social media
 
@@ -158,11 +158,11 @@ chmod +x generate_screenshots.sh
 
 All URLs need to be set up before App Store submission:
 
-- **Main Website**: https://snowtracker.app
-- **Privacy Policy**: https://snowtracker.app/privacy
-- **Terms of Service**: https://snowtracker.app/terms
-- **Support**: https://snowtracker.app/support
-- **Contact**: support@snowtracker.app
+- **Main Website**: https://powderchaserapp.com
+- **Privacy Policy**: https://powderchaserapp.com/privacy
+- **Terms of Service**: https://powderchaserapp.com/terms
+- **Support**: https://powderchaserapp.com/support
+- **Contact**: support@powderchaserapp.com
 
 ## 📈 Launch Strategy
 

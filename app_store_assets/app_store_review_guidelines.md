@@ -1,4 +1,4 @@
-# App Store Review Guidelines - Snow Tracker
+# App Store Review Guidelines - Powder Chaser
 
 ## Pre-Submission Checklist
 
@@ -52,12 +52,12 @@
 **Not Required** - App works fully without account creation
 
 ### Contact Information
-- **Email:** support@snowtracker.app
+- **Email:** support@powderchaserapp.com
 - **Response Time:** Within 24 hours
 
 ### Review Notes for Apple
 ```
-Snow Tracker provides real-time snow conditions for ski resorts worldwide.
+Powder Chaser provides real-time snow conditions for ski resorts worldwide.
 
 KEY FEATURES TO TEST:
 1. Launch app - view resort list with live weather data
@@ -137,7 +137,7 @@ The app includes comprehensive error handling and works reliably offline.
 ### App Description
 - **Lead with benefits** not just features
 - **Use keywords naturally** without keyword stuffing
-- **Include specific numbers** (28+ resorts, 8 regions)
+- **Include specific numbers** (130+ resorts, 11 countries)
 - **Address user pain points** (finding fresh powder)
 - **End with clear call-to-action**
 

@@ -1,15 +1,15 @@
-# Snow Tracker Terms of Service
+# Powder Chaser Terms of Service
 
 **Last updated:** January 27, 2026
 
-Welcome to Snow Tracker! These Terms of Service ("Terms") govern your use of the Snow Tracker mobile application (the "App") operated by Snow Tracker ("we," "us," or "our").
+Welcome to Powder Chaser! These Terms of Service ("Terms") govern your use of the Powder Chaser mobile application (the "App") operated by Powder Chaser ("we," "us," or "our").
 
-By downloading, installing, or using Snow Tracker, you agree to be bound by these Terms. If you do not agree to these Terms, please do not use the App.
+By downloading, installing, or using Powder Chaser, you agree to be bound by these Terms. If you do not agree to these Terms, please do not use the App.
 
 ## 1. Acceptance of Terms
 
 ### 1.1 Agreement
-By accessing or using Snow Tracker, you confirm that:
+By accessing or using Powder Chaser, you confirm that:
 - You have read and understood these Terms
 - You agree to be legally bound by these Terms
 - You are at least 13 years old or have parental consent
@@ -20,7 +20,7 @@ We may modify these Terms at any time. We will notify you of material changes th
 ## 2. Description of Service
 
 ### 2.1 App Features
-Snow Tracker provides:
+Powder Chaser provides:
 - Real-time snow conditions and weather data for ski resorts
 - Interactive maps showing resort locations
 - Snow quality assessments and forecasts
@@ -66,7 +66,7 @@ You may not:
 - Transmit harmful code (viruses, malware, etc.)
 
 ### 4.3 Commercial Use
-Commercial use requires written permission. Contact us at legal@snowtracker.app.
+Commercial use requires written permission. Contact us at legal@powderchaserapp.com.
 
 ## 5. Weather Data and Accuracy
 
@@ -78,7 +78,7 @@ Commercial use requires written permission. Contact us at legal@snowtracker.app.
 
 ### 5.2 Safety Disclaimer
 **IMPORTANT SAFETY NOTICE:**
-- Snow Tracker is for informational purposes only
+- Powder Chaser is for informational purposes only
 - Do not rely solely on the App for safety decisions
 - Always check local avalanche and weather reports
 - Follow all resort safety guidelines and warnings
@@ -104,7 +104,7 @@ Your privacy is important to us. Our Privacy Policy explains how we collect, use
 ## 7. Intellectual Property
 
 ### 7.1 Our Rights
-Snow Tracker and its original content are protected by:
+Powder Chaser and its original content are protected by:
 - Copyright, trademark, and other intellectual property laws
 - All rights reserved unless expressly granted
 
@@ -201,12 +201,12 @@ These Terms are governed by the laws of Canada and the Province of British Colum
 Any disputes will be resolved in the courts of British Columbia, Canada.
 
 ### 13.3 Informal Resolution
-Before formal legal action, we encourage you to contact us at legal@snowtracker.app to resolve disputes amicably.
+Before formal legal action, we encourage you to contact us at legal@powderchaserapp.com to resolve disputes amicably.
 
 ## 14. Miscellaneous
 
 ### 14.1 Entire Agreement
-These Terms, together with our Privacy Policy, constitute the entire agreement between you and Snow Tracker.
+These Terms, together with our Privacy Policy, constitute the entire agreement between you and Powder Chaser.
 
 ### 14.2 Severability
 If any provision is found invalid, the remaining provisions continue in effect.
@@ -223,7 +223,7 @@ We are not liable for delays or failures due to circumstances beyond our reasona
 ## 15. App Store Terms
 
 ### 15.1 Additional Terms
-If you download Snow Tracker from an app store (Apple App Store, Google Play), you also agree to that platform's terms of service.
+If you download Powder Chaser from an app store (Apple App Store, Google Play), you also agree to that platform's terms of service.
 
 ### 15.2 Third-Party Beneficiaries
 Apple and Google are third-party beneficiaries of these Terms with respect to your use of the App on their platforms.
@@ -232,24 +232,24 @@ Apple and Google are third-party beneficiaries of these Terms with respect to yo
 
 For questions about these Terms of Service, contact us:
 
-**Email:** legal@snowtracker.app
-**Subject Line:** Snow Tracker Legal Inquiry
+**Email:** legal@powderchaserapp.com
+**Subject Line:** Powder Chaser Legal Inquiry
 
 **Mailing Address:**
-Snow Tracker Legal Department
+Powder Chaser Legal Department
 [Address to be provided]
 
 **Response Time:** We aim to respond to legal inquiries within 10 business days.
 
 ## 17. Definitions
 
-- **App:** The Snow Tracker mobile application
+- **App:** The Powder Chaser mobile application
 - **Content:** All information, data, text, images, and other materials in the App
 - **Personal Information:** Information that identifies you individually
-- **Services:** All features and functionality provided by Snow Tracker
+- **Services:** All features and functionality provided by Powder Chaser
 - **Terms:** These Terms of Service
 - **User:** Any person who downloads, installs, or uses the App
-- **We/Us/Our:** Snow Tracker and its affiliates
+- **We/Us/Our:** Powder Chaser and its affiliates
 
 ---
 
@@ -262,10 +262,10 @@ Snow sports involve inherent risks. Always:
 - Never ski or snowboard alone in challenging conditions
 - Carry appropriate safety equipment
 
-Snow Tracker is a tool to help you make informed decisions, but your safety is your responsibility.
+Powder Chaser is a tool to help you make informed decisions, but your safety is your responsibility.
 
 ---
 
-These Terms of Service are effective as of the "Last updated" date above and apply to all users of the Snow Tracker mobile application.
+These Terms of Service are effective as of the "Last updated" date above and apply to all users of the Powder Chaser mobile application.
 
-**By using Snow Tracker, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.**
+**By using Powder Chaser, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.**

@@ -1,8 +1,8 @@
-# Snow Tracker - App Store Metadata
+# Powder Chaser - App Store Metadata
 
 ## 📱 App Information
 
-**App Name:** Snow Tracker
+**App Name:** Powder Chaser
 **Bundle ID:** com.wouterdevriendt.snowtracker
 **Version:** 1.0.0
 **Category:** Sports
@@ -15,7 +15,7 @@
 
 ### App Title (30 characters max)
 ```
-Snow Tracker
+Powder Chaser
 ```
 
 ### App Subtitle (30 characters max)
@@ -26,7 +26,7 @@ Ski Resort Snow Conditions
 ### App Description (4,000 characters max)
 
 ```
-Find fresh powder at 28+ ski resorts worldwide with real-time snow quality tracking. Snow Tracker uses advanced algorithms to analyze weather conditions across multiple elevations, helping you discover the best skiing and snowboarding conditions.
+Find fresh powder at 130+ ski resorts worldwide with real-time snow quality tracking. Powder Chaser uses advanced algorithms to analyze weather conditions across multiple elevations, helping you discover the best skiing and snowboarding conditions.
 
 🎿 KEY FEATURES
 
@@ -61,7 +61,7 @@ Our proprietary algorithm analyzes:
 • Surface conditions and snow age
 • Confidence levels based on data reliability
 
-Quality ratings from Excellent (3"+ fresh powder) to Poor (icy conditions) help you make informed decisions about where to ski.
+Quality ratings from Excellent (deep fresh powder) to Poor (hard-packed conditions) help you make informed decisions about where to ski.
 
 🗺️ INTERACTIVE FEATURES
 
@@ -81,25 +81,23 @@ Quality ratings from Excellent (3"+ fresh powder) to Poor (icy conditions) help 
 
 🌨️ WEATHER DATA
 
-Sourced from reliable weather APIs including:
-• NOAA (North America)
-• Environment Canada
-• Météo-France
-• MeteoSwiss
-• Japan Meteorological Agency
-• Resort-specific weather stations
+Powered by Open-Meteo with data from national weather services worldwide, providing:
+• Hourly updates for all resorts
+• Multi-elevation weather modeling
+• 7-day forecast data
+• Historical snow accumulation tracking
 
-Perfect for skiers, snowboarders, and winter sports enthusiasts planning their next powder day. Whether you're chasing fresh lines in the Rockies or exploring the legendary snow of Japan, Snow Tracker helps you find the best conditions.
+Perfect for skiers, snowboarders, and winter sports enthusiasts planning their next powder day. Whether you're chasing fresh lines in the Rockies or exploring the legendary snow of Japan, Powder Chaser helps you find the best conditions.
 
 Download now and never miss a powder day again!
 
-Privacy Policy: https://snowtracker.app/privacy
-Terms of Service: https://snowtracker.app/terms
+Privacy Policy: https://powderchaserapp.com/privacy
+Terms of Service: https://powderchaserapp.com/terms
 ```
 
 ### Promotional Text (170 characters max)
 ```
-🎿 Find fresh powder at 28+ ski resorts worldwide! Real-time snow quality tracking with advanced algorithms. Never miss a powder day again!
+🎿 Find fresh powder at 130+ ski resorts worldwide! Real-time snow quality tracking with advanced algorithms. Never miss a powder day again!
 ```
 
 ### Keywords (100 characters max, comma-separated)
@@ -109,12 +107,12 @@ ski,snow,snowboard,powder,resort,weather,mountain,skiing,snowboarding,conditions
 
 ### What's New in This Version (4,000 characters max)
 ```
-🎿 Welcome to Snow Tracker 1.0!
+🎿 Welcome to Powder Chaser 1.0!
 
 Find the freshest powder at ski resorts around the world with our advanced snow quality tracking system.
 
 ✨ NEW FEATURES
-• Real-time conditions for 28+ premier ski destinations
+• Real-time conditions for 130+ premier ski destinations
 • Smart snow quality algorithm analyzing thaw-freeze cycles
 • Interactive maps with resort clustering
 • Multi-elevation tracking (base, mid, summit)
@@ -221,14 +219,14 @@ Each screenshot should include minimal, tasteful annotations highlighting:
 - **Collects User Data:** Yes (optional sign-in with Apple/Google)
 - **Data Use:** Personalization, app functionality
 - **Data Sharing:** No third-party sharing
-- **Privacy Policy URL:** https://snowtracker.app/privacy
+- **Privacy Policy URL:** https://powderchaserapp.com/privacy
 
 ### App Review Information
 - **Demo Account:** Not required (app works without sign-in)
 - **Contact Information:** [Developer contact details]
 - **Review Notes:**
   ```
-  Snow Tracker provides real-time snow conditions for ski resorts worldwide.
+  Powder Chaser provides real-time snow conditions for ski resorts worldwide.
 
   The app works without account creation - sign-in is optional for personalization.
   All demo data is clearly marked and realistic weather conditions are used.
@@ -253,7 +251,7 @@ Each screenshot should include minimal, tasteful annotations highlighting:
 
 ### Value Propositions
 1. **Smart Algorithm** - Advanced snow quality assessment beyond simple snow depth
-2. **Global Coverage** - 28+ premier destinations across multiple continents
+2. **Global Coverage** - 130+ premier destinations across multiple continents
 3. **Multi-Elevation** - Track conditions at base, mid, and summit elevations
 4. **Real-Time Data** - Fresh conditions updated hourly
 5. **Offline Support** - Works reliably on the mountain without connectivity
@@ -298,15 +296,15 @@ Each screenshot should include minimal, tasteful annotations highlighting:
 ## 🔗 Supporting URLs
 
 ### Required URLs
-- **Privacy Policy:** https://snowtracker.app/privacy
-- **Terms of Service:** https://snowtracker.app/terms
-- **Support:** https://snowtracker.app/support
-- **Website:** https://snowtracker.app
+- **Privacy Policy:** https://powderchaserapp.com/privacy
+- **Terms of Service:** https://powderchaserapp.com/terms
+- **Support:** https://powderchaserapp.com/support
+- **Website:** https://powderchaserapp.com
 
 ### Social Media (Future)
 - **Twitter/X:** @snowtracker_app
-- **Instagram:** @snowtracker.app
-- **Facebook:** Snow Tracker App
+- **Instagram:** @powderchaserapp.com
+- **Facebook:** Powder Chaser App
 
 ---
 
@@ -314,22 +312,22 @@ Each screenshot should include minimal, tasteful annotations highlighting:
 
 ### 5-Star Reviews
 ```
-Thank you for the amazing review! 🎿 We're thrilled Snow Tracker is helping you find fresh powder. Keep chasing those perfect conditions!
+Thank you for the amazing review! 🎿 We're thrilled Powder Chaser is helping you find fresh powder. Keep chasing those perfect conditions!
 ```
 
 ### 4-Star Reviews
 ```
-Thanks for the great feedback! We're always working to improve Snow Tracker. If you have any suggestions for new features, please let us know at support@snowtracker.app
+Thanks for the great feedback! We're always working to improve Powder Chaser. If you have any suggestions for new features, please let us know at support@powderchaserapp.com
 ```
 
 ### 3-Star Reviews
 ```
-Thank you for trying Snow Tracker! We'd love to make it even better for you. Could you share what improvements you'd like to see? Contact us at support@snowtracker.app
+Thank you for trying Powder Chaser! We'd love to make it even better for you. Could you share what improvements you'd like to see? Contact us at support@powderchaserapp.com
 ```
 
 ### Issue-Based Reviews
 ```
-Thanks for the feedback! We take all reports seriously. Please contact us at support@snowtracker.app with details about the issue so we can fix it quickly.
+Thanks for the feedback! We take all reports seriously. Please contact us at support@powderchaserapp.com with details about the issue so we can fix it quickly.
 ```
 
 ---
