@@ -54,18 +54,21 @@ claude -p --dangerously-skip-permissions "Fix the failing tests in SnowTrackerTe
 
 A clean codebase is everyone's responsibility. Leave things better than you found them.
 
-### iOS Code Signing - NEVER Create New Certificates
-**CRITICAL**: The iOS build workflow uses App Store Connect API authentication for automatic
-code signing. This reuses existing certificates on the Apple Developer account. **NEVER**:
-- Set `skip_automatic_signing: false` in the shared ios-infra workflow (this creates new certs)
-- Install distribution certificates into a keychain during CI (causes cert conflicts)
-- Use any approach that creates new Apple Developer certificates on each build
+### iOS Code Signing - Auto-Cleanup of Certificates
+The iOS build workflow uses App Store Connect API for automatic signing. Xcode creates a new
+development certificate on each CI build (ephemeral runners have no keychain certs). A
+**cert cleanup step** in `ios-build.yml` runs before each archive to revoke excess certs
+via the ASC API, keeping 1 dev cert and 2 distribution certs. This prevents hitting Apple's limit.
 
-The correct approach (used in `ios-build.yml`, matching the footprint repo):
-- Use `-allowProvisioningUpdates` with ASC API auth (`-authenticationKeyPath`, `-authenticationKeyID`, `-authenticationKeyIssuerID`)
-- Set `CODE_SIGN_STYLE=Automatic` with `DEVELOPMENT_TEAM`
-- Do NOT install certificates manually - let Xcode resolve them via ASC API
-- For PRs: build with `CODE_SIGNING_ALLOWED=NO` (no signing needed)
+**NEVER**:
+- Remove the cert cleanup step from `ios-build.yml`
+- Set `skip_automatic_signing: false` in shared workflows (creates unmanaged certs)
+
+The signing approach (in `ios-build.yml`):
+- **Cert cleanup**: Python script uses ASC API to revoke excess dev certs before archive
+- **Archive**: `-allowProvisioningUpdates` with ASC API auth for automatic signing
+- **Export**: `app-store-connect` method with automatic signing style
+- **PRs**: `CODE_SIGNING_ALLOWED=NO` (no signing needed)
 
 ### Always Test on Real Device
 When working on iOS changes, **always build and deploy to the physical device** if it's available. Don't just build for simulator - real device testing catches issues that simulators miss. After deploying, launch the app to verify the fix works.
