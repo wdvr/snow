@@ -1,7 +1,7 @@
 # Snow Quality Tracker (Powder Chaser) - Feature Roadmap
 
 **Created**: 2026-02-20
-**Last Updated**: 2026-02-20
+**Last Updated**: 2026-02-22
 
 This document outlines the feature roadmap for Powder Chaser, prioritized by user impact, feasibility, and alignment with what makes the best ski apps indispensable. It is informed by competitive analysis of OpenSnow, Slopes, OnTheSnow, Epic Mix, Ikon Pass, Ski Tracks, and others.
 
@@ -11,7 +11,7 @@ This document outlines the feature roadmap for Powder Chaser, prioritized by use
 
 The app is live with a strong foundation:
 - 900+ resorts across 23 countries with hourly weather updates
-- ML-powered snow quality ratings (v7 ensemble, 88.2% accuracy)
+- ML-powered snow quality ratings (v11 neural network ensemble, 83.5% exact accuracy, 100% within-1)
 - Push notifications (fresh snow, thaw/freeze alerts)
 - 7-day forecast timeline with ML predictions
 - Map view with quality-colored markers and date selector
@@ -19,6 +19,12 @@ The app is live with a strong foundation:
 - Favorites system with notification customization
 - iOS widgets, 13-language localization
 - Apple Sign In / Guest auth, trip API endpoints (UI hidden)
+- AI conditions chat (Claude Sonnet 4.6 on Bedrock with tool_use)
+- User condition reports from the mountain
+- Snow history charts with season totals
+- Weekly snow digest notifications
+- Styled gradient backgrounds with weather-responsive overlays (snow/sun/wind)
+- Shareable conditions cards, favorite groups, elevation profile visualization
 
 Open issues: Trip Planning (#23), Webcam Integration (#24), Apple Watch (#25), Alternative Snow Data Sources (#13).
 
@@ -190,7 +196,7 @@ These features build on the foundation and move the app toward being a daily-use
 
 ---
 
-### 2.4 Weekly Snow Summary Digest
+### 2.4 Weekly Snow Summary Digest — *Done*
 
 **Description**: A push notification (or in-app digest) sent once a week summarizing: best conditions in your region, how your favorites performed, upcoming storm potential, and season-to-date snowfall leaders. The model field `weekly_summary` already exists in UserNotificationPreferences.
 
@@ -376,7 +382,7 @@ These are ambitious features that would make Powder Chaser best-in-class. They r
 
 ---
 
-### 3.7 Offline Mode with Cached Conditions
+### 3.7 Offline Mode with Cached Conditions — *Done*
 
 **Description**: Cache the last-fetched conditions for all favorited resorts locally so the app is fully functional without network connectivity. Critical for mountain use where cell service is spotty. Show "last updated X hours ago" indicators.
 
@@ -592,7 +598,7 @@ These features need investigation before committing to a development plan.
 | 2.1 Trip Planning | High | L | **Next** |
 | 2.2 Resort Detail Enrichment | Medium | M | **Next** |
 | 2.3 Snow Depth Map Overlay | Medium-High | M-L | **Next** |
-| 2.4 Weekly Digest | Medium | M | **In Progress** |
+| 2.4 Weekly Digest | Medium | M | **Done** |
 | 2.5 Shareable Conditions Cards | Medium-High | S-M | **Done** |
 | 2.6 Favorite Groups | Medium | S | **Done** |
 | 2.7 Elevation Profile Viz | Medium | S-M | **Done** |
@@ -603,7 +609,7 @@ These features need investigation before committing to a development plan.
 | 3.4 AI Chat | Very High | M-L | **Done** |
 | 3.5 Social/Friends | High | L-XL | **Later** |
 | 3.6 Gamification | Medium | M-L | **Later** |
-| 3.7 Offline Mode | Medium | M | **In Progress** |
+| 3.7 Offline Mode | Medium | M | **Done** |
 | 3.8 Storm Tracker | High | L | **Later** |
 | 3.9 Resort Reviews | Medium | M-L | **Later** |
 | 3.10 Multi-Source Data | High | L | **Later** |

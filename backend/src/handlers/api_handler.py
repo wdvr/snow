@@ -3081,12 +3081,21 @@ async def list_conversations(
     user_id: str = Depends(get_current_user_id),
 ):
     """List all chat conversations for the authenticated user."""
-    service = get_chat_service()
-    conversations = service.list_conversations(user_id)
-    return {
-        "conversations": [c.model_dump() for c in conversations],
-        "count": len(conversations),
-    }
+    try:
+        service = get_chat_service()
+        conversations = service.list_conversations(user_id)
+        return {
+            "conversations": [c.model_dump() for c in conversations],
+            "count": len(conversations),
+        }
+    except Exception as e:
+        logger.error(
+            "List conversations error for user %s: %s", user_id, e, exc_info=True
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to list conversations",
+        )
 
 
 @app.get("/api/v1/chat/conversations/{conversation_id}")
@@ -3108,6 +3117,12 @@ async def get_conversation(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
+    except Exception as e:
+        logger.error("Get conversation error %s: %s", conversation_id, e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get conversation",
+        )
 
 
 @app.delete("/api/v1/chat/conversations/{conversation_id}")
@@ -3124,6 +3139,14 @@ async def delete_conversation(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
+        )
+    except Exception as e:
+        logger.error(
+            "Delete conversation error %s: %s", conversation_id, e, exc_info=True
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete conversation",
         )
 
 
