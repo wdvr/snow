@@ -7,6 +7,7 @@ struct ResortDetailView: View {
     @State private var selectedElevation: ElevationLevel = .top
     @State private var showingShareSheet: Bool = false
     @State private var showThawFreezeInfo: Bool = false
+    @State private var isRetrying: Bool = false
 
     private var conditions: [WeatherCondition] {
         snowConditionsManager.conditions[resort.id] ?? []
@@ -694,13 +695,22 @@ struct ResortDetailView: View {
                     .multilineTextAlignment(.center)
 
                 Button {
+                    isRetrying = true
                     Task {
-                        await snowConditionsManager.refreshData()
+                        await snowConditionsManager.fetchConditionsForResort(resort.id, forceRefresh: true)
+                        isRetrying = false
                     }
                 } label: {
-                    Label("Retry", systemImage: "arrow.clockwise")
+                    if isRetrying {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Retrying...")
+                    } else {
+                        Label("Retry", systemImage: "arrow.clockwise")
+                    }
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(isRetrying)
             }
         }
         .frame(maxWidth: .infinity)

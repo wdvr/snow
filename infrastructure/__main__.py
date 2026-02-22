@@ -2217,6 +2217,110 @@ feedback_post_integration = aws.apigateway.Integration(
 )
 
 # =============================================================================
+# Chat API Routes
+# =============================================================================
+
+# Chat resource: /api/v1/chat
+chat_resource = aws.apigateway.Resource(
+    f"{app_name}-chat-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="chat",
+)
+
+# POST /api/v1/chat
+chat_post_method = aws.apigateway.Method(
+    f"{app_name}-chat-post-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=chat_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+chat_post_integration = aws.apigateway.Integration(
+    f"{app_name}-chat-post-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=chat_resource.id,
+    http_method=chat_post_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Chat conversations resource: /api/v1/chat/conversations
+chat_conversations_resource = aws.apigateway.Resource(
+    f"{app_name}-chat-conversations-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=chat_resource.id,
+    path_part="conversations",
+)
+
+# GET /api/v1/chat/conversations
+chat_conversations_get_method = aws.apigateway.Method(
+    f"{app_name}-chat-conversations-get-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=chat_conversations_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+chat_conversations_get_integration = aws.apigateway.Integration(
+    f"{app_name}-chat-conversations-get-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=chat_conversations_resource.id,
+    http_method=chat_conversations_get_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Single conversation resource: /api/v1/chat/conversations/{conversationId}
+chat_conversation_resource = aws.apigateway.Resource(
+    f"{app_name}-chat-conversation-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=chat_conversations_resource.id,
+    path_part="{conversationId}",
+)
+
+# GET /api/v1/chat/conversations/{conversationId}
+chat_conversation_get_method = aws.apigateway.Method(
+    f"{app_name}-chat-conversation-get-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=chat_conversation_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+chat_conversation_get_integration = aws.apigateway.Integration(
+    f"{app_name}-chat-conversation-get-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=chat_conversation_resource.id,
+    http_method=chat_conversation_get_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# DELETE /api/v1/chat/conversations/{conversationId}
+chat_conversation_delete_method = aws.apigateway.Method(
+    f"{app_name}-chat-conversation-delete-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=chat_conversation_resource.id,
+    http_method="DELETE",
+    authorization="NONE",
+)
+
+chat_conversation_delete_integration = aws.apigateway.Integration(
+    f"{app_name}-chat-conversation-delete-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=chat_conversation_resource.id,
+    http_method=chat_conversation_delete_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# =============================================================================
 # Debug API Routes (for testing notifications)
 # =============================================================================
 
@@ -2367,6 +2471,10 @@ api_deployment = aws.apigateway.Deployment(
             resort_notification_setting_put_integration.id,
             resort_notification_setting_delete_integration.id,
             feedback_post_integration.id,
+            chat_post_integration.id,
+            chat_conversations_get_integration.id,
+            chat_conversation_get_integration.id,
+            chat_conversation_delete_integration.id,
             debug_trigger_notifications_integration.id,
             debug_test_push_integration.id,
             admin_backfill_geohashes_integration.id,
@@ -2411,6 +2519,10 @@ api_deployment = aws.apigateway.Deployment(
             resort_notification_setting_put_integration,
             resort_notification_setting_delete_integration,
             feedback_post_integration,
+            chat_post_integration,
+            chat_conversations_get_integration,
+            chat_conversation_get_integration,
+            chat_conversation_delete_integration,
             debug_trigger_notifications_integration,
             debug_test_push_integration,
             admin_backfill_geohashes_integration,
