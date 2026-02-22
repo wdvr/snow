@@ -10,6 +10,7 @@ from models.chat import ChatResponse, ConversationSummary
 from models.resort import ElevationLevel, ElevationPoint, Resort
 from models.weather import ConfidenceLevel, SnowQuality, WeatherCondition
 from services.chat_service import (
+    BEDROCK_MAX_RETRIES,
     MAX_TOOL_ITERATIONS,
     MESSAGE_TTL_DAYS,
     RESORT_ALIASES,
@@ -269,8 +270,8 @@ class TestChat:
         assert call_kwargs["modelId"] == "us.anthropic.claude-sonnet-4-6"
         assert call_kwargs["system"] == [{"text": SYSTEM_PROMPT}]
         assert call_kwargs["toolConfig"]["tools"] == TOOL_DEFINITIONS
-        assert call_kwargs["inferenceConfig"]["maxTokens"] == 1024
-        assert call_kwargs["inferenceConfig"]["temperature"] == 0.3
+        assert call_kwargs["inferenceConfig"]["maxTokens"] == 2048
+        assert call_kwargs["inferenceConfig"]["temperature"] == 0.5
 
     def test_conversation_history_loaded(
         self, chat_service, mock_chat_table, mock_bedrock_client
@@ -1007,3 +1008,202 @@ class TestAutoDetectResorts:
         assert "mammoth" in RESORT_ALIASES
         assert "chamonix" in RESORT_ALIASES
         assert "niseko" in RESORT_ALIASES
+
+
+# ---------------------------------------------------------------------------
+# Tool input validation tests
+# ---------------------------------------------------------------------------
+
+
+class TestToolInputValidation:
+    """Test cases for defensive tool input validation."""
+
+    def test_missing_resort_id_returns_error(self, chat_service):
+        """Missing resort_id should return error dict, not crash."""
+        result = chat_service._execute_tool("get_resort_conditions", {})
+        assert "error" in result
+        assert "resort_id" in result["error"]
+
+    def test_missing_query_returns_error(self, chat_service):
+        """Missing query should return error dict."""
+        result = chat_service._execute_tool("search_resorts", {})
+        assert "error" in result
+        assert "query" in result["error"]
+
+    def test_missing_latitude_returns_error(self, chat_service):
+        """Missing latitude/longitude should return error."""
+        result = chat_service._execute_tool("get_nearby_resorts", {"longitude": -118.0})
+        assert "error" in result
+
+    def test_missing_longitude_returns_error(self, chat_service):
+        """Missing longitude should return error."""
+        result = chat_service._execute_tool("get_nearby_resorts", {"latitude": 49.0})
+        assert "error" in result
+
+    def test_invalid_latitude_returns_error(self, chat_service):
+        """Latitude out of bounds should return error."""
+        result = chat_service._execute_tool(
+            "get_nearby_resorts", {"latitude": 100, "longitude": 0}
+        )
+        assert "error" in result
+        assert "latitude" in result["error"]
+
+    def test_invalid_longitude_returns_error(self, chat_service):
+        """Longitude out of bounds should return error."""
+        result = chat_service._execute_tool(
+            "get_nearby_resorts", {"latitude": 0, "longitude": 200}
+        )
+        assert "error" in result
+        assert "longitude" in result["error"]
+
+    def test_radius_km_clamped_to_max(self, chat_service, mock_resort_service):
+        """Excessive radius_km should be clamped to 1000."""
+        chat_service._execute_tool(
+            "get_nearby_resorts",
+            {"latitude": 49.0, "longitude": -118.0, "radius_km": 999999},
+        )
+        mock_resort_service.get_nearby_resorts.assert_called_once()
+        call_kwargs = mock_resort_service.get_nearby_resorts.call_args[1]
+        assert call_kwargs["radius_km"] == 1000
+
+    def test_radius_km_clamped_to_min(self, chat_service, mock_resort_service):
+        """Negative radius_km should be clamped to 1."""
+        chat_service._execute_tool(
+            "get_nearby_resorts",
+            {"latitude": 49.0, "longitude": -118.0, "radius_km": -5},
+        )
+        mock_resort_service.get_nearby_resorts.assert_called_once()
+        call_kwargs = mock_resort_service.get_nearby_resorts.call_args[1]
+        assert call_kwargs["radius_km"] == 1
+
+    def test_missing_resort_id_forecast_returns_error(self, chat_service):
+        """Missing resort_id in forecast should return error."""
+        result = chat_service._execute_tool("get_resort_forecast", {})
+        assert "error" in result
+
+    def test_missing_resort_id_info_returns_error(self, chat_service):
+        """Missing resort_id in info should return error."""
+        result = chat_service._execute_tool("get_resort_info", {})
+        assert "error" in result
+
+    def test_missing_resort_id_reports_returns_error(self, chat_service):
+        """Missing resort_id in condition reports should return error."""
+        result = chat_service._execute_tool("get_condition_reports", {})
+        assert "error" in result
+
+    def test_missing_resort_id_history_returns_error(self, chat_service):
+        """Missing resort_id in snow history should return error."""
+        result = chat_service._execute_tool("get_snow_history", {})
+        assert "error" in result
+
+    def test_missing_resort_ids_compare_returns_error(self, chat_service):
+        """Missing resort_ids in compare should return error."""
+        result = chat_service._execute_tool("compare_resorts", {})
+        assert "error" in result
+
+    def test_valid_coordinates_accepted(self, chat_service, mock_resort_service):
+        """Valid coordinates should work normally."""
+        result = chat_service._execute_tool(
+            "get_nearby_resorts",
+            {"latitude": 49.0, "longitude": -118.0, "radius_km": 200},
+        )
+        assert "results" in result
+        assert "error" not in result
+
+
+# ---------------------------------------------------------------------------
+# Bedrock retry tests
+# ---------------------------------------------------------------------------
+
+
+class TestBedrockRetry:
+    """Test cases for Bedrock throttling retry with exponential backoff."""
+
+    def test_retry_on_throttle_then_succeed(self, chat_service, mock_bedrock_client):
+        """Should retry on ThrottlingException and succeed on next attempt."""
+        from botocore.exceptions import ClientError
+
+        throttle_error = ClientError(
+            {"Error": {"Code": "ThrottlingException", "Message": "Rate exceeded"}},
+            "Converse",
+        )
+        mock_bedrock_client.converse.side_effect = [
+            throttle_error,
+            {
+                "output": {"message": {"content": [{"text": "Recovered response!"}]}},
+                "stopReason": "end_turn",
+            },
+        ]
+
+        with patch("services.chat_service.time.sleep"):
+            result = chat_service.chat("Hello", None, "user_123")
+
+        assert result.response == "Recovered response!"
+        assert mock_bedrock_client.converse.call_count == 2
+
+    def test_gives_up_after_max_retries(self, chat_service, mock_bedrock_client):
+        """Should give up after BEDROCK_MAX_RETRIES throttling errors."""
+        from botocore.exceptions import ClientError
+
+        throttle_error = ClientError(
+            {"Error": {"Code": "ThrottlingException", "Message": "Rate exceeded"}},
+            "Converse",
+        )
+        mock_bedrock_client.converse.side_effect = [
+            throttle_error
+        ] * BEDROCK_MAX_RETRIES
+
+        with patch("services.chat_service.time.sleep"):
+            result = chat_service.chat("Hello", None, "user_123")
+
+        assert "trouble connecting" in result.response
+        assert mock_bedrock_client.converse.call_count == BEDROCK_MAX_RETRIES
+
+    def test_access_denied_no_retry(self, chat_service, mock_bedrock_client):
+        """AccessDeniedException should not retry."""
+        from botocore.exceptions import ClientError
+
+        access_error = ClientError(
+            {"Error": {"Code": "AccessDeniedException", "Message": "Forbidden"}},
+            "Converse",
+        )
+        mock_bedrock_client.converse.side_effect = access_error
+
+        result = chat_service.chat("Hello", None, "user_123")
+        assert "trouble connecting" in result.response
+        assert mock_bedrock_client.converse.call_count == 1
+
+    def test_validation_exception_no_retry(self, chat_service, mock_bedrock_client):
+        """ValidationException should not retry."""
+        from botocore.exceptions import ClientError
+
+        validation_error = ClientError(
+            {"Error": {"Code": "ValidationException", "Message": "Bad request"}},
+            "Converse",
+        )
+        mock_bedrock_client.converse.side_effect = validation_error
+
+        result = chat_service.chat("Hello", None, "user_123")
+        assert "trouble connecting" in result.response
+        assert mock_bedrock_client.converse.call_count == 1
+
+    def test_exponential_backoff_delays(self, chat_service, mock_bedrock_client):
+        """Should use exponential backoff between retries."""
+        from botocore.exceptions import ClientError
+
+        throttle_error = ClientError(
+            {"Error": {"Code": "ThrottlingException", "Message": "Rate exceeded"}},
+            "Converse",
+        )
+        mock_bedrock_client.converse.side_effect = [
+            throttle_error
+        ] * BEDROCK_MAX_RETRIES
+
+        with patch("services.chat_service.time.sleep") as mock_sleep:
+            chat_service.chat("Hello", None, "user_123")
+
+        # Should have slept with exponential delays (1s, 2s for 3 retries)
+        assert mock_sleep.call_count == BEDROCK_MAX_RETRIES - 1
+        delays = [c.args[0] for c in mock_sleep.call_args_list]
+        assert delays[0] == 1.0  # 1.0 * 2^0
+        assert delays[1] == 2.0  # 1.0 * 2^1
