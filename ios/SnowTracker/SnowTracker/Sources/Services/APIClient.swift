@@ -9,12 +9,11 @@ import os.log
 final class APIClient {
     static let shared = APIClient()
 
-    private let baseURL: URL
+    private var baseURL: URL { AppConfiguration.shared.apiBaseURL }
     private let session: Session
     private let log = Logger(subsystem: "com.snowtracker.app", category: "APIClient")
 
     private init() {
-        self.baseURL = AppConfiguration.shared.apiBaseURL
 
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 30

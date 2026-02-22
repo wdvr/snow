@@ -5,8 +5,6 @@ struct SettingsView: View {
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject var userPreferencesManager: UserPreferencesManager
-    @Environment(\.dismiss) private var dismiss: DismissAction
-
     @State private var showingResetAlert = false
     @State private var showingSignOutAlert = false
     @State private var showingClearCacheAlert = false
@@ -171,13 +169,6 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
             .onAppear {
                 customURL = config.customAPIURLString
                 AnalyticsService.shared.trackScreen("Settings", screenClass: "SettingsView")
