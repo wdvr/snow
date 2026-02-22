@@ -185,8 +185,10 @@ struct NotificationSettings: Codable {
     var freshSnowAlerts: Bool
     var eventAlerts: Bool
     var thawFreezeAlerts: Bool
+    var powderAlerts: Bool
     var weeklySummary: Bool
     var defaultSnowThresholdCm: Double
+    var powderSnowThresholdCm: Double
     var gracePeriodHours: Int
     var resortSettings: [String: ResortNotificationSettings]
     var lastNotified: [String: String]
@@ -196,8 +198,10 @@ struct NotificationSettings: Codable {
         case freshSnowAlerts = "fresh_snow_alerts"
         case eventAlerts = "event_alerts"
         case thawFreezeAlerts = "thaw_freeze_alerts"
+        case powderAlerts = "powder_alerts"
         case weeklySummary = "weekly_summary"
         case defaultSnowThresholdCm = "default_snow_threshold_cm"
+        case powderSnowThresholdCm = "powder_snow_threshold_cm"
         case gracePeriodHours = "grace_period_hours"
         case resortSettings = "resort_settings"
         case lastNotified = "last_notified"
@@ -208,8 +212,10 @@ struct NotificationSettings: Codable {
         freshSnowAlerts = true
         eventAlerts = true
         thawFreezeAlerts = true
+        powderAlerts = true
         weeklySummary = false
         defaultSnowThresholdCm = 1.0
+        powderSnowThresholdCm = 15.0
         gracePeriodHours = 24
         resortSettings = [:]
         lastNotified = [:]
@@ -221,11 +227,15 @@ struct ResortNotificationSettings: Codable {
     var freshSnowEnabled: Bool
     var freshSnowThresholdCm: Double
     var eventNotificationsEnabled: Bool
+    var powderAlertsEnabled: Bool
+    var powderThresholdCm: Double?
 
     enum CodingKeys: String, CodingKey {
         case resortId = "resort_id"
         case freshSnowEnabled = "fresh_snow_enabled"
         case freshSnowThresholdCm = "fresh_snow_threshold_cm"
         case eventNotificationsEnabled = "event_notifications_enabled"
+        case powderAlertsEnabled = "powder_alerts_enabled"
+        case powderThresholdCm = "powder_threshold_cm"
     }
 }

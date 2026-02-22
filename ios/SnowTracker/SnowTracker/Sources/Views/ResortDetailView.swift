@@ -46,16 +46,35 @@ struct ResortDetailView: View {
 
                 // Current conditions
                 if let condition = conditionForSelectedElevation {
-                    currentConditionsCard(condition)
-                    snowDetailsCard(condition)
-                    TimelineCard(resortId: resort.id, elevation: selectedElevation)
-                    predictionsCard(condition)
-                    weatherDetailsCard(condition)
+                    Group {
+                        currentConditionsCard(condition)
+                        snowDetailsCard(condition)
+                        TimelineCard(resortId: resort.id, elevation: selectedElevation)
+                        predictionsCard(condition)
+                        weatherDetailsCard(condition)
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                    .id(selectedElevation)
                 } else if snowConditionsManager.isLoading {
                     loadingCard
                 } else {
                     noDataCard
                 }
+
+                // Elevation profile visualization
+                if !conditions.isEmpty {
+                    ElevationProfileView(
+                        resort: resort,
+                        conditions: conditions,
+                        prefs: userPreferencesManager.preferredUnits
+                    )
+                }
+
+                // Snow history chart
+                SnowHistoryView(resortId: resort.id)
+
+                // Community condition reports
+                ConditionReportSection(resortId: resort.id)
 
                 // All elevations summary
                 allElevationsSummary
@@ -94,7 +113,14 @@ struct ResortDetailView: View {
             }
         }
         .sheet(isPresented: $showingShareSheet) {
-            ShareSheet(items: [shareText])
+            let image = ConditionsCardRenderer.render(
+                resort: resort,
+                condition: conditionForSelectedElevation,
+                quality: snowConditionsManager.getSnowQuality(for: resort.id),
+                snowScore: snowConditionsManager.getSnowScore(for: resort.id),
+                prefs: userPreferencesManager.preferredUnits
+            )
+            ShareSheet(items: [image, shareText])
         }
         .refreshable {
             AnalyticsService.shared.trackPullToRefresh(screen: "ResortDetail")
@@ -115,6 +141,7 @@ struct ResortDetailView: View {
         .onDisappear {
             AnalyticsService.shared.trackScreenExit("ResortDetail")
         }
+        .animation(.easeInOut(duration: 0.25), value: selectedElevation)
         .onChange(of: selectedElevation) { _, newValue in
             AnalyticsService.shared.trackElevationChanged(resortId: resort.id, elevation: newValue.rawValue)
         }
@@ -162,7 +189,8 @@ struct ResortDetailView: View {
                         // Numeric snow score (0-100) from ML model
                         if let score = bestElevationSnowScore {
                             Text("\(score)")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .font(.title.weight(.bold))
+                                .fontDesign(.rounded)
                                 .foregroundStyle(quality.color)
                         }
                         Image(systemName: quality.icon)
@@ -175,8 +203,12 @@ struct ResortDetailView: View {
                     }
                     .padding()
                     .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(quality.color.opacity(0.1))
+                        LinearGradient(
+                            colors: [quality.color.opacity(0.15), quality.color.opacity(0.05)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     )
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("Snow quality: \(quality.displayName)\(bestElevationSnowScore.map { ", score \($0) out of 100" } ?? "")")
@@ -193,7 +225,7 @@ struct ResortDetailView: View {
                 })
             }
         }
-        .cardStyle()
+        .cardStyleElevated()
     }
 
     // MARK: - Elevation Picker
@@ -247,7 +279,8 @@ struct ResortDetailView: View {
                 VStack(spacing: 2) {
                     if let score = condition.snowScore {
                         Text("\(score)")
-                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .font(.title2.weight(.bold))
+                            .fontDesign(.rounded)
                             .foregroundStyle(condition.snowQuality.color)
                     }
                     Image(systemName: condition.snowQuality.icon)

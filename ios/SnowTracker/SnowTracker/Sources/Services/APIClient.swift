@@ -637,6 +637,207 @@ final class APIClient {
         }
     }
 
+    // MARK: - Chat API
+
+    /// Send a message to the AI chat
+    func sendChatMessage(_ message: String, conversationId: String?) async throws -> ChatResponse {
+        let url = baseURL.appendingPathComponent("api/v1/chat")
+
+        let request = ChatRequest(message: message, conversationId: conversationId)
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(
+                url,
+                method: .post,
+                parameters: request,
+                encoder: JSONParameterEncoder.default,
+                headers: authHeaders()
+            )
+            .validate()
+            .responseDecodable(of: ChatResponse.self) { response in
+                switch response.result {
+                case .success(let chatResponse):
+                    self.log.debug("Chat message sent, conversation: \(chatResponse.conversationId)")
+                    continuation.resume(returning: chatResponse)
+                case .failure(let error):
+                    self.log.error("Error sending chat message: \(error)")
+                    continuation.resume(throwing: self.mapError(error))
+                }
+            }
+        }
+    }
+
+    /// Get all chat conversations for the current user
+    func getConversations() async throws -> [ChatConversation] {
+        let url = baseURL.appendingPathComponent("api/v1/chat/conversations")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, headers: authHeaders())
+                .validate()
+                .responseDecodable(of: ChatConversationsResponse.self) { response in
+                    switch response.result {
+                    case .success(let conversationsResponse):
+                        self.log.debug("Fetched \(conversationsResponse.conversations.count) conversations")
+                        continuation.resume(returning: conversationsResponse.conversations)
+                    case .failure(let error):
+                        self.log.error("Error fetching conversations: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
+    /// Get messages for a specific conversation
+    func getConversation(_ conversationId: String) async throws -> [ChatMessage] {
+        let url = baseURL.appendingPathComponent("api/v1/chat/conversations/\(conversationId)")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, headers: authHeaders())
+                .validate()
+                .responseDecodable(of: ChatMessagesResponse.self) { response in
+                    switch response.result {
+                    case .success(let messagesResponse):
+                        self.log.debug("Fetched \(messagesResponse.messages.count) messages")
+                        continuation.resume(returning: messagesResponse.messages)
+                    case .failure(let error):
+                        self.log.error("Error fetching conversation \(conversationId): \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
+    /// Delete a conversation
+    func deleteConversation(_ conversationId: String) async throws {
+        let url = baseURL.appendingPathComponent("api/v1/chat/conversations/\(conversationId)")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, method: .delete, headers: authHeaders())
+                .validate()
+                .response { response in
+                    if let error = response.error {
+                        continuation.resume(throwing: self.mapError(error))
+                    } else {
+                        self.log.debug("Deleted conversation: \(conversationId)")
+                        continuation.resume()
+                    }
+                }
+        }
+    }
+
+    // MARK: - Condition Reports API
+
+    /// Submit a condition report for a resort
+    func submitConditionReport(
+        resortId: String,
+        conditionType: String,
+        score: Int,
+        comment: String?,
+        elevationLevel: String?
+    ) async throws {
+        let url = baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/condition-reports")
+
+        let request = SubmitConditionReportRequest(
+            conditionType: conditionType,
+            score: score,
+            comment: comment,
+            elevationLevel: elevationLevel
+        )
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(
+                url,
+                method: .post,
+                parameters: request,
+                encoder: JSONParameterEncoder.default,
+                headers: authHeaders()
+            )
+            .validate()
+            .response { response in
+                if let error = response.error {
+                    self.log.error("Error submitting condition report: \(error)")
+                    continuation.resume(throwing: self.mapError(error))
+                } else {
+                    self.log.debug("Submitted condition report for \(resortId)")
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
+    /// Get condition reports for a resort
+    func getConditionReports(resortId: String, limit: Int = 10) async throws -> ConditionReportsResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/condition-reports"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "limit", value: String(limit))
+        ]
+
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, headers: authHeaders())
+                .validate()
+                .responseDecodable(of: ConditionReportsResponse.self) { response in
+                    switch response.result {
+                    case .success(let reportsResponse):
+                        self.log.debug("Fetched \(reportsResponse.reports.count) condition reports for \(resortId)")
+                        continuation.resume(returning: reportsResponse)
+                    case .failure(let error):
+                        self.log.error("Error fetching condition reports: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
+    /// Get condition reports submitted by the current user
+    func getUserConditionReports(limit: Int = 20) async throws -> ConditionReportsResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/user/condition-reports"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "limit", value: String(limit))
+        ]
+
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, headers: authHeaders())
+                .validate()
+                .responseDecodable(of: ConditionReportsResponse.self) { response in
+                    switch response.result {
+                    case .success(let reportsResponse):
+                        self.log.debug("Fetched \(reportsResponse.reports.count) user condition reports")
+                        continuation.resume(returning: reportsResponse)
+                    case .failure(let error):
+                        self.log.error("Error fetching user condition reports: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
+    /// Delete a condition report
+    func deleteConditionReport(resortId: String, reportId: String) async throws {
+        let url = baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/condition-reports/\(reportId)")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, method: .delete, headers: authHeaders())
+                .validate()
+                .response { response in
+                    if let error = response.error {
+                        self.log.error("Error deleting condition report: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    } else {
+                        self.log.debug("Deleted condition report \(reportId)")
+                        continuation.resume()
+                    }
+                }
+        }
+    }
+
     // MARK: - Feedback API
 
     func submitFeedback(_ feedback: FeedbackSubmission) async throws {
@@ -818,6 +1019,39 @@ final class APIClient {
                     continuation.resume(throwing: self.mapError(error))
                 }
             }
+        }
+    }
+
+    // MARK: - Snow History
+
+    /// Fetch daily snow history and season summary for a resort
+    func getSnowHistory(resortId: String, season: String? = nil) async throws -> SnowHistoryResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/history"), resolvingAgainstBaseURL: false)!
+        var queryItems: [URLQueryItem] = []
+        if let season {
+            queryItems.append(URLQueryItem(name: "season", value: season))
+        }
+        if !queryItems.isEmpty {
+            components.queryItems = queryItems
+        }
+
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url)
+                .validate()
+                .responseDecodable(of: SnowHistoryResponse.self) { response in
+                    switch response.result {
+                    case .success(let historyResponse):
+                        self.log.debug("Fetched \(historyResponse.history.count) history records for \(resortId)")
+                        continuation.resume(returning: historyResponse)
+                    case .failure(let error):
+                        self.log.error("Error fetching snow history for \(resortId): \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
         }
     }
 
@@ -1156,6 +1390,16 @@ struct UserPreferences: Codable {
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
+}
+
+// MARK: - Chat Response Models
+
+struct ChatConversationsResponse: Codable {
+    let conversations: [ChatConversation]
+}
+
+struct ChatMessagesResponse: Codable {
+    let messages: [ChatMessage]
 }
 
 // MARK: - Feedback Submission Model
@@ -1638,8 +1882,10 @@ struct NotificationSettingsUpdate: Codable {
     var freshSnowAlerts: Bool?
     var eventAlerts: Bool?
     var thawFreezeAlerts: Bool?
+    var powderAlerts: Bool?
     var weeklySummary: Bool?
     var defaultSnowThresholdCm: Double?
+    var powderSnowThresholdCm: Double?
     var gracePeriodHours: Int?
 
     private enum CodingKeys: String, CodingKey {
@@ -1647,8 +1893,10 @@ struct NotificationSettingsUpdate: Codable {
         case freshSnowAlerts = "fresh_snow_alerts"
         case eventAlerts = "event_alerts"
         case thawFreezeAlerts = "thaw_freeze_alerts"
+        case powderAlerts = "powder_alerts"
         case weeklySummary = "weekly_summary"
         case defaultSnowThresholdCm = "default_snow_threshold_cm"
+        case powderSnowThresholdCm = "powder_snow_threshold_cm"
         case gracePeriodHours = "grace_period_hours"
     }
 }
@@ -1657,11 +1905,15 @@ struct ResortNotificationSettingsUpdate: Codable {
     var freshSnowEnabled: Bool?
     var freshSnowThresholdCm: Double?
     var eventNotificationsEnabled: Bool?
+    var powderAlertsEnabled: Bool?
+    var powderThresholdCm: Double?
 
     private enum CodingKeys: String, CodingKey {
         case freshSnowEnabled = "fresh_snow_enabled"
         case freshSnowThresholdCm = "fresh_snow_threshold_cm"
         case eventNotificationsEnabled = "event_notifications_enabled"
+        case powderAlertsEnabled = "powder_alerts_enabled"
+        case powderThresholdCm = "powder_threshold_cm"
     }
 }
 

@@ -185,7 +185,36 @@ GET  /api/v1/trips/{id}               - Get trip details
 PUT  /api/v1/trips/{id}               - Update trip
 DELETE /api/v1/trips/{id}             - Delete trip
 POST /api/v1/feedback                  - Submit feedback
+POST /api/v1/chat                      - AI conditions chat (Bedrock Claude Sonnet 4.6)
+GET  /api/v1/chat/conversations        - List chat conversations
+GET  /api/v1/chat/conversations/{id}   - Get conversation messages
+DELETE /api/v1/chat/conversations/{id} - Delete conversation
+POST /api/v1/resorts/{id}/condition-reports - Submit user condition report
+GET  /api/v1/resorts/{id}/condition-reports - List condition reports for resort
+GET  /api/v1/user/condition-reports    - List user's own condition reports
+DELETE /api/v1/resorts/{id}/condition-reports/{report_id} - Delete condition report
+GET  /api/v1/resorts/{id}/history      - Snow history (daily snowfall chart data + season summary)
 ```
+
+### DynamoDB Tables
+```
+snow-tracker-resorts-{env}                 - Resort master data
+snow-tracker-weather-conditions-{env}      - Hourly weather conditions (60d TTL)
+snow-tracker-snow-summary-{env}            - Season snowfall totals (no TTL)
+snow-tracker-daily-history-{env}           - Daily snow history snapshots (no TTL)
+snow-tracker-user-preferences-{env}        - User preferences & notification settings
+snow-tracker-device-tokens-{env}           - APNs device tokens (90d TTL)
+snow-tracker-resort-events-{env}           - Resort events
+snow-tracker-feedback-{env}                - User feedback
+snow-tracker-chat-{env}                    - AI chat conversations (30d TTL)
+snow-tracker-condition-reports-{env}       - User condition reports (90d TTL)
+```
+
+### Bedrock Configuration
+- Model: Claude Sonnet 4.6 (`us.anthropic.claude-sonnet-4-6-20250514`) via Amazon Bedrock Converse API with tool_use
+- Region: `us-west-2`
+- Chat history table: `snow-tracker-chat-{env}`
+- Condition reports table: `snow-tracker-condition-reports-{env}`
 
 ---
 

@@ -185,6 +185,22 @@ struct ResortListView: View {
                                 source: "list"
                             )
                         })
+                        .contextMenu {
+                            Button {
+                                userPreferencesManager.toggleFavorite(resortId: resort.id)
+                            } label: {
+                                Label(
+                                    userPreferencesManager.isFavorite(resortId: resort.id) ? "Remove Favorite" : "Add to Favorites",
+                                    systemImage: userPreferencesManager.isFavorite(resortId: resort.id) ? "heart.slash" : "heart"
+                                )
+                            }
+
+                            if let website = resort.officialWebsite, let url = URL(string: website) {
+                                Link(destination: url) {
+                                    Label("Visit Website", systemImage: "safari")
+                                }
+                            }
+                        }
                     }
                 }
                 .listStyle(PlainListStyle())
@@ -352,7 +368,8 @@ struct ResortRowView: View {
                     VStack(spacing: 2) {
                         if let score = snowConditionsManager.getSnowScore(for: resort.id) {
                             Text("\(score)")
-                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                .font(.callout.weight(.bold))
+                                .fontDesign(.rounded)
                                 .foregroundStyle(displayQuality.color)
                         }
                         Image(systemName: displayQuality.icon)
@@ -462,6 +479,7 @@ struct ResortRowView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+                    .truncationMode(.tail)
             }
         }
         .padding(.vertical, 4)
@@ -483,6 +501,7 @@ struct FilterChip: View {
                 }
                 Text(title)
                     .font(.caption)
+                    .fontWeight(isSelected ? .semibold : .regular)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
@@ -493,6 +512,8 @@ struct FilterChip: View {
             .foregroundStyle(isSelected ? .white : .primary)
         }
         .buttonStyle(PlainButtonStyle())
+        .scaleEffect(isSelected ? 1.0 : 0.95)
+        .animation(.easeInOut(duration: 0.15), value: isSelected)
         .sensoryFeedback(.selection, trigger: isSelected)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .accessibilityLabel("\(title)\(isSelected ? ", selected" : "")")

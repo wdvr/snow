@@ -1,5 +1,12 @@
 """Data models for Snow Quality Tracker."""
 
+from .chat import ChatMessage, ChatRequest, ChatResponse, ConversationSummary
+from .condition_report import (
+    ConditionReport,
+    ConditionReportRequest,
+    ConditionReportResponse,
+    ConditionType,
+)
 from .notification import (
     DeviceToken,
     NotificationPayload,
@@ -14,6 +21,14 @@ from .user import User, UserPreferences
 from .weather import ConfidenceLevel, SnowQuality, WeatherCondition
 
 __all__ = [
+    "ChatMessage",
+    "ChatRequest",
+    "ChatResponse",
+    "ConditionReport",
+    "ConditionReportRequest",
+    "ConditionReportResponse",
+    "ConditionType",
+    "ConversationSummary",
     "Resort",
     "ElevationPoint",
     "WeatherCondition",

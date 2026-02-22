@@ -16,6 +16,7 @@ class NotificationType(str, Enum):
     CONDITIONS_IMPROVED = "conditions_improved"
     THAW_ALERT = "thaw_alert"  # Temperature went from minus to plus for 4+ hours
     FREEZE_ALERT = "freeze_alert"  # Temperature went from plus to minus
+    WEEKLY_SUMMARY = "weekly_summary"  # Weekly snow digest
 
 
 # Funny messages for thaw alerts (rotate through these)
@@ -44,6 +45,20 @@ FREEZE_MESSAGES = [
     "Frost alert! The mountain is hardening up - ski with caution.",
     "Sub-zero lockdown! The slush has turned to survival mode skiing.",
     "Deep freeze engaged! Those groomed runs are now Olympic luge tracks.",
+]
+
+# Powder day alert messages (rotate through these)
+POWDER_MESSAGES = [
+    "POWDER DAY! 🎿 {resort_name} got {snow_cm}cm of fresh snow overnight!",
+    "It's dumping at {resort_name}! {snow_cm}cm and counting - time to call in sick!",
+    "Fresh tracks alert! {resort_name} has {snow_cm}cm of new powder waiting for you!",
+    "The snow gods have spoken! {resort_name} is buried under {snow_cm}cm of fresh!",
+    "Drop everything! {snow_cm}cm of fresh powder at {resort_name} - this is not a drill!",
+    "Waist deep at {resort_name}! {snow_cm}cm of pure bliss just fell from the sky!",
+    "POW POW POW! {resort_name} scored {snow_cm}cm of fresh - your office called, they understand.",
+    "Winter wonderland at {resort_name}! {snow_cm}cm of champagne powder has arrived!",
+    "Alert: {resort_name} is having a powder party! {snow_cm}cm and the trees are fully loaded!",
+    "Best day of the season? {resort_name} just got {snow_cm}cm of epic fresh snow!",
 ]
 
 
@@ -100,6 +115,12 @@ class ResortNotificationSettings(BaseModel):
     event_notifications_enabled: bool = Field(
         default=True, description="Notify on resort events"
     )
+    powder_alerts_enabled: bool = Field(
+        default=True, description="Enable powder alerts for this resort"
+    )
+    powder_threshold_cm: float | None = Field(
+        None, description="Per-resort powder threshold override"
+    )
 
 
 class UserNotificationPreferences(BaseModel):
@@ -118,6 +139,9 @@ class UserNotificationPreferences(BaseModel):
     thaw_freeze_alerts: bool = Field(
         default=True, description="Enable thaw/freeze cycle notifications"
     )
+    powder_alerts: bool = Field(
+        default=True, description="Enable powder day notifications"
+    )
     weekly_summary: bool = Field(
         default=False, description="Enable weekly snow summary"
     )
@@ -125,6 +149,10 @@ class UserNotificationPreferences(BaseModel):
     # Default thresholds (can be overridden per resort)
     default_snow_threshold_cm: float = Field(
         default=1.0, description="Default minimum snow in cm to trigger notification"
+    )
+    powder_snow_threshold_cm: float = Field(
+        default=15.0,
+        description="Fresh snow threshold for powder day alert (cm)",
     )
 
     # Per-resort overrides (resort_id -> settings)

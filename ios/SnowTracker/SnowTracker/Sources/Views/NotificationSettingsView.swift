@@ -92,13 +92,44 @@ struct NotificationSettingsView: View {
                             viewModel.saveSettings()
                             AnalyticsService.shared.trackNotificationSettingChanged(setting: "thaw_freeze_alerts", enabled: newValue)
                         }
+
+                    Toggle("Powder Day Alerts", isOn: $viewModel.powderAlerts)
+                        .onChange(of: viewModel.powderAlerts) { _, newValue in
+                            viewModel.saveSettings()
+                            AnalyticsService.shared.trackNotificationSettingChanged(setting: "powder_alerts", enabled: newValue)
+                        }
+
+                    if viewModel.powderAlerts {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Powder Day Threshold")
+                                .font(.subheadline)
+
+                            HStack {
+                                Slider(
+                                    value: $viewModel.powderThreshold,
+                                    in: 15...50,
+                                    step: 1
+                                )
+                                .onChange(of: viewModel.powderThreshold) { _, _ in
+                                    viewModel.saveSettings()
+                                }
+
+                                Text(formatThreshold(viewModel.powderThreshold))
+                                    .frame(width: 55, alignment: .trailing)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
                 } header: {
                     Text("Alert Types")
                 } footer: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Fresh Snow Alerts: Get notified when fresh snow falls at your favorite resorts.")
                         Text("Resort Events: Get notified about special events and offers at your favorite resorts.")
-                        Text("Thaw/Freeze Alerts: Get notified when temperatures rise above 0°C for 4+ hours (thawing) or drop below 0°C (freezing) - indicates icy conditions ahead.")
+                        Text("Thaw/Freeze Alerts: Get notified when temperatures rise above 0\u{00B0}C for 4+ hours (thawing) or drop below 0\u{00B0}C (freezing) - indicates icy conditions ahead.")
+                        Text("Powder Day Alerts: Get notified when conditions align for an epic powder day - heavy snowfall, cold temps, low wind, and great snow quality.")
                     }
                 }
 
@@ -263,6 +294,30 @@ struct ResortNotificationRow: View {
 
                 Toggle("Event Alerts", isOn: binding(for: \.eventNotificationsEnabled))
                     .font(.subheadline)
+
+                Toggle("Powder Day Alerts", isOn: binding(for: \.powderAlertsEnabled))
+                    .font(.subheadline)
+
+                if viewModel.getResortSetting(resortId)?.powderAlertsEnabled ?? true {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Powder Threshold")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        HStack {
+                            Slider(
+                                value: powderThresholdBinding,
+                                in: 15...50,
+                                step: 1
+                            )
+
+                            Text(formatThreshold(viewModel.getResortSetting(resortId)?.powderThresholdCm ?? viewModel.powderThreshold))
+                                .frame(width: 55, alignment: .trailing)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
             }
             .padding(.vertical, 8)
         } label: {
@@ -308,6 +363,17 @@ struct ResortNotificationRow: View {
         )
     }
 
+    private var powderThresholdBinding: Binding<Double> {
+        Binding(
+            get: {
+                viewModel.getResortSetting(resortId)?.powderThresholdCm ?? viewModel.powderThreshold
+            },
+            set: { newValue in
+                viewModel.updateResortSetting(resortId: resortId, powderThresholdCm: newValue)
+            }
+        )
+    }
+
     private func binding(for keyPath: WritableKeyPath<ResortNotificationSettings, Bool>) -> Binding<Bool> {
         Binding(
             get: {
@@ -320,6 +386,8 @@ struct ResortNotificationRow: View {
                     return viewModel.freshSnowAlerts
                 case \.eventNotificationsEnabled:
                     return viewModel.eventAlerts
+                case \.powderAlertsEnabled:
+                    return viewModel.powderAlerts
                 default:
                     return true
                 }
@@ -330,6 +398,8 @@ struct ResortNotificationRow: View {
                     viewModel.updateResortSetting(resortId: resortId, freshSnowEnabled: newValue)
                 case \.eventNotificationsEnabled:
                     viewModel.updateResortSetting(resortId: resortId, eventNotificationsEnabled: newValue)
+                case \.powderAlertsEnabled:
+                    viewModel.updateResortSetting(resortId: resortId, powderAlertsEnabled: newValue)
                 default:
                     break
                 }
@@ -360,8 +430,10 @@ class NotificationSettingsViewModel: ObservableObject {
     @Published var freshSnowAlerts = true
     @Published var eventAlerts = true
     @Published var thawFreezeAlerts = true
+    @Published var powderAlerts = true
     @Published var weeklySummary = false
     @Published var snowThresholdCm: Double = 1.0
+    @Published var powderThreshold: Double = 15.0
     @Published var gracePeriodHours = 24
     @Published var isLoading = false
     @Published var isSendingTest = false
@@ -400,8 +472,10 @@ class NotificationSettingsViewModel: ObservableObject {
             freshSnowAlerts = settings.freshSnowAlerts
             eventAlerts = settings.eventAlerts
             thawFreezeAlerts = settings.thawFreezeAlerts
+            powderAlerts = settings.powderAlerts
             weeklySummary = settings.weeklySummary
             snowThresholdCm = settings.defaultSnowThresholdCm
+            powderThreshold = settings.powderSnowThresholdCm
             gracePeriodHours = settings.gracePeriodHours
             resortSettings = settings.resortSettings
         } catch {
@@ -418,8 +492,10 @@ class NotificationSettingsViewModel: ObservableObject {
                     freshSnowAlerts: freshSnowAlerts,
                     eventAlerts: eventAlerts,
                     thawFreezeAlerts: thawFreezeAlerts,
+                    powderAlerts: powderAlerts,
                     weeklySummary: weeklySummary,
                     defaultSnowThresholdCm: snowThresholdCm,
+                    powderSnowThresholdCm: powderThreshold,
                     gracePeriodHours: gracePeriodHours
                 )
                 try await apiClient.updateNotificationSettings(update)
@@ -437,14 +513,17 @@ class NotificationSettingsViewModel: ObservableObject {
         resortId: String,
         freshSnowEnabled: Bool? = nil,
         freshSnowThresholdCm: Double? = nil,
-        eventNotificationsEnabled: Bool? = nil
+        eventNotificationsEnabled: Bool? = nil,
+        powderAlertsEnabled: Bool? = nil,
+        powderThresholdCm: Double? = nil
     ) {
         // Create or update resort settings
         var settings = resortSettings[resortId] ?? ResortNotificationSettings(
             resortId: resortId,
             freshSnowEnabled: freshSnowAlerts,
             freshSnowThresholdCm: snowThresholdCm,
-            eventNotificationsEnabled: eventAlerts
+            eventNotificationsEnabled: eventAlerts,
+            powderAlertsEnabled: powderAlerts
         )
 
         if let freshSnowEnabled {
@@ -456,6 +535,12 @@ class NotificationSettingsViewModel: ObservableObject {
         if let eventNotificationsEnabled {
             settings.eventNotificationsEnabled = eventNotificationsEnabled
         }
+        if let powderAlertsEnabled {
+            settings.powderAlertsEnabled = powderAlertsEnabled
+        }
+        if let powderThresholdCm {
+            settings.powderThresholdCm = powderThresholdCm
+        }
 
         resortSettings[resortId] = settings
 
@@ -465,7 +550,9 @@ class NotificationSettingsViewModel: ObservableObject {
                 let update = ResortNotificationSettingsUpdate(
                     freshSnowEnabled: settings.freshSnowEnabled,
                     freshSnowThresholdCm: settings.freshSnowThresholdCm,
-                    eventNotificationsEnabled: settings.eventNotificationsEnabled
+                    eventNotificationsEnabled: settings.eventNotificationsEnabled,
+                    powderAlertsEnabled: settings.powderAlertsEnabled,
+                    powderThresholdCm: settings.powderThresholdCm
                 )
                 try await apiClient.updateResortNotificationSettings(
                     resortId: resortId,

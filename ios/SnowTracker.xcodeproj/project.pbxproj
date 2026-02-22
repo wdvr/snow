@@ -61,6 +61,21 @@
 		EA531D55CCE208840DBD24CA /* Region.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C040FB3169E04F140636D1 /* Region.swift */; };
 		F1A2B3C4D5E6F7A8B9C0D1E2 /* TimelineData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* TimelineData.swift */; };
 		F2B3C4D5E6F7A8B9C0D1E2F3 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* TimelineView.swift */; };
+		B2D3E4F5A6B7C8D9E0F1A2B3 /* ChatModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C2D3E4F5A6B7C8D9E0F1A2 /* ChatModels.swift */; };
+		D4E5F6A7B8C9D0E1F2A3B4C5 /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6A7B8C9D0E1F2A3B4 /* ChatViewModel.swift */; };
+		F6A7B8C9D0E1F2A3B4C5D6E7 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F6A7B8C9D0E1F2A3B4C5D6 /* ChatView.swift */; };
+		AA01BB02CC03DD04EE05FF06 /* ConditionReportModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB01CC02DD03EE04FF05AA06 /* ConditionReportModels.swift */; };
+		AA07BB08CC09DD10EE11FF12 /* ConditionReportViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB07CC08DD09EE10FF11AA12 /* ConditionReportViewModel.swift */; };
+		AA13BB14CC15DD16EE17FF18 /* ConditionReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB13CC14DD15EE16FF17AA18 /* ConditionReportView.swift */; };
+		CC19DD20EE21FF22AA23BB24 /* ComparisonViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD19EE20FF21AA22BB23CC24 /* ComparisonViewModel.swift */; };
+		CC25DD26EE27FF28AA29BB30 /* ResortComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD25EE26FF27AA28BB29CC30 /* ResortComparisonView.swift */; };
+		CC31DD32EE33FF34AA35BB36 /* ConditionsCardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD31EE32FF33AA34BB35CC36 /* ConditionsCardRenderer.swift */; };
+		CC37DD38EE39FF40AA41BB42 /* ElevationProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD37EE38FF39AA40BB41CC42 /* ElevationProfileView.swift */; };
+		DD01EE02FF03AA04BB05CC06 /* SnowHistoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE01FF02AA03BB04CC05DD06 /* SnowHistoryModels.swift */; };
+		DD07EE08FF09AA10BB11CC12 /* SnowHistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE07FF08AA09BB10CC11DD12 /* SnowHistoryViewModel.swift */; };
+		DD13EE14FF15AA16BB17CC18 /* SnowHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE13FF14AA15BB16CC17DD18 /* SnowHistoryView.swift */; };
+		EE19FF20AA21BB22CC23DD24 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF19AA20BB21CC22DD23EE24 /* NetworkMonitor.swift */; };
+		EE25FF26AA27BB28CC29DD30 /* OfflineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF25AA26BB27CC28DD29EE30 /* OfflineBanner.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -169,6 +184,21 @@
 		E584D4547756C9B47E811A69 /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
 		F56FE154DA2CD3D9259038B2 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
 		F6DA2B806F38369F0414AA36 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		A1C2D3E4F5A6B7C8D9E0F1A2 /* ChatModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModels.swift; sourceTree = "<group>"; };
+		C3D4E5F6A7B8C9D0E1F2A3B4 /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
+		E5F6A7B8C9D0E1F2A3B4C5D6 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		BB01CC02DD03EE04FF05AA06 /* ConditionReportModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionReportModels.swift; sourceTree = "<group>"; };
+		BB07CC08DD09EE10FF11AA12 /* ConditionReportViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionReportViewModel.swift; sourceTree = "<group>"; };
+		BB13CC14DD15EE16FF17AA18 /* ConditionReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionReportView.swift; sourceTree = "<group>"; };
+		DD19EE20FF21AA22BB23CC24 /* ComparisonViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonViewModel.swift; sourceTree = "<group>"; };
+		DD25EE26FF27AA28BB29CC30 /* ResortComparisonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResortComparisonView.swift; sourceTree = "<group>"; };
+		DD31EE32FF33AA34BB35CC36 /* ConditionsCardRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionsCardRenderer.swift; sourceTree = "<group>"; };
+		DD37EE38FF39AA40BB41CC42 /* ElevationProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElevationProfileView.swift; sourceTree = "<group>"; };
+		EE01FF02AA03BB04CC05DD06 /* SnowHistoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowHistoryModels.swift; sourceTree = "<group>"; };
+		EE07FF08AA09BB10CC11DD12 /* SnowHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowHistoryViewModel.swift; sourceTree = "<group>"; };
+		EE13FF14AA15BB16CC17DD18 /* SnowHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowHistoryView.swift; sourceTree = "<group>"; };
+		FF19AA20BB21CC22DD23EE24 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		FF25AA26BB27CC28DD29EE30 /* OfflineBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineBanner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -202,8 +232,12 @@
 		1E3908A7EEE6BA35E8EA44FB /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				C3D4E5F6A7B8C9D0E1F2A3B4 /* ChatViewModel.swift */,
+				DD19EE20FF21AA22BB23CC24 /* ComparisonViewModel.swift */,
+				BB07CC08DD09EE10FF11AA12 /* ConditionReportViewModel.swift */,
 				4090ACDD145A707AB31C7279 /* Managers.swift */,
 				137A889DFFD57B2095D78866 /* MapViewModel.swift */,
+				EE07FF08AA09BB10CC11DD12 /* SnowHistoryViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -218,6 +252,7 @@
 				A882E15FD24B57516DE0B29E /* Configuration.swift */,
 				6C1BA087DD0B345FC02441ED /* DemoDataService.swift */,
 				F6DA2B806F38369F0414AA36 /* LocationManager.swift */,
+				FF19AA20BB21CC22DD23EE24 /* NetworkMonitor.swift */,
 				7EA770DE28FAAFB7C82C04D9 /* PushNotificationService.swift */,
 			);
 			path = Services;
@@ -226,9 +261,14 @@
 		2B26478395424C45EDF16B48 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				FF31AA32BB33CC34DD35EE36 /* Components */,
 				1C3612902D14F964CD974A7E /* AuthenticationViews.swift */,
+				E5F6A7B8C9D0E1F2A3B4C5D6 /* ChatView.swift */,
 				61CA3C498827FBF30FCBE0C5 /* ClusteredMapView.swift */,
+				BB13CC14DD15EE16FF17AA18 /* ConditionReportView.swift */,
+				DD31EE32FF33AA34BB35CC36 /* ConditionsCardRenderer.swift */,
 				E42DC701CEC0DFCAD7762C72 /* ConditionsView.swift */,
+				DD37EE38FF39AA40BB41CC42 /* ElevationProfileView.swift */,
 				1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */,
 				7629DBF912C6AF6C0C5845FA /* CardStyle.swift */,
 				D94F3FDE9BBCEF47C3DC8547 /* FeedbackView.swift */,
@@ -236,15 +276,25 @@
 				9C9690886D46EBB22DBF795D /* OnboardingView.swift */,
 				AE39AEFA27BB224346186A6A /* RecommendationsView.swift */,
 				DF4178DE92CCE9002408C907 /* RegionFilterSettingsView.swift */,
+				DD25EE26FF27AA28BB29CC30 /* ResortComparisonView.swift */,
 				22ECDCF89993D8220437C43C /* ResortDetailView.swift */,
 				D49E6B5DE0674E438239F0C7 /* ResortListView.swift */,
 				9D2E198287C4AD2358752184 /* ResortMapView.swift */,
 				8BCC6D20537615D2F10A0472 /* SettingsView.swift */,
+				EE13FF14AA15BB16CC17DD18 /* SnowHistoryView.swift */,
 				B59B0D2F334DE813DE1268D1 /* SplashView.swift */,
 				B2C3D4E5F6A7B8C9D0E1F2A3 /* TimelineView.swift */,
 				34B3DE91A8041E068949717A /* TripPlanningViews.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		FF31AA32BB33CC34DD35EE36 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				FF25AA26BB27CC28DD29EE30 /* OfflineBanner.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		4B34CFC995865095770F7B83 /* SnowTrackerWidget */ = {
@@ -325,8 +375,11 @@
 		BE115A7AABCC32A18E3ACBF1 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				A1C2D3E4F5A6B7C8D9E0F1A2 /* ChatModels.swift */,
+				BB01CC02DD03EE04FF05AA06 /* ConditionReportModels.swift */,
 				18C040FB3169E04F140636D1 /* Region.swift */,
 				9EEA5CCD0AE9EC5A936DC79E /* Resort.swift */,
+				EE01FF02AA03BB04CC05DD06 /* SnowHistoryModels.swift */,
 				A1B2C3D4E5F6A7B8C9D0E1F2 /* TimelineData.swift */,
 				071051238274C7A6A1632776 /* WeatherCondition.swift */,
 			);
@@ -500,10 +553,20 @@
 			files = (
 				74BA625B9E4FE88B4C6172C6 /* APIClient.swift in Sources */,
 				0AAE22343FF726A2537D8CEB /* AnalyticsService.swift in Sources */,
+				B2D3E4F5A6B7C8D9E0F1A2B3 /* ChatModels.swift in Sources */,
+				D4E5F6A7B8C9D0E1F2A3B4C5 /* ChatViewModel.swift in Sources */,
+				F6A7B8C9D0E1F2A3B4C5D6E7 /* ChatView.swift in Sources */,
 				38D5CCC28385D7DC0208CB70 /* AuthenticationService.swift in Sources */,
 				24A3BDA567803E68B65547C7 /* AuthenticationViews.swift in Sources */,
 				7AB63FA94855BFFC3BC3D96D /* CacheService.swift in Sources */,
 				B8228CF5A7EED426F2DD89E1 /* ClusteredMapView.swift in Sources */,
+				CC19DD20EE21FF22AA23BB24 /* ComparisonViewModel.swift in Sources */,
+				AA01BB02CC03DD04EE05FF06 /* ConditionReportModels.swift in Sources */,
+				AA07BB08CC09DD10EE11FF12 /* ConditionReportViewModel.swift in Sources */,
+				AA13BB14CC15DD16EE17FF18 /* ConditionReportView.swift in Sources */,
+				CC31DD32EE33FF34AA35BB36 /* ConditionsCardRenderer.swift in Sources */,
+				CC37DD38EE39FF40AA41BB42 /* ElevationProfileView.swift in Sources */,
+				CC25DD26EE27FF28AA29BB30 /* ResortComparisonView.swift in Sources */,
 				5C548AAEA20DC47384E0E971 /* ConditionsView.swift in Sources */,
 				C440EFF2F7868A9A09A525C2 /* Configuration.swift in Sources */,
 				A79CA1D7F4A1253EFC65CB4B /* DemoDataService.swift in Sources */,
@@ -529,6 +592,11 @@
 				F1A2B3C4D5E6F7A8B9C0D1E2 /* TimelineData.swift in Sources */,
 				F2B3C4D5E6F7A8B9C0D1E2F3 /* TimelineView.swift in Sources */,
 				CCD8A0284D887301091D486F /* TripPlanningViews.swift in Sources */,
+				DD01EE02FF03AA04BB05CC06 /* SnowHistoryModels.swift in Sources */,
+				DD07EE08FF09AA10BB11CC12 /* SnowHistoryViewModel.swift in Sources */,
+				DD13EE14FF15AA16BB17CC18 /* SnowHistoryView.swift in Sources */,
+				EE19FF20AA21BB22CC23DD24 /* NetworkMonitor.swift in Sources */,
+				EE25FF26AA27BB28CC29DD30 /* OfflineBanner.swift in Sources */,
 				67445A37BBAF5CF523504776 /* WeatherCondition.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

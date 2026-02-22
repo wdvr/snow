@@ -460,6 +460,56 @@ class SnowConditionsManager: ObservableObject {
         conditions[resortId]?.first { $0.elevationLevel == elevation.rawValue }
     }
 
+    /// Pre-fetch conditions, snow quality, and timeline data for all favorite
+    /// resorts. Call this when the app enters the foreground and the network is
+    /// available so that detail views are ready instantly.
+    func prefetchFavoriteData() async {
+        let favoriteIds = Array(UserPreferencesManager.shared.favoriteResorts)
+        guard !favoriteIds.isEmpty else { return }
+
+        managerLog.debug("prefetchFavoriteData: Starting pre-fetch for \(favoriteIds.count) favorites")
+
+        // 1. Conditions — only if stale
+        let staleConditionIds = favoriteIds.filter { resortId in
+            guard let cached = cacheService.getCachedConditions(for: resortId), !cached.isStale else {
+                return true
+            }
+            // Make sure in-memory dict is populated
+            if conditions[resortId] == nil {
+                conditions[resortId] = cached.data
+            }
+            return false
+        }
+        if !staleConditionIds.isEmpty {
+            managerLog.debug("prefetchFavoriteData: Fetching conditions for \(staleConditionIds.count) stale favorites")
+            await fetchConditionsForResorts(resortIds: staleConditionIds)
+        }
+
+        // 2. Snow quality summaries — only if stale
+        if let cached = cacheService.getCachedSnowQualitySummaries(), !cached.isStale {
+            if snowQualitySummaries.isEmpty {
+                snowQualitySummaries = cached.data
+            }
+        } else {
+            await fetchAllSnowQualitySummaries()
+        }
+
+        // 3. Timelines — only if stale
+        for resortId in favoriteIds {
+            if let cached = cacheService.getCachedTimeline(for: resortId), !cached.isStale {
+                continue
+            }
+            do {
+                let timeline = try await apiClient.getTimeline(for: resortId)
+                cacheService.cacheTimeline(timeline, for: resortId)
+            } catch {
+                managerLog.debug("prefetchFavoriteData: Failed to fetch timeline for \(resortId): \(error.localizedDescription)")
+            }
+        }
+
+        managerLog.debug("prefetchFavoriteData: Complete")
+    }
+
     func clearCache() {
         cacheService.clearAllCache()
         isUsingCachedData = false
@@ -474,6 +524,7 @@ class UserPreferencesManager: ObservableObject {
     static let shared = UserPreferencesManager()
 
     @Published var favoriteResorts: Set<String> = []
+    @Published var favoriteGroups: [FavoriteGroup] = []
     @Published var preferredUnits: UnitPreferences = UnitPreferences() {
         didSet {
             saveUnitPreferences()
@@ -495,6 +546,7 @@ class UserPreferencesManager: ObservableObject {
 
     private let apiClient = APIClient.shared
     private let favoritesKey = "favoriteResorts"
+    private let favoriteGroupsKey = "favoriteGroups"
     private let unitPreferencesKey = "unitPreferences"
     private let hiddenRegionsKey = "hiddenRegions"
     private let hasCompletedOnboardingKey = "hasCompletedOnboarding"
@@ -529,6 +581,9 @@ class UserPreferencesManager: ObservableObject {
             // Migrate to shared defaults
             saveLocalPreferences()
         }
+
+        // Load favorite groups
+        loadFavoriteGroups()
 
         // Load unit preferences
         loadUnitPreferences()
@@ -620,9 +675,76 @@ class UserPreferencesManager: ObservableObject {
         }
     }
 
+    // MARK: - Favorite Groups
+
+    private func loadFavoriteGroups() {
+        let defaults = sharedDefaults ?? UserDefaults.standard
+        if let data = defaults.data(forKey: favoriteGroupsKey),
+           let decoded = try? JSONDecoder().decode([FavoriteGroup].self, from: data) {
+            favoriteGroups = decoded
+        }
+    }
+
+    func saveFavoriteGroups() {
+        guard let encoded = try? JSONEncoder().encode(favoriteGroups) else { return }
+        sharedDefaults?.set(encoded, forKey: favoriteGroupsKey)
+        UserDefaults.standard.set(encoded, forKey: favoriteGroupsKey)
+    }
+
+    func createGroup(name: String) {
+        let group = FavoriteGroup(name: name)
+        favoriteGroups.append(group)
+        saveFavoriteGroups()
+    }
+
+    func renameGroup(id: String, name: String) {
+        guard let index = favoriteGroups.firstIndex(where: { $0.id == id }) else { return }
+        favoriteGroups[index].name = name
+        saveFavoriteGroups()
+    }
+
+    func deleteGroup(id: String) {
+        favoriteGroups.removeAll { $0.id == id }
+        saveFavoriteGroups()
+    }
+
+    func addResortToGroup(resortId: String, groupId: String) {
+        // Remove from any existing group first
+        for i in favoriteGroups.indices {
+            favoriteGroups[i].resortIds.removeAll { $0 == resortId }
+        }
+        // Add to target group
+        if let index = favoriteGroups.firstIndex(where: { $0.id == groupId }) {
+            favoriteGroups[index].resortIds.append(resortId)
+        }
+        saveFavoriteGroups()
+    }
+
+    func removeResortFromGroup(resortId: String, groupId: String) {
+        if let index = favoriteGroups.firstIndex(where: { $0.id == groupId }) {
+            favoriteGroups[index].resortIds.removeAll { $0 == resortId }
+        }
+        saveFavoriteGroups()
+    }
+
+    /// Resorts not assigned to any group
+    func ungroupedFavoriteResortIds() -> Set<String> {
+        let grouped = Set(favoriteGroups.flatMap(\.resortIds))
+        return favoriteResorts.subtracting(grouped)
+    }
+
+    func groupForResort(_ resortId: String) -> FavoriteGroup? {
+        favoriteGroups.first { $0.resortIds.contains(resortId) }
+    }
+
     func toggleFavorite(resortId: String) {
         if favoriteResorts.contains(resortId) {
             favoriteResorts.remove(resortId)
+            // Remove from any group
+            for i in favoriteGroups.indices {
+                favoriteGroups[i].resortIds.removeAll { $0 == resortId }
+            }
+            saveFavoriteGroups()
         } else {
             favoriteResorts.insert(resortId)
         }
@@ -744,3 +866,17 @@ struct UnitPreferences: Codable {
 }
 
 // NotificationSettings moved to PushNotificationService.swift
+
+// MARK: - Favorite Groups
+
+struct FavoriteGroup: Codable, Identifiable {
+    let id: String
+    var name: String
+    var resortIds: [String]
+
+    init(id: String = UUID().uuidString, name: String, resortIds: [String] = []) {
+        self.id = id
+        self.name = name
+        self.resortIds = resortIds
+    }
+}
