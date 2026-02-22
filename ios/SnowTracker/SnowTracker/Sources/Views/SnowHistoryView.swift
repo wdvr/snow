@@ -82,6 +82,19 @@ struct SnowHistoryView: View {
             }
         }
         .frame(height: 180)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(chartAccessibilityLabel)
+    }
+
+    private var chartAccessibilityLabel: String {
+        let snowDays = viewModel.history.filter { $0.snowfall24hCm > 0 }.count
+        let totalDays = viewModel.history.count
+        let maxSnow = viewModel.history.map(\.snowfall24hCm).max() ?? 0
+        let unit = prefs.snowDepth == .centimeters ? "centimeters" : "inches"
+        let maxFormatted = prefs.snowDepth == .centimeters
+            ? String(format: "%.0f", maxSnow)
+            : String(format: "%.1f", maxSnow / 2.54)
+        return "Daily snowfall chart. \(snowDays) snow days out of \(totalDays) tracked. Largest single day: \(maxFormatted) \(unit)."
     }
 
     // MARK: - Season Stats

@@ -29,9 +29,20 @@ struct TimelineCard: View {
             } else if isLoading {
                 timelineLoadingSkeleton
             } else if error != nil {
-                Text("Unable to load timeline")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                VStack(spacing: 8) {
+                    Text("Unable to load timeline")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Button {
+                        Task { await loadTimeline() }
+                    } label: {
+                        Label("Retry", systemImage: "arrow.clockwise")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
             }
         }
         .padding()
