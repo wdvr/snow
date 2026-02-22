@@ -159,12 +159,12 @@ struct BestResortsWidgetView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Image(systemName: "trophy.fill")
-                    .foregroundColor(.yellow)
+                    .foregroundStyle(.yellow)
                     .font(.caption2)
                 Text(smallRegionTitle)
                     .font(.caption2)
                     .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Spacer()
             }
 
@@ -176,17 +176,17 @@ struct BestResortsWidgetView: View {
 
                 Text(resort.location)
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
 
                 HStack(spacing: 4) {
                     Image(systemName: resort.snowQuality.icon)
-                        .foregroundColor(resort.snowQuality.color)
+                        .foregroundStyle(resort.snowQuality.color)
                         .font(.title2)
                     Text(resort.snowQuality.displayName)
                         .font(.caption)
                         .fontWeight(.medium)
-                        .foregroundColor(resort.snowQuality.color)
+                        .foregroundStyle(resort.snowQuality.color)
                 }
 
                 Spacer(minLength: 0)
@@ -194,10 +194,10 @@ struct BestResortsWidgetView: View {
                 HStack(spacing: 12) {
                     Label(unitPreferences.formatTemperature(resort.temperature), systemImage: "thermometer")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Label(unitPreferences.formatSnow(resort.freshSnow), systemImage: "snowflake")
                         .font(.caption2)
-                        .foregroundColor(.cyan)
+                        .foregroundStyle(.cyan)
                 }
             } else {
                 Spacer()
@@ -206,10 +206,10 @@ struct BestResortsWidgetView: View {
                     VStack(spacing: 4) {
                         Image(systemName: "cloud.snow")
                             .font(.title3)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                         Text("No data")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     Spacer()
                 }
@@ -223,12 +223,12 @@ struct BestResortsWidgetView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "trophy.fill")
-                    .foregroundColor(.yellow)
+                    .foregroundStyle(.yellow)
                     .font(.caption)
                 Text(regionTitle)
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Spacer()
             }
 
@@ -239,10 +239,10 @@ struct BestResortsWidgetView: View {
                     VStack(spacing: 4) {
                         Image(systemName: "cloud.snow")
                             .font(.title2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                         Text("No data available")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     Spacer()
                 }
@@ -258,7 +258,7 @@ struct BestResortsWidgetView: View {
                             Text("\(index + 1)")
                                 .font(.caption)
                                 .fontWeight(.bold)
-                                .foregroundColor(index == 0 ? .black : .primary)
+                                .foregroundStyle(index == 0 ? .black : .primary)
                         }
 
                         ResortConditionRow(resort: resort, unitPreferences: unitPreferences)

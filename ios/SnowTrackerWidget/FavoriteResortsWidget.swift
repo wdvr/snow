@@ -92,12 +92,12 @@ struct FavoriteResortsWidgetView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Image(systemName: "heart.fill")
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .font(.caption2)
                 Text("Favorite")
                     .font(.caption2)
                     .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Spacer()
             }
 
@@ -109,12 +109,12 @@ struct FavoriteResortsWidgetView: View {
 
                 HStack(spacing: 4) {
                     Image(systemName: resort.snowQuality.icon)
-                        .foregroundColor(resort.snowQuality.color)
+                        .foregroundStyle(resort.snowQuality.color)
                         .font(.title2)
                     Text(resort.snowQuality.displayName)
                         .font(.caption)
                         .fontWeight(.medium)
-                        .foregroundColor(resort.snowQuality.color)
+                        .foregroundStyle(resort.snowQuality.color)
                 }
 
                 Spacer(minLength: 0)
@@ -122,10 +122,10 @@ struct FavoriteResortsWidgetView: View {
                 HStack(spacing: 12) {
                     Label(unitPreferences.formatTemperature(resort.temperature), systemImage: "thermometer")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Label(unitPreferences.formatSnow(resort.freshSnow), systemImage: "snowflake")
                         .font(.caption2)
-                        .foregroundColor(.cyan)
+                        .foregroundStyle(.cyan)
                 }
             } else {
                 Spacer()
@@ -134,10 +134,10 @@ struct FavoriteResortsWidgetView: View {
                     VStack(spacing: 4) {
                         Image(systemName: "heart.slash")
                             .font(.title3)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                         Text("No favorites")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     Spacer()
                 }
@@ -151,12 +151,12 @@ struct FavoriteResortsWidgetView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "heart.fill")
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .font(.caption)
                 Text("Favorite Resorts")
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Spacer()
             }
 
@@ -167,10 +167,10 @@ struct FavoriteResortsWidgetView: View {
                     VStack(spacing: 4) {
                         Image(systemName: "heart.slash")
                             .font(.title2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                         Text("No favorites yet")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     Spacer()
                 }

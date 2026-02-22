@@ -16,7 +16,7 @@ struct ResortConditionRow: View {
 
                 Text(resort.location)
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
 
@@ -25,12 +25,12 @@ struct ResortConditionRow: View {
             VStack(alignment: .trailing, spacing: 2) {
                 HStack(spacing: 4) {
                     Image(systemName: resort.snowQuality.icon)
-                        .foregroundColor(resort.snowQuality.color)
+                        .foregroundStyle(resort.snowQuality.color)
                         .font(.caption)
                     Text(resort.snowQuality.displayName)
                         .font(.caption)
                         .fontWeight(.medium)
-                        .foregroundColor(resort.snowQuality.color)
+                        .foregroundStyle(resort.snowQuality.color)
                 }
 
                 HStack(spacing: 8) {
@@ -38,20 +38,20 @@ struct ResortConditionRow: View {
                     HStack(spacing: 2) {
                         Image(systemName: "thermometer")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                         Text(unitPreferences.formatTemperature(resort.temperature))
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
 
                     // Fresh snow
                     HStack(spacing: 2) {
                         Image(systemName: "snowflake")
                             .font(.caption2)
-                            .foregroundColor(.cyan)
+                            .foregroundStyle(.cyan)
                         Text(unitPreferences.formatSnow(resort.freshSnow))
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
