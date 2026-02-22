@@ -39,6 +39,11 @@
 
 | Feature | Date |
 |---------|------|
+| Improve resort search to match country codes and pass types | 2026-02-22 |
+| Add storms incoming section to favorites summary card | 2026-02-22 |
+| Add Snow Depth and Predicted Snow sort options to resort list | 2026-02-22 |
+| Add snow depth and forecast data to batch quality endpoint | 2026-02-22 |
+| Add forecast badge to resort list when significant snow is expected | 2026-02-22 |
 | Add forecast badge to favorites when significant snow is expected | 2026-02-22 |
 | Add markdown rendering for AI chat responses (headers, lists, code blocks) | 2026-02-22 |
 | Improve chat AI system prompt for markdown-formatted responses | 2026-02-22 |
