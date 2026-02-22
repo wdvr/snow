@@ -25,6 +25,7 @@ from services.quality_explanation_service import (
     score_to_100,
 )
 from services.resort_service import ResortService
+from services.snow_quality_service import SnowQualityService
 from services.weather_service import WeatherService
 from utils.constants import DEFAULT_ELEVATION_WEIGHT, ELEVATION_WEIGHTS
 
@@ -236,8 +237,6 @@ class StaticJsonGenerator:
             snow_score = score_to_100(overall_raw)
             overall_quality = raw_score_to_quality(overall_raw)
         else:
-            from services.snow_quality_service import SnowQualityService
-
             overall_quality = SnowQualityService.calculate_overall_quality(conditions)
             snow_score = None
 

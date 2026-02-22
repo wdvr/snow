@@ -1025,8 +1025,6 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
             overall_raw_score = None
 
         # Derive quality label from weighted raw score using model thresholds
-        from services.snow_quality_service import SnowQualityService
-
         if overall_raw_score is not None:
             overall_snow_score = score_to_100(overall_raw_score)
             overall_quality = raw_score_to_quality(overall_raw_score)
@@ -1290,8 +1288,6 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
         snow_score = score_to_100(overall_raw)
         overall_quality = raw_score_to_quality(overall_raw)
     else:
-        from services.snow_quality_service import SnowQualityService
-
         overall_quality = SnowQualityService.calculate_overall_quality(conditions)
         snow_score = None
 
