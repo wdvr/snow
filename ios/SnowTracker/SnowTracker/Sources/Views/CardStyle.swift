@@ -29,4 +29,12 @@ extension View {
     func cardStyleElevated(cornerRadius: CGFloat = 12) -> some View {
         modifier(CardStyleModifier(cornerRadius: cornerRadius, elevated: true))
     }
+
+    func cardStyleFrosted(cornerRadius: CGFloat = 12) -> some View {
+        self
+            .padding()
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .shadow(color: .black.opacity(0.08), radius: 2, x: 0, y: 1)
+    }
 }

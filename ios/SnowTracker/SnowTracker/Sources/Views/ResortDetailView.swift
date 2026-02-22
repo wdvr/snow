@@ -35,52 +35,66 @@ struct ResortDetailView: View {
         return text
     }
 
+    /// Overlay type based on the top-elevation condition (most representative)
+    private var currentOverlayType: WeatherOverlayType {
+        let topCondition = conditions.first { $0.elevationLevel == "top" }
+            ?? conditions.first { $0.elevationLevel == "mid" }
+            ?? conditions.first
+        return topCondition?.weatherOverlayType ?? .none
+    }
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Resort header
-                resortHeader
+        ZStack {
+            WeatherOverlayView(overlayType: currentOverlayType)
+                .ignoresSafeArea()
 
-                // Elevation picker
-                elevationPicker
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Resort header
+                    resortHeader
 
-                // Current conditions
-                if let condition = conditionForSelectedElevation {
-                    Group {
-                        currentConditionsCard(condition)
-                        snowDetailsCard(condition)
-                        TimelineCard(resortId: resort.id, elevation: selectedElevation)
-                        predictionsCard(condition)
-                        weatherDetailsCard(condition)
+                    // Elevation picker
+                    elevationPicker
+
+                    // Current conditions
+                    if let condition = conditionForSelectedElevation {
+                        Group {
+                            currentConditionsCard(condition)
+                            snowDetailsCard(condition)
+                            TimelineCard(resortId: resort.id, elevation: selectedElevation)
+                            predictionsCard(condition)
+                            weatherDetailsCard(condition)
+                        }
+                        .transition(.opacity.combined(with: .move(edge: .trailing)))
+                        .id(selectedElevation)
+                    } else if snowConditionsManager.isLoading {
+                        loadingCard
+                    } else {
+                        noDataCard
                     }
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
-                    .id(selectedElevation)
-                } else if snowConditionsManager.isLoading {
-                    loadingCard
-                } else {
-                    noDataCard
+
+                    // Elevation profile visualization
+                    if !conditions.isEmpty {
+                        ElevationProfileView(
+                            resort: resort,
+                            conditions: conditions,
+                            prefs: userPreferencesManager.preferredUnits
+                        )
+                    }
+
+                    // Snow history chart
+                    SnowHistoryView(resortId: resort.id)
+
+                    // Community condition reports
+                    ConditionReportSection(resortId: resort.id)
+
+                    // All elevations summary
+                    allElevationsSummary
                 }
-
-                // Elevation profile visualization
-                if !conditions.isEmpty {
-                    ElevationProfileView(
-                        resort: resort,
-                        conditions: conditions,
-                        prefs: userPreferencesManager.preferredUnits
-                    )
-                }
-
-                // Snow history chart
-                SnowHistoryView(resortId: resort.id)
-
-                // Community condition reports
-                ConditionReportSection(resortId: resort.id)
-
-                // All elevations summary
-                allElevationsSummary
+                .padding()
             }
-            .padding()
         }
+        .appBackground()
         .navigationTitle(resort.name)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {

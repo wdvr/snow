@@ -649,6 +649,38 @@ extension WeatherCondition {
     }
 }
 
+// MARK: - Weather Overlay Type
+
+enum WeatherOverlayType {
+    case snow
+    case sun
+    case wind
+    case none
+}
+
+extension WeatherCondition {
+    /// Determine which weather overlay to show. Snow > Wind > Sun > None.
+    var weatherOverlayType: WeatherOverlayType {
+        // Snow: active snowfall or recent fresh snow
+        if snowfall24hCm > 2 || freshSnowCm > 5 {
+            return .snow
+        }
+
+        // Wind: strong winds
+        if let wind = windSpeedKmh, wind > 40 {
+            return .wind
+        }
+
+        // Sun: clear or sunny weather
+        if let desc = weatherDescription?.lowercased(),
+           desc.contains("clear") || desc.contains("sunny") {
+            return .sun
+        }
+
+        return .none
+    }
+}
+
 // MARK: - Sample Data
 
 extension WeatherCondition {

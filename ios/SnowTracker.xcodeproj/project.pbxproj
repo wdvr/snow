@@ -50,6 +50,8 @@
 		BAB8E308D58D61C5454715E2 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA770DE28FAAFB7C82C04D9 /* PushNotificationService.swift */; };
 		C0711EC616F41F08730D790A /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */; };
 		E9108540FE0495AA300A4664 /* CardStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7629DBF912C6AF6C0C5845FA /* CardStyle.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1A1 /* AppBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1A2 /* AppBackground.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1A3 /* WeatherOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1A4 /* WeatherOverlayView.swift */; };
 		C440EFF2F7868A9A09A525C2 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A882E15FD24B57516DE0B29E /* Configuration.swift */; };
 		C9503A1D14E11C37EBD585F7 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = BFEBBB03F51632FE030398C0 /* GoogleSignInSwift */; };
 		CA425D6DF761A30E14DAF304 /* GoogleService-Info.plist.template in Resources */ = {isa = PBXBuildFile; fileRef = C9D8809765B1DAE070C75605 /* GoogleService-Info.plist.template */; };
@@ -127,6 +129,8 @@
 		B2C3D4E5F6A7B8C9D0E1F2A3 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		1C3612902D14F964CD974A7E /* AuthenticationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationViews.swift; sourceTree = "<group>"; };
 		7629DBF912C6AF6C0C5845FA /* CardStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardStyle.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1A2 /* AppBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBackground.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1A4 /* WeatherOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherOverlayView.swift; sourceTree = "<group>"; };
 		1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
 		22ECDCF89993D8220437C43C /* ResortDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResortDetailView.swift; sourceTree = "<group>"; };
 		279D40CEA622F25142C8FD65 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
@@ -262,6 +266,7 @@
 			isa = PBXGroup;
 			children = (
 				FF31AA32BB33CC34DD35EE36 /* Components */,
+				A1B2C3D4E5F6A7B8C9D0E1A2 /* AppBackground.swift */,
 				1C3612902D14F964CD974A7E /* AuthenticationViews.swift */,
 				E5F6A7B8C9D0E1F2A3B4C5D6 /* ChatView.swift */,
 				61CA3C498827FBF30FCBE0C5 /* ClusteredMapView.swift */,
@@ -285,6 +290,7 @@
 				B59B0D2F334DE813DE1268D1 /* SplashView.swift */,
 				B2C3D4E5F6A7B8C9D0E1F2A3 /* TimelineView.swift */,
 				34B3DE91A8041E068949717A /* TripPlanningViews.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1A4 /* WeatherOverlayView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -572,6 +578,8 @@
 				A79CA1D7F4A1253EFC65CB4B /* DemoDataService.swift in Sources */,
 				C0711EC616F41F08730D790A /* FavoritesView.swift in Sources */,
 				E9108540FE0495AA300A4664 /* CardStyle.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E1A1 /* AppBackground.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E1A3 /* WeatherOverlayView.swift in Sources */,
 				2699A5371F1EFF464AB8F9E9 /* FeedbackView.swift in Sources */,
 				9BF10F65F1BF8419E4A87267 /* LocationManager.swift in Sources */,
 				8720BD7F787971D36BBEE343 /* Managers.swift in Sources */,
