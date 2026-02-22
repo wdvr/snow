@@ -64,6 +64,9 @@ struct FavoritesView: View {
             .task {
                 await snowConditionsManager.fetchConditionsForFavorites()
             }
+            .navigationDestination(for: Resort.self) { resort in
+                ResortDetailView(resort: resort)
+            }
             .sheet(isPresented: $showingGroupManager) {
                 FavoriteGroupsManagerView()
                     .environmentObject(userPreferencesManager)
@@ -152,16 +155,9 @@ struct FavoritesView: View {
 
     private func resortRows(_ resorts: [Resort]) -> some View {
         ForEach(resorts) { resort in
-            NavigationLink(destination: ResortDetailView(resort: resort)) {
+            NavigationLink(value: resort) {
                 FavoriteResortRow(resort: resort)
             }
-            .simultaneousGesture(TapGesture().onEnded {
-                AnalyticsService.shared.trackResortClicked(
-                    resortId: resort.id,
-                    resortName: resort.name,
-                    source: "favorites"
-                )
-            })
             .accessibilityLabel("\(resort.name), \(snowConditionsManager.getSnowQuality(for: resort.id).displayName)")
             .swipeActions(edge: .leading) {
                 if !userPreferencesManager.favoriteGroups.isEmpty {

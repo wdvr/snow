@@ -101,6 +101,9 @@ struct BestSnowNearYouView: View {
                 }
             }
             .navigationTitle("Best Snow")
+            .navigationDestination(for: Resort.self) { resort in
+                ResortDetailView(resort: resort)
+            }
             .onAppear {
                 AnalyticsService.shared.trackScreen("BestSnow", screenClass: "BestSnowNearYouView")
             }
@@ -271,7 +274,7 @@ struct BestSnowNearYouView: View {
 
                 // Recommendations
                 ForEach(Array(recommendations.enumerated()), id: \.element.id) { index, recommendation in
-                    NavigationLink(destination: ResortDetailView(resort: recommendation.resort)) {
+                    NavigationLink(value: recommendation.resort) {
                         RecommendationCard(
                             recommendation: recommendation,
                             showDistance: showDistance,
@@ -279,14 +282,6 @@ struct BestSnowNearYouView: View {
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .simultaneousGesture(TapGesture().onEnded {
-                        AnalyticsService.shared.trackRecommendationClicked(
-                            resortId: recommendation.resort.id,
-                            resortName: recommendation.resort.name,
-                            rank: index + 1,
-                            score: recommendation.combinedScore
-                        )
-                    })
                 }
             }
             .padding()
@@ -532,7 +527,7 @@ struct BestSnowNearYouCard: View {
                 .padding(.vertical, 20)
             } else if let topRecommendation = filteredRecommendations.first {
                 // Show top recommendation
-                NavigationLink(destination: ResortDetailView(resort: topRecommendation.resort)) {
+                NavigationLink(value: topRecommendation.resort) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(topRecommendation.resort.name)

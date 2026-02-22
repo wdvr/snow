@@ -170,7 +170,7 @@ struct ResortListView: View {
                 // Resort list
                 List {
                     ForEach(filteredResorts) { resort in
-                        NavigationLink(destination: ResortDetailView(resort: resort)) {
+                        NavigationLink(value: resort) {
                             ResortRowView(
                                 resort: resort,
                                 showDistance: sortOption == .distance,
@@ -178,13 +178,6 @@ struct ResortListView: View {
                                 useMetric: useMetricDistance
                             )
                         }
-                        .simultaneousGesture(TapGesture().onEnded {
-                            AnalyticsService.shared.trackResortClicked(
-                                resortId: resort.id,
-                                resortName: resort.name,
-                                source: "list"
-                            )
-                        })
                         .contextMenu {
                             Button {
                                 userPreferencesManager.toggleFavorite(resortId: resort.id)
@@ -245,6 +238,9 @@ struct ResortListView: View {
             }
             .onChange(of: sortOption) { _, newValue in
                 AnalyticsService.shared.trackSortChanged(sortOption: newValue.rawValue)
+            }
+            .navigationDestination(for: Resort.self) { resort in
+                ResortDetailView(resort: resort)
             }
             .navigationDestination(item: $deepLinkResort) { resort in
                 ResortDetailView(resort: resort)

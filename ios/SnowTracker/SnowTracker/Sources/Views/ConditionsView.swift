@@ -29,7 +29,7 @@ struct ConditionsView: View {
 
                     // Resort conditions cards
                     ForEach(sortedResorts) { resort in
-                        NavigationLink(destination: ResortDetailView(resort: resort)) {
+                        NavigationLink(value: resort) {
                             ResortConditionCard(resort: resort)
                         }
                         .buttonStyle(PlainButtonStyle())
@@ -38,6 +38,9 @@ struct ConditionsView: View {
                 .padding()
             }
             .navigationTitle("Snow Conditions")
+            .navigationDestination(for: Resort.self) { resort in
+                ResortDetailView(resort: resort)
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: { showingQualityInfo = true }) {
