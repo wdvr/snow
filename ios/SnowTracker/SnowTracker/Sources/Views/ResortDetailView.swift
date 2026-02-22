@@ -98,7 +98,7 @@ struct ResortDetailView: View {
                         noDataCard
                     }
 
-                    // Elevation profile visualization
+                    // Elevation profile and resort details
                     if !conditions.isEmpty {
                         ElevationProfileView(
                             resort: resort,
@@ -106,6 +106,8 @@ struct ResortDetailView: View {
                             prefs: userPreferencesManager.preferredUnits
                         )
                     }
+
+                    runDifficultySection
 
                     // Snow history chart
                     SnowHistoryView(resortId: resort.id)
@@ -312,43 +314,6 @@ struct ResortDetailView: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("Snow quality: \(quality.displayName)\(bestElevationSnowScore.map { ", score \($0) out of 100" } ?? "")")
                 }
-            }
-
-            // Run difficulty breakdown
-            if let green = resort.greenRunsPct, let blue = resort.blueRunsPct, let black = resort.blackRunsPct {
-                VStack(spacing: 6) {
-                    // Stacked bar chart
-                    GeometryReader { geometry in
-                        HStack(spacing: 1) {
-                            Rectangle()
-                                .fill(.green)
-                                .frame(width: geometry.size.width * CGFloat(green) / 100)
-                            Rectangle()
-                                .fill(.blue)
-                                .frame(width: geometry.size.width * CGFloat(blue) / 100)
-                            Rectangle()
-                                .fill(.primary)
-                                .frame(width: geometry.size.width * CGFloat(black) / 100)
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                    }
-                    .frame(height: 8)
-
-                    HStack(spacing: 12) {
-                        Label("\(green)%", systemImage: "circle.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.green)
-                        Label("\(blue)%", systemImage: "square.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.blue)
-                        Label("\(black)%", systemImage: "diamond.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.primary)
-                        Spacer()
-                    }
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Run difficulty: \(green)% beginner, \(blue)% intermediate, \(black)% advanced")
             }
 
             // Links row
@@ -738,6 +703,52 @@ struct ResortDetailView: View {
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title): \(value)")
+    }
+
+    // MARK: - Run Difficulty
+
+    @ViewBuilder
+    private var runDifficultySection: some View {
+        if let green = resort.greenRunsPct, let blue = resort.blueRunsPct, let black = resort.blackRunsPct {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Run Difficulty")
+                    .font(.headline)
+
+                VStack(spacing: 6) {
+                    GeometryReader { geometry in
+                        HStack(spacing: 1) {
+                            Rectangle()
+                                .fill(.green)
+                                .frame(width: geometry.size.width * CGFloat(green) / 100)
+                            Rectangle()
+                                .fill(.blue)
+                                .frame(width: geometry.size.width * CGFloat(blue) / 100)
+                            Rectangle()
+                                .fill(.primary)
+                                .frame(width: geometry.size.width * CGFloat(black) / 100)
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .frame(height: 8)
+
+                    HStack(spacing: 12) {
+                        Label("\(green)%", systemImage: "circle.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.green)
+                        Label("\(blue)%", systemImage: "square.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.blue)
+                        Label("\(black)%", systemImage: "diamond.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                    }
+                }
+            }
+            .cardStyle()
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Run difficulty: \(green)% beginner, \(blue)% intermediate, \(black)% advanced")
+        }
     }
 
     // MARK: - All Elevations Summary
