@@ -48,9 +48,15 @@ final class ChatViewModel: ObservableObject {
             chatLog.debug("Chat response received for conversation \(response.conversationId)")
         } catch {
             chatLog.error("Failed to send chat message: \(error)")
-            errorMessage = error.localizedDescription
-            // Remove the optimistic user message on failure
-            messages.removeAll { $0.id == userMessage.id }
+            errorMessage = "Failed to send message. Check your connection and try again."
+            // Add an error message from assistant so the user sees what happened
+            let errorResponse = ChatMessage(
+                id: UUID().uuidString,
+                role: .assistant,
+                content: "Sorry, I couldn't process your request right now. Please try again.",
+                createdAt: Date()
+            )
+            messages.append(errorResponse)
         }
 
         isSending = false
