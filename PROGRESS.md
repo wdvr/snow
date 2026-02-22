@@ -39,6 +39,11 @@
 
 | Feature | Date |
 |---------|------|
+| Implement Live Activities & Dynamic Island for resort conditions | 2026-02-22 |
+| Improve AI chat system prompt with interpretation guidance | 2026-02-22 |
+| Fix chat compare_resorts crash, add missing API fields, optimize DynamoDB queries | 2026-02-22 |
+| Add error handling to chat conversation endpoints | 2026-02-22 |
+| Fix weekly digest double-counting cumulative forecast snow | 2026-02-22 |
 | Extract shared ELEVATION_WEIGHTS constant, fix condition report query and confidence calc | 2026-02-22 |
 | Fix chat service: parallelize resort auto-detect, re-raise save errors | 2026-02-22 |
 | Add VoiceOver accessibility to condition report section | 2026-02-22 |
