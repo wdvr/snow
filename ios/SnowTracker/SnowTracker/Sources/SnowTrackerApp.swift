@@ -132,6 +132,17 @@ struct MainTabView: View {
     @State private var selectedTab = 0
     @State private var deepLinkResort: Resort?
     @State private var showingChat = false
+    @ObservedObject private var userPrefs = UserPreferencesManager.shared
+
+    /// Number of favorited resorts with significant predicted snow (≥10cm in 48h)
+    private var favoritesStormCount: Int {
+        userPrefs.favoriteResorts.filter { resortId in
+            guard let predicted = snowConditionsManager.snowQualitySummaries[resortId]?.predictedSnow48hCm else {
+                return false
+            }
+            return predicted >= 10
+        }.count
+    }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -169,6 +180,7 @@ struct MainTabView: View {
                             Text("Favorites")
                         }
                         .tag(3)
+                        .badge(favoritesStormCount)
 
                     SettingsView()
                         .environmentObject(authService)
