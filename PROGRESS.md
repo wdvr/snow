@@ -39,6 +39,11 @@
 
 | Feature | Date |
 |---------|------|
+| Fix batch endpoint timeouts and None safety in recommendations | 2026-02-22 |
+| Add retry button to map cluster view when data fails to load | 2026-02-22 |
+| Improve comparison empty state with feature description | 2026-02-22 |
+| Add VoiceOver labels to snowfall items in resort detail | 2026-02-22 |
+| Add snow scores to quality badges in recommendations | 2026-02-22 |
 | Improve VoiceOver accessibility across chat, timeline, and recommendations | 2026-02-22 |
 | Show ML snow scores in recommendations view (replace ranking score) | 2026-02-22 |
 | Add snow scores to widgets, large widget shows 5 resorts | 2026-02-22 |
