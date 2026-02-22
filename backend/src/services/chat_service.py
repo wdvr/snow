@@ -57,13 +57,45 @@ RESORT_ALIASES: dict[str, str] = {
     "courchevel": "courchevel",
     "kitzbuhel": "kitzbuehel",
     "kitzbühel": "kitzbuehel",
+    "fernie": "fernie",
+    "heavenly": "heavenly",
+    "northstar": "northstar-california-resort",
+    "kirkwood": "kirkwood",
+    "sugar bowl": "sugar-bowl",
+    "big bear": "big-bear",
+    "mt hood": "mt-hood-meadows",
+    "timberline": "timberline",
+    "stevens pass": "stevens-pass",
+    "mt baker": "mt-baker",
+    "snoqualmie": "snoqualmie-pass",
+    "sugarbush": "sugarbush",
+    "sunday river": "sunday-river",
+    "sugarloaf": "sugarloaf",
+    "loon": "loon-mountain",
+    "loon mountain": "loon-mountain",
+    "bretton woods": "bretton-woods",
+    "remarkables": "queenstown-remarkables",
+    "thredbo": "thredbo",
+    "portillo": "portillo",
 }
 
 SYSTEM_PROMPT = (
     "You are Powder Chaser AI, a knowledgeable ski conditions assistant. "
     "You help skiers find the best conditions using real-time resort data. "
     "Keep responses concise and actionable. Use tools to fetch current data — "
-    "never guess conditions. Only answer ski/snow related questions."
+    "never guess conditions. Only answer ski/snow related questions.\n\n"
+    "Snow quality levels (from our ML model):\n"
+    "- EXCELLENT: Deep fresh powder, cold temps, no recent thaw-freeze. Best skiing.\n"
+    "- GOOD: Good coverage of non-refrozen snow, stable cold temps.\n"
+    "- FAIR: Some fresh snow on older base, may have thin crust in places.\n"
+    "- POOR: Limited fresh snow, harder surface with some soft spots.\n"
+    "- BAD: Icy/refrozen surface, no fresh snow covering the ice layer.\n"
+    "- HORRIBLE: Not skiable — no snow, actively melting, or dangerous.\n\n"
+    "Key data fields: snow_quality (overall quality label), quality_score (1-6 ML score), "
+    "fresh_snow_cm (non-refrozen snow), snowfall_24h_cm (recent snowfall), "
+    "snow_depth_cm (total base depth), current_temp_celsius.\n"
+    "Each resort has 3 elevations: base, mid, top. Mid is most representative. "
+    "When conditions vary significantly by elevation, mention the difference."
 )
 
 TOOL_DEFINITIONS = [
