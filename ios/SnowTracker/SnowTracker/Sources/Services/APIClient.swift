@@ -12,6 +12,8 @@ final class APIClient {
     private var baseURL: URL { AppConfiguration.shared.apiBaseURL }
     private let session: Session
     private let log = Logger(subsystem: "com.snowtracker.app", category: "APIClient")
+    /// Background queue for JSON decoding so large responses don't block the main thread
+    private let decodeQueue = DispatchQueue(label: "com.snowtracker.api.decode", qos: .userInitiated)
 
     private init() {
 
@@ -29,6 +31,7 @@ final class APIClient {
 
         self.session = Session(
             configuration: configuration,
+            serializationQueue: DispatchQueue(label: "com.snowtracker.api.serial", qos: .userInitiated),
             interceptor: retryPolicy
         )
     }

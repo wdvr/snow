@@ -14,17 +14,26 @@
 ## Current Issues (Priority Order)
 
 ### 🔴 Critical
-*None*
+| Issue | Description | Status |
+|-------|-------------|--------|
+| Main thread blocking | List view blocks taps during batch API/cache loading | In Progress |
+| Chat not working | API Gateway routes missing for /chat endpoints | Fixed (deploying) |
 
 ### 🟡 Medium
 | Issue | Description | Status |
 |-------|-------------|--------|
+| Chat streaming UX | Response waits for full Bedrock completion, no live stream | Backlog |
+| Scoring: weather comfort | Add sunny/wind-free bonus (+5-10), cold/windy penalty to ML model | Backlog |
+| Resort metadata enrichment | Green run %, vertical drop, pass affiliation (Epic/Ikon), trail count | Research needed |
+| Auto-suggest resort in chat | "How's Whistler" → auto-detect nearest famous resort or user favorite | Backlog |
 | Apple Sign In Email | Shows "Apple ID (000495...)" instead of email | Backlog |
 | App Store Release | Need provisioning profile with Push Notifications | User action needed |
 
 ### 🟢 Future Features
 | Issue | Description |
 |-------|-------------|
+| Resort similarity engine | "Resorts like X with lots of green runs" — needs resort metadata |
+| MCP distance search | Find best resorts within X km / Y hours drive |
 | [#23](https://github.com/wdvr/snow/issues/23) | Trip Planning Mode (Trips tab hidden for now) |
 | [#24](https://github.com/wdvr/snow/issues/24) | Webcam Integration |
 | [#25](https://github.com/wdvr/snow/issues/25) | Apple Watch App |
