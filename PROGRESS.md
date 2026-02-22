@@ -16,16 +16,13 @@
 ### 🔴 Critical
 | Issue | Description | Status |
 |-------|-------------|--------|
-| Main thread blocking | List view blocks taps during batch API/cache loading | In Progress |
-| Chat not working | API Gateway routes missing for /chat endpoints | Fixed (deploying) |
+| (none) | | |
 
 ### 🟡 Medium
 | Issue | Description | Status |
 |-------|-------------|--------|
-| Chat streaming UX | Response waits for full Bedrock completion, no live stream | Backlog |
-| Scoring: weather comfort | Add sunny/wind-free bonus (+5-10), cold/windy penalty to ML model | Backlog |
-| Resort metadata enrichment | Green run %, vertical drop, pass affiliation (Epic/Ikon), trail count | Research needed |
 | Auto-suggest resort in chat | "How's Whistler" → auto-detect nearest famous resort or user favorite | Backlog |
+| Pass affiliation | Epic/Ikon pass info per resort | Research needed |
 | Apple Sign In Email | Shows "Apple ID (000495...)" instead of email | Backlog |
 | App Store Release | Need provisioning profile with Push Notifications | User action needed |
 
@@ -45,6 +42,16 @@
 
 | Feature | Date |
 |---------|------|
+| Add trail map links + run difficulty bars (green/blue/black %) to detail view | 2026-02-21 |
+| Add run breakdown data for 26 core resorts | 2026-02-21 |
+| Fix chat Bedrock model ID (us.anthropic.claude-sonnet-4-6) | 2026-02-21 |
+| Fix main thread blocking: batch @Published conditions updates | 2026-02-21 |
+| Add weather comfort features to ML model v12 (wind chill, solar) | 2026-02-21 |
+| Add simulated streaming UX for AI chat responses | 2026-02-21 |
+| Add gradient backgrounds + weather overlays (snow/sun/wind) | 2026-02-21 |
+| Fix retry button loading feedback | 2026-02-21 |
+| Soften dark mode gradient colors | 2026-02-21 |
+| Fix environment switch requiring app restart | 2026-02-21 |
 | Rename app to "Powder Chaser" across iOS + 13 languages | 2026-02-21 |
 | Rewrite App Store metadata (description, subtitle, keywords) | 2026-02-21 |
 | Fix "soft" quality explanation at cold temps (<-5°C) | 2026-02-21 |
