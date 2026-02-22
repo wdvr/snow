@@ -81,8 +81,8 @@ chmod +x generate_screenshots.sh
 - Upload app binary via Xcode or Transporter
 - Add all metadata from `app_store_metadata.md`
 - Upload screenshots for all required device sizes
-- Set privacy policy URL: `https://snowtracker.app/privacy`
-- Set terms of service URL: `https://snowtracker.app/terms`
+- Set privacy policy URL: `https://powderchaserapp.com/privacy`
+- Set terms of service URL: `https://powderchaserapp.com/terms`
 
 ### 3. Review Submission
 - Follow checklist in `app_store_review_guidelines.md`
@@ -91,8 +91,8 @@ chmod +x generate_screenshots.sh
 - Verify offline functionality
 
 ### 4. Marketing Preparation
-- Set up website at `snowtracker.app`
-- Configure support email: `support@snowtracker.app`
+- Set up website at `powderchaserapp.com`
+- Configure support email: `support@powderchaserapp.com`
 - Prepare press kit and marketing materials
 - Plan launch announcement and social media
 
@@ -158,11 +158,11 @@ chmod +x generate_screenshots.sh
 
 All URLs need to be set up before App Store submission:
 
-- **Main Website**: https://snowtracker.app
-- **Privacy Policy**: https://snowtracker.app/privacy
-- **Terms of Service**: https://snowtracker.app/terms
-- **Support**: https://snowtracker.app/support
-- **Contact**: support@snowtracker.app
+- **Main Website**: https://powderchaserapp.com
+- **Privacy Policy**: https://powderchaserapp.com/privacy
+- **Terms of Service**: https://powderchaserapp.com/terms
+- **Support**: https://powderchaserapp.com/support
+- **Contact**: support@powderchaserapp.com
 
 ## 📈 Launch Strategy
 
