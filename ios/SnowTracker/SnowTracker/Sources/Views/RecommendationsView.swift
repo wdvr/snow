@@ -344,7 +344,7 @@ struct RecommendationCard: View {
                 Spacer()
 
                 // Quality badge
-                QualityBadge(quality: recommendation.quality)
+                QualityBadge(quality: recommendation.quality, snowScore: recommendation.snowScore)
             }
 
             // Reason text
@@ -436,9 +436,15 @@ struct RecommendationCard: View {
 
 struct QualityBadge: View {
     let quality: SnowQuality
+    var snowScore: Int?
 
     var body: some View {
         HStack(spacing: 4) {
+            if let score = snowScore {
+                Text("\(score)")
+                    .font(.caption.weight(.bold))
+                    .fontDesign(.rounded)
+            }
             Image(systemName: quality.icon)
             Text(quality.displayName)
                 .font(.caption)
@@ -449,6 +455,8 @@ struct QualityBadge: View {
         .padding(.vertical, 4)
         .background(quality.color.opacity(0.15))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Snow quality: \(quality.displayName)\(snowScore.map { ", score \($0)" } ?? "")")
     }
 }
 
@@ -545,7 +553,7 @@ struct BestSnowNearYouCard: View {
 
                         Spacer()
 
-                        QualityBadge(quality: topRecommendation.quality)
+                        QualityBadge(quality: topRecommendation.quality, snowScore: topRecommendation.snowScore)
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
