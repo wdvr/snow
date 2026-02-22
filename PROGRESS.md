@@ -39,6 +39,18 @@
 
 | Feature | Date |
 |---------|------|
+| Add forecast badge to favorites when significant snow is expected | 2026-02-22 |
+| Add markdown rendering for AI chat responses (headers, lists, code blocks) | 2026-02-22 |
+| Improve chat AI system prompt for markdown-formatted responses | 2026-02-22 |
+| Add snow history + resort comparison tools to AI chat (9 tools total) | 2026-02-22 |
+| Add Fresh Snow and Temperature sort options to resort list | 2026-02-22 |
+| Add small widget size for Favorites and Best Snow widgets | 2026-02-22 |
+| Add condition reports tool to AI chat for on-the-ground context | 2026-02-22 |
+| Add Epic/Ikon pass filter to resort list with persistence | 2026-02-22 |
+| Add conditions summary card to favorites view | 2026-02-22 |
+| Fix recommendation falsy value bug, add error logging to 32 endpoints | 2026-02-22 |
+| Remove 6 duplicate resorts, add Fortress Mountain, clean up DynamoDB orphans | 2026-02-22 |
+| Update About view to show dynamic resort count, fix all branding references | 2026-02-22 |
 | Enhance chat AI system prompt with quality definitions + 20 new aliases | 2026-02-22 |
 | Add chat retry button, accessibility labels, fix diacritics search | 2026-02-22 |
 | Fix global recommendations favoring tiny resorts (vertical drop weight) | 2026-02-22 |
@@ -155,18 +167,22 @@
 ## Architecture
 
 ### Snow Quality Algorithm
-ML model v9: ensemble of 10 neural networks (29 features incl. snow_depth → quality score 1-6).
-Val MAE 0.180, R² 0.952, 83.5% exact, 100% within-1. Trained on 2207 samples across 129 resorts. See `ml/ALGORITHM.md` for details.
+ML model v11: ensemble of 10 neural networks (29 features incl. snow_depth → quality score 1-6).
+Val MAE 0.176, R² 0.955, 83.5% exact, 100% within-1. Trained on 2181 samples across 134 resorts. See `ml/ALGORITHM.md` for details.
 
 Quality levels: EXCELLENT (6) → GOOD (5) → FAIR (4) → POOR (3) → BAD (2) → HORRIBLE (1)
 
 ### DynamoDB Tables
 - `snow-tracker-resorts-{env}`
-- `snow-tracker-weather-conditions-{env}` (TTL: 7 days)
+- `snow-tracker-weather-conditions-{env}` (TTL: 60 days)
 - `snow-tracker-snow-summary-{env}`
+- `snow-tracker-daily-history-{env}`
 - `snow-tracker-user-preferences-{env}`
 - `snow-tracker-feedback-{env}`
-- `snow-tracker-device-tokens-{env}`
+- `snow-tracker-device-tokens-{env}` (TTL: 90 days)
+- `snow-tracker-chat-{env}` (TTL: 30 days)
+- `snow-tracker-condition-reports-{env}` (TTL: 90 days)
+- `snow-tracker-resort-events-{env}`
 
 ---
 
