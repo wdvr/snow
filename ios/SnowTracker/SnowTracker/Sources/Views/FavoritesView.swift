@@ -395,6 +395,8 @@ struct FavoriteResortRow: View {
                         }
                     }
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Snow quality: \(displayQuality.displayName)\(snowConditionsManager.getSnowScore(for: resort.id).map { ", score \($0) out of 100" } ?? "")")
             } else {
                 ZStack {
                     Circle()
@@ -405,6 +407,7 @@ struct FavoriteResortRow: View {
                         .font(.title2)
                         .foregroundStyle(.gray)
                 }
+                .accessibilityLabel("Snow quality: Unknown")
             }
 
             // Resort info

@@ -23,7 +23,7 @@ final class WidgetDataService: @unchecked Sendable {
         logger.info("WidgetDataService initialized with URL: \(self.baseURL.absoluteString)")
     }
 
-    // MARK: - Fetch Best Resorts
+    // MARK: - Fetch Best Resorts (via recommendations endpoint — 1 request)
 
     func fetchBestResorts(region: String? = nil) async throws -> [ResortConditionData] {
         if let region = region {
@@ -32,11 +32,90 @@ final class WidgetDataService: @unchecked Sendable {
             logger.info("Fetching best resorts (all regions)...")
         }
 
-        // Fetch resorts (optionally filtered by region) and their conditions, then sort by snow quality
-        let resorts = try await fetchAllResortsWithConditions(region: region)
-        logger.info("Fetched \(resorts.count) resorts with conditions")
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/recommendations/best"), resolvingAgainstBaseURL: false)!
+        var queryItems = [URLQueryItem(name: "limit", value: "3")]
+        if let region = region {
+            queryItems.append(URLQueryItem(name: "region", value: region))
+        }
+        components.queryItems = queryItems
 
-        // Sort by snow quality (excellent first) and fresh snow
+        let url = components.url!
+        logger.info("Fetching recommendations from: \(url.absoluteString)")
+
+        let (data, response) = try await session.data(from: url)
+
+        if let httpResponse = response as? HTTPURLResponse {
+            logger.info("Recommendations API response status: \(httpResponse.statusCode)")
+            guard httpResponse.statusCode == 200 else {
+                logger.error("Bad status code: \(httpResponse.statusCode)")
+                throw WidgetError.networkError
+            }
+        }
+
+        let decoder = JSONDecoder()
+        do {
+            let recResponse = try decoder.decode(RecommendationsAPIResponse.self, from: data)
+            logger.info("Decoded \(recResponse.recommendations.count) recommendations")
+
+            let resorts = recResponse.recommendations.map { rec in
+                ResortConditionData(
+                    resortId: rec.resort.resortId,
+                    resortName: rec.resort.name,
+                    location: "\(rec.resort.region), \(rec.resort.country)",
+                    snowQuality: WidgetSnowQuality(rawValue: rec.snowQuality) ?? .unknown,
+                    temperature: rec.currentTempCelsius,
+                    freshSnow: rec.freshSnowCm,
+                    predictedSnow24h: rec.predictedSnow72hCm / 3.0 // Approximate 24h from 72h
+                )
+            }
+
+            logger.info("Returning \(resorts.count) best resorts")
+            return resorts
+        } catch {
+            logger.error("Failed to decode recommendations: \(error.localizedDescription)")
+            throw WidgetError.decodingError
+        }
+    }
+
+    // MARK: - Fetch Favorite Resorts (via batch endpoint — 2 requests max)
+
+    func fetchFavoriteResorts() async throws -> [ResortConditionData] {
+        let favorites = loadFavorites()
+        logger.info("Loaded \(favorites.count) favorites: \(favorites.joined(separator: ", "))")
+
+        if favorites.isEmpty {
+            logger.info("No favorites set, returning empty array")
+            return []
+        }
+
+        // Fetch resort names and batch conditions in parallel
+        let resortIds = Array(favorites)
+
+        async let resortNamesTask = fetchResortNames(for: resortIds)
+        async let batchTask = fetchBatchQuality(for: resortIds)
+
+        let (resortNames, batchResults) = try await (resortNamesTask, batchTask)
+
+        logger.info("Got \(resortNames.count) resort names and \(batchResults.count) batch results")
+
+        // Combine into ResortConditionData
+        let resorts = batchResults.compactMap { (resortId, summary) -> ResortConditionData? in
+            guard let name = resortNames[resortId] else {
+                logger.warning("No name found for resort \(resortId)")
+                return nil
+            }
+            return ResortConditionData(
+                resortId: resortId,
+                resortName: name.name,
+                location: name.location,
+                snowQuality: WidgetSnowQuality(rawValue: summary.overallQuality) ?? .unknown,
+                temperature: summary.temperatureC ?? 0,
+                freshSnow: summary.snowfallFreshCm ?? 0,
+                predictedSnow24h: (summary.predictedSnow48hCm ?? 0) / 2.0
+            )
+        }
+
+        // Sort by quality
         let sorted = resorts.sorted { a, b in
             let qualityOrder: [WidgetSnowQuality] = [.excellent, .good, .fair, .poor, .bad, .unknown]
             let aIndex = qualityOrder.firstIndex(of: a.snowQuality) ?? 5
@@ -48,136 +127,52 @@ final class WidgetDataService: @unchecked Sendable {
             return a.freshSnow > b.freshSnow
         }
 
-        let result = Array(sorted.prefix(2))
-        logger.info("Returning \(result.count) best resorts")
-        return result
-    }
-
-    // MARK: - Fetch Favorite Resorts
-
-    func fetchFavoriteResorts() async throws -> [ResortConditionData] {
-        // Load favorites from UserDefaults (shared with main app via App Group)
-        let favorites = loadFavorites()
-        logger.info("Loaded \(favorites.count) favorites: \(favorites.joined(separator: ", "))")
-
-        if favorites.isEmpty {
-            logger.info("No favorites set, returning empty array")
-            return []
-        }
-
-        let allResorts = try await fetchAllResortsWithConditions()
-        logger.info("Fetched \(allResorts.count) resorts, filtering to favorites")
-
-        // Filter to only favorites
-        let favoriteResorts = allResorts.filter { favorites.contains($0.resortId) }
-        logger.info("Found \(favoriteResorts.count) favorite resorts with data")
-
-        // Sort by quality
-        let sorted = favoriteResorts.sorted { a, b in
-            let qualityOrder: [WidgetSnowQuality] = [.excellent, .good, .fair, .poor, .bad, .unknown]
-            let aIndex = qualityOrder.firstIndex(of: a.snowQuality) ?? 5
-            let bIndex = qualityOrder.firstIndex(of: b.snowQuality) ?? 5
-            return aIndex < bIndex
-        }
-
         return Array(sorted.prefix(2))
     }
 
     // MARK: - Private Methods
 
-    private func fetchAllResortsWithConditions(region: String? = nil) async throws -> [ResortConditionData] {
-        // Fetch resorts (optionally filtered by region)
-        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/resorts"), resolvingAgainstBaseURL: false)!
-        if let region = region {
-            components.queryItems = [URLQueryItem(name: "region", value: region)]
-        }
-        let resortsURL = components.url!
-        logger.info("Fetching resorts from: \(resortsURL.absoluteString)")
+    private func fetchBatchQuality(for resortIds: [String]) async throws -> [String: BatchSummary] {
+        let idsParam = resortIds.joined(separator: ",")
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/snow-quality/batch"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "resort_ids", value: idsParam)]
+        let url = components.url!
 
-        let (resortsData, response) = try await session.data(from: resortsURL)
+        logger.info("Fetching batch quality for \(resortIds.count) resorts")
+
+        let (data, response) = try await session.data(from: url)
 
         if let httpResponse = response as? HTTPURLResponse {
-            logger.info("Resorts API response status: \(httpResponse.statusCode)")
+            logger.info("Batch API response status: \(httpResponse.statusCode)")
             guard httpResponse.statusCode == 200 else {
-                logger.error("Bad status code: \(httpResponse.statusCode)")
                 throw WidgetError.networkError
             }
         }
 
-        let decoder = JSONDecoder()
-        do {
-            let resortsResponse = try decoder.decode(ResortsAPIResponse.self, from: resortsData)
-            logger.info("Decoded \(resortsResponse.resorts.count) resorts")
-
-            // Fetch conditions for each resort CONCURRENTLY (limit to 6 to reduce load)
-            let resortsToFetch = Array(resortsResponse.resorts.prefix(6))
-
-            let results = await withTaskGroup(of: ResortConditionData?.self) { group in
-                for resort in resortsToFetch {
-                    group.addTask {
-                        do {
-                            let condition = try await self.fetchConditions(for: resort.resortId)
-                            self.logger.info("Fetched conditions for \(resort.resortId)")
-                            return ResortConditionData(
-                                resortId: resort.resortId,
-                                resortName: resort.name,
-                                location: "\(resort.region), \(resort.country)",
-                                snowQuality: WidgetSnowQuality(rawValue: condition.snowQuality) ?? .unknown,
-                                temperature: condition.currentTempCelsius,
-                                freshSnow: condition.freshSnowCm,
-                                predictedSnow24h: condition.predictedSnow24hCm ?? 0
-                            )
-                        } catch {
-                            self.logger.error("Failed to fetch conditions for \(resort.resortId): \(error.localizedDescription)")
-                            return nil
-                        }
-                    }
-                }
-
-                var collected: [ResortConditionData] = []
-                for await result in group {
-                    if let data = result {
-                        collected.append(data)
-                    }
-                }
-                return collected
-            }
-
-            logger.info("Total results with conditions: \(results.count)")
-            return results
-        } catch {
-            logger.error("Failed to decode resorts: \(error.localizedDescription)")
-            if let jsonString = String(data: resortsData, encoding: .utf8) {
-                logger.debug("Raw response: \(jsonString.prefix(500))")
-            }
-            throw WidgetError.decodingError
-        }
+        let decoded = try JSONDecoder().decode(BatchQualityResponse.self, from: data)
+        return decoded.results
     }
 
-    private func fetchConditions(for resortId: String) async throws -> WidgetCondition {
-        let url = baseURL.appendingPathComponent("api/v1/resorts/\(resortId)/conditions")
+    private func fetchResortNames(for resortIds: [String]) async throws -> [String: ResortNameInfo] {
+        // Fetch all resorts and filter to the ones we need
+        let url = baseURL.appendingPathComponent("api/v1/resorts")
+        logger.info("Fetching resort list for names")
+
         let (data, response) = try await session.data(from: url)
 
         if let httpResponse = response as? HTTPURLResponse {
-            logger.debug("Conditions API status for \(resortId): \(httpResponse.statusCode)")
-        }
-
-        let decoder = JSONDecoder()
-        // CodingKeys handle the snake_case to camelCase conversion
-
-        do {
-            let conditionsResponse = try decoder.decode(ConditionsAPIResponse.self, from: data)
-
-            guard let topCondition = conditionsResponse.conditions.first(where: { $0.elevationLevel == "top" }) ?? conditionsResponse.conditions.first else {
-                logger.warning("No conditions found for \(resortId)")
-                throw WidgetError.noData
+            guard httpResponse.statusCode == 200 else {
+                throw WidgetError.networkError
             }
-
-            return topCondition
-        } catch {
-            logger.error("Failed to decode conditions for \(resortId): \(error.localizedDescription)")
-            throw WidgetError.decodingError
         }
+
+        let resortsResponse = try JSONDecoder().decode(ResortsAPIResponse.self, from: data)
+        let idSet = Set(resortIds)
+        var nameMap: [String: ResortNameInfo] = [:]
+        for resort in resortsResponse.resorts where idSet.contains(resort.resortId) {
+            nameMap[resort.resortId] = ResortNameInfo(name: resort.name, location: "\(resort.region), \(resort.country)")
+        }
+        return nameMap
     }
 
     private func loadFavorites() -> Set<String> {
@@ -217,25 +212,66 @@ private struct WidgetResort: Codable {
     }
 }
 
-private struct ConditionsAPIResponse: Codable {
-    let conditions: [WidgetCondition]
+private struct ResortNameInfo {
+    let name: String
+    let location: String
 }
 
-private struct WidgetCondition: Codable {
-    let resortId: String
-    let elevationLevel: String
+// MARK: - Recommendations Response
+
+private struct RecommendationsAPIResponse: Codable {
+    let recommendations: [Recommendation]
+}
+
+private struct Recommendation: Codable {
+    let resort: RecommendationResort
     let snowQuality: String
-    let currentTempCelsius: Double
     let freshSnowCm: Double
-    let predictedSnow24hCm: Double?
+    let predictedSnow72hCm: Double
+    let currentTempCelsius: Double
+
+    enum CodingKeys: String, CodingKey {
+        case resort
+        case snowQuality = "snow_quality"
+        case freshSnowCm = "fresh_snow_cm"
+        case predictedSnow72hCm = "predicted_snow_72h_cm"
+        case currentTempCelsius = "current_temp_celsius"
+    }
+}
+
+private struct RecommendationResort: Codable {
+    let resortId: String
+    let name: String
+    let country: String
+    let region: String
 
     enum CodingKeys: String, CodingKey {
         case resortId = "resort_id"
-        case elevationLevel = "elevation_level"
-        case snowQuality = "snow_quality"
-        case currentTempCelsius = "current_temp_celsius"
-        case freshSnowCm = "fresh_snow_cm"
-        case predictedSnow24hCm = "predicted_snow_24h_cm"
+        case name
+        case country
+        case region
+    }
+}
+
+// MARK: - Batch Quality Response
+
+private struct BatchQualityResponse: Codable {
+    let results: [String: BatchSummary]
+}
+
+private struct BatchSummary: Codable {
+    let overallQuality: String
+    let temperatureC: Double?
+    let snowfallFreshCm: Double?
+    let snowDepthCm: Double?
+    let predictedSnow48hCm: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case overallQuality = "overall_quality"
+        case temperatureC = "temperature_c"
+        case snowfallFreshCm = "snowfall_fresh_cm"
+        case snowDepthCm = "snow_depth_cm"
+        case predictedSnow48hCm = "predicted_snow_48h_cm"
     }
 }
 
