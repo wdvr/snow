@@ -75,6 +75,10 @@ struct ElevationPoint: Codable, Identifiable, Hashable {
     var formattedMeters: String {
         (Self.elevationFormatter.string(from: NSNumber(value: elevationMeters)) ?? "\(Int(elevationMeters))") + " m"
     }
+
+    func formattedElevation(prefs: UnitPreferences) -> String {
+        prefs.distance == .metric ? formattedMeters : formattedFeet
+    }
 }
 
 struct Resort: Codable, Identifiable, Hashable {
@@ -139,11 +143,17 @@ struct Resort: Codable, Identifiable, Hashable {
     }
 
     var elevationRange: String {
-        let elevations = elevationPoints.map { Int($0.elevationFeet) }.sorted()
+        elevationRange(prefs: nil)
+    }
+
+    func elevationRange(prefs: UnitPreferences?) -> String {
+        let useMetric = prefs?.distance == .metric
+        let elevations = elevationPoints.map { useMetric ? Int($0.elevationMeters) : Int($0.elevationFeet) }.sorted()
         guard let min = elevations.first, let max = elevations.last else {
             return "Unknown elevation"
         }
-        return "\(min) - \(max) ft"
+        let unit = useMetric ? "m" : "ft"
+        return "\(min) - \(max) \(unit)"
     }
 
     var baseElevation: ElevationPoint? {

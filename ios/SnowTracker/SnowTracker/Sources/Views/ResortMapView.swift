@@ -575,7 +575,7 @@ struct ResortMapDetailSheet: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
-                    Text(resort.elevationRange)
+                    Text(resort.elevationRange(prefs: userPreferencesManager.preferredUnits))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
