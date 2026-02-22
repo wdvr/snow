@@ -6,6 +6,8 @@ enum ResortSortOption: String, CaseIterable {
     case distance = "Distance"
     case snowQuality = "Snow Quality"
     case freshSnow = "Fresh Snow"
+    case snowDepth = "Snow Depth"
+    case predictedSnow = "Predicted Snow"
     case temperature = "Temperature"
 
     var icon: String {
@@ -14,6 +16,8 @@ enum ResortSortOption: String, CaseIterable {
         case .distance: return "location"
         case .snowQuality: return "snowflake"
         case .freshSnow: return "cloud.snow"
+        case .snowDepth: return "mountain.2.fill"
+        case .predictedSnow: return "cloud.snow.fill"
         case .temperature: return "thermometer.snowflake"
         }
     }
@@ -132,6 +136,22 @@ struct ResortListView: View {
             })
             return resorts.sorted {
                 (freshSnow[$0.id] ?? -1) > (freshSnow[$1.id] ?? -1)
+            }
+        case .snowDepth:
+            // Sort by snow depth (deepest first)
+            let depths = Dictionary(uniqueKeysWithValues: resorts.map {
+                ($0.id, snowConditionsManager.snowQualitySummaries[$0.id]?.snowDepthCm ?? -1)
+            })
+            return resorts.sorted {
+                (depths[$0.id] ?? -1) > (depths[$1.id] ?? -1)
+            }
+        case .predictedSnow:
+            // Sort by predicted snowfall in next 48h (most first)
+            let predicted = Dictionary(uniqueKeysWithValues: resorts.map {
+                ($0.id, snowConditionsManager.snowQualitySummaries[$0.id]?.predictedSnow48hCm ?? -1)
+            })
+            return resorts.sorted {
+                (predicted[$0.id] ?? -1) > (predicted[$1.id] ?? -1)
             }
         case .temperature:
             // Sort by temperature (coldest first - better for snow preservation)
