@@ -5,12 +5,16 @@ enum ResortSortOption: String, CaseIterable {
     case name = "Name"
     case distance = "Distance"
     case snowQuality = "Snow Quality"
+    case freshSnow = "Fresh Snow"
+    case temperature = "Temperature"
 
     var icon: String {
         switch self {
         case .name: return "textformat.abc"
         case .distance: return "location"
         case .snowQuality: return "snowflake"
+        case .freshSnow: return "cloud.snow"
+        case .temperature: return "thermometer.snowflake"
         }
     }
 }
@@ -120,6 +124,22 @@ struct ResortListView: View {
             })
             return resorts.sorted {
                 (qualities[$0.id] ?? 99) < (qualities[$1.id] ?? 99)
+            }
+        case .freshSnow:
+            // Sort by fresh snow amount (most snow first)
+            let freshSnow = Dictionary(uniqueKeysWithValues: resorts.map {
+                ($0.id, snowConditionsManager.snowQualitySummaries[$0.id]?.snowfallFreshCm ?? -1)
+            })
+            return resorts.sorted {
+                (freshSnow[$0.id] ?? -1) > (freshSnow[$1.id] ?? -1)
+            }
+        case .temperature:
+            // Sort by temperature (coldest first - better for snow preservation)
+            let temps = Dictionary(uniqueKeysWithValues: resorts.map {
+                ($0.id, snowConditionsManager.snowQualitySummaries[$0.id]?.temperatureC ?? 999)
+            })
+            return resorts.sorted {
+                (temps[$0.id] ?? 999) < (temps[$1.id] ?? 999)
             }
         }
     }
