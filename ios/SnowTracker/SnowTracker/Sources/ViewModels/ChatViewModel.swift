@@ -1,4 +1,5 @@
 import Foundation
+import KeychainSwift
 import os.log
 
 private let chatLog = Logger(subsystem: "com.snowtracker.app", category: "Chat")
@@ -53,7 +54,7 @@ final class ChatViewModel: ObservableObject {
         messages.append(userMessage)
 
         do {
-            let response = try await apiClient.sendChatMessage(trimmed, conversationId: currentConversationId)
+            let response = try await sendWithAutoRefresh(trimmed)
             currentConversationId = response.conversationId
 
             // Add assistant response with empty content initially
@@ -69,10 +70,20 @@ final class ChatViewModel: ObservableObject {
             // Start progressive text reveal
             await startStreaming(messageId: response.messageId, fullText: response.response)
             chatLog.debug("Chat response received for conversation \(response.conversationId)")
+        } catch APIError.unauthorized {
+            chatLog.error("Chat unauthorized after refresh attempt")
+            errorMessage = "Please sign in again to use chat."
+            let errorResponse = ChatMessage(
+                id: UUID().uuidString,
+                role: .assistant,
+                content: "Your session has expired. Please sign out and sign in again to continue chatting.",
+                createdAt: Date()
+            )
+            messages.append(errorResponse)
+            isSending = false
         } catch {
             chatLog.error("Failed to send chat message: \(error)")
             errorMessage = "Failed to send message. Check your connection and try again."
-            // Add an error message from assistant so the user sees what happened
             let errorResponse = ChatMessage(
                 id: UUID().uuidString,
                 role: .assistant,
@@ -81,6 +92,31 @@ final class ChatViewModel: ObservableObject {
             )
             messages.append(errorResponse)
             isSending = false
+        }
+    }
+
+    // MARK: - Auto Token Refresh
+
+    /// Try sending a chat message; on 401, refresh the token and retry once.
+    private func sendWithAutoRefresh(_ text: String) async throws -> ChatResponse {
+        do {
+            return try await apiClient.sendChatMessage(text, conversationId: currentConversationId)
+        } catch APIError.unauthorized {
+            chatLog.info("Chat got 401, attempting token refresh")
+            let keychain = KeychainSwift()
+            guard let refreshToken = keychain.get("com.snowtracker.refreshToken") else {
+                throw APIError.unauthorized
+            }
+            do {
+                let authResponse = try await apiClient.refreshAuthTokens(refreshToken: refreshToken)
+                keychain.set(authResponse.accessToken, forKey: "com.snowtracker.authToken")
+                keychain.set(authResponse.refreshToken, forKey: "com.snowtracker.refreshToken")
+                chatLog.info("Token refreshed successfully, retrying chat")
+                return try await apiClient.sendChatMessage(text, conversationId: currentConversationId)
+            } catch {
+                chatLog.error("Token refresh failed: \(error)")
+                throw APIError.unauthorized
+            }
         }
     }
 

@@ -127,6 +127,21 @@
       "features": []
     },
     {
+      "resort_id": "are",
+      "name": "Åre",
+      "country": "SE",
+      "region": "scandinavia",
+      "state_province": "Jämtland",
+      "elevation_base_m": 380,
+      "elevation_top_m": 1274,
+      "latitude": 63.3982,
+      "longitude": 13.0745,
+      "timezone": "Europe/Stockholm",
+      "website": "https://www.skistar.com/are",
+      "features": [],
+      "annual_snowfall_cm": 500
+    },
+    {
       "resort_id": "aspen-snowmass",
       "name": "Aspen Snowmass",
       "country": "US",
@@ -595,6 +610,20 @@
       "black_runs_pct": 20
     },
     {
+      "resort_id": "geilo",
+      "name": "Geilo",
+      "country": "NO",
+      "region": "scandinavia",
+      "state_province": "Viken",
+      "elevation_base_m": 800,
+      "elevation_top_m": 1178,
+      "latitude": 60.5333,
+      "longitude": 8.2000,
+      "timezone": "Europe/Oslo",
+      "website": "https://www.skigeilo.no",
+      "features": []
+    },
+    {
       "resort_id": "grand-targhee",
       "name": "Grand Targhee",
       "country": "US",
@@ -666,6 +695,21 @@
       "annual_snowfall_cm": 890
     },
     {
+      "resort_id": "hemsedal",
+      "name": "Hemsedal",
+      "country": "NO",
+      "region": "scandinavia",
+      "state_province": "Viken",
+      "elevation_base_m": 620,
+      "elevation_top_m": 1450,
+      "latitude": 60.8608,
+      "longitude": 8.3961,
+      "timezone": "Europe/Oslo",
+      "website": "https://www.hemsedal.com",
+      "features": [],
+      "annual_snowfall_cm": 600
+    },
+    {
       "resort_id": "homewood-mountain-resort",
       "name": "Homewood Mountain Resort",
       "country": "US",
@@ -692,6 +736,21 @@
       "timezone": "America/Vancouver",
       "website": "https://hudsonbaymountain.com",
       "features": []
+    },
+    {
+      "resort_id": "ischgl",
+      "name": "Ischgl",
+      "country": "AT",
+      "region": "alps",
+      "state_province": "Tyrol",
+      "elevation_base_m": 1377,
+      "elevation_top_m": 2872,
+      "latitude": 47.0167,
+      "longitude": 10.2833,
+      "timezone": "Europe/Vienna",
+      "website": "https://www.ischgl.com",
+      "features": [],
+      "annual_snowfall_cm": 600
     },
     {
       "resort_id": "jackson-hole",
@@ -842,6 +901,21 @@
       "ikon_pass": "7 days"
     },
     {
+      "resort_id": "la-plagne",
+      "name": "La Plagne",
+      "country": "FR",
+      "region": "alps",
+      "state_province": "Savoie",
+      "elevation_base_m": 1250,
+      "elevation_top_m": 3250,
+      "latitude": 45.5078,
+      "longitude": 6.6772,
+      "timezone": "Europe/Paris",
+      "website": "https://www.la-plagne.com",
+      "features": [],
+      "annual_snowfall_cm": 700
+    },
+    {
       "resort_id": "lake-louise",
       "name": "Lake Louise Ski Resort",
       "country": "CA",
@@ -924,6 +998,50 @@
       "features": []
     },
     {
+      "resort_id": "lech-zuers",
+      "name": "Lech Zürs",
+      "country": "AT",
+      "region": "alps",
+      "state_province": "Vorarlberg",
+      "elevation_base_m": 1450,
+      "elevation_top_m": 2811,
+      "latitude": 47.2082,
+      "longitude": 10.1414,
+      "timezone": "Europe/Vienna",
+      "website": "https://www.lechzuers.com",
+      "features": [],
+      "annual_snowfall_cm": 700
+    },
+    {
+      "resort_id": "les-arcs",
+      "name": "Les Arcs",
+      "country": "FR",
+      "region": "alps",
+      "state_province": "Savoie",
+      "elevation_base_m": 1200,
+      "elevation_top_m": 3226,
+      "latitude": 45.5733,
+      "longitude": 6.8203,
+      "timezone": "Europe/Paris",
+      "website": "https://www.lesarcs.com",
+      "features": [],
+      "annual_snowfall_cm": 600
+    },
+    {
+      "resort_id": "levi",
+      "name": "Levi",
+      "country": "FI",
+      "region": "scandinavia",
+      "state_province": "Lapland",
+      "elevation_base_m": 200,
+      "elevation_top_m": 531,
+      "latitude": 67.8039,
+      "longitude": 24.8130,
+      "timezone": "Europe/Helsinki",
+      "website": "https://www.levi.fi",
+      "features": []
+    },
+    {
       "resort_id": "loon-mountain",
       "name": "Loon Mountain Resort",
       "country": "US",
@@ -987,6 +1105,21 @@
       "timezone": "America/Edmonton",
       "website": "https://www.skimarmot.com",
       "features": []
+    },
+    {
+      "resort_id": "meribel",
+      "name": "Méribel",
+      "country": "FR",
+      "region": "alps",
+      "state_province": "Savoie",
+      "elevation_base_m": 1100,
+      "elevation_top_m": 2952,
+      "latitude": 45.3969,
+      "longitude": 6.5653,
+      "timezone": "Europe/Paris",
+      "website": "https://www.meribel.net",
+      "features": [],
+      "annual_snowfall_cm": 600
     },
     {
       "resort_id": "mont-blanc",
@@ -1195,6 +1328,21 @@
       "timezone": "America/Edmonton",
       "website": "https://banffnorquay.com",
       "features": []
+    },
+    {
+      "resort_id": "myrkdalen",
+      "name": "Myrkdalen",
+      "country": "NO",
+      "region": "scandinavia",
+      "state_province": "Vestland",
+      "elevation_base_m": 495,
+      "elevation_top_m": 1055,
+      "latitude": 60.8825,
+      "longitude": 6.4481,
+      "timezone": "Europe/Oslo",
+      "website": "https://www.myrkdalen.no",
+      "features": [],
+      "annual_snowfall_cm": 800
     },
     {
       "resort_id": "nakiska",
@@ -1444,6 +1592,34 @@
       "green_runs_pct": 7,
       "blue_runs_pct": 48,
       "black_runs_pct": 45
+    },
+    {
+      "resort_id": "riksgransen",
+      "name": "Riksgränsen",
+      "country": "SE",
+      "region": "scandinavia",
+      "state_province": "Norrbotten",
+      "elevation_base_m": 500,
+      "elevation_top_m": 909,
+      "latitude": 68.4256,
+      "longitude": 18.1283,
+      "timezone": "Europe/Stockholm",
+      "website": "https://www.riksgransen.se",
+      "features": []
+    },
+    {
+      "resort_id": "saalbach",
+      "name": "Saalbach Hinterglemm",
+      "country": "AT",
+      "region": "alps",
+      "state_province": "Salzburg",
+      "elevation_base_m": 1003,
+      "elevation_top_m": 2096,
+      "latitude": 47.3911,
+      "longitude": 12.6358,
+      "timezone": "Europe/Vienna",
+      "website": "https://www.saalbach.com",
+      "features": []
     },
     {
       "resort_id": "sierra-at-tahoe",
@@ -1833,6 +2009,21 @@
       "ikon_pass": "7 days"
     },
     {
+      "resort_id": "tignes",
+      "name": "Tignes",
+      "country": "FR",
+      "region": "alps",
+      "state_province": "Savoie",
+      "elevation_base_m": 1550,
+      "elevation_top_m": 3456,
+      "latitude": 45.4681,
+      "longitude": 6.9064,
+      "timezone": "Europe/Paris",
+      "website": "https://www.tignes.net",
+      "features": [],
+      "annual_snowfall_cm": 600
+    },
+    {
       "resort_id": "timberline",
       "name": "Timberline Lodge",
       "country": "US",
@@ -1864,6 +2055,21 @@
       "timezone": "America/Montreal",
       "website": "https://www.tremblant.ca",
       "features": []
+    },
+    {
+      "resort_id": "trysil",
+      "name": "Trysil",
+      "country": "NO",
+      "region": "scandinavia",
+      "state_province": "Innlandet",
+      "elevation_base_m": 415,
+      "elevation_top_m": 1100,
+      "latitude": 61.3138,
+      "longitude": 12.2833,
+      "timezone": "Europe/Oslo",
+      "website": "https://www.trysil.com",
+      "features": [],
+      "annual_snowfall_cm": 450
     },
     {
       "resort_id": "vail",
@@ -1978,6 +2184,34 @@
       "blue_runs_pct": 50,
       "black_runs_pct": 28,
       "epic_pass": "5 consecutive days"
+    },
+    {
+      "resort_id": "voss",
+      "name": "Voss Resort",
+      "country": "NO",
+      "region": "scandinavia",
+      "state_province": "Vestland",
+      "elevation_base_m": 82,
+      "elevation_top_m": 960,
+      "latitude": 60.6324,
+      "longitude": 6.4295,
+      "timezone": "Europe/Oslo",
+      "website": "https://www.vossresort.no",
+      "features": []
+    },
+    {
+      "resort_id": "wengen",
+      "name": "Wengen-Jungfrau",
+      "country": "CH",
+      "region": "alps",
+      "state_province": "Bern",
+      "elevation_base_m": 944,
+      "elevation_top_m": 2500,
+      "latitude": 46.6056,
+      "longitude": 7.9222,
+      "timezone": "Europe/Zurich",
+      "website": "https://www.wengen.swiss",
+      "features": []
     },
     {
       "resort_id": "whistler-blackcomb",

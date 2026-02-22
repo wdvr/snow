@@ -92,6 +92,28 @@ RESORT_ALIASES: dict[str, str] = {
     "mont sainte anne": "mont-sainte-anne",
     "mont-sainte-anne": "mont-sainte-anne",
     "stoneham": "stoneham",
+    # Scandinavia
+    "åre": "are",
+    "are": "are",
+    "hemsedal": "hemsedal",
+    "trysil": "trysil",
+    "geilo": "geilo",
+    "myrkdalen": "myrkdalen",
+    "riksgränsen": "riksgransen",
+    "riksgransen": "riksgransen",
+    "levi": "levi",
+    "voss": "voss",
+    # Additional Alps
+    "ischgl": "ischgl",
+    "la plagne": "la-plagne",
+    "les arcs": "les-arcs",
+    "meribel": "meribel",
+    "méribel": "meribel",
+    "tignes": "tignes",
+    "lech": "lech-zuers",
+    "zürs": "lech-zuers",
+    "saalbach": "saalbach",
+    "wengen": "wengen",
 }
 
 SYSTEM_PROMPT = (
