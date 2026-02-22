@@ -41,14 +41,11 @@ class SnowConditionsManager: ObservableObject {
         //    and invalidate stale cache from the old environment
         cacheService.checkAndInvalidateIfAPIChanged()
 
-        // 1. Load cached data in a yielding task so the main thread stays
-        //    responsive (taps, scrolls) even while cache loads.
-        Task {
-            loadCachedDataSynchronously()
-            // Yield so the run loop can process pending user interactions
-            await Task.yield()
+        // 1. Load cached data immediately so the UI is populated right away
+        loadCachedDataSynchronously()
 
-            // 2. Refresh from API in background
+        // 2. Refresh from API in background
+        Task {
             await fetchResorts()
             // Fetch snow quality summaries for all resorts (lightweight, fast)
             await fetchAllSnowQualitySummaries()
