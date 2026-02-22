@@ -533,8 +533,10 @@ class OpenMeteoService:
                 known_freeze_hours_ago = (
                     datetime.now(UTC) - known_freeze_datetime
                 ).total_seconds() / 3600
-            except (ValueError, TypeError):
-                pass  # Invalid date, ignore
+            except (ValueError, TypeError) as e:
+                logger.warning(
+                    "Invalid freeze date '%s': %s", last_known_freeze_date, e
+                )
 
         # Process hourly data for accurate rolling windows
         hourly_snowfall = hourly.get("snowfall", [])

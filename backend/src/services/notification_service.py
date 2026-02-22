@@ -495,8 +495,10 @@ class NotificationService:
                                 "hours_thawed": round(hours_thawed, 1),
                             },
                         )
-                except (ValueError, TypeError):
-                    pass
+                except (ValueError, TypeError) as e:
+                    logger.warning(
+                        "Error processing thaw alert for %s: %s", resort_id, e
+                    )
 
         # Case 3: Temperature just went negative (freeze started)
         if current_temp < 0 and prev_state == "thawed":

@@ -433,8 +433,9 @@ class WeatherService:
                     try:
                         items = future.result()
                         all_items.extend(items)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        level = futures[future]
+                        logger.warning("Error querying elevation %s: %s", level, e)
 
             # Parse and group by resort, keeping only latest per elevation
             seen_keys: set[str] = set()  # "resort_id:elevation" dedup keys

@@ -1035,10 +1035,25 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
         # Get explanation for overall quality
         quality_explanation = SNOW_QUALITY_EXPLANATIONS.get(overall_quality, {})
 
+        # Find representative condition (mid > top > base) for explanation
+        # consistency with static_json_generator and batch endpoint
+        representative = None
+        for pref in ["mid", "top", "base"]:
+            for c in conditions:
+                if c.elevation_level == pref:
+                    representative = c
+                    break
+            if representative:
+                break
+        if not representative and conditions:
+            representative = conditions[0]
+
         # Generate overall explanation matching the weighted quality level.
-        # When no elevation matches overall quality (common with weighted
-        # averaging), synthesizes a mixed-elevation description.
-        overall_explanation = generate_overall_explanation(conditions, overall_quality)
+        # Pass representative to ensure explanation temperature matches
+        # the elevation used in batch/static JSON endpoints.
+        overall_explanation = generate_overall_explanation(
+            conditions, overall_quality, representative=representative
+        )
 
         # Set cache headers - 1 hour since weather updates hourly
         response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC_LONG
