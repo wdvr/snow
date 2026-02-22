@@ -49,6 +49,7 @@ final class CachedResort {
         let decoder = JSONDecoder()
         guard let elevationPoints = try? decoder.decode([ElevationPoint].self, from: elevationPointsData),
               let weatherSources = try? decoder.decode([String].self, from: weatherSourcesData) else {
+            cacheLog.warning("CacheService: Failed to decode cached resort \(self.id)")
             return nil
         }
 
@@ -93,7 +94,12 @@ final class CachedWeatherCondition {
 
     func toWeatherCondition() -> WeatherCondition? {
         let decoder = JSONDecoder()
-        return try? decoder.decode(WeatherCondition.self, from: conditionData)
+        do {
+            return try decoder.decode(WeatherCondition.self, from: conditionData)
+        } catch {
+            cacheLog.warning("CacheService: Failed to decode cached condition \(self.cacheKey): \(error.localizedDescription)")
+            return nil
+        }
     }
 }
 

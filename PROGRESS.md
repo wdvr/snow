@@ -39,6 +39,7 @@
 
 | Feature | Date |
 |---------|------|
+| Extract shared ELEVATION_WEIGHTS constant, fix condition report query and confidence calc | 2026-02-22 |
 | Fix chat service: parallelize resort auto-detect, re-raise save errors | 2026-02-22 |
 | Add VoiceOver accessibility to condition report section | 2026-02-22 |
 | Add timeline retry button and snow history chart accessibility | 2026-02-22 |
