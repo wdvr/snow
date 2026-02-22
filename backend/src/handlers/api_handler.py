@@ -53,6 +53,7 @@ from utils.cache import (
     get_recommendations_cache,
     get_timeline_cache,
 )
+from utils.constants import DEFAULT_ELEVATION_WEIGHT, ELEVATION_WEIGHTS
 
 logger = logging.getLogger(__name__)
 
@@ -1008,13 +1009,14 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
 
         # Calculate overall quality from weighted raw scores (top 50%, mid 35%, base 15%).
         # This ensures overall_quality and overall_snow_score are always consistent.
-        elevation_weights = {"top": 0.50, "mid": 0.35, "base": 0.15}
         weighted_raw_score = 0.0
         total_weight = 0.0
         for cond in conditions:
             raw = cond.quality_score
             if raw is not None:
-                w = elevation_weights.get(cond.elevation_level, 0.15)
+                w = ELEVATION_WEIGHTS.get(
+                    cond.elevation_level, DEFAULT_ELEVATION_WEIGHT
+                )
                 weighted_raw_score += raw * w
                 total_weight += w
         if total_weight > 0:
@@ -1273,12 +1275,11 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
         }
 
     # Calculate overall quality from weighted raw scores (consistent with detail endpoint)
-    elevation_weights = {"top": 0.50, "mid": 0.35, "base": 0.15}
     weighted_raw = 0.0
     total_w = 0.0
     for c in conditions:
         if c.quality_score is not None:
-            w = elevation_weights.get(c.elevation_level, 0.15)
+            w = ELEVATION_WEIGHTS.get(c.elevation_level, DEFAULT_ELEVATION_WEIGHT)
             weighted_raw += c.quality_score * w
             total_w += w
 

@@ -187,10 +187,13 @@ class ConditionReportService:
         cutoff_iso = seven_days_ago.isoformat()
 
         try:
-            # Query all reports for this resort (ULID sort key is time-ordered)
+            # Query recent reports for this resort (ULID sort key is time-ordered).
+            # Limit to 100 to prevent unbounded reads on popular resorts;
+            # 7 days of community reports should be well under this.
             response = self.table.query(
                 KeyConditionExpression=Key("resort_id").eq(resort_id),
                 ScanIndexForward=False,
+                Limit=100,
             )
 
             # Filter to last 7 days
@@ -218,7 +221,7 @@ class ConditionReportService:
                 ct = r.get("condition_type", "")
                 type_counts[ct] = type_counts.get(ct, 0) + 1
 
-            most_common = max(type_counts, key=type_counts.get)
+            most_common = max(type_counts, key=type_counts.get) if type_counts else None
 
             return {
                 "average_score": avg_score,

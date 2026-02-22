@@ -8,6 +8,7 @@ from models.resort import Resort
 from models.weather import ConfidenceLevel, SnowQuality, WeatherCondition
 from services.ml_scorer import raw_score_to_quality
 from services.quality_explanation_service import score_to_100
+from utils.constants import DEFAULT_ELEVATION_WEIGHT, ELEVATION_WEIGHTS
 from utils.geo_utils import haversine_distance
 
 
@@ -340,15 +341,6 @@ class RecommendationService:
         )
         return recommendations[:limit]
 
-    def _get_resort_conditions(self, resort_id: str) -> list[WeatherCondition]:
-        """Get latest conditions for a resort."""
-        try:
-            return self.weather_service.get_conditions_for_resort(
-                resort_id, hours_back=6
-            )
-        except Exception:
-            return []
-
     def _get_best_quality(self, conditions: list[WeatherCondition]) -> SnowQuality:
         """Get the best snow quality across all elevations (used for ranking)."""
         if not conditions:
@@ -369,13 +361,12 @@ class RecommendationService:
         self, conditions: list[WeatherCondition]
     ) -> int | None:
         """Compute weighted 0-100 snow score using same elevation weights as batch endpoint."""
-        elevation_weights = {"top": 0.50, "mid": 0.35, "base": 0.15}
         weighted_raw = 0.0
         total_w = 0.0
 
         for c in conditions:
             if c.quality_score is not None:
-                w = elevation_weights.get(c.elevation_level, 0.15)
+                w = ELEVATION_WEIGHTS.get(c.elevation_level, DEFAULT_ELEVATION_WEIGHT)
                 weighted_raw += c.quality_score * w
                 total_w += w
 
@@ -396,13 +387,12 @@ class RecommendationService:
         if not conditions:
             return SnowQuality.UNKNOWN
 
-        elevation_weights = {"top": 0.50, "mid": 0.35, "base": 0.15}
         weighted_raw = 0.0
         total_w = 0.0
 
         for c in conditions:
             if c.quality_score is not None:
-                w = elevation_weights.get(c.elevation_level, 0.15)
+                w = ELEVATION_WEIGHTS.get(c.elevation_level, DEFAULT_ELEVATION_WEIGHT)
                 weighted_raw += c.quality_score * w
                 total_w += w
 

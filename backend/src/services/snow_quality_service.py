@@ -9,6 +9,7 @@ from models.weather import (
     SnowQualityAlgorithm,
     WeatherCondition,
 )
+from utils.constants import DEFAULT_ELEVATION_WEIGHT, ELEVATION_WEIGHTS
 
 
 class SnowQualityService:
@@ -546,16 +547,18 @@ class SnowQualityService:
         # Adjust based on data completeness
         data_completeness = self._assess_data_completeness(weather)
 
+        confidence_levels = list(ConfidenceLevel)
+        try:
+            current_index = confidence_levels.index(base_confidence)
+        except ValueError:
+            return ConfidenceLevel.VERY_LOW
+
         if data_completeness < 0.5:
             # Downgrade confidence for incomplete data
-            confidence_levels = list(ConfidenceLevel)
-            current_index = confidence_levels.index(base_confidence)
             new_index = min(len(confidence_levels) - 1, current_index + 1)
             return confidence_levels[new_index]
         elif data_completeness > 0.8 and source_multiplier > 0.8:
             # Upgrade confidence for complete, reliable data
-            confidence_levels = list(ConfidenceLevel)
-            current_index = confidence_levels.index(base_confidence)
             new_index = max(0, current_index - 1)
             return confidence_levels[new_index]
         else:
@@ -638,11 +641,10 @@ class SnowQualityService:
             return SnowQuality.UNKNOWN
 
         # Weighted average: top 50%, mid 35%, base 15%
-        weights = {"top": 0.50, "mid": 0.35, "base": 0.15}
         total_weight = 0
         weighted_score = 0
         for level, score in scores_by_elevation.items():
-            w = weights.get(level, 0.15)
+            w = ELEVATION_WEIGHTS.get(level, DEFAULT_ELEVATION_WEIGHT)
             weighted_score += score * w
             total_weight += w
 

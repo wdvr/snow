@@ -26,6 +26,7 @@ from services.quality_explanation_service import (
 )
 from services.resort_service import ResortService
 from services.weather_service import WeatherService
+from utils.constants import DEFAULT_ELEVATION_WEIGHT, ELEVATION_WEIGHTS
 
 logger = logging.getLogger(__name__)
 
@@ -240,12 +241,11 @@ class StaticJsonGenerator:
             }
 
         # Calculate overall quality from weighted raw scores (top 50%, mid 35%, base 15%)
-        elevation_weights = {"top": 0.50, "mid": 0.35, "base": 0.15}
         weighted_raw = 0.0
         total_w = 0.0
         for c in conditions:
             if c.quality_score is not None:
-                w = elevation_weights.get(c.elevation_level, 0.15)
+                w = ELEVATION_WEIGHTS.get(c.elevation_level, DEFAULT_ELEVATION_WEIGHT)
                 weighted_raw += c.quality_score * w
                 total_w += w
 
