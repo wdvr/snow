@@ -92,7 +92,7 @@ struct ElevationProfileView: View {
                     .fontWeight(.semibold)
 
                 if let elevation {
-                    Text(prefs.distance == .metric ? elevation.formattedMeters : elevation.formattedFeet)
+                    Text(elevation.formattedElevation(prefs: prefs))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
