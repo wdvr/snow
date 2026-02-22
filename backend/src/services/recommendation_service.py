@@ -411,9 +411,10 @@ class RecommendationService:
             return 0.0
 
         # Use snowfall_after_freeze_cm if available, otherwise fresh_snow_cm
+        # NOTE: must use `is not None` — 0.0 is a valid value (no snow since freeze)
         total = sum(
             c.snowfall_after_freeze_cm
-            if c.snowfall_after_freeze_cm
+            if c.snowfall_after_freeze_cm is not None
             else c.fresh_snow_cm
             for c in conditions
         )

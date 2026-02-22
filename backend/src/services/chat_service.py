@@ -108,7 +108,8 @@ SYSTEM_PROMPT = (
     "Key data fields: snow_quality (overall quality label), quality_score (1-6 ML score), "
     "fresh_snow_cm (non-refrozen snow), snowfall_24h_cm (recent snowfall), "
     "snow_depth_cm (total base depth), current_temp_celsius.\n"
-    "Each resort has 3 elevations: base, mid, top. Mid is most representative. "
+    "Each resort has 3 elevations: base, mid, top. "
+    "Overall quality is a weighted average (50% top, 35% mid, 15% base). "
     "When conditions vary significantly by elevation, mention the difference."
 )
 
