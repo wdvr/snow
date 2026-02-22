@@ -73,13 +73,16 @@ struct ChatView: View {
                     .padding(.horizontal, 40)
 
                 VStack(spacing: 12) {
-                    SuggestionChip(text: "Best powder near me?") {
-                        sendSuggestion("Best powder near me?")
+                    SuggestionChip(text: "Best powder right now?") {
+                        sendSuggestion("Where has the best powder right now?")
                     }
-                    SuggestionChip(text: "How's Whistler today?") {
-                        sendSuggestion("How's Whistler today?")
+                    SuggestionChip(text: "Compare Whistler vs Jackson Hole") {
+                        sendSuggestion("Compare Whistler and Jackson Hole conditions")
                     }
-                    SuggestionChip(text: "Where should I ski this weekend?") {
+                    SuggestionChip(text: "How's the season at Vail?") {
+                        sendSuggestion("How has the season been at Vail so far?")
+                    }
+                    SuggestionChip(text: "Weekend ski trip ideas") {
                         sendSuggestion("Where should I ski this weekend?")
                     }
                 }
