@@ -537,9 +537,14 @@ struct ResortRowView: View {
 
                     Spacer()
 
-                    Label(condition.formattedTimestamp, systemImage: "clock")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    // Forecast badge or timestamp
+                    if let predicted = condition.predictedSnow48hCm, predicted >= 5 {
+                        ForecastBadge(hours: 48, cm: predicted, prefs: userPreferencesManager.preferredUnits)
+                    } else {
+                        Label(condition.formattedTimestamp, systemImage: "clock")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             } else if let summary = snowQualitySummary,
                       summary.temperatureC != nil || summary.snowfallFreshCm != nil {
@@ -560,7 +565,9 @@ struct ResortRowView: View {
 
                     Spacer()
 
-                    if let timestamp = summary.formattedTimestamp {
+                    if let predicted = summary.predictedSnow48hCm, predicted >= 5 {
+                        ForecastBadge(hours: 48, cm: predicted, prefs: userPreferencesManager.preferredUnits)
+                    } else if let timestamp = summary.formattedTimestamp {
                         Label(timestamp, systemImage: "clock")
                             .font(.caption)
                             .foregroundStyle(.secondary)
