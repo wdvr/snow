@@ -15,6 +15,28 @@ enum ResortSortOption: String, CaseIterable {
     }
 }
 
+enum PassFilter: String, CaseIterable {
+    case all = "All"
+    case epic = "Epic"
+    case ikon = "Ikon"
+
+    var icon: String {
+        switch self {
+        case .all: return "creditcard"
+        case .epic: return "star.fill"
+        case .ikon: return "mountain.2.fill"
+        }
+    }
+
+    var chipColor: Color {
+        switch self {
+        case .all: return .blue
+        case .epic: return .indigo
+        case .ikon: return .orange
+        }
+    }
+}
+
 struct ResortListView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
@@ -27,8 +49,10 @@ struct ResortListView: View {
     @State private var searchText = ""
     @State private var selectedRegion: SkiRegion? = nil
     @State private var sortOption: ResortSortOption = .name
+    @State private var passFilter: PassFilter = .all
     @AppStorage("selectedRegionFilter") private var savedRegionFilter: String = ""
     @AppStorage("resortSortOption") private var savedSortOption: String = "Name"
+    @AppStorage("selectedPassFilter") private var savedPassFilter: String = "All"
 
     private var useMetricDistance: Bool {
         userPreferencesManager.preferredUnits.distance == .metric
@@ -47,12 +71,23 @@ struct ResortListView: View {
             regionFiltered = visibleResorts
         }
 
+        // Apply pass filter
+        let passFiltered: [Resort]
+        switch passFilter {
+        case .all:
+            passFiltered = regionFiltered
+        case .epic:
+            passFiltered = regionFiltered.filter { $0.epicPass != nil }
+        case .ikon:
+            passFiltered = regionFiltered.filter { $0.ikonPass != nil }
+        }
+
         // Apply search filter
         let searchFiltered: [Resort]
         if searchText.isEmpty {
-            searchFiltered = regionFiltered
+            searchFiltered = passFiltered
         } else {
-            searchFiltered = regionFiltered.filter { resort in
+            searchFiltered = passFiltered.filter { resort in
                 resort.name.localizedCaseInsensitiveContains(searchText) ||
                 resort.countryName.localizedCaseInsensitiveContains(searchText) ||
                 resort.region.localizedCaseInsensitiveContains(searchText)
@@ -137,6 +172,28 @@ struct ResortListView: View {
                         }
                     }
 
+                    // Pass filter
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack {
+                            Text("Pass:")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            ForEach(PassFilter.allCases, id: \.self) { filter in
+                                FilterChip(
+                                    title: filter.rawValue,
+                                    icon: filter.icon,
+                                    isSelected: passFilter == filter,
+                                    selectedColor: filter.chipColor
+                                ) {
+                                    passFilter = filter
+                                    savedPassFilter = filter.rawValue
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+
                     // Sort options
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack {
@@ -199,8 +256,16 @@ struct ResortListView: View {
                 .listStyle(PlainListStyle())
                 .searchable(text: $searchText, prompt: "Search resorts...")
                 .overlay {
-                    if !searchText.isEmpty && filteredResorts.isEmpty && !snowConditionsManager.resorts.isEmpty {
-                        ContentUnavailableView.search(text: searchText)
+                    if filteredResorts.isEmpty && !snowConditionsManager.resorts.isEmpty {
+                        if !searchText.isEmpty {
+                            ContentUnavailableView.search(text: searchText)
+                        } else if passFilter != .all {
+                            ContentUnavailableView(
+                                "No \(passFilter.rawValue) Pass Resorts",
+                                systemImage: "creditcard.trianglebadge.exclamationmark",
+                                description: Text("No resorts found with \(passFilter.rawValue) pass in the selected region.")
+                            )
+                        }
                     }
                 }
             }
@@ -213,6 +278,10 @@ struct ResortListView: View {
                 // Restore saved sort option
                 if let option = ResortSortOption(rawValue: savedSortOption) {
                     sortOption = option
+                }
+                // Restore saved pass filter
+                if let filter = PassFilter(rawValue: savedPassFilter) {
+                    passFilter = filter
                 }
                 // Track screen view
                 AnalyticsService.shared.trackScreen("ResortList", screenClass: "ResortListView")
@@ -518,6 +587,7 @@ struct FilterChip: View {
     let title: String
     var icon: String? = nil
     let isSelected: Bool
+    var selectedColor: Color = .blue
     let action: () -> Void
 
     var body: some View {
@@ -535,7 +605,7 @@ struct FilterChip: View {
             .padding(.vertical, 6)
             .background(
                 Capsule()
-                    .fill(isSelected ? Color.blue : Color.gray.opacity(0.2))
+                    .fill(isSelected ? selectedColor : Color.gray.opacity(0.2))
             )
             .foregroundStyle(isSelected ? .white : .primary)
         }
