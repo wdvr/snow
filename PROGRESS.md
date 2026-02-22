@@ -21,10 +21,8 @@
 ### 🟡 Medium
 | Issue | Description | Status |
 |-------|-------------|--------|
-| Chat requires Bedrock model access form | Bedrock Claude Sonnet 4.6 requires User action | User action needed |
 | Auto-suggest resort in chat | "How's Whistler" → auto-detect nearest famous resort or user favorite | Backlog |
-| Pass affiliation | Epic/Ikon pass info per resort | Research needed |
-| Apple Sign In Email | Shows "Apple ID (000495...)" instead of email | Backlog |
+| App Store Release | Need provisioning profile with Push Notifications | User action needed |
 
 ### 🟢 Future Features
 | Issue | Description |

@@ -1130,8 +1130,10 @@ async def get_resort_history(
                 season_summary["total_season_snowfall_cm_accumulated"] = mid_summary[
                     "total_season_snowfall_cm"
                 ]
-        except Exception:
-            pass  # Non-critical: accumulated total is a bonus field
+        except Exception as e:
+            logger.warning(
+                "Failed to get accumulated season total for %s: %s", resort_id, e
+            )
 
         # Set cache headers - 1 hour
         response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC_LONG
@@ -1293,7 +1295,9 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
         "resort_id": resort_id,
         "overall_quality": overall_quality.value,
         "snow_score": snow_score,
-        "explanation": generate_overall_explanation(conditions, overall_quality),
+        "explanation": generate_overall_explanation(
+            conditions, overall_quality, representative=representative
+        ),
         "last_updated": max(c.timestamp for c in conditions) if conditions else None,
         "temperature_c": representative.current_temp_celsius
         if representative
@@ -2182,8 +2186,8 @@ async def get_current_user(user_id: str = Depends(get_current_user_id)):
             raw_response = auth_service.user_table.get_item(Key={"user_id": user_id})
             raw_item = raw_response.get("Item", {})
             provider = raw_item.get("auth_provider")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Failed to get auth provider for user %s: %s", user_id, e)
 
         # Get user preferences
         user_service = get_user_service()

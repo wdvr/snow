@@ -219,8 +219,13 @@ class StaticJsonGenerator:
                 )
                 if condition:
                     conditions.append(condition)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(
+                    "Failed to get %s condition for %s: %s",
+                    level,
+                    resort.resort_id,
+                    e,
+                )
 
         if not conditions:
             return {
@@ -252,9 +257,6 @@ class StaticJsonGenerator:
             overall_quality = SnowQualityService.calculate_overall_quality(conditions)
             snow_score = None
 
-        # Generate overall explanation matching weighted quality level
-        explanation = generate_overall_explanation(conditions, overall_quality)
-
         # Get representative condition for temperature/snowfall fields (prefer mid)
         # Mid elevation best represents typical skiing conditions and aligns with
         # the weighted quality rating (50% top + 35% mid + 15% base)
@@ -268,6 +270,12 @@ class StaticJsonGenerator:
                 break
         if not representative and conditions:
             representative = conditions[0]
+
+        # Generate overall explanation using same representative condition
+        # to ensure temperature in explanation matches temperature_c field
+        explanation = generate_overall_explanation(
+            conditions, overall_quality, representative=representative
+        )
 
         return {
             "resort_id": resort.resort_id,

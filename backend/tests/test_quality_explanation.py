@@ -407,9 +407,13 @@ class TestOverallExplanation:
         ]
         result = generate_overall_explanation(conditions, SnowQuality.POOR)
         assert result is not None
-        # Should mention summit conditions AND lower elevation issues
-        assert "summit" in result.lower()
-        assert "lower" in result.lower() or "icy" in result.lower()
+        # Uses representative (mid) with POOR quality override
+        # Should describe poor conditions using mid's freeze-thaw data
+        assert (
+            "thaw" in result.lower()
+            or "hard" in result.lower()
+            or "refrozen" in result.lower()
+        )
 
     def test_mixed_excellent_top_poor_lower(self):
         """Excellent at top but poor lower → synthesized explanation."""
@@ -427,11 +431,12 @@ class TestOverallExplanation:
                 current_temp_celsius=-2.0,
             ),
         ]
-        # Overall good (between excellent and poor)
+        # Overall good (between excellent and poor), representative is top (no mid)
         result = generate_overall_explanation(conditions, SnowQuality.GOOD)
         assert result is not None
-        # Should not just show the "excellent" explanation
-        assert "summit" in result.lower()
+        # Uses representative (top) with GOOD quality override
+        # Should describe good conditions using top's snow data
+        assert "powder" in result.lower() or "snow" in result.lower()
 
     def test_empty_conditions_returns_none(self):
         """Empty conditions list returns None."""
