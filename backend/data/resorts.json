@@ -86,7 +86,11 @@
         "vallee_blanche",
         "extreme_skiing"
       ],
-      "annual_snowfall_cm": 900
+      "annual_snowfall_cm": 900,
+      "trail_map_url": "https://www.chamonix.com/ski-areas",
+      "green_runs_pct": 20,
+      "blue_runs_pct": 45,
+      "black_runs_pct": 35
     },
     {
       "resort_id": "cortina",
@@ -104,7 +108,11 @@
         "dolomites",
         "olympic_2026"
       ],
-      "annual_snowfall_cm": 500
+      "annual_snowfall_cm": 500,
+      "trail_map_url": "https://www.dolomitisuperski.com/en/live-info/ski-map/dolomiti-superski/map-for-cortina-d-ampezzo",
+      "green_runs_pct": 33,
+      "blue_runs_pct": 51,
+      "black_runs_pct": 16
     },
     {
       "resort_id": "courchevel",
@@ -122,7 +130,11 @@
         "three_valleys",
         "luxury"
       ],
-      "annual_snowfall_cm": 500
+      "annual_snowfall_cm": 500,
+      "trail_map_url": "https://www.courchevel.com/en/interactive-map/",
+      "green_runs_pct": 23,
+      "blue_runs_pct": 45,
+      "black_runs_pct": 32
     },
     {
       "resort_id": "kitzbuehel",
@@ -140,7 +152,11 @@
         "hahnenkamm",
         "world_cup"
       ],
-      "annual_snowfall_cm": 550
+      "annual_snowfall_cm": 550,
+      "trail_map_url": "https://www.kitzski.at/en/service-info/publications-amp-downloads.html",
+      "green_runs_pct": 33,
+      "blue_runs_pct": 45,
+      "black_runs_pct": 22
     },
     {
       "resort_id": "st-anton",
@@ -158,7 +174,11 @@
         "birthplace_of_skiing",
         "apres_ski"
       ],
-      "annual_snowfall_cm": 700
+      "annual_snowfall_cm": 700,
+      "trail_map_url": "https://www.skiarlberg.at/en/Ski-Arlberg/Live-Info/Interactive-map",
+      "green_runs_pct": 36,
+      "blue_runs_pct": 40,
+      "black_runs_pct": 24
     },
     {
       "resort_id": "val-disere",
@@ -176,7 +196,11 @@
         "espace_killy",
         "world_cup"
       ],
-      "annual_snowfall_cm": 600
+      "annual_snowfall_cm": 600,
+      "trail_map_url": "https://www.valdisere.com/en/live/ski-map/",
+      "green_runs_pct": 15,
+      "blue_runs_pct": 40,
+      "black_runs_pct": 45
     },
     {
       "resort_id": "verbier",
@@ -194,7 +218,11 @@
         "freeride",
         "xtreme_verbier"
       ],
-      "annual_snowfall_cm": 750
+      "annual_snowfall_cm": 750,
+      "trail_map_url": "https://www.verbier.ch/en/winter/skiing/piste-map/",
+      "green_runs_pct": 22,
+      "blue_runs_pct": 50,
+      "black_runs_pct": 28
     },
     {
       "resort_id": "zermatt",
@@ -213,7 +241,11 @@
         "glacier_skiing",
         "car_free"
       ],
-      "annual_snowfall_cm": 400
+      "annual_snowfall_cm": 400,
+      "trail_map_url": "https://www.matterhornparadise.ch/en/experience/skiing/piste-map",
+      "green_runs_pct": 22,
+      "blue_runs_pct": 60,
+      "black_runs_pct": 18
     },
     {
       "resort_id": "furano",
@@ -231,7 +263,11 @@
         "powder",
         "world_cup"
       ],
-      "annual_snowfall_cm": 900
+      "annual_snowfall_cm": 900,
+      "trail_map_url": "https://www.snowfurano.com/en/winter/",
+      "green_runs_pct": 40,
+      "blue_runs_pct": 40,
+      "black_runs_pct": 20
     },
     {
       "resort_id": "hakuba",
@@ -250,7 +286,11 @@
         "powder",
         "onsen"
       ],
-      "annual_snowfall_cm": 1100
+      "annual_snowfall_cm": 1100,
+      "trail_map_url": "https://www.hakubavalley.com/en/ski_resort/",
+      "green_runs_pct": 30,
+      "blue_runs_pct": 40,
+      "black_runs_pct": 30
     },
     {
       "resort_id": "niseko",
@@ -269,7 +309,11 @@
         "night_skiing",
         "onsen"
       ],
-      "annual_snowfall_cm": 1500
+      "annual_snowfall_cm": 1500,
+      "trail_map_url": "https://www.niseko.ne.jp/en/mountain/",
+      "green_runs_pct": 30,
+      "blue_runs_pct": 40,
+      "black_runs_pct": 30
     },
     {
       "resort_id": "blue-mountain-resort-collingwood",
@@ -805,7 +849,11 @@
         "four_mountains",
         "luxury"
       ],
-      "annual_snowfall_cm": 762
+      "annual_snowfall_cm": 762,
+      "trail_map_url": "https://www.aspensnowmass.com/four-mountains/snowmass/trail-maps",
+      "green_runs_pct": 6,
+      "blue_runs_pct": 47,
+      "black_runs_pct": 47
     },
     {
       "resort_id": "bald-mountain-sun-valley",
@@ -879,7 +927,11 @@
         "terrain_park",
         "highest_lift"
       ],
-      "annual_snowfall_cm": 890
+      "annual_snowfall_cm": 890,
+      "trail_map_url": "https://www.breckenridge.com/the-mountain/about-the-mountain/trail-map.aspx",
+      "green_runs_pct": 11,
+      "blue_runs_pct": 31,
+      "black_runs_pct": 58
     },
     {
       "resort_id": "brighton",
@@ -1010,7 +1062,11 @@
         "expert_terrain",
         "tram"
       ],
-      "annual_snowfall_cm": 1168
+      "annual_snowfall_cm": 1168,
+      "trail_map_url": "https://www.jacksonhole.com/maps/mountain-winter",
+      "green_runs_pct": 10,
+      "blue_runs_pct": 40,
+      "black_runs_pct": 50
     },
     {
       "resort_id": "keystone",
@@ -1041,7 +1097,11 @@
       "features": [
         "backcountry_access"
       ],
-      "annual_snowfall_cm": 454
+      "annual_snowfall_cm": 454,
+      "trail_map_url": "https://www.skilouise.com/explore-winter/winter-ski-ride/lift-runs-parks-status/",
+      "green_runs_pct": 25,
+      "blue_runs_pct": 45,
+      "black_runs_pct": 30
     },
     {
       "resort_id": "marmot-basin-jasper",
@@ -1101,7 +1161,11 @@
         "largest_us_resort",
         "terrain_park"
       ],
-      "annual_snowfall_cm": 889
+      "annual_snowfall_cm": 889,
+      "trail_map_url": "https://www.parkcitymountain.com/the-mountain/about-the-mountain/trail-map",
+      "green_runs_pct": 8,
+      "blue_runs_pct": 41,
+      "black_runs_pct": 51
     },
     {
       "resort_id": "purgatory-durango",
@@ -1203,7 +1267,11 @@
         "champagne_powder",
         "natural_hot_springs"
       ],
-      "annual_snowfall_cm": 879
+      "annual_snowfall_cm": 879,
+      "trail_map_url": "https://www.steamboat.com/the-mountain/trail-map",
+      "green_runs_pct": 12,
+      "blue_runs_pct": 43,
+      "black_runs_pct": 45
     },
     {
       "resort_id": "sunshine-village",
@@ -1252,7 +1320,11 @@
         "free_gondola",
         "steep_terrain"
       ],
-      "annual_snowfall_cm": 790
+      "annual_snowfall_cm": 790,
+      "trail_map_url": "https://www.tellurideskiresort.com/the-mountain/trail-maps/",
+      "green_runs_pct": 23,
+      "blue_runs_pct": 36,
+      "black_runs_pct": 41
     },
     {
       "resort_id": "vail",
@@ -1270,7 +1342,11 @@
         "back_bowls",
         "terrain_park"
       ],
-      "annual_snowfall_cm": 889
+      "annual_snowfall_cm": 889,
+      "trail_map_url": "https://www.vail.com/the-mountain/about-the-mountain/trail-map.aspx",
+      "green_runs_pct": 18,
+      "blue_runs_pct": 29,
+      "black_runs_pct": 53
     },
     {
       "resort_id": "whitefish-mountain-resort",
@@ -1391,7 +1467,11 @@
         "night_skiing",
         "terrain_park"
       ],
-      "annual_snowfall_cm": 750
+      "annual_snowfall_cm": 750,
+      "trail_map_url": "https://www.bigwhite.com/the-mountain/trail-map",
+      "green_runs_pct": 18,
+      "blue_runs_pct": 54,
+      "black_runs_pct": 28
     },
     {
       "resort_id": "crystal-mountain-wa",
@@ -1581,7 +1661,11 @@
         "terrain_park",
         "long_season"
       ],
-      "annual_snowfall_cm": 990
+      "annual_snowfall_cm": 990,
+      "trail_map_url": "https://www.mammothmountain.com/on-the-mountain/winter-trail-map",
+      "green_runs_pct": 25,
+      "blue_runs_pct": 40,
+      "black_runs_pct": 35
     },
     {
       "resort_id": "mount-seymour",
@@ -1699,7 +1783,11 @@
         "terrain_park",
         "olympic_history"
       ],
-      "annual_snowfall_cm": 1143
+      "annual_snowfall_cm": 1143,
+      "trail_map_url": "https://www.palisadestahoe.com/mountain-information/trail-maps",
+      "green_runs_pct": 6,
+      "blue_runs_pct": 41,
+      "black_runs_pct": 53
     },
     {
       "resort_id": "panorama",
@@ -1759,7 +1847,11 @@
         "cat_skiing",
         "heli_skiing"
       ],
-      "annual_snowfall_cm": 1050
+      "annual_snowfall_cm": 1050,
+      "trail_map_url": "https://www.revelstokemountainresort.com/the-mountain/trail-map",
+      "green_runs_pct": 7,
+      "blue_runs_pct": 48,
+      "black_runs_pct": 45
     },
     {
       "resort_id": "sierra-at-tahoe",
@@ -1791,7 +1883,11 @@
         "night_skiing",
         "cross_country"
       ],
-      "annual_snowfall_cm": 700
+      "annual_snowfall_cm": 700,
+      "trail_map_url": "https://www.skisilverstar.com/the-mountain/mountain-maps/winter-maps/",
+      "green_runs_pct": 15,
+      "blue_runs_pct": 40,
+      "black_runs_pct": 45
     },
     {
       "resort_id": "stevens-pass",
@@ -1845,7 +1941,11 @@
         "night_skiing",
         "cross_country"
       ],
-      "annual_snowfall_cm": 600
+      "annual_snowfall_cm": 600,
+      "trail_map_url": "https://www.sunpeaksresort.com/explore/the-mountain/trail-maps",
+      "green_runs_pct": 10,
+      "blue_runs_pct": 58,
+      "black_runs_pct": 32
     },
     {
       "resort_id": "snoqualmie-pass",
@@ -1902,7 +2002,11 @@
         "terrain_park",
         "night_skiing"
       ],
-      "annual_snowfall_cm": 1180
+      "annual_snowfall_cm": 1180,
+      "trail_map_url": "https://www.whistlerblackcomb.com/the-mountain/trail-maps",
+      "green_runs_pct": 20,
+      "blue_runs_pct": 55,
+      "black_runs_pct": 25
     },
     {
       "resort_id": "whitewater-nelson",

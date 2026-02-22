@@ -43,6 +43,16 @@ class Resort(BaseModel):
         ..., description="Resort timezone (e.g., 'America/Vancouver')"
     )
     official_website: str | None = Field(None, description="Resort official website")
+    trail_map_url: str | None = Field(None, description="URL to trail map image or PDF")
+    green_runs_pct: int | None = Field(
+        None, description="Percentage of beginner/green runs"
+    )
+    blue_runs_pct: int | None = Field(
+        None, description="Percentage of intermediate/blue runs"
+    )
+    black_runs_pct: int | None = Field(
+        None, description="Percentage of advanced/black runs"
+    )
     weather_sources: list[str] = Field(
         default_factory=list, description="Available weather data sources"
     )

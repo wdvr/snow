@@ -14,6 +14,10 @@ final class CachedResort {
     var region: String
     var timezone: String
     var officialWebsite: String?
+    var trailMapUrl: String?
+    var greenRunsPct: Int?
+    var blueRunsPct: Int?
+    var blackRunsPct: Int?
     var elevationPointsData: Data
     var weatherSourcesData: Data
     var cachedAt: Date
@@ -25,6 +29,10 @@ final class CachedResort {
         self.region = resort.region
         self.timezone = resort.timezone
         self.officialWebsite = resort.officialWebsite
+        self.trailMapUrl = resort.trailMapUrl
+        self.greenRunsPct = resort.greenRunsPct
+        self.blueRunsPct = resort.blueRunsPct
+        self.blackRunsPct = resort.blackRunsPct
 
         // Encode elevation points
         let encoder = JSONEncoder()
@@ -48,6 +56,10 @@ final class CachedResort {
             elevationPoints: elevationPoints,
             timezone: timezone,
             officialWebsite: officialWebsite,
+            trailMapUrl: trailMapUrl,
+            greenRunsPct: greenRunsPct,
+            blueRunsPct: blueRunsPct,
+            blackRunsPct: blackRunsPct,
             weatherSources: weatherSources,
             createdAt: nil,
             updatedAt: nil

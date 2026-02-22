@@ -230,14 +230,63 @@ struct ResortDetailView: View {
                 }
             }
 
-            if let website = resort.officialWebsite, let url = URL(string: website) {
-                Link(destination: url) {
-                    Label("Visit Website", systemImage: "safari")
-                        .font(.caption)
+            // Run difficulty breakdown
+            if let green = resort.greenRunsPct, let blue = resort.blueRunsPct, let black = resort.blackRunsPct {
+                VStack(spacing: 6) {
+                    // Stacked bar chart
+                    GeometryReader { geometry in
+                        HStack(spacing: 1) {
+                            Rectangle()
+                                .fill(.green)
+                                .frame(width: geometry.size.width * CGFloat(green) / 100)
+                            Rectangle()
+                                .fill(.blue)
+                                .frame(width: geometry.size.width * CGFloat(blue) / 100)
+                            Rectangle()
+                                .fill(.primary)
+                                .frame(width: geometry.size.width * CGFloat(black) / 100)
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .frame(height: 8)
+
+                    HStack(spacing: 12) {
+                        Label("\(green)%", systemImage: "circle.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.green)
+                        Label("\(blue)%", systemImage: "square.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.blue)
+                        Label("\(black)%", systemImage: "diamond.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                    }
                 }
-                .simultaneousGesture(TapGesture().onEnded {
-                    AnalyticsService.shared.trackResortWebsiteVisited(resortId: resort.id, resortName: resort.name)
-                })
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Run difficulty: \(green)% beginner, \(blue)% intermediate, \(black)% advanced")
+            }
+
+            // Links row
+            HStack(spacing: 16) {
+                if let website = resort.officialWebsite, let url = URL(string: website) {
+                    Link(destination: url) {
+                        Label("Website", systemImage: "safari")
+                            .font(.caption)
+                    }
+                    .simultaneousGesture(TapGesture().onEnded {
+                        AnalyticsService.shared.trackResortWebsiteVisited(resortId: resort.id, resortName: resort.name)
+                    })
+                }
+
+                if let mapUrlStr = resort.trailMapUrl, let mapUrl = URL(string: mapUrlStr) {
+                    Link(destination: mapUrl) {
+                        Label("Trail Map", systemImage: "map")
+                            .font(.caption)
+                    }
+                }
+
+                Spacer()
             }
         }
         .cardStyleElevated()

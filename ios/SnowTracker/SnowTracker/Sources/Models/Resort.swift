@@ -85,6 +85,10 @@ struct Resort: Codable, Identifiable, Hashable {
     let elevationPoints: [ElevationPoint]
     let timezone: String
     let officialWebsite: String?
+    let trailMapUrl: String?
+    let greenRunsPct: Int?
+    let blueRunsPct: Int?
+    let blackRunsPct: Int?
     let weatherSources: [String]
     let createdAt: String?
     let updatedAt: String?
@@ -97,6 +101,10 @@ struct Resort: Codable, Identifiable, Hashable {
         case elevationPoints = "elevation_points"
         case timezone
         case officialWebsite = "official_website"
+        case trailMapUrl = "trail_map_url"
+        case greenRunsPct = "green_runs_pct"
+        case blueRunsPct = "blue_runs_pct"
+        case blackRunsPct = "black_runs_pct"
         case weatherSources = "weather_sources"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
@@ -188,6 +196,10 @@ extension Resort {
             ],
             timezone: "America/Vancouver",
             officialWebsite: "https://www.bigwhite.com",
+            trailMapUrl: nil,
+            greenRunsPct: 18,
+            blueRunsPct: 56,
+            blackRunsPct: 26,
             weatherSources: ["weatherapi", "snow-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-20T08:00:00Z"
@@ -225,6 +237,10 @@ extension Resort {
             ],
             timezone: "America/Edmonton",
             officialWebsite: "https://www.skilouise.com",
+            trailMapUrl: nil,
+            greenRunsPct: 25,
+            blueRunsPct: 45,
+            blackRunsPct: 30,
             weatherSources: ["weatherapi", "snow-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-20T08:00:00Z"
@@ -262,6 +278,10 @@ extension Resort {
             ],
             timezone: "America/Vancouver",
             officialWebsite: "https://www.skisilverstar.com",
+            trailMapUrl: nil,
+            greenRunsPct: 20,
+            blueRunsPct: 50,
+            blackRunsPct: 30,
             weatherSources: ["weatherapi", "snow-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-20T08:00:00Z"
