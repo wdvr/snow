@@ -39,6 +39,8 @@
 
 | Feature | Date |
 |---------|------|
+| Add VoiceOver accessibility to condition report section | 2026-02-22 |
+| Add timeline retry button and snow history chart accessibility | 2026-02-22 |
 | Add error handling for Bedrock API calls in chat service | 2026-02-22 |
 | Add VoiceOver accessibility to elevation profile bands | 2026-02-22 |
 | Update quality info sheet to reflect current ML model stats | 2026-02-22 |
