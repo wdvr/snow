@@ -24,6 +24,12 @@ struct ResortConditionRow: View {
 
             VStack(alignment: .trailing, spacing: 2) {
                 HStack(spacing: 4) {
+                    if let score = resort.snowScore {
+                        Text("\(score)")
+                            .font(.caption.weight(.bold))
+                            .fontDesign(.rounded)
+                            .foregroundStyle(resort.snowQuality.color)
+                    }
                     Image(systemName: resort.snowQuality.icon)
                         .foregroundStyle(resort.snowQuality.color)
                         .font(.caption)

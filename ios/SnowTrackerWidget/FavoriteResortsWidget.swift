@@ -15,7 +15,7 @@ struct FavoriteResortsWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Favorite Resorts")
-        .description("Snow conditions at your top 2 favorite resorts.")
+        .description("Snow conditions at your favorite resorts.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
@@ -83,8 +83,10 @@ struct FavoriteResortsWidgetView: View {
         switch widgetFamily {
         case .systemSmall:
             smallView
+        case .systemLarge:
+            listView(count: 5)
         default:
-            mediumLargeView
+            listView(count: 2)
         }
     }
 
@@ -108,9 +110,16 @@ struct FavoriteResortsWidgetView: View {
                     .lineLimit(1)
 
                 HStack(spacing: 4) {
-                    Image(systemName: resort.snowQuality.icon)
-                        .foregroundStyle(resort.snowQuality.color)
-                        .font(.title2)
+                    if let score = resort.snowScore {
+                        Text("\(score)")
+                            .font(.title2.weight(.bold))
+                            .fontDesign(.rounded)
+                            .foregroundStyle(resort.snowQuality.color)
+                    } else {
+                        Image(systemName: resort.snowQuality.icon)
+                            .foregroundStyle(resort.snowQuality.color)
+                            .font(.title2)
+                    }
                     Text(resort.snowQuality.displayName)
                         .font(.caption)
                         .fontWeight(.medium)
@@ -147,8 +156,8 @@ struct FavoriteResortsWidgetView: View {
         .padding()
     }
 
-    private var mediumLargeView: some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private func listView(count: Int) -> some View {
+        VStack(alignment: .leading, spacing: count > 2 ? 6 : 8) {
             HStack {
                 Image(systemName: "heart.fill")
                     .foregroundStyle(.red)
@@ -176,9 +185,10 @@ struct FavoriteResortsWidgetView: View {
                 }
                 Spacer()
             } else {
-                ForEach(entry.resorts.prefix(2), id: \.resortId) { resort in
+                let displayResorts = Array(entry.resorts.prefix(count))
+                ForEach(Array(displayResorts.enumerated()), id: \.element.resortId) { index, resort in
                     ResortConditionRow(resort: resort, unitPreferences: unitPreferences)
-                    if resort.resortId != entry.resorts.prefix(2).last?.resortId {
+                    if index < displayResorts.count - 1 {
                         Divider()
                     }
                 }
@@ -192,11 +202,14 @@ struct FavoriteResortsWidgetView: View {
 
 // MARK: - Preview
 
-#Preview(as: .systemMedium) {
+#Preview(as: .systemLarge) {
     FavoriteResortsWidget()
 } timeline: {
     FavoriteResortsEntry(date: .now, resorts: [
         ResortConditionData.sample,
-        ResortConditionData.sample2
+        ResortConditionData.sample2,
+        ResortConditionData.sample3,
+        ResortConditionData.sample4,
+        ResortConditionData.sample5
     ])
 }
