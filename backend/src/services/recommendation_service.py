@@ -442,7 +442,7 @@ class RecommendationService:
         total = sum(
             c.snowfall_after_freeze_cm
             if c.snowfall_after_freeze_cm is not None
-            else c.fresh_snow_cm
+            else (c.fresh_snow_cm if c.fresh_snow_cm is not None else 0.0)
             for c in conditions
         )
         return total / len(conditions)

@@ -825,7 +825,7 @@ async def get_batch_conditions(
         with ThreadPoolExecutor(max_workers=min(len(ids), 10)) as executor:
             futures = {executor.submit(fetch_one, rid): rid for rid in ids}
             for future in as_completed(futures, timeout=30):
-                resort_id, result = future.result(timeout=5)
+                resort_id, result = future.result()
                 results[resort_id] = result
 
         # Set cache headers
@@ -1375,7 +1375,7 @@ async def get_batch_snow_quality(
                     futures = {
                         executor.submit(fetch_quality, rid): rid for rid in missing_ids
                     }
-                    for future in as_completed(futures):
+                    for future in as_completed(futures, timeout=30):
                         resort_id, result = future.result()
                         if result:
                             results[resort_id] = result
@@ -1402,7 +1402,7 @@ async def get_batch_snow_quality(
         max_workers = min(len(ids), 10)  # Cap at 10 to avoid thread contention
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {executor.submit(fetch_quality, rid): rid for rid in ids}
-            for future in as_completed(futures):
+            for future in as_completed(futures, timeout=30):
                 resort_id, result = future.result()
                 if result:
                     results[resort_id] = result
