@@ -660,26 +660,34 @@ struct ResortDetailView: View {
 
     private var noDataCard: some View {
         VStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.largeTitle)
-                .foregroundStyle(.orange)
+            if snowConditionsManager.isLoading {
+                ProgressView()
+                    .controlSize(.large)
+                Text("Loading conditions...")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.largeTitle)
+                    .foregroundStyle(.orange)
 
-            Text("No Data Available")
-                .font(.headline)
+                Text("No Data Available")
+                    .font(.headline)
 
-            Text("Weather conditions for this elevation are not currently available.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                Text("Weather conditions for this elevation are not currently available.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
 
-            Button {
-                Task {
-                    await snowConditionsManager.refreshData()
+                Button {
+                    Task {
+                        await snowConditionsManager.refreshData()
+                    }
+                } label: {
+                    Label("Retry", systemImage: "arrow.clockwise")
                 }
-            } label: {
-                Label("Retry", systemImage: "arrow.clockwise")
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.borderedProminent)
         }
         .frame(maxWidth: .infinity)
         .cardStyle()
