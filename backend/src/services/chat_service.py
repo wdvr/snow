@@ -447,7 +447,7 @@ class ChatService:
 
         for _iteration in range(MAX_TOOL_ITERATIONS):
             response = self.bedrock.converse(
-                modelId="us.anthropic.claude-sonnet-4-20250514-v1:0",
+                modelId="us.anthropic.claude-sonnet-4-6",
                 system=[{"text": SYSTEM_PROMPT}],
                 messages=messages,
                 toolConfig={"tools": TOOL_DEFINITIONS},
