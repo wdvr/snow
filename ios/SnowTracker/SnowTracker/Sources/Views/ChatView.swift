@@ -183,6 +183,7 @@ struct ChatView: View {
                 }
                 .disabled(!canSend)
                 .sensoryFeedback(.impact, trigger: sendTrigger)
+                .accessibilityLabel(viewModel.isSending ? "Sending message" : "Send message")
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -339,6 +340,7 @@ private struct SuggestionChip: View {
             .clipShape(RoundedRectangle(cornerRadius: 20))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(text)
     }
 }
 

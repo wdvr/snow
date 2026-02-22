@@ -466,6 +466,7 @@ struct StatItem: View {
                 .font(.caption)
                 .foregroundStyle(.primary)
         }
+        .accessibilityElement(children: .combine)
     }
 }
 

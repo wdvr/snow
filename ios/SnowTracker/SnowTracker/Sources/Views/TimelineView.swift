@@ -261,6 +261,7 @@ struct TimelinePointCard: View {
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Show conditions explanation")
             }
         }
         .frame(width: 68)
