@@ -29,6 +29,11 @@ class SnowConditionsManager: ObservableObject {
     private let refreshRateLimitSeconds: TimeInterval = 5.0
     private var lastRefreshTime: Date?
 
+    /// Tracks resort IDs queued for lazy condition fetching (visible on screen)
+    private var pendingVisibleResortIds: Set<String> = []
+    /// Debounce task for batching visible resort condition fetches
+    private var visibleFetchTask: Task<Void, Never>?
+
     func loadInitialData() {
         // Prevent multiple calls (can happen with tab switching)
         guard !hasLoadedInitialData else {
@@ -49,7 +54,8 @@ class SnowConditionsManager: ObservableObject {
             await fetchResorts()
             // Fetch snow quality summaries for all resorts (lightweight, fast)
             await fetchAllSnowQualitySummaries()
-            // Only pre-fetch full conditions for favorites (not all 1040 resorts)
+            // Pre-fetch full conditions for favorites; visible resorts will be
+            // loaded lazily via onResortAppeared as the list scrolls
             await fetchConditionsForFavorites()
             // Clean up old cached data periodically
             cacheService.cleanupStaleCache()
@@ -209,9 +215,9 @@ class SnowConditionsManager: ObservableObject {
     }
 
     /// Refresh all data - called by pull-to-refresh
-    /// This bypasses cache to ensure fresh data is fetched
+    /// Fetches summaries for all resorts + conditions for visible + favorites
     /// Rate-limited to prevent API spam (5 second minimum between refreshes)
-    func refreshData() async {
+    func refreshData(visibleResortIds: [String] = []) async {
         // Rate limiting - prevent rapid successive refreshes
         if let lastRefresh = lastRefreshTime {
             let timeSinceLastRefresh = Date().timeIntervalSince(lastRefresh)
@@ -226,8 +232,13 @@ class SnowConditionsManager: ObservableObject {
 
         // Refresh snow quality summaries for all resorts (used by list view)
         await fetchAllSnowQualitySummaries(forceRefresh: true)
-        // Only refresh full conditions for favorites (not all 1040 resorts)
-        await fetchConditionsForFavorites()
+        // Refresh full conditions for visible resorts + favorites
+        let favoriteIds = Array(UserPreferencesManager.shared.favoriteResorts)
+        let idsToFetch = Array(Set(visibleResortIds + favoriteIds))
+        if !idsToFetch.isEmpty {
+            managerLog.debug("refreshData: Fetching conditions for \(idsToFetch.count) resorts (visible + favorites)")
+            await fetchConditionsForResorts(resortIds: idsToFetch)
+        }
 
         lastUpdated = Date()
         managerLog.debug("refreshData: Complete")
@@ -292,6 +303,41 @@ class SnowConditionsManager: ObservableObject {
 
         managerLog.debug("fetchConditionsForAllResorts: Fetching conditions for \(idsToFetch.count) resorts (\(sortedIds.count - idsToFetch.count) already cached)")
         await fetchConditionsForResorts(resortIds: idsToFetch)
+    }
+
+    /// Called when a resort row appears on screen. Batches up visible resort IDs
+    /// and fetches conditions in a debounced batch (avoids per-row API calls).
+    func onResortAppeared(_ resortId: String) {
+        // Skip if we already have conditions for this resort
+        if conditions[resortId] != nil { return }
+        if let cached = cacheService.getCachedConditions(for: resortId), !cached.isStale {
+            // Load from cache into memory without API call
+            conditions[resortId] = cached.data
+            return
+        }
+
+        pendingVisibleResortIds.insert(resortId)
+
+        // Debounce: wait 200ms to batch up visible rows, then fetch together
+        visibleFetchTask?.cancel()
+        visibleFetchTask = Task {
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            guard !Task.isCancelled else { return }
+            let ids = Array(pendingVisibleResortIds)
+            pendingVisibleResortIds.removeAll()
+            guard !ids.isEmpty else { return }
+            managerLog.debug("onResortAppeared: Fetching conditions for \(ids.count) visible resorts")
+            await fetchConditionsForResorts(resortIds: ids)
+        }
+    }
+
+    /// Called when a list view needs conditions for a page of visible resorts + buffer.
+    /// Used by pull-to-refresh: refresh summaries + conditions for visible resorts.
+    func refreshVisibleResorts(_ visibleIds: [String]) async {
+        await fetchAllSnowQualitySummaries(forceRefresh: true)
+        if !visibleIds.isEmpty {
+            await fetchConditionsForResorts(resortIds: visibleIds)
+        }
     }
 
     /// Fetch conditions for a single resort - use when opening detail view

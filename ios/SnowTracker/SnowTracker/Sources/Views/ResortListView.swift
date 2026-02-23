@@ -58,6 +58,7 @@ struct ResortListView: View {
     @State private var selectedRegion: SkiRegion? = nil
     @State private var sortOption: ResortSortOption = .name
     @State private var passFilter: PassFilter = .all
+    @State private var visibleResortIds: Set<String> = []
     @AppStorage("selectedRegionFilter") private var savedRegionFilter: String = ""
     @AppStorage("resortSortOption") private var savedSortOption: String = "Name"
     @AppStorage("selectedPassFilter") private var savedPassFilter: String = "All"
@@ -278,6 +279,13 @@ struct ResortListView: View {
                                 useMetric: useMetricDistance
                             )
                         }
+                        .onAppear {
+                            visibleResortIds.insert(resort.id)
+                            snowConditionsManager.onResortAppeared(resort.id)
+                        }
+                        .onDisappear {
+                            visibleResortIds.remove(resort.id)
+                        }
                         .contextMenu {
                             Button {
                                 userPreferencesManager.toggleFavorite(resortId: resort.id)
@@ -300,7 +308,9 @@ struct ResortListView: View {
                 .searchable(text: $searchText, prompt: "Search resorts...")
                 .refreshable {
                     AnalyticsService.shared.trackPullToRefresh(screen: "ResortList")
-                    await snowConditionsManager.refreshData()
+                    // Refresh visible resorts + a buffer of 20 more from the current list
+                    let topIds = Array(filteredResorts.prefix(max(visibleResortIds.count + 20, 30)).map(\.id))
+                    await snowConditionsManager.refreshData(visibleResortIds: topIds)
                 }
                 .overlay {
                     if filteredResorts.isEmpty && !snowConditionsManager.resorts.isEmpty {

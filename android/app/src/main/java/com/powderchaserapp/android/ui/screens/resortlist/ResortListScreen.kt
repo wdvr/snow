@@ -110,7 +110,7 @@ class ResortListViewModel @Inject constructor(
                 result.fold(
                     onSuccess = { resorts ->
                         _uiState.update { it.copy(resorts = resorts, isLoading = false, isRefreshing = false, error = null) }
-                        loadQuality(resorts.map { it.id })
+                        loadQuality(resorts.map { it.id }, forceRefresh = forceRefresh)
                     },
                     onFailure = { error ->
                         _uiState.update { it.copy(isLoading = false, isRefreshing = false, error = error.message) }
@@ -120,10 +120,17 @@ class ResortListViewModel @Inject constructor(
         }
     }
 
-    private fun loadQuality(resortIds: List<String>) {
+    private fun loadQuality(resortIds: List<String>, forceRefresh: Boolean = false) {
         viewModelScope.launch {
-            snowQualityRepository.getBatchSnowQuality(resortIds).onSuccess { qualityMap ->
-                _uiState.update { it.copy(qualityMap = qualityMap) }
+            // Chunk into batches of 200 to avoid URL length limits
+            val allResults = mutableMapOf<String, SnowQualitySummaryLight>()
+            for (chunk in resortIds.chunked(200)) {
+                snowQualityRepository.getBatchSnowQuality(chunk, forceRefresh).onSuccess { qualityMap ->
+                    allResults.putAll(qualityMap)
+                }
+            }
+            if (allResults.isNotEmpty()) {
+                _uiState.update { it.copy(qualityMap = it.qualityMap + allResults) }
             }
         }
     }
