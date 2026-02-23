@@ -75,12 +75,14 @@
 ### 🔴 Critical
 | Issue | Description | Status |
 |-------|-------------|--------|
-| (none) | | |
+| iOS list refresh slow | List refresh takes forever with 1040 resorts (pagination issue?) | Investigating |
+| iOS stale list data | List view not updated when detail data is fetched | Investigating |
 
 ### 🟡 Medium
 | Issue | Description | Status |
 |-------|-------------|--------|
 | App Store Release | Need provisioning profile with Push Notifications | User action needed |
+| Cross-platform check | Ensure Android/web don't have same list perf/stale issues | Pending |
 
 ### 🟢 Future Features
 | Issue | Description |
