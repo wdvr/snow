@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Thermometer, Snowflake, Wind } from 'lucide-react'
+import { Thermometer, Snowflake, Wind, Heart } from 'lucide-react'
 import type { Resort, SnowQualitySummary } from '../../api/types'
 import { QualityBadge } from './QualityBadge'
 import { formatTemp, formatSnowCm, countryFlag } from '../../utils/format'
@@ -7,9 +7,11 @@ import { formatTemp, formatSnowCm, countryFlag } from '../../utils/format'
 interface ResortCardProps {
   resort: Resort
   quality?: SnowQualitySummary
+  isFavorite?: boolean
+  onToggleFavorite?: (id: string) => void
 }
 
-export function ResortCard({ resort, quality }: ResortCardProps) {
+export function ResortCard({ resort, quality, isFavorite, onToggleFavorite }: ResortCardProps) {
   return (
     <Link
       to={`/resort/${resort.resort_id}`}
@@ -24,11 +26,28 @@ export function ResortCard({ resort, quality }: ResortCardProps) {
             {countryFlag(resort.country)} {resort.region}, {resort.country}
           </p>
         </div>
-        <QualityBadge
-          quality={quality?.overall_quality}
-          score={quality?.snow_score}
-          size="sm"
-        />
+        <div className="flex items-center gap-1">
+          <QualityBadge
+            quality={quality?.overall_quality}
+            score={quality?.snow_score}
+            size="sm"
+          />
+          {onToggleFavorite && (
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onToggleFavorite(resort.resort_id)
+              }}
+              className="p-1 -mr-1 rounded-full hover:bg-gray-100 transition-colors"
+              aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <Heart
+                className={`w-4 h-4 transition-colors ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-300 hover:text-red-400'}`}
+              />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
