@@ -275,6 +275,22 @@ chat_table = aws.dynamodb.Table(
     tags=tags,
 )
 
+# Chat IP rate limit table for anonymous user throttling
+chat_rate_limit_table = aws.dynamodb.Table(
+    f"{app_name}-chat-rate-limit-{environment}",
+    name=f"snow-tracker-chat-rate-limit-{environment}",
+    billing_mode="PAY_PER_REQUEST",
+    hash_key="ip_address",
+    attributes=[
+        aws.dynamodb.TableAttributeArgs(name="ip_address", type="S"),
+    ],
+    ttl=aws.dynamodb.TableTtlArgs(
+        enabled=True,
+        attribute_name="expires_at",
+    ),
+    tags=tags,
+)
+
 # Condition reports table for user-submitted resort condition reports
 condition_reports_table = aws.dynamodb.Table(
     f"{app_name}-condition-reports-{environment}",
@@ -337,6 +353,7 @@ lambda_policy = aws.iam.RolePolicy(
         chat_table.arn,
         condition_reports_table.arn,
         daily_history_table.arn,
+        chat_rate_limit_table.arn,
     ).apply(
         lambda arns: f"""{{
         "Version": "2012-10-17",
@@ -373,6 +390,7 @@ lambda_policy = aws.iam.RolePolicy(
                     "{arns[7]}",
                     "{arns[8]}",
                     "{arns[9]}",
+                    "{arns[10]}",
                     "{arns[0]}/index/*",
                     "{arns[1]}/index/*",
                     "{arns[2]}/index/*",
@@ -382,7 +400,8 @@ lambda_policy = aws.iam.RolePolicy(
                     "{arns[6]}/index/*",
                     "{arns[7]}/index/*",
                     "{arns[8]}/index/*",
-                    "{arns[9]}/index/*"
+                    "{arns[9]}/index/*",
+                    "{arns[10]}/index/*"
                 ]
             }},
             {{
@@ -1212,6 +1231,7 @@ def get_conditions(resort_id, headers):
             "DEVICE_TOKENS_TABLE": f"{app_name}-device-tokens-{environment}",
             "RESORT_EVENTS_TABLE": f"{app_name}-resort-events-{environment}",
             "CHAT_TABLE": f"{app_name}-chat-{environment}",
+            "CHAT_RATE_LIMIT_TABLE_NAME": chat_rate_limit_table.name,
             "CONDITION_REPORTS_TABLE": f"{app_name}-condition-reports-{environment}",
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
             "AWS_REGION_NAME": aws_region,
@@ -2936,6 +2956,135 @@ else:
     )
 
 # =============================================================================
+# Web App (app.powderchaserapp.com) - S3 + CloudFront — prod only
+# React SPA served via CloudFront with the same wildcard certificate
+# =============================================================================
+
+webapp_distribution = None
+
+if environment == "prod" and cert_validation:
+    app_subdomain = f"app.{domain_name}"
+
+    # S3 bucket for web app
+    webapp_bucket = aws.s3.BucketV2(
+        f"{app_name}-webapp-{environment}",
+        bucket=f"{app_name}-webapp-{environment}-{caller_identity.account_id}",
+        tags=tags,
+    )
+
+    webapp_bucket_pab = aws.s3.BucketPublicAccessBlock(
+        f"{app_name}-webapp-pab-{environment}",
+        bucket=webapp_bucket.id,
+        block_public_acls=True,
+        block_public_policy=True,
+        ignore_public_acls=True,
+        restrict_public_buckets=True,
+    )
+
+    # OAC for CloudFront → S3
+    webapp_oac = aws.cloudfront.OriginAccessControl(
+        f"{app_name}-webapp-oac-{environment}",
+        name=f"{app_name}-webapp-oac-{environment}",
+        origin_access_control_origin_type="s3",
+        signing_behavior="always",
+        signing_protocol="sigv4",
+    )
+
+    # CloudFront distribution for web app
+    webapp_distribution = aws.cloudfront.Distribution(
+        f"{app_name}-webapp-cdn-{environment}",
+        enabled=True,
+        is_ipv6_enabled=True,
+        default_root_object="index.html",
+        aliases=[app_subdomain],
+        origins=[
+            aws.cloudfront.DistributionOriginArgs(
+                domain_name=webapp_bucket.bucket_regional_domain_name,
+                origin_id="S3Origin",
+                origin_access_control_id=webapp_oac.id,
+            ),
+        ],
+        default_cache_behavior=aws.cloudfront.DistributionDefaultCacheBehaviorArgs(
+            allowed_methods=["GET", "HEAD", "OPTIONS"],
+            cached_methods=["GET", "HEAD"],
+            target_origin_id="S3Origin",
+            viewer_protocol_policy="redirect-to-https",
+            compress=True,
+            forwarded_values=aws.cloudfront.DistributionDefaultCacheBehaviorForwardedValuesArgs(
+                query_string=False,
+                cookies=aws.cloudfront.DistributionDefaultCacheBehaviorForwardedValuesCookiesArgs(
+                    forward="none",
+                ),
+            ),
+            min_ttl=0,
+            default_ttl=86400,
+            max_ttl=31536000,
+        ),
+        custom_error_responses=[
+            # SPA routing — return index.html for 404s and 403s
+            aws.cloudfront.DistributionCustomErrorResponseArgs(
+                error_code=404,
+                response_code=200,
+                response_page_path="/index.html",
+            ),
+            aws.cloudfront.DistributionCustomErrorResponseArgs(
+                error_code=403,
+                response_code=200,
+                response_page_path="/index.html",
+            ),
+        ],
+        restrictions=aws.cloudfront.DistributionRestrictionsArgs(
+            geo_restriction=aws.cloudfront.DistributionRestrictionsGeoRestrictionArgs(
+                restriction_type="none",
+            ),
+        ),
+        viewer_certificate=aws.cloudfront.DistributionViewerCertificateArgs(
+            acm_certificate_arn=cert_validation.certificate_arn,
+            ssl_support_method="sni-only",
+            minimum_protocol_version="TLSv1.2_2021",
+        ),
+        tags=tags,
+    )
+
+    # Bucket policy for CloudFront OAC access
+    webapp_bucket_policy = aws.s3.BucketPolicy(
+        f"{app_name}-webapp-policy-{environment}",
+        bucket=webapp_bucket.id,
+        policy=pulumi.Output.all(webapp_bucket.arn, webapp_distribution.arn).apply(
+            lambda args: f"""{{
+                "Version": "2012-10-17",
+                "Statement": [{{
+                    "Sid": "AllowCloudFrontServicePrincipal",
+                    "Effect": "Allow",
+                    "Principal": {{"Service": "cloudfront.amazonaws.com"}},
+                    "Action": "s3:GetObject",
+                    "Resource": "{args[0]}/*",
+                    "Condition": {{"StringEquals": {{"AWS:SourceArn": "{args[1]}"}}}}
+                }}]
+            }}"""
+        ),
+    )
+
+    # Route53 A record for app.powderchaserapp.com → CloudFront
+    webapp_dns_record = aws.route53.Record(
+        f"{app_name}-webapp-dns-{environment}",
+        zone_id=hosted_zone.zone_id,
+        name=app_subdomain,
+        type="A",
+        aliases=[
+            aws.route53.RecordAliasArgs(
+                name=webapp_distribution.domain_name,
+                zone_id=webapp_distribution.hosted_zone_id,
+                evaluate_target_health=False,
+            )
+        ],
+    )
+
+    pulumi.export("webapp_bucket_name", webapp_bucket.bucket)
+    pulumi.export("webapp_url", f"https://{app_subdomain}")
+    pulumi.export("webapp_cloudfront_distribution_id", webapp_distribution.id)
+
+# =============================================================================
 # API Custom Domain (all environments)
 # - prod:    api.powderchaserapp.com
 # - staging: staging.api.powderchaserapp.com
@@ -3015,6 +3164,7 @@ pulumi.export("device_tokens_table_name", device_tokens_table.name)
 pulumi.export("resort_events_table_name", resort_events_table.name)
 pulumi.export("snow_summary_table_name", snow_summary_table.name)
 pulumi.export("chat_table_name", chat_table.name)
+pulumi.export("chat_rate_limit_table_name", chat_rate_limit_table.name)
 pulumi.export("condition_reports_table_name", condition_reports_table.name)
 pulumi.export("daily_history_table_name", daily_history_table.name)
 pulumi.export("lambda_role_arn", lambda_role.arn)

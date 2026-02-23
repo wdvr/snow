@@ -431,6 +431,36 @@ jobs:
           echo "Website bucket not available, skipping website deployment"
         fi
 
+    - name: Build and deploy web app (prod only)
+      if: env.ENVIRONMENT == 'prod'
+      run: |
+        cd web
+
+        # Install dependencies and build
+        npm ci
+        VITE_API_URL=https://api.powderchaserapp.com npm run build
+
+        # Get bucket name and CloudFront distribution ID from Pulumi
+        cd ../infrastructure
+        WEBAPP_BUCKET=$(pulumi stack output webapp_bucket_name 2>/dev/null || echo "")
+        WEBAPP_CF_ID=$(pulumi stack output webapp_cloudfront_distribution_id 2>/dev/null || echo "")
+
+        if [ -n "$WEBAPP_BUCKET" ]; then
+          echo "Deploying web app to S3 bucket: $WEBAPP_BUCKET"
+          aws s3 sync ../web/dist/ "s3://$WEBAPP_BUCKET/" --delete
+
+          if [ -n "$WEBAPP_CF_ID" ]; then
+            echo "Invalidating CloudFront cache: $WEBAPP_CF_ID"
+            aws cloudfront create-invalidation \
+              --distribution-id "$WEBAPP_CF_ID" \
+              --paths "/*"
+          fi
+
+          echo "Web app deployed successfully to https://app.powderchaserapp.com"
+        else
+          echo "Web app bucket not available, skipping web app deployment"
+        fi
+
     - name: Invoke weather processor to fetch initial data (async)
       run: |
         cd infrastructure
