@@ -223,6 +223,24 @@ jobs:
           echo "API handler Lambda updated"
         fi
 
+        # Deploy Chat Stream Lambda
+        CHAT_STREAM_LAMBDA=$(pulumi stack output chat_stream_lambda_name 2>/dev/null || echo "")
+        if [ -n "$CHAT_STREAM_LAMBDA" ]; then
+          echo "Deploying Chat stream Lambda: $CHAT_STREAM_LAMBDA"
+          aws lambda update-function-code \
+            --function-name "$CHAT_STREAM_LAMBDA" \
+            --s3-bucket "$S3_BUCKET" \
+            --s3-key "$S3_KEY" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$CHAT_STREAM_LAMBDA" --region us-west-2
+          aws lambda update-function-configuration \
+            --function-name "$CHAT_STREAM_LAMBDA" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},CHAT_TABLE_NAME=snow-tracker-chat-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2}" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$CHAT_STREAM_LAMBDA" --region us-west-2
+          echo "Chat stream Lambda updated"
+        fi
+
         # Deploy Weather Processor Lambda
         WEATHER_LAMBDA=$(pulumi stack output weather_processor_lambda_name 2>/dev/null || echo "")
         if [ -n "$WEATHER_LAMBDA" ]; then
