@@ -235,7 +235,7 @@ jobs:
           aws lambda wait function-updated --function-name "$CHAT_STREAM_LAMBDA" --region us-west-2
           aws lambda update-function-configuration \
             --function-name "$CHAT_STREAM_LAMBDA" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},CHAT_TABLE_NAME=snow-tracker-chat-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2,AWS_LWA_INVOKE_MODE=response_stream,AWS_LWA_PORT=8080,AWS_LWA_READINESS_CHECK_PATH=/,PYTHONPATH=/var/task}" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},CHAT_TABLE_NAME=snow-tracker-chat-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2,AWS_LAMBDA_EXEC_WRAPPER=/opt/bootstrap,AWS_LWA_INVOKE_MODE=response_stream,AWS_LWA_PORT=8080,AWS_LWA_READINESS_CHECK_PATH=/,PYTHONPATH=/var/task}" \
             --handler run.sh \
             --layers "arn:aws:lambda:us-west-2:753240598075:layer:LambdaAdapterLayerX86:26" \
             --region us-west-2
