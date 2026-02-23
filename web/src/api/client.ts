@@ -52,26 +52,29 @@ class ApiClient {
 
   // --- Resorts ---
 
-  getResorts(params?: { region?: string; country?: string }): Promise<Resort[]> {
+  async getResorts(params?: { region?: string; country?: string }): Promise<Resort[]> {
     const searchParams = new URLSearchParams()
     if (params?.region) searchParams.set('region', params.region)
     if (params?.country) searchParams.set('country', params.country)
     const qs = searchParams.toString()
-    return this.fetch<Resort[]>(`/api/v1/resorts${qs ? `?${qs}` : ''}`)
+    const data = await this.fetch<{ resorts: Resort[] }>(`/api/v1/resorts${qs ? `?${qs}` : ''}`)
+    return data.resorts
   }
 
   getResort(id: string): Promise<Resort> {
     return this.fetch<Resort>(`/api/v1/resorts/${id}`)
   }
 
-  getResortConditions(id: string): Promise<WeatherCondition[]> {
-    return this.fetch<WeatherCondition[]>(`/api/v1/resorts/${id}/conditions`)
+  async getResortConditions(id: string): Promise<WeatherCondition[]> {
+    const data = await this.fetch<{ conditions: WeatherCondition[] }>(`/api/v1/resorts/${id}/conditions`)
+    return data.conditions
   }
 
-  getSnowQualityBatch(ids: string[]): Promise<Record<string, SnowQualitySummary>> {
-    return this.fetch<Record<string, SnowQualitySummary>>(
+  async getSnowQualityBatch(ids: string[]): Promise<Record<string, SnowQualitySummary>> {
+    const data = await this.fetch<{ results: Record<string, SnowQualitySummary> }>(
       `/api/v1/snow-quality/batch?resort_ids=${ids.join(',')}`,
     )
+    return data.results
   }
 
   getResortSnowQuality(id: string): Promise<Record<string, unknown>> {
@@ -87,17 +90,20 @@ class ApiClient {
     return this.fetch<HistoryResponse>(`/api/v1/resorts/${id}/history${qs}`)
   }
 
-  getRegions(): Promise<Region[]> {
-    return this.fetch<Region[]>('/api/v1/regions')
+  async getRegions(): Promise<Region[]> {
+    const data = await this.fetch<{ regions: Region[] }>('/api/v1/regions')
+    return data.regions
   }
 
-  getBestConditions(limit?: number): Promise<Recommendation[]> {
+  async getBestConditions(limit?: number): Promise<Recommendation[]> {
     const qs = limit ? `?limit=${limit}` : ''
-    return this.fetch<Recommendation[]>(`/api/v1/recommendations/best${qs}`)
+    const data = await this.fetch<{ recommendations: Recommendation[] }>(`/api/v1/recommendations/best${qs}`)
+    return data.recommendations
   }
 
-  getConditionReports(resortId: string): Promise<ConditionReport[]> {
-    return this.fetch<ConditionReport[]>(`/api/v1/resorts/${resortId}/condition-reports`)
+  async getConditionReports(resortId: string): Promise<ConditionReport[]> {
+    const data = await this.fetch<{ reports: ConditionReport[] }>(`/api/v1/resorts/${resortId}/condition-reports`)
+    return data.reports
   }
 
   getNearbyResorts(lat: number, lon: number, radius?: number, limit?: number): Promise<{ resorts: Array<{ resort: Resort; distance_km: number }>; count: number }> {
@@ -119,12 +125,14 @@ class ApiClient {
     })
   }
 
-  getConversations(): Promise<ConversationSummary[]> {
-    return this.fetch<ConversationSummary[]>('/api/v1/chat/conversations')
+  async getConversations(): Promise<ConversationSummary[]> {
+    const data = await this.fetch<{ conversations: ConversationSummary[] }>('/api/v1/chat/conversations')
+    return data.conversations
   }
 
-  getConversation(id: string): Promise<ChatMessage[]> {
-    return this.fetch<ChatMessage[]>(`/api/v1/chat/conversations/${id}`)
+  async getConversation(id: string): Promise<ChatMessage[]> {
+    const data = await this.fetch<{ messages: ChatMessage[] }>(`/api/v1/chat/conversations/${id}`)
+    return data.messages
   }
 
   deleteConversation(id: string): Promise<void> {
