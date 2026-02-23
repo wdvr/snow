@@ -1273,6 +1273,7 @@ chat_stream_lambda = aws.lambda_.Function(
             "CHAT_TABLE_NAME": f"{app_name}-chat-{environment}",
             "RESULTS_BUCKET": "snow-tracker-pulumi-state-us-west-2",
             "AWS_REGION_NAME": aws_region,
+            "AWS_LAMBDA_EXEC_WRAPPER": "/opt/bootstrap",
             "AWS_LWA_INVOKE_MODE": "response_stream",
             "AWS_LWA_PORT": "8080",
             "AWS_LWA_READINESS_CHECK_PATH": "/",
