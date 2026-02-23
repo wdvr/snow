@@ -117,8 +117,16 @@ struct ChatView: View {
                     }
 
                     if viewModel.isSending {
-                        TypingIndicatorView()
-                            .id("typing-indicator")
+                        if viewModel.statusMessage != nil || !viewModel.activeTools.isEmpty {
+                            ToolStatusView(
+                                statusMessage: viewModel.statusMessage,
+                                activeTools: viewModel.activeTools
+                            )
+                            .id("tool-status")
+                        } else if !viewModel.isStreaming {
+                            TypingIndicatorView()
+                                .id("typing-indicator")
+                        }
                     }
 
                     if let error = viewModel.errorMessage {
@@ -148,6 +156,12 @@ struct ChatView: View {
                         proxy.scrollTo(messageId, anchor: .bottom)
                     }
                 }
+            }
+            .onChange(of: viewModel.statusMessage) { _, _ in
+                scrollToBottom(proxy: proxy)
+            }
+            .onChange(of: viewModel.activeTools.count) { _, _ in
+                scrollToBottom(proxy: proxy)
             }
         }
     }
@@ -218,7 +232,11 @@ struct ChatView: View {
     private func scrollToBottom(proxy: ScrollViewProxy) {
         withAnimation(.easeOut(duration: 0.3)) {
             if viewModel.isSending {
-                proxy.scrollTo("typing-indicator", anchor: .bottom)
+                if viewModel.statusMessage != nil || !viewModel.activeTools.isEmpty {
+                    proxy.scrollTo("tool-status", anchor: .bottom)
+                } else {
+                    proxy.scrollTo("typing-indicator", anchor: .bottom)
+                }
             } else if let lastMessage = viewModel.messages.last {
                 proxy.scrollTo(lastMessage.id, anchor: .bottom)
             }
@@ -281,6 +299,54 @@ private struct MessageBubbleView: View {
                 Spacer(minLength: 60)
             }
         }
+    }
+}
+
+// MARK: - Tool Status View
+
+private struct ToolStatusView: View {
+    let statusMessage: String?
+    let activeTools: [String]
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 6) {
+                if let status = statusMessage {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text(status)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if !activeTools.isEmpty {
+                    HStack(spacing: 6) {
+                        ForEach(activeTools, id: \.self) { tool in
+                            HStack(spacing: 4) {
+                                Image(systemName: "wrench.and.screwdriver")
+                                    .font(.caption2)
+                                Text(tool)
+                                    .font(.caption)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.blue.opacity(0.1))
+                            .foregroundStyle(.blue)
+                            .clipShape(Capsule())
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+
+            Spacer(minLength: 60)
+        }
+        .accessibilityLabel(statusMessage ?? "Processing")
     }
 }
 

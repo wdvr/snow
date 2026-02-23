@@ -16,15 +16,19 @@ final class ChatViewModel: ObservableObject {
 
     // MARK: - Streaming State
 
-    /// The message ID currently being streamed (progressive text reveal)
+    /// The message ID currently being streamed
     @Published var streamingMessageId: String?
     /// The text displayed so far during streaming
     @Published var displayedText: String = ""
+    /// Status message shown during tool execution (e.g. "Checking conditions...")
+    @Published var statusMessage: String?
+    /// Tools currently being executed
+    @Published var activeTools: [String] = []
 
-    /// Whether a message is currently being progressively revealed
+    /// Whether a message is currently being streamed
     var isStreaming: Bool { streamingMessageId != nil }
 
-    /// The full text of the message being streamed (used for skip)
+    /// The full text of the message being streamed (used for skip in non-SSE mode)
     private var fullStreamingText: String = ""
     /// The words of the full text, split for progressive reveal
     private var streamingWords: [String] = []
@@ -34,6 +38,7 @@ final class ChatViewModel: ObservableObject {
     private var streamingTask: Task<Void, Never>?
 
     private let apiClient = APIClient.shared
+    private let streamService = ChatStreamService.shared
 
     // MARK: - Send Message
 
@@ -43,6 +48,8 @@ final class ChatViewModel: ObservableObject {
 
         isSending = true
         errorMessage = nil
+        statusMessage = nil
+        activeTools = []
 
         // Add the user message optimistically
         let userMessage = ChatMessage(
@@ -53,11 +60,22 @@ final class ChatViewModel: ObservableObject {
         )
         messages.append(userMessage)
 
+        // Try SSE streaming first if available
+        if streamService.isStreamingAvailable {
+            do {
+                try await sendMessageViaStream(trimmed)
+                return
+            } catch {
+                chatLog.warning("Stream failed, falling back to REST: \(error)")
+                // Fall through to REST
+            }
+        }
+
+        // Fallback: non-streaming REST call
         do {
             let response = try await sendWithAutoRefresh(trimmed)
             currentConversationId = response.conversationId
 
-            // Add assistant response with empty content initially
             let assistantMessage = ChatMessage(
                 id: response.messageId,
                 role: .assistant,
@@ -67,8 +85,8 @@ final class ChatViewModel: ObservableObject {
             messages.append(assistantMessage)
             isSending = false
 
-            // Start progressive text reveal
-            await startStreaming(messageId: response.messageId, fullText: response.response)
+            // Start progressive text reveal for REST responses
+            await startLocalStreaming(messageId: response.messageId, fullText: response.response)
             chatLog.debug("Chat response received for conversation \(response.conversationId)")
         } catch APIError.unauthorized {
             chatLog.error("Chat unauthorized after refresh attempt")
@@ -93,6 +111,102 @@ final class ChatViewModel: ObservableObject {
             messages.append(errorResponse)
             isSending = false
         }
+    }
+
+    // MARK: - SSE Streaming
+
+    private func sendMessageViaStream(_ text: String) async throws {
+        let placeholderId = "stream-\(UUID().uuidString)"
+
+        // Add placeholder assistant message
+        let placeholder = ChatMessage(
+            id: placeholderId,
+            role: .assistant,
+            content: "",
+            createdAt: Date()
+        )
+        messages.append(placeholder)
+
+        var assistantText = ""
+        var finalMessageId = ""
+        var finalConversationId = ""
+
+        let stream = streamService.sendMessageStream(
+            message: text,
+            conversationId: currentConversationId
+        )
+
+        do {
+            for try await event in stream {
+                switch event.type {
+                case .status:
+                    statusMessage = event.message
+                case .toolStart:
+                    statusMessage = event.message ?? "Running \(event.tool ?? "tool")..."
+                    if let tool = event.tool {
+                        activeTools.append(tool)
+                    }
+                case .toolDone:
+                    if let tool = event.tool {
+                        activeTools.removeAll { $0 == tool }
+                    }
+                case .textDelta:
+                    assistantText += event.text ?? ""
+                    statusMessage = nil
+                    // Update placeholder content
+                    if let index = messages.firstIndex(where: { $0.id == placeholderId }) {
+                        messages[index] = ChatMessage(
+                            id: placeholderId,
+                            role: .assistant,
+                            content: assistantText,
+                            createdAt: Date()
+                        )
+                    }
+                    displayedText = assistantText
+                    streamingMessageId = placeholderId
+                case .done:
+                    finalMessageId = event.messageId ?? ""
+                    finalConversationId = event.conversationId ?? ""
+                case .error:
+                    throw ChatStreamError.serverError(event.message ?? "Chat error")
+                }
+            }
+        } catch {
+            // Clean up on error
+            isSending = false
+            statusMessage = nil
+            activeTools = []
+            streamingMessageId = nil
+            displayedText = ""
+            // Remove placeholder if no text was received
+            if assistantText.isEmpty {
+                messages.removeAll { $0.id == placeholderId }
+            }
+            throw error
+        }
+
+        // Update placeholder with final ID
+        if !finalMessageId.isEmpty {
+            if let index = messages.firstIndex(where: { $0.id == placeholderId }) {
+                messages[index] = ChatMessage(
+                    id: finalMessageId,
+                    role: .assistant,
+                    content: assistantText,
+                    createdAt: Date()
+                )
+            }
+        }
+
+        if !finalConversationId.isEmpty, currentConversationId == nil {
+            currentConversationId = finalConversationId
+        }
+
+        isSending = false
+        statusMessage = nil
+        activeTools = []
+        streamingMessageId = nil
+        displayedText = ""
+        chatLog.debug("Stream complete for conversation \(finalConversationId)")
     }
 
     // MARK: - Auto Token Refresh
@@ -120,10 +234,10 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Streaming
+    // MARK: - Local Streaming (Progressive Text Reveal for REST)
 
     /// Start progressive text reveal for a message (~30 words/second)
-    private func startStreaming(messageId: String, fullText: String) async {
+    private func startLocalStreaming(messageId: String, fullText: String) async {
         fullStreamingText = fullText
         streamingWords = fullText.splitKeepingSeparators()
         streamingWordIndex = 0

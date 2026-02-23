@@ -44,6 +44,19 @@ enum AppEnvironment: String, CaseIterable {
         }
     }
 
+    /// Chat streaming Lambda Function URL (SSE endpoint)
+    /// Returns nil if streaming is not yet deployed for this environment
+    var chatStreamURL: URL? {
+        switch self {
+        case .development:
+            return nil
+        case .staging:
+            return nil // Set after infrastructure deploy
+        case .production:
+            return nil // Set after infrastructure deploy
+        }
+    }
+
     var cognitoUserPoolId: String {
         switch self {
         case .development:
