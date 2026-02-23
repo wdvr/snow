@@ -100,6 +100,13 @@ class ApiClient {
     return this.fetch<ConditionReport[]>(`/api/v1/resorts/${resortId}/condition-reports`)
   }
 
+  getNearbyResorts(lat: number, lon: number, radius?: number, limit?: number): Promise<{ resorts: Array<{ resort: Resort; distance_km: number }>; count: number }> {
+    const params = new URLSearchParams({ lat: String(lat), lon: String(lon) })
+    if (radius) params.set('radius', String(radius))
+    if (limit) params.set('limit', String(limit))
+    return this.fetch(`/api/v1/resorts/nearby?${params}`)
+  }
+
   // --- Chat ---
 
   sendChatMessage(message: string, conversationId?: string): Promise<ChatResponse> {

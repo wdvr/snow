@@ -9,8 +9,10 @@ import {
   Thermometer,
   Clock,
   AlertCircle,
+  Heart,
 } from 'lucide-react'
 import { useResort } from '../hooks/useResorts'
+import { useFavorites } from '../hooks/useFavorites'
 import {
   useResortConditions,
   useResortTimeline,
@@ -41,6 +43,7 @@ export function ResortDetailPage() {
   const { resortId } = useParams<{ resortId: string }>()
   const [activeTab, setActiveTab] = useState<Tab>('conditions')
 
+  const { toggleFavorite, isFavorite } = useFavorites()
   const { data: resort, isLoading: resortLoading } = useResort(resortId!)
   const { data: conditions, isLoading: conditionsLoading } = useResortConditions(resortId!)
   const { data: timeline } = useResortTimeline(resortId!)
@@ -95,9 +98,19 @@ export function ResortDetailPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
-              {countryFlag(resort.country)} {resort.name}
-            </h1>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                {countryFlag(resort.country)} {resort.name}
+              </h1>
+              <button
+                onClick={() => toggleFavorite(resortId!)}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <Heart
+                  className={`w-6 h-6 ${isFavorite(resortId!) ? 'fill-red-500 text-red-500' : 'text-gray-300'}`}
+                />
+              </button>
+            </div>
             <p className="text-gray-500">
               {resort.region}, {resort.country}
               {resort.official_website && (

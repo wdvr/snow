@@ -55,6 +55,15 @@ export function useBestConditions(limit = 5) {
   })
 }
 
+export function useNearbyResorts(lat: number | null, lon: number | null, radius = 300) {
+  return useQuery({
+    queryKey: ['nearby-resorts', lat, lon, radius],
+    queryFn: () => api.getNearbyResorts(lat!, lon!, radius, 10),
+    staleTime: 10 * 60 * 1000,
+    enabled: lat !== null && lon !== null,
+  })
+}
+
 export function useResortsByRegion(_regions: Region[] | undefined, selectedRegion: string | null) {
   // This hook is for convenience - actual filtering is handled by the API
   return useResorts(selectedRegion || undefined)
