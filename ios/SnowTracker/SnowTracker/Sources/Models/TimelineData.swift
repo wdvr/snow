@@ -10,6 +10,8 @@ struct TimelinePoint: Codable, Identifiable, Sendable {
     let timestamp: String
     let temperatureC: Double
     let windSpeedKmh: Double?
+    let windGustKmh: Double?
+    let visibilityM: Double?
     let snowfallCm: Double
     let snowDepthCm: Double?
     let snowQuality: SnowQuality
@@ -27,6 +29,8 @@ struct TimelinePoint: Codable, Identifiable, Sendable {
         case timestamp
         case temperatureC = "temperature_c"
         case windSpeedKmh = "wind_speed_kmh"
+        case windGustKmh = "wind_gust_kmh"
+        case visibilityM = "visibility_m"
         case snowfallCm = "snowfall_cm"
         case snowDepthCm = "snow_depth_cm"
         case snowQuality = "snow_quality"

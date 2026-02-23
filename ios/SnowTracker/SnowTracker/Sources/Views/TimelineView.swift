@@ -229,6 +229,40 @@ struct TimelinePointCard: View {
                     }
                 }
                 .foregroundStyle(.secondary)
+                .accessibilityLabel("Wind \(WeatherCondition.formatWindSpeed(wind, prefs: prefs))")
+            }
+
+            // Wind gust (show when >= 50 km/h)
+            if let gust = point.windGustKmh, gust >= 50 {
+                HStack(spacing: 2) {
+                    Image(systemName: "wind.snow")
+                        .font(.system(size: 9))
+                    if prefs.distance == .metric {
+                        Text("\(Int(gust))")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                    } else {
+                        Text("\(Int(gust * 0.621371))")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                    }
+                }
+                .foregroundStyle(.orange)
+                .accessibilityLabel("Wind gusts \(WeatherCondition.formatWindSpeed(gust, prefs: prefs))")
+            }
+
+            // Visibility (show when < 5000m)
+            if let vis = point.visibilityM, vis < 5000 {
+                let category = WeatherCondition.visibilityCategory(meters: vis)
+                HStack(spacing: 2) {
+                    Image(systemName: "cloud.fog")
+                        .font(.system(size: 9))
+                    Text(vis < 1000 ? "\(Int(vis))m" : String(format: "%.0fk", vis / 1000))
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                }
+                .foregroundStyle(category.color)
+                .accessibilityLabel("Visibility \(category.label)")
             }
 
             // Snowfall

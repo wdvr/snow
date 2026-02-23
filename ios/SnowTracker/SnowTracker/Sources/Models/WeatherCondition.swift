@@ -279,6 +279,10 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
     // Weather conditions
     let humidityPercent: Double?
     let windSpeedKmh: Double?
+    let windGustKmh: Double?
+    let maxWindGust24h: Double?
+    let visibilityM: Double?
+    let minVisibility24hM: Double?
     let weatherDescription: String?
 
     // Snow quality assessment
@@ -314,6 +318,10 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         case currentlyWarming = "currently_warming"
         case humidityPercent = "humidity_percent"
         case windSpeedKmh = "wind_speed_kmh"
+        case windGustKmh = "wind_gust_kmh"
+        case maxWindGust24h = "max_wind_gust_24h"
+        case visibilityM = "visibility_m"
+        case minVisibility24hM = "min_visibility_24h_m"
         case weatherDescription = "weather_description"
         case snowQuality = "snow_quality"
         case qualityScore = "quality_score"
@@ -640,6 +648,102 @@ extension WeatherCondition {
         }
     }
 
+    /// Format wind gust speed according to user preferences
+    func formattedWindGustWithPrefs(_ prefs: UnitPreferences) -> String {
+        guard let gust = windGustKmh else { return "No gust data" }
+        switch prefs.distance {
+        case .metric:
+            return "\(Int(gust)) km/h"
+        case .imperial:
+            let mph = gust * 0.621371
+            return "\(Int(mph)) mph"
+        }
+    }
+
+    /// Format wind speed value in user-preferred units (static helper)
+    static func formatWindSpeed(_ kmh: Double, prefs: UnitPreferences) -> String {
+        switch prefs.distance {
+        case .metric:
+            return "\(Int(kmh)) km/h"
+        case .imperial:
+            let mph = kmh * 0.621371
+            return "\(Int(mph)) mph"
+        }
+    }
+
+    /// Format visibility distance for display
+    static func formatVisibility(_ meters: Double, prefs: UnitPreferences) -> String {
+        switch prefs.distance {
+        case .metric:
+            if meters < 1000 {
+                return "\(Int(meters)) m"
+            }
+            return String(format: "%.1f km", meters / 1000.0)
+        case .imperial:
+            let miles = meters / 1609.344
+            if miles < 0.5 {
+                let feet = meters * 3.28084
+                return "\(Int(feet)) ft"
+            }
+            return String(format: "%.1f mi", miles)
+        }
+    }
+
+    /// Visibility category based on distance in meters
+    enum VisibilityCategory {
+        case veryPoor   // < 500m
+        case poor       // < 1000m
+        case low        // < 2000m
+        case moderate   // < 5000m
+        case good       // >= 5000m
+
+        var label: String {
+            switch self {
+            case .veryPoor: return "Very Poor"
+            case .poor: return "Poor"
+            case .low: return "Low"
+            case .moderate: return "Moderate"
+            case .good: return "Good"
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .veryPoor: return .red
+            case .poor: return .orange
+            case .low: return .yellow
+            case .moderate: return .secondary
+            case .good: return .green
+            }
+        }
+
+        /// Whether this category should be shown as a warning
+        var isNotable: Bool {
+            self != .good
+        }
+    }
+
+    /// Determine visibility category from meters
+    static func visibilityCategory(meters: Double) -> VisibilityCategory {
+        if meters < 500 { return .veryPoor }
+        if meters < 1000 { return .poor }
+        if meters < 2000 { return .low }
+        if meters < 5000 { return .moderate }
+        return .good
+    }
+
+    /// Whether wind conditions are notable (gusts > 50 km/h)
+    var hasNotableWindGust: Bool {
+        guard let gust = windGustKmh else { return false }
+        return gust >= 50
+    }
+
+    /// Whether visibility is poor enough to show a warning (< 5000m)
+    var hasPoorVisibility: Bool {
+        guard let vis = visibilityM else { return false }
+        return vis < 5000
+    }
+
     /// Format 24h snowfall according to user preferences
     func formattedSnowfall24hWithPrefs(_ prefs: UnitPreferences) -> String {
         if snowfall24hCm < 0.1 {
@@ -666,8 +770,11 @@ extension WeatherCondition {
             return .snow
         }
 
-        // Wind: strong winds
+        // Wind: strong winds or gusts
         if let wind = windSpeedKmh, wind > 40 {
+            return .wind
+        }
+        if let gust = windGustKmh, gust > 60 {
             return .wind
         }
 
@@ -707,6 +814,10 @@ extension WeatherCondition {
             currentlyWarming: false,
             humidityPercent: 90.0,
             windSpeedKmh: 15.0,
+            windGustKmh: 35.0,
+            maxWindGust24h: 55.0,
+            visibilityM: 800.0,
+            minVisibility24hM: 400.0,
             weatherDescription: "Heavy snow",
             snowQuality: .excellent,
             qualityScore: 5.8,
@@ -738,6 +849,10 @@ extension WeatherCondition {
             currentlyWarming: false,
             humidityPercent: 80.0,
             windSpeedKmh: 20.0,
+            windGustKmh: 45.0,
+            maxWindGust24h: 60.0,
+            visibilityM: 6000.0,
+            minVisibility24hM: 3000.0,
             weatherDescription: "Light snow",
             snowQuality: .good,
             qualityScore: 4.6,

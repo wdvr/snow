@@ -668,6 +668,51 @@ struct ResortDetailView: View {
                         value: condition.formattedWindSpeedWithPrefs(userPreferencesManager.preferredUnits)
                     )
                 }
+
+                if condition.windGustKmh != nil {
+                    weatherDetailItem(
+                        icon: "wind.snow",
+                        title: "Gusts",
+                        value: condition.formattedWindGustWithPrefs(userPreferencesManager.preferredUnits)
+                    )
+                }
+
+                if let maxGust = condition.maxWindGust24h {
+                    weatherDetailItem(
+                        icon: "wind.circle",
+                        title: "Max Gust 24h",
+                        value: WeatherCondition.formatWindSpeed(maxGust, prefs: userPreferencesManager.preferredUnits)
+                    )
+                }
+            }
+
+            // Visibility warning
+            if let vis = condition.visibilityM, vis < 5000 {
+                let category = WeatherCondition.visibilityCategory(meters: vis)
+                Divider()
+                HStack(spacing: 8) {
+                    Image(systemName: "cloud.fog")
+                        .foregroundStyle(category.color)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 4) {
+                            Text("Visibility: \(category.label)")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(category.color)
+                        }
+                        Text(WeatherCondition.formatVisibility(vis, prefs: userPreferencesManager.preferredUnits))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if let minVis = condition.minVisibility24hM, minVis < vis {
+                            Text("Low today: \(WeatherCondition.formatVisibility(minVis, prefs: userPreferencesManager.preferredUnits))")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Spacer()
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Visibility \(category.label), \(WeatherCondition.formatVisibility(vis, prefs: userPreferencesManager.preferredUnits))")
             }
 
             if let description = condition.weatherDescription {
