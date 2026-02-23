@@ -66,6 +66,14 @@
     <string name="max_temp">Max Temp</string>
     <string name="humidity">Humidity</string>
     <string name="wind">Wind</string>
+    <string name="wind_gusts">Gusts</string>
+    <string name="max_gust_24h">Max Gust (24h)</string>
+    <string name="visibility">Visibility</string>
+    <string name="visibility_very_poor">Very Poor</string>
+    <string name="visibility_poor">Poor</string>
+    <string name="visibility_low">Low</string>
+    <string name="visibility_moderate">Moderate</string>
+    <string name="low_today">Low today: %1$s</string>
     <string name="snowfall_24h">24h</string>
     <string name="snowfall_48h">48h</string>
     <string name="snowfall_72h">72h</string>

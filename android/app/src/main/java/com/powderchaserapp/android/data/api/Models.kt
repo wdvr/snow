@@ -246,6 +246,10 @@ data class WeatherCondition(
     @SerialName("currently_warming") val currentlyWarming: Boolean? = null,
     @SerialName("humidity_percent") val humidityPercent: Double? = null,
     @SerialName("wind_speed_kmh") val windSpeedKmh: Double? = null,
+    @SerialName("wind_gust_kmh") val windGustKmh: Double? = null,
+    @SerialName("max_wind_gust_24h") val maxWindGust24h: Double? = null,
+    @SerialName("visibility_m") val visibilityM: Double? = null,
+    @SerialName("min_visibility_24h_m") val minVisibility24hM: Double? = null,
     @SerialName("weather_description") val weatherDescription: String? = null,
     @SerialName("snow_quality") val snowQuality: SnowQuality,
     @SerialName("quality_score") val qualityScore: Double? = null,
@@ -272,6 +276,63 @@ data class WeatherCondition(
         } catch (_: Exception) {
             null
         }
+
+    /** Whether wind gusts are notable (>= 50 km/h). */
+    val hasNotableWindGust: Boolean
+        get() {
+            val gust = windGustKmh ?: return false
+            return gust >= 50
+        }
+
+    /** Whether visibility is poor enough to show a warning (< 5000m). */
+    val hasPoorVisibility: Boolean
+        get() {
+            val vis = visibilityM ?: return false
+            return vis < 5000
+        }
+}
+
+// =============================================================================
+// MARK: - Visibility Category
+// =============================================================================
+
+enum class VisibilityCategory(val label: String) {
+    VERY_POOR("Very Poor"),  // < 500m
+    POOR("Poor"),            // < 1000m
+    LOW("Low"),              // < 2000m
+    MODERATE("Moderate"),    // < 5000m
+    GOOD("Good");            // >= 5000m
+
+    /** Whether this category should be shown as a warning. */
+    val isNotable: Boolean get() = this != GOOD
+}
+
+/** Determine visibility category from meters. */
+fun visibilityCategory(meters: Double): VisibilityCategory {
+    if (meters < 500) return VisibilityCategory.VERY_POOR
+    if (meters < 1000) return VisibilityCategory.POOR
+    if (meters < 2000) return VisibilityCategory.LOW
+    if (meters < 5000) return VisibilityCategory.MODERATE
+    return VisibilityCategory.GOOD
+}
+
+/** Format visibility distance for display. */
+fun formatVisibility(meters: Double, useMetric: Boolean): String {
+    return if (useMetric) {
+        if (meters < 1000) {
+            "${meters.toInt()} m"
+        } else {
+            String.format("%.1f km", meters / 1000.0)
+        }
+    } else {
+        val miles = meters / 1609.344
+        if (miles < 0.5) {
+            val feet = meters * 3.28084
+            "${feet.toInt()} ft"
+        } else {
+            String.format("%.1f mi", miles)
+        }
+    }
 }
 
 // =============================================================================
@@ -374,6 +435,8 @@ data class TimelinePoint(
     val timestamp: String,
     @SerialName("temperature_c") val temperatureC: Double,
     @SerialName("wind_speed_kmh") val windSpeedKmh: Double? = null,
+    @SerialName("wind_gust_kmh") val windGustKmh: Double? = null,
+    @SerialName("visibility_m") val visibilityM: Double? = null,
     @SerialName("snowfall_cm") val snowfallCm: Double,
     @SerialName("snow_depth_cm") val snowDepthCm: Double? = null,
     @SerialName("snow_quality") val snowQuality: SnowQuality,

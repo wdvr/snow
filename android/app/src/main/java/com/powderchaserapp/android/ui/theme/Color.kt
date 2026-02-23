@@ -62,3 +62,13 @@ fun snowQualityColor(quality: String): Color {
         else -> SnowColors.QualityUnknown
     }
 }
+
+fun visibilityCategoryColor(category: com.powderchaserapp.android.data.api.VisibilityCategory): Color {
+    return when (category) {
+        com.powderchaserapp.android.data.api.VisibilityCategory.VERY_POOR -> SnowColors.QualityBad      // red
+        com.powderchaserapp.android.data.api.VisibilityCategory.POOR -> SnowColors.SunsetOrange          // orange
+        com.powderchaserapp.android.data.api.VisibilityCategory.LOW -> Color(0xFFFFCC00)                  // yellow
+        com.powderchaserapp.android.data.api.VisibilityCategory.MODERATE -> SnowColors.MountainGray      // secondary text color
+        com.powderchaserapp.android.data.api.VisibilityCategory.GOOD -> SnowColors.QualityGood           // green
+    }
+}

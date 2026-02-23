@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -28,6 +30,7 @@ import com.powderchaserapp.android.data.api.*
 import com.powderchaserapp.android.data.repository.*
 import com.powderchaserapp.android.ui.theme.SnowColors
 import com.powderchaserapp.android.ui.theme.snowQualityColor
+import com.powderchaserapp.android.ui.theme.visibilityCategoryColor
 import com.powderchaserapp.android.util.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -678,6 +681,59 @@ private fun WeatherDetailsCard(condition: WeatherCondition, units: UnitPreferenc
             condition.windSpeedKmh?.let {
                 WeatherRow(stringResource(R.string.wind), UnitConversions.formatWindSpeed(it, units.useMetricDistance))
             }
+            condition.windGustKmh?.let { gust ->
+                WeatherRow(stringResource(R.string.wind_gusts), UnitConversions.formatWindSpeed(gust, units.useMetricDistance))
+            }
+            condition.maxWindGust24h?.let { maxGust ->
+                WeatherRow(stringResource(R.string.max_gust_24h), UnitConversions.formatWindSpeed(maxGust, units.useMetricDistance))
+            }
+
+            // Visibility warning
+            condition.visibilityM?.let { vis ->
+                if (vis < 5000) {
+                    val category = visibilityCategory(vis)
+                    val visColor = visibilityCategoryColor(category)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.semantics {
+                            contentDescription = "Visibility ${category.label}, ${formatVisibility(vis, units.useMetricDistance)}"
+                        },
+                    ) {
+                        Icon(
+                            Icons.Default.Cloud,
+                            contentDescription = null,
+                            tint = visColor,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "${stringResource(R.string.visibility)}: ${category.label}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = visColor,
+                            )
+                            Text(
+                                text = formatVisibility(vis, units.useMetricDistance),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            condition.minVisibility24hM?.let { minVis ->
+                                if (minVis < vis) {
+                                    Text(
+                                        text = stringResource(R.string.low_today, formatVisibility(minVis, units.useMetricDistance)),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -794,41 +850,98 @@ private fun TimelineCard(timeline: TimelineResponse, units: UnitPreferences) {
                 val maxTemp = points.maxOf { it.temperatureC }
                 val totalSnow = points.sumOf { it.snowfallCm }
                 val bestQuality = points.minByOrNull { it.snowQuality.sortOrder }?.snowQuality
+                val maxGust = points.mapNotNull { it.windGustKmh }.maxOrNull()
+                val minVisibility = points.mapNotNull { it.visibilityM }.minOrNull()
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = date.takeLast(5),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.width(50.dp),
-                    )
-                    bestQuality?.let { q ->
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(snowQualityColor(q.value)),
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "${UnitConversions.formatTemperature(minTemp, units.useMetricTemp)} / ${UnitConversions.formatTemperature(maxTemp, units.useMetricTemp)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (totalSnow > 0) {
-                        Icon(Icons.Default.AcUnit, contentDescription = null, modifier = Modifier.size(12.dp), tint = SnowColors.IceBlue)
-                        Spacer(modifier = Modifier.width(4.dp))
+                Column(modifier = Modifier.padding(vertical = 2.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Text(
-                            UnitConversions.formatSnowShort(totalSnow, units.useMetricSnow),
+                            text = date.takeLast(5),
                             style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = SnowColors.IceBlue,
+                            modifier = Modifier.width(50.dp),
                         )
+                        bestQuality?.let { q ->
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(snowQualityColor(q.value)),
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${UnitConversions.formatTemperature(minTemp, units.useMetricTemp)} / ${UnitConversions.formatTemperature(maxTemp, units.useMetricTemp)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (totalSnow > 0) {
+                            Icon(Icons.Default.AcUnit, contentDescription = stringResource(R.string.fresh), modifier = Modifier.size(12.dp), tint = SnowColors.IceBlue)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                UnitConversions.formatSnowShort(totalSnow, units.useMetricSnow),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = SnowColors.IceBlue,
+                            )
+                        }
+                    }
+
+                    // Wind gust and visibility indicators
+                    val notableGust = maxGust?.takeIf { it >= 50 }
+                    val lowVisibility = minVisibility?.takeIf { it < 5000 }
+                    if (notableGust != null || lowVisibility != null) {
+                        Row(
+                            modifier = Modifier.padding(start = 50.dp, top = 2.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            notableGust?.let { gust ->
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.semantics {
+                                        contentDescription = "Wind gusts ${UnitConversions.formatWindSpeed(gust, units.useMetricDistance)}"
+                                    },
+                                ) {
+                                    Icon(
+                                        Icons.Default.Air,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(10.dp),
+                                        tint = SnowColors.SunsetOrange,
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(
+                                        UnitConversions.formatWindSpeed(gust, units.useMetricDistance),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = SnowColors.SunsetOrange,
+                                    )
+                                }
+                            }
+                            lowVisibility?.let { vis ->
+                                val visCat = visibilityCategory(vis)
+                                val visColor = visibilityCategoryColor(visCat)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.semantics {
+                                        contentDescription = "Visibility ${visCat.label}"
+                                    },
+                                ) {
+                                    Icon(
+                                        Icons.Default.Cloud,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(10.dp),
+                                        tint = visColor,
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(
+                                        if (vis < 1000) "${vis.toInt()}m" else String.format("%.0fkm", vis / 1000),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = visColor,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
