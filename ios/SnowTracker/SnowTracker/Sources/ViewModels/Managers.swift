@@ -49,8 +49,8 @@ class SnowConditionsManager: ObservableObject {
             await fetchResorts()
             // Fetch snow quality summaries for all resorts (lightweight, fast)
             await fetchAllSnowQualitySummaries()
-            // Fetch full conditions for all visible resorts so detail views are instant
-            await fetchConditionsForAllResorts()
+            // Only pre-fetch full conditions for favorites (not all 1040 resorts)
+            await fetchConditionsForFavorites()
             // Clean up old cached data periodically
             cacheService.cleanupStaleCache()
         }
@@ -226,8 +226,8 @@ class SnowConditionsManager: ObservableObject {
 
         // Refresh snow quality summaries for all resorts (used by list view)
         await fetchAllSnowQualitySummaries(forceRefresh: true)
-        // Refresh full conditions for all resorts
-        await fetchConditionsForAllResorts(forceRefresh: true)
+        // Only refresh full conditions for favorites (not all 1040 resorts)
+        await fetchConditionsForFavorites()
 
         lastUpdated = Date()
         managerLog.debug("refreshData: Complete")
@@ -328,12 +328,18 @@ class SnowConditionsManager: ObservableObject {
         do {
             let batchResults = try await apiClient.getBatchConditions(resortIds: resortIds)
             var updatedConditions = conditions
+            var updatedSummaries = snowQualitySummaries
             for (resortId, resortConditions) in batchResults {
                 updatedConditions[resortId] = resortConditions
                 cacheService.cacheConditions(resortConditions, for: resortId)
+                // Sync summary from fresh conditions so list view stays current
+                if let summary = synthesizeSummary(from: resortConditions, resortId: resortId) {
+                    updatedSummaries[resortId] = summary
+                }
             }
             // Single UI update instead of N individual updates
             conditions = updatedConditions
+            snowQualitySummaries = updatedSummaries
             isUsingCachedData = false
             errorMessage = nil
             lastUpdated = Date()
@@ -351,6 +357,62 @@ class SnowConditionsManager: ObservableObject {
                 errorMessage = "Using cached data"
             }
         }
+    }
+
+    /// Build a lightweight summary from full conditions so the list view stays in sync
+    private func synthesizeSummary(from conditions: [WeatherCondition], resortId: String) -> SnowQualitySummaryLight? {
+        guard !conditions.isEmpty else { return nil }
+
+        // Use the representative condition (mid > top > base, same as backend)
+        let representative = conditions.first { $0.elevationLevel == "mid" }
+            ?? conditions.first { $0.elevationLevel == "top" }
+            ?? conditions.first
+
+        guard let cond = representative else { return nil }
+
+        // Compute overall quality as weighted average (matches backend logic)
+        let top = conditions.first { $0.elevationLevel == "top" }
+        let mid = conditions.first { $0.elevationLevel == "mid" }
+        let base = conditions.first { $0.elevationLevel == "base" }
+
+        let overallQuality: String
+        let overallScore: Int?
+
+        if let topScore = top?.snowScore, let midScore = mid?.snowScore, let baseScore = base?.snowScore {
+            let weighted = Double(topScore) * 0.50 + Double(midScore) * 0.35 + Double(baseScore) * 0.15
+            overallScore = Int(weighted.rounded())
+            overallQuality = qualityFromScore(overallScore!)
+        } else {
+            overallScore = cond.snowScore
+            overallQuality = cond.snowQuality.rawValue
+        }
+
+        // Preserve existing explanation if available (conditions don't carry explanation text)
+        let existingExplanation = snowQualitySummaries[resortId]?.explanation
+
+        return SnowQualitySummaryLight(
+            resortId: resortId,
+            overallQuality: overallQuality,
+            snowScore: overallScore,
+            explanation: existingExplanation,
+            lastUpdated: cond.timestamp,
+            temperatureC: cond.currentTempCelsius,
+            snowfallFreshCm: cond.snowfallAfterFreezeCm ?? cond.snowfall24hCm,
+            snowfall24hCm: cond.snowfall24hCm,
+            snowDepthCm: cond.snowDepthCm,
+            predictedSnow48hCm: cond.predictedSnow48hCm
+        )
+    }
+
+    /// Map a numeric snow score to a quality string (matches backend thresholds)
+    private func qualityFromScore(_ score: Int) -> String {
+        let s = Double(score)
+        if s >= 92 { return "excellent" }
+        if s >= 75 { return "good" }
+        if s >= 58 { return "fair" }
+        if s >= 42 { return "poor" }
+        if s >= 25 { return "bad" }
+        return "horrible"
     }
 
     func fetchResorts() async {

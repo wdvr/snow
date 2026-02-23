@@ -298,6 +298,10 @@ struct ResortListView: View {
                 }
                 .listStyle(PlainListStyle())
                 .searchable(text: $searchText, prompt: "Search resorts...")
+                .refreshable {
+                    AnalyticsService.shared.trackPullToRefresh(screen: "ResortList")
+                    await snowConditionsManager.refreshData()
+                }
                 .overlay {
                     if filteredResorts.isEmpty && !snowConditionsManager.resorts.isEmpty {
                         if !searchText.isEmpty {
@@ -331,10 +335,6 @@ struct ResortListView: View {
             }
             .onDisappear {
                 AnalyticsService.shared.trackScreenExit("ResortList")
-            }
-            .refreshable {
-                AnalyticsService.shared.trackPullToRefresh(screen: "ResortList")
-                await snowConditionsManager.refreshData()
             }
             .onChange(of: searchText) { _, newValue in
                 // Track search when user stops typing (debounced by SwiftUI)
