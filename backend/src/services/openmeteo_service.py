@@ -166,8 +166,8 @@ class OpenMeteoService:
                 "latitude": latitude,
                 "longitude": longitude,
                 "elevation": elevation_meters,
-                "current": "temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code",
-                "hourly": "temperature_2m,snowfall,snow_depth,wind_speed_10m,weather_code,cloud_cover",
+                "current": "temperature_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,weather_code",
+                "hourly": "temperature_2m,snowfall,snow_depth,wind_speed_10m,wind_gusts_10m,weather_code,cloud_cover,visibility",
                 "daily": "temperature_2m_min,temperature_2m_max,snowfall_sum",
                 "past_days": 14,  # Need 14 days for freeze-thaw detection
                 "forecast_days": 3,
@@ -192,6 +192,9 @@ class OpenMeteoService:
 
             # Calculate ice hours from hourly temperatures
             ice_hours_data = self._calculate_ice_hours(hourly)
+
+            # Calculate wind gust and visibility from hourly data
+            wind_vis_data = self._compute_wind_visibility(hourly, current)
 
             # Get weather description from weather code
             weather_code = current.get("weather_code", 0)
@@ -240,6 +243,10 @@ class OpenMeteoService:
                 # Weather conditions
                 "humidity_percent": current.get("relative_humidity_2m", 0.0),
                 "wind_speed_kmh": current.get("wind_speed_10m", 0.0),
+                "wind_gust_kmh": wind_vis_data.get("wind_gust_kmh"),
+                "max_wind_gust_24h": wind_vis_data.get("max_wind_gust_24h"),
+                "visibility_m": wind_vis_data.get("visibility_m"),
+                "min_visibility_24h_m": wind_vis_data.get("min_visibility_24h_m"),
                 "weather_code": weather_code,
                 "weather_description": weather_description,
                 # Data source info
@@ -292,7 +299,7 @@ class OpenMeteoService:
                 "latitude": latitude,
                 "longitude": longitude,
                 "elevation": elevation_meters,
-                "hourly": "temperature_2m,snowfall,snow_depth,wind_speed_10m,weather_code,cloud_cover",
+                "hourly": "temperature_2m,snowfall,snow_depth,wind_speed_10m,wind_gusts_10m,weather_code,cloud_cover,visibility",
                 "daily": "temperature_2m_min,temperature_2m_max,snowfall_sum",
                 "past_days": 14,
                 "forecast_days": 7,
@@ -312,8 +319,10 @@ class OpenMeteoService:
             hourly_snowfall = hourly.get("snowfall", [])
             hourly_snow_depth = hourly.get("snow_depth", [])
             hourly_wind = hourly.get("wind_speed_10m", [])
+            hourly_wind_gusts = hourly.get("wind_gusts_10m", [])
             hourly_weather_code = hourly.get("weather_code", [])
             hourly_cloud_cover = hourly.get("cloud_cover", [])
+            hourly_visibility = hourly.get("visibility", [])
 
             now = datetime.now(UTC)
 
@@ -384,6 +393,22 @@ class OpenMeteoService:
                     ):
                         snow_depth = hourly_snow_depth[idx] * 100  # m -> cm
 
+                    # Wind gust at that hour
+                    gust = (
+                        hourly_wind_gusts[idx]
+                        if idx < len(hourly_wind_gusts)
+                        and hourly_wind_gusts[idx] is not None
+                        else None
+                    )
+
+                    # Visibility at that hour
+                    vis = (
+                        hourly_visibility[idx]
+                        if idx < len(hourly_visibility)
+                        and hourly_visibility[idx] is not None
+                        else None
+                    )
+
                     # Weather code and description
                     wcode = (
                         hourly_weather_code[idx]
@@ -421,6 +446,8 @@ class OpenMeteoService:
                         hourly_snow_depth,
                         hourly_weather_code,
                         hourly_cloud_cover,
+                        hourly_visibility=hourly_visibility,
+                        hourly_wind_gusts=hourly_wind_gusts,
                     )
 
                     quality_val = (
@@ -436,6 +463,8 @@ class OpenMeteoService:
                         else None,
                         wind_speed_kmh=wind,
                         is_forecast=is_forecast,
+                        wind_gust_kmh=gust,
+                        visibility_m=vis,
                     )
 
                     point = {
@@ -445,6 +474,8 @@ class OpenMeteoService:
                         "timestamp": timestamp_str,
                         "temperature_c": temp,
                         "wind_speed_kmh": wind,
+                        "wind_gust_kmh": gust,
+                        "visibility_m": vis,
                         "snowfall_cm": round(snowfall_sum, 1),
                         "snow_depth_cm": round(snow_depth, 1)
                         if snow_depth is not None
@@ -803,6 +834,62 @@ class OpenMeteoService:
                     break
 
         return result
+
+    def _compute_wind_visibility(
+        self, hourly: dict, current: dict
+    ) -> dict[str, float | None]:
+        """Compute wind gust and visibility features from hourly data.
+
+        Returns dict with wind_gust_kmh, max_wind_gust_24h,
+        visibility_m, and min_visibility_24h_m.
+        """
+        hourly_gusts = hourly.get("wind_gusts_10m", [])
+        hourly_vis = hourly.get("visibility", [])
+        hourly_times = hourly.get("time", [])
+
+        # Find current hour index (same pattern as _process_snowfall)
+        now = datetime.now(UTC)
+        now_str = now.strftime("%Y-%m-%dT%H:00")
+        current_index = len(hourly_times) - 1
+        for i, time_str in enumerate(hourly_times):
+            if time_str[:13] >= now_str[:13]:
+                current_index = i
+                break
+
+        start_24h = max(0, current_index - 24)
+
+        # Wind gust: current value from API + max over 24h from hourly
+        wind_gust_kmh = current.get("wind_gusts_10m")
+        if wind_gust_kmh is None and hourly_gusts and current_index < len(hourly_gusts):
+            wind_gust_kmh = hourly_gusts[current_index]
+
+        max_wind_gust_24h = None
+        if hourly_gusts:
+            gusts_24h = [
+                g for g in hourly_gusts[start_24h : current_index + 1] if g is not None
+            ]
+            if gusts_24h:
+                max_wind_gust_24h = max(gusts_24h)
+
+        # Visibility: current value from hourly + min over 24h
+        visibility_m = None
+        if hourly_vis and current_index < len(hourly_vis):
+            visibility_m = hourly_vis[current_index]
+
+        min_visibility_24h_m = None
+        if hourly_vis:
+            vis_24h = [
+                v for v in hourly_vis[start_24h : current_index + 1] if v is not None
+            ]
+            if vis_24h:
+                min_visibility_24h_m = min(vis_24h)
+
+        return {
+            "wind_gust_kmh": wind_gust_kmh,
+            "max_wind_gust_24h": max_wind_gust_24h,
+            "visibility_m": visibility_m,
+            "min_visibility_24h_m": min_visibility_24h_m,
+        }
 
     def _calculate_ice_hours(
         self, hourly: dict, threshold_temp: float = 3.0

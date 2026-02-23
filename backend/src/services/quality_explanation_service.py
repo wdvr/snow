@@ -36,7 +36,12 @@ def generate_quality_explanation(condition: WeatherCondition) -> str:
     if base:
         parts.append(base)
 
-    # 5. Forecast outlook
+    # 5. Wind/visibility context
+    wind_vis = _describe_wind_visibility(condition)
+    if wind_vis:
+        parts.append(wind_vis)
+
+    # 6. Forecast outlook
     forecast = _describe_forecast(condition)
     if forecast:
         parts.append(forecast)
@@ -213,6 +218,29 @@ def _describe_forecast(condition: WeatherCondition) -> str:
     return ""
 
 
+def _describe_wind_visibility(condition: WeatherCondition) -> str:
+    """Describe wind and visibility conditions when notable."""
+    parts = []
+
+    wind = condition.wind_speed_kmh
+    gust = getattr(condition, "wind_gust_kmh", None)
+    vis = getattr(condition, "visibility_m", None)
+
+    if gust and gust > 60:
+        parts.append(f"Strong gusts ({gust:.0f} km/h).")
+    elif wind and wind > 40:
+        parts.append(f"Strong wind ({wind:.0f} km/h).")
+    elif wind and wind > 25:
+        parts.append(f"Windy ({wind:.0f} km/h).")
+
+    if vis is not None and vis < 500:
+        parts.append("Very poor visibility.")
+    elif vis is not None and vis < 1000:
+        parts.append("Low visibility.")
+
+    return " ".join(parts)
+
+
 def _default_explanation(quality: SnowQuality) -> str:
     """Fallback explanation when data is insufficient."""
     defaults = {
@@ -247,6 +275,8 @@ def generate_timeline_explanation(
     snow_depth_cm: float | None,
     wind_speed_kmh: float | None,
     is_forecast: bool,
+    wind_gust_kmh: float | None = None,
+    visibility_m: float | None = None,
 ) -> str:
     """Generate a concise explanation for a timeline point.
 
@@ -309,8 +339,18 @@ def generate_timeline_explanation(
         parts.append(f"Near freezing ({temperature_c:.0f}°C).")
 
     # Wind context
-    if wind_speed_kmh and wind_speed_kmh > 40:
+    if wind_gust_kmh and wind_gust_kmh > 60:
+        parts.append(f"Strong gusts ({wind_gust_kmh:.0f} km/h).")
+    elif wind_speed_kmh and wind_speed_kmh > 40:
         parts.append(f"Strong wind ({wind_speed_kmh:.0f} km/h).")
+    elif wind_speed_kmh and wind_speed_kmh > 25:
+        parts.append(f"Windy ({wind_speed_kmh:.0f} km/h).")
+
+    # Visibility context
+    if visibility_m is not None and visibility_m < 500:
+        parts.append("Very poor visibility — fog or whiteout.")
+    elif visibility_m is not None and visibility_m < 1000:
+        parts.append("Low visibility.")
 
     return " ".join(parts)
 
@@ -378,6 +418,11 @@ def generate_overall_explanation(
     base_desc = _describe_base(representative)
     if base_desc:
         parts.append(base_desc)
+
+    # Wind/visibility context from representative
+    wind_vis = _describe_wind_visibility(representative)
+    if wind_vis:
+        parts.append(wind_vis)
 
     # Forecast from representative
     forecast = _describe_forecast(representative)

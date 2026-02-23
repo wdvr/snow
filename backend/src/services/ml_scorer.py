@@ -205,6 +205,11 @@ def engineer_features(raw: dict[str, float]) -> list[float]:
     wind_chill_delta = _f("wind_chill_delta", 0.0)
     cur_wind = _f("cur_wind_kmh", avg_wind)
 
+    # Visibility and gust features
+    visibility_m = _f("visibility_m", 10000.0)
+    min_vis_24h = _f("min_visibility_24h_m", 10000.0)
+    max_gust = _f("max_wind_gust_24h", 0.0)
+
     return [
         ct,
         max24,
@@ -241,6 +246,10 @@ def engineer_features(raw: dict[str, float]) -> list[float]:
         wind_chill_delta,  # wind chill penalty (always <= 0)
         is_clear * max(0.0, 1.0 - cur_wind / 30.0),  # sunny calm indicator
         is_snowing * max(0, -ct) / 10.0 * max(0.0, 1.0 - avg_wind / 40.0),  # powder day
+        # Visibility and gust features (3)
+        visibility_m / 1000.0,  # normalized to km
+        min_vis_24h / 1000.0,  # min visibility 24h, normalized to km
+        max_gust / 100.0,  # max gust normalized
     ]
 
 
@@ -374,6 +383,8 @@ def _extract_features_at_hour(
     snow_depth_arr: list[float | None] | None = None,
     weather_code_arr: list[int | None] | None = None,
     cloud_cover_arr: list[float | None] | None = None,
+    visibility_arr: list[float | None] | None = None,
+    wind_gust_arr: list[float | None] | None = None,
 ) -> dict[str, float] | None:
     """Core feature extraction at a specific hour index.
 
@@ -491,6 +502,35 @@ def _extract_features_at_hour(
     wind_chill = _compute_wind_chill(cur_temp, cur_wind)
     wind_chill_delta = wind_chill - cur_temp
 
+    # Visibility features
+    if visibility_arr and len(visibility_arr) > target_hour:
+        vis = visibility_arr[target_hour]
+        visibility_m = float(vis) if vis is not None else 10000.0
+    else:
+        visibility_m = 10000.0
+
+    vis_24h = (
+        [v for v in visibility_arr[h24_start:target_hour] if v is not None]
+        if visibility_arr
+        else []
+    )
+    min_visibility_24h_m = min(vis_24h) if vis_24h else visibility_m
+
+    # Wind gust features
+    if wind_gust_arr and len(wind_gust_arr) > target_hour:
+        gust = wind_gust_arr[target_hour]
+        max_wind_gust_24h = float(gust) if gust is not None else 0.0
+    else:
+        max_wind_gust_24h = 0.0
+
+    gust_24h = (
+        [g for g in wind_gust_arr[h24_start:target_hour] if g is not None]
+        if wind_gust_arr
+        else []
+    )
+    if gust_24h:
+        max_wind_gust_24h = max(max_wind_gust_24h, max(gust_24h))
+
     return {
         "cur_temp": cur_temp,
         "max_temp_24h": max_temp_24h,
@@ -526,6 +566,9 @@ def _extract_features_at_hour(
         "is_snowing": is_snowing,
         "wind_chill_c": wind_chill,
         "wind_chill_delta": wind_chill_delta,
+        "visibility_m": visibility_m,
+        "min_visibility_24h_m": min_visibility_24h_m,
+        "max_wind_gust_24h": max_wind_gust_24h,
     }
 
 
@@ -549,6 +592,8 @@ def extract_features_from_raw_data(
     snow_depth_arr = hourly.get("snow_depth", [])
     weather_code_arr = hourly.get("weather_code", [])
     cloud_cover_arr = hourly.get("cloud_cover", [])
+    visibility_arr = hourly.get("visibility", [])
+    wind_gust_arr = hourly.get("wind_gusts_10m", [])
 
     if not temps or len(temps) < 48:
         return None
@@ -575,6 +620,8 @@ def extract_features_from_raw_data(
         snow_depth_arr,
         weather_code_arr,
         cloud_cover_arr,
+        visibility_arr or None,
+        wind_gust_arr or None,
     )
 
 
@@ -764,6 +811,8 @@ def predict_quality_at_hour(
     snow_depth_arr: list[float | None] | None = None,
     weather_code_arr: list[int | None] | None = None,
     cloud_cover_arr: list[float | None] | None = None,
+    hourly_visibility: list[float | None] | None = None,
+    hourly_wind_gusts: list[float | None] | None = None,
 ) -> tuple[SnowQuality, float]:
     """Predict snow quality at a specific hour index using the ML model.
 
@@ -797,6 +846,8 @@ def predict_quality_at_hour(
         snow_depth_arr,
         weather_code_arr,
         cloud_cover_arr,
+        hourly_visibility,
+        hourly_wind_gusts,
     )
     if raw_features is None:
         return SnowQuality.UNKNOWN, 3.5

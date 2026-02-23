@@ -81,6 +81,8 @@ def compute_features_for_day(
     hourly_snow_depth: list[float] | None = None,
     hourly_weather_code: list[int] | None = None,
     hourly_cloud_cover: list[float] | None = None,
+    hourly_wind_gusts: list[float] | None = None,
+    hourly_visibility: list[float] | None = None,
 ) -> dict | None:
     """Compute all ML features for a specific day from hourly data.
 
@@ -246,6 +248,34 @@ def compute_features_for_day(
     # More negative = harsher conditions
     wind_chill_delta = wind_chill - cur_temp
 
+    # Visibility features
+    if hourly_visibility and len(hourly_visibility) > target_hour:
+        vis = hourly_visibility[target_hour]
+        visibility_m = float(vis) if vis is not None else 10000.0
+    else:
+        visibility_m = 10000.0
+
+    vis_24h = (
+        [v for v in hourly_visibility[h24_start:target_hour] if v is not None]
+        if hourly_visibility
+        else []
+    )
+    min_visibility_24h_m = min(vis_24h) if vis_24h else visibility_m
+
+    # Wind gust features
+    max_wind_gust_24h = 0.0
+    if hourly_wind_gusts:
+        gust_24h = [
+            g for g in hourly_wind_gusts[h24_start:target_hour] if g is not None
+        ]
+        if gust_24h:
+            max_wind_gust_24h = max(gust_24h)
+        if (
+            len(hourly_wind_gusts) > target_hour
+            and hourly_wind_gusts[target_hour] is not None
+        ):
+            max_wind_gust_24h = max(max_wind_gust_24h, hourly_wind_gusts[target_hour])
+
     return {
         "cur_temp": round(cur_temp, 1),
         "max_temp_24h": round(max_temp_24h, 1),
@@ -281,6 +311,9 @@ def compute_features_for_day(
         "is_snowing": is_snowing,
         "wind_chill_c": wind_chill,
         "wind_chill_delta": round(wind_chill_delta, 1),
+        "visibility_m": round(visibility_m, 0),
+        "min_visibility_24h_m": round(min_visibility_24h_m, 0),
+        "max_wind_gust_24h": round(max_wind_gust_24h, 1),
     }
 
 
@@ -300,7 +333,7 @@ async def fetch_resort_data(
             "latitude": lat,
             "longitude": lon,
             "elevation": elev_top,
-            "hourly": "temperature_2m,snowfall,wind_speed_10m,snow_depth,weather_code,cloud_cover",
+            "hourly": "temperature_2m,snowfall,wind_speed_10m,wind_gusts_10m,snow_depth,weather_code,cloud_cover,visibility",
             "past_days": 14,
             "forecast_days": 1,
             "timezone": "GMT",
@@ -338,6 +371,8 @@ async def fetch_resort_data(
         snow_depth = hourly.get("snow_depth", [])
         weather_code = hourly.get("weather_code", [])
         cloud_cover = hourly.get("cloud_cover", [])
+        wind_gusts = hourly.get("wind_gusts_10m", [])
+        visibility = hourly.get("visibility", [])
 
         if not temps:
             print(f"  NO DATA {resort_id}")
@@ -358,6 +393,8 @@ async def fetch_resort_data(
                 snow_depth,
                 weather_code,
                 cloud_cover,
+                wind_gusts,
+                visibility,
             )
             if features:
                 # Determine the date for this day

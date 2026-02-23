@@ -200,7 +200,7 @@ class TestEngineerFeatures:
     def test_output_length(self, sample_raw_features):
         """Should produce exactly 34 engineered features."""
         features = engineer_features(sample_raw_features)
-        assert len(features) == 34
+        assert len(features) == 37
 
     def test_cur_temp_is_first(self, sample_raw_features):
         features = engineer_features(sample_raw_features)
@@ -236,7 +236,7 @@ class TestEngineerFeatures:
     def test_missing_keys_default_to_zero(self):
         """All features should work with empty dict (using defaults)."""
         features = engineer_features({})
-        assert len(features) == 34
+        assert len(features) == 37
         assert all(isinstance(f, float) for f in features)
 
     def test_wind_protected_snow(self, sample_raw_features):

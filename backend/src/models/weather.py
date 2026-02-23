@@ -143,6 +143,14 @@ class WeatherCondition(BaseModel):
         None, description="Relative humidity percentage"
     )
     wind_speed_kmh: float | None = Field(None, description="Wind speed in km/h")
+    wind_gust_kmh: float | None = Field(None, description="Wind gust speed in km/h")
+    max_wind_gust_24h: float | None = Field(
+        None, description="Maximum wind gust in last 24 hours (km/h)"
+    )
+    visibility_m: float | None = Field(None, description="Visibility in meters")
+    min_visibility_24h_m: float | None = Field(
+        None, description="Minimum visibility in last 24 hours (meters)"
+    )
     weather_description: str | None = Field(
         None, description="General weather description"
     )
@@ -263,6 +271,8 @@ class TimelinePoint(BaseModel):
     timestamp: str = Field(..., description="ISO timestamp")
     temperature_c: float = Field(..., description="Temperature in Celsius")
     wind_speed_kmh: float | None = Field(None, description="Wind speed in km/h")
+    wind_gust_kmh: float | None = Field(None, description="Wind gust speed in km/h")
+    visibility_m: float | None = Field(None, description="Visibility in meters")
     snowfall_cm: float = Field(
         default=0.0, description="Snowfall in surrounding window"
     )

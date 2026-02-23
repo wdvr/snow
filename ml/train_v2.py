@@ -54,6 +54,9 @@ RAW_FEATURE_COLUMNS = [
     "is_snowing",
     "wind_chill_c",
     "wind_chill_delta",
+    "visibility_m",
+    "min_visibility_24h_m",
+    "max_wind_gust_24h",
 ]
 
 
@@ -98,6 +101,11 @@ def engineer_features(raw_features: dict) -> list[float]:
     wind_chill = raw_features.get("wind_chill_c", ct) or ct
     wind_chill_delta = raw_features.get("wind_chill_delta", 0.0) or 0.0
     cur_wind = raw_features.get("cur_wind_kmh", avg_wind) or avg_wind
+
+    # Visibility and gust features
+    visibility_m = raw_features.get("visibility_m", 10000.0) or 10000.0
+    min_vis_24h = raw_features.get("min_visibility_24h_m", 10000.0) or 10000.0
+    max_gust = raw_features.get("max_wind_gust_24h", 0.0) or 0.0
 
     return [
         # Temperature features (4)
@@ -149,6 +157,10 @@ def engineer_features(raw_features: dict) -> list[float]:
         is_clear * max(0.0, 1.0 - cur_wind / 30.0),  # sunny calm indicator
         # Active snowing + cold + calm = ideal powder day
         is_snowing * max(0, -ct) / 10.0 * max(0.0, 1.0 - avg_wind / 40.0),
+        # Visibility and gust features (3)
+        visibility_m / 1000.0,  # normalized to km (0-30 range)
+        min_vis_24h / 1000.0,  # min visibility 24h, normalized to km
+        max_gust / 100.0,  # max gust normalized (gusts can reach 100+ km/h)
     ]
 
 
@@ -187,6 +199,9 @@ ENGINEERED_FEATURE_NAMES = [
     "wind_chill_delta",
     "sunny_calm_indicator",
     "powder_day_indicator",
+    "visibility_km",
+    "min_visibility_24h_km",
+    "max_wind_gust_norm",
 ]
 
 
