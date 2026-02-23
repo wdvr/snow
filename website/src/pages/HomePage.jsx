@@ -11,6 +11,7 @@ import {
   FiCpu,
   FiThermometer,
   FiCoffee,
+  FiGlobe,
 } from 'react-icons/fi'
 import { BsApple, BsSnow } from 'react-icons/bs'
 
@@ -33,7 +34,7 @@ function HomePage() {
     },
     {
       icon: <FiMapPin />,
-      title: '28+ World-Class Resorts',
+      title: '130+ World-Class Resorts',
       description: 'Track conditions at top resorts across North America, the Alps, Japan, and more.'
     },
     {
@@ -49,8 +50,8 @@ function HomePage() {
   ]
 
   const stats = [
-    { number: '28+', label: 'Resorts' },
-    { number: '8', label: 'Regions' },
+    { number: '130+', label: 'Resorts' },
+    { number: '11', label: 'Countries' },
     { number: '24/7', label: 'Updates' },
     { number: '100%', label: 'Free' }
   ]
@@ -82,13 +83,13 @@ function HomePage() {
                   Download on App Store
                 </a>
                 <a
-                  href="https://github.com/wdvr/snow"
+                  href="https://app.powderchaserapp.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-secondary"
                 >
-                  <FiGithub size={20} />
-                  View on GitHub
+                  <FiGlobe size={20} />
+                  Open Web App
                 </a>
               </div>
             </div>
@@ -229,13 +230,13 @@ function HomePage() {
                 Download for iOS
               </a>
               <a
-                href="https://buymeacoffee.com/wdvr"
+                href="https://app.powderchaserapp.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-secondary"
               >
-                <FiCoffee size={20} />
-                Buy Me a Coffee
+                <FiGlobe size={20} />
+                Open Web App
               </a>
             </div>
           </div>
