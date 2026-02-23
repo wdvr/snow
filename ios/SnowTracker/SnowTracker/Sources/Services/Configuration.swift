@@ -45,15 +45,14 @@ enum AppEnvironment: String, CaseIterable {
     }
 
     /// Chat streaming Lambda Function URL (SSE endpoint)
-    /// Returns nil if streaming is not yet deployed for this environment
     var chatStreamURL: URL? {
         switch self {
         case .development:
             return nil
         case .staging:
-            return nil // Set after infrastructure deploy
+            return URL(string: "https://h5yv2vpzlchdpbvnf2ddc6v5xu0lmztp.lambda-url.us-west-2.on.aws/")
         case .production:
-            return nil // Set after infrastructure deploy
+            return URL(string: "https://z3s2kwjc2cs6zhhgui3jmus5e40igoyr.lambda-url.us-west-2.on.aws/")
         }
     }
 
