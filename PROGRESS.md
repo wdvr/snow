@@ -66,11 +66,11 @@
 - [x] Run percentages: enriched from 2.8% to 93.8% coverage (948 resorts scraped)
 - [x] Website URLs: enriched from 13.2% to 85.4% coverage (751 resorts)
 - [x] Annual snowfall: enriched 446/1040 resorts (42.9%) via Open-Meteo historical API
-- [x] Base elevations: enriched 852/1040 (81.9%) from DEM via Open-Meteo elevation API
-- [x] Fixed 459 corrupted elevation values (scraper artifacts)
-- [x] Computed family_friendly (976), expert_terrain (983), vertical_drop (296) from existing data
-- [ ] Annual snowfall: 594 resorts still missing (rate-limited, retry needed)
-- [ ] Elevation top: 711 resorts missing (scraper bug identified, fix pending)
+- [x] Base elevations: enriched 994/1040 (95.6%) from DEM + skiresort.info
+- [x] Top elevations: enriched 903/1040 (86.8%) from skiresort.info (fixed scraper bug)
+- [x] Fixed 459 corrupted elevation values (scraper artifacts from "Similar Resorts")
+- [x] Computed family_friendly (976), expert_terrain (983), vertical_drop (870) from data
+- [ ] Annual snowfall: 594 resorts still missing (Open-Meteo daily rate limit, retry tomorrow)
 - [ ] 47 resorts not found on skiresort.info (Chinese, heli-ski, indoor)
 
 ---
@@ -104,7 +104,8 @@
 | Feature | Date |
 |---------|------|
 | Add wind gust and visibility to web conditions table with color-coded severity | 2026-02-23 |
-| Enrich annual snowfall (446/1040), base elevations (852/1040), fix 459 corrupted elevations | 2026-02-23 |
+| Enrich top elevations 903/1040 (86.8%) via skiresort.info, fix scraper elevation bug | 2026-02-23 |
+| Enrich annual snowfall (446/1040), base elevations (994/1040), fix 459 corrupted elevations | 2026-02-23 |
 | Compute family_friendly, expert_terrain, large_resort labels from existing data | 2026-02-23 |
 | Fix Android stale data: sync quality updates from detail to list view | 2026-02-23 |
 | Fix iOS list: slow refresh (21→2 API calls), stale data sync, filter scroll | 2026-02-23 |
