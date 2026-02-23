@@ -18,8 +18,19 @@ final class CachedResort {
     var greenRunsPct: Int?
     var blueRunsPct: Int?
     var blackRunsPct: Int?
+    var doubleBlackRunsPct: Int?
+    var hasSnowmaking: Bool?
+    var dayTicketPriceMinUsd: Int?
+    var dayTicketPriceMaxUsd: Int?
+    var annualSnowfallCm: Int?
     var epicPass: String?
     var ikonPass: String?
+    var mountainCollective: String?
+    var indyPass: String?
+    var familyFriendly: Bool?
+    var expertTerrain: Bool?
+    var largeResort: Bool?
+    var skiInOut: Bool?
     var elevationPointsData: Data
     var weatherSourcesData: Data
     var cachedAt: Date
@@ -35,8 +46,19 @@ final class CachedResort {
         self.greenRunsPct = resort.greenRunsPct
         self.blueRunsPct = resort.blueRunsPct
         self.blackRunsPct = resort.blackRunsPct
+        self.doubleBlackRunsPct = resort.doubleBlackRunsPct
+        self.hasSnowmaking = resort.hasSnowmaking
+        self.dayTicketPriceMinUsd = resort.dayTicketPriceMinUsd
+        self.dayTicketPriceMaxUsd = resort.dayTicketPriceMaxUsd
+        self.annualSnowfallCm = resort.annualSnowfallCm
         self.epicPass = resort.epicPass
         self.ikonPass = resort.ikonPass
+        self.mountainCollective = resort.mountainCollective
+        self.indyPass = resort.indyPass
+        self.familyFriendly = resort.familyFriendly
+        self.expertTerrain = resort.expertTerrain
+        self.largeResort = resort.largeResort
+        self.skiInOut = resort.skiInOut
 
         // Encode elevation points
         let encoder = JSONEncoder()
@@ -65,8 +87,19 @@ final class CachedResort {
             greenRunsPct: greenRunsPct,
             blueRunsPct: blueRunsPct,
             blackRunsPct: blackRunsPct,
+            doubleBlackRunsPct: doubleBlackRunsPct,
+            hasSnowmaking: hasSnowmaking,
+            dayTicketPriceMinUsd: dayTicketPriceMinUsd,
+            dayTicketPriceMaxUsd: dayTicketPriceMaxUsd,
+            annualSnowfallCm: annualSnowfallCm,
             epicPass: epicPass,
             ikonPass: ikonPass,
+            mountainCollective: mountainCollective,
+            indyPass: indyPass,
+            familyFriendly: familyFriendly,
+            expertTerrain: expertTerrain,
+            largeResort: largeResort,
+            skiInOut: skiInOut,
             weatherSources: weatherSources,
             createdAt: nil,
             updatedAt: nil

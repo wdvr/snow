@@ -145,6 +145,60 @@ CA_PROVINCE_REGIONS = {
     "NT": "na_west",
 }
 
+# Currency conversion rates to USD (approximate, for ticket price normalization)
+USD_RATES = {
+    "USD": 1.0,
+    "EUR": 1.08,
+    "CHF": 1.12,
+    "CAD": 0.74,
+    "NOK": 0.095,
+    "SEK": 0.096,
+    "JPY": 0.0067,
+    "AUD": 0.65,
+    "NZD": 0.61,
+    "CLP": 0.0011,
+    "ARS": 0.0011,
+    "GBP": 1.27,
+    "PLN": 0.25,
+    "CZK": 0.043,
+    "RON": 0.22,
+    "BGN": 0.55,
+    "KRW": 0.00075,
+    "CNY": 0.14,
+    "INR": 0.012,
+}
+
+# Country to currency mapping
+COUNTRY_CURRENCY = {
+    "US": "USD",
+    "CA": "CAD",
+    "FR": "EUR",
+    "CH": "CHF",
+    "AT": "EUR",
+    "IT": "EUR",
+    "DE": "EUR",
+    "SI": "EUR",
+    "ES": "EUR",
+    "AD": "EUR",
+    "NO": "NOK",
+    "SE": "SEK",
+    "FI": "EUR",
+    "PL": "PLN",
+    "CZ": "CZK",
+    "SK": "EUR",
+    "RO": "RON",
+    "BG": "BGN",
+    "JP": "JPY",
+    "KR": "KRW",
+    "CN": "CNY",
+    "IN": "INR",
+    "AU": "AUD",
+    "NZ": "NZD",
+    "CL": "CLP",
+    "AR": "ARS",
+    "GB": "GBP",
+}
+
 # Full name to abbreviation mappings for US states
 US_STATE_ABBREV = {
     "california": "CA",
@@ -273,6 +327,13 @@ class ScrapedResort:
     website: str | None = None
     features: list[str] = field(default_factory=list)
     annual_snowfall_cm: int | None = None
+    green_runs_pct: int | None = None
+    blue_runs_pct: int | None = None
+    black_runs_pct: int | None = None
+    double_black_runs_pct: int | None = None
+    has_snowmaking: bool | None = None
+    day_ticket_price_min_usd: int | None = None
+    day_ticket_price_max_usd: int | None = None
     resort_id: str = ""
     source: str = ""
     source_url: str = ""
@@ -319,7 +380,7 @@ class ScrapedResort:
 
     def to_dict(self) -> dict:
         """Convert to dictionary matching our JSON schema."""
-        return {
+        result = {
             "resort_id": self.resort_id,
             "name": self.name,
             "country": self.country,
@@ -336,6 +397,22 @@ class ScrapedResort:
             "source": self.source,
             "scraped_at": self.scraped_at,
         }
+        # Include optional scraped fields when present
+        if self.green_runs_pct is not None:
+            result["green_runs_pct"] = self.green_runs_pct
+        if self.blue_runs_pct is not None:
+            result["blue_runs_pct"] = self.blue_runs_pct
+        if self.black_runs_pct is not None:
+            result["black_runs_pct"] = self.black_runs_pct
+        if self.double_black_runs_pct is not None:
+            result["double_black_runs_pct"] = self.double_black_runs_pct
+        if self.has_snowmaking is not None:
+            result["has_snowmaking"] = self.has_snowmaking
+        if self.day_ticket_price_min_usd is not None:
+            result["day_ticket_price_min_usd"] = self.day_ticket_price_min_usd
+        if self.day_ticket_price_max_usd is not None:
+            result["day_ticket_price_max_usd"] = self.day_ticket_price_max_usd
+        return result
 
 
 class BaseScraper:
@@ -802,6 +879,114 @@ class SkiResortInfoScraper(BaseScraper):
                 if match:
                     annual_snowfall_cm = int(match.group(1))
 
+        # Extract trail percentages from slope data
+        green_pct = None
+        blue_pct = None
+        black_pct = None
+        double_black_pct = None
+
+        # Look for slope difficulty breakdown (skiresort.info format)
+        slope_data = {}
+        for label_pattern, key in [
+            (r"(?:easy|green|beginner)", "green"),
+            (r"(?:intermediate|blue|medium)", "blue"),
+            (r"(?:difficult|black|advanced|expert)", "black"),
+            (r"(?:freeride|extreme|double.?black)", "double_black"),
+        ]:
+            for elem in soup.find_all(string=re.compile(label_pattern, re.I)):
+                parent = elem.parent
+                if parent:
+                    # Look for km values near this label
+                    nearby_text = parent.get_text() if parent else ""
+                    # Also check siblings
+                    for sibling in [parent.next_sibling, parent.previous_sibling]:
+                        if sibling:
+                            nearby_text += " " + (
+                                sibling.get_text()
+                                if hasattr(sibling, "get_text")
+                                else str(sibling)
+                            )
+                    km_match = re.search(r"(\d+(?:\.\d+)?)\s*km", nearby_text)
+                    if km_match and key not in slope_data:
+                        slope_data[key] = float(km_match.group(1))
+                        break
+
+        # Convert km to percentages
+        total_km = sum(slope_data.values())
+        if total_km > 0:
+            if "green" in slope_data:
+                green_pct = round(slope_data["green"] / total_km * 100)
+            if "blue" in slope_data:
+                blue_pct = round(slope_data["blue"] / total_km * 100)
+            if "black" in slope_data:
+                black_pct = round(slope_data["black"] / total_km * 100)
+            if "double_black" in slope_data:
+                double_black_pct = round(slope_data["double_black"] / total_km * 100)
+
+        # Detect snowmaking
+        has_snowmaking = None
+        page_text = soup.get_text().lower()
+        if any(
+            term in page_text
+            for term in [
+                "snow-making",
+                "snowmaking",
+                "snow cannon",
+                "snow gun",
+                "artificial snow",
+            ]
+        ):
+            has_snowmaking = True
+
+        # Extract ticket price range (min and max adult day ticket)
+        day_ticket_price_min_usd = None
+        day_ticket_price_max_usd = None
+        currencies_pattern = r"(?:USD|EUR|CHF|CAD|NOK|SEK|AUD|NZD|CLP|ARS|JPY|GBP|PLN|CZK|RON|BGN|KRW|CNY|INR)"
+        # Find all price-like numbers with currency indicators
+        price_with_currency = re.findall(
+            rf"(\d+(?:[.,]\d+)?)\s*{currencies_pattern}", page_text, re.I
+        )
+        price_with_currency += re.findall(
+            rf"{currencies_pattern}\s*(\d+(?:[.,]\d+)?)", page_text, re.I
+        )
+        # Also look for prices near ticket/pass/lift keywords
+        ticket_section = ""
+        for kw in ["ticket", "lift pass", "day pass", "ski pass", "adult"]:
+            idx = page_text.lower().find(kw)
+            if idx >= 0:
+                ticket_section += page_text[max(0, idx - 200) : idx + 500] + " "
+
+        if ticket_section:
+            # Extract all numbers that look like prices from the ticket section
+            section_prices = re.findall(
+                r"[\$\u20ac\u00a3\u00a5]?\s*(\d+(?:[.,]\d+)?)", ticket_section
+            )
+            price_with_currency += section_prices
+
+        currency = COUNTRY_CURRENCY.get(country, "USD")
+        rate = USD_RATES.get(currency, 1.0)
+
+        # Collect all reasonable price values in USD
+        usd_prices = []
+        for p in price_with_currency:
+            try:
+                val = float(str(p).replace(",", "."))
+                usd_val = round(val * rate)
+                if 10 <= usd_val <= 500:  # Reasonable ticket price range
+                    usd_prices.append(usd_val)
+            except (ValueError, TypeError):
+                continue
+
+        if usd_prices:
+            day_ticket_price_min_usd = min(usd_prices)
+            day_ticket_price_max_usd = max(usd_prices)
+            # If min == max, just set both to the same value
+            # If the range is too wide (>3x), likely noise — use median as both
+            if day_ticket_price_max_usd > day_ticket_price_min_usd * 3:
+                median = sorted(usd_prices)[len(usd_prices) // 2]
+                day_ticket_price_min_usd = median
+                day_ticket_price_max_usd = median
+
         # Determine region and timezone
         region = self.get_region(country, state_province)
         timezone = self.get_timezone(country, state_province)
@@ -819,6 +1004,13 @@ class SkiResortInfoScraper(BaseScraper):
             website=website,
             features=list(set(features)),
             annual_snowfall_cm=annual_snowfall_cm,
+            green_runs_pct=green_pct,
+            blue_runs_pct=blue_pct,
+            black_runs_pct=black_pct,
+            double_black_runs_pct=double_black_pct,
+            has_snowmaking=has_snowmaking,
+            day_ticket_price_min_usd=day_ticket_price_min_usd,
+            day_ticket_price_max_usd=day_ticket_price_max_usd,
             source="skiresort.info",
             source_url=url,
         )
@@ -1532,6 +1724,7 @@ class ResortScraper:
         min_vertical: int = 300,
         max_workers: int = 10,
         existing_ids: set[str] | None = None,
+        skip_geocode: bool = False,
     ):
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": USER_AGENT})
@@ -1554,6 +1747,7 @@ class ResortScraper:
             WikipediaScraper(countries=countries, session=self.session),
         ]
         self.geocoder = MultiSourceGeocoder(session=self.session)
+        self.skip_geocode = skip_geocode
 
     def scrape(self) -> list[ScrapedResort]:
         """Scrape from all sources and deduplicate."""
@@ -1570,8 +1764,11 @@ class ResortScraper:
             except Exception as e:
                 logger.error(f"Scraper {scraper.__class__.__name__} failed: {e}")
 
-        # Enrich with coordinates
-        all_resorts = self.geocoder.enrich_resorts(all_resorts)
+        # Enrich with coordinates (can be skipped for speed)
+        if not self.skip_geocode:
+            all_resorts = self.geocoder.enrich_resorts(all_resorts)
+        else:
+            logger.info("Skipping geocoding phase (--skip-geocode)")
 
         # Sort by country, then name
         all_resorts.sort(key=lambda r: (r.country, r.name))
@@ -1746,6 +1943,12 @@ def main():
         help="Number of parallel workers (default: 10)",
     )
 
+    parser.add_argument(
+        "--skip-geocode",
+        action="store_true",
+        help="Skip geocoding phase (faster, but some resorts may have 0,0 coordinates)",
+    )
+
     args = parser.parse_args()
 
     if args.verbose:
@@ -1773,6 +1976,7 @@ def main():
         min_vertical=args.min_vertical,
         max_workers=args.workers,
         existing_ids=existing_ids if not args.full else None,
+        skip_geocode=args.skip_geocode,
     )
 
     resorts = scraper.scrape()

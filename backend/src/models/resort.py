@@ -53,6 +53,21 @@ class Resort(BaseModel):
     black_runs_pct: int | None = Field(
         None, description="Percentage of advanced/black runs"
     )
+    double_black_runs_pct: int | None = Field(
+        None, description="Percentage of double-black/expert runs"
+    )
+    has_snowmaking: bool | None = Field(
+        None, description="Resort has snowmaking capability"
+    )
+    day_ticket_price_min_usd: int | None = Field(
+        None, description="Minimum adult day ticket price in USD"
+    )
+    day_ticket_price_max_usd: int | None = Field(
+        None, description="Maximum adult day ticket price in USD"
+    )
+    annual_snowfall_cm: int | None = Field(
+        None, description="Average annual snowfall in cm"
+    )
     weather_sources: list[str] = Field(
         default_factory=list, description="Available weather data sources"
     )
@@ -68,6 +83,21 @@ class Resort(BaseModel):
     )
     ikon_pass: str | None = Field(
         None, description="Ikon Pass access (e.g., 'Unlimited', '7 days', '5 days')"
+    )
+    mountain_collective: str | None = Field(
+        None, description="Mountain Collective access level"
+    )
+    indy_pass: str | None = Field(None, description="Indy Pass access level")
+    # Resort labels
+    family_friendly: bool | None = Field(None, description="Suitable for families")
+    expert_terrain: bool | None = Field(
+        None, description="Known for expert/advanced terrain"
+    )
+    large_resort: bool | None = Field(
+        None, description="Large resort (>100km piste or >1000m vertical)"
+    )
+    ski_in_out: bool | None = Field(
+        None, description="Ski-in/ski-out accommodation available"
     )
     # Scraper metadata
     source: str | None = Field(

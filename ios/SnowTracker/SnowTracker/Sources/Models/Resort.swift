@@ -93,8 +93,19 @@ struct Resort: Codable, Identifiable, Hashable {
     let greenRunsPct: Int?
     let blueRunsPct: Int?
     let blackRunsPct: Int?
+    let doubleBlackRunsPct: Int?
+    let hasSnowmaking: Bool?
+    let dayTicketPriceMinUsd: Int?
+    let dayTicketPriceMaxUsd: Int?
+    let annualSnowfallCm: Int?
     let epicPass: String?
     let ikonPass: String?
+    let mountainCollective: String?
+    let indyPass: String?
+    let familyFriendly: Bool?
+    let expertTerrain: Bool?
+    let largeResort: Bool?
+    let skiInOut: Bool?
     let weatherSources: [String]
     let createdAt: String?
     let updatedAt: String?
@@ -111,8 +122,19 @@ struct Resort: Codable, Identifiable, Hashable {
         case greenRunsPct = "green_runs_pct"
         case blueRunsPct = "blue_runs_pct"
         case blackRunsPct = "black_runs_pct"
+        case doubleBlackRunsPct = "double_black_runs_pct"
+        case hasSnowmaking = "has_snowmaking"
+        case dayTicketPriceMinUsd = "day_ticket_price_min_usd"
+        case dayTicketPriceMaxUsd = "day_ticket_price_max_usd"
+        case annualSnowfallCm = "annual_snowfall_cm"
         case epicPass = "epic_pass"
         case ikonPass = "ikon_pass"
+        case mountainCollective = "mountain_collective"
+        case indyPass = "indy_pass"
+        case familyFriendly = "family_friendly"
+        case expertTerrain = "expert_terrain"
+        case largeResort = "large_resort"
+        case skiInOut = "ski_in_out"
         case weatherSources = "weather_sources"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
@@ -214,8 +236,19 @@ extension Resort {
             greenRunsPct: 18,
             blueRunsPct: 56,
             blackRunsPct: 26,
+            doubleBlackRunsPct: nil,
+            hasSnowmaking: true,
+            dayTicketPriceMinUsd: nil,
+            dayTicketPriceMaxUsd: nil,
+            annualSnowfallCm: 750,
             epicPass: "7 days",
             ikonPass: nil,
+            mountainCollective: nil,
+            indyPass: nil,
+            familyFriendly: true,
+            expertTerrain: nil,
+            largeResort: nil,
+            skiInOut: true,
             weatherSources: ["weatherapi", "snow-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-20T08:00:00Z"
@@ -257,8 +290,19 @@ extension Resort {
             greenRunsPct: 25,
             blueRunsPct: 45,
             blackRunsPct: 30,
+            doubleBlackRunsPct: nil,
+            hasSnowmaking: nil,
+            dayTicketPriceMinUsd: nil,
+            dayTicketPriceMaxUsd: nil,
+            annualSnowfallCm: nil,
             epicPass: nil,
             ikonPass: "7 days",
+            mountainCollective: nil,
+            indyPass: nil,
+            familyFriendly: nil,
+            expertTerrain: nil,
+            largeResort: true,
+            skiInOut: nil,
             weatherSources: ["weatherapi", "snow-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-20T08:00:00Z"
@@ -300,8 +344,19 @@ extension Resort {
             greenRunsPct: 20,
             blueRunsPct: 50,
             blackRunsPct: 30,
+            doubleBlackRunsPct: nil,
+            hasSnowmaking: nil,
+            dayTicketPriceMinUsd: nil,
+            dayTicketPriceMaxUsd: nil,
+            annualSnowfallCm: nil,
             epicPass: nil,
             ikonPass: nil,
+            mountainCollective: nil,
+            indyPass: nil,
+            familyFriendly: nil,
+            expertTerrain: nil,
+            largeResort: nil,
+            skiInOut: nil,
             weatherSources: ["weatherapi", "snow-report"],
             createdAt: "2026-01-20T08:00:00Z",
             updatedAt: "2026-01-20T08:00:00Z"
