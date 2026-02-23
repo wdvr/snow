@@ -34,6 +34,23 @@ export function formatWind(kmh: number | null | undefined): string {
   return `${Math.round(kmh)} km/h`
 }
 
+/** Format visibility in meters/km */
+export function formatVisibility(meters: number | null | undefined): string {
+  if (meters == null) return '--'
+  if (meters >= 10000) return '>10 km'
+  if (meters >= 1000) return `${(meters / 1000).toFixed(1)} km`
+  return `${Math.round(meters)} m`
+}
+
+/** Get visibility severity color class */
+export function visibilitySeverity(meters: number | null | undefined): string {
+  if (meters == null) return ''
+  if (meters < 200) return 'text-red-600 font-medium'
+  if (meters < 1000) return 'text-orange-500 font-medium'
+  if (meters < 5000) return 'text-yellow-600'
+  return ''
+}
+
 /** Format a quality label */
 export function formatQuality(quality: string | null | undefined): string {
   if (!quality || quality === 'unknown') return 'Unknown'

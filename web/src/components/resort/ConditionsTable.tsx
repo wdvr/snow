@@ -1,7 +1,7 @@
-import { Mountain, Thermometer, Snowflake, Wind, Layers } from 'lucide-react'
+import { Mountain, Thermometer, Snowflake, Wind, Layers, Eye } from 'lucide-react'
 import type { WeatherCondition } from '../../api/types'
 import { QualityBadge } from './QualityBadge'
-import { formatTemp, formatSnowCm, formatWind } from '../../utils/format'
+import { formatTemp, formatSnowCm, formatWind, formatVisibility, visibilitySeverity } from '../../utils/format'
 
 interface ConditionsTableProps {
   conditions: WeatherCondition[]
@@ -63,6 +63,12 @@ export function ConditionsTable({ conditions }: ConditionsTableProps) {
                 Wind
               </div>
             </th>
+            <th className="pb-3 px-4 font-medium">
+              <div className="flex items-center gap-1.5">
+                <Eye className="w-4 h-4" />
+                Visibility
+              </div>
+            </th>
             <th className="pb-3 pl-4 font-medium">24h Snow</th>
           </tr>
         </thead>
@@ -96,7 +102,15 @@ export function ConditionsTable({ conditions }: ConditionsTableProps) {
                   : '--'}
               </td>
               <td className="py-3 px-4 text-sm text-gray-700">
-                {formatWind(condition.wind_speed_kmh)}
+                <span>{formatWind(condition.wind_speed_kmh)}</span>
+                {condition.wind_gust_kmh != null && condition.wind_gust_kmh > 0 && (
+                  <span className="text-xs text-gray-400 ml-1">
+                    (gust {Math.round(condition.wind_gust_kmh)})
+                  </span>
+                )}
+              </td>
+              <td className={`py-3 px-4 text-sm text-gray-700 ${visibilitySeverity(condition.visibility_m)}`}>
+                {formatVisibility(condition.visibility_m)}
               </td>
               <td className="py-3 pl-4 text-sm text-gray-700">
                 {formatSnowCm(condition.snowfall_24h_cm)}

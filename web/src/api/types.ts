@@ -75,6 +75,10 @@ export interface WeatherCondition {
   currently_warming: boolean
   humidity_percent: number | null
   wind_speed_kmh: number | null
+  wind_gust_kmh: number | null
+  max_wind_gust_24h_kmh: number | null
+  visibility_m: number | null
+  min_visibility_24h_m: number | null
   weather_description: string | null
   snow_quality: SnowQuality
   quality_score: number | null
@@ -106,6 +110,8 @@ export interface TimelinePoint {
   timestamp: string
   temperature_c: number
   wind_speed_kmh: number | null
+  wind_gust_kmh: number | null
+  visibility_m: number | null
   snowfall_cm: number
   snow_depth_cm: number | null
   snow_quality: string
