@@ -81,12 +81,24 @@ class ResortListViewModel @Inject constructor(
     init {
         loadResorts()
         observePreferences()
+        observeQualityUpdates()
     }
 
     private fun observePreferences() {
         viewModelScope.launch {
             userPreferencesRepository.unitPreferences.collect { prefs ->
                 _uiState.update { it.copy(unitPreferences = prefs) }
+            }
+        }
+    }
+
+    /** Collect quality updates from detail view so the list stays in sync */
+    private fun observeQualityUpdates() {
+        viewModelScope.launch {
+            snowQualityRepository.qualityUpdates.collect { (resortId, quality) ->
+                _uiState.update { state ->
+                    state.copy(qualityMap = state.qualityMap + (resortId to quality))
+                }
             }
         }
     }

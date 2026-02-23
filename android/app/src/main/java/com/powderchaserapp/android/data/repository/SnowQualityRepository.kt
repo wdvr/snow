@@ -5,6 +5,9 @@ import com.powderchaserapp.android.data.db.dao.BatchQualityDao
 import com.powderchaserapp.android.data.db.dao.SnowQualityDao
 import com.powderchaserapp.android.data.db.entity.CachedBatchQuality
 import com.powderchaserapp.android.data.db.entity.CachedSnowQuality
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -17,6 +20,9 @@ class SnowQualityRepository @Inject constructor(
     private val batchQualityDao: BatchQualityDao,
     private val json: Json,
 ) {
+    /** Emits when individual resort quality is fetched (e.g. from detail view) so the list can stay in sync */
+    private val _qualityUpdates = MutableSharedFlow<Pair<String, SnowQualitySummaryLight>>(extraBufferCapacity = 16)
+    val qualityUpdates: SharedFlow<Pair<String, SnowQualitySummaryLight>> = _qualityUpdates.asSharedFlow()
     suspend fun getSnowQuality(resortId: String, forceRefresh: Boolean = false): Result<SnowQualitySummary> {
         if (!forceRefresh) {
             val cached = snowQualityDao.getById(resortId)
@@ -61,6 +67,13 @@ class SnowQualityRepository @Inject constructor(
                     jsonData = json.encodeToString(quality),
                 )
             )
+            // Emit a light summary so the list view can update without re-fetching
+            val light = quality.toLight()
+            _qualityUpdates.tryEmit(resortId to light)
+            // Also update the batch quality cache so it stays in sync
+            batchQualityDao.upsertAll(listOf(
+                CachedBatchQuality(resortId = resortId, jsonData = json.encodeToString(light))
+            ))
             Result.success(quality)
         } catch (e: Exception) {
             val cached = snowQualityDao.getById(resortId)

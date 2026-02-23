@@ -354,6 +354,24 @@ data class SnowQualitySummary(
         } catch (_: Exception) {
             SnowQuality.UNKNOWN
         }
+
+    /** Convert full summary to lightweight version (for list view sync) */
+    fun toLight(): SnowQualitySummaryLight {
+        // Use representative elevation (mid > top > base, same as backend)
+        val repr = elevations["mid"] ?: elevations["top"] ?: elevations["base"]
+        return SnowQualitySummaryLight(
+            resortId = resortId,
+            overallQuality = overallQuality,
+            snowScore = overallSnowScore,
+            explanation = overallExplanation,
+            lastUpdated = lastUpdated,
+            temperatureC = repr?.temperatureCelsius,
+            snowfallFreshCm = repr?.freshSnowCm,
+            snowfall24hCm = repr?.snowfall24hCm,
+            snowDepthCm = null,
+            predictedSnow48hCm = null,
+        )
+    }
 }
 
 @Serializable
