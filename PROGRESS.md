@@ -70,8 +70,22 @@
 - [x] Top elevations: enriched 903/1040 (86.8%) from skiresort.info (fixed scraper bug)
 - [x] Fixed 459 corrupted elevation values (scraper artifacts from "Similar Resorts")
 - [x] Computed family_friendly (976), expert_terrain (983), vertical_drop (870) from data
+- [x] Fix 6 data quality issues: 3 elevation swaps, 3 trail percentage scrape errors
 - [ ] Annual snowfall: 594 resorts still missing (Open-Meteo daily rate limit, retry tomorrow)
 - [ ] 47 resorts not found on skiresort.info (Chinese, heli-ski, indoor)
+
+### Workstream 3: List & Map Performance Fixes
+
+#### iOS
+- [x] Increase batch quality fetch from 300 to 2000 (all resorts get quality data)
+- [x] Add snow quality score to map detail sheet badge
+- [x] Add summary data fallback in map detail when conditions unavailable
+- [x] Deploy to TestFlight
+
+#### Android
+- [x] Fix map view: add chunked batch quality fetching (was sending all 1040 IDs at once)
+- [x] Fix favorites view: add chunked batch quality fetching
+- [ ] Deploy to internal testing (pending Google Play setup)
 
 ---
 
@@ -103,6 +117,9 @@
 
 | Feature | Date |
 |---------|------|
+| Fix 6 resort data quality issues: elevation swaps, trail pct scrape errors | 2026-02-23 |
+| Android: fix batch quality chunking in map and favorites views | 2026-02-23 |
+| iOS: fix list loading (quality fetch 300→2000), map score display, summary fallback | 2026-02-23 |
 | Add wind gust and visibility to web conditions table with color-coded severity | 2026-02-23 |
 | Enrich top elevations 903/1040 (86.8%) via skiresort.info, fix scraper elevation bug | 2026-02-23 |
 | Enrich annual snowfall (446/1040), base elevations (994/1040), fix 459 corrupted elevations | 2026-02-23 |
