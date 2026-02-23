@@ -226,9 +226,9 @@ class RecommendationService:
                 )
             )
 
-        # Sort by combined score (descending), then fresh snow as tiebreaker
+        # Sort by snow_score (user-visible quality metric), then fresh snow
         recommendations.sort(
-            key=lambda r: (r.combined_score, r.fresh_snow_cm), reverse=True
+            key=lambda r: (r.snow_score, r.fresh_snow_cm), reverse=True
         )
 
         logger.info(
@@ -299,10 +299,8 @@ class RecommendationService:
                 avg_fresh_snow, total_predicted_snow
             )
 
-            # For global ranking, quality + fresh snow weighted by resort significance
-            base_score = 0.7 * quality_score + 0.3 * fresh_snow_score
-            significance = self._calculate_significance(resort)
-            combined_score = base_score * significance
+            # For global ranking, use quality + fresh snow directly (no resort size bias)
+            combined_score = 0.7 * quality_score + 0.3 * fresh_snow_score
 
             elevation_conditions = self._build_elevation_summary(conditions)
 
@@ -332,9 +330,9 @@ class RecommendationService:
                 )
             )
 
-        # Sort by combined score (descending), then fresh snow as tiebreaker
+        # Sort by snow_score (user-visible quality metric), then fresh snow
         recommendations.sort(
-            key=lambda r: (r.combined_score, r.fresh_snow_cm), reverse=True
+            key=lambda r: (r.snow_score, r.fresh_snow_cm), reverse=True
         )
         logger.info(
             f"[PERF] get_best_conditions_globally total took {time.time() - start_time:.2f}s, returning {min(limit, len(recommendations))} recommendations"

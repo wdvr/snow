@@ -593,11 +593,8 @@ class TestRecommendationService:
         recommendations = recommendation_service.get_best_conditions_globally(limit=10)
 
         assert len(recommendations) == 2
-        # Major resort should rank higher despite identical conditions
-        assert recommendations[0].resort.resort_id == "revelstoke"
-        assert recommendations[1].resort.resort_id == "cape-smokey"
-        # The tiny resort should have a significantly lower score
-        assert recommendations[0].combined_score > recommendations[1].combined_score * 2
+        # With identical conditions, both should have equal scores (no size bias)
+        assert recommendations[0].snow_score == recommendations[1].snow_score
 
     def test_significance_calculation(self, recommendation_service):
         """Test vertical drop significance weight calculation."""
