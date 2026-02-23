@@ -614,8 +614,8 @@ static_json_lambda = aws.lambda_.Function(
     role=lambda_role.arn,
     handler="handlers.static_json_handler.static_json_handler",
     runtime="python3.12",
-    timeout=300,  # 5 minutes to generate and upload all JSON files
-    memory_size=256,
+    timeout=600,  # 10 minutes for 1000+ resorts
+    memory_size=512,
     code=pulumi.AssetArchive(
         {
             "index.py": pulumi.StringAsset(placeholder_lambda_code),
