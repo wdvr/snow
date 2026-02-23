@@ -124,14 +124,44 @@ class TestSendChatMessage:
         )
         assert resp.status_code == 422  # Validation error
 
-    def test_send_message_no_auth(self, mock_auth, client):
-        """Should return 401 without auth header."""
-        auth = MagicMock()
-        auth.verify_access_token.side_effect = Exception("Invalid token")
-        mock_auth.return_value = auth
+    @patch("handlers.api_handler._check_anonymous_chat_limit")
+    @patch("handlers.api_handler._get_remaining_anonymous_messages")
+    @patch("handlers.api_handler.get_chat_service")
+    def test_send_message_no_auth_anonymous(
+        self, mock_chat_svc, mock_remaining, mock_limit, mock_auth, client
+    ):
+        """Should allow anonymous chat without auth header."""
+        # Auth returns None for anonymous
+        mock_auth.return_value = MagicMock()
+        mock_limit.return_value = True
+        mock_remaining.return_value = 4
+
+        svc = MagicMock()
+        svc.chat.return_value = ChatResponse(
+            conversation_id="conv_anon",
+            response="Whistler is great!",
+            message_id="01ANON",
+        )
+        mock_chat_svc.return_value = svc
 
         resp = client.post("/api/v1/chat", json={"message": "Hello"})
-        assert resp.status_code == 401
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["conversation_id"] == "conv_anon"
+        assert data["remaining_messages"] == 4
+        # Verify service called with anon user ID
+        call_args = svc.chat.call_args
+        assert call_args[0][2].startswith("anon_")
+
+    @patch("handlers.api_handler._check_anonymous_chat_limit")
+    def test_send_message_anonymous_rate_limited(self, mock_limit, mock_auth, client):
+        """Should return 429 when anonymous rate limit exceeded."""
+        mock_auth.return_value = MagicMock()
+        mock_limit.return_value = False
+
+        resp = client.post("/api/v1/chat", json={"message": "Hello"})
+        assert resp.status_code == 429
+        assert "Chat limit reached" in resp.json()["detail"]
 
     @patch("handlers.api_handler.get_chat_service")
     def test_send_message_service_error(self, mock_chat_svc, mock_auth, client):
@@ -376,3 +406,247 @@ class TestConversationOwnership:
             headers=_auth_header("user_a"),
         )
         assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Anonymous chat rate limiting
+# ---------------------------------------------------------------------------
+
+
+class TestAnonymousChatRateLimit:
+    """Tests for anonymous IP-based chat rate limiting."""
+
+    @patch("handlers.api_handler.get_auth_service")
+    @patch("handlers.api_handler._check_anonymous_chat_limit")
+    @patch("handlers.api_handler._get_remaining_anonymous_messages")
+    @patch("handlers.api_handler.get_chat_service")
+    def test_anonymous_chat_includes_remaining_messages(
+        self, mock_chat_svc, mock_remaining, mock_limit, mock_auth, client
+    ):
+        """Anonymous response should include remaining_messages field."""
+        mock_auth.return_value = MagicMock()
+        mock_limit.return_value = True
+        mock_remaining.return_value = 3
+
+        svc = MagicMock()
+        svc.chat.return_value = ChatResponse(
+            conversation_id="conv_1",
+            response="Great snow!",
+            message_id="01X",
+        )
+        mock_chat_svc.return_value = svc
+
+        resp = client.post("/api/v1/chat", json={"message": "How is Whistler?"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["remaining_messages"] == 3
+
+    @patch("handlers.api_handler.get_auth_service")
+    @patch("handlers.api_handler.get_chat_service")
+    def test_authenticated_chat_no_remaining_messages(
+        self, mock_chat_svc, mock_auth, client
+    ):
+        """Authenticated response should not include remaining_messages."""
+        auth = MagicMock()
+        auth.verify_access_token.return_value = "test_user"
+        mock_auth.return_value = auth
+
+        svc = MagicMock()
+        svc.chat.return_value = ChatResponse(
+            conversation_id="conv_1",
+            response="Great snow!",
+            message_id="01X",
+        )
+        mock_chat_svc.return_value = svc
+
+        resp = client.post(
+            "/api/v1/chat",
+            json={"message": "How is Whistler?"},
+            headers=_auth_header(),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("remaining_messages") is None
+
+    @patch("handlers.api_handler.get_auth_service")
+    @patch("handlers.api_handler._check_anonymous_chat_limit")
+    def test_anonymous_rate_limit_returns_429(self, mock_limit, mock_auth, client):
+        """Should return 429 with helpful message when limit reached."""
+        mock_auth.return_value = MagicMock()
+        mock_limit.return_value = False
+
+        resp = client.post("/api/v1/chat", json={"message": "Hello"})
+        assert resp.status_code == 429
+        data = resp.json()
+        assert "Sign in" in data["detail"]
+        assert "try again later" in data["detail"]
+
+
+# ---------------------------------------------------------------------------
+# Rate limit helper unit tests
+# ---------------------------------------------------------------------------
+
+
+class TestCheckAnonymousChatLimit:
+    """Tests for the _check_anonymous_chat_limit helper."""
+
+    @patch.dict("os.environ", {"CHAT_RATE_LIMIT_TABLE_NAME": ""}, clear=False)
+    def test_no_table_configured_allows_request(self):
+        """Should allow request when table not configured."""
+        from handlers.api_handler import _check_anonymous_chat_limit
+
+        assert _check_anonymous_chat_limit("1.2.3.4") is True
+
+    @patch("handlers.api_handler.boto3")
+    @patch.dict(
+        "os.environ",
+        {"CHAT_RATE_LIMIT_TABLE_NAME": "test-rate-limit"},
+        clear=False,
+    )
+    def test_first_message_allowed(self, mock_boto3):
+        """Should allow first message from a new IP."""
+        from handlers.api_handler import _check_anonymous_chat_limit
+
+        table = MagicMock()
+        table.get_item.return_value = {}  # No existing item
+        mock_boto3.resource.return_value.Table.return_value = table
+
+        assert _check_anonymous_chat_limit("1.2.3.4") is True
+        table.put_item.assert_called_once()
+        item = table.put_item.call_args[1]["Item"]
+        assert item["ip_address"] == "1.2.3.4"
+        assert item["message_count"] == 1
+
+    @patch("handlers.api_handler.boto3")
+    @patch.dict(
+        "os.environ",
+        {"CHAT_RATE_LIMIT_TABLE_NAME": "test-rate-limit"},
+        clear=False,
+    )
+    def test_under_limit_allowed(self, mock_boto3):
+        """Should allow when under the limit."""
+        import time
+
+        from handlers.api_handler import _check_anonymous_chat_limit
+
+        now = int(time.time())
+        table = MagicMock()
+        table.get_item.return_value = {
+            "Item": {
+                "ip_address": "1.2.3.4",
+                "timestamps": [now - 100, now - 50],
+                "message_count": 2,
+            }
+        }
+        mock_boto3.resource.return_value.Table.return_value = table
+
+        assert _check_anonymous_chat_limit("1.2.3.4") is True
+
+    @patch("handlers.api_handler.boto3")
+    @patch.dict(
+        "os.environ",
+        {"CHAT_RATE_LIMIT_TABLE_NAME": "test-rate-limit"},
+        clear=False,
+    )
+    def test_at_limit_rejected(self, mock_boto3):
+        """Should reject when at the limit."""
+        import time
+
+        from handlers.api_handler import _check_anonymous_chat_limit
+
+        now = int(time.time())
+        table = MagicMock()
+        table.get_item.return_value = {
+            "Item": {
+                "ip_address": "1.2.3.4",
+                "timestamps": [now - 500, now - 400, now - 300, now - 200, now - 100],
+                "message_count": 5,
+            }
+        }
+        mock_boto3.resource.return_value.Table.return_value = table
+
+        assert _check_anonymous_chat_limit("1.2.3.4") is False
+
+    @patch("handlers.api_handler.boto3")
+    @patch.dict(
+        "os.environ",
+        {"CHAT_RATE_LIMIT_TABLE_NAME": "test-rate-limit"},
+        clear=False,
+    )
+    def test_expired_timestamps_not_counted(self, mock_boto3):
+        """Should not count timestamps outside the window."""
+        import time
+
+        from handlers.api_handler import _check_anonymous_chat_limit
+
+        now = int(time.time())
+        old = now - (7 * 3600)  # 7 hours ago (outside 6h window)
+        table = MagicMock()
+        table.get_item.return_value = {
+            "Item": {
+                "ip_address": "1.2.3.4",
+                "timestamps": [old, old, old, old, old],  # All expired
+                "message_count": 5,
+            }
+        }
+        mock_boto3.resource.return_value.Table.return_value = table
+
+        assert _check_anonymous_chat_limit("1.2.3.4") is True
+
+    @patch("handlers.api_handler.boto3")
+    @patch.dict(
+        "os.environ",
+        {"CHAT_RATE_LIMIT_TABLE_NAME": "test-rate-limit"},
+        clear=False,
+    )
+    def test_dynamo_error_fails_open(self, mock_boto3):
+        """Should allow request if DynamoDB errors (fail open)."""
+        from handlers.api_handler import _check_anonymous_chat_limit
+
+        table = MagicMock()
+        table.get_item.side_effect = Exception("DynamoDB timeout")
+        mock_boto3.resource.return_value.Table.return_value = table
+
+        assert _check_anonymous_chat_limit("1.2.3.4") is True
+
+
+class TestGetClientIp:
+    """Tests for the _get_client_ip helper."""
+
+    def test_x_forwarded_for(self):
+        """Should extract first IP from X-Forwarded-For header."""
+        from handlers.api_handler import _get_client_ip
+
+        request = MagicMock()
+        request.headers.get.return_value = "1.2.3.4, 5.6.7.8"
+        result = _get_client_ip(request)
+        assert result == "1.2.3.4"
+
+    def test_single_x_forwarded_for(self):
+        """Should handle single IP in X-Forwarded-For."""
+        from handlers.api_handler import _get_client_ip
+
+        request = MagicMock()
+        request.headers.get.return_value = "1.2.3.4"
+        result = _get_client_ip(request)
+        assert result == "1.2.3.4"
+
+    def test_no_forwarded_header(self):
+        """Should fall back to client host."""
+        from handlers.api_handler import _get_client_ip
+
+        request = MagicMock()
+        request.headers.get.return_value = None
+        request.client.host = "10.0.0.1"
+        result = _get_client_ip(request)
+        assert result == "10.0.0.1"
+
+    def test_no_client(self):
+        """Should return 'unknown' if no client info."""
+        from handlers.api_handler import _get_client_ip
+
+        request = MagicMock()
+        request.headers.get.return_value = None
+        request.client = None
+        result = _get_client_ip(request)
+        assert result == "unknown"

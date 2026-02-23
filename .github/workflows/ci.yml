@@ -69,6 +69,8 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       ios: ${{ steps.filter.outputs.ios }}
+      android: ${{ steps.filter.outputs.android }}
+      web: ${{ steps.filter.outputs.web }}
       infrastructure: ${{ steps.filter.outputs.infrastructure }}
     steps:
     - name: Checkout code
@@ -84,6 +86,12 @@ jobs:
             - '.github/workflows/ci.yml'
           ios:
             - 'ios/**'
+            - '.github/workflows/ci.yml'
+          android:
+            - 'android/**'
+            - '.github/workflows/ci.yml'
+          web:
+            - 'web/**'
             - '.github/workflows/ci.yml'
           infrastructure:
             - 'infrastructure/**'
@@ -424,11 +432,78 @@ jobs:
           ios/TestResults/
           ios/build.log
 
+  # Android Build & Test
+  android-tests:
+    name: Android Tests
+    needs: changes
+    if: ${{ needs.changes.outputs.android == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+
+    - name: Run unit tests
+      run: |
+        cd android
+        ./gradlew testDevDebugUnitTest --no-daemon
+
+    - name: Build debug APK
+      run: |
+        cd android
+        ./gradlew assembleDevDebug --no-daemon
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-test-results
+        path: android/app/build/reports/tests/
+        if-no-files-found: ignore
+
+  # Web App Build & Typecheck
+  web-build:
+    name: Web App Build
+    needs: changes
+    if: ${{ needs.changes.outputs.web == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: web/package-lock.json
+
+    - name: Install dependencies
+      run: cd web && npm ci
+
+    - name: Type check
+      run: cd web && npx tsc --noEmit
+
+    - name: Build
+      run: cd web && npm run build
+
   # Build and Test Results Summary
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [changes, backend-tests, infrastructure-validation, code-quality, ios-tests]
+    needs: [changes, backend-tests, infrastructure-validation, code-quality, ios-tests, android-tests, web-build]
     if: always()
 
     steps:
@@ -440,21 +515,27 @@ jobs:
 
         BACKEND="${{ needs.backend-tests.result }}"
         IOS="${{ needs.ios-tests.result }}"
+        ANDROID="${{ needs.android-tests.result }}"
+        WEB="${{ needs.web-build.result }}"
         INFRA="${{ needs.infrastructure-validation.result }}"
         QUALITY="${{ needs.code-quality.result }}"
 
-        [ "$BACKEND" = "skipped" ] && BACKEND="⏭️ skipped (no changes)"
-        [ "$IOS" = "skipped" ] && IOS="⏭️ skipped (no changes)"
-        [ "$INFRA" = "skipped" ] && INFRA="⏭️ skipped (no changes)"
-        [ "$QUALITY" = "skipped" ] && QUALITY="⏭️ skipped (no changes)"
+        [ "$BACKEND" = "skipped" ] && BACKEND="skipped (no changes)"
+        [ "$IOS" = "skipped" ] && IOS="skipped (no changes)"
+        [ "$ANDROID" = "skipped" ] && ANDROID="skipped (no changes)"
+        [ "$WEB" = "skipped" ] && WEB="skipped (no changes)"
+        [ "$INFRA" = "skipped" ] && INFRA="skipped (no changes)"
+        [ "$QUALITY" = "skipped" ] && QUALITY="skipped (no changes)"
 
         echo "| Backend Tests | $BACKEND |" >> $GITHUB_STEP_SUMMARY
         echo "| iOS Tests | $IOS |" >> $GITHUB_STEP_SUMMARY
+        echo "| Android Tests | $ANDROID |" >> $GITHUB_STEP_SUMMARY
+        echo "| Web App Build | $WEB |" >> $GITHUB_STEP_SUMMARY
         echo "| Infrastructure Validation | $INFRA |" >> $GITHUB_STEP_SUMMARY
         echo "| Code Quality | $QUALITY |" >> $GITHUB_STEP_SUMMARY
 
         FAILED=false
-        for result in "${{ needs.backend-tests.result }}" "${{ needs.ios-tests.result }}" "${{ needs.infrastructure-validation.result }}" "${{ needs.code-quality.result }}"; do
+        for result in "${{ needs.backend-tests.result }}" "${{ needs.ios-tests.result }}" "${{ needs.android-tests.result }}" "${{ needs.infrastructure-validation.result }}" "${{ needs.code-quality.result }}"; do
           if [ "$result" = "failure" ]; then
             FAILED=true
             break
@@ -462,8 +543,8 @@ jobs:
         done
 
         if [ "$FAILED" = "true" ]; then
-          echo "❌ Some checks failed." >> $GITHUB_STEP_SUMMARY
+          echo "Some checks failed." >> $GITHUB_STEP_SUMMARY
           exit 1
         else
-          echo "✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
+          echo "All checks passed!" >> $GITHUB_STEP_SUMMARY
         fi

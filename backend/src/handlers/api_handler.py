@@ -9,7 +9,16 @@ from typing import Annotated, Dict, List, Optional
 
 import boto3
 from botocore.exceptions import ClientError
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Response, status
+from fastapi import (
+    Depends,
+    FastAPI,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -486,6 +495,100 @@ async def get_optional_user_id(
         return get_auth_service().verify_access_token(credentials.credentials)
     except AuthenticationError:
         return None
+
+
+# MARK: - Anonymous Chat Rate Limiting
+
+ANON_CHAT_LIMIT = 5
+ANON_CHAT_WINDOW_HOURS = 6
+
+
+def _get_client_ip(request: Request) -> str:
+    """Get client IP from request, considering proxy headers."""
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _check_anonymous_chat_limit(ip_address: str) -> bool:
+    """Check if anonymous IP is within chat rate limit. Returns True if allowed."""
+    table_name = os.environ.get("CHAT_RATE_LIMIT_TABLE_NAME")
+    if not table_name:
+        logger.warning("CHAT_RATE_LIMIT_TABLE_NAME not configured, allowing request")
+        return True
+
+    try:
+        dynamodb = boto3.resource("dynamodb", region_name="us-west-2")
+        table = dynamodb.Table(table_name)
+
+        now = int(time.time())
+        window_start = now - (ANON_CHAT_WINDOW_HOURS * 3600)
+        expires_at = now + (ANON_CHAT_WINDOW_HOURS * 3600)
+
+        # Get current record
+        response = table.get_item(Key={"ip_address": ip_address})
+        item = response.get("Item")
+
+        if item:
+            # Filter to only timestamps within the window
+            timestamps = item.get("timestamps", [])
+            recent = [t for t in timestamps if t > window_start]
+
+            if len(recent) >= ANON_CHAT_LIMIT:
+                return False
+
+            # Add new timestamp
+            recent.append(now)
+            table.put_item(
+                Item={
+                    "ip_address": ip_address,
+                    "timestamps": recent,
+                    "message_count": len(recent),
+                    "expires_at": expires_at,
+                }
+            )
+        else:
+            # First message from this IP
+            table.put_item(
+                Item={
+                    "ip_address": ip_address,
+                    "timestamps": [now],
+                    "message_count": 1,
+                    "expires_at": expires_at,
+                }
+            )
+
+        return True
+    except Exception as e:
+        logger.error("Rate limit check failed for IP %s: %s", ip_address, e)
+        # Fail open - allow the request if rate limit check fails
+        return True
+
+
+def _get_remaining_anonymous_messages(ip_address: str) -> int:
+    """Get remaining anonymous messages for an IP address."""
+    table_name = os.environ.get("CHAT_RATE_LIMIT_TABLE_NAME")
+    if not table_name:
+        return ANON_CHAT_LIMIT
+
+    try:
+        dynamodb = boto3.resource("dynamodb", region_name="us-west-2")
+        table = dynamodb.Table(table_name)
+
+        now = int(time.time())
+        window_start = now - (ANON_CHAT_WINDOW_HOURS * 3600)
+
+        response = table.get_item(Key={"ip_address": ip_address})
+        item = response.get("Item")
+
+        if item:
+            timestamps = item.get("timestamps", [])
+            recent = [t for t in timestamps if t > window_start]
+            return max(0, ANON_CHAT_LIMIT - len(recent))
+        return ANON_CHAT_LIMIT
+    except Exception:
+        return ANON_CHAT_LIMIT
 
 
 # MARK: - Health Check
@@ -3069,16 +3172,40 @@ async def backfill_geohashes():
 @app.post("/api/v1/chat")
 async def send_chat_message(
     request: ChatRequest,
-    user_id: str = Depends(get_current_user_id),
+    fastapi_request: Request,
+    user_id: str | None = Depends(get_optional_user_id),
 ):
     """Send a message to the AI ski conditions assistant.
 
-    Uses AWS Bedrock with tool use to provide real-time resort data.
+    Authenticated users have unlimited chat. Anonymous users are limited
+    to 5 messages per IP address per 6 hours.
     """
     try:
+        remaining_messages = None
+
+        # For anonymous users, enforce IP-based rate limit
+        if not user_id:
+            client_ip = _get_client_ip(fastapi_request)
+            if not _check_anonymous_chat_limit(client_ip):
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Chat limit reached. Sign in for unlimited access, or try again later.",
+                )
+            # Use IP-based identifier for anonymous conversations
+            user_id = f"anon_{client_ip}"
+            remaining_messages = _get_remaining_anonymous_messages(client_ip)
+
         service = get_chat_service()
         result = service.chat(request.message, request.conversation_id, user_id)
-        return result
+
+        # Add remaining messages info for anonymous users
+        response_data = result.model_dump() if hasattr(result, "model_dump") else result
+        if remaining_messages is not None:
+            response_data["remaining_messages"] = remaining_messages
+
+        return response_data
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Chat error for user %s: %s", user_id, e, exc_info=True)
         raise HTTPException(

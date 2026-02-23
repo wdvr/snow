@@ -1,0 +1,76 @@
+import { Link } from 'react-router-dom'
+import { Thermometer, Snowflake, Wind } from 'lucide-react'
+import type { Resort, SnowQualitySummary } from '../../api/types'
+import { QualityBadge } from './QualityBadge'
+import { formatTemp, formatSnowCm, countryFlag } from '../../utils/format'
+
+interface ResortCardProps {
+  resort: Resort
+  quality?: SnowQualitySummary
+}
+
+export function ResortCard({ resort, quality }: ResortCardProps) {
+  return (
+    <Link
+      to={`/resort/${resort.resort_id}`}
+      className="block bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow group"
+    >
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="min-w-0">
+          <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+            {resort.name}
+          </h3>
+          <p className="text-sm text-gray-500 truncate">
+            {countryFlag(resort.country)} {resort.region}, {resort.country}
+          </p>
+        </div>
+        <QualityBadge
+          quality={quality?.overall_quality}
+          score={quality?.snow_score}
+          size="sm"
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div className="flex items-center gap-1.5 text-sm text-gray-600">
+          <Snowflake className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+          <span className="truncate">
+            {quality?.snowfall_fresh_cm != null
+              ? formatSnowCm(quality.snowfall_fresh_cm)
+              : '--'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-sm text-gray-600">
+          <Thermometer className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+          <span className="truncate">
+            {quality?.temperature_c != null ? formatTemp(quality.temperature_c) : '--'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-sm text-gray-600">
+          <Wind className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+          <span className="truncate">
+            {quality?.snow_depth_cm != null
+              ? formatSnowCm(quality.snow_depth_cm)
+              : '--'}
+          </span>
+        </div>
+      </div>
+
+      {/* Pass badges */}
+      {(resort.epic_pass || resort.ikon_pass) && (
+        <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-gray-50">
+          {resort.epic_pass && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">
+              Epic
+            </span>
+          )}
+          {resort.ikon_pass && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 font-medium">
+              Ikon
+            </span>
+          )}
+        </div>
+      )}
+    </Link>
+  )
+}

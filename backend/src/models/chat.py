@@ -34,6 +34,10 @@ class ChatResponse(BaseModel):
     conversation_id: str = Field(..., description="Conversation identifier")
     response: str = Field(..., description="Assistant response text")
     message_id: str = Field(..., description="Response message identifier (ULID)")
+    remaining_messages: int | None = Field(
+        None,
+        description="Remaining anonymous messages (None if authenticated)",
+    )
 
 
 class ConversationSummary(BaseModel):
