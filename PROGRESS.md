@@ -63,9 +63,10 @@
 - [x] Recalculate large_resort based on vertical drop >= 800m
 - [x] Clean zero-width spaces from 119 resort names
 - [x] Add DE, SI, ES, AD to alps region definition
-- [ ] Run percentages: 489 resorts have placeholder blue=100% (needs scraping)
-- [ ] Website URLs: 903 resorts (86.8%) lack URLs
+- [x] Run percentages: enriched from 2.8% to 93.8% coverage (948 resorts scraped)
+- [x] Website URLs: enriched from 13.2% to 85.4% coverage (751 resorts)
 - [ ] Annual snowfall: 982 resorts (94.4%) lack data
+- [ ] 47 resorts not found on skiresort.info (Chinese, heli-ski, indoor)
 
 ---
 
@@ -97,6 +98,7 @@
 
 | Feature | Date |
 |---------|------|
+| Enrich run percentages (93.8%) and website URLs (85.4%) from skiresort.info | 2026-02-23 |
 | Fix resort data quality: elevations, pass values, labels, names (252 elevations, 73 passes) | 2026-02-23 |
 | Geocode all 862 resorts with (0,0) coordinates, fix 4 country misattributions | 2026-02-23 |
 | Add wind gust and visibility UI to Android app | 2026-02-23 |
