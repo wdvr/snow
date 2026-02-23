@@ -422,12 +422,21 @@ class ChatService:
 
         # Auto-detect resort mentions and pre-inject conditions data
         # This reduces Bedrock round trips from 2-3 to 1 for simple queries
+        t0 = time.monotonic()
         context_data = self._auto_detect_resorts(user_message)
+        t1 = time.monotonic()
+        logger.info(
+            "Chat auto-detect took %.1fs, found context: %s",
+            t1 - t0,
+            bool(context_data),
+        )
 
         # Call Bedrock with tool use loop
         assistant_text, tool_calls = self._call_bedrock_with_tools(
             messages, context_data=context_data
         )
+        t2 = time.monotonic()
+        logger.info("Chat Bedrock call took %.1fs (total %.1fs)", t2 - t1, t2 - t0)
 
         # Save assistant message
         assistant_message_id = str(ULID())
@@ -666,7 +675,7 @@ class ChatService:
                     system=[{"text": system_text}],
                     messages=messages,
                     toolConfig={"tools": TOOL_DEFINITIONS},
-                    inferenceConfig={"maxTokens": 2048, "temperature": 0.5},
+                    inferenceConfig={"maxTokens": 1024, "temperature": 0.5},
                 )
             except ClientError as e:
                 error_code = e.response.get("Error", {}).get("Code", "")
@@ -700,6 +709,43 @@ class ChatService:
                 return None
         return None
 
+    def _invoke_bedrock_no_tools(
+        self, system_text: str, messages: list[dict]
+    ) -> dict | None:
+        """Invoke Bedrock converse API without tools (faster, single response).
+
+        Returns the response dict, or None if failed.
+        """
+        for attempt in range(BEDROCK_MAX_RETRIES):
+            try:
+                return self.bedrock.converse(
+                    modelId="us.anthropic.claude-sonnet-4-6",
+                    system=[{"text": system_text}],
+                    messages=messages,
+                    inferenceConfig={"maxTokens": 1024, "temperature": 0.5},
+                )
+            except ClientError as e:
+                error_code = e.response.get("Error", {}).get("Code", "")
+                if error_code == "ThrottlingException":
+                    delay = BEDROCK_BASE_DELAY * (2**attempt)
+                    logger.warning(
+                        "Bedrock throttled (attempt %d/%d), retrying in %.1fs",
+                        attempt + 1,
+                        BEDROCK_MAX_RETRIES,
+                        delay,
+                    )
+                    if attempt < BEDROCK_MAX_RETRIES - 1:
+                        time.sleep(delay)
+                        continue
+                    return None
+                else:
+                    logger.error("Bedrock ClientError: %s", e)
+                    return None
+            except Exception as e:
+                logger.error("Bedrock API error: %s", e)
+                return None
+        return None
+
     def _call_bedrock_with_tools(
         self,
         messages: list[dict],
@@ -727,6 +773,15 @@ class ChatService:
                 "You may still use tools for additional resorts or data not covered here.\n\n"
                 + context_data
             )
+            # When we have pre-fetched data, try without tools first for speed
+            response = self._invoke_bedrock_no_tools(system_text, messages)
+            if response is not None:
+                output = response.get("output", {})
+                message = output.get("message", {})
+                content_blocks = message.get("content", [])
+                text_parts = [b["text"] for b in content_blocks if "text" in b]
+                if text_parts:
+                    return "\n".join(text_parts), None
 
         for _iteration in range(MAX_TOOL_ITERATIONS):
             response = self._invoke_bedrock(system_text, messages)

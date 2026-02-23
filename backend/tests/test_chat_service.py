@@ -270,7 +270,7 @@ class TestChat:
         assert call_kwargs["modelId"] == "us.anthropic.claude-sonnet-4-6"
         assert call_kwargs["system"] == [{"text": SYSTEM_PROMPT}]
         assert call_kwargs["toolConfig"]["tools"] == TOOL_DEFINITIONS
-        assert call_kwargs["inferenceConfig"]["maxTokens"] == 2048
+        assert call_kwargs["inferenceConfig"]["maxTokens"] == 1024
         assert call_kwargs["inferenceConfig"]["temperature"] == 0.5
 
     def test_conversation_history_loaded(
