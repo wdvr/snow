@@ -751,51 +751,73 @@ class SkiResortInfoScraper(BaseScraper):
         elevation_base = None
         elevation_top = None
 
-        # Look for elevation information
-        elevation_section = soup.select_one(
-            ".elevation, .altitude, [class*='elevation']"
+        # Strategy 1: Find "Elevation info" heading and parse text after it
+        # skiresort.info uses: <h3>Elevation info</h3> XXXX m - YYYY m (Difference ZZZ m)
+        elev_heading = soup.find(
+            ["h3", "h4", "h2"],
+            string=re.compile(r"Elevation\s+info", re.I),
         )
-        if elevation_section:
-            text = elevation_section.get_text()
-            # Try to extract numbers
-            numbers = re.findall(r"(\d+)\s*m", text)
-            if len(numbers) >= 2:
-                elevation_base = int(min(numbers))
-                elevation_top = int(max(numbers))
+        if elev_heading:
+            # Get text from heading's next siblings (the elevation data follows as text)
+            next_text = ""
+            for sibling in elev_heading.next_siblings:
+                if hasattr(sibling, "name") and sibling.name in ("h3", "h4", "h2"):
+                    break  # Stop at next heading
+                text = (
+                    sibling.get_text() if hasattr(sibling, "get_text") else str(sibling)
+                )
+                next_text += text
+                if len(next_text) > 200:
+                    break
 
-        # Alternative: look for specific labeled values
+            # Parse "XXXX m - YYYY m" pattern
+            match = re.search(r"(\d[\d,. ]*)\s*m\s*[-–]\s*(\d[\d,. ]*)\s*m", next_text)
+            if match:
+                base_str = (
+                    match.group(1).replace(",", "").replace(".", "").replace(" ", "")
+                )
+                top_str = (
+                    match.group(2).replace(",", "").replace(".", "").replace(" ", "")
+                )
+                try:
+                    elevation_base = int(base_str)
+                    elevation_top = int(top_str)
+                except ValueError:
+                    pass
+
+        # Strategy 2: Look in the page header/summary area for "XXXX - YYYY m"
         if not elevation_base or not elevation_top:
-            for label in ["Base", "Valley", "Bottom"]:
-                elem = soup.find(string=re.compile(label, re.I))
-                if elem:
-                    parent = elem.parent
-                    if parent:
-                        match = re.search(r"(\d+)\s*m", parent.get_text())
-                        if match:
-                            elevation_base = int(match.group(1))
-                            break
-
-            for label in ["Top", "Summit", "Peak"]:
-                elem = soup.find(string=re.compile(label, re.I))
-                if elem:
-                    parent = elem.parent
-                    if parent:
-                        match = re.search(r"(\d+)\s*m", parent.get_text())
-                        if match:
-                            elevation_top = int(match.group(1))
-                            break
-
-        # If we still don't have elevation, try finding it in the general text
-        if not elevation_base or not elevation_top:
-            all_elevations = re.findall(r"(\d{3,4})\s*m", soup.get_text())
-            all_elevations = [int(e) for e in all_elevations if 100 < int(e) < 5000]
-            if len(all_elevations) >= 2:
-                elevation_base = min(all_elevations)
-                elevation_top = max(all_elevations)
+            # The header area often shows "2,424 - 3,369 m"
+            header = soup.select_one(
+                ".resort-header, .resort-summary, .resort-info, h1"
+            )
+            if header:
+                parent = header.parent if header.name == "h1" else header
+                text = parent.get_text(" ", strip=True)[:500]
+                match = re.search(r"(\d[\d,. ]*)\s*[-–]\s*(\d[\d,. ]*)\s*m\b", text)
+                if match:
+                    base_str = (
+                        match.group(1)
+                        .replace(",", "")
+                        .replace(".", "")
+                        .replace(" ", "")
+                    )
+                    top_str = (
+                        match.group(2)
+                        .replace(",", "")
+                        .replace(".", "")
+                        .replace(" ", "")
+                    )
+                    try:
+                        b, t = int(base_str), int(top_str)
+                        if 100 < b < 5000 and 100 < t < 5000 and t > b:
+                            elevation_base = b
+                            elevation_top = t
+                    except ValueError:
+                        pass
 
         if not elevation_base or not elevation_top:
             logger.warning(f"Could not extract elevation for {name}")
-            return None
 
         # Extract location/region within country (state/province)
         state_province = self._extract_state_province(soup, country)
