@@ -44,8 +44,8 @@
 - [x] Show wind/visibility in resort detail and timeline views
 - [ ] Deploy to internal testing (pending Google Play setup)
 
-#### Web (after Android)
-- [ ] Web: show wind & visibility
+#### Web
+- [x] Web: show wind gust & visibility in conditions table with color-coded severity
 
 ### Workstream 2: Resort Data Audit (1040 resorts)
 
@@ -65,7 +65,12 @@
 - [x] Add DE, SI, ES, AD to alps region definition
 - [x] Run percentages: enriched from 2.8% to 93.8% coverage (948 resorts scraped)
 - [x] Website URLs: enriched from 13.2% to 85.4% coverage (751 resorts)
-- [ ] Annual snowfall: 982 resorts (94.4%) lack data
+- [x] Annual snowfall: enriched 446/1040 resorts (42.9%) via Open-Meteo historical API
+- [x] Base elevations: enriched 852/1040 (81.9%) from DEM via Open-Meteo elevation API
+- [x] Fixed 459 corrupted elevation values (scraper artifacts)
+- [x] Computed family_friendly (976), expert_terrain (983), vertical_drop (296) from existing data
+- [ ] Annual snowfall: 594 resorts still missing (rate-limited, retry needed)
+- [ ] Elevation top: 711 resorts missing (scraper bug identified, fix pending)
 - [ ] 47 resorts not found on skiresort.info (Chinese, heli-ski, indoor)
 
 ---
@@ -98,6 +103,9 @@
 
 | Feature | Date |
 |---------|------|
+| Add wind gust and visibility to web conditions table with color-coded severity | 2026-02-23 |
+| Enrich annual snowfall (446/1040), base elevations (852/1040), fix 459 corrupted elevations | 2026-02-23 |
+| Compute family_friendly, expert_terrain, large_resort labels from existing data | 2026-02-23 |
 | Fix Android stale data: sync quality updates from detail to list view | 2026-02-23 |
 | Fix iOS list: slow refresh (21→2 API calls), stale data sync, filter scroll | 2026-02-23 |
 | Enrich run percentages (93.8%) and website URLs (85.4%) from skiresort.info | 2026-02-23 |
