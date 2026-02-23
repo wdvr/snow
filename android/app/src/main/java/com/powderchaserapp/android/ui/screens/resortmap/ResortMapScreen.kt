@@ -66,8 +66,14 @@ class ResortMapViewModel @Inject constructor(
             resortRepository.getResorts().collect { result ->
                 result.onSuccess { resorts ->
                     _uiState.update { it.copy(resorts = resorts, isLoading = false) }
-                    snowQualityRepository.getBatchSnowQuality(resorts.map { it.id }).onSuccess { quality ->
-                        _uiState.update { it.copy(qualityMap = quality) }
+                    val allResults = mutableMapOf<String, SnowQualitySummaryLight>()
+                    for (chunk in resorts.map { it.id }.chunked(200)) {
+                        snowQualityRepository.getBatchSnowQuality(chunk).onSuccess { qualityMap ->
+                            allResults.putAll(qualityMap)
+                        }
+                    }
+                    if (allResults.isNotEmpty()) {
+                        _uiState.update { it.copy(qualityMap = allResults) }
                     }
                 }
             }

@@ -537,6 +537,9 @@ struct ResortMapDetailSheet: View {
                         conditionsSection(condition)
                     } else if isLoadingConditions {
                         loadingConditionsView
+                    } else if let summary = snowConditionsManager.snowQualitySummaries[resort.id],
+                              summary.temperatureC != nil || summary.snowfallFreshCm != nil {
+                        summaryFallbackSection(summary)
                     } else {
                         noConditionsView
                     }
@@ -598,13 +601,20 @@ struct ResortMapDetailSheet: View {
                 // Snow quality badge - show from summary even before conditions load
                 let quality = condition?.snowQuality ?? knownQuality
                 if quality != .unknown {
-                    Label(quality.displayName, systemImage: quality.icon)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(quality.color, in: Capsule())
+                    HStack(spacing: 6) {
+                        if let score = snowConditionsManager.getSnowScore(for: resort.id) {
+                            Text("\(score)")
+                                .font(.subheadline.weight(.bold))
+                                .fontDesign(.rounded)
+                        }
+                        Label(quality.displayName, systemImage: quality.icon)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(quality.color, in: Capsule())
                 }
 
                 // Temperature (only when full conditions are loaded)
@@ -699,6 +709,53 @@ struct ResortMapDetailSheet: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
+    }
+
+    @ViewBuilder
+    private func summaryFallbackSection(_ summary: SnowQualitySummaryLight) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Conditions Summary")
+                .font(.headline)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                if let temp = summary.formattedTemperature(userPreferencesManager.preferredUnits) {
+                    ConditionCard(title: "Temperature", value: temp, icon: "thermometer.medium", color: .orange)
+                }
+
+                if let snow = summary.formattedFreshSnow(userPreferencesManager.preferredUnits) {
+                    ConditionCard(title: "Fresh Snow", value: snow, icon: "snowflake", color: .cyan)
+                }
+
+                if let snow24 = summary.snowfall24hCm {
+                    ConditionCard(
+                        title: "24h Snowfall",
+                        value: WeatherCondition.formatSnowShort(snow24, prefs: userPreferencesManager.preferredUnits),
+                        icon: "cloud.snow",
+                        color: .blue
+                    )
+                }
+
+                if let depth = summary.snowDepthCm {
+                    ConditionCard(
+                        title: "Snow Depth",
+                        value: WeatherCondition.formatSnowShort(depth, prefs: userPreferencesManager.preferredUnits),
+                        icon: "mountain.2.fill",
+                        color: .purple
+                    )
+                }
+            }
+
+            if let pred48 = summary.predictedSnow48hCm, pred48 >= 5 {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Forecast")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+
+                    ForecastBadge(hours: 48, cm: pred48, prefs: userPreferencesManager.preferredUnits)
+                }
+                .padding(.top, 8)
+            }
+        }
     }
 
     private var actionsSection: some View {

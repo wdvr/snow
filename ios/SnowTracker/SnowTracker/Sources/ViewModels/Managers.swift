@@ -93,7 +93,7 @@ class SnowConditionsManager: ObservableObject {
 
     /// Maximum number of resorts to fetch snow quality for in one session
     /// This prevents excessive API calls when the backend returns thousands of resorts
-    private let maxSnowQualityFetchCount = 300
+    private let maxSnowQualityFetchCount = 2000
 
     /// Fetch lightweight snow quality summaries for all resorts (for main list display)
     /// - Parameter forceRefresh: If true, bypasses cache and fetches fresh data from API
