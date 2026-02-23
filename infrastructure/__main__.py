@@ -1241,6 +1241,53 @@ def get_conditions(resort_id, headers):
     opts=pulumi.ResourceOptions(depends_on=[lambda_role, log_group]),
 )
 
+# ---- Chat Streaming Lambda (Function URL with response streaming) ----
+chat_stream_log_group = aws.cloudwatch.LogGroup(
+    f"{app_name}-chat-stream-logs-{environment}",
+    name=f"/aws/lambda/{app_name}-chat-stream-{environment}",
+    retention_in_days=14,
+    tags=tags,
+)
+
+chat_stream_lambda = aws.lambda_.Function(
+    f"{app_name}-chat-stream-{environment}",
+    name=f"{app_name}-chat-stream-{environment}",
+    role=lambda_role.arn,
+    handler="handlers.chat_stream_handler.handler",
+    runtime="python3.12",
+    timeout=90,
+    memory_size=512,
+    code=pulumi.AssetArchive(
+        {"placeholder.py": pulumi.StringAsset("# placeholder - deployed via CI")}
+    ),
+    environment=aws.lambda_.FunctionEnvironmentArgs(
+        variables={
+            "ENVIRONMENT": environment,
+            "CHAT_TABLE_NAME": f"{app_name}-chat-{environment}",
+            "RESULTS_BUCKET": "snow-tracker-pulumi-state-us-west-2",
+            "AWS_REGION_NAME": aws_region,
+        }
+    ),
+    tags=tags,
+    opts=pulumi.ResourceOptions(depends_on=[lambda_role, chat_stream_log_group]),
+)
+
+chat_stream_url = aws.lambda_.FunctionUrl(
+    f"{app_name}-chat-stream-url-{environment}",
+    function_name=chat_stream_lambda.name,
+    authorization_type="NONE",
+    invoke_mode="RESPONSE_STREAM",
+    cors=aws.lambda_.FunctionUrlCorsArgs(
+        allow_origins=["*"],
+        allow_methods=["POST", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization"],
+        max_age=3600,
+    ),
+)
+
+pulumi.export("chat_stream_url", chat_stream_url.function_url)
+pulumi.export("chat_stream_lambda_name", chat_stream_lambda.name)
+
 # Permission for API Gateway to invoke the API handler Lambda
 api_handler_permission = aws.lambda_.Permission(
     f"{app_name}-api-handler-permission-{environment}",

@@ -28,6 +28,8 @@ export function ChatPage() {
     messages,
     isLoading,
     isRateLimited,
+    statusMessage,
+    activeTools,
     sendMessage,
     startNewConversation,
     loadConversation,
@@ -179,7 +181,13 @@ export function ChatPage() {
         </div>
 
         {/* Messages */}
-        <ChatWindow messages={messages} isLoading={isLoading} />
+        <ChatWindow
+          messages={messages}
+          isLoading={isLoading}
+          statusMessage={statusMessage}
+          activeTools={activeTools}
+          onSuggestionClick={handleSend}
+        />
 
         {/* Rate limit + error banners */}
         {isRateLimited && (

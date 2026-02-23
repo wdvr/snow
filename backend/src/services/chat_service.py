@@ -675,7 +675,7 @@ class ChatService:
                     system=[{"text": system_text}],
                     messages=messages,
                     toolConfig={"tools": TOOL_DEFINITIONS},
-                    inferenceConfig={"maxTokens": 1024, "temperature": 0.5},
+                    inferenceConfig={"maxTokens": 2048, "temperature": 0.5},
                 )
             except ClientError as e:
                 error_code = e.response.get("Error", {}).get("Code", "")
@@ -722,7 +722,7 @@ class ChatService:
                     modelId="us.anthropic.claude-sonnet-4-6",
                     system=[{"text": system_text}],
                     messages=messages,
-                    inferenceConfig={"maxTokens": 1024, "temperature": 0.5},
+                    inferenceConfig={"maxTokens": 2048, "temperature": 0.5},
                 )
             except ClientError as e:
                 error_code = e.response.get("Error", {}).get("Code", "")
@@ -783,8 +783,11 @@ class ChatService:
                 if text_parts:
                     return "\n".join(text_parts), None
 
-        for _iteration in range(MAX_TOOL_ITERATIONS):
+        for iteration in range(MAX_TOOL_ITERATIONS):
+            t_bedrock = time.monotonic()
             response = self._invoke_bedrock(system_text, messages)
+            bedrock_ms = int((time.monotonic() - t_bedrock) * 1000)
+            logger.info("Bedrock call #%d took %dms", iteration + 1, bedrock_ms)
             if response is None:
                 return (
                     "I'm having trouble connecting to the AI service. Please try again.",
@@ -801,7 +804,6 @@ class ChatService:
             if stop_reason == "tool_use":
                 # Process tool calls
                 tool_use_blocks = [b for b in content_blocks if "toolUse" in b]
-                text_blocks = [b for b in content_blocks if "text" in b]
 
                 # Add assistant message with tool use to conversation
                 messages.append({"role": "assistant", "content": content_blocks})
@@ -814,17 +816,22 @@ class ChatService:
                     tool_input = tool_use.get("input", {})
                     tool_use_id = tool_use["toolUseId"]
 
-                    logger.info(
-                        "Executing tool: %s with input: %s", tool_name, tool_input
-                    )
-
+                    t_tool = time.monotonic()
                     try:
                         result = self._execute_tool(tool_name, tool_input)
+                        tool_ms = int((time.monotonic() - t_tool) * 1000)
+                        logger.info(
+                            "Tool %s took %dms (input: %s)",
+                            tool_name,
+                            tool_ms,
+                            tool_input,
+                        )
                         all_tool_calls.append(
                             {
                                 "tool": tool_name,
                                 "input": tool_input,
                                 "success": True,
+                                "duration_ms": tool_ms,
                             }
                         )
                         tool_results.append(
@@ -836,13 +843,17 @@ class ChatService:
                             }
                         )
                     except Exception as e:
-                        logger.error("Tool execution error for %s: %s", tool_name, e)
+                        tool_ms = int((time.monotonic() - t_tool) * 1000)
+                        logger.error(
+                            "Tool %s failed after %dms: %s", tool_name, tool_ms, e
+                        )
                         all_tool_calls.append(
                             {
                                 "tool": tool_name,
                                 "input": tool_input,
                                 "success": False,
                                 "error": str(e),
+                                "duration_ms": tool_ms,
                             }
                         )
                         tool_results.append(
