@@ -91,6 +91,15 @@ function HomePage() {
                   <FiGlobe size={20} />
                   Open Web App
                 </a>
+                <a
+                  href="https://github.com/wdvr/snow"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary"
+                >
+                  <FiGithub size={20} />
+                  View on GitHub
+                </a>
               </div>
             </div>
 
@@ -233,10 +242,19 @@ function HomePage() {
                 href="https://app.powderchaserapp.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn btn-secondary"
+                className="btn btn-white"
               >
                 <FiGlobe size={20} />
                 Open Web App
+              </a>
+              <a
+                href="https://buymeacoffee.com/wdvr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary"
+              >
+                <FiCoffee size={20} />
+                Buy Me a Coffee
               </a>
             </div>
           </div>
