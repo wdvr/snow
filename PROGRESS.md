@@ -75,14 +75,12 @@
 ### 🔴 Critical
 | Issue | Description | Status |
 |-------|-------------|--------|
-| iOS list refresh slow | List refresh takes forever with 1040 resorts (pagination issue?) | Investigating |
-| iOS stale list data | List view not updated when detail data is fetched | Investigating |
+| (none) | | |
 
 ### 🟡 Medium
 | Issue | Description | Status |
 |-------|-------------|--------|
 | App Store Release | Need provisioning profile with Push Notifications | User action needed |
-| Cross-platform check | Ensure Android/web don't have same list perf/stale issues | Pending |
 
 ### 🟢 Future Features
 | Issue | Description |
@@ -100,6 +98,8 @@
 
 | Feature | Date |
 |---------|------|
+| Fix Android stale data: sync quality updates from detail to list view | 2026-02-23 |
+| Fix iOS list: slow refresh (21→2 API calls), stale data sync, filter scroll | 2026-02-23 |
 | Enrich run percentages (93.8%) and website URLs (85.4%) from skiresort.info | 2026-02-23 |
 | Fix resort data quality: elevations, pass values, labels, names (252 elevations, 73 passes) | 2026-02-23 |
 | Geocode all 862 resorts with (0,0) coordinates, fix 4 country misattributions | 2026-02-23 |
