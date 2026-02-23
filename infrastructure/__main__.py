@@ -1249,14 +1249,21 @@ chat_stream_log_group = aws.cloudwatch.LogGroup(
     tags=tags,
 )
 
+# Lambda Web Adapter layer enables Python response streaming via FastAPI
+# It runs the FastAPI app as a subprocess and bridges Lambda runtime to HTTP
+lwa_layer_arn = (
+    f"arn:aws:lambda:{aws_region}:753240598075:layer:LambdaAdapterLayerX86:26"
+)
+
 chat_stream_lambda = aws.lambda_.Function(
     f"{app_name}-chat-stream-{environment}",
     name=f"{app_name}-chat-stream-{environment}",
     role=lambda_role.arn,
-    handler="handlers.chat_stream_handler.handler",
+    handler="run.sh",
     runtime="python3.12",
     timeout=90,
     memory_size=512,
+    layers=[lwa_layer_arn],
     code=pulumi.AssetArchive(
         {"placeholder.py": pulumi.StringAsset("# placeholder - deployed via CI")}
     ),
@@ -1266,6 +1273,10 @@ chat_stream_lambda = aws.lambda_.Function(
             "CHAT_TABLE_NAME": f"{app_name}-chat-{environment}",
             "RESULTS_BUCKET": "snow-tracker-pulumi-state-us-west-2",
             "AWS_REGION_NAME": aws_region,
+            "AWS_LWA_INVOKE_MODE": "response_stream",
+            "AWS_LWA_PORT": "8080",
+            "AWS_LWA_READINESS_CHECK_PATH": "/",
+            "PYTHONPATH": "/var/task",
         }
     ),
     tags=tags,

@@ -1,6 +1,9 @@
-"""Streaming chat handler using Lambda Function URL with response streaming.
+"""Streaming chat handler using Lambda Function URL with Lambda Web Adapter.
 
-Returns Server-Sent Events (SSE) for real-time chat updates:
+Uses FastAPI with StreamingResponse to return SSE events in real-time.
+Lambda Web Adapter (LWA) bridges the Lambda runtime to the FastAPI HTTP server.
+
+SSE event types:
 - {"type":"status","message":"..."} - progress updates
 - {"type":"tool_start","tool":"...","input":{}} - tool execution started
 - {"type":"tool_done","tool":"...","duration_ms":123} - tool execution completed
@@ -12,12 +15,17 @@ Returns Server-Sent Events (SSE) for real-time chat updates:
 import json
 import logging
 import os
+import queue
+import threading
 import time
 import uuid
 
 import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from ulid import ULID
 
 from services.chat_service import RESORT_ALIASES, SYSTEM_PROMPT, TOOL_DEFINITIONS
@@ -25,14 +33,24 @@ from services.chat_service import RESORT_ALIASES, SYSTEM_PROMPT, TOOL_DEFINITION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# Bedrock retry settings
 BEDROCK_MAX_RETRIES = 3
 BEDROCK_BASE_DELAY = 1.0
 MAX_TOOL_ITERATIONS = 5
 
+# Sentinel to signal end of stream
+_STREAM_END = object()
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 def _sse(data: dict) -> str:
-    """Format a dict as an SSE event."""
     return f"data: {json.dumps(data, default=str)}\n\n"
 
 
@@ -47,7 +65,6 @@ def _get_bedrock():
 
 
 def _validate_jwt(token: str) -> str | None:
-    """Validate JWT and return user_id, or None if invalid."""
     import jwt as pyjwt
 
     jwt_secret = os.environ.get("JWT_SECRET_KEY", "dev-secret-change-in-prod")
@@ -58,72 +75,70 @@ def _validate_jwt(token: str) -> str | None:
         return None
 
 
-def handler(event, response_stream, context):
-    """Lambda Function URL streaming handler for chat."""
-    # Set content type for SSE
-    response_stream.content_type = "text/event-stream"
+@app.get("/")
+async def health():
+    return {"status": "ok"}
+
+
+@app.post("/")
+async def chat_stream(request: Request):
+    """SSE streaming chat endpoint."""
 
     try:
-        _handle_chat_stream(event, response_stream)
-    except Exception as e:
-        logger.error("Stream handler error: %s", e, exc_info=True)
-        response_stream.write(
-            _sse({"type": "error", "message": "Internal error"}).encode()
+        body = await request.json()
+    except Exception:
+        return StreamingResponse(
+            iter([_sse({"type": "error", "message": "Invalid JSON"})]),
+            media_type="text/event-stream",
         )
-    finally:
-        response_stream.close()
-
-
-def _handle_chat_stream(event, response_stream):
-    """Main streaming chat logic."""
-    # Handle CORS preflight
-    method = event.get("requestContext", {}).get("http", {}).get("method", "")
-    if method == "OPTIONS":
-        response_stream.write(_sse({"type": "done"}).encode())
-        return
-
-    # Parse request body
-    body_str = event.get("body", "{}")
-    if event.get("isBase64Encoded"):
-        import base64
-
-        body_str = base64.b64decode(body_str).decode()
-
-    try:
-        body = json.loads(body_str)
-    except json.JSONDecodeError:
-        response_stream.write(
-            _sse({"type": "error", "message": "Invalid JSON"}).encode()
-        )
-        return
 
     user_message = body.get("message", "").strip()
     conversation_id = body.get("conversation_id")
 
     if not user_message:
-        response_stream.write(
-            _sse({"type": "error", "message": "Message is required"}).encode()
+        return StreamingResponse(
+            iter([_sse({"type": "error", "message": "Message is required"})]),
+            media_type="text/event-stream",
         )
-        return
 
     # Auth
-    headers = event.get("headers", {})
-    auth_header = headers.get("authorization", "")
+    auth_header = request.headers.get("authorization", "")
     user_id = None
     if auth_header.startswith("Bearer "):
         user_id = _validate_jwt(auth_header[7:])
-
     if not user_id:
-        # Anonymous user - use IP
-        source_ip = (
-            event.get("requestContext", {}).get("http", {}).get("sourceIp", "unknown")
-        )
-        user_id = f"anon_{source_ip}"
+        user_id = f"anon_{request.client.host if request.client else 'unknown'}"
 
-    # Send immediate status
-    response_stream.write(_sse({"type": "status", "message": "Thinking..."}).encode())
+    # Use a thread-safe queue for the generator to yield from
+    q: queue.Queue[str | object] = queue.Queue()
 
-    # Initialize services
+    def _produce():
+        try:
+            _handle_chat_stream(q, user_message, conversation_id, user_id)
+        except Exception as e:
+            logger.error("Stream handler error: %s", e, exc_info=True)
+            q.put(_sse({"type": "error", "message": "Internal error"}))
+        finally:
+            q.put(_STREAM_END)
+
+    # Run the producer in a background thread
+    thread = threading.Thread(target=_produce, daemon=True)
+    thread.start()
+
+    def _generate():
+        while True:
+            item = q.get()
+            if item is _STREAM_END:
+                break
+            yield item
+
+    return StreamingResponse(_generate(), media_type="text/event-stream")
+
+
+def _handle_chat_stream(q, user_message, conversation_id, user_id):
+    """Main streaming chat logic. Writes SSE events to the queue."""
+    q.put(_sse({"type": "status", "message": "Thinking..."}))
+
     dynamodb = _get_dynamodb()
     bedrock = _get_bedrock()
     chat_table_name = os.environ.get(
@@ -131,15 +146,12 @@ def _handle_chat_stream(event, response_stream):
     )
     chat_table = dynamodb.Table(chat_table_name)
 
-    # Generate conversation_id if new
     if not conversation_id:
         conversation_id = f"conv_{uuid.uuid4().hex[:12]}"
 
-    # Load history
     history = _load_history(chat_table, conversation_id, user_id)
     messages = _build_messages(history, user_message)
 
-    # Save user message
     from datetime import UTC, datetime, timedelta
 
     user_message_id = str(ULID())
@@ -157,14 +169,9 @@ def _handle_chat_stream(event, response_stream):
         title,
     )
 
-    # Auto-detect resorts
-    response_stream.write(
-        _sse({"type": "status", "message": "Analyzing your question..."}).encode()
-    )
-
+    q.put(_sse({"type": "status", "message": "Analyzing your question..."}))
     context_data = _auto_detect_resorts_fast(user_message, dynamodb)
 
-    # Build system prompt
     system_text = SYSTEM_PROMPT
     if context_data:
         system_text += (
@@ -174,16 +181,10 @@ def _handle_chat_stream(event, response_stream):
             "You may still use tools for additional resorts or data not covered here.\n\n"
             + context_data
         )
-        response_stream.write(
-            _sse({"type": "status", "message": "Checking conditions..."}).encode()
-        )
+        q.put(_sse({"type": "status", "message": "Checking conditions..."}))
 
-        # Try without tools first for speed
-        text = _call_bedrock_stream_no_tools(
-            bedrock, system_text, messages, response_stream
-        )
+        text = _call_bedrock_stream_no_tools(bedrock, system_text, messages, q)
         if text:
-            # Save and finish
             assistant_id = str(ULID())
             _save_message(
                 chat_table,
@@ -194,26 +195,22 @@ def _handle_chat_stream(event, response_stream):
                 text,
                 datetime.now(UTC).isoformat(),
             )
-            response_stream.write(
+            q.put(
                 _sse(
                     {
                         "type": "done",
                         "conversation_id": conversation_id,
                         "message_id": assistant_id,
                     }
-                ).encode()
+                )
             )
             return
 
-    # Fall back to tool use loop with streaming
-    response_stream.write(
-        _sse({"type": "status", "message": "Looking up data..."}).encode()
-    )
+    q.put(_sse({"type": "status", "message": "Looking up data..."}))
     text, tool_calls = _call_bedrock_with_tools_stream(
-        bedrock, system_text, messages, response_stream, dynamodb
+        bedrock, system_text, messages, q, dynamodb
     )
 
-    # Save assistant message
     assistant_id = str(ULID())
     _save_message(
         chat_table,
@@ -226,21 +223,18 @@ def _handle_chat_stream(event, response_stream):
         tool_calls=tool_calls,
     )
 
-    response_stream.write(
+    q.put(
         _sse(
             {
                 "type": "done",
                 "conversation_id": conversation_id,
                 "message_id": assistant_id,
             }
-        ).encode()
+        )
     )
 
 
-def _call_bedrock_stream_no_tools(
-    bedrock, system_text, messages, response_stream
-) -> str | None:
-    """Call Bedrock with converse_stream (no tools) and stream text deltas."""
+def _call_bedrock_stream_no_tools(bedrock, system_text, messages, q) -> str | None:
     try:
         response = bedrock.converse_stream(
             modelId="us.anthropic.claude-sonnet-4-6",
@@ -260,9 +254,7 @@ def _call_bedrock_stream_no_tools(
                 if "text" in delta:
                     chunk = delta["text"]
                     text_parts.append(chunk)
-                    response_stream.write(
-                        _sse({"type": "text_delta", "text": chunk}).encode()
-                    )
+                    q.put(_sse({"type": "text_delta", "text": chunk}))
 
         return "".join(text_parts) if text_parts else None
 
@@ -271,10 +263,7 @@ def _call_bedrock_stream_no_tools(
         return None
 
 
-def _call_bedrock_with_tools_stream(
-    bedrock, system_text, messages, response_stream, dynamodb
-):
-    """Call Bedrock with tool use loop, streaming progress and final text."""
+def _call_bedrock_with_tools_stream(bedrock, system_text, messages, q, dynamodb):
     all_tool_calls = []
 
     for iteration in range(MAX_TOOL_ITERATIONS):
@@ -295,9 +284,7 @@ def _call_bedrock_with_tools_stream(
             ):
                 time.sleep(BEDROCK_BASE_DELAY * (2**iteration))
                 continue
-            response_stream.write(
-                _sse({"type": "error", "message": "AI service unavailable"}).encode()
-            )
+            q.put(_sse({"type": "error", "message": "AI service unavailable"}))
             return (
                 "I'm having trouble connecting to the AI service. Please try again.",
                 all_tool_calls or None,
@@ -328,9 +315,8 @@ def _call_bedrock_with_tools_stream(
                 tool_input = tool_use.get("input", {})
                 tool_use_id = tool_use["toolUseId"]
 
-                # Stream tool start
                 friendly = _tool_friendly_name(tool_name, tool_input)
-                response_stream.write(
+                q.put(
                     _sse(
                         {
                             "type": "tool_start",
@@ -338,7 +324,7 @@ def _call_bedrock_with_tools_stream(
                             "input": tool_input,
                             "message": friendly,
                         }
-                    ).encode()
+                    )
                 )
 
                 t_tool = time.monotonic()
@@ -347,14 +333,14 @@ def _call_bedrock_with_tools_stream(
                     tool_ms = int((time.monotonic() - t_tool) * 1000)
                     logger.info("Tool %s took %dms", tool_name, tool_ms)
 
-                    response_stream.write(
+                    q.put(
                         _sse(
                             {
                                 "type": "tool_done",
                                 "tool": tool_name,
                                 "duration_ms": tool_ms,
                             }
-                        ).encode()
+                        )
                     )
 
                     all_tool_calls.append(
@@ -396,9 +382,7 @@ def _call_bedrock_with_tools_stream(
 
             messages.append({"role": "user", "content": tool_results})
 
-            # Stream the final response using converse_stream
             if iteration < MAX_TOOL_ITERATIONS - 1:
-                # Try streaming the next response
                 try:
                     stream_resp = bedrock.converse_stream(
                         modelId="us.anthropic.claude-sonnet-4-6",
@@ -417,11 +401,7 @@ def _call_bedrock_with_tools_stream(
                                 if "text" in delta:
                                     chunk = delta["text"]
                                     text_parts.append(chunk)
-                                    response_stream.write(
-                                        _sse(
-                                            {"type": "text_delta", "text": chunk}
-                                        ).encode()
-                                    )
+                                    q.put(_sse({"type": "text_delta", "text": chunk}))
                             elif "contentBlockStart" in evt:
                                 start = evt["contentBlockStart"].get("start", {})
                                 if "toolUse" in start:
@@ -431,10 +411,7 @@ def _call_bedrock_with_tools_stream(
                         if text_parts and not has_tool_use:
                             return "".join(text_parts), all_tool_calls or None
 
-                        # If we hit another tool_use, fall through to continue the loop
                         if has_tool_use:
-                            # We need to collect the rest of the stream to get tool calls
-                            # Fall back to non-streaming for this iteration
                             continue
                 except Exception as e:
                     logger.warning("Stream fallback: %s", e)
@@ -447,15 +424,13 @@ def _call_bedrock_with_tools_stream(
             "\n".join(text_parts) if text_parts else "I couldn't generate a response."
         )
 
-        # Stream the text
-        response_stream.write(_sse({"type": "text_delta", "text": text}).encode())
+        q.put(_sse({"type": "text_delta", "text": text}))
         return text, all_tool_calls or None
 
     return "I'm having trouble processing your request.", all_tool_calls or None
 
 
 def _tool_friendly_name(tool_name: str, tool_input: dict) -> str:
-    """Return a user-friendly description of a tool call."""
     resort_id = tool_input.get("resort_id", "")
     resort_name = resort_id.replace("-", " ").title() if resort_id else ""
 
@@ -484,7 +459,6 @@ def _tool_friendly_name(tool_name: str, tool_input: dict) -> str:
 
 
 def _auto_detect_resorts_fast(user_message: str, dynamodb) -> str | None:
-    """Quick resort detection using aliases only (no DB scan)."""
     import re
 
     message_lower = user_message.lower()
@@ -506,12 +480,10 @@ def _auto_detect_resorts_fast(user_message: str, dynamodb) -> str | None:
     context_parts = []
     for resort_id in resort_ids:
         try:
-            # Get resort name
             resort_resp = resorts_table.get_item(Key={"resort_id": resort_id})
             resort = resort_resp.get("Item", {})
             resort_name = resort.get("name", resort_id)
 
-            # Get conditions
             cond_resp = conditions_table.query(
                 KeyConditionExpression=Key("resort_id").eq(resort_id),
                 ScanIndexForward=False,
@@ -553,7 +525,6 @@ def _to_float(val) -> float | None:
 
 
 def _execute_tool(tool_name: str, tool_input: dict, dynamodb) -> dict:
-    """Execute a tool directly using DynamoDB (no service layer for speed)."""
     env = os.environ.get("ENVIRONMENT", "prod")
 
     if tool_name == "get_resort_conditions":
@@ -584,8 +555,8 @@ def _execute_tool(tool_name: str, tool_input: dict, dynamodb) -> dict:
         return {"resort_id": resort_id, "elevations": elevations}
 
     elif tool_name == "search_resorts":
-        query = tool_input.get("query", "").lower()
-        if not query:
+        query_str = tool_input.get("query", "").lower()
+        if not query_str:
             return {"error": "Missing query"}
         table = dynamodb.Table(f"snow-tracker-resorts-{env}")
         resp = table.scan()
@@ -594,7 +565,7 @@ def _execute_tool(tool_name: str, tool_input: dict, dynamodb) -> dict:
             name = r.get("name", "").lower()
             region = r.get("region", "").lower()
             country = r.get("country", "").lower()
-            if query in name or query in region or query in country:
+            if query_str in name or query_str in region or query_str in country:
                 results.append(
                     {
                         "resort_id": r["resort_id"],
@@ -606,7 +577,6 @@ def _execute_tool(tool_name: str, tool_input: dict, dynamodb) -> dict:
         return {"results": results[:20], "count": len(results)}
 
     elif tool_name == "get_best_conditions":
-        # Read from static JSON in S3
         try:
             s3 = boto3.client("s3", region_name="us-west-2")
             bucket = os.environ.get(
@@ -642,7 +612,6 @@ def _execute_tool(tool_name: str, tool_input: dict, dynamodb) -> dict:
         resort_id = tool_input.get("resort_id", "")
         if not resort_id:
             return {"error": "Missing resort_id"}
-        # Use static forecast JSON if available
         try:
             s3 = boto3.client("s3", region_name="us-west-2")
             bucket = os.environ.get(
@@ -721,7 +690,6 @@ def _execute_tool(tool_name: str, tool_input: dict, dynamodb) -> dict:
         lon = tool_input.get("longitude")
         if lat is None or lon is None:
             return {"error": "Missing coordinates"}
-        # Scan resorts and compute distances
         import math
 
         table = dynamodb.Table(f"snow-tracker-resorts-{env}")
@@ -753,7 +721,6 @@ def _execute_tool(tool_name: str, tool_input: dict, dynamodb) -> dict:
 
 
 def _haversine(lat1, lon1, lat2, lon2):
-    """Calculate distance in km between two points."""
     import math
 
     R = 6371
@@ -769,7 +736,6 @@ def _haversine(lat1, lon1, lat2, lon2):
 
 
 def _load_history(chat_table, conversation_id, user_id):
-    """Load last 20 messages."""
     try:
         resp = chat_table.query(
             KeyConditionExpression=Key("conversation_id").eq(conversation_id),
@@ -786,7 +752,6 @@ def _load_history(chat_table, conversation_id, user_id):
 
 
 def _build_messages(history, user_message):
-    """Build Bedrock messages from history."""
     messages = []
     for item in history:
         role = item.get("role", "user")
@@ -808,7 +773,6 @@ def _save_message(
     title=None,
     tool_calls=None,
 ):
-    """Save message to DynamoDB."""
     from datetime import UTC, datetime, timedelta
 
     item = {
@@ -828,3 +792,10 @@ def _save_message(
         chat_table.put_item(Item=item)
     except Exception as e:
         logger.error("Error saving message: %s", e)
+
+
+# Lambda Web Adapter expects the app to listen on port 8080
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8080)
