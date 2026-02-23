@@ -1279,7 +1279,7 @@ chat_stream_url = aws.lambda_.FunctionUrl(
     invoke_mode="RESPONSE_STREAM",
     cors=aws.lambda_.FunctionUrlCorsArgs(
         allow_origins=["*"],
-        allow_methods=["POST", "OPTIONS"],
+        allow_methods=["*"],
         allow_headers=["Content-Type", "Authorization"],
         max_age=3600,
     ),
