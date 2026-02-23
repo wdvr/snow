@@ -1288,6 +1288,15 @@ chat_stream_url = aws.lambda_.FunctionUrl(
 pulumi.export("chat_stream_url", chat_stream_url.function_url)
 pulumi.export("chat_stream_lambda_name", chat_stream_lambda.name)
 
+# Permission for public access to chat stream Function URL
+chat_stream_permission = aws.lambda_.Permission(
+    f"{app_name}-chat-stream-url-permission-{environment}",
+    action="lambda:InvokeFunctionUrl",
+    function=chat_stream_lambda.name,
+    principal="*",
+    function_url_auth_type="NONE",
+)
+
 # Permission for API Gateway to invoke the API handler Lambda
 api_handler_permission = aws.lambda_.Permission(
     f"{app_name}-api-handler-permission-{environment}",
