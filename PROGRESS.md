@@ -31,7 +31,7 @@
 #### Backend Updates
 - [x] Add wind_gust_kmh, max_wind_gust_24h, visibility_m, min_visibility_24h_m to API response
 - [x] Update quality explanation to mention wind/visibility when significant
-- [ ] Trigger weather processor to populate new fields in DynamoDB (waiting for deploy)
+- [x] Trigger weather processor to populate new fields in DynamoDB
 
 #### iOS UI
 - [x] Show wind gust, max gust 24h in resort detail view (PR #183)
@@ -40,9 +40,9 @@
 - [x] Deploy to TestFlight
 
 #### Android
-- [ ] Add wind gust and visibility fields to Android weather models
-- [ ] Show wind/visibility in resort detail and timeline views
-- [ ] Deploy to internal testing
+- [x] Add wind gust and visibility fields to Android weather models
+- [x] Show wind/visibility in resort detail and timeline views
+- [ ] Deploy to internal testing (pending Google Play setup)
 
 #### Web (after Android)
 - [ ] Web: show wind & visibility
@@ -50,19 +50,22 @@
 ### Workstream 2: Resort Data Audit (1040 resorts)
 
 #### Critical: Coordinate Fix
-- [ ] Geocode 862 resorts with (0,0) coordinates (IN PROGRESS - geocoding script running)
-- [ ] Commit updated resorts.json with coordinates
-- [ ] Re-populate DynamoDB
-- [ ] Trigger weather processor for newly-geocoded resorts
+- [x] Geocode 862 resorts with (0,0) coordinates (all 1040 now have valid coords)
+- [x] Fix 2 Austrian resorts misattributed as US/CA, 2 Italian resorts as FR
+- [x] Commit updated resorts.json with coordinates
+- [x] Re-populate DynamoDB (staging + prod)
+- [x] Trigger weather processor for newly-geocoded resorts
 
-#### Audit Categories
-- [ ] Website URLs: verify still valid, not 404
-- [ ] Elevations: base < mid < top, reasonable ranges
-- [ ] Run percentages: green + blue + black ≈ 100%
-- [ ] Pass affiliations: verify Epic/Ikon/Mountain Collective/Indy
-- [ ] Country/region consistency
-- [ ] Height profiles (vertical drop makes sense)
-- [ ] Family-owned / independent classification
+#### Data Quality Audit & Fixes
+- [x] Run comprehensive data quality audit (1237 issues found)
+- [x] Null out corrupted elevations for 252 resorts (exceeded country max)
+- [x] Normalize pass affiliations ("Unlimited" -> "full", "5 days" -> "local/base")
+- [x] Recalculate large_resort based on vertical drop >= 800m
+- [x] Clean zero-width spaces from 119 resort names
+- [x] Add DE, SI, ES, AD to alps region definition
+- [ ] Run percentages: 489 resorts have placeholder blue=100% (needs scraping)
+- [ ] Website URLs: 903 resorts (86.8%) lack URLs
+- [ ] Annual snowfall: 982 resorts (94.4%) lack data
 
 ---
 
@@ -71,7 +74,7 @@
 ### 🔴 Critical
 | Issue | Description | Status |
 |-------|-------------|--------|
-| 862 resorts at (0,0) | Weather data fetched from Gulf of Guinea instead of resort locations | Geocoding in progress |
+| (none) | | |
 
 ### 🟡 Medium
 | Issue | Description | Status |
@@ -94,6 +97,9 @@
 
 | Feature | Date |
 |---------|------|
+| Fix resort data quality: elevations, pass values, labels, names (252 elevations, 73 passes) | 2026-02-23 |
+| Geocode all 862 resorts with (0,0) coordinates, fix 4 country misattributions | 2026-02-23 |
+| Add wind gust and visibility UI to Android app | 2026-02-23 |
 | Retrain ML model v13 with wind gust and visibility features (37 features, 11960 samples) | 2026-02-23 |
 | Add wind gust and visibility UI to iOS app (PR #183) | 2026-02-23 |
 | Add wind gust and visibility to weather pipeline (backend + ML) | 2026-02-23 |
