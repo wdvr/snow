@@ -116,7 +116,6 @@ class SnowConditionsManager: ObservableObject {
         }
 
         isLoadingSnowQuality = true
-        defer { isLoadingSnowQuality = false }
 
         // Prioritize favorites, then limit total to prevent excessive API calls
         let favoriteIds = Set(UserPreferencesManager.shared.favoriteResorts)
@@ -140,11 +139,9 @@ class SnowConditionsManager: ObservableObject {
         managerLog.debug("fetchAllSnowQualitySummaries: Fetching summaries for \(resortIds.count) resorts from API")
 
         // Batch fetch in chunks of 200 (API limit)
-        // Update the published property only once at the end to avoid
-        // triggering N full list re-renders (each re-sorts 1000+ resorts)
+        // Progressive loading: update UI after each batch so resorts show data as it arrives
         let batchSize = 200
         var totalLoaded = 0
-        var allResults: [String: SnowQualitySummaryLight] = snowQualitySummaries // Start with existing data
 
         for batchStart in stride(from: 0, to: resortIds.count, by: batchSize) {
             let batchEnd = min(batchStart + batchSize, resortIds.count)
@@ -154,24 +151,31 @@ class SnowConditionsManager: ObservableObject {
 
             do {
                 let batchResults = try await apiClient.getBatchSnowQuality(for: batchIds)
+                // Update UI progressively — merge batch results into published property
+                var updated = snowQualitySummaries
                 for (resortId, summary) in batchResults {
-                    allResults[resortId] = summary
+                    updated[resortId] = summary
                 }
+                snowQualitySummaries = updated
                 totalLoaded += batchResults.count
-                managerLog.debug("fetchAllSnowQualitySummaries: Batch \(batchNumber) loaded \(batchResults.count) summaries")
+                // Clear loading flag after first batch so rows with data show immediately
+                if isLoadingSnowQuality {
+                    isLoadingSnowQuality = false
+                }
+                managerLog.debug("fetchAllSnowQualitySummaries: Batch \(batchNumber) loaded \(batchResults.count) summaries (total: \(totalLoaded))")
             } catch {
                 managerLog.debug("fetchAllSnowQualitySummaries: Batch \(batchNumber) failed: \(error.localizedDescription)")
                 // Continue with next batch rather than failing completely
             }
         }
 
-        // Single UI update with all results (avoids multiple re-sorts of 1000+ items)
-        snowQualitySummaries = allResults
+        // Ensure loading flag is cleared even if all batches failed
+        isLoadingSnowQuality = false
 
         // Cache the final results
-        if !allResults.isEmpty {
-            managerLog.debug("fetchAllSnowQualitySummaries: Caching \(allResults.count) summaries")
-            cacheService.cacheSnowQualitySummaries(allResults)
+        if !self.snowQualitySummaries.isEmpty {
+            managerLog.debug("fetchAllSnowQualitySummaries: Caching \(self.snowQualitySummaries.count) summaries")
+            cacheService.cacheSnowQualitySummaries(self.snowQualitySummaries)
         }
 
         managerLog.debug("fetchAllSnowQualitySummaries: Complete. Loaded \(totalLoaded) summaries total")

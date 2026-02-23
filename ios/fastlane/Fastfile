@@ -185,11 +185,9 @@ platform :ios do
 
   desc "Generate App Store screenshots on all required device sizes"
   lane :screenshots do
-    # Ensure we have the UI tests scheme
     capture_screenshots(
       project: "SnowTracker.xcodeproj",
       scheme: "SnowTracker",
-      testplan: "ScreenshotTestPlan",
       devices: [
         "iPhone 17 Pro Max",      # 6.9" display (required)
         "iPhone 17 Pro",          # 6.3" display
@@ -210,7 +208,6 @@ platform :ios do
     capture_screenshots(
       project: "SnowTracker.xcodeproj",
       scheme: "SnowTracker",
-      testplan: "ScreenshotTestPlan",
       devices: ["iPhone 17 Pro Max"],
       languages: ["en-US"],
       output_directory: "./screenshots",
