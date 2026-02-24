@@ -210,6 +210,8 @@ class WeatherService:
 
         Queries DynamoDB for recent items and deduplicates by elevation level,
         keeping only the most recent condition per elevation.
+        Uses Limit to avoid scanning all 24h of data when only the latest
+        per elevation is needed (3 elevations × 5 headroom = 15 items max).
         """
         if not self.conditions_table:
             return []
@@ -223,6 +225,7 @@ class WeatherService:
                 KeyConditionExpression=Key("resort_id").eq(resort_id)
                 & Key("timestamp").gte(cutoff_str),
                 ScanIndexForward=False,  # Most recent first
+                Limit=15,  # 3 elevations × 5 timestamps = enough headroom
             )
 
             items = response.get("Items", [])

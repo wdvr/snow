@@ -18,12 +18,12 @@ final class APIClient {
     private init() {
 
         let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 30
-        configuration.timeoutIntervalForResource = 60
+        configuration.timeoutIntervalForRequest = 15
+        configuration.timeoutIntervalForResource = 30
 
-        // Retry transient failures with exponential backoff
+        // Retry transient failures once (not twice — keeps pull-to-refresh snappy)
         let retryPolicy = RetryPolicy(
-            retryLimit: 2,
+            retryLimit: 1,
             exponentialBackoffBase: 2,
             exponentialBackoffScale: 0.5,
             retryableHTTPStatusCodes: Set([408, 500, 502, 503, 504])

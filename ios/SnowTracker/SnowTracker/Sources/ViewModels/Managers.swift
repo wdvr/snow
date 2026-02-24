@@ -144,7 +144,7 @@ class SnowConditionsManager: ObservableObject {
             Array(resortIds[start..<min(start + batchSize, resortIds.count)])
         }
 
-        managerLog.debug("fetchAllSnowQualitySummaries: Fetching \(chunks.count) batches in parallel")
+        managerLog.info("fetchAllSnowQualitySummaries: Fetching \(chunks.count) batches in parallel")
 
         // Fire all batch requests concurrently
         let batchResults: [[(String, SnowQualitySummaryLight)]] = await withTaskGroup(
@@ -153,11 +153,13 @@ class SnowConditionsManager: ObservableObject {
         ) { group in
             for (index, chunk) in chunks.enumerated() {
                 group.addTask { [apiClient] in
+                    let t0 = CFAbsoluteTimeGetCurrent()
                     do {
                         let results = try await apiClient.getBatchSnowQuality(for: chunk)
+                        managerLog.info("fetchAllSnowQualitySummaries: Batch \(index + 1)/\(chunks.count) (\(chunk.count) resorts) completed in \(String(format: "%.1f", CFAbsoluteTimeGetCurrent() - t0))s")
                         return results.map { ($0.key, $0.value) }
                     } catch {
-                        managerLog.debug("fetchAllSnowQualitySummaries: Batch \(index + 1) failed: \(error.localizedDescription)")
+                        managerLog.error("fetchAllSnowQualitySummaries: Batch \(index + 1) failed after \(String(format: "%.1f", CFAbsoluteTimeGetCurrent() - t0))s: \(error.localizedDescription)")
                         return []
                     }
                 }
@@ -229,7 +231,7 @@ class SnowConditionsManager: ObservableObject {
     }
 
     /// Refresh all data - called by pull-to-refresh
-    /// Fetches summaries for all resorts + conditions for visible + favorites
+    /// Fetches summaries + conditions in parallel for visible + favorites
     /// Rate-limited to prevent API spam (5 second minimum between refreshes)
     func refreshData(visibleResortIds: [String] = []) async {
         // Rate limiting - prevent rapid successive refreshes
@@ -237,52 +239,46 @@ class SnowConditionsManager: ObservableObject {
             let timeSinceLastRefresh = Date().timeIntervalSince(lastRefresh)
             if timeSinceLastRefresh < refreshRateLimitSeconds {
                 managerLog.debug("refreshData: Rate limited, only \(String(format: "%.1f", timeSinceLastRefresh))s since last refresh")
-                // Don't silently return — let the refresh gesture complete naturally
-                // by doing a brief wait so the spinner shows then dismisses
-                try? await Task.sleep(for: .milliseconds(300))
                 return
             }
         }
 
-        managerLog.debug("refreshData: Starting full refresh (bypassing cache)")
+        let refreshStart = CFAbsoluteTimeGetCurrent()
+        managerLog.info("refreshData: Starting full refresh")
         lastRefreshTime = Date()
 
         // Capture favorites before entering task group (UserPreferencesManager is @MainActor)
         let favoriteIds = Array(UserPreferencesManager.shared.favoriteResorts)
         let idsToFetch = Array(Set(visibleResortIds + favoriteIds))
 
-        // Wrap in a timeout to prevent infinite hangs (45 seconds max)
+        // Fetch summaries and conditions IN PARALLEL (not sequentially)
         await withTaskGroup(of: Void.self) { group in
             group.addTask {
-                // Refresh snow quality summaries for all resorts (used by list view)
+                let t0 = CFAbsoluteTimeGetCurrent()
                 await self.fetchAllSnowQualitySummaries(forceRefresh: true)
-                // Refresh full conditions for visible resorts + favorites
-                if !idsToFetch.isEmpty {
-                    managerLog.debug("refreshData: Fetching conditions for \(idsToFetch.count) resorts (visible + favorites)")
+                managerLog.info("refreshData: Summaries took \(String(format: "%.1f", CFAbsoluteTimeGetCurrent() - t0))s")
+            }
+            if !idsToFetch.isEmpty {
+                group.addTask {
+                    let t0 = CFAbsoluteTimeGetCurrent()
+                    managerLog.info("refreshData: Fetching conditions for \(idsToFetch.count) resorts (visible + favorites)")
                     await self.fetchConditionsForResorts(resortIds: idsToFetch)
+                    managerLog.info("refreshData: Conditions took \(String(format: "%.1f", CFAbsoluteTimeGetCurrent() - t0))s")
                 }
             }
-            group.addTask {
-                try? await Task.sleep(for: .seconds(45))
-                managerLog.debug("refreshData: Timeout reached (45s)")
-            }
-            // Return when EITHER the actual work finishes OR timeout hits
-            await group.next()
-            group.cancelAll()
+            // Wait for ALL tasks (both summaries and conditions)
+            for await _ in group {}
         }
 
+        let totalTime = CFAbsoluteTimeGetCurrent() - refreshStart
         lastUpdated = Date()
-        managerLog.debug("refreshData: Complete")
+        managerLog.info("refreshData: Complete in \(String(format: "%.1f", totalTime))s")
     }
 
     func refreshConditions() async {
-        // Wrap in timeout to prevent pull-to-refresh from hanging
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask { await self.fetchConditionsForFavorites() }
-            group.addTask { try? await Task.sleep(for: .seconds(30)) }
-            await group.next()
-            group.cancelAll()
-        }
+        let t0 = CFAbsoluteTimeGetCurrent()
+        await fetchConditionsForFavorites()
+        managerLog.info("refreshConditions: Complete in \(String(format: "%.1f", CFAbsoluteTimeGetCurrent() - t0))s")
     }
 
     /// Fetch conditions for favorites only - efficient for startup
@@ -395,6 +391,8 @@ class SnowConditionsManager: ObservableObject {
     func fetchConditionsForResorts(resortIds: [String]) async {
         guard !resortIds.isEmpty else { return }
 
+        let t0 = CFAbsoluteTimeGetCurrent()
+
         // Only show loading indicator if we have no data at all to display
         let hasExistingData = !resorts.isEmpty
         if !hasExistingData {
@@ -410,6 +408,9 @@ class SnowConditionsManager: ObservableObject {
         // Accumulate results locally to avoid per-resort @Published updates
         do {
             let batchResults = try await apiClient.getBatchConditions(resortIds: resortIds)
+            let networkTime = CFAbsoluteTimeGetCurrent() - t0
+            managerLog.info("fetchConditionsForResorts: API call for \(resortIds.count) resorts took \(String(format: "%.1f", networkTime))s")
+
             var updatedConditions = conditions
             var updatedSummaries = snowQualitySummaries
             for (resortId, resortConditions) in batchResults {
@@ -427,6 +428,7 @@ class SnowConditionsManager: ObservableObject {
             errorMessage = nil
             lastUpdated = Date()
         } catch {
+            managerLog.error("fetchConditionsForResorts: Failed after \(String(format: "%.1f", CFAbsoluteTimeGetCurrent() - t0))s: \(error.localizedDescription)")
             // Fall back to cache for each resort
             var updatedConditions = conditions
             for resortId in resortIds {
