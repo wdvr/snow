@@ -11,11 +11,11 @@ Files generated:
 import json
 import logging
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from typing import Any
 
 import boto3
+from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError
 
 from models.resort import Resort
@@ -37,9 +37,10 @@ ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
 WEBSITE_BUCKET = os.environ.get("WEBSITE_BUCKET", f"snow-tracker-website-{ENVIRONMENT}")
 AWS_REGION = os.environ.get("AWS_REGION_NAME", "us-west-2")
 
-# Initialize AWS clients
-s3_client = boto3.client("s3", region_name=AWS_REGION)
-dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
+# Initialize AWS clients with adequate connection pool
+_boto_config = BotoConfig(max_pool_connections=25, retries={"max_attempts": 3})
+s3_client = boto3.client("s3", region_name=AWS_REGION, config=_boto_config)
+dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION, config=_boto_config)
 
 
 class StaticJsonGenerator:
@@ -163,33 +164,27 @@ class StaticJsonGenerator:
         # Get all resorts
         resorts = self.resort_service.get_all_resorts()
 
-        # Build snow quality summaries for each resort (parallel for performance)
+        # Build snow quality summaries sequentially to avoid connection pool exhaustion
+        # Each resort requires 1 DynamoDB query (~50ms) — 1040 resorts ≈ 60-90s total
         quality_summaries = {}
         processed = 0
         errors = 0
+        total = len(resorts)
 
-        def _process_resort(resort: Resort) -> tuple[str, dict | None, str | None]:
-            """Process a single resort, returning (resort_id, summary, error)."""
+        for i, resort in enumerate(resorts):
             try:
                 summary = self._get_snow_quality_for_resort(resort)
-                return (resort.resort_id, summary, None)
-            except Exception as e:
-                return (resort.resort_id, None, str(e))
-
-        with ThreadPoolExecutor(max_workers=20) as executor:
-            futures = {
-                executor.submit(_process_resort, resort): resort for resort in resorts
-            }
-            for future in as_completed(futures):
-                resort_id, summary, error = future.result()
-                if error:
-                    logger.warning(
-                        f"Failed to get snow quality for {resort_id}: {error}"
-                    )
-                    errors += 1
-                elif summary:
-                    quality_summaries[resort_id] = summary
+                if summary:
+                    quality_summaries[resort.resort_id] = summary
                     processed += 1
+            except Exception as e:
+                logger.warning(
+                    f"Failed to get snow quality for {resort.resort_id}: {e}"
+                )
+                errors += 1
+
+            if (i + 1) % 100 == 0:
+                logger.info(f"Progress: {i + 1}/{total} resorts processed")
 
         logger.info(f"Generated snow quality for {processed} resorts, {errors} errors")
 
