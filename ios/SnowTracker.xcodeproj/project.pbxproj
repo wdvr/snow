@@ -58,6 +58,7 @@
 		9D87FE6D1BD3A9D9E7B82B90 /* SnowTrackerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 00C42DA351EFF0BEC9BA422F /* SnowTrackerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A4382A7758E7EBE091690413 /* ResortListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D49E6B5DE0674E438239F0C7 /* ResortListView.swift */; };
 		A54716CE89BF74F69590ABB8 /* AppStoreScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A4D65C5E4661E9DBBBB32F /* AppStoreScreenshotTests.swift */; };
+		AB1234567890ABCDEF123456 /* VerificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD1234567890ABCDEF654321 /* VerificationTests.swift */; };
 		A559B6F611A845A81B6E08EF /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = D306BA8EC8E75B251574AF45 /* GoogleService-Info.plist */; };
 		A79CA1D7F4A1253EFC65CB4B /* DemoDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C1BA087DD0B345FC02441ED /* DemoDataService.swift */; };
 		A998E46579EE3277F6D34651 /* RecommendationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE39AEFA27BB224346186A6A /* RecommendationsView.swift */; };
@@ -192,6 +193,7 @@
 		C195DDF1D0D05A96F34D77AC /* SnapshotHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotHelper.swift; sourceTree = "<group>"; };
 		C1CD2C514C419D7264FB7E0D /* SnowTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowTrackerApp.swift; sourceTree = "<group>"; };
 		C8A4D65C5E4661E9DBBBB32F /* AppStoreScreenshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotTests.swift; sourceTree = "<group>"; };
+		CD1234567890ABCDEF654321 /* VerificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerificationTests.swift; sourceTree = "<group>"; };
 		C9D8809765B1DAE070C75605 /* GoogleService-Info.plist.template */ = {isa = PBXFileReference; path = "GoogleService-Info.plist.template"; sourceTree = "<group>"; };
 		CBB345FFD1FF45422315F20B /* SnowActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowActivityAttributes.swift; sourceTree = "<group>"; };
 		CF54F2EE12C18F789C609199 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
@@ -351,6 +353,7 @@
 				B70DB3D9D6611B6FD69120E7 /* Info.plist */,
 				C195DDF1D0D05A96F34D77AC /* SnapshotHelper.swift */,
 				04113168D514491AA588BD9E /* SnowTrackerUITests.swift */,
+				CD1234567890ABCDEF654321 /* VerificationTests.swift */,
 			);
 			name = SnowTrackerUITests;
 			path = SnowTracker/SnowTrackerUITests;
@@ -661,6 +664,7 @@
 				A54716CE89BF74F69590ABB8 /* AppStoreScreenshotTests.swift in Sources */,
 				4C2533C919834F8578674A2B /* SnapshotHelper.swift in Sources */,
 				B2357528C3D50AC74D4E81FF /* SnowTrackerUITests.swift in Sources */,
+				AB1234567890ABCDEF123456 /* VerificationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

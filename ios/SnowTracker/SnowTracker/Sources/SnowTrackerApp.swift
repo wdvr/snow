@@ -77,8 +77,9 @@ struct SnowTrackerApp: App {
                 }
             }
             .onAppear {
-                // Auto-authenticate in screenshot/demo mode
-                if ProcessInfo.processInfo.arguments.contains("SCREENSHOT_MODE") ||
+                // Auto-authenticate in UI testing/screenshot/demo mode
+                if ProcessInfo.processInfo.arguments.contains("UI_TESTING") ||
+                   ProcessInfo.processInfo.arguments.contains("SCREENSHOT_MODE") ||
                    ProcessInfo.processInfo.arguments.contains("DEMO_DATA") {
                     authService.continueWithoutSignIn()
                     showOnboarding = false
