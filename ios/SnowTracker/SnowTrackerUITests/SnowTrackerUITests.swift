@@ -112,17 +112,36 @@ final class SnowTrackerUITests: XCTestCase {
         // Wait for snow quality data to load (scores appear)
         sleep(5)
 
+        // Take screenshot before pull-to-refresh
+        let preRefresh = XCTAttachment(screenshot: app.screenshot())
+        preRefresh.name = "1-before-refresh"
+        preRefresh.lifetime = .keepAlways
+        add(preRefresh)
+
         // Perform pull-to-refresh and measure time
         let start = CFAbsoluteTimeGetCurrent()
         firstCell.swipeDown()
 
-        // Wait for cells to still exist (refresh completes)
+        // Wait for cells to reappear (refresh completes)
         let cellReappeared = firstCell.waitForExistence(timeout: 30)
         let duration = CFAbsoluteTimeGetCurrent() - start
+
+        // Take screenshot right after cells reappear
+        let postRefresh = XCTAttachment(screenshot: app.screenshot())
+        postRefresh.name = "2-after-refresh-\(String(format: "%.1f", duration))s"
+        postRefresh.lifetime = .keepAlways
+        add(postRefresh)
 
         XCTAssertTrue(cellReappeared, "Cells should remain visible after refresh")
         XCTAssertLessThan(duration, 10.0,
             "Pull-to-refresh took \(String(format: "%.1f", duration))s — must complete within 10s")
+
+        // Wait 3 more seconds and check spinner is gone
+        sleep(3)
+        let afterWait = XCTAttachment(screenshot: app.screenshot())
+        afterWait.name = "3-after-3s-wait"
+        afterWait.lifetime = .keepAlways
+        add(afterWait)
 
         // Verify app is still responsive
         let tabBar = app.tabBars.firstMatch

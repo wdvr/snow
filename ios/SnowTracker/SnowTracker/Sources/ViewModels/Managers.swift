@@ -115,7 +115,14 @@ class SnowConditionsManager: ObservableObject {
             managerLog.debug("fetchAllSnowQualitySummaries: Force refresh requested, bypassing cache")
         }
 
-        isLoadingSnowQuality = true
+        // Only show loading state on initial load (no existing data).
+        // During pull-to-refresh we already have data displayed — flipping
+        // isLoadingSnowQuality causes every row to re-render with a spinner,
+        // which can confuse SwiftUI's refresh control and lock the spinner.
+        let showLoading = snowQualitySummaries.isEmpty
+        if showLoading {
+            isLoadingSnowQuality = true
+        }
 
         // Prioritize favorites, then limit total to prevent excessive API calls
         let favoriteIds = Set(UserPreferencesManager.shared.favoriteResorts)
@@ -144,7 +151,7 @@ class SnowConditionsManager: ObservableObject {
             Array(resortIds[start..<min(start + batchSize, resortIds.count)])
         }
 
-        managerLog.info("fetchAllSnowQualitySummaries: Fetching \(chunks.count) batches in parallel")
+        NSLog("[Refresh] Fetching \(chunks.count) batches (\(resortIds.count) resorts)")
 
         // Fire all batch requests concurrently
         let batchResults: [[(String, SnowQualitySummaryLight)]] = await withTaskGroup(
@@ -156,10 +163,10 @@ class SnowConditionsManager: ObservableObject {
                     let t0 = CFAbsoluteTimeGetCurrent()
                     do {
                         let results = try await apiClient.getBatchSnowQuality(for: chunk)
-                        managerLog.info("fetchAllSnowQualitySummaries: Batch \(index + 1)/\(chunks.count) (\(chunk.count) resorts) completed in \(String(format: "%.1f", CFAbsoluteTimeGetCurrent() - t0))s")
+                        NSLog("[Refresh] Batch \(index + 1)/\(chunks.count) done in \(String(format: "%.1f", CFAbsoluteTimeGetCurrent() - t0))s (\(results.count) results)")
                         return results.map { ($0.key, $0.value) }
                     } catch {
-                        managerLog.error("fetchAllSnowQualitySummaries: Batch \(index + 1) failed after \(String(format: "%.1f", CFAbsoluteTimeGetCurrent() - t0))s: \(error.localizedDescription)")
+                        NSLog("[Refresh] Batch \(index + 1) FAILED after \(String(format: "%.1f", CFAbsoluteTimeGetCurrent() - t0))s: \(error)")
                         return []
                     }
                 }
@@ -182,7 +189,14 @@ class SnowConditionsManager: ObservableObject {
             totalLoaded += batch.count
         }
         snowQualitySummaries = updated
-        isLoadingSnowQuality = false
+        if showLoading {
+            isLoadingSnowQuality = false
+        }
+
+        // Yield to let SwiftUI process the @Published update before the
+        // .refreshable closure returns. Without this, the refresh control
+        // can get stuck if the view re-renders while it's trying to dismiss.
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Cache the final results
         if !self.snowQualitySummaries.isEmpty {
@@ -234,17 +248,20 @@ class SnowConditionsManager: ObservableObject {
     /// Fetches summaries + conditions in parallel for visible + favorites
     /// Rate-limited to prevent API spam (5 second minimum between refreshes)
     func refreshData(visibleResortIds: [String] = []) async {
-        // Rate limiting - prevent rapid successive refreshes
+        // Rate limiting - prevent rapid successive refreshes.
+        // IMPORTANT: Even when rate-limited, yield briefly so SwiftUI's
+        // .refreshable can properly dismiss the spinner.
         if let lastRefresh = lastRefreshTime {
             let timeSinceLastRefresh = Date().timeIntervalSince(lastRefresh)
             if timeSinceLastRefresh < refreshRateLimitSeconds {
-                managerLog.debug("refreshData: Rate limited, only \(String(format: "%.1f", timeSinceLastRefresh))s since last refresh")
+                NSLog("[Refresh] Rate limited (%.1fs since last)", timeSinceLastRefresh)
+                try? await Task.sleep(nanoseconds: 300_000_000)
                 return
             }
         }
 
         let refreshStart = CFAbsoluteTimeGetCurrent()
-        managerLog.info("refreshData: Starting refresh")
+        NSLog("[Refresh] Starting")
         lastRefreshTime = Date()
 
         // Only refresh summaries (S3-backed, <1s). The list view only needs summaries.
@@ -253,7 +270,7 @@ class SnowConditionsManager: ObservableObject {
 
         let totalTime = CFAbsoluteTimeGetCurrent() - refreshStart
         lastUpdated = Date()
-        managerLog.info("refreshData: Complete in \(String(format: "%.1f", totalTime))s")
+        NSLog("[Refresh] Complete in %.1fs", totalTime)
     }
 
     func refreshConditions() async {

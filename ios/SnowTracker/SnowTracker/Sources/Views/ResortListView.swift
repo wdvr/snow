@@ -307,10 +307,11 @@ struct ResortListView: View {
                 .listStyle(PlainListStyle())
                 .searchable(text: $searchText, prompt: "Search resorts...")
                 .refreshable {
+                    NSLog("[Refresh] .refreshable closure START")
                     AnalyticsService.shared.trackPullToRefresh(screen: "ResortList")
-                    // Refresh visible resorts + a buffer of 20 more from the current list
                     let topIds = Array(filteredResorts.prefix(max(visibleResortIds.count + 20, 30)).map(\.id))
                     await snowConditionsManager.refreshData(visibleResortIds: topIds)
+                    NSLog("[Refresh] .refreshable closure END — spinner should dismiss now")
                 }
                 .overlay {
                     if filteredResorts.isEmpty && !snowConditionsManager.resorts.isEmpty {
