@@ -394,11 +394,11 @@ def normalize_features(X):
 
 
 def score_to_quality(score):
-    if score >= 5.5:
+    if score >= 5.2:
         return "excellent"
-    elif score >= 4.5:
+    elif score >= 4.2:
         return "good"
-    elif score >= 3.5:
+    elif score >= 3.4:
         return "fair"
     elif score >= 2.5:
         return "poor"

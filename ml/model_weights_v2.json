@@ -18830,9 +18830,9 @@
     ]
   },
   "quality_thresholds": {
-    "excellent": 5.45,
-    "good": 4.4,
-    "fair": 3.6,
+    "excellent": 5.2,
+    "good": 4.2,
+    "fair": 3.4,
     "poor": 2.5,
     "bad": 1.5,
     "horrible": 0.0

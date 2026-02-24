@@ -501,7 +501,32 @@ def _brief_lower_issue(condition: WeatherCondition) -> str:
 def score_to_100(raw_score: float) -> int:
     """Convert ML model raw score (1.0-6.0) to a 0-100 scale.
 
-    1.0 (horrible) -> 0
-    6.0 (excellent) -> 100
+    Uses piecewise-linear calibration instead of naive linear mapping.
+    The model's training data clusters around 3.0-4.0 (average groomed days),
+    and linear mapping places those at 40-60 which feels too harsh — a typical
+    groomed day with cold temps and deep base is perfectly enjoyable skiing.
+
+    Calibration targets:
+      1.0 ->  0  (not skiable)
+      2.5 -> 22  (icy, minimal fresh)
+      3.5 -> 65  (average groomed, good base, cold)
+      4.5 -> 83  (recent snow, cold preservation)
+      5.5 -> 95  (powder day)
+      6.0 -> 100 (epic)
     """
-    return max(0, min(100, round((raw_score - 1.0) / 5.0 * 100)))
+    breakpoints = [
+        (1.0, 0),
+        (2.5, 22),
+        (3.5, 65),
+        (4.5, 83),
+        (5.5, 95),
+        (6.0, 100),
+    ]
+    raw_score = max(1.0, min(6.0, raw_score))
+    for i in range(len(breakpoints) - 1):
+        r1, t1 = breakpoints[i]
+        r2, t2 = breakpoints[i + 1]
+        if raw_score <= r2:
+            frac = (raw_score - r1) / (r2 - r1)
+            return max(0, min(100, round(t1 + frac * (t2 - t1))))
+    return 100

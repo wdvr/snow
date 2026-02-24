@@ -339,7 +339,8 @@ class TestScoreTo100:
         assert score_to_100(6.0) == 100
 
     def test_middle_score(self):
-        assert score_to_100(3.5) == 50
+        # Piecewise-linear: 3.5 maps to 65 (breakpoint)
+        assert score_to_100(3.5) == 65
 
     def test_clamp_below(self):
         assert score_to_100(0.5) == 0
@@ -348,12 +349,12 @@ class TestScoreTo100:
         assert score_to_100(7.0) == 100
 
     def test_known_values(self):
-        # fair threshold (3.5) = 50
-        assert score_to_100(3.5) == 50
-        # good threshold (4.25) = 65
-        assert score_to_100(4.25) == 65
-        # excellent threshold (5.0) = 80
-        assert score_to_100(5.0) == 80
+        # Piecewise-linear calibration breakpoints:
+        # (1.0, 0), (2.5, 22), (3.5, 65), (4.5, 83), (5.5, 95), (6.0, 100)
+        assert score_to_100(2.5) == 22
+        assert score_to_100(3.5) == 65
+        assert score_to_100(4.5) == 83
+        assert score_to_100(5.5) == 95
 
 
 # MARK: - Overall explanation tests
