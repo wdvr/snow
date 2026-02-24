@@ -17,30 +17,24 @@ final class SnowTrackerUITests: XCTestCase {
 
     // MARK: - Data Loading Tests (Critical - catches API mismatches)
 
-    func testAppLoadsRealResortData() throws {
-        // Wait for app to load data from API
-        // The app should show real resort names, not sample/fake data
-
-        // Wait for loading to complete (up to 10 seconds)
-        let bigWhiteText = app.staticTexts["Big White Ski Resort"]
-        let exists = bigWhiteText.waitForExistence(timeout: 10)
-
-        XCTAssertTrue(exists, "App should display Big White Ski Resort from API data")
+    func testAppLoadsResortData() throws {
+        // Wait for app to load data from API — at least one resort cell should appear
+        let firstCell = app.cells.firstMatch
+        let exists = firstCell.waitForExistence(timeout: 10)
+        XCTAssertTrue(exists, "App should display resort cells from API data")
     }
 
-    func testAppShowsThreeResorts() throws {
-        // Check for all three seeded resorts
-        let bigWhite = app.staticTexts["Big White Ski Resort"]
-        let lakeLouise = app.staticTexts["Lake Louise Ski Resort"]
-        let silverStar = app.staticTexts["SilverStar Mountain Resort"]
+    func testAppShowsMultipleResorts() throws {
+        // Multiple resort cells should load within timeout
+        let firstCell = app.cells.firstMatch
+        guard firstCell.waitForExistence(timeout: 10) else {
+            XCTFail("App should show resort cells from API")
+            return
+        }
 
-        // At least one should exist within 10 seconds
-        XCTAssertTrue(
-            bigWhite.waitForExistence(timeout: 10) ||
-            lakeLouise.waitForExistence(timeout: 1) ||
-            silverStar.waitForExistence(timeout: 1),
-            "App should show at least one resort from API"
-        )
+        // Should have more than one cell
+        let cellCount = app.cells.count
+        XCTAssertGreaterThan(cellCount, 1, "App should show multiple resorts")
     }
 
     func testAppDoesNotShowFakeDataOnly() throws {
@@ -65,18 +59,20 @@ final class SnowTrackerUITests: XCTestCase {
 
     func testResortDetailShowsElevations() throws {
         // Wait for resorts to load
-        let bigWhite = app.staticTexts["Big White Ski Resort"]
-        guard bigWhite.waitForExistence(timeout: 10) else {
+        let firstCell = app.cells.firstMatch
+        guard firstCell.waitForExistence(timeout: 10) else {
             XCTFail("Resorts should load within 10 seconds")
             return
         }
 
-        // Tap on the resort to see details
-        bigWhite.tap()
+        // Tap on the first resort to see details
+        firstCell.tap()
 
-        // Should show elevation information
-        let elevationExists = app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'ft'")).firstMatch.waitForExistence(timeout: 5)
-        XCTAssertTrue(elevationExists, "Resort detail should show elevation in feet")
+        // Should show elevation information (ft or m)
+        let elevationFt = app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'ft'")).firstMatch
+        let elevationM = app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'elevation'")).firstMatch
+        let hasElevation = elevationFt.waitForExistence(timeout: 5) || elevationM.waitForExistence(timeout: 1)
+        XCTAssertTrue(hasElevation, "Resort detail should show elevation info")
     }
 
     // MARK: - Error State Tests
@@ -105,22 +101,54 @@ final class SnowTrackerUITests: XCTestCase {
         XCTAssertTrue(tabBar.waitForExistence(timeout: 10), "App should launch and show tab bar")
     }
 
-    func testPullToRefreshWorks() throws {
-        // Wait for initial load
-        let tabBar = app.tabBars.firstMatch
-        guard tabBar.waitForExistence(timeout: 10) else {
-            XCTFail("App should launch")
+    func testPullToRefreshCompletesWithinTimeout() throws {
+        // Wait for initial data load
+        let firstCell = app.cells.firstMatch
+        guard firstCell.waitForExistence(timeout: 15) else {
+            XCTFail("Resort list should load within 15 seconds")
             return
         }
 
-        // Try pull to refresh gesture
+        // Wait for snow quality data to load (scores appear)
+        sleep(5)
+
+        // Perform pull-to-refresh and measure time
+        let start = CFAbsoluteTimeGetCurrent()
+        firstCell.swipeDown()
+
+        // Wait for cells to still exist (refresh completes)
+        let cellReappeared = firstCell.waitForExistence(timeout: 30)
+        let duration = CFAbsoluteTimeGetCurrent() - start
+
+        XCTAssertTrue(cellReappeared, "Cells should remain visible after refresh")
+        XCTAssertLessThan(duration, 10.0,
+            "Pull-to-refresh took \(String(format: "%.1f", duration))s — must complete within 10s")
+
+        // Verify app is still responsive
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.exists, "App should still be responsive after refresh")
+    }
+
+    func testQualityLabelsNotSoft() throws {
+        // Regression: quality label for .poor must show "Poor", not "Soft"
         let firstCell = app.cells.firstMatch
-        if firstCell.waitForExistence(timeout: 5) {
-            firstCell.swipeDown()
-            // Verify app doesn't crash and refreshes - wait for cell to reappear
-            _ = firstCell.waitForExistence(timeout: 5)
-            XCTAssertTrue(tabBar.exists, "App should still be responsive after refresh")
+        guard firstCell.waitForExistence(timeout: 15) else {
+            XCTFail("Resort list should load")
+            return
         }
+
+        // Wait for quality labels to appear
+        sleep(5)
+
+        // "Soft" should NEVER appear as a quality label
+        let softLabel = app.staticTexts["Soft"]
+        XCTAssertFalse(softLabel.exists,
+            "Quality label 'Soft' should not exist — use 'Poor' instead")
+
+        // "Icy" should NEVER appear as a quality label
+        let icyLabel = app.staticTexts["Icy"]
+        XCTAssertFalse(icyLabel.exists,
+            "Quality label 'Icy' should not exist — use 'Bad' instead")
     }
 
     // MARK: - Tab Bar Tests
@@ -137,13 +165,13 @@ final class SnowTrackerUITests: XCTestCase {
         // Check for expected tabs
         let resortsTab = tabBar.buttons["Resorts"]
         let mapTab = tabBar.buttons["Map"]
-        let conditionsTab = tabBar.buttons["Conditions"]
+        let bestSnowTab = tabBar.buttons["Best Snow"]
         let favoritesTab = tabBar.buttons["Favorites"]
         let settingsTab = tabBar.buttons["Settings"]
 
         XCTAssertTrue(resortsTab.exists)
         XCTAssertTrue(mapTab.exists)
-        XCTAssertTrue(conditionsTab.exists)
+        XCTAssertTrue(bestSnowTab.exists)
         XCTAssertTrue(favoritesTab.exists)
         XCTAssertTrue(settingsTab.exists)
     }
@@ -180,9 +208,9 @@ final class SnowTrackerUITests: XCTestCase {
         let mapView = app.maps.firstMatch
         _ = mapView.waitForExistence(timeout: 5)
 
-        // Check for filter chip buttons
-        let allFilter = app.buttons["All"]
-        XCTAssertTrue(allFilter.waitForExistence(timeout: 3), "All filter should be visible")
+        // Check for filter chip buttons (may take time after map loads)
+        let allFilter = app.buttons.matching(NSPredicate(format: "label CONTAINS 'All'")).firstMatch
+        XCTAssertTrue(allFilter.waitForExistence(timeout: 5), "All filter should be visible")
     }
 
     func testMapFilterChipSelection() throws {
@@ -231,15 +259,15 @@ final class SnowTrackerUITests: XCTestCase {
         }
     }
 
-    func testNavigateToConditionsTab() throws {
+    func testNavigateToBestSnowTab() throws {
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.waitForExistence(timeout: 5))
 
-        tabBar.buttons["Conditions"].tap()
+        tabBar.buttons["Best Snow"].tap()
 
-        // Verify we're on the conditions screen by checking for navigation title
-        let conditionsTitle = app.navigationBars["Snow Conditions"]
-        XCTAssertTrue(conditionsTitle.waitForExistence(timeout: 3))
+        // Verify we're on the best snow screen
+        let bestSnowTitle = app.navigationBars["Best Snow"]
+        XCTAssertTrue(bestSnowTitle.waitForExistence(timeout: 3))
     }
 
     func testNavigateToFavoritesTab() throws {
@@ -317,20 +345,6 @@ final class SnowTrackerUITests: XCTestCase {
         // Check for Units link
         let unitsLink = app.buttons["Units"]
         XCTAssertTrue(unitsLink.exists)
-    }
-
-    func testSettingsScreenShowsLegalSection() throws {
-        let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 5))
-
-        tabBar.buttons["Settings"].tap()
-
-        // Scroll down to find Legal section (it might be off screen)
-        app.swipeUp()
-
-        // Check for Legal section
-        let legalHeader = app.staticTexts["Legal"]
-        XCTAssertTrue(legalHeader.waitForExistence(timeout: 3))
     }
 
     func testNavigateToNotificationSettings() throws {

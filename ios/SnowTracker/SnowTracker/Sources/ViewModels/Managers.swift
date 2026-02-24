@@ -244,31 +244,12 @@ class SnowConditionsManager: ObservableObject {
         }
 
         let refreshStart = CFAbsoluteTimeGetCurrent()
-        managerLog.info("refreshData: Starting full refresh")
+        managerLog.info("refreshData: Starting refresh")
         lastRefreshTime = Date()
 
-        // Capture favorites before entering task group (UserPreferencesManager is @MainActor)
-        let favoriteIds = Array(UserPreferencesManager.shared.favoriteResorts)
-        let idsToFetch = Array(Set(visibleResortIds + favoriteIds))
-
-        // Fetch summaries and conditions IN PARALLEL (not sequentially)
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask {
-                let t0 = CFAbsoluteTimeGetCurrent()
-                await self.fetchAllSnowQualitySummaries(forceRefresh: true)
-                managerLog.info("refreshData: Summaries took \(String(format: "%.1f", CFAbsoluteTimeGetCurrent() - t0))s")
-            }
-            if !idsToFetch.isEmpty {
-                group.addTask {
-                    let t0 = CFAbsoluteTimeGetCurrent()
-                    managerLog.info("refreshData: Fetching conditions for \(idsToFetch.count) resorts (visible + favorites)")
-                    await self.fetchConditionsForResorts(resortIds: idsToFetch)
-                    managerLog.info("refreshData: Conditions took \(String(format: "%.1f", CFAbsoluteTimeGetCurrent() - t0))s")
-                }
-            }
-            // Wait for ALL tasks (both summaries and conditions)
-            for await _ in group {}
-        }
+        // Only refresh summaries (S3-backed, <1s). The list view only needs summaries.
+        // Conditions are lazy-loaded via onResortAppeared() for detail views.
+        await fetchAllSnowQualitySummaries(forceRefresh: true)
 
         let totalTime = CFAbsoluteTimeGetCurrent() - refreshStart
         lastUpdated = Date()
