@@ -29,6 +29,7 @@ final class ResortPointAnnotation: MKPointAnnotation {
 
 struct ClusteredMapView: UIViewRepresentable {
     @Binding var cameraPosition: MapCameraPosition
+    @Binding var pendingRegion: MKCoordinateRegion?
     let annotations: [ResortAnnotation]
     let mapStyle: MapStyle
     let showUserLocation: Bool
@@ -55,6 +56,14 @@ struct ClusteredMapView: UIViewRepresentable {
             forAnnotationViewWithReuseIdentifier: MKMapViewDefaultClusterAnnotationViewReuseIdentifier
         )
 
+        // Set initial region
+        if let region = pendingRegion {
+            mapView.setRegion(region, animated: false)
+            DispatchQueue.main.async { self.pendingRegion = nil }
+        } else {
+            mapView.setRegion(MapRegionPreset.naRockies.region, animated: false)
+        }
+
         return mapView
     }
 
@@ -62,8 +71,13 @@ struct ClusteredMapView: UIViewRepresentable {
         // Update map type
         updateMapType(mapView)
 
-        // Update region from camera position
-        updateRegion(mapView)
+        // Apply pending region change (from preset selection, fitAll, etc.)
+        if let region = pendingRegion {
+            context.coordinator.isProgrammaticRegionChange = true
+            mapView.setRegion(region, animated: context.coordinator.hasInitialized)
+            context.coordinator.hasInitialized = true
+            DispatchQueue.main.async { self.pendingRegion = nil }
+        }
 
         // Update annotations
         updateAnnotations(mapView)
@@ -85,19 +99,6 @@ struct ClusteredMapView: UIViewRepresentable {
         } else {
             mapView.mapType = .standard
         }
-    }
-
-    private func updateRegion(_ mapView: MKMapView) {
-        // MapCameraPosition doesn't expose its region directly in a pattern-matchable way
-        // So we check its description or use a different approach
-        let positionDescription = String(describing: cameraPosition)
-        if positionDescription.contains("automatic") {
-            if !annotations.isEmpty {
-                fitAllAnnotations(mapView)
-            }
-        }
-        // For region updates, we'll rely on the region passed through the binding
-        // This is handled by SwiftUI's onChange in the parent view
     }
 
     private func updateAnnotations(_ mapView: MKMapView) {
@@ -131,55 +132,12 @@ struct ClusteredMapView: UIViewRepresentable {
         }
     }
 
-    private func fitAllAnnotations(_ mapView: MKMapView) {
-        guard !annotations.isEmpty else { return }
-
-        let coordinates = annotations.map { $0.coordinate }
-        let minLat = coordinates.map { $0.latitude }.min() ?? 0
-        let maxLat = coordinates.map { $0.latitude }.max() ?? 0
-        let minLon = coordinates.map { $0.longitude }.min() ?? 0
-        let maxLon = coordinates.map { $0.longitude }.max() ?? 0
-
-        let center = CLLocationCoordinate2D(
-            latitude: (minLat + maxLat) / 2,
-            longitude: (minLon + maxLon) / 2
-        )
-
-        // Calculate span with bounds validation to prevent crash
-        var latDelta = (maxLat - minLat) * 1.3 + 2
-        var lonDelta = (maxLon - minLon) * 1.3 + 2
-
-        // Clamp to valid MapKit region bounds (max 180 lat, 360 lon)
-        // Use slightly smaller values to avoid edge case issues
-        latDelta = min(latDelta, 170.0)
-        lonDelta = min(lonDelta, 350.0)
-
-        // Ensure minimum reasonable zoom level
-        latDelta = max(latDelta, 0.01)
-        lonDelta = max(lonDelta, 0.01)
-
-        // Validate center coordinates
-        guard center.latitude.isFinite && center.longitude.isFinite &&
-              center.latitude >= -90 && center.latitude <= 90 &&
-              center.longitude >= -180 && center.longitude <= 180 else {
-            // Fallback to a safe default region (North America)
-            let defaultRegion = MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 45.0, longitude: -110.0),
-                span: MKCoordinateSpan(latitudeDelta: 30, longitudeDelta: 40)
-            )
-            mapView.setRegion(defaultRegion, animated: false)
-            return
-        }
-
-        let span = MKCoordinateSpan(latitudeDelta: latDelta, longitudeDelta: lonDelta)
-
-        mapView.setRegion(MKCoordinateRegion(center: center, span: span), animated: false)
-    }
-
     // MARK: - Coordinator
 
     final class Coordinator: NSObject, MKMapViewDelegate {
         var parent: ClusteredMapView
+        var isProgrammaticRegionChange = false
+        var hasInitialized = false
 
         init(_ parent: ClusteredMapView) {
             self.parent = parent
@@ -247,6 +205,11 @@ struct ClusteredMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+            // Skip binding update for programmatic changes (prevents feedback loop)
+            if isProgrammaticRegionChange {
+                isProgrammaticRegionChange = false
+                return
+            }
             // Update the binding when user interacts with map
             parent.cameraPosition = .region(mapView.region)
         }

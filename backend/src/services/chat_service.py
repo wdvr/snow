@@ -153,10 +153,15 @@ SYSTEM_PROMPT = (
     "Overall quality is weighted: 50% top, 35% mid, 15% base. "
     "Conditions data is updated hourly from weather models.\n\n"
     "## Tips\n"
+    "- For 'where has the best powder' or 'best conditions' questions, use the "
+    "get_best_conditions tool. You do NOT need the user's location for this — "
+    "the tool returns the top resorts worldwide by current snow quality.\n"
     "- Use the forecast tool for 'when should I go' questions — suggest the best day.\n"
     "- For future predictions, caveat with 'based on current forecast' — weather changes.\n"
     "- Check condition reports when available — real on-the-ground skier feedback.\n"
-    "- When comparing resorts, highlight the clear winner and explain why."
+    "- When comparing resorts, highlight the clear winner and explain why.\n"
+    "- Never ask the user to share their location before answering a question. "
+    "If a question can be answered with get_best_conditions or search_resorts, use those first."
 )
 
 TOOL_DEFINITIONS = [

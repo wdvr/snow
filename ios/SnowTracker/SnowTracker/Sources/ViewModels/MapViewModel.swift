@@ -143,7 +143,8 @@ class MapViewModel: ObservableObject {
     @Published var selectedAnnotation: ResortAnnotation?
     @Published var selectedFilter: MapFilterOption = .all
     @Published var selectedRegionPreset: MapRegionPreset = .naRockies
-    @Published var cameraPosition: MapCameraPosition = .automatic
+    @Published var cameraPosition: MapCameraPosition = .region(MapRegionPreset.naRockies.region)
+    @Published var pendingRegion: MKCoordinateRegion?
     @Published var sortByDistance: Bool = false
     @Published var selectedForecastDate: Date? = nil
     @Published var isFetchingTimelines = false
@@ -229,10 +230,12 @@ class MapViewModel: ObservableObject {
             return
         }
 
-        cameraPosition = .region(MKCoordinateRegion(
+        let region = MKCoordinateRegion(
             center: userLoc.coordinate,
             span: MKCoordinateSpan(latitudeDelta: 8, longitudeDelta: 10)
-        ))
+        )
+        cameraPosition = .region(region)
+        pendingRegion = region
     }
 
     func setRegion(_ preset: MapRegionPreset) {
@@ -241,6 +244,7 @@ class MapViewModel: ObservableObject {
             centerOnUserLocation()
         } else {
             cameraPosition = .region(preset.region)
+            pendingRegion = preset.region
         }
     }
 
@@ -270,13 +274,16 @@ class MapViewModel: ObservableObject {
         guard center.latitude.isFinite && center.longitude.isFinite &&
               center.latitude >= -90 && center.latitude <= 90 &&
               center.longitude >= -180 && center.longitude <= 180 else {
-            // Fallback to default region
-            cameraPosition = .region(MapRegionPreset.naRockies.region)
+            let region = MapRegionPreset.naRockies.region
+            cameraPosition = .region(region)
+            pendingRegion = region
             return
         }
 
         let span = MKCoordinateSpan(latitudeDelta: latDelta, longitudeDelta: lonDelta)
-        cameraPosition = .region(MKCoordinateRegion(center: center, span: span))
+        let region = MKCoordinateRegion(center: center, span: span)
+        cameraPosition = .region(region)
+        pendingRegion = region
     }
 
     func requestLocationPermission() {

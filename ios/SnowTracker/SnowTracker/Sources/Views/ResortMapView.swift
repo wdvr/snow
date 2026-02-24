@@ -8,7 +8,6 @@ struct ResortMapView: View {
     @ObservedObject private var locationManager = LocationManager.shared
 
     @State private var selectedResort: Resort?
-    @State private var showResortDetail: Bool = false
     @State private var showLegend: Bool = false
     @State private var mapStyle: MapStyle = .standard
     @State private var clusterResorts: [Resort] = []
@@ -25,7 +24,13 @@ struct ResortMapView: View {
             .navigationTitle("Map")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { mapToolbarItems }
-            .sheet(isPresented: $showResortDetail) { resortDetailSheet }
+            .sheet(item: $selectedResort) { resort in
+                ResortMapDetailSheet(resort: resort)
+                    .environmentObject(snowConditionsManager)
+                    .environmentObject(userPreferencesManager)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+            }
             .sheet(isPresented: $showClusterList) { clusterListSheet }
             .onAppear { handleAppear() }
             .onDisappear { handleDisappear() }
@@ -93,24 +98,15 @@ struct ResortMapView: View {
     }
 
     @ViewBuilder
-    private var resortDetailSheet: some View {
-        if let resort = selectedResort {
-            ResortMapDetailSheet(resort: resort)
-                .environmentObject(snowConditionsManager)
-                .environmentObject(userPreferencesManager)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-        }
-    }
-
-    @ViewBuilder
     private var clusterListSheet: some View {
         ClusterResortListSheet(
             resorts: clusterResorts,
             onResortSelected: { resort in
                 showClusterList = false
-                selectedResort = resort
-                showResortDetail = true
+                // Delay to let the cluster sheet dismiss before showing detail
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    selectedResort = resort
+                }
             }
         )
         .environmentObject(snowConditionsManager)
@@ -122,6 +118,10 @@ struct ResortMapView: View {
     private func handleAppear() {
         updateAnnotations()
         locationManager.requestOneTimeLocation()
+        // Center on user location if available, otherwise keep default (NA Rockies)
+        if let userLocation = locationManager.userLocation {
+            mapViewModel.centerOnUserLocation(userLocation)
+        }
         AnalyticsService.shared.trackScreen("Map", screenClass: "ResortMapView")
     }
 
@@ -146,12 +146,12 @@ struct ResortMapView: View {
     private var mapContent: some View {
         ClusteredMapView(
             cameraPosition: $mapViewModel.cameraPosition,
+            pendingRegion: $mapViewModel.pendingRegion,
             annotations: mapViewModel.annotations,
             mapStyle: mapStyle,
             showUserLocation: true,
             onAnnotationTap: { resort in
                 selectedResort = resort
-                showResortDetail = true
                 AnalyticsService.shared.trackResortClicked(
                     resortId: resort.id,
                     resortName: resort.name,
@@ -257,7 +257,6 @@ struct ResortMapView: View {
                             distance: mapViewModel.formattedDistance(to: annotation.resort, prefs: userPreferencesManager.preferredUnits)
                         ) {
                             selectedResort = annotation.resort
-                            showResortDetail = true
                         }
                     }
                 }

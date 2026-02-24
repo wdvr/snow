@@ -99,7 +99,7 @@ final class VerificationTests: XCTestCase {
         XCTAssertTrue(mapView.exists, "Map should be visible")
     }
 
-    func testMapView_TapAnnotation() throws {
+    func testMapView_TapAnnotation_ShowsDetailSheet() throws {
         let tabBar = app.tabBars.firstMatch
         tabBar.buttons["Map"].tap()
         sleep(5)
@@ -113,14 +113,21 @@ final class VerificationTests: XCTestCase {
         if annotations.count > 0 {
             // Tap the first annotation
             annotations.element(boundBy: 0).tap()
-            sleep(2)
+            sleep(3)
 
-            // Take screenshot of annotation detail
+            // Take screenshot of the detail sheet
             let screenshot = XCUIScreen.main.screenshot()
             let attachment = XCTAttachment(screenshot: screenshot)
-            attachment.name = "map-annotation-tapped"
+            attachment.name = "map-detail-sheet"
             attachment.lifetime = .keepAlways
             add(attachment)
+
+            // Regression: detail sheet must NOT be empty/grey
+            // Check that resort name or conditions content is visible
+            let hasResortContent = app.staticTexts.matching(
+                NSPredicate(format: "label CONTAINS 'Conditions' OR label CONTAINS 'Done' OR label CONTAINS 'View Full Details' OR label CONTAINS 'Loading'")
+            ).firstMatch.waitForExistence(timeout: 5)
+            XCTAssertTrue(hasResortContent, "Map detail sheet should show resort content, not grey/empty screen")
         } else {
             print("No annotations found on map - this may be expected if map hasn't loaded annotations yet")
         }

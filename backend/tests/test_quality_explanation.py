@@ -456,3 +456,140 @@ class TestOverallExplanation:
         assert result is not None
         # Should use standard fair explanation
         assert "10cm" in result or "fresh" in result.lower()
+
+
+# MARK: - Wind/Visibility Score Impact Tests (Regression)
+
+
+class TestWindVisibilityScoreImpact:
+    """Regression tests: wind/visibility explanations must mention score impact."""
+
+    def test_windy_mentions_score(self):
+        """Wind above 25 km/h should say it decreases the score."""
+        cond = _make_condition(
+            snow_quality=SnowQuality.FAIR,
+            wind_speed_kmh=30.0,
+        )
+        explanation = generate_quality_explanation(cond)
+        assert "score" in explanation.lower(), (
+            f"Wind explanation should mention score impact, got: {explanation}"
+        )
+
+    def test_strong_wind_mentions_score(self):
+        """Strong wind (>40 km/h) should say it lowers the score."""
+        cond = _make_condition(
+            snow_quality=SnowQuality.FAIR,
+            wind_speed_kmh=50.0,
+        )
+        explanation = generate_quality_explanation(cond)
+        assert "lowers the score" in explanation.lower(), (
+            f"Strong wind should say 'lowers the score', got: {explanation}"
+        )
+        assert "50" in explanation
+
+    def test_strong_gusts_mention_score(self):
+        """Strong gusts (>60 km/h) should say it lowers/lower the score."""
+        cond = _make_condition(
+            snow_quality=SnowQuality.FAIR,
+            wind_gust_kmh=70.0,
+        )
+        explanation = generate_quality_explanation(cond)
+        assert "lower the score" in explanation.lower(), (
+            f"Strong gusts should mention score impact, got: {explanation}"
+        )
+        assert "70" in explanation
+
+    def test_low_visibility_mentions_score(self):
+        """Low visibility (<1000m) should mention score impact."""
+        cond = _make_condition(
+            snow_quality=SnowQuality.FAIR,
+            visibility_m=800.0,
+        )
+        explanation = generate_quality_explanation(cond)
+        assert "score" in explanation.lower(), (
+            f"Low visibility should mention score impact, got: {explanation}"
+        )
+
+    def test_very_low_visibility_mentions_score(self):
+        """Very low visibility (<500m) should mention score impact."""
+        cond = _make_condition(
+            snow_quality=SnowQuality.FAIR,
+            visibility_m=300.0,
+        )
+        explanation = generate_quality_explanation(cond)
+        assert "score" in explanation.lower(), (
+            f"Very low visibility should mention score impact, got: {explanation}"
+        )
+
+    def test_no_wind_no_visibility_mention(self):
+        """Normal wind and visibility should not mention score impact."""
+        cond = _make_condition(
+            snow_quality=SnowQuality.FAIR,
+            wind_speed_kmh=15.0,
+            visibility_m=5000.0,
+        )
+        explanation = generate_quality_explanation(cond)
+        # Should not contain wind/visibility score text
+        assert "wind" not in explanation.lower() or "score" not in explanation.lower()
+
+
+class TestTimelineWindVisibilityScoreImpact:
+    """Regression tests: timeline wind/visibility explanations must mention score impact."""
+
+    def test_timeline_wind_mentions_score(self):
+        """Timeline wind >25 should mention score decrease."""
+        result = generate_timeline_explanation(
+            quality="fair",
+            temperature_c=-5.0,
+            snowfall_cm=0.0,
+            snow_depth_cm=100.0,
+            wind_speed_kmh=30.0,
+            is_forecast=False,
+        )
+        assert "score" in result.lower(), (
+            f"Timeline wind explanation should mention score, got: {result}"
+        )
+
+    def test_timeline_strong_wind_mentions_score(self):
+        """Timeline strong wind >40 should say it lowers the score."""
+        result = generate_timeline_explanation(
+            quality="fair",
+            temperature_c=-5.0,
+            snowfall_cm=0.0,
+            snow_depth_cm=100.0,
+            wind_speed_kmh=50.0,
+            is_forecast=False,
+        )
+        assert "lowers the score" in result.lower(), (
+            f"Timeline strong wind should say 'lowers the score', got: {result}"
+        )
+
+    def test_timeline_gusts_mention_score(self):
+        """Timeline strong gusts should mention score impact."""
+        result = generate_timeline_explanation(
+            quality="fair",
+            temperature_c=-5.0,
+            snowfall_cm=0.0,
+            snow_depth_cm=100.0,
+            wind_speed_kmh=20.0,
+            is_forecast=False,
+            wind_gust_kmh=70.0,
+        )
+        assert "lower the score" in result.lower(), (
+            f"Timeline gusts should mention score impact, got: {result}"
+        )
+
+    def test_timeline_low_visibility_mentions_score(self):
+        """Timeline low visibility should mention score impact."""
+        result = generate_timeline_explanation(
+            quality="fair",
+            temperature_c=-5.0,
+            snowfall_cm=0.0,
+            snow_depth_cm=100.0,
+            wind_speed_kmh=10.0,
+            is_forecast=False,
+            visibility_m=800.0,
+        )
+        assert "score" in result.lower(), (
+            f"Timeline visibility should mention score, got: {result}"
+        )
