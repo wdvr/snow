@@ -80,7 +80,7 @@ enum WidgetSnowQuality: String, Sendable {
         case .excellent: return "Excellent"
         case .good: return "Good"
         case .fair: return "Fair"
-        case .poor: return "Soft"
+        case .poor: return "Poor"
         case .slushy: return "Slushy"
         case .bad: return "Icy"
         case .horrible: return "Not Skiable"

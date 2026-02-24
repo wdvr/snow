@@ -237,6 +237,9 @@ class SnowConditionsManager: ObservableObject {
             let timeSinceLastRefresh = Date().timeIntervalSince(lastRefresh)
             if timeSinceLastRefresh < refreshRateLimitSeconds {
                 managerLog.debug("refreshData: Rate limited, only \(String(format: "%.1f", timeSinceLastRefresh))s since last refresh")
+                // Don't silently return — let the refresh gesture complete naturally
+                // by doing a brief wait so the spinner shows then dismisses
+                try? await Task.sleep(for: .milliseconds(300))
                 return
             }
         }
@@ -244,14 +247,28 @@ class SnowConditionsManager: ObservableObject {
         managerLog.debug("refreshData: Starting full refresh (bypassing cache)")
         lastRefreshTime = Date()
 
-        // Refresh snow quality summaries for all resorts (used by list view)
-        await fetchAllSnowQualitySummaries(forceRefresh: true)
-        // Refresh full conditions for visible resorts + favorites
+        // Capture favorites before entering task group (UserPreferencesManager is @MainActor)
         let favoriteIds = Array(UserPreferencesManager.shared.favoriteResorts)
         let idsToFetch = Array(Set(visibleResortIds + favoriteIds))
-        if !idsToFetch.isEmpty {
-            managerLog.debug("refreshData: Fetching conditions for \(idsToFetch.count) resorts (visible + favorites)")
-            await fetchConditionsForResorts(resortIds: idsToFetch)
+
+        // Wrap in a timeout to prevent infinite hangs (45 seconds max)
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask {
+                // Refresh snow quality summaries for all resorts (used by list view)
+                await self.fetchAllSnowQualitySummaries(forceRefresh: true)
+                // Refresh full conditions for visible resorts + favorites
+                if !idsToFetch.isEmpty {
+                    managerLog.debug("refreshData: Fetching conditions for \(idsToFetch.count) resorts (visible + favorites)")
+                    await self.fetchConditionsForResorts(resortIds: idsToFetch)
+                }
+            }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(45))
+                managerLog.debug("refreshData: Timeout reached (45s)")
+            }
+            // Return when EITHER the actual work finishes OR timeout hits
+            await group.next()
+            group.cancelAll()
         }
 
         lastUpdated = Date()
@@ -259,7 +276,13 @@ class SnowConditionsManager: ObservableObject {
     }
 
     func refreshConditions() async {
-        await fetchConditionsForFavorites()
+        // Wrap in timeout to prevent pull-to-refresh from hanging
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await self.fetchConditionsForFavorites() }
+            group.addTask { try? await Task.sleep(for: .seconds(30)) }
+            await group.next()
+            group.cancelAll()
+        }
     }
 
     /// Fetch conditions for favorites only - efficient for startup

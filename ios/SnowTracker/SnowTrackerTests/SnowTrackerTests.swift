@@ -38,9 +38,9 @@ final class SnowTrackerTests: XCTestCase {
         XCTAssertEqual(SnowQuality.excellent.displayName, "Excellent")
         XCTAssertEqual(SnowQuality.good.displayName, "Good")
         XCTAssertEqual(SnowQuality.fair.displayName, "Fair")
-        XCTAssertEqual(SnowQuality.poor.displayName, "Soft")
+        XCTAssertEqual(SnowQuality.poor.displayName, "Poor")
         XCTAssertEqual(SnowQuality.slushy.displayName, "Slushy")
-        XCTAssertEqual(SnowQuality.bad.displayName, "Icy")
+        XCTAssertEqual(SnowQuality.bad.displayName, "Bad")
         XCTAssertEqual(SnowQuality.unknown.displayName, "Unknown")
     }
 
@@ -48,9 +48,9 @@ final class SnowTrackerTests: XCTestCase {
         XCTAssertEqual(SnowQuality.excellent.icon, "snowflake")
         XCTAssertEqual(SnowQuality.good.icon, "cloud.snow")
         XCTAssertEqual(SnowQuality.fair.icon, "cloud")
-        XCTAssertEqual(SnowQuality.poor.icon, "drop.fill")
+        XCTAssertEqual(SnowQuality.poor.icon, "cloud")
         XCTAssertEqual(SnowQuality.slushy.icon, "drop.fill")
-        XCTAssertEqual(SnowQuality.bad.icon, "thermometer.sun")
+        XCTAssertEqual(SnowQuality.bad.icon, "exclamationmark.triangle")
         XCTAssertEqual(SnowQuality.unknown.icon, "questionmark.circle")
     }
 
