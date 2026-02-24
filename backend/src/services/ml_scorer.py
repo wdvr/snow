@@ -335,6 +335,11 @@ def extract_features_from_condition(
     wind_chill = _compute_wind_chill(cur_temp, float(wind_speed))
     wind_chill_delta = wind_chill - cur_temp
 
+    # Wind gust and visibility from condition (v13 model features)
+    visibility_m = getattr(condition, "visibility_m", None) or 10000.0
+    min_visibility_24h_m = getattr(condition, "min_visibility_24h_m", None) or 10000.0
+    max_wind_gust_24h = getattr(condition, "max_wind_gust_24h", None) or 0.0
+
     return {
         "cur_temp": cur_temp,
         "max_temp_24h": max_temp,
@@ -371,6 +376,9 @@ def extract_features_from_condition(
         "is_snowing": is_snowing,
         "wind_chill_c": wind_chill,
         "wind_chill_delta": wind_chill_delta,
+        "visibility_m": float(visibility_m),
+        "min_visibility_24h_m": float(min_visibility_24h_m),
+        "max_wind_gust_24h": float(max_wind_gust_24h),
     }
 
 

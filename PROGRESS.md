@@ -91,15 +91,45 @@
 
 ## Current Issues (Priority Order)
 
+### Workstream 4: Critical Bug Fixes (Feb 23 evening)
+
+#### iOS List View
+- [x] Progressive batch loading (update UI per batch, not all-at-once)
+- [ ] List view still shows all 1040 resorts with no pagination — needs lazy pagination
+- [ ] List/detail data discrepancy (list uses stale S3 static JSON, detail uses fresh DynamoDB)
+- [ ] Stale data in list (e.g. Big White shows "epic" incorrectly, Apex shows wrong temp)
+
+#### iOS Map View
+- [ ] Grey empty screen when selecting single resort (race condition: sheet renders before .task fires)
+- [ ] "0 resorts" in cluster view with no spinner (loading state only shown when list is empty AND loading)
+
+#### Backend: ML Scorer Bug
+- [ ] extract_features_from_condition() missing visibility_m, min_visibility_24h_m, max_wind_gust_24h — model uses defaults instead of real data
+
+#### Backend: Chat Streaming
+- [x] Fix chat stream Lambda crash: `ModuleNotFoundError: No module named 'jwt'` — changed to `from jose import jwt`
+- [x] Deploy fix to staging + prod
+
+#### Backend: Snow History
+- [ ] Big White has empty snow history despite recent snowfall — daily_history_service is called but records may not be persisting
+
+#### iOS: App Store Connect
+- [ ] Upload metadata and screenshots to App Store Connect
+- [ ] Submit for review
+
 ### 🔴 Critical
 | Issue | Description | Status |
 |-------|-------------|--------|
-| (none) | | |
+| Chat broken | jwt import crash in chat_stream_handler.py | FIXED - deployed |
+| ML scorer bug | Missing wind/visibility features in extract_features_from_condition | In progress |
+| List view perf | 1040 resorts with no pagination, stale data | In progress |
+| Map empty state | Grey screen on resort select, 0 resorts on cluster | In progress |
 
 ### 🟡 Medium
 | Issue | Description | Status |
 |-------|-------------|--------|
-| App Store Release | Need provisioning profile with Push Notifications | User action needed |
+| Snow history empty | Big White etc. have no history despite weather runs | In progress |
+| App Store Release | Need to upload metadata + screenshots | In progress |
 
 ### 🟢 Future Features
 | Issue | Description |

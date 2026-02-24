@@ -532,14 +532,23 @@ struct ResortMapDetailSheet: View {
 
                     Divider()
 
-                    // Current conditions
+                    // Current conditions - show summary immediately while full conditions load
                     if let condition = condition {
                         conditionsSection(condition)
-                    } else if isLoadingConditions {
-                        loadingConditionsView
                     } else if let summary = snowConditionsManager.snowQualitySummaries[resort.id],
                               summary.temperatureC != nil || summary.snowfallFreshCm != nil {
                         summaryFallbackSection(summary)
+                        if isLoadingConditions {
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                    .controlSize(.small)
+                                Text("Loading full conditions...")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    } else if isLoadingConditions {
+                        loadingConditionsView
                     } else {
                         noConditionsView
                     }
