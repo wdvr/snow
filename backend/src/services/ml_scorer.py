@@ -210,6 +210,10 @@ def engineer_features(raw: dict[str, float]) -> list[float]:
     min_vis_24h = _f("min_visibility_24h_m", 10000.0)
     max_gust = _f("max_wind_gust_24h", 0.0)
 
+    # Snow freshness feature
+    hours_since_snow = _f("hours_since_last_snowfall", 336.0)
+    days_since_snow = min(hours_since_snow / 24.0, 14.0)
+
     return [
         ct,
         max24,
@@ -250,6 +254,10 @@ def engineer_features(raw: dict[str, float]) -> list[float]:
         visibility_m / 1000.0,  # normalized to km
         min_vis_24h / 1000.0,  # min visibility 24h, normalized to km
         max_gust / 100.0,  # max gust normalized
+        # Snow freshness features (3)
+        days_since_snow,
+        max(0, days_since_snow - 2.0) * max(0, ct) / 5.0,  # aging * warmth
+        snow24 / max(days_since_snow, 0.1),  # fresh snow rate
     ]
 
 
@@ -379,6 +387,9 @@ def extract_features_from_condition(
         "visibility_m": float(visibility_m),
         "min_visibility_24h_m": float(min_visibility_24h_m),
         "max_wind_gust_24h": float(max_wind_gust_24h),
+        "hours_since_last_snowfall": float(
+            getattr(condition, "hours_since_last_snowfall", None) or 336.0
+        ),
     }
 
 
@@ -584,6 +595,16 @@ def _extract_features_at_hour(
     if gust_24h:
         max_wind_gust_24h = max(max_wind_gust_24h, max(gust_24h))
 
+    # Hours since last significant snowfall (>0.1 cm in any hour)
+    hours_since_last_snowfall = 336.0  # default: no recent snow (14 days)
+    for h in range(target_hour, max(target_hour - 336, -1), -1):
+        if h < 0 or h >= len(snowfall):
+            break
+        s = snowfall[h]
+        if s is not None and s > 0.1:
+            hours_since_last_snowfall = float(target_hour - h)
+            break
+
     return {
         "cur_temp": cur_temp,
         "max_temp_24h": max_temp_24h,
@@ -622,6 +643,7 @@ def _extract_features_at_hour(
         "visibility_m": visibility_m,
         "min_visibility_24h_m": min_visibility_24h_m,
         "max_wind_gust_24h": max_wind_gust_24h,
+        "hours_since_last_snowfall": hours_since_last_snowfall,
     }
 
 
@@ -815,30 +837,6 @@ def predict_quality(
         score = _forward_single(normalized, model["weights"])
     score = max(1.0, min(6.0, score))
 
-    # Post-ML adjustment: penalize aged snow
-    hours_since = getattr(condition, "hours_since_last_snowfall", None)
-    cur_temp = getattr(condition, "current_temp_celsius", 0.0) or 0.0
-    snow_24h = getattr(condition, "snowfall_24h_cm", 0.0) or 0.0
-    score = _apply_snow_aging_penalty(score, hours_since, snow_24h, cur_temp)
-
-    # Post-ML adjustment: boost for accumulated unrefrozen snow at cold temps.
-    # The model underestimates quality when there's no recent 24h snowfall but
-    # significant snow has accumulated since the last freeze-thaw and temps are
-    # very cold (preserving powder quality).
-    # Use condition's snowfall_after_freeze_cm (derived from snow depth changes)
-    # rather than raw_features (from hourly API snowfall) since the latter often
-    # shows 0 for snow that fell outside the API's hourly data window.
-    snow_since_ft = getattr(condition, "snowfall_after_freeze_cm", None)
-    if snow_since_ft is None:
-        snow_since_ft = raw_features.get("snow_since_freeze_cm", 0.0)
-    ft_hours = getattr(condition, "last_freeze_thaw_hours_ago", None)
-    ft_days = (
-        ft_hours / 24.0
-        if ft_hours is not None
-        else raw_features.get("freeze_thaw_days_ago", 0.0)
-    )
-    score = _apply_cold_accumulation_boost(score, snow_since_ft, ft_days, cur_temp)
-
     # Map to quality
     thresholds = model["quality_thresholds"]
     if score >= thresholds["excellent"]:
@@ -922,25 +920,6 @@ def predict_quality_at_hour(
     else:
         score = _forward_single(normalized, model["weights"])
     score = max(1.0, min(6.0, score))
-
-    # Post-ML adjustment: penalize aged snow
-    # Compute hours since last significant snowfall from the array
-    hours_since_snow = None
-    snow_24h = raw_features.get("snowfall_24h_cm", 0.0)
-    for h in range(target_hour_index, max(target_hour_index - 336, -1), -1):
-        if h < 0 or h >= len(snowfall):
-            break
-        s = snowfall[h]
-        if s is not None and s > 0.1:
-            hours_since_snow = float(target_hour_index - h)
-            break
-    cur_temp = temps[target_hour_index] if temps[target_hour_index] is not None else 0.0
-    score = _apply_snow_aging_penalty(score, hours_since_snow, snow_24h, cur_temp)
-
-    # Cold accumulation boost for timeline predictions
-    snow_since_ft = raw_features.get("snow_since_freeze_cm", 0.0)
-    ft_days = raw_features.get("freeze_thaw_days_ago", 0.0)
-    score = _apply_cold_accumulation_boost(score, snow_since_ft, ft_days, cur_temp)
 
     thresholds = model["quality_thresholds"]
     if score >= thresholds["excellent"]:

@@ -57,6 +57,7 @@ RAW_FEATURE_COLUMNS = [
     "visibility_m",
     "min_visibility_24h_m",
     "max_wind_gust_24h",
+    "hours_since_last_snowfall",
 ]
 
 
@@ -106,6 +107,10 @@ def engineer_features(raw_features: dict) -> list[float]:
     visibility_m = raw_features.get("visibility_m", 10000.0) or 10000.0
     min_vis_24h = raw_features.get("min_visibility_24h_m", 10000.0) or 10000.0
     max_gust = raw_features.get("max_wind_gust_24h", 0.0) or 0.0
+
+    # Snow freshness feature
+    hours_since_snow = raw_features.get("hours_since_last_snowfall", 336.0) or 336.0
+    days_since_snow = min(hours_since_snow / 24.0, 14.0)  # cap at 14 days
 
     return [
         # Temperature features (4)
@@ -161,6 +166,12 @@ def engineer_features(raw_features: dict) -> list[float]:
         visibility_m / 1000.0,  # normalized to km (0-30 range)
         min_vis_24h / 1000.0,  # min visibility 24h, normalized to km
         max_gust / 100.0,  # max gust normalized (gusts can reach 100+ km/h)
+        # Snow freshness features (3) — how recently it snowed + interactions
+        days_since_snow,  # days since last significant snowfall (0-14)
+        max(0, days_since_snow - 2.0)
+        * max(0, ct)
+        / 5.0,  # aging * warmth = degradation
+        snow24 / max(days_since_snow, 0.1),  # fresh snow rate (higher = fresher)
     ]
 
 
@@ -202,6 +213,9 @@ ENGINEERED_FEATURE_NAMES = [
     "visibility_km",
     "min_visibility_24h_km",
     "max_wind_gust_norm",
+    "days_since_last_snowfall",
+    "aging_warmth_degradation",
+    "fresh_snow_rate",
 ]
 
 

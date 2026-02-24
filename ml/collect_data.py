@@ -276,6 +276,15 @@ def compute_features_for_day(
         ):
             max_wind_gust_24h = max(max_wind_gust_24h, hourly_wind_gusts[target_hour])
 
+    # Hours since last significant snowfall (>0.1 cm in any hour)
+    hours_since_last_snowfall = 336.0  # default: no recent snow (14 days)
+    for h in range(target_hour, max(target_hour - 336, -1), -1):
+        if h < 0:
+            break
+        if hourly_snowfall[h] > 0.1:
+            hours_since_last_snowfall = float(target_hour - h)
+            break
+
     return {
         "cur_temp": round(cur_temp, 1),
         "max_temp_24h": round(max_temp_24h, 1),
@@ -314,6 +323,7 @@ def compute_features_for_day(
         "visibility_m": round(visibility_m, 0),
         "min_visibility_24h_m": round(min_visibility_24h_m, 0),
         "max_wind_gust_24h": round(max_wind_gust_24h, 1),
+        "hours_since_last_snowfall": round(hours_since_last_snowfall, 0),
     }
 
 
