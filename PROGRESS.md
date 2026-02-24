@@ -101,6 +101,9 @@
 #### iOS Map View
 - [x] Map detail sheet: show summary data immediately while full conditions load
 - [x] Cluster view verified working — "0 resorts" was transient (stale data, no S3 JSON)
+- [x] Fix grey screen on first annotation tap — changed `.sheet(isPresented:)` to `.sheet(item:)` pattern
+- [x] Fix initial zoom showing entire world — default to NA Rockies region, user location when available
+- [x] Fix region presets not applying — added `pendingRegion` coordination with MKMapView
 
 #### Backend: ML Scorer Bug
 - [x] Fix extract_features_from_condition() missing visibility_m, min_visibility_24h_m, max_wind_gust_24h
@@ -109,6 +112,7 @@
 #### Backend: Chat Streaming
 - [x] Fix chat stream Lambda crash: `ModuleNotFoundError: No module named 'jwt'` — changed to `from jose import jwt`
 - [x] Deploy fix to staging + prod
+- [x] Fix chat not answering "best powder" questions — system prompt now instructs to use `get_best_conditions` tool
 
 #### Backend: Snow History
 - [x] Fix: DAILY_HISTORY_TABLE env var missing from prod API Lambda (defaulted to dev table)
@@ -125,10 +129,20 @@
 - [x] Generate static JSON for prod (1040 resorts, 325KB, 266s)
 - [x] Batch endpoint now reads from S3: 200 resorts in 130ms (was 5+ seconds)
 
+#### Backend: Quality Explanations
+- [x] Wind/visibility text now mentions score impact: "30 km/h wind decreases the score" (was "Windy (30 km/h)")
+- [x] Same fix applied to timeline explanations
+- [x] 10 regression tests for wind/visibility score impact text
+
+#### Data Quality: Big White
+- [x] Remove incorrect `epic_pass:"local"` — Big White is not an Epic Pass resort
+- [x] Updated in resorts.json, pushed to DynamoDB, static JSON regenerated
+
 #### UI Verification Tests
 - [x] Add VerificationTests.swift with list/map/detail/chat tests
 - [x] Add UI_TESTING to auto-auth bypass in SnowTrackerApp.swift
 - [x] All verification tests passing on simulator
+- [x] Add map detail sheet regression test (verifies no grey/empty screen)
 
 ### 🔴 Critical
 | Issue | Description | Status |
@@ -138,6 +152,11 @@
 | S3 static JSON missing | Batch quality endpoint falling back to slow DynamoDB | FIXED |
 | Snow history empty | DAILY_HISTORY_TABLE env var missing from API Lambda | FIXED |
 | List view slow | S3 JSON never generated (Lambda OOM/timeout) → sequential processing | FIXED |
+| Map grey screen | First annotation tap shows empty sheet (sheet(isPresented:) race) | FIXED |
+| Map ugly zoom | Initial view shows entire world with 1040 resorts | FIXED |
+| Chat ignoring questions | "Best powder?" returned location prompt instead of answer | FIXED |
+| Wind/vis explanation | "Windy (30 km/h)" → "30 km/h wind decreases the score" | FIXED |
+| Big White Epic badge | Incorrectly tagged as Epic Pass resort | FIXED |
 
 ### 🟡 Medium
 | Issue | Description | Status |
@@ -160,6 +179,7 @@
 
 | Feature | Date |
 |---------|------|
+| Fix map grey screen, wind/vis explanations, chat, Big White data (5 bug fixes) | 2026-02-24 |
 | Fix static JSON generator: sequential processing, 1040 resorts in 266s | 2026-02-24 |
 | Fix chat streaming: jwt→jose import, snow history: DAILY_HISTORY_TABLE env var | 2026-02-24 |
 | Fix ML scorer: add wind/visibility features to extract_features_from_condition | 2026-02-24 |
