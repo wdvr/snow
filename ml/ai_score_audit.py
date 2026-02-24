@@ -119,6 +119,8 @@ def compute_physics_score(feat):
     # -----------------------------------------------------------------------
     # Step 1: Base score from freshness
     # -----------------------------------------------------------------------
+    hours_since_snow = safe_float(feat.get("hours_since_last_snowfall"), 336.0)
+
     if snow_24h >= 20:
         base = 5.5
         reasons.append(f"Base=5.5 (24h snow={snow_24h:.1f}cm >= 20)")
@@ -138,20 +140,27 @@ def compute_physics_score(feat):
         reasons.append(
             f"Base=3.5 (72h snow={snow_72h:.1f}cm >= 10, 24h={snow_24h:.1f})"
         )
-    else:
+    elif snow_72h >= 5:
         base = 3.0
         reasons.append(
-            f"Base=3.0 (no significant fresh: 24h={snow_24h:.1f}, 72h={snow_72h:.1f})"
+            f"Base=3.0 (some 72h snow: 24h={snow_24h:.1f}, 72h={snow_72h:.1f})"
         )
+    else:
+        # Stale snow: less than 5cm in 72h — groomed/packed at best
+        base = 2.7
+        reasons.append(f"Base=2.7 (stale snow: 24h={snow_24h:.1f}, 72h={snow_72h:.1f})")
 
     score = base
 
     # -----------------------------------------------------------------------
     # Step 2: Temperature adjustment
+    # Cold preserves FRESH snow (good), but old snow becomes harder/packed
     # -----------------------------------------------------------------------
     temp_adj = 0.0
+    is_fresh = base >= 4.5  # significant fresh snow present
+
     if cur_temp < -15:
-        if base >= 4.5:
+        if is_fresh:
             temp_adj = 0.0
             reasons.append(
                 f"Temp adj=0 (extreme cold {cur_temp:.1f}C, fresh snow preserved)"
@@ -159,17 +168,17 @@ def compute_physics_score(feat):
         else:
             temp_adj = -0.3
             reasons.append(
-                f"Temp adj=-0.3 (extreme cold {cur_temp:.1f}C, old snow brittle)"
+                f"Temp adj=-0.3 (extreme cold {cur_temp:.1f}C, old snow hard/brittle)"
             )
     elif cur_temp < -5:
-        if base >= 4.5:
+        if is_fresh:
             temp_adj = 0.0
             reasons.append(f"Temp adj=0 (cold {cur_temp:.1f}C, fresh snow preserved)")
         else:
-            temp_adj = 0.0
-            reasons.append(f"Temp adj=0 (cold {cur_temp:.1f}C, preserved)")
+            temp_adj = -0.2
+            reasons.append(f"Temp adj=-0.2 (cold {cur_temp:.1f}C, old snow packs hard)")
     elif cur_temp < -3:
-        if base >= 4.5:
+        if is_fresh:
             temp_adj = -0.2
             reasons.append(
                 f"Temp adj=-0.2 (marginal cold {cur_temp:.1f}C, slightly less perfect)"
@@ -370,8 +379,8 @@ def correct_score(assigned_score, physics_score, hard_violations):
                 physics_score, 1
             ), f"Hard violation: adjusted to physics={physics_score}"
 
-    # Soft correction: only if diff > 1.0
-    if abs(diff) > 1.0:
+    # Soft correction: if diff > 0.8
+    if abs(diff) > 0.8:
         if diff > 0:
             new_score = round(physics_score + 0.5, 1)
             return (
