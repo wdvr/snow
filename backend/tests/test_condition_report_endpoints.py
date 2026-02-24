@@ -315,9 +315,9 @@ class TestGetResortConditionReports:
         svc.get_reports_for_resort.return_value = []
         svc.get_report_summary.return_value = {
             "average_score": None,
-            "most_common_type": None,
-            "report_count": 0,
-            "last_7_days": True,
+            "dominant_condition": None,
+            "total_reports": 0,
+            "reports_last_24h": 0,
         }
         mock_svc_fn.return_value = svc
 
@@ -326,7 +326,7 @@ class TestGetResortConditionReports:
         assert resp.status_code == 200
         data = resp.json()
         assert data["reports"] == []
-        assert data["summary"]["report_count"] == 0
+        assert data["summary"]["total_reports"] == 0
 
     @patch("handlers.api_handler.get_condition_report_service")
     def test_get_reports_with_data(self, mock_svc_fn, client):
@@ -336,9 +336,9 @@ class TestGetResortConditionReports:
         svc.get_reports_for_resort.return_value = [report]
         svc.get_report_summary.return_value = {
             "average_score": 8.0,
-            "most_common_type": "powder",
-            "report_count": 1,
-            "last_7_days": True,
+            "dominant_condition": "powder",
+            "total_reports": 1,
+            "reports_last_24h": 0,
         }
         mock_svc_fn.return_value = svc
 
@@ -357,9 +357,9 @@ class TestGetResortConditionReports:
         svc.get_reports_for_resort.return_value = []
         svc.get_report_summary.return_value = {
             "average_score": None,
-            "most_common_type": None,
-            "report_count": 0,
-            "last_7_days": True,
+            "dominant_condition": None,
+            "total_reports": 0,
+            "reports_last_24h": 0,
         }
         mock_svc_fn.return_value = svc
 
@@ -377,9 +377,9 @@ class TestGetResortConditionReports:
             svc.get_reports_for_resort.return_value = []
             svc.get_report_summary.return_value = {
                 "average_score": None,
-                "most_common_type": None,
-                "report_count": 0,
-                "last_7_days": True,
+                "dominant_condition": None,
+                "total_reports": 0,
+                "reports_last_24h": 0,
             }
             mock_svc_fn.return_value = svc
 
@@ -404,9 +404,9 @@ class TestGetResortConditionReports:
         svc.get_reports_for_resort.return_value = [report]
         svc.get_report_summary.return_value = {
             "average_score": 8.0,
-            "most_common_type": "powder",
-            "report_count": 1,
-            "last_7_days": True,
+            "dominant_condition": "powder",
+            "total_reports": 1,
+            "reports_last_24h": 0,
         }
         mock_svc_fn.return_value = svc
 
@@ -426,8 +426,8 @@ class TestGetResortConditionReports:
         # Verify summary fields
         s = data["summary"]
         assert "average_score" in s
-        assert "most_common_type" in s
-        assert "report_count" in s
+        assert "dominant_condition" in s
+        assert "total_reports" in s
 
 
 # ===========================================================================

@@ -47,9 +47,10 @@ class ConditionReportResponse(BaseModel):
 
     report_id: str
     resort_id: str
+    user_id: str
     condition_type: ConditionType
     score: int
     comment: str | None
     elevation_level: str | None
     created_at: str
-    user_display_name: str | None = None
+    user_name: str | None = None

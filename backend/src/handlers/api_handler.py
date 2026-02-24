@@ -2799,6 +2799,7 @@ async def submit_condition_report(
         return ConditionReportResponse(
             report_id=report.report_id,
             resort_id=report.resort_id,
+            user_id=report.user_id,
             condition_type=report.condition_type,
             score=report.score,
             comment=report.comment,
@@ -2845,6 +2846,7 @@ async def get_resort_condition_reports(
                 ConditionReportResponse(
                     report_id=r.report_id,
                     resort_id=r.resort_id,
+                    user_id=r.user_id,
                     condition_type=r.condition_type,
                     score=r.score,
                     comment=r.comment,
@@ -2885,6 +2887,7 @@ async def get_user_condition_reports(
                 ConditionReportResponse(
                     report_id=r.report_id,
                     resort_id=r.resort_id,
+                    user_id=r.user_id,
                     condition_type=r.condition_type,
                     score=r.score,
                     comment=r.comment,

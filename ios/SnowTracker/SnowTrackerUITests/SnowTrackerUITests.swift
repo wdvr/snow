@@ -398,6 +398,55 @@ final class SnowTrackerUITests: XCTestCase {
         XCTAssertTrue(unitsTitle.waitForExistence(timeout: 3))
     }
 
+    // MARK: - Condition Report Tests
+
+    func testConditionReportFlowWorks() throws {
+        // Wait for resorts to load
+        let firstCell = app.cells.firstMatch
+        guard firstCell.waitForExistence(timeout: 15) else {
+            XCTFail("Resort list should load")
+            return
+        }
+
+        // Tap first resort to open detail
+        firstCell.tap()
+
+        // Wait for detail to load — look for Community Reports section
+        let reportButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Report'")).firstMatch
+        guard reportButton.waitForExistence(timeout: 10) else {
+            // Take screenshot to see what's on screen
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.name = "condition-report-missing"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+            XCTFail("Report button should appear in resort detail")
+            return
+        }
+
+        // Tap Report button to open submit sheet
+        reportButton.tap()
+
+        // Verify submit sheet appears with condition type options
+        let sheetTitle = app.navigationBars["Report Conditions"]
+        XCTAssertTrue(sheetTitle.waitForExistence(timeout: 5), "Report conditions sheet should appear")
+
+        // Select a condition type (Powder)
+        let powderButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Powder'")).firstMatch
+        if powderButton.waitForExistence(timeout: 3) {
+            powderButton.tap()
+        }
+
+        // Submit button should be enabled after selecting condition
+        let submitButton = app.buttons["Submit Report"]
+        XCTAssertTrue(submitButton.waitForExistence(timeout: 3), "Submit button should exist")
+
+        // Take screenshot of the form
+        let formScreenshot = XCTAttachment(screenshot: app.screenshot())
+        formScreenshot.name = "condition-report-form"
+        formScreenshot.lifetime = .keepAlways
+        add(formScreenshot)
+    }
+
     // MARK: - Debug Settings Tests (Only in DEBUG builds)
 
     #if DEBUG

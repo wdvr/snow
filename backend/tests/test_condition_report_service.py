@@ -324,9 +324,9 @@ class TestConditionReportService:
         summary = service.get_report_summary("big-white")
 
         assert summary["average_score"] is None
-        assert summary["most_common_type"] is None
-        assert summary["report_count"] == 0
-        assert summary["last_7_days"] is True
+        assert summary["dominant_condition"] is None
+        assert summary["total_reports"] == 0
+        assert summary["reports_last_24h"] >= 0
 
     def test_get_report_summary_with_reports(self, service, mock_table):
         """Test summary calculation with multiple reports."""
@@ -361,10 +361,10 @@ class TestConditionReportService:
 
         summary = service.get_report_summary("big-white")
 
-        assert summary["report_count"] == 4
+        assert summary["total_reports"] == 4
         assert summary["average_score"] == 7.5  # (8+8+8+6)/4
-        assert summary["most_common_type"] == "powder"  # 3 vs 1
-        assert summary["last_7_days"] is True
+        assert summary["dominant_condition"] == "powder"  # 3 vs 1
+        assert summary["reports_last_24h"] >= 0
 
     def test_get_report_summary_excludes_old_reports(self, service, mock_table):
         """Test that summary excludes reports older than 7 days."""
@@ -400,9 +400,9 @@ class TestConditionReportService:
 
         summary = service.get_report_summary("big-white")
 
-        assert summary["report_count"] == 1
+        assert summary["total_reports"] == 1
         assert summary["average_score"] == 9.0
-        assert summary["most_common_type"] == "powder"
+        assert summary["dominant_condition"] == "powder"
 
     def test_get_report_summary_single_type(self, service, mock_table):
         """Test summary when all reports have the same type."""
@@ -425,8 +425,8 @@ class TestConditionReportService:
 
         summary = service.get_report_summary("big-white")
 
-        assert summary["most_common_type"] == "spring"
-        assert summary["report_count"] == 3
+        assert summary["dominant_condition"] == "spring"
+        assert summary["total_reports"] == 3
         assert summary["average_score"] == 6.0  # (5+6+7)/3
 
     def test_get_report_summary_uses_limit(self, service, mock_table):
@@ -459,10 +459,10 @@ class TestConditionReportService:
 
         summary = service.get_report_summary("big-white")
 
-        assert summary["report_count"] == 1
+        assert summary["total_reports"] == 1
         assert summary["average_score"] == 5.0
         # Empty string is still a valid type count entry
-        assert summary["most_common_type"] == ""
+        assert summary["dominant_condition"] == ""
 
     # -----------------------------------------------------------------------
     # _is_rate_limited

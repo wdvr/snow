@@ -205,10 +205,10 @@ class ConditionReportService:
 
             if not recent_reports:
                 return {
+                    "total_reports": 0,
                     "average_score": None,
-                    "most_common_type": None,
-                    "report_count": 0,
-                    "last_7_days": True,
+                    "dominant_condition": None,
+                    "reports_last_24h": 0,
                 }
 
             # Calculate average score
@@ -223,11 +223,18 @@ class ConditionReportService:
 
             most_common = max(type_counts, key=type_counts.get) if type_counts else None
 
+            # Count reports in last 24 hours
+            twenty_four_hours_ago = datetime.now(UTC) - timedelta(hours=24)
+            cutoff_24h = twenty_four_hours_ago.isoformat()
+            reports_last_24h = sum(
+                1 for r in recent_reports if r.get("created_at", "") >= cutoff_24h
+            )
+
             return {
+                "total_reports": len(recent_reports),
                 "average_score": avg_score,
-                "most_common_type": most_common,
-                "report_count": len(recent_reports),
-                "last_7_days": True,
+                "dominant_condition": most_common,
+                "reports_last_24h": reports_last_24h,
             }
 
         except ClientError as e:
