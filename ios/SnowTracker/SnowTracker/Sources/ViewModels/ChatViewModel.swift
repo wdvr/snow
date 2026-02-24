@@ -40,6 +40,10 @@ final class ChatViewModel: ObservableObject {
     private let apiClient = APIClient.shared
     private let streamService = ChatStreamService.shared
 
+    /// User location for contextual chat responses (set by ChatView from LocationManager)
+    var userLatitude: Double?
+    var userLongitude: Double?
+
     // MARK: - Send Message
 
     func sendMessage(_ text: String) async {
@@ -133,7 +137,9 @@ final class ChatViewModel: ObservableObject {
 
         let stream = streamService.sendMessageStream(
             message: text,
-            conversationId: currentConversationId
+            conversationId: currentConversationId,
+            latitude: userLatitude,
+            longitude: userLongitude
         )
 
         do {
@@ -214,7 +220,7 @@ final class ChatViewModel: ObservableObject {
     /// Try sending a chat message; on 401, refresh the token and retry once.
     private func sendWithAutoRefresh(_ text: String) async throws -> ChatResponse {
         do {
-            return try await apiClient.sendChatMessage(text, conversationId: currentConversationId)
+            return try await apiClient.sendChatMessage(text, conversationId: currentConversationId, latitude: userLatitude, longitude: userLongitude)
         } catch APIError.unauthorized {
             chatLog.info("Chat got 401, attempting token refresh")
             let keychain = KeychainSwift()
@@ -226,7 +232,7 @@ final class ChatViewModel: ObservableObject {
                 keychain.set(authResponse.accessToken, forKey: "com.snowtracker.authToken")
                 keychain.set(authResponse.refreshToken, forKey: "com.snowtracker.refreshToken")
                 chatLog.info("Token refreshed successfully, retrying chat")
-                return try await apiClient.sendChatMessage(text, conversationId: currentConversationId)
+                return try await apiClient.sendChatMessage(text, conversationId: currentConversationId, latitude: userLatitude, longitude: userLongitude)
             } catch {
                 chatLog.error("Token refresh failed: \(error)")
                 throw APIError.unauthorized

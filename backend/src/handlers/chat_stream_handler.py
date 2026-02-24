@@ -94,6 +94,8 @@ async def chat_stream(request: Request):
 
     user_message = body.get("message", "").strip()
     conversation_id = body.get("conversation_id")
+    user_lat = body.get("latitude")
+    user_lon = body.get("longitude")
 
     if not user_message:
         return StreamingResponse(
@@ -114,7 +116,14 @@ async def chat_stream(request: Request):
 
     def _produce():
         try:
-            _handle_chat_stream(q, user_message, conversation_id, user_id)
+            _handle_chat_stream(
+                q,
+                user_message,
+                conversation_id,
+                user_id,
+                user_lat=user_lat,
+                user_lon=user_lon,
+            )
         except Exception as e:
             logger.error("Stream handler error: %s", e, exc_info=True)
             q.put(_sse({"type": "error", "message": "Internal error"}))
@@ -135,7 +144,9 @@ async def chat_stream(request: Request):
     return StreamingResponse(_generate(), media_type="text/event-stream")
 
 
-def _handle_chat_stream(q, user_message, conversation_id, user_id):
+def _handle_chat_stream(
+    q, user_message, conversation_id, user_id, *, user_lat=None, user_lon=None
+):
     """Main streaming chat logic. Writes SSE events to the queue."""
     q.put(_sse({"type": "status", "message": "Thinking..."}))
 
@@ -173,6 +184,15 @@ def _handle_chat_stream(q, user_message, conversation_id, user_id):
     context_data = _auto_detect_resorts_fast(user_message, dynamodb)
 
     system_text = SYSTEM_PROMPT
+    # Inject user location if available
+    if user_lat is not None and user_lon is not None:
+        system_text += (
+            f"\n\n--- USER LOCATION ---\n"
+            f"The user's current coordinates: latitude {user_lat:.4f}, longitude {user_lon:.4f}.\n"
+            f"Use the get_nearby_resorts tool with these coordinates when the user asks about "
+            f"nearby resorts, recommendations near them, or 'where should I ski'. "
+            f"Do not mention exact coordinates to the user."
+        )
     if context_data:
         system_text += (
             "\n\n--- PRE-FETCHED DATA ---\n"

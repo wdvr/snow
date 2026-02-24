@@ -194,6 +194,7 @@ struct ClusteredMapView: UIViewRepresentable {
                             longitudeDelta: mapView.region.span.longitudeDelta / 3
                         )
                     )
+                    isProgrammaticRegionChange = true
                     mapView.setRegion(region, animated: true)
                 } else {
                     // Show cluster tap handler for larger clusters

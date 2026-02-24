@@ -36,9 +36,13 @@ struct ChatConversation: Codable, Identifiable {
 struct ChatRequest: Encodable {
     let message: String
     let conversationId: String?
+    let latitude: Double?
+    let longitude: Double?
     enum CodingKeys: String, CodingKey {
         case message
         case conversationId = "conversation_id"
+        case latitude
+        case longitude
     }
 }
 

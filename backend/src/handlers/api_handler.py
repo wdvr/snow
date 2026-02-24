@@ -3196,7 +3196,13 @@ async def send_chat_message(
             remaining_messages = _get_remaining_anonymous_messages(client_ip)
 
         service = get_chat_service()
-        result = service.chat(request.message, request.conversation_id, user_id)
+        result = service.chat(
+            request.message,
+            request.conversation_id,
+            user_id,
+            user_lat=request.latitude,
+            user_lon=request.longitude,
+        )
 
         # Add remaining messages info for anonymous users
         response_data = result.model_dump() if hasattr(result, "model_dump") else result

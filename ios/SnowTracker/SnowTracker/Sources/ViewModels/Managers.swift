@@ -138,38 +138,48 @@ class SnowConditionsManager: ObservableObject {
         }
         managerLog.debug("fetchAllSnowQualitySummaries: Fetching summaries for \(resortIds.count) resorts from API")
 
-        // Batch fetch in chunks of 200 (API limit)
-        // Progressive loading: update UI after each batch so resorts show data as it arrives
+        // Batch fetch in chunks of 200 (API limit) — all batches run in PARALLEL
         let batchSize = 200
-        var totalLoaded = 0
-
-        for batchStart in stride(from: 0, to: resortIds.count, by: batchSize) {
-            let batchEnd = min(batchStart + batchSize, resortIds.count)
-            let batchIds = Array(resortIds[batchStart..<batchEnd])
-            let batchNumber = batchStart/batchSize + 1
-            managerLog.debug("fetchAllSnowQualitySummaries: Fetching batch \(batchNumber) with \(batchIds.count) resorts")
-
-            do {
-                let batchResults = try await apiClient.getBatchSnowQuality(for: batchIds)
-                // Update UI progressively — merge batch results into published property
-                var updated = snowQualitySummaries
-                for (resortId, summary) in batchResults {
-                    updated[resortId] = summary
-                }
-                snowQualitySummaries = updated
-                totalLoaded += batchResults.count
-                // Clear loading flag after first batch so rows with data show immediately
-                if isLoadingSnowQuality {
-                    isLoadingSnowQuality = false
-                }
-                managerLog.debug("fetchAllSnowQualitySummaries: Batch \(batchNumber) loaded \(batchResults.count) summaries (total: \(totalLoaded))")
-            } catch {
-                managerLog.debug("fetchAllSnowQualitySummaries: Batch \(batchNumber) failed: \(error.localizedDescription)")
-                // Continue with next batch rather than failing completely
-            }
+        let chunks: [[String]] = stride(from: 0, to: resortIds.count, by: batchSize).map { start in
+            Array(resortIds[start..<min(start + batchSize, resortIds.count)])
         }
 
-        // Ensure loading flag is cleared even if all batches failed
+        managerLog.debug("fetchAllSnowQualitySummaries: Fetching \(chunks.count) batches in parallel")
+
+        // Fire all batch requests concurrently
+        let batchResults: [[(String, SnowQualitySummaryLight)]] = await withTaskGroup(
+            of: [(String, SnowQualitySummaryLight)].self,
+            returning: [[(String, SnowQualitySummaryLight)]].self
+        ) { group in
+            for (index, chunk) in chunks.enumerated() {
+                group.addTask { [apiClient] in
+                    do {
+                        let results = try await apiClient.getBatchSnowQuality(for: chunk)
+                        return results.map { ($0.key, $0.value) }
+                    } catch {
+                        managerLog.debug("fetchAllSnowQualitySummaries: Batch \(index + 1) failed: \(error.localizedDescription)")
+                        return []
+                    }
+                }
+            }
+
+            var allResults: [[(String, SnowQualitySummaryLight)]] = []
+            for await result in group {
+                allResults.append(result)
+            }
+            return allResults
+        }
+
+        // Merge all results in a single UI update
+        var updated = snowQualitySummaries
+        var totalLoaded = 0
+        for batch in batchResults {
+            for (resortId, summary) in batch {
+                updated[resortId] = summary
+            }
+            totalLoaded += batch.count
+        }
+        snowQualitySummaries = updated
         isLoadingSnowQuality = false
 
         // Cache the final results

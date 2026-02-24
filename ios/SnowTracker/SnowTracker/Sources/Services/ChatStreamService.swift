@@ -57,12 +57,14 @@ final class ChatStreamService {
     /// Send a message via SSE streaming. Returns an async throwing stream of events.
     func sendMessageStream(
         message: String,
-        conversationId: String?
+        conversationId: String?,
+        latitude: Double? = nil,
+        longitude: Double? = nil
     ) -> AsyncThrowingStream<ChatStreamEvent, Error> {
         AsyncThrowingStream { continuation in
             Task {
                 do {
-                    try await performStream(message: message, conversationId: conversationId, continuation: continuation)
+                    try await performStream(message: message, conversationId: conversationId, latitude: latitude, longitude: longitude, continuation: continuation)
                 } catch {
                     continuation.finish(throwing: error)
                 }
@@ -73,6 +75,8 @@ final class ChatStreamService {
     private func performStream(
         message: String,
         conversationId: String?,
+        latitude: Double?,
+        longitude: Double?,
         continuation: AsyncThrowingStream<ChatStreamEvent, Error>.Continuation
     ) async throws {
         let streamURL = await MainActor.run { AppConfiguration.shared.selectedEnvironment.chatStreamURL }
@@ -94,6 +98,12 @@ final class ChatStreamService {
         var body: [String: Any] = ["message": message]
         if let conversationId {
             body["conversation_id"] = conversationId
+        }
+        if let latitude {
+            body["latitude"] = latitude
+        }
+        if let longitude {
+            body["longitude"] = longitude
         }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         request.timeoutInterval = 120

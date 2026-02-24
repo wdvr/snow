@@ -26,6 +26,12 @@ class ChatRequest(BaseModel):
     conversation_id: str | None = Field(
         None, description="Existing conversation ID, or None to start new"
     )
+    latitude: float | None = Field(
+        None, description="User latitude for location-aware responses"
+    )
+    longitude: float | None = Field(
+        None, description="User longitude for location-aware responses"
+    )
 
 
 class ChatResponse(BaseModel):

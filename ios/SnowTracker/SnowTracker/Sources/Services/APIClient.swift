@@ -642,10 +642,10 @@ final class APIClient {
     // MARK: - Chat API
 
     /// Send a message to the AI chat
-    func sendChatMessage(_ message: String, conversationId: String?) async throws -> ChatResponse {
+    func sendChatMessage(_ message: String, conversationId: String?, latitude: Double? = nil, longitude: Double? = nil) async throws -> ChatResponse {
         let url = baseURL.appendingPathComponent("api/v1/chat")
 
-        let request = ChatRequest(message: message, conversationId: conversationId)
+        let request = ChatRequest(message: message, conversationId: conversationId, latitude: latitude, longitude: longitude)
 
         return try await withCheckedThrowingContinuation { continuation in
             session.request(

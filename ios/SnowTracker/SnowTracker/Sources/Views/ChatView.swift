@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ChatView: View {
+    @EnvironmentObject private var locationManager: LocationManager
     @StateObject private var viewModel = ChatViewModel()
     @State private var messageText = ""
     @State private var sendTrigger = 0
@@ -45,6 +46,10 @@ struct ChatView: View {
             }
             .onAppear {
                 AnalyticsService.shared.trackScreen("AskAI", screenClass: "ChatView")
+                updateViewModelLocation()
+            }
+            .onChange(of: locationManager.userLocation) { _, _ in
+                updateViewModelLocation()
             }
             .onDisappear {
                 AnalyticsService.shared.trackScreenExit("AskAI")
@@ -227,6 +232,11 @@ struct ChatView: View {
         Task {
             await viewModel.sendMessage(text)
         }
+    }
+
+    private func updateViewModelLocation() {
+        viewModel.userLatitude = locationManager.userLocation?.coordinate.latitude
+        viewModel.userLongitude = locationManager.userLocation?.coordinate.longitude
     }
 
     private func scrollToBottom(proxy: ScrollViewProxy) {

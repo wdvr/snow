@@ -387,7 +387,13 @@ class ChatService:
         self.bedrock = boto3.client("bedrock-runtime", region_name="us-west-2")
 
     def chat(
-        self, user_message: str, conversation_id: str | None, user_id: str
+        self,
+        user_message: str,
+        conversation_id: str | None,
+        user_id: str,
+        *,
+        user_lat: float | None = None,
+        user_lon: float | None = None,
     ) -> ChatResponse:
         """Process a chat message and return an AI response.
 
@@ -436,9 +442,20 @@ class ChatService:
             bool(context_data),
         )
 
+        # Build location context if available
+        location_context = None
+        if user_lat is not None and user_lon is not None:
+            location_context = (
+                f"\n\n--- USER LOCATION ---\n"
+                f"The user's current coordinates: latitude {user_lat:.4f}, longitude {user_lon:.4f}.\n"
+                f"Use the get_nearby_resorts tool with these coordinates when the user asks about "
+                f"nearby resorts, recommendations near them, or 'where should I ski'. "
+                f"Do not mention exact coordinates to the user."
+            )
+
         # Call Bedrock with tool use loop
         assistant_text, tool_calls = self._call_bedrock_with_tools(
-            messages, context_data=context_data
+            messages, context_data=context_data, location_context=location_context
         )
         t2 = time.monotonic()
         logger.info("Chat Bedrock call took %.1fs (total %.1fs)", t2 - t1, t2 - t0)
@@ -755,6 +772,7 @@ class ChatService:
         self,
         messages: list[dict],
         context_data: str | None = None,
+        location_context: str | None = None,
     ) -> tuple[str, list[dict[str, Any]] | None]:
         """Call Bedrock converse API with tool use loop.
 
@@ -762,6 +780,7 @@ class ChatService:
             messages: Conversation messages for Bedrock
             context_data: Pre-fetched resort conditions data to inject into
                 system prompt, reducing the need for tool calls.
+            location_context: User location context to inject into system prompt.
 
         Returns:
             Tuple of (assistant_text, tool_calls_list)
@@ -770,6 +789,8 @@ class ChatService:
 
         # Build system prompt with optional pre-injected context
         system_text = SYSTEM_PROMPT
+        if location_context:
+            system_text += location_context
         if context_data:
             system_text += (
                 "\n\n--- PRE-FETCHED DATA ---\n"

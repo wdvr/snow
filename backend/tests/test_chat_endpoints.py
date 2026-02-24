@@ -110,7 +110,9 @@ class TestSendChatMessage:
             headers=_auth_header(),
         )
         assert resp.status_code == 200
-        svc.chat.assert_called_once_with("Follow up", "conv_existing", "test_user")
+        svc.chat.assert_called_once_with(
+            "Follow up", "conv_existing", "test_user", user_lat=None, user_lon=None
+        )
 
     @patch("handlers.api_handler.get_chat_service")
     def test_send_empty_message_rejected(self, mock_chat_svc, mock_auth, client):
