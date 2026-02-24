@@ -157,7 +157,7 @@ jobs:
         ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         ASC_KEY_PATH: ${{ runner.temp }}/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
       run: |
-        pip3 install -q PyJWT
+        pip3 install -q --break-system-packages PyJWT
         python3 << 'CLEANUP_SCRIPT'
         import jwt, json, time, os, urllib.request, ssl
 
