@@ -124,6 +124,61 @@ def _smooth_timeline_snow_depth(points: list[dict]) -> None:
             points[i]["snow_depth_cm"] = max(0, smoothed)
 
 
+def _smooth_timeline_scores(
+    points: list[dict], raw_score_to_quality_fn, score_to_100_fn
+) -> None:
+    """Smooth unrealistic score drops between consecutive timeline points.
+
+    Snow quality changes gradually in the real world. Even in severe weather
+    (rain-on-snow, rapid warming), conditions degrade over 1-2 days, not hours.
+    This caps the maximum score drop between consecutive timeline points to
+    prevent phantom crashes caused by unreliable forecast data (snow depth
+    model splices, marginal freeze-thaw triggers, etc.).
+
+    Only smooths forecast points — historical scores are left unchanged since
+    they're based on observed (not forecast) data.
+    Increases are never capped — conditions can improve quickly (fresh snowfall).
+    """
+    if len(points) < 2:
+        return
+
+    # Max score drop per timeline step (points are ~4-8h apart, 3 per day)
+    # 5 points on 0-100 scale = max ~15 point drop per day = ~1 quality tier/day
+    MAX_SCORE_DROP_PER_STEP = 5
+
+    for i in range(1, len(points)):
+        # Only smooth forecast points
+        if not points[i].get("is_forecast", False):
+            continue
+
+        prev_score = points[i - 1].get("snow_score")
+        curr_score = points[i].get("snow_score")
+
+        if prev_score is None or curr_score is None:
+            continue
+
+        # Only smooth drops, not increases
+        if curr_score >= prev_score:
+            continue
+
+        drop = prev_score - curr_score
+        if drop > MAX_SCORE_DROP_PER_STEP:
+            smoothed_score = prev_score - MAX_SCORE_DROP_PER_STEP
+            points[i]["snow_score"] = smoothed_score
+
+            # Recompute quality_score (1.0-6.0 scale) from snow_score (0-100)
+            # snow_score = round((raw_score - 1.0) * 20.0), so raw = snow_score/20 + 1
+            raw_score = smoothed_score / 20.0 + 1.0
+            raw_score = max(1.0, min(6.0, raw_score))
+            points[i]["quality_score"] = round(raw_score, 2)
+
+            # Update quality label
+            quality = raw_score_to_quality_fn(raw_score)
+            points[i]["snow_quality"] = (
+                quality.value if hasattr(quality, "value") else str(quality)
+            )
+
+
 class OpenMeteoService:
     """Service for fetching elevation-aware weather data from Open-Meteo API.
 
@@ -347,7 +402,7 @@ class OpenMeteoService:
                     dates_seen.append(d)
 
             # Use ML model for timeline quality predictions
-            from services.ml_scorer import predict_quality_at_hour
+            from services.ml_scorer import predict_quality_at_hour, raw_score_to_quality
 
             timeline_points = []
 
@@ -496,6 +551,12 @@ class OpenMeteoService:
             # physically impossible drops (e.g., 165cm to 50cm in hours).
             # Max realistic melt rate: ~10cm/hour; timeline points are 4-8h apart.
             _smooth_timeline_snow_depth(timeline_points)
+
+            # Smooth unrealistic score drops between consecutive timeline points.
+            # Real snow quality changes gradually — even rain-on-snow events degrade
+            # over 1-2 days, not in hours. Cap the max drop at 5 score points
+            # (on 0-100 scale) per timeline step for forecast points.
+            _smooth_timeline_scores(timeline_points, raw_score_to_quality, score_to_100)
 
             return {
                 "timeline": timeline_points,

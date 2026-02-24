@@ -421,6 +421,8 @@ def _extract_features_at_hour(
     snow_72h = sum(s for s in snowfall[h72_start:target_hour] if s is not None)
 
     # Freeze-thaw detection (same algorithm as collect_data.py)
+    # Requires: 2+ cold hours (< -1°C) followed by 3+ warm hours (>= 0°C)
+    # with warmest temp >= 1°C (prevents marginal forecast temps from triggering)
     freeze_thaw_hour = None
     warmest_thaw = 0.0
     state = "looking_for_freeze"
@@ -451,6 +453,15 @@ def _extract_features_at_hour(
             else:
                 warm_hours = 0
                 warm_peak = 0.0
+
+    # Ignore marginal freeze-thaw events. Real freeze-thaw cycles that damage
+    # snow quality require sustained warm temps well above 0°C — a brief +1°C
+    # forecast blip doesn't cause meaningful surface melt. Require warmest_thaw
+    # >= 2°C to count as a real event (surface melt only starts above ~1.5°C
+    # with solar radiation, and needs to be sustained for snowpack damage).
+    if freeze_thaw_hour is not None and warmest_thaw < 2.0:
+        freeze_thaw_hour = None
+        warmest_thaw = 0.0
 
     ft_days = (target_hour - freeze_thaw_hour) / 24.0 if freeze_thaw_hour else 14.0
     ft_start = freeze_thaw_hour or 0
@@ -486,9 +497,43 @@ def _extract_features_at_hour(
         max_wind_24h = 0.0
 
     # Snow depth at target hour (Open-Meteo returns snow_depth in meters)
+    # Open-Meteo's forecast snow_depth can drop unrealistically fast due to its
+    # simple melt model (e.g., 92cm → 1cm in 2 days at sub-zero temps). When the
+    # target hour is in the forecast period, clamp snow_depth to at least the most
+    # recent observed value minus a reasonable daily melt rate (5cm/day max when
+    # temps stay below freezing, 15cm/day above freezing).
     if snow_depth_arr and len(snow_depth_arr) > target_hour:
         sd = snow_depth_arr[target_hour]
         snow_depth_cm = float(sd) * 100.0 if sd is not None else 0.0
+
+        # Find the most recent plausible snow depth (last value >= 10cm)
+        # to use as a floor for forecast periods
+        recent_depth_cm = 0.0
+        for h in range(
+            min(target_hour, len(snow_depth_arr) - 1), max(target_hour - 168, -1), -1
+        ):
+            if h < 0:
+                break
+            v = snow_depth_arr[h]
+            if v is not None and v * 100.0 >= 10.0:
+                recent_depth_cm = v * 100.0
+                # Calculate reasonable minimum based on days elapsed and temps
+                days_elapsed = (target_hour - h) / 24.0
+                if days_elapsed > 0:
+                    # Check average temp in between
+                    interval_temps = [t for t in temps[h:target_hour] if t is not None]
+                    avg_temp = (
+                        sum(interval_temps) / len(interval_temps)
+                        if interval_temps
+                        else 0.0
+                    )
+                    if avg_temp < 0:
+                        melt_rate = 3.0  # cm/day sublimation at sub-zero
+                    else:
+                        melt_rate = 15.0  # cm/day active melt
+                    floor_cm = max(0.0, recent_depth_cm - days_elapsed * melt_rate)
+                    snow_depth_cm = max(snow_depth_cm, floor_cm)
+                break
     else:
         snow_depth_cm = 0.0
 
@@ -654,22 +699,25 @@ def _apply_snow_aging_penalty(
     Returns:
         Adjusted score (1.0-6.0)
     """
-    if hours_since_snowfall is None or hours_since_snowfall <= 48:
+    if hours_since_snowfall is None or hours_since_snowfall <= 72:
         return score
     if snowfall_24h >= 0.5:
         # Recent snow — no aging penalty
         return score
 
-    # Penalty: -0.15 per day beyond 2 days, max -0.8
-    # Snow compacts ~30% per day; after 5 days it's hard packed
+    # Penalty: -0.10 per day beyond 3 days, max -0.5
+    # Snow compacts gradually; cold temps slow densification significantly.
+    # Cap at -0.5 because even week-old snow at a cold resort is still skiable.
     days_since = hours_since_snowfall / 24.0
-    age_penalty = min(0.8, (days_since - 2.0) * 0.15)
+    age_penalty = min(0.5, (days_since - 3.0) * 0.10)
 
-    # Cold temps slow densification: reduce penalty at very cold temps
+    # Cold temps slow densification: reduce penalty significantly
     if cur_temp < -15:
-        age_penalty *= 0.6
+        age_penalty *= 0.3
     elif cur_temp < -8:
-        age_penalty *= 0.8
+        age_penalty *= 0.5
+    elif cur_temp < -3:
+        age_penalty *= 0.7
 
     return max(1.0, score - age_penalty)
 
