@@ -912,6 +912,255 @@ def build_edge_cases() -> list[EdgeCase]:
         )
     )
 
+    # -----------------------------------------------------------------------
+    # Category 11: Wind severity (wind should degrade conditions)
+    # -----------------------------------------------------------------------
+    cases.append(
+        EdgeCase(
+            name="extreme_wind_powder",
+            raw_features=make_raw_features(
+                cur_temp=-8.0,
+                snowfall_24h_cm=20.0,
+                snowfall_72h_cm=30.0,
+                snow_depth_cm=150.0,
+                avg_wind_24h=70.0,
+                max_wind_24h=90.0,
+                max_wind_gust_24h=110.0,
+                hours_since_last_snowfall=2.0,
+            ),
+            description="Extreme wind + powder: -8C, 20cm, 70km/h avg wind",
+        )
+    )
+    cases.append(
+        EdgeCase(
+            name="gale_force_fresh",
+            raw_features=make_raw_features(
+                cur_temp=-10.0,
+                snowfall_24h_cm=15.0,
+                snowfall_72h_cm=20.0,
+                snow_depth_cm=120.0,
+                avg_wind_24h=55.0,
+                max_wind_24h=75.0,
+                max_wind_gust_24h=95.0,
+                hours_since_last_snowfall=3.0,
+            ),
+            description="Gale force + fresh: -10C, 15cm, 55km/h avg",
+        )
+    )
+    cases.append(
+        EdgeCase(
+            name="calm_powder",
+            raw_features=make_raw_features(
+                cur_temp=-8.0,
+                snowfall_24h_cm=20.0,
+                snowfall_72h_cm=30.0,
+                snow_depth_cm=150.0,
+                avg_wind_24h=5.0,
+                max_wind_24h=10.0,
+                hours_since_last_snowfall=2.0,
+            ),
+            description="Calm powder (comparison): -8C, 20cm, 5km/h wind",
+        )
+    )
+
+    # -----------------------------------------------------------------------
+    # Category 12: Rain-on-snow scenarios
+    # -----------------------------------------------------------------------
+    cases.append(
+        EdgeCase(
+            name="heavy_rain_warm",
+            raw_features=make_raw_features(
+                cur_temp=5.0,
+                snowfall_24h_cm=0.0,
+                snowfall_72h_cm=0.0,
+                snow_depth_cm=100.0,
+                weather_code=63,  # moderate rain
+                hours_since_last_snowfall=120.0,
+            ),
+            description="Heavy rain on snow: 5C, raining, 100cm base",
+        )
+    )
+    cases.append(
+        EdgeCase(
+            name="drizzle_near_freezing",
+            raw_features=make_raw_features(
+                cur_temp=1.0,
+                snowfall_24h_cm=0.0,
+                snowfall_72h_cm=3.0,
+                snow_depth_cm=80.0,
+                weather_code=51,  # light drizzle
+                hours_since_last_snowfall=96.0,
+            ),
+            description="Drizzle near freezing: 1C, drizzle, 80cm base",
+        )
+    )
+    cases.append(
+        EdgeCase(
+            name="freezing_rain",
+            raw_features=make_raw_features(
+                cur_temp=-1.0,
+                snowfall_24h_cm=0.0,
+                snowfall_72h_cm=2.0,
+                snow_depth_cm=100.0,
+                weather_code=66,  # freezing rain
+                hours_since_last_snowfall=120.0,
+            ),
+            description="Freezing rain: -1C, icy crust forming",
+        )
+    )
+
+    # -----------------------------------------------------------------------
+    # Category 13: Thin snowpack scenarios
+    # -----------------------------------------------------------------------
+    cases.append(
+        EdgeCase(
+            name="thin_base_fresh",
+            raw_features=make_raw_features(
+                cur_temp=-5.0,
+                snowfall_24h_cm=10.0,
+                snowfall_72h_cm=15.0,
+                snow_depth_cm=15.0,
+                hours_since_last_snowfall=4.0,
+            ),
+            description="Thin base + fresh: -5C, 10cm fresh on 15cm base",
+        )
+    )
+    cases.append(
+        EdgeCase(
+            name="thin_base_no_fresh",
+            raw_features=make_raw_features(
+                cur_temp=-3.0,
+                snowfall_24h_cm=0.0,
+                snowfall_72h_cm=2.0,
+                snow_depth_cm=12.0,
+                hours_since_last_snowfall=120.0,
+            ),
+            description="Thin base, no fresh: -3C, 12cm scraped base",
+        )
+    )
+    cases.append(
+        EdgeCase(
+            name="thin_warm",
+            raw_features=make_raw_features(
+                cur_temp=3.0,
+                snowfall_24h_cm=0.0,
+                snowfall_72h_cm=0.0,
+                snow_depth_cm=15.0,
+                hours_since_last_snowfall=168.0,
+            ),
+            description="Thin + warm: 3C, 15cm melting base",
+        )
+    )
+
+    # -----------------------------------------------------------------------
+    # Category 14: Stale/old snow aging
+    # -----------------------------------------------------------------------
+    cases.append(
+        EdgeCase(
+            name="week_old_snow_cold",
+            raw_features=make_raw_features(
+                cur_temp=-8.0,
+                snowfall_24h_cm=0.0,
+                snowfall_72h_cm=0.0,
+                snow_depth_cm=100.0,
+                hours_since_last_snowfall=200.0,
+            ),
+            description="Week-old snow: -8C, no fresh for 200h, 100cm base",
+        )
+    )
+    cases.append(
+        EdgeCase(
+            name="two_week_old_cold",
+            raw_features=make_raw_features(
+                cur_temp=-5.0,
+                snowfall_24h_cm=0.0,
+                snowfall_72h_cm=0.0,
+                snow_depth_cm=80.0,
+                hours_since_last_snowfall=336.0,
+            ),
+            description="Two-week-old snow: -5C, no fresh for 2 weeks",
+        )
+    )
+    cases.append(
+        EdgeCase(
+            name="stale_snow_warm",
+            raw_features=make_raw_features(
+                cur_temp=2.0,
+                snowfall_24h_cm=0.0,
+                snowfall_72h_cm=0.0,
+                snow_depth_cm=60.0,
+                hours_since_last_snowfall=240.0,
+            ),
+            description="Stale + warm: 2C, no fresh for 10 days, 60cm base",
+        )
+    )
+
+    # -----------------------------------------------------------------------
+    # Category 15: Recovery from bad conditions
+    # -----------------------------------------------------------------------
+    cases.append(
+        EdgeCase(
+            name="fresh_after_freeze_thaw",
+            raw_features=make_raw_features(
+                cur_temp=-6.0,
+                snowfall_24h_cm=15.0,
+                snowfall_72h_cm=18.0,
+                snow_depth_cm=120.0,
+                freeze_thaw_days_ago=2.0,
+                warmest_thaw=5.0,
+                snow_since_freeze_cm=15.0,
+                hours_since_last_snowfall=4.0,
+            ),
+            description="Recovery: 15cm fresh after FT cycle 2 days ago",
+        )
+    )
+    cases.append(
+        EdgeCase(
+            name="light_fresh_after_freeze_thaw",
+            raw_features=make_raw_features(
+                cur_temp=-4.0,
+                snowfall_24h_cm=5.0,
+                snowfall_72h_cm=7.0,
+                snow_depth_cm=100.0,
+                freeze_thaw_days_ago=1.5,
+                warmest_thaw=4.0,
+                snow_since_freeze_cm=5.0,
+                hours_since_last_snowfall=8.0,
+            ),
+            description="Light recovery: 5cm fresh after FT 1.5 days ago",
+        )
+    )
+
+    # -----------------------------------------------------------------------
+    # Category 16: Moderate fresh at various temps (FAIR-GOOD boundary)
+    # -----------------------------------------------------------------------
+    cases.append(
+        EdgeCase(
+            name="moderate_fresh_minus2",
+            raw_features=make_raw_features(
+                cur_temp=-2.0,
+                snowfall_24h_cm=7.0,
+                snowfall_72h_cm=12.0,
+                snow_depth_cm=100.0,
+                hours_since_last_snowfall=10.0,
+            ),
+            description="Moderate fresh near zero: -2C, 7cm, 100cm base",
+        )
+    )
+    cases.append(
+        EdgeCase(
+            name="moderate_fresh_plus1",
+            raw_features=make_raw_features(
+                cur_temp=1.0,
+                snowfall_24h_cm=7.0,
+                snowfall_72h_cm=12.0,
+                snow_depth_cm=100.0,
+                hours_since_last_snowfall=10.0,
+            ),
+            description="Moderate fresh above zero: 1C, 7cm, warming",
+        )
+    )
+
     return cases
 
 
@@ -1046,6 +1295,81 @@ def build_constraints() -> list[Constraint]:
                 and f["snowfall_72h_cm"] < 5.0
             ),
             check_fn=lambda f, s: s < 3.6,
+        )
+    )
+
+    # 9. Heavy wind caps quality — even powder is less excellent in extreme wind
+    constraints.append(
+        Constraint(
+            name="extreme_wind_not_excellent",
+            description="If avg_wind > 60km/h, score must be < 5.0 (wind degrades conditions)",
+            applicable_fn=lambda f: f["avg_wind_24h"] > 60.0,
+            check_fn=lambda f, s: s < 5.0,
+        )
+    )
+
+    # 10. Rain on snow = poor conditions
+    constraints.append(
+        Constraint(
+            name="rain_on_snow_poor",
+            description="If weather_code in rain range (51-67) AND temp > 0, score must be < 3.5",
+            applicable_fn=lambda f: (
+                51 <= f["weather_code"] <= 67 and f["cur_temp"] > 0
+            ),
+            check_fn=lambda f, s: s < 3.5,
+        )
+    )
+
+    # 11. Thin snowpack — can't be good with < 20cm base
+    constraints.append(
+        Constraint(
+            name="thin_snowpack_not_good",
+            description="If snow_depth < 15cm AND snow_24h < 10cm, score must be < 4.0",
+            applicable_fn=lambda f: (
+                f["snow_depth_cm"] < 15.0 and f["snowfall_24h_cm"] < 10.0
+            ),
+            check_fn=lambda f, s: s < 4.0,
+        )
+    )
+
+    # 12. Very old snow without fresh can't be good
+    constraints.append(
+        Constraint(
+            name="stale_snow_not_good",
+            description="If hours_since_last_snowfall > 168 (1 week) AND snow_24h < 3cm, score must be < 4.0",
+            applicable_fn=lambda f: (
+                f["hours_since_last_snowfall"] > 168.0 and f["snowfall_24h_cm"] < 3.0
+            ),
+            check_fn=lambda f, s: s < 4.0,
+        )
+    )
+
+    # 13. Fresh snow recovery — fresh snow after freeze-thaw should be at least fair
+    constraints.append(
+        Constraint(
+            name="fresh_recovery_at_least_fair",
+            description="If snow_24h >= 10cm AND temp < -3C, score must be >= 3.6 (at least FAIR) even after FT",
+            applicable_fn=lambda f: (
+                f["snowfall_24h_cm"] >= 10.0
+                and f["cur_temp"] < -3.0
+                and f["freeze_thaw_days_ago"] < 3.0
+            ),
+            check_fn=lambda f, s: s >= 3.6,
+        )
+    )
+
+    # 14. Cold moderate fresh should be at least fair
+    constraints.append(
+        Constraint(
+            name="moderate_fresh_cold_at_least_fair",
+            description="If snow_24h >= 5cm AND temp < -2C AND depth > 50cm AND no recent FT, score must be >= 3.6 (FAIR)",
+            applicable_fn=lambda f: (
+                f["snowfall_24h_cm"] >= 5.0
+                and f["cur_temp"] < -2.0
+                and f["snow_depth_cm"] > 50.0
+                and f["freeze_thaw_days_ago"] >= 3.0
+            ),
+            check_fn=lambda f, s: s >= 3.6,
         )
     )
 
