@@ -1413,6 +1413,52 @@ final class SnowTrackerTests: XCTestCase {
         XCTAssertFalse(viewModel.isFetchingTimelines)
     }
 
+    // MARK: - Pull-to-Refresh Regression Tests
+
+    @MainActor
+    func testRefreshDataRateLimitReturnsImmediately() async {
+        let manager = SnowConditionsManager()
+
+        // First refresh - should proceed normally (no data to fetch, but won't hang)
+        let start1 = CFAbsoluteTimeGetCurrent()
+        await manager.refreshData(visibleResortIds: [])
+        let duration1 = CFAbsoluteTimeGetCurrent() - start1
+
+        // Second refresh immediately - should be rate limited and return fast
+        let start2 = CFAbsoluteTimeGetCurrent()
+        await manager.refreshData(visibleResortIds: [])
+        let duration2 = CFAbsoluteTimeGetCurrent() - start2
+
+        // Rate-limited refresh must return in under 1 second
+        XCTAssertLessThan(duration2, 1.0, "Rate-limited refresh should return immediately, took \(duration2)s")
+    }
+
+    @MainActor
+    func testRefreshDataCompletesWithinTimeout() async {
+        let manager = SnowConditionsManager()
+
+        // Refresh with no resorts loaded should complete quickly (nothing to fetch)
+        let start = CFAbsoluteTimeGetCurrent()
+        await manager.refreshData(visibleResortIds: ["test-resort"])
+        let duration = CFAbsoluteTimeGetCurrent() - start
+
+        // Must complete within 20 seconds (API timeout is 15s + 1 retry = 30s max,
+        // but with no resorts loaded, summaries fetch is skipped)
+        XCTAssertLessThan(duration, 20.0, "refreshData should not hang, took \(duration)s")
+    }
+
+    @MainActor
+    func testRefreshConditionsCompletesWithinTimeout() async {
+        let manager = SnowConditionsManager()
+
+        // With no favorites, should return immediately
+        let start = CFAbsoluteTimeGetCurrent()
+        await manager.refreshConditions()
+        let duration = CFAbsoluteTimeGetCurrent() - start
+
+        XCTAssertLessThan(duration, 5.0, "refreshConditions with no favorites should be fast, took \(duration)s")
+    }
+
     func testTimelinePointWithNullOptionals() throws {
         // Test decoding when optional fields are null
         let json = """
