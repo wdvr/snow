@@ -45,6 +45,14 @@ struct ResortMapView: View {
                 onAnnotationsUpdate: updateAnnotations,
                 onFilterChange: handleFilterChange
             ))
+            .onChange(of: mapViewModel.isFetchingTimelines) { _, newValue in
+                if !newValue && mapViewModel.selectedForecastDate != nil {
+                    updateAnnotations()
+                }
+            }
+            .onChange(of: mapViewModel.selectedForecastDate) { _, _ in
+                updateAnnotations()
+            }
     }
 
     private var mapZStackContent: some View {
@@ -85,12 +93,44 @@ struct ResortMapView: View {
                 qualityLegend
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+
+            // Forecast indicator when showing predicted quality
+            if let forecastDate = mapViewModel.selectedForecastDate {
+                forecastBanner(for: forecastDate)
+            }
+
+            // Date selector — always visible (controls all map pins)
+            dateSelector
+                .padding(8)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+
             if locationManager.isLocationAvailable && !mapViewModel.nearbyResorts().isEmpty {
                 nearbyResortsCarousel
             }
         }
         .padding(.horizontal)
         .padding(.bottom, 8)
+    }
+
+    private func forecastBanner(for date: Date) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "calendar")
+                .foregroundStyle(.blue)
+
+            Text("Showing forecast for \(dayAbbreviation(date))")
+                .font(.subheadline)
+                .fontWeight(.medium)
+
+            Spacer()
+
+            if mapViewModel.isFetchingTimelines {
+                ProgressView()
+                    .controlSize(.small)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
     }
 
     @ToolbarContentBuilder
@@ -139,6 +179,12 @@ struct ResortMapView: View {
             try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
             guard !Task.isCancelled else { return }
             await fetchConditionsForVisibleResorts()
+
+            // If forecast mode is active, also fetch timelines for newly visible resorts
+            if mapViewModel.selectedForecastDate != nil {
+                let visibleIds = mapViewModel.annotations.map(\.resort.id)
+                await mapViewModel.fetchTimelinesForVisible(resortIds: visibleIds)
+            }
         }
     }
 
@@ -300,22 +346,9 @@ struct ResortMapView: View {
                 Text("Nearby")
                     .font(.headline)
 
-                if mapViewModel.selectedForecastDate != nil {
-                    Text("Forecast")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
                 Spacer()
-
-                if mapViewModel.isFetchingTimelines {
-                    ProgressView()
-                        .controlSize(.small)
-                }
             }
             .padding(.horizontal, 4)
-
-            dateSelector
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
@@ -344,7 +377,8 @@ struct ResortMapView: View {
                         : Calendar.current.isDate(date, inSameDayAs: mapViewModel.selectedForecastDate ?? .distantPast)
 
                     Button {
-                        mapViewModel.selectForecastDate(isToday ? nil : date)
+                        let visibleIds = mapViewModel.annotations.map(\.resort.id)
+                        mapViewModel.selectForecastDate(isToday ? nil : date, visibleResortIds: visibleIds)
                     } label: {
                         Text(isToday ? "Today" : dayAbbreviation(date))
                             .font(.caption)

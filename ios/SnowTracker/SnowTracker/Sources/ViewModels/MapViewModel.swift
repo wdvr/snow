@@ -216,7 +216,13 @@ class MapViewModel: ObservableObject {
                 ?? resortConditions.first { $0.elevationLevel == "mid" }
                 ?? resortConditions.first
             let fallbackQuality = snowQualitySummaries[resort.id]?.overallSnowQuality
-            let annotation = ResortAnnotation(resort: resort, condition: condition, fallbackQuality: fallbackQuality)
+            var annotation = ResortAnnotation(resort: resort, condition: condition, fallbackQuality: fallbackQuality)
+
+            // Override with forecast quality if a future date is selected
+            if let forecastDate = selectedForecastDate,
+               let predicted = predictedQuality(for: resort.id, on: forecastDate) {
+                annotation = ResortAnnotation(resort: resort, condition: nil, fallbackQuality: predicted)
+            }
 
             guard filterQualities.contains(annotation.snowQuality) else { continue }
             result.append(annotation)
@@ -318,10 +324,13 @@ class MapViewModel: ObservableObject {
 
     // MARK: - Forecast Date Selection
 
-    func selectForecastDate(_ date: Date?) {
+    func selectForecastDate(_ date: Date?, visibleResortIds: [String] = []) {
         selectedForecastDate = date
         if date != nil {
-            Task { await fetchTimelinesForNearby() }
+            Task {
+                await fetchTimelinesForNearby()
+                await fetchTimelinesForVisible(resortIds: visibleResortIds)
+            }
         }
     }
 
@@ -340,6 +349,30 @@ class MapViewModel: ObservableObject {
             }
             for await (resortId, response) in group {
                 if let response { timelineCache[resortId] = response }
+            }
+        }
+        isFetchingTimelines = false
+    }
+
+    func fetchTimelinesForVisible(resortIds: [String]) async {
+        let uncached = resortIds.filter { timelineCache[$0] == nil }
+        guard !uncached.isEmpty else { return }
+
+        isFetchingTimelines = true
+        let batchSize = 10
+        for batch in stride(from: 0, to: uncached.count, by: batchSize) {
+            let end = min(batch + batchSize, uncached.count)
+            let batchIds = Array(uncached[batch..<end])
+            await withTaskGroup(of: (String, TimelineResponse?).self) { group in
+                for resortId in batchIds {
+                    group.addTask {
+                        let response = try? await APIClient.shared.getTimeline(for: resortId, elevation: .top)
+                        return (resortId, response)
+                    }
+                }
+                for await (resortId, response) in group {
+                    if let response { timelineCache[resortId] = response }
+                }
             }
         }
         isFetchingTimelines = false
