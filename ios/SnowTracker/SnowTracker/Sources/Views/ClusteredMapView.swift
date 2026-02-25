@@ -103,34 +103,35 @@ struct ClusteredMapView: UIViewRepresentable {
     }
 
     private func updateAnnotations(_ mapView: MKMapView) {
-        // Get current resort IDs
         let currentAnnotations = mapView.annotations.compactMap { $0 as? ResortPointAnnotation }
-        let newIds = Set(annotations.map { $0.id })
+        let currentById = Dictionary(currentAnnotations.map { ($0.resort.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let newById = Dictionary(annotations.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
-        // Remove annotations that are no longer needed
-        let toRemove = currentAnnotations.filter { !newIds.contains($0.resort.id) }
-        mapView.removeAnnotations(toRemove)
+        var toRemove: [MKAnnotation] = []
+        var toAdd: [ResortPointAnnotation] = []
 
-        // Add new annotations
-        let existingIds = Set(currentAnnotations.map { $0.resort.id })
-        let toAdd = annotations.filter { !existingIds.contains($0.id) }
-            .map { annotation in
-                ResortPointAnnotation(resort: annotation.resort, condition: annotation.condition, snowQuality: annotation.snowQuality)
-            }
-        mapView.addAnnotations(toAdd)
-
-        // Update existing annotations if condition changed
-        for annotation in currentAnnotations {
-            if let updatedData = annotations.first(where: { $0.id == annotation.resort.id }) {
-                if annotation.snowQuality != updatedData.snowQuality {
-                    // Need to remove and re-add to update the view
-                    mapView.removeAnnotation(annotation)
-                    mapView.addAnnotation(
-                        ResortPointAnnotation(resort: updatedData.resort, condition: updatedData.condition, snowQuality: updatedData.snowQuality)
-                    )
+        // Annotations to remove: gone from new set, or quality changed
+        for (id, current) in currentById {
+            if let updated = newById[id] {
+                if current.snowQuality != updated.snowQuality {
+                    toRemove.append(current)
+                    toAdd.append(ResortPointAnnotation(resort: updated.resort, condition: updated.condition, snowQuality: updated.snowQuality))
                 }
+            } else {
+                toRemove.append(current)
             }
         }
+
+        // Annotations to add: not in current set
+        for (id, newAnnotation) in newById {
+            if currentById[id] == nil {
+                toAdd.append(ResortPointAnnotation(resort: newAnnotation.resort, condition: newAnnotation.condition, snowQuality: newAnnotation.snowQuality))
+            }
+        }
+
+        // Batch operations — single remove then single add keeps MKMapView clustering consistent
+        if !toRemove.isEmpty { mapView.removeAnnotations(toRemove) }
+        if !toAdd.isEmpty { mapView.addAnnotations(toAdd) }
     }
 
     // MARK: - Coordinator
@@ -256,6 +257,7 @@ final class ResortAnnotationView: MKAnnotationView {
 
     func configure(with annotation: ResortPointAnnotation) {
         self.annotation = annotation
+        clusteringIdentifier = Self.preferredClusteringIdentifier
         let image = createMarkerImage(color: annotation.markerColor, quality: annotation.snowQuality)
         markerImageView.image = image
 
