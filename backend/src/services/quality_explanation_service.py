@@ -774,51 +774,64 @@ def generate_score_change_reason(
         return f"No fresh snow; conditions {magnitude}settling"
 
     # 12. Smart fallback — identify the largest changing factor
-    factors: list[tuple[float, str]] = []
+    # Each factor is (magnitude, description, is_negative_for_skiing)
+    # is_negative = True means this factor worsens conditions
+    factors: list[tuple[float, str, bool]] = []
     # Temperature change relative importance (each degree matters)
     if abs(temp_delta) > 0.5:
         desc = f"{cur_temp:.0f}\u00b0C" if cur_temp != 0 else "0\u00b0C"
         if temp_delta > 0:
-            factors.append((abs(temp_delta) * 3, f"warming to {desc}"))
+            factors.append((abs(temp_delta) * 3, f"warming to {desc}", True))
         else:
-            factors.append((abs(temp_delta) * 3, f"cooling to {desc}"))
-    # Wind change
-    if abs(wind_delta) > 1:
+            factors.append((abs(temp_delta) * 3, f"cooling to {desc}", False))
+    # Wind change (only mention if wind is actually significant)
+    if abs(wind_delta) > 1 and max(cur_wind, prev_wind) > 10:
         if wind_delta > 0:
-            factors.append((abs(wind_delta), f"wind up to {cur_wind:.0f} km/h"))
-        else:
-            factors.append((abs(wind_delta), f"wind easing to {cur_wind:.0f} km/h"))
-    # Gust change
-    if abs(gust_delta) > 2:
-        if gust_delta > 0:
-            factors.append((abs(gust_delta) * 0.8, f"gusts up to {cur_gust:.0f} km/h"))
+            factors.append((abs(wind_delta), f"wind up to {cur_wind:.0f} km/h", True))
         else:
             factors.append(
-                (abs(gust_delta) * 0.8, f"gusts easing to {cur_gust:.0f} km/h")
+                (abs(wind_delta), f"wind easing to {cur_wind:.0f} km/h", False)
             )
-    # Visibility change (normalize to similar scale)
+    # Gust change (only if gusts are meaningful)
+    if abs(gust_delta) > 2 and max(cur_gust, prev_gust) > 15:
+        if gust_delta > 0:
+            factors.append(
+                (abs(gust_delta) * 0.8, f"gusts up to {cur_gust:.0f} km/h", True)
+            )
+        else:
+            factors.append(
+                (abs(gust_delta) * 0.8, f"gusts easing to {cur_gust:.0f} km/h", False)
+            )
+    # Visibility change (only for meaningful ranges, not 19860m)
     if cur_vis is not None and prev_vis is not None and prev_vis > 0:
         vis_ratio = abs(cur_vis - prev_vis) / max(prev_vis, 1)
-        if vis_ratio > 0.2:
+        if vis_ratio > 0.2 and min(cur_vis, prev_vis) < 5000:
             if cur_vis < prev_vis:
                 factors.append(
-                    (vis_ratio * 10, f"visibility dropping to {cur_vis:.0f}m")
+                    (vis_ratio * 10, f"visibility dropping to {cur_vis:.0f}m", True)
                 )
             else:
                 factors.append(
-                    (vis_ratio * 10, f"visibility improving to {cur_vis:.0f}m")
+                    (vis_ratio * 10, f"visibility improving to {cur_vis:.0f}m", False)
                 )
     # Snowfall delta
     snowfall_delta = cur_snowfall - prev_snowfall
     if abs(snowfall_delta) > 0.1:
         if snowfall_delta < 0:
-            factors.append((abs(snowfall_delta) * 5, "snowfall easing"))
+            factors.append((abs(snowfall_delta) * 5, "snowfall easing", True))
         else:
-            factors.append((abs(snowfall_delta) * 5, f"+{cur_snowfall:.1f}cm snowfall"))
+            factors.append(
+                (abs(snowfall_delta) * 5, f"+{cur_snowfall:.1f}cm snowfall", False)
+            )
 
     if factors:
-        factors.sort(key=lambda x: x[0], reverse=True)
-        top_factor = factors[0][1]
+        # Prefer factors whose direction aligns with the score change
+        aligned = [
+            f for f in factors if (f[2] and not improving) or (not f[2] and improving)
+        ]
+        chosen = aligned if aligned else factors
+        chosen.sort(key=lambda x: x[0], reverse=True)
+        top_factor = chosen[0][1]
         top_factor_cap = top_factor[0].upper() + top_factor[1:]
         if improving:
             return f"{top_factor_cap} {magnitude}improves conditions"
