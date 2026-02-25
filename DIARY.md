@@ -19,6 +19,18 @@ Open-Meteo's forecast snow depth model predicted unrealistic snowpack collapse (
 |-----|---------|-----|-----|
 | n/a | n/a | n/a | done |
 
+### Map: Add Asia and Eastern Europe regions
+iOS was missing Asia (KR, CN) and Eastern Europe (PL, CZ, SK, RO, BG) from SkiRegion enum, map presets, filter settings, and onboarding. Backend had 66 + 222 resorts in these regions. Also fixed Alps countries to include SI, ES, AD.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | pending | n/a |
+
+### Map: Auto-refresh quality on region change
+Map only fetched conditions once on appear. Panning/zooming to new areas showed grey pins. Added debounced (1.5s) auto-fetch on viewport change, plus manual reload button (arrow.clockwise) in toolbar. Only fetches uncached resorts in batches of 30.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
 ### Research: Alternative weather data sources
 Comprehensive evaluation of 10 weather APIs. Top recommendations:
 - **Weather Unlocked** ($220-420/mo): per-elevation (base/mid/top) forecasts for 850+ resorts
