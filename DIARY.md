@@ -7,6 +7,18 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 25, 2026
 
+### Map: Fix clustering breaking when panning between regions
+Clustering broke when zooming out, panning to Europe, zooming in/out, going to Asia. Root cause: individual removeAnnotation/addAnnotation calls during quality updates confused MKMapView's clustering engine. Fixed by batching all add/remove operations into single calls and re-setting clusteringIdentifier on configure() to survive view reuse.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Fix: Southern hemisphere resorts showing score 10 in summer
+Resorts like La Hoya (AR) showed score 10 "Bad" at 17°C with 0 snow depth — should be score 0 "Not Skiable". Added summer override: when temp >= 10°C with no snow depth and no fresh snowfall, both ML and heuristic scorers now return HORRIBLE (score 0). Affects all southern hemisphere resorts (AR, CL, NZ, AU) during off-season.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ### Map: Forecast time slider updates all annotation pins
 When selecting a future day in the date selector, all map pins now update to show predicted quality for that day — not just the 5 nearby resort cards. Moved date selector above nearby carousel so it's always visible. Added forecast banner and loading indicator. Timeline fetches batched (10 concurrent) with session caching. Region changes also fetch timelines when in forecast mode.
 | iOS | Android | Web | API |
