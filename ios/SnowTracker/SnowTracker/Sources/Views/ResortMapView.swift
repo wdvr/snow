@@ -374,6 +374,7 @@ struct ResortMapView: View {
         } label: {
             Image(systemName: "globe")
         }
+        .accessibilityLabel("Region")
     }
 
     // MARK: - Private Methods

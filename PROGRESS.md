@@ -1,7 +1,7 @@
 # Powder Chaser - Progress
 
 ## Status: LIVE
-**Last Updated**: 2026-02-23
+**Last Updated**: 2026-02-24
 
 ### Endpoints & Website
 - **Staging API**: https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging
@@ -11,7 +11,30 @@
 
 ---
 
-## Active Work (Feb 23)
+## Active Work (Feb 24)
+
+### Workstream 5: Chat UX Improvements
+
+#### iOS Chat Fixes
+- [x] Split streaming messages into separate bubbles at tool boundaries (thinking vs final response)
+- [x] Fix conversation history not loading (ISO 8601 date parsing in ChatMessage/ChatConversation)
+- [x] Style intermediate "thinking" messages: italic, muted color, lighter background
+- [x] Deploy to TestFlight
+- [ ] Test chat with: "What's the best resort near Fremont, California? Affordable, 60+ snow score"
+- [ ] Verify conversation history loads after fix
+
+#### Completed Earlier (Feb 24)
+- [x] Fix fresh powder chart: axes legend, "Crust formed" label, "since last thaw" subtitle
+- [x] Fix map: proactive condition fetching for all visible resorts
+- [x] Fix map: add yellow segment to cluster pie chart for "decent" quality
+- [x] Expand quality labels from 6 to 10 levels (backend + iOS)
+- [x] Fix trail distribution passthrough for Big White and others
+- [x] Add 9 new unit tests (DailySnowData, crust date regression)
+- [x] Add Fresh Powder Chart UI test
+
+---
+
+## Previous Active Work (Feb 23)
 
 ### Workstream 1: Wind & Visibility Features (ML + UI)
 
@@ -179,6 +202,11 @@
 
 | Feature | Date |
 |---------|------|
+| Fix chat: split thinking bubbles, conversation history, intermediate message styling | 2026-02-24 |
+| Fix map: proactive condition fetching, yellow pie segment | 2026-02-24 |
+| Fix fresh powder chart: legend, crust formed label, 9 new tests | 2026-02-24 |
+| Expand quality labels from 6 to 10 levels (backend + iOS) | 2026-02-24 |
+| Fix trail distribution passthrough for Big White and others | 2026-02-24 |
 | Fix map grey screen, wind/vis explanations, chat, Big White data (5 bug fixes) | 2026-02-24 |
 | Fix static JSON generator: sequential processing, 1040 resorts in 266s | 2026-02-24 |
 | Fix chat streaming: jwt→jose import, snow history: DAILY_HISTORY_TABLE env var | 2026-02-24 |

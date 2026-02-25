@@ -1,0 +1,1286 @@
+# Powder Chaser — Dev Diary
+
+Cross-platform fix/feature tracker. Each item shows status across platforms.
+Status: done | pending | n/a (not applicable) | backlog
+
+---
+
+## Feb 24, 2026
+
+### Chat: Split thinking messages into separate bubbles
+When AI uses tools, intermediate text ("Now let me check...") was concatenated with the final response into one giant message. Now split at tool boundaries into separate italic bubbles.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Chat: Fix conversation history not loading
+Backend returns ISO 8601 date strings but iOS JSONDecoder expected Double, causing decode failures. Added custom `init(from:)` with ISO 8601 parsing for ChatMessage and ChatConversation.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Map: Proactive condition fetching for visible resorts
+Map annotations showed stale quality data from S3 batch JSON. Only updated when individually tapped. Now fetches full conditions for all visible resorts in background on map appear.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Map: Add yellow segment to cluster pie chart
+"Decent" quality (yellow) was grouped with mediocre/poor (orange) in cluster pie charts. Added 5th segment for yellow.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Fresh Powder Chart: Fix axes and freeze line
+- Removed confusing combined "°C / cm" Y-axis label, added proper legend with color-coded items
+- Renamed "Last freeze" annotation to "Crust formed" (matches actual semantics of `lastFreezeThawHoursAgo`)
+- Subtitle now says "since last thaw" not "since last freeze"
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Quality Labels: Expand from 6 to 10 levels
+New scale: Horrible, Bad, Poor, Mediocre, Decent, Good, Great, Excellent, Powder Day, Champagne Powder. With distinct colors and icons.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | pending | done |
+
+### Trail Distribution: Fix missing data for Big White and others
+Trail percentages (green/blue/black runs) weren't passed through the API transform. Fixed `_transform_resort()` passthrough.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | pending | done |
+
+### ML Model v14-v15: Physics-based scoring overhaul
+v14 added `hours_since_last_snowfall` feature, removed manual hacks (aging penalty, cold boost, smoothing). v15 added physics-based audit of training data, expanded eval suite (64 edge cases, 14 constraints), targeted synthetic data. Cold+dry now correctly scores POOR not FAIR.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Pull-to-refresh: Fix hang and slow refresh
+DynamoDB `Limit=1` was too small with filter expressions. Changed to `Limit=15` with parallel fetch. Then further optimized to only refresh summaries (not full conditions). Fixed spinner stuck by preventing re-render during refresh with explicit yield.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Score Recalibration: Piecewise-linear mapping
+`score_to_100` was non-linear and unfair at boundaries. Replaced with piecewise-linear mapping for more intuitive 0-100 scores.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Condition Reports: Backend/iOS model mismatch
+Backend response fields didn't match iOS Codable model. Aligned response format.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Chat: Fix IAM streaming permissions, batch tools, guest auth
+Chat stream Lambda lacked `lambda:InvokeFunction` permission. Added `get_resort_details_batch` tool. Fixed guest auth for anonymous chat. Fixed empty bubbles appearing on tool calls.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | done | done |
+
+### Forecast Score Stability
+Forecast scores were jittering due to freeze-thaw state changes. Added freeze-thaw guard, aging penalty damping, and score smoothing across timeline days.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
+## Feb 23, 2026
+
+### Map: Grey screen on first annotation tap
+`sheet(isPresented:)` race condition caused empty sheet on first tap. Changed to `sheet(item:)` pattern.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Map: Initial zoom showing entire world
+1040 resorts scattered globally looked bad. Default to NA Rockies region, user location when available.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Chat: JWT import crash in streaming Lambda
+`ModuleNotFoundError: No module named 'jwt'` — changed to `from jose import jwt`.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Chat: Ignoring "best powder" questions
+System prompt didn't instruct to use `get_best_conditions` tool. AI asked for location instead of answering.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### ML Scorer: Missing wind/visibility features
+`extract_features_from_condition()` missing visibility_m, min_visibility_24h_m, max_wind_gust_24h. Scores were wrong.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Static JSON Generator: Connection pool exhaustion
+Parallel workers (20) exhausted DynamoDB connection pool. Changed to sequential processing. 1040 resorts in 266s.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Snow History: Empty data
+DAILY_HISTORY_TABLE env var missing from prod API Lambda (defaulted to dev table).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### List View: Slow loading
+Quality fetch limited to 300 resorts. Increased to 2000 (all resorts). Added progressive batch loading.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | done | n/a | n/a |
+
+### Map: Batch quality chunking
+Android sent all 1040 resort IDs in one request. Split into chunks.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | done | n/a | n/a |
+
+### Wind/Visibility: Explanation text improvement
+"Windy (30 km/h)" → "30 km/h wind decreases the score" with actual impact shown.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Big White: Incorrect Epic Pass badge
+Incorrectly tagged as Epic Pass resort. Removed.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Resort Data: 862 resorts with (0,0) coordinates
+Geocoded all resorts. Fixed 4 country misattributions (2 Austrian→US, 2 Italian→FR).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Wind Gust & Visibility UI
+Added wind gust, max gust 24h, visibility with color-coded severity to resort detail.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | done | done | done |
+
+### ML Model v13: Wind gust and visibility features
+Retrained with 37 features (up from 34) including visibility_km, min_visibility_24h_km, max_wind_gust_norm. 11,960 samples from 134 resorts. MAE=0.265, R²=0.880.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Resort Database: Expand from 138 to 1040 resorts
+Added resorts across 25 countries via enrichment scripts. Scraped prices, pass affiliations, and labels from skiresort.info.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Data Quality: Massive enrichment pass
+Enriched run percentages (2.8%→93.8%), website URLs (13.2%→85.4%), annual snowfall (446 resorts), base elevations (95.6%), top elevations (86.8%). Fixed 459 corrupted elevation values from scraper artifacts. Nulled 252 bad elevations exceeding country maximums.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### iOS Certificate Cleanup
+Added automatic certificate cleanup step to iOS build workflow. Revokes excess dev certs via ASC API before archive to prevent hitting Apple's cert limit.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Parallel Batch Quality Fetch
+Map quality fetch parallelized for faster loading. Fixed map clustering bugs. Added chat location awareness.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+---
+
+## Feb 22, 2026
+
+### Live Activities & Dynamic Island
+Real-time resort conditions on lock screen.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Chat: compare_resorts crash
+Tool crashed on missing data. Added error handling and missing API fields.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Weekly Digest: Double-counting forecast snow
+Cumulative forecast snowfall was double-counted in digest calculation.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### VoiceOver Accessibility
+Added accessibility labels to condition reports, elevation profiles, quality badges, season stats, snow history chart.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Batch Endpoint Timeouts
+Fixed timeout and None safety in recommendations and batch quality endpoints.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Streaming Chat with SSE
+Added Server-Sent Events streaming for AI chat via Lambda Function URL + Web Adapter. Tool tracing shows what AI is doing in real-time. Required multiple Lambda permission and wrapper fixes.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | done | done |
+
+### Android App: Initial release
+Full Android app in Kotlin + Jetpack Compose. Resort list, map, favorites, detail view, conditions. Material 3, Room database, Hilt DI.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | done | n/a | n/a |
+
+### React Web App
+Built web app at app.powderchaserapp.com with resort browsing, geolocation nearby resorts, favorites, and anonymous AI chat.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | done | n/a |
+
+### Chat: Harden API with retry and validation
+Added retry with exponential backoff for Bedrock calls, input length validation, larger conversation context window.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Chat: Fix timeouts with pre-fetched data
+Chat was timing out because Bedrock tool_use calls were slow. Pre-fetch resort data before calling Bedrock, skip redundant tool invocations. Increased Lambda timeout.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Snow Scores in Widgets
+Added ML snow scores (0-100) to home screen widgets. Large widget now shows 5 resorts instead of 3.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Favorites: Conditions summary card
+Added summary card to favorites view showing best conditions, storms incoming section, and forecast badges for upcoming snow.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Storm Badge on Favorites Tab
+Tab icon shows storm badge when significant snowfall (10+ cm) is predicted for any favorited resort.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Resort Search: Country codes and pass types
+Search now matches "CA" for Canada, "Epic" for Epic Pass resorts, etc.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Share Text: Snow score, depth, and forecast
+Share card now includes snow score, current depth, and forecast data instead of just resort name.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Batch Quality: Snow depth and forecast data
+Added snow_depth_cm, forecast_snowfall_cm to batch quality response so list/map views show depth and forecast without individual API calls.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Sort Options: Snow Depth and Predicted Snow
+Added new sort options to resort list for sorting by current snow depth or predicted incoming snowfall.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Chat: Markdown rendering
+AI chat responses now render markdown (bold, italic, lists, links, code) instead of plain text.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | done | n/a |
+
+### Chat: Snow history and comparison tools
+Added `get_snow_history` and `compare_resorts` tools so AI can answer historical questions and compare resorts side-by-side.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Chat: Condition reports tool
+AI chat can now access user-submitted condition reports for on-the-ground context when answering questions.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Epic/Ikon Pass Filter
+Added pass type filter to resort list. Pass badges shown on list and favorites views.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Elevation Display: Unit preferences
+Elevation displays now respect user unit preferences (meters vs feet) everywhere in the app.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### DynamoDB Backups and Missing API Routes
+Enabled point-in-time recovery on all DynamoDB tables. Added missing API Gateway routes for regions, auth, trips, snow-quality, events, and notification endpoints.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Chat: Auth fix and 16 new resorts
+Fixed chat authentication bug. Added 16 Scandinavian and Alps resorts.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Extract shared ELEVATION_WEIGHTS constant
+Elevation weighting (50% top + 35% mid + 15% base) was defined in multiple files with risk of drift. Extracted to shared constant.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Branding: Rename to Powder Chaser
+App renamed from "Snow Tracker" to "Powder Chaser" with updated marketing materials, About view, and documentation.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | done | done | n/a |
+
+---
+
+## Feb 21, 2026
+
+### AI Chat, Condition Reports, Offline Mode, Weekly Digest
+Major feature drop: AI chat with Claude Sonnet 4.6 via Bedrock (with tool use for resort lookups, comparisons), user-submitted condition reports, offline mode with aggressive caching, weekly snow digest, floating chat bubble, gradient weather backgrounds.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | backlog | backlog | done |
+
+### Production Crash: Missing python-ulid
+Lambda crashed on first condition report submission — `python-ulid` not in requirements.txt.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Chat: Bedrock model ID issues
+Wrong model ID format caused Bedrock access errors. Tried Claude 3.5 Sonnet v2, Sonnet 4, then back to Sonnet 4.6 after user fixed Bedrock access. Must use inference profile IDs like `us.anthropic.claude-sonnet-4-6`.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### List View Hang
+List view hung on main thread due to synchronous DynamoDB batch calls during scroll. Fixed with async dispatch and reduced API calls from 21 to 2 per refresh.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Trail Maps and Run Difficulty
+Added trail map links and run difficulty percentage breakdown (green/blue/black) to resort detail view. Required populating trail data for all resorts.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | pending | done |
+
+### Elevation Profile Redesign
+Redesigned elevation profile visualization to look like a mountain shape instead of flat bars.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Epic/Ikon Pass Badges
+Added Epic and Ikon pass badges to resort detail, list, and favorites views. Fixed Apple Sign In email preservation.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Elevation Consistency Bug
+Explanation text temperature didn't match the `temperature_c` field because they used different elevation preferences. Fixed to use same elevation (prefer mid > top > base).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Recommendations: Tiny resorts favored over major ones
+Global recommendations scoring favored tiny resorts with marginally higher scores. Added size weighting to prefer well-known resorts.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Chat: Auto-suggest resort detection
+Chat now detects resort names in user messages and offers quick-tap suggestions.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Batch Quality: Elevation mismatch
+Batch endpoint used different elevation than detail endpoint for overall quality. Aligned to weighted average (50/35/15).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### ML Model v10-v11: Real data only
+Dropped historical data from training, using only real-world scored data + synthetic edge cases. v11: 2181 samples, improved accuracy.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Explanation Text: Wrong elevation temperature
+Explanation text was using top-elevation temperature instead of mid-elevation (which is what `temperature_c` shows). Fixed in `quality_explanation_service.py`.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Unit Preferences: Multiple hardcoded spots
+ForecastBadge hardcoded "cm", notification thresholds showed cm regardless of preference, skeleton loader used wrong units, timeline wind speed was hardcoded. Fixed all to respect user preferences.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Overall Quality: Weighted raw scores
+Overall quality was computing from quality labels (discrete) instead of raw scores (continuous), causing information loss. Fixed to use weighted raw score averaging. Applied same fix to static JSON generator and recommendations.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### ML Model v8-v9: Deep snow and aging
+v8: retrained with accumulated snow and cold temperature scenarios. v9: added snow_depth as ML feature. Post-ML aging penalty for old snow. Improved heuristic scorer for deep unrefrozen snow.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Quality Explanation: User-friendly language
+Replaced technical jargon ("freeze-thaw cycle", "accumulation") with plain English. Made explanations more conversational.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Conditions Endpoint: Returning 50 entries
+Conditions query was returning too many entries per resort due to missing elevation filter. Added proper elevation-specific query.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Duplicate Resorts
+Found and removed duplicate resort entries in the database. Added chat aliases so queries for old names still work.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Backend: Falsy value check bug
+`if not value` was treating `0` and `0.0` as missing data, causing incorrect fallbacks. Changed to `if value is None`.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### 483 new tests
+Added comprehensive test coverage: 65 ml_scorer tests, 60 notification_service tests, 39 snow_summary_service tests, 205 api_handler/cache/resort_loader tests, 213 scraper/consolidator/weather tests.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### iOS Certificate Management
+Replaced cert revocation approach with stored signing certificate import from GitHub Secrets. Prevents hitting Apple's cert creation limits on CI.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Snowfall Consistency Check
+Open-Meteo cumulative snowfall window was inconsistent between processor and worker. Added consistency check that runs after scraper data merge.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### iOS Code Quality: Zero warnings build
+Replaced all deprecated `.foregroundColor` with `.foregroundStyle`, `.cornerRadius` with `.clipShape(RoundedRectangle)`. Extracted `.cardStyle()` modifier. Made all DateFormatters static. Added haptic feedback. Zero compiler warnings achieved.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Rename to Powder Chaser v1.1
+App renamed from "Snow Tracker" to "Powder Chaser". Updated all marketing materials, website, and About view.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | done | done | n/a |
+
+### Map Cluster: Snow quality display fix
+Map cluster pie charts showed wrong quality distribution. Temperature-aware explanations were using wrong elevation. Fixed both.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Auto-bypass auth in screenshot mode
+Screenshot and demo modes now auto-bypass authentication and onboarding for automated testing.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Timeline: Snow depth smoothing
+Timeline snow depth was dropping too fast (10cm/h melt rate). Lowered to 2cm/h for more realistic visualization.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Snow Score (0-100) and Quality Explanations
+Added human-readable 0-100 snow score alongside quality label. Explanations describe what's driving the score (fresh snow, temperature, wind, etc.). Added to static JSON generator.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | pending | done |
+
+### Cap fresh_snow_cm at snow_depth_cm
+API could return `fresh_snow_cm: 20, snow_depth_cm: 5` — contradictory. Capped fresh snow at depth.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
+## Feb 20, 2026
+
+### Snow Conditions Timeline View
+7-day forecast timeline showing snow quality, temperature, snowfall, and wind for each day at each elevation. With explanations and score info popovers.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | pending | done |
+
+### ML-based Snow Quality Scoring (v2-v7)
+Replaced heuristic scoring with neural network ensemble. v2: initial neural net. v3: synthetic edge cases. v5: ensemble of 5 models + deterministic labels (87.4% exact). v6: 10-model ensemble (93.6% exact). v7: retrained on corrected elevation data.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix Snow Quality Algorithm: Source confidence bias
+Heuristic scorer had a bias based on data source (scraped vs. API). Scores varied depending on where the data came from rather than actual conditions. Removed the bias.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Batch Endpoint: Thread contention
+ML model inference with 10-model ensemble caused thread contention in batch endpoint. Optimized with pre-loaded models and reduced lock contention.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Elevation Data: Fix 94 resorts
+Critical weather accuracy fix — 94 resorts had wrong elevation data causing Open-Meteo to apply incorrect temperature lapse rates (~6.5 deg C per 1000m). Protected elevation data from future scraper overwrites.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### East Coast Resorts
+Added 3 missing NA East resorts (Bretton Woods, Jay Peak, Loon Mountain). Fixed 12 wrong top elevations for existing na_east resorts.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Notification Deep Linking and Thaw-Freeze Info
+Push notification taps now deep link to the relevant resort. Added thaw-freeze info popover explaining how quality is calculated.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### ML Model for Timeline Predictions
+Timeline quality predictions now use the ML model instead of heuristic scoring, matching what the current conditions endpoint uses.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Missing API Gateway Routes
+Regions, auth, trips, snow-quality endpoints were returning "Missing Authentication Token" because API Gateway routes were not configured in Pulumi.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Snow-quality Endpoint Crash
+Endpoint crashed when DynamoDB enum fields were stored as strings instead of enum values. Added `hasattr` guard for `.value` access.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Recommendations: Lambda OOM
+Recommendations endpoint crashed with OOM on 512MB Lambda. Root cause: unpaginated GSI query loading all weather data. Fixed with ProjectionExpression and proper pagination. Had to alias reserved word `ttl`.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Recommendations: Scoring plateau
+Logarithmic fresh snow scale caused scores to plateau after 10cm. Switched to linear scale for more differentiation between moderate and heavy snowfall.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Server-side Timeline Cache
+Added 30-minute TTL cache for timeline endpoint. Prevents redundant weather calculations for frequently-requested resorts.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### iOS: Structured Logging
+Replaced all `print()` statements with `os.Logger` in the iOS service layer. Backend also got structured logging with consistent format.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### Map Detail Sheet: Missing data and pull-to-refresh
+Map detail sheet showed no data on first open. Pull-to-refresh didn't actually refresh conditions. Added loading spinner.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Retrain ML Model: 1677 real-world samples
+First major retrain with 13 days of real-world scored data. Improved accuracy on edge cases.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
+## Feb 19, 2026
+
+### Add 80 Validated Resorts
+Added 80 new resorts validated with correct coordinates and elevations. Fixed iOS batch performance. Removed daily scrape schedule (using manual trigger instead).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### Remove CloudWatch Custom Metrics
+Custom metrics were costing ~$50/month. Removed in favor of log-based monitoring.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### iOS Build: Certificate management overhaul
+Multiple attempts to fix iOS build certificate issues. Tried manual distribution signing, automatic signing with cert cleanup, inline ASC API signing. Final solution: stop creating new certs, reuse existing.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+---
+
+## Feb 17, 2026
+
+### App Startup Performance
+Instant cache loading for near-zero startup time. Snow quality display made consistent between list and detail views.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### iOS Build: Automatic provisioning profile download
+Build archive was failing because provisioning profiles weren't being auto-downloaded. Enabled `-allowProvisioningUpdates` with ASC API auth.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+---
+
+## Feb 15, 2026
+
+### Snow Quality Cap: 1-2 inch fresh snow in cold temps
+Quality was capped too aggressively for resorts with 1-2 inches of fresh snow in cold temperatures. Adjusted threshold.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
+## Feb 14, 2026
+
+### API Custom Domain DNS Fix
+Certificate validation DNS record conflicted with existing records. Added `allow_overwrite` to Pulumi cert validation record. Fixed pending Pulumi operations with stack export/import workaround.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Deployment Skills for Claude Agents
+Added `/deploy-testflight` and `/deploy-backend` Claude agent skills for easier deployments.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | n/a |
+
+---
+
+## Feb 8, 2026
+
+### Snow Quality: Smooth gradient for thin snow
+Cliff-edge at 2.54cm (1 inch) caused quality to jump dramatically. Replaced with smooth gradient up to 5.08cm (2 inches).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
+## Feb 7, 2026
+
+### Snow Quality: Icy label showing for fresh powder
+Resorts with fresh snow were incorrectly labeled "Icy" because freeze-thaw detection thresholds were too aggressive. Fixed detection logic: "Icy" only when actually frozen, "Soft" when thawing.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Scraper: Regex parsing wrong numbers as snow depth
+Snow depth scraper regex matched unrelated numbers on the page (e.g., trail counts) as snow depth. Fixed regex to target correct elements.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
+## Feb 5, 2026
+
+### Static JSON API: Pre-computed resort data
+Added Lambda that generates static JSON file (~325KB) with all resort data + snow quality. Batch endpoint reads from S3 instead of DynamoDB — 200 resorts in 130ms (was 5+ seconds). Multiple Pulumi fixes for bucket configuration.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Resort Data Validation: Multi-batch audit
+5-batch validation audit fixing resort elevations, coordinates, and data quality issues across the database. Fixed Sugar Bowl coordinates. Fixed Snoqualmie elevation.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Snow Quality Labels: "Icy" only when frozen
+Quality label was showing "Icy" for cold but not actually frozen conditions. Fixed to only show "Icy" when freeze-thaw cycle has occurred.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Snow Depth in API and Quality Calculation
+Added `snow_depth_cm` to API response. Incorporated snow depth into quality calculation. Added display in iOS resort detail.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Fernie: Showing as non-skiable
+Fernie was missing from the database or had bad data, showing as non-skiable in list view. Added resort and updated seeder.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### HORRIBLE Quality Threshold
+Made HORRIBLE threshold more conservative — was triggering too easily for marginal conditions.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
+## Feb 4, 2026
+
+### API List Loading: Optimize for 10K+ resorts
+List endpoint was slow with growing resort database. Added pagination, reduced response payload size, optimized DynamoDB queries.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### PolyForm Noncommercial License
+Added open source license. Created comprehensive README. Set up Buy Me a Coffee. Removed GoogleService-Info.plist from repo (use template).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+---
+
+## Feb 3, 2026
+
+### Parallel Weather Processing
+Implemented fan-out Lambda architecture: orchestrator invokes per-resort workers in parallel. Scaled from sequential (slow for 100+ resorts) to parallel processing of 1000+ resorts.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Parallel Resort Scraper
+Implemented orchestrator/worker pattern for resort scraping. Workers run per-country, results aggregated in S3. Added SNS notifications for newly discovered resorts.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### East Coast Resorts (VT, NH, ME)
+Added Vermont, New Hampshire, and Maine ski resorts to the database.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Localization: 13 languages
+Added translations for French, German, Spanish, Italian, Japanese, Korean, Chinese (Simplified/Traditional), Portuguese, Dutch, Swedish, Norwegian, Finnish.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Marketing Website
+Launched powderchaserapp.com with iPhone screenshots, proprietary algorithm marketing, and support page with contact form.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | done | n/a |
+
+### Map: Pie chart clusters and warm temp fix
+Added pie chart visualization to map resort clusters. Fixed warm temperature quality override logic. Fixed "Not Skiable" in batch endpoint.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Region Filter and Onboarding
+Added region filter to iOS app. Region selection in onboarding flow. Fixed DynamoDB Decimal/float conversion issue.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Geo Indexing and Snow Summary
+Added geohash indexing for location-based queries. Persistent snow summary tracking across weather updates.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Firebase Analytics
+Comprehensive event tracking across iOS app: resort views, map interactions, favorites, chat, search, condition reports.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### App Store Preparation: v4.0.0
+Fastlane automation for App Store submission. App icon generation. Review information. Automated Claude release notes. Export compliance. Hid Trips tab. Removed staging/prod selector from release UI.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Snow Accumulation Bug: 24h snowfall delta tracking
+24h snowfall was using cumulative values instead of deltas, causing massive overreporting of fresh snow.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Map Markers: Wrong elevation for snow quality
+Map markers were using base elevation quality instead of the representative elevation (mid > top > base).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Push Notifications: False "removed" alerts
+Core resorts were triggering "resort removed" SNS notifications when scraper temporarily couldn't find them. Added protection for core resorts.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
+## Feb 2, 2026
+
+### Push Notifications Fix
+Notifications weren't delivering. Fixed APNs configuration, EventTarget target_id length limit (max 64 chars), and resort versioning system.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### Apple Sign In: Email preservation
+Apple Sign In email was lost on fallback auth path. Fixed to preserve email throughout the auth flow.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Map View: Snow quality icons not rendering
+Map marker icons for snow quality were not displaying. Fixed rendering pipeline.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Near You: Increase search radius
+Default "Near You" search radius was too small (200km). Increased to 1000km.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+---
+
+## Feb 1, 2026
+
+### Login UI Fixes
+Fixed Google logo display, email display in profile, debug error handling. Removed auth requirement from notification endpoints. Fixed feedback API route validation.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+---
+
+## Jan 31, 2026
+
+### Push Notifications and Fresh Snow Alerts
+Added resort event notifications and fresh snow alerts via APNs. Required multiple infra fixes: SNS PlatformApplication attributes, API Gateway routes for events/notifications, missing Lambda env vars, APNs credential configuration, multiline private key handling.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### iOS Build Errors: Duplicate types and concurrency
+iOS build broke due to duplicate type declarations and Swift 6 concurrency issues from notification feature additions.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+---
+
+## Jan 30, 2026
+
+### Recommendations: API and caching fixes
+Recommendations endpoint had multiple issues: batch query optimization, caching TTL too short, parallel DynamoDB queries, iOS decoding mismatches. Multiple rounds of fixes.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### Firebase Analytics and Crashlytics
+Integrated Firebase Analytics for usage tracking and Crashlytics for crash reporting.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### CI: Shared ios-infra workflows
+Migrated iOS CI/CD workflows to shared `ios-infra` repository for reuse across projects. Added intelligent runner strategy with self-hosted fallback.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+---
+
+## Jan 29, 2026
+
+### Scraper Data Quality and DB Population Workflow
+Fixed scraper data quality issues. Added GitHub Actions workflow to populate DynamoDB from resorts.json. Fixed duplicate ACM DNS validation records.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Recommendations API Routes
+Added recommendations endpoints to API Gateway. Fixed iOS app issues with recommendations display. Optimized with batch query and 1-hour cache. Fixed batch conditions scan to parse all fields.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+---
+
+## Jan 28, 2026
+
+### Auth, Recommendations, and Trip Planning
+Major backend feature drop: Apple/Google/Guest authentication with JWT, personalized recommendations based on location and preferences, trip planning CRUD with multi-resort itineraries.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | backlog | backlog | done |
+
+### Release Workflow Restructure
+Separated build from upload in CI/CD. Restructured into 3-step release process. Version bump to 1.1.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Region Filtering in Widget
+Best Snow widget now supports region filtering (NA West, NA Rockies, Alps, etc.).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### API Timeout: 5s to 30s
+iOS app was timing out on slow API calls. Increased client timeout from 5s to 30s.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Dead Code Cleanup
+Removed dead code, fixed silent error handlers, improved test reliability across the codebase.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+---
+
+## Jan 27, 2026
+
+### TestFlight Automated Deployment
+Set up automated TestFlight deployment pipeline. Required extensive debugging: Info.plist path, JWT generation for ASC API (multiple Python/YAML/heredoc fixes), PyJWT install issues, bundle ID, export compliance, beta group assignment, runner fallback strategy.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Marketing Website and Custom Domains
+Launched powderchaserapp.com. Set up custom API subdomains (api.powderchaserapp.com, staging.api.powderchaserapp.com). Automated website deployment to S3.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | done | done |
+
+### Map Clustering and Geocoding
+Added clustered map view. Improved resort geocoding with multi-source approach (Apple, Google, OSM). Fixed certificate creation to import from secrets.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Batch Conditions: Parallel fetching
+Batch conditions endpoint was sequential (slow). Changed to parallel DynamoDB fetching with ThreadPoolExecutor.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Resort Scraping and Population
+Added scraping scripts for ski resort data. Population scripts with SNS notifications for new/removed resorts. Parallel scraping with delta mode. URL filtering to skip non-resort pages.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Lambda SnapStart
+Enabled Lambda SnapStart for faster cold starts.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### iOS SDK Update to 26.0
+Updated to iOS SDK 26.0 and Swift 6.0. Added location privacy description string. Fixed Xcode version selection in CI.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Data Loading Optimization
+Lazy fetch conditions (don't load until resort tapped). Aggressive caching. Reduced API response size by excluding raw_data field.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### App Store Assets and Fastlane
+App Store screenshots, app icon, metadata management via Fastlane. Multiple fixes for App Store upload requirements (emojis rejected, phone format, review info).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Proximity-based Resort Discovery
+Find resorts near your location with distance and quality sorting.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+---
+
+## Jan 26, 2026
+
+### Google Sign-In
+Added Google Sign-In alongside Apple authentication.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Interactive Map View
+Location-based resort filtering on a full map view with annotations.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Offline Mode
+Fixed API offline mode and data display issues. App now works with cached data when offline.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Bundle ID Update
+Updated bundle ID for new Apple Developer account. Fixed app group identifier in entitlements.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+---
+
+## Jan 25, 2026
+
+### Snow Quality Batch Endpoint
+Added batch API endpoint for fetching snow quality of multiple resorts at once. Fixed quality calculation bugs and added test coverage.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Parallel API Loading
+Fixed slow API loading by fetching conditions for multiple resorts in parallel instead of sequentially.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### HORRIBLE Snow Quality Level
+Added HORRIBLE (1) quality level. Updated iOS launch screen. Adjusted quality thresholds.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Freeze-Thaw Detection: Extended to 14 days
+Weather processor only looked back 7 days for freeze-thaw events. Extended to 14 days for more accurate detection in stable cold weather.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### API Lambda: Wrong table environment
+API Lambda environment variables were pointing to dev table instead of the correct environment table. Fixed configuration.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Historical Data Backfill
+Added script and deployment step for backfilling historical weather data. Later removed from automatic deploy, added manual trigger workflow.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
+## Jan 24, 2026
+
+### Switch to Open-Meteo
+Replaced weatherapi.com with Open-Meteo for weather data. Free, no API key needed, better elevation support with lapse rate adjustments.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Snow Quality Rating: Fresh powder since thaw-freeze
+Implemented first snow quality algorithm based on fresh powder accumulation since last thaw-freeze cycle. Quality levels: EXCELLENT, GOOD, FAIR, POOR, BAD.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### OnTheSnow Scraper
+Integrated OnTheSnow for real snow depth data to supplement Open-Meteo weather data.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### 60-second API Caching
+Added 60-second response caching to reduce API load and improve response times.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Splash Screen and Region Filtering
+Added splash/loading screen. Offline data caching. More resorts added. Region filtering (Alps, Rockies, etc.).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### CloudWatch Metrics and Grafana Dashboards
+Added custom CloudWatch metrics for API latency, weather processing, and resort coverage. Created Grafana dashboards for monitoring.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### iOS Conditions: Response format mismatch
+iOS model expected different JSON structure than what the API returned. Multiple rounds of fixes to align the two.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### Lambda Timeout: Open-Meteo
+Lambda was timing out when Open-Meteo API was slow. Reduced API timeouts to fail fast.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Widget Reliability
+Fixed widget data service decoding issues. Added debugging logs. Improved reliability.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Conditional CI: Path-based job execution
+CI jobs now only run when relevant files change (iOS jobs skip when only backend changes, etc.).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+---
+
+## Jan 23, 2026
+
+### First Deployment: iOS app talking to live API
+Connected iOS app to deployed staging API. Multiple rounds of fixes: Lambda handler, API Gateway configuration, Python imports, response format parsing, DynamoDB queries. Weather processor producing real data.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### API Error Handling
+Replaced fake data fallback with proper error messages when API fails. Added error message UI.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### Weather Processor: Multiple fixes
+Convert floats to Decimal for DynamoDB. Remove redundant enum-to-string conversion. Fix handler and elevation formatting. Fix logging for both enum and string values.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Lambda: Large package deployment
+Lambda deployment failed for packages over 50MB. Fixed deployment pipeline.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### US, European, and Japanese Resorts
+Expanded from initial Canadian resorts to include major US (Vail, Park City, etc.), European (Chamonix, Zermatt, etc.), and Japanese (Niseko, Hakuba) resorts.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Feedback Feature
+Added in-app feedback submission with backend endpoint.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Snow Predictions, Share Button, and Widgets
+Added 7-day snow predictions. Share button for resort conditions. iOS home screen widgets showing best snow conditions.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### iOS CI: XcodeGen and Screenshots
+Added XcodeGen to CI for generating Xcode project. Set up screenshot capture automation.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Fix iOS: WeatherCondition rawData decoding
+Complex nested JSON in weather response caused decoding failures. Fixed with custom decoder.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+---
+
+## Jan 20, 2026
+
+### Project Inception
+Initial project setup for Snow Quality Tracker. Project scaffolding with comprehensive testing strategy. Resort data seeder. CI/CD pipeline with GitHub Actions.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### Infrastructure: Pulumi AWS setup
+S3 state backend, multi-environment Pulumi deployment (dev/staging/prod). API Gateway, Lambda functions, DynamoDB tables. EKS with Grafana/Prometheus (later disabled to reduce costs).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### iOS App: Initial features
+API client, SwiftUI views for resort list and detail, Sign in with Apple authentication. Silver Star resort added, favorites persistence.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Scheduled Weather Processing Lambda
+Lambda function to periodically fetch and process weather data from external APIs. Fix config namespace issues.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### EKS: Version upgrade fiasco
+Attempted upgrade to EKS 1.34 failed because Kubernetes requires incremental version upgrades. Had to destroy and redeploy staging cluster. Eventually disabled EKS entirely to reduce costs.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
