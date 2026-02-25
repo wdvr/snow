@@ -280,6 +280,11 @@ private struct MessageBubbleView: View {
                         Text(displayedText)
                             .font(.body)
                             .foregroundStyle(.white)
+                    } else if message.isIntermediate {
+                        Text(displayedText)
+                            .font(.body)
+                            .italic()
+                            .foregroundStyle(.secondary)
                     } else {
                         MarkdownTextView(displayedText, foregroundColor: .primary)
                             .font(.body)
@@ -291,7 +296,9 @@ private struct MessageBubbleView: View {
                     .background(
                         message.isFromUser
                             ? Color.blue
-                            : Color(.secondarySystemBackground)
+                            : message.isIntermediate
+                                ? Color(.tertiarySystemBackground)
+                                : Color(.secondarySystemBackground)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 18))
 

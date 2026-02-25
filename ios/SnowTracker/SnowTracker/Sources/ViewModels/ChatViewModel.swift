@@ -155,20 +155,18 @@ final class ChatViewModel: ObservableObject {
     // MARK: - SSE Streaming
 
     private func sendMessageViaStream(_ text: String) async throws {
-        let placeholderId = "stream-\(UUID().uuidString)"
+        var currentSegmentId = "stream-\(UUID().uuidString)"
+        var currentSegmentText = ""
+        var finalMessageId = ""
+        var finalConversationId = ""
 
-        // Add placeholder assistant message
-        let placeholder = ChatMessage(
-            id: placeholderId,
+        // Add first placeholder assistant message
+        messages.append(ChatMessage(
+            id: currentSegmentId,
             role: .assistant,
             content: "",
             createdAt: Date()
-        )
-        messages.append(placeholder)
-
-        var assistantText = ""
-        var finalMessageId = ""
-        var finalConversationId = ""
+        ))
 
         let stream = streamService.sendMessageStream(
             message: text,
@@ -182,61 +180,94 @@ final class ChatViewModel: ObservableObject {
                 switch event.type {
                 case .status:
                     statusMessage = event.message
+
                 case .toolStart:
+                    // If we have accumulated text, finalize it as a separate "thinking" bubble
+                    if !currentSegmentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        if let index = messages.firstIndex(where: { $0.id == currentSegmentId }) {
+                            messages[index] = ChatMessage(
+                                id: currentSegmentId,
+                                role: .assistant,
+                                content: currentSegmentText,
+                                createdAt: Date(),
+                                isIntermediate: true
+                            )
+                        }
+                        streamingMessageId = nil
+                        displayedText = ""
+                        currentSegmentText = ""
+                        currentSegmentId = "stream-\(UUID().uuidString)"
+                    } else {
+                        // No text accumulated — remove empty placeholder
+                        messages.removeAll { $0.id == currentSegmentId }
+                        currentSegmentId = "stream-\(UUID().uuidString)"
+                    }
+
                     statusMessage = event.message ?? "Running \(event.tool ?? "tool")..."
                     if let tool = event.tool {
                         activeTools.append(tool)
                     }
+
                 case .toolDone:
                     if let tool = event.tool {
                         activeTools.removeAll { $0 == tool }
                     }
+
                 case .textDelta:
-                    assistantText += event.text ?? ""
-                    statusMessage = nil
-                    // Update placeholder content
-                    if let index = messages.firstIndex(where: { $0.id == placeholderId }) {
-                        messages[index] = ChatMessage(
-                            id: placeholderId,
+                    let delta = event.text ?? ""
+                    // Create placeholder for new segment if needed
+                    if !messages.contains(where: { $0.id == currentSegmentId }) {
+                        messages.append(ChatMessage(
+                            id: currentSegmentId,
                             role: .assistant,
-                            content: assistantText,
+                            content: "",
+                            createdAt: Date()
+                        ))
+                    }
+                    currentSegmentText += delta
+                    statusMessage = nil
+                    if let index = messages.firstIndex(where: { $0.id == currentSegmentId }) {
+                        messages[index] = ChatMessage(
+                            id: currentSegmentId,
+                            role: .assistant,
+                            content: currentSegmentText,
                             createdAt: Date()
                         )
                     }
-                    displayedText = assistantText
-                    streamingMessageId = placeholderId
+                    displayedText = currentSegmentText
+                    streamingMessageId = currentSegmentId
+
                 case .done:
                     finalMessageId = event.messageId ?? ""
                     finalConversationId = event.conversationId ?? ""
+
                 case .error:
                     throw ChatStreamError.serverError(event.message ?? "Chat error")
                 }
             }
         } catch {
-            // Clean up on error
             isSending = false
             statusMessage = nil
             activeTools = []
             streamingMessageId = nil
             displayedText = ""
-            // Remove placeholder if no text was received
-            if assistantText.isEmpty {
-                messages.removeAll { $0.id == placeholderId }
+            if currentSegmentText.isEmpty {
+                messages.removeAll { $0.id == currentSegmentId }
             }
             throw error
         }
 
-        // Remove placeholder if stream completed but no text was received
-        if assistantText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            messages.removeAll { $0.id == placeholderId }
-            chatLog.warning("Stream completed with empty response, removed placeholder")
+        // Finalize the last segment
+        if currentSegmentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            messages.removeAll { $0.id == currentSegmentId }
+            chatLog.warning("Stream completed with empty final segment")
         } else if !finalMessageId.isEmpty {
-            // Update placeholder with final ID
-            if let index = messages.firstIndex(where: { $0.id == placeholderId }) {
+            // Update the last segment with the real message ID from backend
+            if let index = messages.firstIndex(where: { $0.id == currentSegmentId }) {
                 messages[index] = ChatMessage(
                     id: finalMessageId,
                     role: .assistant,
-                    content: assistantText,
+                    content: currentSegmentText,
                     createdAt: Date()
                 )
             }
