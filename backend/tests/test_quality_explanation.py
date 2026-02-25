@@ -740,12 +740,13 @@ class TestScoreChangeReason:
         assert "improv" in reason.lower()
 
     def test_generic_decline_fallback(self):
-        """When no specific factor is dominant, generic decline message shown."""
+        """When no specific factor matches, snow aging or smart fallback is shown."""
         prev = _timeline_point(snow_score=72)
         curr = _timeline_point(snow_score=68)
         reason = generate_score_change_reason(curr, prev)
         assert reason is not None
-        assert "declin" in reason.lower()
+        # With no fresh snow in either period, the snow aging pattern fires
+        assert "no fresh snow" in reason.lower() or "settling" in reason.lower()
 
     def test_significant_change_label(self):
         """Large score changes (>=15 pts) should mention significance."""
@@ -762,3 +763,93 @@ class TestScoreChangeReason:
         reason = generate_score_change_reason(curr, prev)
         assert reason is not None
         assert "slightly" in reason.lower()
+
+    # --- New pattern tests ---
+
+    def test_small_fresh_snow_detected(self):
+        """Even small fresh snowfall (0.5cm) should be mentioned."""
+        prev = _timeline_point(snow_score=65, snowfall_cm=0.0)
+        curr = _timeline_point(snow_score=70, snowfall_cm=0.8)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "0.8cm" in reason or "fresh snow" in reason.lower()
+
+    def test_high_absolute_wind_mentioned(self):
+        """High absolute wind (>25 km/h gusts) should be flagged even without big delta."""
+        prev = _timeline_point(snow_score=72, wind_gust_kmh=20.0)
+        curr = _timeline_point(snow_score=65, wind_gust_kmh=30.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "30" in reason
+        assert "gust" in reason.lower() or "wind" in reason.lower()
+
+    def test_snow_aging_no_fresh_snow(self):
+        """When no fresh snow in either period and score drops, mention snow aging."""
+        prev = _timeline_point(snow_score=70, snowfall_cm=0.0)
+        curr = _timeline_point(snow_score=63, snowfall_cm=0.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "no fresh snow" in reason.lower() or "settling" in reason.lower()
+
+    def test_daytime_warming_afternoon(self):
+        """Afternoon temp rise should mention daytime warming."""
+        prev = _timeline_point(snow_score=72, temperature_c=-4.0, time_label="morning")
+        curr = _timeline_point(snow_score=65, temperature_c=1.0, time_label="afternoon")
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "warm" in reason.lower() or "soften" in reason.lower()
+        assert "1\u00b0C" in reason
+
+    def test_overnight_cooling_morning(self):
+        """Morning temp drop should mention overnight cooling."""
+        prev = _timeline_point(
+            snow_score=62, temperature_c=-2.0, time_label="afternoon"
+        )
+        curr = _timeline_point(snow_score=70, temperature_c=-8.0, time_label="morning")
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "cooling" in reason.lower() or "firm" in reason.lower()
+        assert "-8\u00b0C" in reason
+
+    def test_smart_fallback_picks_largest_factor(self):
+        """Smart fallback should identify the largest changing factor."""
+        prev = _timeline_point(
+            snow_score=70,
+            temperature_c=-5.0,
+            wind_speed_kmh=10.0,
+            snowfall_cm=0.1,
+        )
+        curr = _timeline_point(
+            snow_score=65,
+            temperature_c=-4.0,
+            wind_speed_kmh=14.0,
+            snowfall_cm=0.1,
+        )
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        # Should not be generic "Conditions declining"
+        assert "declining" not in reason.lower()
+
+    def test_actual_values_in_wind_message(self):
+        """Wind messages should include the actual wind speed value."""
+        prev = _timeline_point(snow_score=75, wind_speed_kmh=12.0)
+        curr = _timeline_point(snow_score=65, wind_speed_kmh=22.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "22" in reason
+
+    def test_snowfall_stopped_lower_threshold(self):
+        """Snowfall stopping from as little as 0.5cm should be noted."""
+        prev = _timeline_point(snow_score=72, snowfall_cm=1.0)
+        curr = _timeline_point(snow_score=66, snowfall_cm=0.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "stop" in reason.lower() or "settl" in reason.lower()
+
+    def test_depth_loss_lower_threshold(self):
+        """Snow depth loss of 6cm (above -5 threshold) should be detected."""
+        prev = _timeline_point(snow_score=70, snow_depth_cm=100.0)
+        curr = _timeline_point(snow_score=63, snow_depth_cm=94.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "depth" in reason.lower() or "dropping" in reason.lower()

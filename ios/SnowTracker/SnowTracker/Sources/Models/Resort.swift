@@ -156,14 +156,10 @@ struct Resort: Codable, Identifiable, Hashable {
     /// The region field may contain state/province codes (BC, UT), full names
     /// (British Columbia, Hokkaido), or internal region keys (na_west, alps).
     var regionDisplayName: String {
-        // Internal region keys -> empty (just show country name)
-        let internalKeys: Set<String> = [
+        let internalKeys: [String] = [
             "na_west", "na_rockies", "na_east", "alps", "scandinavia",
             "japan", "oceania", "south_america", "europe_east", "asia"
         ]
-        if internalKeys.contains(region.lowercased()) {
-            return ""
-        }
 
         // US state codes
         let usStates: [String: String] = [
@@ -191,7 +187,45 @@ struct Resort: Codable, Identifiable, Hashable {
             "SK": "Saskatchewan", "YT": "Yukon"
         ]
 
-        // Check if it's a known short code
+        let lowered = region.lowercased()
+
+        // Exact internal key -> empty (just show country name)
+        if internalKeys.contains(lowered) {
+            return ""
+        }
+
+        // Compound key like "na_west_BC", "alps_FR", "japan_Hokkaido"
+        // Check if region starts with a known internal key prefix followed by "_"
+        for key in internalKeys {
+            let prefix = key + "_"
+            if lowered.hasPrefix(prefix) {
+                let suffix = String(region.dropFirst(prefix.count))
+                let suffixUpper = suffix.uppercased()
+
+                // Try resolving as a US state or Canadian province code
+                if let stateName = usStates[suffixUpper] {
+                    return stateName
+                }
+                if let provinceName = caProvinces[suffixUpper] {
+                    return provinceName
+                }
+
+                // Non-NA compound keys (alps_FR, scandinavia_NO) -> empty
+                if !key.hasPrefix("na_") {
+                    return ""
+                }
+
+                // NA compound key with a full name suffix (e.g., "na_west_British Columbia")
+                // Return the suffix as-is if it looks like a readable name (more than 2 chars)
+                if suffix.count > 2 {
+                    return suffix
+                }
+
+                return ""
+            }
+        }
+
+        // Bare 2-letter code (legacy data where region = "BC", "CO", etc.)
         if country.uppercased() == "US", let stateName = usStates[region.uppercased()] {
             return stateName
         }
@@ -199,13 +233,12 @@ struct Resort: Codable, Identifiable, Hashable {
             return provinceName
         }
 
-        // If region is already a readable name (e.g., "Hokkaido", "Valais", "British Columbia"),
-        // return it as-is, but filter out the scraper artifact "Montana" for non-US resorts
+        // Filter out the scraper artifact "Montana" for non-US resorts
         if country.uppercased() != "US" && region == "Montana" {
             return ""
         }
 
-        // Return the region as-is if it's not empty (it's already a readable name)
+        // Already a readable name (e.g., "Hokkaido", "Valais", "British Columbia")
         return region
     }
 
@@ -279,7 +312,7 @@ extension Resort {
             id: "big-white",
             name: "Big White Ski Resort",
             country: "CA",
-            region: "BC",
+            region: "na_west_BC",
             elevationPoints: [
                 ElevationPoint(
                     level: .base,
@@ -333,7 +366,7 @@ extension Resort {
             id: "lake-louise",
             name: "Lake Louise Ski Resort",
             country: "CA",
-            region: "AB",
+            region: "na_rockies_AB",
             elevationPoints: [
                 ElevationPoint(
                     level: .base,
@@ -387,7 +420,7 @@ extension Resort {
             id: "silver-star",
             name: "Silver Star Mountain Resort",
             country: "CA",
-            region: "BC",
+            region: "na_west_BC",
             elevationPoints: [
                 ElevationPoint(
                     level: .base,

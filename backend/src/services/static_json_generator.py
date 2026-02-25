@@ -230,26 +230,10 @@ class StaticJsonGenerator:
                 "predicted_snow_48h_cm": None,
             }
 
-        # Calculate overall quality from weighted raw scores (top 50%, mid 35%, base 15%)
-        weighted_raw = 0.0
-        total_w = 0.0
-        for c in conditions:
-            if c.quality_score is not None:
-                w = ELEVATION_WEIGHTS.get(c.elevation_level, DEFAULT_ELEVATION_WEIGHT)
-                weighted_raw += c.quality_score * w
-                total_w += w
-
-        if total_w > 0:
-            overall_raw = weighted_raw / total_w
-            snow_score = score_to_100(overall_raw)
-            overall_quality = raw_score_to_quality(overall_raw)
-        else:
-            overall_quality = SnowQualityService.calculate_overall_quality(conditions)
-            snow_score = None
-
-        # Get representative condition for temperature/snowfall fields (prefer mid)
-        # Mid elevation best represents typical skiing conditions and aligns with
-        # the weighted quality rating (50% top + 35% mid + 15% base)
+        # Get representative condition (prefer mid > top > base).
+        # Mid elevation best represents typical skiing conditions.
+        # We use this single elevation's score for overall quality so that
+        # the score matches the timeline view and explanation text.
         representative = None
         for pref_level in ["mid", "top", "base"]:
             for c in conditions:
@@ -260,6 +244,16 @@ class StaticJsonGenerator:
                 break
         if not representative and conditions:
             representative = conditions[0]
+
+        # Use representative elevation's raw score for overall quality
+        # (matches timeline default view and explanation text)
+        if representative and representative.quality_score is not None:
+            overall_raw = representative.quality_score
+            snow_score = score_to_100(overall_raw)
+            overall_quality = raw_score_to_quality(overall_raw)
+        else:
+            overall_quality = SnowQualityService.calculate_overall_quality(conditions)
+            snow_score = None
 
         # Generate overall explanation using same representative condition
         # to ensure temperature in explanation matches temperature_c field

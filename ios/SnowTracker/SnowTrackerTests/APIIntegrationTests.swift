@@ -94,7 +94,7 @@ final class APIIntegrationTests: XCTestCase {
         XCTAssertEqual(resort.id, "big-white")
         XCTAssertEqual(resort.name, "Big White Ski Resort")
         XCTAssertEqual(resort.country, "CA")
-        XCTAssertEqual(resort.region, "BC")
+        XCTAssertEqual(resort.region, "na_west_BC")
     }
 
     func testGetConditionsEndpoint() async throws {

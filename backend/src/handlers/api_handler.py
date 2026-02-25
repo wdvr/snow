@@ -1110,36 +1110,9 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
                 "timestamp": condition.timestamp,
             }
 
-        # Calculate overall quality from weighted raw scores (top 50%, mid 35%, base 15%).
-        # This ensures overall_quality and overall_snow_score are always consistent.
-        weighted_raw_score = 0.0
-        total_weight = 0.0
-        for cond in conditions:
-            raw = cond.quality_score
-            if raw is not None:
-                w = ELEVATION_WEIGHTS.get(
-                    cond.elevation_level, DEFAULT_ELEVATION_WEIGHT
-                )
-                weighted_raw_score += raw * w
-                total_weight += w
-        if total_weight > 0:
-            overall_raw_score = weighted_raw_score / total_weight
-        else:
-            overall_raw_score = None
-
-        # Derive quality label from weighted raw score using model thresholds
-        if overall_raw_score is not None:
-            overall_snow_score = score_to_100(overall_raw_score)
-            overall_quality = raw_score_to_quality(overall_raw_score)
-        else:
-            overall_quality = SnowQualityService.calculate_overall_quality(conditions)
-            overall_snow_score = None
-
-        # Get explanation for overall quality
-        quality_explanation = SNOW_QUALITY_EXPLANATIONS.get(overall_quality, {})
-
-        # Find representative condition (mid > top > base) for explanation
-        # consistency with static_json_generator and batch endpoint
+        # Find representative condition (mid > top > base) for score, explanation,
+        # and temperature/snowfall fields. Using a single elevation's score
+        # ensures consistency with the timeline view and explanation text.
         representative = None
         for pref in ["mid", "top", "base"]:
             for c in conditions:
@@ -1151,9 +1124,22 @@ async def get_snow_quality_summary(resort_id: str, response: Response):
         if not representative and conditions:
             representative = conditions[0]
 
-        # Generate overall explanation matching the weighted quality level.
+        # Use representative elevation's raw score for overall quality
+        # (matches timeline default view and explanation text)
+        if representative and representative.quality_score is not None:
+            overall_raw_score = representative.quality_score
+            overall_snow_score = score_to_100(overall_raw_score)
+            overall_quality = raw_score_to_quality(overall_raw_score)
+        else:
+            overall_quality = SnowQualityService.calculate_overall_quality(conditions)
+            overall_snow_score = None
+
+        # Get explanation for overall quality
+        quality_explanation = SNOW_QUALITY_EXPLANATIONS.get(overall_quality, {})
+
+        # Generate overall explanation matching the representative quality level.
         # Pass representative to ensure explanation temperature matches
-        # the elevation used in batch/static JSON endpoints.
+        # the elevation used for the score.
         overall_explanation = generate_overall_explanation(
             conditions, overall_quality, representative=representative
         )

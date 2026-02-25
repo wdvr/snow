@@ -102,6 +102,52 @@ final class SnowTrackerTests: XCTestCase {
         let bigWhite = Resort.sampleResorts.first { $0.id == "big-white" }
         XCTAssertNotNil(bigWhite)
         XCTAssertEqual(bigWhite?.displayLocation, "British Columbia, Canada")
+
+        let lakeLouise = Resort.sampleResorts.first { $0.id == "lake-louise" }
+        XCTAssertNotNil(lakeLouise)
+        XCTAssertEqual(lakeLouise?.displayLocation, "Alberta, Canada")
+    }
+
+    func testRegionDisplayNameCompoundKeys() throws {
+        func makeResort(country: String, region: String) throws -> Resort {
+            let json = """
+            {
+                "resort_id": "test",
+                "name": "Test",
+                "country": "\(country)",
+                "region": "\(region)",
+                "elevation_points": [],
+                "timezone": "UTC",
+                "weather_sources": []
+            }
+            """
+            return try JSONDecoder().decode(Resort.self, from: json.data(using: .utf8)!)
+        }
+
+        // NA compound keys with 2-letter state/province codes
+        XCTAssertEqual(try makeResort(country: "CA", region: "na_west_BC").regionDisplayName, "British Columbia")
+        XCTAssertEqual(try makeResort(country: "US", region: "na_rockies_CO").regionDisplayName, "Colorado")
+        XCTAssertEqual(try makeResort(country: "US", region: "na_east_VT").regionDisplayName, "Vermont")
+        XCTAssertEqual(try makeResort(country: "CA", region: "na_rockies_AB").regionDisplayName, "Alberta")
+        XCTAssertEqual(try makeResort(country: "US", region: "na_east_NH").regionDisplayName, "New Hampshire")
+
+        // NA compound keys with full name suffixes
+        XCTAssertEqual(try makeResort(country: "US", region: "na_rockies_Colorado").regionDisplayName, "Colorado")
+        XCTAssertEqual(try makeResort(country: "CA", region: "na_west_British Columbia").regionDisplayName, "British Columbia")
+        XCTAssertEqual(try makeResort(country: "CA", region: "na_east_Ontario").regionDisplayName, "Ontario")
+
+        // Non-NA compound keys -> empty (just show country)
+        XCTAssertEqual(try makeResort(country: "FR", region: "alps_FR").regionDisplayName, "")
+        XCTAssertEqual(try makeResort(country: "NO", region: "scandinavia_NO").regionDisplayName, "")
+        XCTAssertEqual(try makeResort(country: "JP", region: "japan_Hokkaido").regionDisplayName, "")
+
+        // Plain internal keys -> empty
+        XCTAssertEqual(try makeResort(country: "FR", region: "alps").regionDisplayName, "")
+        XCTAssertEqual(try makeResort(country: "US", region: "na_west").regionDisplayName, "")
+
+        // Bare 2-letter codes (legacy)
+        XCTAssertEqual(try makeResort(country: "CA", region: "BC").regionDisplayName, "British Columbia")
+        XCTAssertEqual(try makeResort(country: "US", region: "CO").regionDisplayName, "Colorado")
     }
 
     func testResortElevationRange() {

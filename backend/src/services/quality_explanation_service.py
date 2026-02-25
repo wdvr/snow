@@ -676,6 +676,7 @@ def generate_score_change_reason(
     prev_gust = previous.get("wind_gust_kmh") or 0.0
     cur_vis = current.get("visibility_m")
     prev_vis = previous.get("visibility_m")
+    cur_time = current.get("time_label", "")
 
     temp_delta = cur_temp - prev_temp
     wind_delta = cur_wind - prev_wind
@@ -687,7 +688,6 @@ def generate_score_change_reason(
     )
 
     improving = score_delta > 0
-    direction = "improves" if improving else "worsens"
     arrow = "+" if score_delta > 0 else ""
 
     # Score magnitude descriptors
@@ -701,11 +701,11 @@ def generate_score_change_reason(
 
     # --- Identify the dominant factor ---
 
-    # 1. Fresh snowfall is the strongest positive signal
-    if cur_snowfall >= 2.0 and improving:
-        return f"{magnitude.capitalize().strip()} {direction}d: +{cur_snowfall:.0f}cm fresh snow".strip().replace(
-            "  ", " "
-        )
+    # 1. Fresh snowfall is the strongest positive signal (lowered from 2.0cm)
+    if cur_snowfall >= 0.5 and improving:
+        if cur_snowfall >= 5.0:
+            return f"+{cur_snowfall:.0f}cm fresh snow {magnitude}improves conditions"
+        return f"+{cur_snowfall:.1f}cm fresh snow {magnitude}improves conditions"
 
     # 2. Temperature crossing freezing point
     if prev_temp <= 0 and cur_temp > 2:
@@ -717,42 +717,115 @@ def generate_score_change_reason(
     if prev_temp > 0 and cur_temp < 0 and not improving:
         return f"Refreezing at {cur_temp:.0f}\u00b0C creates icy surface"
 
-    # 4. Wind changes
-    if gust_delta > 15 and not improving:
-        return f"Wind gusts up to {cur_gust:.0f} km/h {magnitude}{direction} conditions"
-    if wind_delta > 10 and not improving:
-        return (
-            f"Wind increasing to {cur_wind:.0f} km/h {magnitude}{direction} conditions"
-        )
-    if wind_delta < -10 and improving:
-        return f"Wind easing to {cur_wind:.0f} km/h {magnitude}{direction} conditions"
-    if gust_delta < -15 and improving:
-        return f"Wind gusts easing {magnitude}{direction} conditions"
+    # 4. Wind — absolute high wind or significant change (lowered thresholds)
+    if cur_gust > 25 and not improving:
+        return f"Gusts of {cur_gust:.0f} km/h {magnitude}reduce score"
+    if gust_delta > 10 and not improving:
+        return f"Wind gusts up to {cur_gust:.0f} km/h {magnitude}worsen conditions"
+    if wind_delta > 5 and cur_wind > 15 and not improving:
+        return f"Wind increasing to {cur_wind:.0f} km/h {magnitude}worsens conditions"
+    if wind_delta < -5 and improving:
+        return f"Wind easing to {cur_wind:.0f} km/h {magnitude}improves conditions"
+    if gust_delta < -10 and improving:
+        return f"Wind gusts easing {magnitude}improves conditions"
 
-    # 5. Significant temperature change in the same direction
-    if temp_delta > 3 and not improving:
-        return f"Warming to {cur_temp:.0f}\u00b0C {magnitude}{direction} conditions"
+    # 5. Daytime warming — afternoon temp rise worsens
+    if (
+        cur_time in ("midday", "afternoon")
+        and temp_delta > 2
+        and not improving
+        and cur_temp > -2
+    ):
+        return f"Daytime warming to {cur_temp:.0f}\u00b0C {magnitude}softens conditions"
+
+    # 6. Overnight cooling — morning temp drop improves
+    if cur_time == "morning" and temp_delta < -2 and improving and cur_temp < 0:
+        return f"Overnight cooling to {cur_temp:.0f}\u00b0C {magnitude}firms up snow"
+
+    # 7. Significant temperature change (lowered from 3/5 to 2)
+    if temp_delta > 2 and not improving:
+        return f"Warming to {cur_temp:.0f}\u00b0C {magnitude}worsens conditions"
     if temp_delta < -5 and cur_temp < -15:
-        return f"Extreme cold ({cur_temp:.0f}\u00b0C) {magnitude}{direction} conditions"
-    if temp_delta < -3 and improving and cur_temp < 0:
-        return f"Cooling to {cur_temp:.0f}\u00b0C {magnitude}{direction} conditions"
+        return f"Extreme cold ({cur_temp:.0f}\u00b0C) {magnitude}worsens conditions"
+    if temp_delta < -2 and improving and cur_temp < 0:
+        return f"Cooling to {cur_temp:.0f}\u00b0C {magnitude}improves conditions"
 
-    # 6. Snow depth loss (melting or settling)
-    if depth_delta < -10 and not improving:
-        return f"Snow depth dropping {magnitude}{direction} conditions"
+    # 8. Snow depth loss (lowered from -10 to -5)
+    if depth_delta < -5 and not improving:
+        return (
+            f"Snow depth dropping ({depth_delta:.0f}cm) {magnitude}worsens conditions"
+        )
 
-    # 7. Visibility changes
+    # 9. Visibility changes
     if cur_vis is not None and prev_vis is not None:
         if cur_vis < 1000 and prev_vis >= 2000 and not improving:
-            return f"Visibility dropping to {cur_vis:.0f}m {magnitude}{direction} conditions"
+            return (
+                f"Visibility dropping to {cur_vis:.0f}m {magnitude}worsens conditions"
+            )
         if cur_vis >= 2000 and prev_vis < 1000 and improving:
-            return f"Visibility improving {magnitude}{direction} conditions"
+            return f"Visibility improving {magnitude}improves conditions"
 
-    # 8. Snowfall stopped (previous had snow, current doesn't)
-    if prev_snowfall >= 2.0 and cur_snowfall < 0.5 and not improving:
+    # 10. Snowfall stopped (previous had snow, current doesn't; lowered from 2.0)
+    if prev_snowfall >= 0.5 and cur_snowfall < 0.2 and not improving:
         return f"Snowfall stopped; conditions {magnitude}settling"
 
-    # 9. Generic fallback based on score direction
+    # 11. Snow aging — no fresh snow and score drops
+    if cur_snowfall < 0.2 and prev_snowfall < 0.2 and not improving:
+        return f"No fresh snow; conditions {magnitude}settling"
+
+    # 12. Smart fallback — identify the largest changing factor
+    factors: list[tuple[float, str]] = []
+    # Temperature change relative importance (each degree matters)
+    if abs(temp_delta) > 0.5:
+        desc = f"{cur_temp:.0f}\u00b0C" if cur_temp != 0 else "0\u00b0C"
+        if temp_delta > 0:
+            factors.append((abs(temp_delta) * 3, f"warming to {desc}"))
+        else:
+            factors.append((abs(temp_delta) * 3, f"cooling to {desc}"))
+    # Wind change
+    if abs(wind_delta) > 1:
+        if wind_delta > 0:
+            factors.append((abs(wind_delta), f"wind up to {cur_wind:.0f} km/h"))
+        else:
+            factors.append((abs(wind_delta), f"wind easing to {cur_wind:.0f} km/h"))
+    # Gust change
+    if abs(gust_delta) > 2:
+        if gust_delta > 0:
+            factors.append((abs(gust_delta) * 0.8, f"gusts up to {cur_gust:.0f} km/h"))
+        else:
+            factors.append(
+                (abs(gust_delta) * 0.8, f"gusts easing to {cur_gust:.0f} km/h")
+            )
+    # Visibility change (normalize to similar scale)
+    if cur_vis is not None and prev_vis is not None and prev_vis > 0:
+        vis_ratio = abs(cur_vis - prev_vis) / max(prev_vis, 1)
+        if vis_ratio > 0.2:
+            if cur_vis < prev_vis:
+                factors.append(
+                    (vis_ratio * 10, f"visibility dropping to {cur_vis:.0f}m")
+                )
+            else:
+                factors.append(
+                    (vis_ratio * 10, f"visibility improving to {cur_vis:.0f}m")
+                )
+    # Snowfall delta
+    snowfall_delta = cur_snowfall - prev_snowfall
+    if abs(snowfall_delta) > 0.1:
+        if snowfall_delta < 0:
+            factors.append((abs(snowfall_delta) * 5, "snowfall easing"))
+        else:
+            factors.append((abs(snowfall_delta) * 5, f"+{cur_snowfall:.1f}cm snowfall"))
+
+    if factors:
+        factors.sort(key=lambda x: x[0], reverse=True)
+        top_factor = factors[0][1]
+        top_factor_cap = top_factor[0].upper() + top_factor[1:]
+        if improving:
+            return f"{top_factor_cap} {magnitude}improves conditions"
+        else:
+            return f"{top_factor_cap} {magnitude}worsens conditions"
+
+    # 13. Ultimate fallback (should rarely be reached)
     if improving:
         return f"Conditions {magnitude}improving ({arrow}{score_delta} pts)"
     else:
