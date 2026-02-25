@@ -5,6 +5,32 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Feb 25, 2026
+
+### Timeline: Temperature-aware snow depth smoothing
+Open-Meteo's forecast snow depth model predicted unrealistic snowpack collapse (e.g. 144cm → 11cm in 4 days at sub-zero temps). Replaced flat max-drop-per-hour with temperature-aware melt rates: 3cm/day sub-zero, 15cm/day above-zero. Three-pass smoothing: find last observed, consecutive pair smoothing with temperature, forecast floor clamping. 13 new tests.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Weather Processor: Fix 576 grey resorts
+876 non-NA resorts had empty `region` in DynamoDB because `populate_resorts.py` used `state_province` (only set for NA). Weather processor grouped all 876 into a single Lambda worker that timed out at 600s. Fixed: use `region` from resorts.json (alps, scandinavia, etc.) with `state_province` suffix for NA. Added chunking in weather processor (max 100 per worker). Re-populated DynamoDB, triggered weather processor.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Research: Alternative weather data sources
+Comprehensive evaluation of 10 weather APIs. Top recommendations:
+- **Weather Unlocked** ($220-420/mo): per-elevation (base/mid/top) forecasts for 850+ resorts
+- **Synoptic Data / SNOTEL** (FREE): actual station snow depth observations for US resorts
+- **Tomorrow.io** (FREE tier): worth testing their snow depth model
+- Apple WeatherKit: marginal value (no snow depth, no per-elevation)
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | backlog |
+
+---
+
 ## Feb 24, 2026
 
 ### Map: Add Region menu accessibility label
