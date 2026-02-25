@@ -133,6 +133,80 @@ final class VerificationTests: XCTestCase {
         }
     }
 
+    // MARK: - Fresh Powder Chart Verification
+
+    func testFreshPowderChart_AxesAndLegend() throws {
+        let tabBar = app.tabBars.firstMatch
+        tabBar.buttons["Resorts"].tap()
+        sleep(3)
+
+        // Search for Heavenly
+        let searchField = app.searchFields.firstMatch
+        if searchField.waitForExistence(timeout: 5) {
+            searchField.tap()
+            searchField.typeText("Heavenly")
+            sleep(2)
+        }
+
+        // Tap the first matching cell
+        let heavenlyCell = app.cells.matching(
+            NSPredicate(format: "label CONTAINS[c] 'Heavenly'")
+        ).firstMatch
+        if heavenlyCell.waitForExistence(timeout: 5) {
+            heavenlyCell.tap()
+        } else {
+            // Fallback: just tap the first resort
+            let firstCell = app.cells.firstMatch
+            guard firstCell.waitForExistence(timeout: 5) else {
+                XCTFail("No resort cells found")
+                return
+            }
+            firstCell.tap()
+        }
+        sleep(3)
+
+        // Scroll down to find the Fresh Powder chart
+        let scrollView = app.scrollViews.firstMatch
+        for _ in 0..<5 {
+            let freshPowderHeader = app.staticTexts["Fresh Powder"]
+            if freshPowderHeader.exists { break }
+            scrollView.swipeUp()
+            sleep(1)
+        }
+
+        // Take screenshot of the chart area
+        let screenshot = XCUIScreen.main.screenshot()
+        let attachment = XCTAttachment(screenshot: screenshot)
+        attachment.name = "fresh-powder-chart"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+
+        // Verify chart elements
+        let freshPowderLabel = app.staticTexts["Fresh Powder"]
+        XCTAssertTrue(freshPowderLabel.exists, "Fresh Powder header should be visible")
+
+        // Verify "since last thaw" subtitle (not "since last freeze")
+        let sinceThaw = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'since last thaw'")
+        ).firstMatch
+        XCTAssertTrue(sinceThaw.exists, "Subtitle should say 'since last thaw', not 'since last freeze'")
+
+        // Verify legend items exist
+        let snowfallLegend = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'Snowfall'")
+        ).firstMatch
+        let tempLegend = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'Temp range'")
+        ).firstMatch
+        XCTAssertTrue(snowfallLegend.exists, "Snowfall legend should be visible")
+        XCTAssertTrue(tempLegend.exists, "Temp range legend should be visible")
+
+        // Verify "Crust formed" annotation (not "Last freeze") if present
+        let lastFreezeWrong = app.staticTexts["Last freeze"]
+        XCTAssertFalse(lastFreezeWrong.exists,
+            "Regression: 'Last freeze' label should NOT appear — use 'Crust formed' instead")
+    }
+
     // MARK: - Chat Verification
 
     func testChat_SendsMessage() throws {

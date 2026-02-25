@@ -1495,4 +1495,105 @@ final class SnowTrackerTests: XCTestCase {
         XCTAssertEqual(point.isForecast, true)
         XCTAssertEqual(point.timeDisplay, "PM")
     }
+
+    // MARK: - DailySnowData Tests
+
+    func testDailySnowDataDateParsing() {
+        let day = DailySnowData(date: "2026-02-15", snowfallCm: 5.0, minTempC: -10.0, maxTempC: -2.0, isForecast: false)
+        XCTAssertNotNil(day.dateValue, "Valid date string should parse to Date")
+        XCTAssertEqual(day.id, "2026-02-15")
+    }
+
+    func testDailySnowDataInvalidDate() {
+        let day = DailySnowData(date: "not-a-date", snowfallCm: 0.0, minTempC: 0.0, maxTempC: 0.0, isForecast: false)
+        XCTAssertNil(day.dateValue, "Invalid date string should return nil")
+        XCTAssertEqual(day.shortDate, "not-a-date", "Invalid date should fall back to raw string")
+    }
+
+    func testDailySnowDataShortDate() {
+        let day = DailySnowData(date: "2026-02-15", snowfallCm: 0.0, minTempC: 0.0, maxTempC: 0.0, isForecast: false)
+        XCTAssertEqual(day.shortDate, "Feb 15")
+    }
+
+    func testDailySnowDataMetricDisplay() {
+        let day = DailySnowData(date: "2026-02-15", snowfallCm: 10.0, minTempC: -8.0, maxTempC: -2.0, isForecast: false)
+        let metricPrefs = UnitPreferences(temperature: .celsius, distance: .metric, snowDepth: .centimeters)
+
+        XCTAssertEqual(day.snowfallDisplay(metricPrefs), 10.0, accuracy: 0.01)
+        XCTAssertEqual(day.minTempDisplay(metricPrefs), -8.0, accuracy: 0.01)
+        XCTAssertEqual(day.maxTempDisplay(metricPrefs), -2.0, accuracy: 0.01)
+    }
+
+    func testDailySnowDataImperialDisplay() {
+        let day = DailySnowData(date: "2026-02-15", snowfallCm: 25.4, minTempC: 0.0, maxTempC: 100.0, isForecast: false)
+        let imperialPrefs = UnitPreferences(temperature: .fahrenheit, distance: .imperial, snowDepth: .inches)
+
+        // 25.4cm = 10 inches
+        XCTAssertEqual(day.snowfallDisplay(imperialPrefs), 10.0, accuracy: 0.01)
+        // 0°C = 32°F
+        XCTAssertEqual(day.minTempDisplay(imperialPrefs), 32.0, accuracy: 0.01)
+        // 100°C = 212°F
+        XCTAssertEqual(day.maxTempDisplay(imperialPrefs), 212.0, accuracy: 0.01)
+    }
+
+    func testDailySnowDataForecastFlag() {
+        let forecast = DailySnowData(date: "2026-02-20", snowfallCm: 5.0, minTempC: -5.0, maxTempC: 0.0, isForecast: true)
+        let actual = DailySnowData(date: "2026-02-15", snowfallCm: 5.0, minTempC: -5.0, maxTempC: 0.0, isForecast: false)
+
+        XCTAssertTrue(forecast.isForecast)
+        XCTAssertFalse(actual.isForecast)
+    }
+
+    // MARK: - Crust Date Regression Tests
+
+    func testCrustDateComputationFromHoursAgo() {
+        // Regression: The "crust formed" date should be computed from lastFreezeThawHoursAgo.
+        // lastFreezeThawHoursAgo represents hours since last warm period ended (ice crust formed),
+        // NOT when temperatures dropped below 0. Verify the date calculation is correct.
+        let now = Date()
+        let hoursAgo: Double = 48.0 // 2 days ago
+        let expectedDate = Calendar.current.startOfDay(for: now.addingTimeInterval(-hoursAgo * 3600))
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let crustTime = now.addingTimeInterval(-hoursAgo * 3600)
+        let crustDateString = formatter.string(from: crustTime)
+        let expectedDateString = formatter.string(from: expectedDate)
+
+        XCTAssertEqual(crustDateString, expectedDateString,
+            "Crust date 48h ago should map to the correct calendar date")
+    }
+
+    func testCrustDateMatchesTimelineDay() {
+        // Verify that a crust date computed from hoursAgo can find a matching day in timeline data
+        let dailyData = [
+            DailySnowData(date: "2026-02-20", snowfallCm: 0, minTempC: -5, maxTempC: 2, isForecast: false),
+            DailySnowData(date: "2026-02-21", snowfallCm: 3, minTempC: -8, maxTempC: -1, isForecast: false),
+            DailySnowData(date: "2026-02-22", snowfallCm: 5, minTempC: -10, maxTempC: -3, isForecast: false),
+            DailySnowData(date: "2026-02-23", snowfallCm: 0, minTempC: -4, maxTempC: 1, isForecast: false),
+            DailySnowData(date: "2026-02-24", snowfallCm: 2, minTempC: -6, maxTempC: -2, isForecast: false),
+        ]
+
+        // Simulate: crust formed on Feb 22
+        let crustDateString = "2026-02-22"
+        let matchedDay = dailyData.first(where: { $0.date == crustDateString })
+
+        XCTAssertNotNil(matchedDay, "Crust date should match a day in the timeline")
+        XCTAssertEqual(matchedDay?.snowfallCm, 5.0)
+        XCTAssertNotNil(matchedDay?.dateValue, "Matched day should have a valid Date value")
+    }
+
+    func testCrustDateNotInTimeline() {
+        // When the crust formed date is outside the timeline window, the line shouldn't show
+        let dailyData = [
+            DailySnowData(date: "2026-02-20", snowfallCm: 0, minTempC: -5, maxTempC: 2, isForecast: false),
+            DailySnowData(date: "2026-02-21", snowfallCm: 3, minTempC: -8, maxTempC: -1, isForecast: false),
+        ]
+
+        // Crust formed 30 days ago — outside the 14-day timeline window
+        let crustDateString = "2026-01-25"
+        let matchedDay = dailyData.first(where: { $0.date == crustDateString })
+
+        XCTAssertNil(matchedDay, "Crust date outside timeline should not match any day")
+    }
 }

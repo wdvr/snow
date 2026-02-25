@@ -29,13 +29,15 @@ struct FreshSnowChartView: View {
         }
     }
 
-    // Calculate freeze line date from condition.lastFreezeThawHoursAgo
-    private var freezeDate: String? {
+    // Calculate the date when the last ice crust formed (end of last thaw period).
+    // `lastFreezeThawHoursAgo` tracks when the last sustained warm period ended —
+    // after this point, any new snow is fresh powder on top of the ice crust.
+    private var crustFormedDate: String? {
         guard let hoursAgo = condition.lastFreezeThawHoursAgo, hoursAgo > 0 else { return nil }
-        let freezeTime = Date().addingTimeInterval(-hoursAgo * 3600)
+        let crustTime = Date().addingTimeInterval(-hoursAgo * 3600)
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: freezeTime)
+        return formatter.string(from: crustTime)
     }
 
     private var freshSnowTotal: Double {
@@ -53,7 +55,7 @@ struct FreshSnowChartView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Fresh Powder")
                         .font(.headline)
-                    Text("\(WeatherCondition.formatSnow(freshSnowTotal, prefs: prefs)) since last freeze")
+                    Text("\(WeatherCondition.formatSnow(freshSnowTotal, prefs: prefs)) since last thaw")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -89,15 +91,15 @@ struct FreshSnowChartView: View {
                         }
                     }
 
-                    // Freeze line
-                    if let freezeDate = freezeDate,
-                       let freezeDay = dailyData.first(where: { $0.date == freezeDate }),
-                       let freezeDateVal = freezeDay.dateValue {
-                        RuleMark(x: .value("Freeze", freezeDateVal, unit: .day))
+                    // Ice crust line — marks when the last thaw ended and snow re-froze
+                    if let crustDate = crustFormedDate,
+                       let crustDay = dailyData.first(where: { $0.date == crustDate }),
+                       let crustDateVal = crustDay.dateValue {
+                        RuleMark(x: .value("Crust", crustDateVal, unit: .day))
                             .foregroundStyle(.orange)
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 3]))
                             .annotation(position: .top, alignment: .leading) {
-                                Text("Last freeze")
+                                Text("Crust formed")
                                     .font(.caption2)
                                     .foregroundStyle(.orange)
                             }
@@ -109,8 +111,26 @@ struct FreshSnowChartView: View {
                         AxisValueLabel(format: .dateTime.month(.abbreviated).day())
                     }
                 }
-                .chartYAxisLabel(prefs.temperature == .celsius ? "°C / cm" : "°F / in")
                 .frame(height: 200)
+
+                // Legend
+                HStack(spacing: 16) {
+                    HStack(spacing: 4) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(.cyan.opacity(0.8))
+                            .frame(width: 10, height: 10)
+                        Text("Snowfall (\(prefs.snowDepth == .inches ? "in" : "cm"))")
+                            .font(.caption2)
+                    }
+                    HStack(spacing: 4) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(.red.opacity(0.2))
+                            .frame(width: 10, height: 10)
+                        Text("Temp range (\(prefs.temperature == .celsius ? "°C" : "°F"))")
+                            .font(.caption2)
+                    }
+                }
+                .foregroundStyle(.secondary)
             } else if !isLoading {
                 Text("No timeline data available")
                     .font(.caption)
