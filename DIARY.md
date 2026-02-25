@@ -7,6 +7,24 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 24, 2026
 
+### Map: Add Region menu accessibility label
+Globe menu button in map toolbar had no accessibility label, making it invisible to XCUI tests. Added `.accessibilityLabel("Region")`.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Map: Region switching UI test
+Added `testMapView_RegionSwitching` that navigates Alps → Japan → Rockies via the Region menu, taking screenshots at each stop. Previous zoom test failed because XCUI pinch gesture on MKMapView extends into tab bar area.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Chat: Add get_resort_details_batch to streaming handler
+The `get_resort_details_batch` tool was defined in `chat_service.py` but missing from `chat_stream_handler.py`. AI streaming would hit "Unknown tool" errors when trying batch lookups.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ### Chat: Split thinking messages into separate bubbles
 When AI uses tools, intermediate text ("Now let me check...") was concatenated with the final response into one giant message. Now split at tool boundaries into separate italic bubbles.
 | iOS | Android | Web | API |
