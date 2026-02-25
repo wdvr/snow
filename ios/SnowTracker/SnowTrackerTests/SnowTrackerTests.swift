@@ -101,7 +101,7 @@ final class SnowTrackerTests: XCTestCase {
     func testResortDisplayLocation() {
         let bigWhite = Resort.sampleResorts.first { $0.id == "big-white" }
         XCTAssertNotNil(bigWhite)
-        XCTAssertEqual(bigWhite?.displayLocation, "BC, Canada")
+        XCTAssertEqual(bigWhite?.displayLocation, "British Columbia, Canada")
     }
 
     func testResortElevationRange() {

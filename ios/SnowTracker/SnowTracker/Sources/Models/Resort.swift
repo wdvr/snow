@@ -142,24 +142,100 @@ struct Resort: Codable, Identifiable, Hashable {
 
     // Computed properties for UI
     var displayLocation: String {
-        "\(region), \(countryName)"
+        let readableRegion = regionDisplayName
+        // For NA resorts, show "State/Province, Country"
+        // For others, if region is meaningful (not a raw key), show "Region, Country"
+        // If region is a raw key or empty, show just the country
+        if readableRegion.isEmpty || readableRegion == countryName {
+            return countryName
+        }
+        return "\(readableRegion), \(countryName)"
+    }
+
+    /// Maps the raw `region` field to a human-readable name.
+    /// The region field may contain state/province codes (BC, UT), full names
+    /// (British Columbia, Hokkaido), or internal region keys (na_west, alps).
+    var regionDisplayName: String {
+        // Internal region keys -> empty (just show country name)
+        let internalKeys: Set<String> = [
+            "na_west", "na_rockies", "na_east", "alps", "scandinavia",
+            "japan", "oceania", "south_america", "europe_east", "asia"
+        ]
+        if internalKeys.contains(region.lowercased()) {
+            return ""
+        }
+
+        // US state codes
+        let usStates: [String: String] = [
+            "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
+            "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware",
+            "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho",
+            "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas",
+            "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland",
+            "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi",
+            "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada",
+            "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
+            "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma",
+            "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
+            "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah",
+            "VT": "Vermont", "VA": "Virginia", "WA": "Washington", "WV": "West Virginia",
+            "WI": "Wisconsin", "WY": "Wyoming"
+        ]
+
+        // Canadian province codes
+        let caProvinces: [String: String] = [
+            "AB": "Alberta", "BC": "British Columbia", "MB": "Manitoba",
+            "NB": "New Brunswick", "NL": "Newfoundland and Labrador",
+            "NS": "Nova Scotia", "NT": "Northwest Territories", "NU": "Nunavut",
+            "ON": "Ontario", "PE": "Prince Edward Island", "QC": "Quebec",
+            "SK": "Saskatchewan", "YT": "Yukon"
+        ]
+
+        // Check if it's a known short code
+        if country.uppercased() == "US", let stateName = usStates[region.uppercased()] {
+            return stateName
+        }
+        if country.uppercased() == "CA", let provinceName = caProvinces[region.uppercased()] {
+            return provinceName
+        }
+
+        // If region is already a readable name (e.g., "Hokkaido", "Valais", "British Columbia"),
+        // return it as-is, but filter out the scraper artifact "Montana" for non-US resorts
+        if country.uppercased() != "US" && region == "Montana" {
+            return ""
+        }
+
+        // Return the region as-is if it's not empty (it's already a readable name)
+        return region
     }
 
     var countryName: String {
         switch country.uppercased() {
-        case "CA": return "Canada"
-        case "US": return "United States"
-        case "FR": return "France"
-        case "CH": return "Switzerland"
+        case "AD": return "Andorra"
+        case "AR": return "Argentina"
         case "AT": return "Austria"
+        case "AU": return "Australia"
+        case "BG": return "Bulgaria"
+        case "CA": return "Canada"
+        case "CH": return "Switzerland"
+        case "CL": return "Chile"
+        case "CN": return "China"
+        case "CZ": return "Czech Republic"
+        case "DE": return "Germany"
+        case "ES": return "Spain"
+        case "FI": return "Finland"
+        case "FR": return "France"
         case "IT": return "Italy"
         case "JP": return "Japan"
-        case "NZ": return "New Zealand"
-        case "AU": return "Australia"
-        case "CL": return "Chile"
-        case "DE": return "Germany"
+        case "KR": return "South Korea"
         case "NO": return "Norway"
+        case "NZ": return "New Zealand"
+        case "PL": return "Poland"
+        case "RO": return "Romania"
         case "SE": return "Sweden"
+        case "SI": return "Slovenia"
+        case "SK": return "Slovakia"
+        case "US": return "United States"
         default: return country
         }
     }
