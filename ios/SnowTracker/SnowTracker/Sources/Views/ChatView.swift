@@ -108,17 +108,23 @@ struct ChatView: View {
             ScrollView {
                 LazyVStack(spacing: 16) {
                     ForEach(viewModel.messages) { message in
-                        MessageBubbleView(
-                            message: message,
-                            isStreaming: viewModel.streamingMessageId == message.id,
-                            displayedText: viewModel.streamingMessageId == message.id
-                                ? viewModel.displayedText
-                                : message.content,
-                            onTapToSkip: {
-                                viewModel.skipStreaming()
-                            }
-                        )
-                        .id(message.id)
+                        let isCurrentlyStreaming = viewModel.streamingMessageId == message.id
+                        let text = isCurrentlyStreaming
+                            ? viewModel.displayedText
+                            : message.content
+
+                        // Don't show empty bubbles (e.g. failed AI responses with no content)
+                        if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isCurrentlyStreaming {
+                            MessageBubbleView(
+                                message: message,
+                                isStreaming: isCurrentlyStreaming,
+                                displayedText: text,
+                                onTapToSkip: {
+                                    viewModel.skipStreaming()
+                                }
+                            )
+                            .id(message.id)
+                        }
                     }
 
                     if viewModel.isSending {

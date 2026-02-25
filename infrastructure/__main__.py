@@ -446,7 +446,8 @@ lambda_policy = aws.iam.RolePolicy(
             {{
                 "Effect": "Allow",
                 "Action": [
-                    "bedrock:InvokeModel"
+                    "bedrock:InvokeModel",
+                    "bedrock:InvokeModelWithResponseStream"
                 ],
                 "Resource": [
                     "arn:aws:bedrock:*::foundation-model/anthropic.claude-*",

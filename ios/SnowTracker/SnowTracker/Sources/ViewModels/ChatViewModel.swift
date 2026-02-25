@@ -1,5 +1,6 @@
 import Foundation
 import KeychainSwift
+import UIKit
 import os.log
 
 private let chatLog = Logger(subsystem: "com.snowtracker.app", category: "Chat")
@@ -44,6 +45,30 @@ final class ChatViewModel: ObservableObject {
     var userLatitude: Double?
     var userLongitude: Double?
 
+    // MARK: - Guest Auth
+
+    /// Ensure we have a valid auth token before making chat API calls.
+    /// Guest users skip backend auth during sign-in, so we authenticate them
+    /// lazily on first chat use to get a proper JWT token.
+    private func ensureAuthenticated() async throws {
+        let keychain = KeychainSwift()
+        if keychain.get("com.snowtracker.authToken") != nil {
+            return // Already have a token
+        }
+
+        // No token — check if this is a guest user and authenticate with backend
+        let authService = AuthenticationService.shared
+        if authService.isAuthenticated,
+           authService.currentUser?.provider == .guest {
+            chatLog.info("Guest user has no token, authenticating with backend")
+            let deviceId = keychain.get("com.snowtracker.userIdentifier") ?? UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
+            let response = try await apiClient.authenticateAsGuest(deviceId: deviceId)
+            keychain.set(response.accessToken, forKey: "com.snowtracker.authToken")
+            keychain.set(response.refreshToken, forKey: "com.snowtracker.refreshToken")
+            chatLog.info("Guest backend auth successful, tokens stored")
+        }
+    }
+
     // MARK: - Send Message
 
     func sendMessage(_ text: String) async {
@@ -54,6 +79,16 @@ final class ChatViewModel: ObservableObject {
         errorMessage = nil
         statusMessage = nil
         activeTools = []
+
+        // Ensure guest users have valid auth tokens before making API calls
+        do {
+            try await ensureAuthenticated()
+        } catch {
+            chatLog.error("Failed to authenticate for chat: \(error)")
+            errorMessage = "Please sign in to use chat."
+            isSending = false
+            return
+        }
 
         // Add the user message optimistically
         let userMessage = ChatMessage(
@@ -191,8 +226,12 @@ final class ChatViewModel: ObservableObject {
             throw error
         }
 
-        // Update placeholder with final ID
-        if !finalMessageId.isEmpty {
+        // Remove placeholder if stream completed but no text was received
+        if assistantText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            messages.removeAll { $0.id == placeholderId }
+            chatLog.warning("Stream completed with empty response, removed placeholder")
+        } else if !finalMessageId.isEmpty {
+            // Update placeholder with final ID
             if let index = messages.firstIndex(where: { $0.id == placeholderId }) {
                 messages[index] = ChatMessage(
                     id: finalMessageId,
@@ -301,6 +340,7 @@ final class ChatViewModel: ObservableObject {
         errorMessage = nil
 
         do {
+            try await ensureAuthenticated()
             conversations = try await apiClient.getConversations()
             chatLog.debug("Loaded \(self.conversations.count) conversations")
         } catch {
@@ -319,6 +359,7 @@ final class ChatViewModel: ObservableObject {
         currentConversationId = conversationId
 
         do {
+            try await ensureAuthenticated()
             messages = try await apiClient.getConversation(conversationId)
             chatLog.debug("Loaded \(self.messages.count) messages for conversation \(conversationId)")
         } catch {

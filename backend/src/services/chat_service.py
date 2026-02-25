@@ -156,16 +156,26 @@ SYSTEM_PROMPT = (
     "Each resort has 3 elevations: base, mid, top. "
     "Overall quality is weighted: 50% top, 35% mid, 15% base. "
     "Conditions data is updated hourly from weather models.\n\n"
-    "## Tips\n"
+    "## Efficient Tool Usage (IMPORTANT)\n"
+    "- For location-based queries (e.g., 'best resort near X', 'within N hours of city'), "
+    "ALWAYS start with get_nearby_resorts. It returns resorts WITH snow scores, ticket prices, "
+    "and distances in ONE call. Never search resorts one by one.\n"
+    "- After get_nearby_resorts, use get_resort_details_batch to get full conditions and "
+    "forecasts for your top 3-5 candidates. This replaces multiple individual lookups.\n"
+    "- Typical efficient flow: get_nearby_resorts → filter by score/price/distance → "
+    "get_resort_details_batch on finalists → present recommendation.\n"
     "- For 'where has the best powder' or 'best conditions' questions, use the "
     "get_best_conditions tool. You do NOT need the user's location for this — "
-    "the tool returns the top resorts worldwide by current snow quality.\n"
+    "the tool returns the top resorts worldwide by current snow quality.\n\n"
+    "## Tips\n"
     "- Use the forecast tool for 'when should I go' questions — suggest the best day.\n"
     "- For future predictions, caveat with 'based on current forecast' — weather changes.\n"
     "- Check condition reports when available — real on-the-ground skier feedback.\n"
     "- When comparing resorts, highlight the clear winner and explain why.\n"
     "- Never ask the user to share their location before answering a question. "
-    "If a question can be answered with get_best_conditions or search_resorts, use those first."
+    "If a question can be answered with get_best_conditions or search_resorts, use those first.\n"
+    "- Ticket prices are in USD. Pass affiliations (Epic, Ikon, Mountain Collective, Indy) "
+    "can help users who already have a season pass."
 )
 
 TOOL_DEFINITIONS = [
@@ -208,7 +218,11 @@ TOOL_DEFINITIONS = [
     {
         "toolSpec": {
             "name": "get_nearby_resorts",
-            "description": "Find resorts near given coordinates.",
+            "description": (
+                "Find resorts near given coordinates WITH their current snow quality scores, "
+                "ticket prices, and pass affiliations included. Returns a scored, sortable list "
+                "in a single call. Use this as the FIRST tool for any location-based query."
+            ),
             "inputSchema": {
                 "json": {
                     "type": "object",
@@ -223,7 +237,11 @@ TOOL_DEFINITIONS = [
                         },
                         "radius_km": {
                             "type": "number",
-                            "description": "Search radius in kilometers (default 200)",
+                            "description": "Search radius in kilometers (default 200, max 1000)",
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Max resorts to return (default 20, max 50)",
                         },
                     },
                     "required": ["latitude", "longitude"],
@@ -337,6 +355,29 @@ TOOL_DEFINITIONS = [
                             "type": "array",
                             "items": {"type": "string"},
                             "description": "List of resort identifiers to compare (2-4 resorts)",
+                        }
+                    },
+                    "required": ["resort_ids"],
+                }
+            },
+        }
+    },
+    {
+        "toolSpec": {
+            "name": "get_resort_details_batch",
+            "description": (
+                "Get detailed conditions, forecasts, ticket prices, and metadata for multiple "
+                "resorts at once. Use AFTER get_nearby_resorts to drill into the top candidates. "
+                "Returns everything needed to make a recommendation without individual lookups."
+            ),
+            "inputSchema": {
+                "json": {
+                    "type": "object",
+                    "properties": {
+                        "resort_ids": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "List of resort IDs to fetch details for (max 10)",
                         }
                     },
                     "required": ["resort_ids"],
@@ -942,7 +983,8 @@ class ChatService:
             if not (-180 <= longitude <= 180):
                 return {"error": "longitude must be between -180 and 180"}
             radius_km = min(max(tool_input.get("radius_km", 200), 1), 1000)
-            return self._tool_get_nearby_resorts(latitude, longitude, radius_km)
+            limit = min(max(tool_input.get("limit", 20), 1), 50)
+            return self._tool_get_nearby_resorts(latitude, longitude, radius_km, limit)
         elif tool_name == "get_resort_forecast":
             resort_id = tool_input.get("resort_id")
             if not resort_id:
@@ -970,6 +1012,11 @@ class ChatService:
             if not resort_ids:
                 return {"error": "Missing required parameter: resort_ids"}
             return self._tool_compare_resorts(resort_ids)
+        elif tool_name == "get_resort_details_batch":
+            resort_ids = tool_input.get("resort_ids")
+            if not resort_ids:
+                return {"error": "Missing required parameter: resort_ids"}
+            return self._tool_get_resort_details_batch(resort_ids)
         else:
             raise ValueError(f"Unknown tool: {tool_name}")
 
@@ -1016,26 +1063,107 @@ class ChatService:
         }
 
     def _tool_get_nearby_resorts(
-        self, latitude: float, longitude: float, radius_km: float
+        self, latitude: float, longitude: float, radius_km: float, limit: int = 20
     ) -> dict:
-        """Find resorts near given coordinates."""
+        """Find resorts near given coordinates with snow quality scores and ticket prices."""
+        from services.ml_scorer import raw_score_to_quality
+        from services.quality_explanation_service import score_to_100
+        from utils.constants import DEFAULT_ELEVATION_WEIGHT, ELEVATION_WEIGHTS
+
         nearby = self.resort_service.get_nearby_resorts(
             latitude=latitude,
             longitude=longitude,
             radius_km=radius_km,
-            limit=20,
+            limit=limit,
         )
+
+        if not nearby:
+            return {"results": [], "count": 0}
+
+        # Batch-fetch snow quality for all nearby resorts in parallel
+        resort_ids = [resort.resort_id for resort, _ in nearby]
+        quality_map: dict[str, dict] = {}
+
+        def _fetch_quality(resort_id: str) -> tuple[str, dict | None]:
+            try:
+                conditions = self.weather_service.get_conditions_for_resort(resort_id)
+                if not conditions:
+                    return resort_id, None
+
+                weighted_raw = 0.0
+                total_w = 0.0
+                for c in conditions:
+                    if c.quality_score is not None:
+                        w = ELEVATION_WEIGHTS.get(
+                            c.elevation_level, DEFAULT_ELEVATION_WEIGHT
+                        )
+                        weighted_raw += c.quality_score * w
+                        total_w += w
+
+                if total_w > 0:
+                    overall_raw = weighted_raw / total_w
+                    return resort_id, {
+                        "snow_quality": raw_score_to_quality(overall_raw).value,
+                        "snow_score": score_to_100(overall_raw),
+                    }
+                return resort_id, None
+            except Exception as e:
+                logger.warning("Error fetching quality for %s: %s", resort_id, e)
+                return resort_id, None
+
+        with ThreadPoolExecutor(max_workers=min(len(resort_ids), 10)) as executor:
+            futures = {executor.submit(_fetch_quality, rid): rid for rid in resort_ids}
+            for future in as_completed(futures):
+                rid, quality = future.result()
+                if quality:
+                    quality_map[rid] = quality
+
+        results = []
+        for resort, distance in nearby:
+            entry = {
+                "resort_id": resort.resort_id,
+                "name": resort.name,
+                "country": resort.country,
+                "region": resort.region,
+                "distance_km": distance,
+            }
+
+            # Add snow quality if available
+            quality = quality_map.get(resort.resort_id)
+            if quality:
+                entry["snow_score"] = quality["snow_score"]
+                entry["snow_quality"] = quality["snow_quality"]
+
+            # Add ticket price info
+            if resort.day_ticket_price_min_usd is not None:
+                entry["day_ticket_price_usd"] = resort.day_ticket_price_min_usd
+                if (
+                    resort.day_ticket_price_max_usd is not None
+                    and resort.day_ticket_price_max_usd
+                    != resort.day_ticket_price_min_usd
+                ):
+                    entry["day_ticket_price_max_usd"] = resort.day_ticket_price_max_usd
+
+            # Add pass affiliations
+            passes = []
+            if resort.epic_pass:
+                passes.append(f"Epic ({resort.epic_pass})")
+            if resort.ikon_pass:
+                passes.append(f"Ikon ({resort.ikon_pass})")
+            if resort.mountain_collective:
+                passes.append(f"MC ({resort.mountain_collective})")
+            if resort.indy_pass:
+                passes.append(f"Indy ({resort.indy_pass})")
+            if passes:
+                entry["pass_affiliations"] = passes
+
+            results.append(entry)
+
         return {
-            "results": [
-                {
-                    "resort_id": resort.resort_id,
-                    "name": resort.name,
-                    "country": resort.country,
-                    "distance_km": distance,
-                }
-                for resort, distance in nearby
-            ],
-            "count": len(nearby),
+            "results": results,
+            "count": len(results),
+            "search_center": {"latitude": latitude, "longitude": longitude},
+            "radius_km": radius_km,
         }
 
     def _tool_get_resort_forecast(self, resort_id: str) -> dict:
@@ -1319,6 +1447,141 @@ class ChatService:
             results.append(entry)
 
         return {"comparison": results, "resort_count": len(results)}
+
+    def _tool_get_resort_details_batch(self, resort_ids: list[str]) -> dict:
+        """Get detailed conditions, forecasts, ticket prices for multiple resorts at once."""
+        from services.ml_scorer import raw_score_to_quality
+        from services.quality_explanation_service import score_to_100
+        from utils.constants import DEFAULT_ELEVATION_WEIGHT, ELEVATION_WEIGHTS
+
+        if not resort_ids:
+            return {"error": "No resort IDs provided."}
+        if len(resort_ids) > 10:
+            resort_ids = resort_ids[:10]
+
+        def _fetch_resort_detail(resort_id: str) -> dict:
+            entry: dict[str, Any] = {"resort_id": resort_id}
+            try:
+                resort = self.resort_service.get_resort(resort_id)
+                if not resort:
+                    entry["error"] = "Resort not found."
+                    return entry
+
+                entry["name"] = resort.name
+                entry["country"] = resort.country
+                entry["region"] = resort.region
+
+                # Ticket prices
+                if resort.day_ticket_price_min_usd is not None:
+                    entry["day_ticket_price_usd"] = resort.day_ticket_price_min_usd
+                    if (
+                        resort.day_ticket_price_max_usd is not None
+                        and resort.day_ticket_price_max_usd
+                        != resort.day_ticket_price_min_usd
+                    ):
+                        entry["day_ticket_price_max_usd"] = (
+                            resort.day_ticket_price_max_usd
+                        )
+
+                # Pass affiliations
+                passes = []
+                if resort.epic_pass:
+                    passes.append(f"Epic ({resort.epic_pass})")
+                if resort.ikon_pass:
+                    passes.append(f"Ikon ({resort.ikon_pass})")
+                if resort.mountain_collective:
+                    passes.append(f"MC ({resort.mountain_collective})")
+                if resort.indy_pass:
+                    passes.append(f"Indy ({resort.indy_pass})")
+                if passes:
+                    entry["pass_affiliations"] = passes
+
+                # Current conditions with overall quality
+                conditions = self.weather_service.get_conditions_for_resort(resort_id)
+                if conditions:
+                    weighted_raw = 0.0
+                    total_w = 0.0
+                    for c in conditions:
+                        if c.quality_score is not None:
+                            w = ELEVATION_WEIGHTS.get(
+                                c.elevation_level, DEFAULT_ELEVATION_WEIGHT
+                            )
+                            weighted_raw += c.quality_score * w
+                            total_w += w
+
+                    if total_w > 0:
+                        overall_raw = weighted_raw / total_w
+                        entry["snow_quality"] = raw_score_to_quality(overall_raw).value
+                        entry["snow_score"] = score_to_100(overall_raw)
+
+                    # Representative condition (mid > top > base)
+                    representative = None
+                    for pref in ["mid", "top", "base"]:
+                        for c in conditions:
+                            if c.elevation_level == pref:
+                                representative = c
+                                break
+                        if representative:
+                            break
+                    if not representative:
+                        representative = conditions[0]
+
+                    entry["fresh_snow_cm"] = representative.fresh_snow_cm
+                    entry["temperature_c"] = representative.current_temp_celsius
+                    entry["snow_depth_cm"] = representative.snow_depth_cm
+                    entry["wind_speed_kmh"] = representative.wind_speed_kmh
+                    entry["snowfall_24h_cm"] = representative.snowfall_24h_cm
+                    entry["snowfall_72h_cm"] = representative.snowfall_72h_cm
+
+                # 7-day forecast summary (lightweight)
+                try:
+                    forecast = self._tool_get_resort_forecast(resort_id)
+                    if "days" in forecast:
+                        entry["forecast_7d"] = forecast["days"]
+                except Exception:
+                    pass  # Forecast is optional
+
+                # Condition reports summary
+                if self.condition_report_service:
+                    try:
+                        reports = self.condition_report_service.get_reports_for_resort(
+                            resort_id, limit=3
+                        )
+                        if reports:
+                            entry["recent_reports"] = [
+                                {
+                                    "score": r.score,
+                                    "comment": r.comment,
+                                    "created_at": r.created_at,
+                                }
+                                for r in reports
+                            ]
+                    except Exception:
+                        pass
+
+            except Exception as e:
+                logger.error("Error fetching details for %s: %s", resort_id, e)
+                entry["error"] = f"Failed to fetch details: {str(e)}"
+
+            return entry
+
+        # Fetch all resort details in parallel
+        results = []
+        with ThreadPoolExecutor(max_workers=min(len(resort_ids), 10)) as executor:
+            futures = {
+                executor.submit(_fetch_resort_detail, rid): rid for rid in resort_ids
+            }
+            # Maintain order by building a map then iterating resort_ids
+            result_map: dict[str, dict] = {}
+            for future in as_completed(futures):
+                detail = future.result()
+                result_map[detail["resort_id"]] = detail
+
+            for rid in resort_ids:
+                if rid in result_map:
+                    results.append(result_map[rid])
+
+        return {"resorts": results, "count": len(results)}
 
     def _save_message(
         self,
