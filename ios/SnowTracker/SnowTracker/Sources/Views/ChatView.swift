@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ChatView: View {
-    @EnvironmentObject private var locationManager: LocationManager
+    @ObservedObject private var locationManager = LocationManager.shared
     @StateObject private var viewModel = ChatViewModel()
     @State private var messageText = ""
     @State private var sendTrigger = 0

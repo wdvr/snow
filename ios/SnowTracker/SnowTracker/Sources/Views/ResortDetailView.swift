@@ -210,7 +210,7 @@ struct ResortDetailView: View {
             liveActivityService.end(resortId: resort.id)
         } else {
             guard let condition = conditionForSelectedElevation else { return }
-            let quality = snowConditionsManager.getSnowQuality(for: resort.id).rawValue ?? condition.snowQuality.rawValue
+            let quality = snowConditionsManager.getSnowQuality(for: resort.id).rawValue
             let score = snowConditionsManager.getSnowScore(for: resort.id)
             liveActivityService.start(
                 resortId: resort.id,
@@ -227,7 +227,7 @@ struct ResortDetailView: View {
     private func updateLiveActivityIfNeeded() {
         guard liveActivityService.isActive(for: resort.id),
               let condition = conditionForSelectedElevation else { return }
-        let quality = snowConditionsManager.getSnowQuality(for: resort.id).rawValue ?? condition.snowQuality.rawValue
+        let quality = snowConditionsManager.getSnowQuality(for: resort.id).rawValue
         let score = snowConditionsManager.getSnowScore(for: resort.id)
         liveActivityService.update(
             freshSnowCm: condition.freshSnowCm,
