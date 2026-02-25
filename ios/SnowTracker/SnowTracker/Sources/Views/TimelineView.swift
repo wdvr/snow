@@ -197,6 +197,23 @@ struct TimelinePointCard: View {
                     .foregroundStyle(point.snowQuality.color)
             }
 
+            // Score change delta indicator
+            if let reason = point.scoreChangeReason {
+                let isImproving = reason.lowercased().contains("improv")
+                    || reason.lowercased().contains("fresh")
+                    || reason.lowercased().contains("eas")
+                    || reason.lowercased().contains("firm")
+                HStack(spacing: 1) {
+                    Image(systemName: isImproving ? "arrow.up.right" : "arrow.down.right")
+                        .font(.system(size: 7, weight: .bold))
+                    Text(scoreChangeSummary(reason))
+                        .font(.system(size: 8))
+                        .lineLimit(1)
+                }
+                .foregroundStyle(isImproving ? .green : .orange)
+                .accessibilityLabel("Score change: \(reason)")
+            }
+
             Image(systemName: point.snowQuality.icon)
                 .font(.title3)
                 .foregroundStyle(point.snowQuality.color)
@@ -346,12 +363,48 @@ struct TimelinePointCard: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+
+                    // Score change reason (delta explanation)
+                    if let reason = point.scoreChangeReason {
+                        let isImproving = reason.lowercased().contains("improv")
+                            || reason.lowercased().contains("fresh")
+                            || reason.lowercased().contains("eas")
+                            || reason.lowercased().contains("firm")
+                        HStack(spacing: 4) {
+                            Image(systemName: isImproving ? "arrow.up.right.circle.fill" : "arrow.down.right.circle.fill")
+                                .font(.caption)
+                                .foregroundStyle(isImproving ? .green : .orange)
+                            Text(reason)
+                                .font(.caption)
+                                .foregroundStyle(isImproving ? .green : .orange)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
                 .padding()
                 .frame(maxWidth: 260)
                 .presentationCompactAdaptation(.popover)
             }
         }
+    }
+
+    /// Abbreviate the score change reason for the compact card display.
+    private func scoreChangeSummary(_ reason: String) -> String {
+        let lower = reason.lowercased()
+        if lower.contains("fresh snow") { return "Snow" }
+        if lower.contains("warm") || lower.contains("soften") { return "Warm" }
+        if lower.contains("cool") || lower.contains("firm") { return "Cold" }
+        if lower.contains("refreez") || lower.contains("icy") { return "Ice" }
+        if lower.contains("gust") { return "Gust" }
+        if lower.contains("wind") && lower.contains("eas") { return "Calm" }
+        if lower.contains("wind") { return "Wind" }
+        if lower.contains("visibility") && lower.contains("improv") { return "Clear" }
+        if lower.contains("visibility") { return "Fog" }
+        if lower.contains("stop") || lower.contains("settl") { return "Settl" }
+        if lower.contains("depth") { return "Melt" }
+        if lower.contains("improv") { return "Up" }
+        if lower.contains("declin") { return "Down" }
+        return ""
     }
 }
 

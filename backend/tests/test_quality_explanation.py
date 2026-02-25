@@ -6,6 +6,7 @@ from models.weather import SnowQuality, WeatherCondition
 from services.quality_explanation_service import (
     generate_overall_explanation,
     generate_quality_explanation,
+    generate_score_change_reason,
     generate_timeline_explanation,
     score_to_100,
 )
@@ -594,3 +595,170 @@ class TestTimelineWindVisibilityScoreImpact:
         assert "score" in result.lower(), (
             f"Timeline visibility should mention score, got: {result}"
         )
+
+
+# MARK: - Score Change Reason Tests
+
+
+def _timeline_point(**kwargs) -> dict:
+    """Create a timeline point dict with defaults for score change reason testing."""
+    defaults = {
+        "date": "2026-02-20",
+        "time_label": "midday",
+        "hour": 12,
+        "timestamp": "2026-02-20T12:00",
+        "temperature_c": -5.0,
+        "wind_speed_kmh": 10.0,
+        "wind_gust_kmh": 15.0,
+        "visibility_m": 10000.0,
+        "snowfall_cm": 0.0,
+        "snow_depth_cm": 100.0,
+        "snow_quality": "good",
+        "quality_score": 3.8,
+        "snow_score": 70,
+        "explanation": "Good conditions.",
+        "weather_code": 3,
+        "weather_description": "Overcast",
+        "is_forecast": False,
+    }
+    defaults.update(kwargs)
+    return defaults
+
+
+class TestScoreChangeReason:
+    """Tests for generate_score_change_reason()."""
+
+    def test_no_previous_returns_none(self):
+        """First point in timeline has no previous, should return None."""
+        point = _timeline_point()
+        assert generate_score_change_reason(point, None) is None
+
+    def test_same_score_returns_none(self):
+        """When score doesn't change, no reason is needed."""
+        prev = _timeline_point(snow_score=70)
+        curr = _timeline_point(snow_score=70)
+        assert generate_score_change_reason(curr, prev) is None
+
+    def test_missing_score_returns_none(self):
+        """When score is missing, return None."""
+        prev = _timeline_point(snow_score=None)
+        curr = _timeline_point(snow_score=70)
+        assert generate_score_change_reason(curr, prev) is None
+
+    def test_fresh_snow_improves(self):
+        """Fresh snowfall should be identified as the improving factor."""
+        prev = _timeline_point(snow_score=60, snowfall_cm=0.0)
+        curr = _timeline_point(snow_score=80, snowfall_cm=8.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "8cm" in reason or "fresh" in reason.lower()
+
+    def test_warming_above_freezing(self):
+        """Warming above freezing should mention softening."""
+        prev = _timeline_point(snow_score=75, temperature_c=-2.0)
+        curr = _timeline_point(snow_score=65, temperature_c=4.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "warm" in reason.lower() or "soften" in reason.lower()
+
+    def test_cooling_below_freezing(self):
+        """Cooling below freezing should mention firming up."""
+        prev = _timeline_point(snow_score=60, temperature_c=2.0)
+        curr = _timeline_point(snow_score=70, temperature_c=-5.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "cool" in reason.lower() or "firm" in reason.lower()
+
+    def test_refreezing_creates_ice(self):
+        """When temps drop from above zero to below, mention icy surface."""
+        prev = _timeline_point(snow_score=65, temperature_c=2.0)
+        curr = _timeline_point(snow_score=50, temperature_c=-1.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "refreez" in reason.lower() or "icy" in reason.lower()
+
+    def test_wind_increase_worsens(self):
+        """Increasing wind should be flagged as worsening factor."""
+        prev = _timeline_point(snow_score=75, wind_speed_kmh=10.0)
+        curr = _timeline_point(snow_score=60, wind_speed_kmh=35.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "wind" in reason.lower()
+
+    def test_wind_easing_improves(self):
+        """Decreasing wind should be flagged as improving factor."""
+        prev = _timeline_point(snow_score=60, wind_speed_kmh=40.0)
+        curr = _timeline_point(snow_score=72, wind_speed_kmh=10.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "wind" in reason.lower() and (
+            "eas" in reason.lower() or "improv" in reason.lower()
+        )
+
+    def test_gust_increase_worsens(self):
+        """Increasing gusts should be flagged."""
+        prev = _timeline_point(snow_score=75, wind_gust_kmh=20.0)
+        curr = _timeline_point(snow_score=60, wind_gust_kmh=55.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "gust" in reason.lower() or "wind" in reason.lower()
+
+    def test_visibility_drop_worsens(self):
+        """Significant visibility drop should be flagged."""
+        prev = _timeline_point(snow_score=75, visibility_m=5000.0)
+        curr = _timeline_point(snow_score=65, visibility_m=500.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "visibility" in reason.lower() or "vis" in reason.lower()
+
+    def test_visibility_improving(self):
+        """Visibility improving from low should be flagged."""
+        prev = _timeline_point(snow_score=60, visibility_m=500.0)
+        curr = _timeline_point(snow_score=72, visibility_m=5000.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "visibility" in reason.lower() or "improv" in reason.lower()
+
+    def test_snowfall_stopped_worsens(self):
+        """When snowfall stops, settling conditions should be noted."""
+        prev = _timeline_point(snow_score=80, snowfall_cm=5.0)
+        curr = _timeline_point(snow_score=70, snowfall_cm=0.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert (
+            "stop" in reason.lower()
+            or "settl" in reason.lower()
+            or "declin" in reason.lower()
+        )
+
+    def test_generic_improvement_fallback(self):
+        """When no specific factor is dominant, generic improvement message shown."""
+        prev = _timeline_point(snow_score=68)
+        curr = _timeline_point(snow_score=72)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "improv" in reason.lower()
+
+    def test_generic_decline_fallback(self):
+        """When no specific factor is dominant, generic decline message shown."""
+        prev = _timeline_point(snow_score=72)
+        curr = _timeline_point(snow_score=68)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "declin" in reason.lower()
+
+    def test_significant_change_label(self):
+        """Large score changes (>=15 pts) should mention significance."""
+        prev = _timeline_point(snow_score=50, snowfall_cm=0.0)
+        curr = _timeline_point(snow_score=85, snowfall_cm=15.0)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "significantly" in reason.lower() or "15cm" in reason
+
+    def test_slight_change_label(self):
+        """Small score changes (<5 pts) should say 'slightly'."""
+        prev = _timeline_point(snow_score=70)
+        curr = _timeline_point(snow_score=73)
+        reason = generate_score_change_reason(curr, prev)
+        assert reason is not None
+        assert "slightly" in reason.lower()

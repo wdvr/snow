@@ -18,6 +18,7 @@ struct TimelinePoint: Codable, Identifiable, Sendable {
     let qualityScore: Double?
     let snowScore: Int?
     let explanation: String?
+    let scoreChangeReason: String?
     let weatherCode: Int?
     let weatherDescription: String?
     let isForecast: Bool
@@ -37,6 +38,7 @@ struct TimelinePoint: Codable, Identifiable, Sendable {
         case qualityScore = "quality_score"
         case snowScore = "snow_score"
         case explanation
+        case scoreChangeReason = "score_change_reason"
         case weatherCode = "weather_code"
         case weatherDescription = "weather_description"
         case isForecast = "is_forecast"

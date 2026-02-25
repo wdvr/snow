@@ -9,6 +9,7 @@ import requests
 
 from models.weather import ConfidenceLevel, SnowQuality, WeatherCondition
 from services.quality_explanation_service import (
+    generate_score_change_reason,
     generate_timeline_explanation,
     score_to_100,
 )
@@ -748,6 +749,11 @@ class OpenMeteoService:
             # overnight with 0.1cm snowfall), causing ML score jumps of +19.
             # Cap step-to-step changes for a smoother timeline.
             _smooth_timeline_scores(timeline_points)
+
+            # Second pass: add score_change_reason by comparing consecutive points
+            for i, point in enumerate(timeline_points):
+                prev = timeline_points[i - 1] if i > 0 else None
+                point["score_change_reason"] = generate_score_change_reason(point, prev)
 
             return {
                 "timeline": timeline_points,
