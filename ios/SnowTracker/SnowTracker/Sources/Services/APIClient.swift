@@ -1373,7 +1373,12 @@ struct ElevationSummary: Codable {
     }
 
     var snowQuality: SnowQuality {
-        SnowQuality(rawValue: quality) ?? .unknown
+        // Handle backward compatibility for old quality values
+        switch quality {
+        case "fair": return .decent
+        case "slushy": return .mediocre
+        default: return SnowQuality(rawValue: quality) ?? .unknown
+        }
     }
 
     var confidenceLevel: ConfidenceLevel {
@@ -1534,7 +1539,12 @@ struct ElevationConditionSummary: Codable {
     }
 
     var snowQuality: SnowQuality {
-        SnowQuality(rawValue: quality) ?? .unknown
+        // Handle backward compatibility for old quality values
+        switch quality {
+        case "fair": return .decent
+        case "slushy": return .mediocre
+        default: return SnowQuality(rawValue: quality) ?? .unknown
+        }
     }
 }
 

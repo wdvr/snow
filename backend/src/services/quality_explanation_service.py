@@ -73,6 +73,28 @@ def _describe_surface(
     temp = condition.current_temp_celsius
     warming = condition.currently_warming
 
+    if quality == SnowQuality.CHAMPAGNE_POWDER:
+        if snow_24h >= 15:
+            return f"Ultra-light champagne powder: {snow_24h:.0f}cm in the last 24 hours. Dry, cold, and deep."
+        elif snow_24h >= 10:
+            return f"Champagne powder: {snow_24h:.0f}cm of ultra-light snow in the last 24 hours."
+        elif snow_48h >= 15:
+            return f"Champagne powder: {snow_48h:.0f}cm of ultra-dry snow in the last 48 hours."
+        elif fresh_cm >= 10:
+            return (
+                f"Champagne powder: {fresh_cm:.0f}cm of ultra-light, uncompacted snow."
+            )
+        return "Champagne powder conditions — ultra-light, dry snow."
+
+    if quality == SnowQuality.POWDER_DAY:
+        if snow_24h >= 10:
+            return f"Powder day: {snow_24h:.0f}cm of fresh snow in the last 24 hours."
+        elif snow_48h >= 10:
+            return f"Powder day: {snow_48h:.0f}cm of fresh snow in the last 48 hours."
+        elif fresh_cm >= 7.6:
+            return f"Powder day: {fresh_cm:.0f}cm of uncompacted snow."
+        return "Deep fresh powder conditions."
+
     if quality == SnowQuality.EXCELLENT:
         if snow_24h >= 10:
             return f"Fresh powder: {snow_24h:.0f}cm in the last 24 hours."
@@ -82,7 +104,7 @@ def _describe_surface(
             return f"Fresh powder: {fresh_cm:.0f}cm of uncompacted snow."
         return "Fresh powder conditions."
 
-    if quality == SnowQuality.GOOD:
+    if quality == SnowQuality.GREAT:
         # Use temperature-aware descriptions: below -5°C snow is dry, not soft
         is_cold = temp is not None and temp < -5
         if snow_24h >= 5:
@@ -99,7 +121,25 @@ def _describe_surface(
             return "Dry packed powder — good rideable surface."
         return "Soft, rideable surface."
 
-    if quality == SnowQuality.FAIR:
+    if quality == SnowQuality.GOOD:
+        is_cold = temp is not None and temp < -5
+        if snow_24h >= 5:
+            if is_cold:
+                return f"Dry packed powder with {snow_24h:.0f}cm of recent snow."
+            return f"Good surface with {snow_24h:.0f}cm of recent snow."
+        elif fresh_cm >= 30:
+            if warming:
+                return f"Good base ({fresh_cm:.0f}cm fresh) but currently warming."
+            return f"Good base with {fresh_cm:.0f}cm of fresh snow."
+        elif fresh_cm >= 5:
+            return (
+                f"Solid conditions with {fresh_cm:.0f}cm of fresh snow on a good base."
+            )
+        if is_cold:
+            return "Solid groomed conditions — cold and dry."
+        return "Solid groomed conditions."
+
+    if quality == SnowQuality.DECENT:
         if fresh_cm >= 80:
             return f"Substantial base with {fresh_cm:.0f}cm of fresh snow."
         elif hours_since and hours_since > 72 and fresh_cm > 5:
@@ -113,6 +153,13 @@ def _describe_surface(
                 return f"Some fresh snow ({fresh_cm:.0f}cm) but currently warming — surface softening."
             return f"Some fresh snow ({fresh_cm:.0f}cm) on a firm base."
         return "Firm, groomed-type surface with limited fresh snow."
+
+    if quality == SnowQuality.MEDIOCRE:
+        if fresh_cm >= 30:
+            return f"Aging snow ({fresh_cm:.0f}cm) — firm, groomed-type surface."
+        elif fresh_cm >= 2.5:
+            return f"Limited fresh snow ({fresh_cm:.0f}cm) on a firm base. Stick to groomed runs."
+        return "Firm surface with limited fresh snow. Stick to groomed runs."
 
     if quality == SnowQuality.POOR:
         if freeze_thaw_ago and freeze_thaw_ago < 72:
@@ -244,9 +291,13 @@ def _describe_wind_visibility(condition: WeatherCondition) -> str:
 def _default_explanation(quality: SnowQuality) -> str:
     """Fallback explanation when data is insufficient."""
     defaults = {
+        SnowQuality.CHAMPAGNE_POWDER: "Champagne powder — ultra-light, dry snow.",
+        SnowQuality.POWDER_DAY: "Powder day — deep fresh snow.",
         SnowQuality.EXCELLENT: "Excellent conditions with fresh powder.",
-        SnowQuality.GOOD: "Good rideable conditions.",
-        SnowQuality.FAIR: "Fair conditions. Groomed runs recommended.",
+        SnowQuality.GREAT: "Great rideable conditions.",
+        SnowQuality.GOOD: "Good conditions with solid base.",
+        SnowQuality.DECENT: "Decent conditions. Groomed runs recommended.",
+        SnowQuality.MEDIOCRE: "Mediocre conditions. Stick to groomed runs.",
         SnowQuality.POOR: "Poor conditions. Thin or aged snow cover.",
         SnowQuality.BAD: "Icy conditions. Sharp edges recommended.",
         SnowQuality.HORRIBLE: "Not skiable. Insufficient snow cover.",
@@ -292,12 +343,24 @@ def generate_timeline_explanation(
     prefix = "Expected: " if is_forecast else ""
 
     # Surface/quality description
-    if q == SnowQuality.EXCELLENT:
+    if q == SnowQuality.CHAMPAGNE_POWDER:
+        if snowfall_cm >= 10:
+            parts.append(
+                f"{prefix}Champagne powder with {snowfall_cm:.0f}cm of ultra-light snow."
+            )
+        else:
+            parts.append(f"{prefix}Champagne powder — ultra-light, dry snow.")
+    elif q == SnowQuality.POWDER_DAY:
+        if snowfall_cm >= 5:
+            parts.append(f"{prefix}Powder day with {snowfall_cm:.0f}cm of fresh snow.")
+        else:
+            parts.append(f"{prefix}Deep fresh powder conditions.")
+    elif q == SnowQuality.EXCELLENT:
         if snowfall_cm >= 5:
             parts.append(f"{prefix}Fresh powder with {snowfall_cm:.0f}cm of snowfall.")
         else:
             parts.append(f"{prefix}Excellent powder conditions.")
-    elif q == SnowQuality.GOOD:
+    elif q == SnowQuality.GREAT:
         # Use temperature-aware descriptions: below -5°C snow is dry, not soft
         is_cold = temperature_c < -5
         if snowfall_cm >= 2:
@@ -311,16 +374,34 @@ def generate_timeline_explanation(
                 )
         else:
             if is_cold:
-                parts.append(f"{prefix}Good, dry packed powder.")
+                parts.append(f"{prefix}Great, dry packed powder.")
             else:
-                parts.append(f"{prefix}Good, soft rideable surface.")
-    elif q == SnowQuality.FAIR:
+                parts.append(f"{prefix}Great, soft rideable surface.")
+    elif q == SnowQuality.GOOD:
+        is_cold = temperature_c < -5
+        if snowfall_cm >= 2:
+            if is_cold:
+                parts.append(
+                    f"{prefix}Good conditions with {snowfall_cm:.0f}cm of recent snow."
+                )
+            else:
+                parts.append(
+                    f"{prefix}Good surface with {snowfall_cm:.0f}cm of recent snow."
+                )
+        else:
+            if is_cold:
+                parts.append(f"{prefix}Good, solid groomed conditions.")
+            else:
+                parts.append(f"{prefix}Good, solid rideable surface.")
+    elif q == SnowQuality.DECENT:
         if snowfall_cm >= 1:
             parts.append(
                 f"{prefix}Some fresh snow ({snowfall_cm:.0f}cm) on a firm base."
             )
         else:
             parts.append(f"{prefix}Firm, groomed-type surface.")
+    elif q == SnowQuality.MEDIOCRE:
+        parts.append(f"{prefix}Firm surface with limited fresh snow.")
     elif q == SnowQuality.POOR:
         parts.append(f"{prefix}Hard packed with limited fresh snow.")
     elif q == SnowQuality.BAD:
@@ -443,6 +524,13 @@ def _brief_summit(condition: WeatherCondition) -> str:
     fresh_cm = condition.fresh_snow_cm or 0
     snow_24h = condition.snowfall_24h_cm or 0
 
+    if quality in (SnowQuality.CHAMPAGNE_POWDER, SnowQuality.POWDER_DAY):
+        if snow_24h >= 10:
+            return f"Deep powder at summit ({snow_24h:.0f}cm in 24h)"
+        if fresh_cm >= 8:
+            return f"Deep powder at summit ({fresh_cm:.0f}cm uncompacted)"
+        return "Deep powder at summit"
+
     if quality == SnowQuality.EXCELLENT:
         if snow_24h >= 10:
             return f"Fresh powder at summit ({snow_24h:.0f}cm in 24h)"
@@ -450,24 +538,34 @@ def _brief_summit(condition: WeatherCondition) -> str:
             return f"Fresh powder at summit ({fresh_cm:.0f}cm uncompacted)"
         return "Fresh powder at summit"
 
-    if quality == SnowQuality.GOOD:
+    if quality == SnowQuality.GREAT:
         temp = condition.current_temp_celsius
         is_cold = temp is not None and temp < -5
         if fresh_cm >= 30:
-            return f"Good snow at summit ({fresh_cm:.0f}cm fresh)"
+            return f"Great snow at summit ({fresh_cm:.0f}cm fresh)"
         if snow_24h >= 5:
             if is_cold:
                 return f"Dry packed powder at summit ({snow_24h:.0f}cm recent)"
             return f"Soft surface at summit ({snow_24h:.0f}cm recent)"
         if is_cold:
-            return "Good, dry packed powder at summit"
-        return "Good, soft surface at summit"
+            return "Great, dry packed powder at summit"
+        return "Great, soft surface at summit"
 
-    if quality == SnowQuality.FAIR:
+    if quality == SnowQuality.GOOD:
         if fresh_cm >= 30:
-            return f"Fair at summit ({fresh_cm:.0f}cm fresh)"
+            return f"Good snow at summit ({fresh_cm:.0f}cm fresh)"
+        if fresh_cm >= 5:
+            return f"Good conditions at summit ({fresh_cm:.0f}cm fresh)"
+        return "Good conditions at summit"
+
+    if quality == SnowQuality.DECENT:
+        if fresh_cm >= 30:
+            return f"Decent at summit ({fresh_cm:.0f}cm fresh)"
         if fresh_cm >= 3:
             return f"Some fresh snow at summit ({fresh_cm:.0f}cm)"
+        return "Firm surface at summit"
+
+    if quality == SnowQuality.MEDIOCRE:
         return "Firm surface at summit"
 
     if quality == SnowQuality.POOR:
@@ -492,7 +590,7 @@ def _brief_lower_issue(condition: WeatherCondition) -> str:
     if quality == SnowQuality.POOR:
         return "hard packed at lower elevations"
 
-    if quality == SnowQuality.FAIR:
+    if quality in (SnowQuality.DECENT, SnowQuality.MEDIOCRE):
         return "firmer conditions at lower elevations"
 
     return "variable conditions at lower elevations"

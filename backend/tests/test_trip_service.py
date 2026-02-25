@@ -457,7 +457,7 @@ class TestTripService:
         """Test that significant condition changes trigger alerts."""
         # Set up initial conditions with warm temps
         sample_trip_data["latest_conditions"]["temperature_celsius"] = -5.0
-        sample_trip_data["latest_conditions"]["snow_quality"] = "fair"
+        sample_trip_data["latest_conditions"]["snow_quality"] = "decent"
         mock_table.get_item.return_value = {"Item": sample_trip_data}
 
         # Mock new conditions with warming (above ice threshold)

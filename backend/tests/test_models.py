@@ -195,17 +195,21 @@ class TestWeatherModels:
     def test_snow_quality_enum(self):
         """Test SnowQuality enum values and properties."""
         # Test enum values
+        assert SnowQuality.CHAMPAGNE_POWDER == "champagne_powder"
+        assert SnowQuality.POWDER_DAY == "powder_day"
         assert SnowQuality.EXCELLENT == "excellent"
+        assert SnowQuality.GREAT == "great"
         assert SnowQuality.GOOD == "good"
-        assert SnowQuality.FAIR == "fair"
+        assert SnowQuality.DECENT == "decent"
+        assert SnowQuality.MEDIOCRE == "mediocre"
         assert SnowQuality.POOR == "poor"
         assert SnowQuality.BAD == "bad"
         assert SnowQuality.HORRIBLE == "horrible"
         assert SnowQuality.UNKNOWN == "unknown"
 
-        # Test all values are present (excellent, good, fair, poor, bad, horrible, unknown)
+        # Test all values are present (11 total)
         all_qualities = list(SnowQuality)
-        assert len(all_qualities) == 7
+        assert len(all_qualities) == 11
 
     def test_confidence_level_enum(self):
         """Test ConfidenceLevel enum values."""
@@ -370,7 +374,7 @@ class TestUserModels:
                 "distance": "metric",
                 "snow_depth": "cm",
             },
-            quality_threshold="fair",
+            quality_threshold="decent",
             created_at="2026-01-20T10:00:00Z",
             updated_at="2026-01-20T11:00:00Z",
         )
@@ -380,7 +384,7 @@ class TestUserModels:
         assert "big-white" in preferences.favorite_resorts
         assert preferences.notification_preferences["snow_alerts"] is True
         assert preferences.preferred_units["temperature"] == "celsius"
-        assert preferences.quality_threshold == "fair"
+        assert preferences.quality_threshold == "decent"
 
     def test_user_preferences_defaults(self):
         """Test UserPreferences with default values."""
@@ -398,7 +402,7 @@ class TestUserModels:
         assert preferences.preferred_units["temperature"] == "celsius"
         assert preferences.preferred_units["distance"] == "metric"
         assert preferences.preferred_units["snow_depth"] == "cm"
-        assert preferences.quality_threshold == "fair"
+        assert preferences.quality_threshold == "decent"
 
     def test_user_preferences_json_serialization(self):
         """Test UserPreferences JSON serialization."""

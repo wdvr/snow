@@ -82,7 +82,8 @@ class TestSnowQualityApiConsistency:
             # Call the function
             result = _get_snow_quality_for_resort("test-resort")
 
-            # Weighted scoring: top (50%) EXCELLENT + base (15%) HORRIBLE = GOOD overall
+            # Weighted scoring: top (50%) EXCELLENT + base (15%) HORRIBLE
+            # avg = (8*0.50 + 1*0.15) / 0.65 = 6.38 → GOOD
             # A warm base shouldn't override excellent upper mountain conditions
             assert result["overall_quality"] == SnowQuality.GOOD.value
 
@@ -101,9 +102,13 @@ class TestSnowQualityApiConsistency:
 
         # Quality scores (should match both endpoints)
         quality_scores = {
-            SnowQuality.EXCELLENT: 6,
-            SnowQuality.GOOD: 5,
-            SnowQuality.FAIR: 4,
+            SnowQuality.CHAMPAGNE_POWDER: 10,
+            SnowQuality.POWDER_DAY: 9,
+            SnowQuality.EXCELLENT: 8,
+            SnowQuality.GREAT: 7,
+            SnowQuality.GOOD: 6,
+            SnowQuality.DECENT: 5,
+            SnowQuality.MEDIOCRE: 4,
             SnowQuality.POOR: 3,
             SnowQuality.BAD: 2,
             SnowQuality.HORRIBLE: 1,
@@ -121,12 +126,20 @@ class TestSnowQualityApiConsistency:
                 sum(overall_scores) / len(overall_scores) if overall_scores else 0
             )
 
-            if avg_score >= 5.5:
+            if avg_score >= 9.5:
+                overall_quality = SnowQuality.CHAMPAGNE_POWDER
+            elif avg_score >= 8.5:
+                overall_quality = SnowQuality.POWDER_DAY
+            elif avg_score >= 7.5:
                 overall_quality = SnowQuality.EXCELLENT
-            elif avg_score >= 4.5:
+            elif avg_score >= 6.5:
+                overall_quality = SnowQuality.GREAT
+            elif avg_score >= 5.5:
                 overall_quality = SnowQuality.GOOD
+            elif avg_score >= 4.5:
+                overall_quality = SnowQuality.DECENT
             elif avg_score >= 3.5:
-                overall_quality = SnowQuality.FAIR
+                overall_quality = SnowQuality.MEDIOCRE
             elif avg_score >= 2.5:
                 overall_quality = SnowQuality.POOR
             elif avg_score >= 1.5:
@@ -149,7 +162,7 @@ class TestSnowQualityApiConsistency:
                 max_temp_celsius=0.0,
                 snowfall_24h_cm=5.0,
                 hours_above_ice_threshold=2.0,
-                snow_quality=SnowQuality.FAIR,  # Score 4
+                snow_quality=SnowQuality.DECENT,  # Score 5
                 confidence_level=ConfidenceLevel.MEDIUM,
                 fresh_snow_cm=3.0,
                 data_source="test-api",
@@ -164,7 +177,7 @@ class TestSnowQualityApiConsistency:
                 max_temp_celsius=-5.0,
                 snowfall_24h_cm=20.0,
                 hours_above_ice_threshold=0.0,
-                snow_quality=SnowQuality.EXCELLENT,  # Score 6
+                snow_quality=SnowQuality.EXCELLENT,  # Score 8
                 confidence_level=ConfidenceLevel.HIGH,
                 fresh_snow_cm=20.0,
                 snowfall_after_freeze_cm=20.0,
@@ -174,9 +187,13 @@ class TestSnowQualityApiConsistency:
         ]
 
         quality_scores = {
-            SnowQuality.EXCELLENT: 6,
-            SnowQuality.GOOD: 5,
-            SnowQuality.FAIR: 4,
+            SnowQuality.CHAMPAGNE_POWDER: 10,
+            SnowQuality.POWDER_DAY: 9,
+            SnowQuality.EXCELLENT: 8,
+            SnowQuality.GREAT: 7,
+            SnowQuality.GOOD: 6,
+            SnowQuality.DECENT: 5,
+            SnowQuality.MEDIOCRE: 4,
             SnowQuality.POOR: 3,
             SnowQuality.BAD: 2,
             SnowQuality.HORRIBLE: 1,
@@ -187,19 +204,23 @@ class TestSnowQualityApiConsistency:
         assert not has_horrible  # No HORRIBLE conditions
 
         overall_scores = [quality_scores.get(c.snow_quality, 0) for c in conditions]
-        avg_score = sum(overall_scores) / len(overall_scores)  # (4 + 6) / 2 = 5.0
+        avg_score = sum(overall_scores) / len(overall_scores)  # (5 + 8) / 2 = 6.5
 
-        # Average is 5.0, which should be GOOD (>= 4.5)
-        assert avg_score == 5.0
+        # Average is 6.5, which should be GREAT (>= 6.0)
+        assert avg_score == 6.5
 
-        if avg_score >= 5.5:
+        if avg_score >= 9.5:
+            overall_quality = SnowQuality.CHAMPAGNE_POWDER
+        elif avg_score >= 8.5:
+            overall_quality = SnowQuality.POWDER_DAY
+        elif avg_score >= 7.5:
             overall_quality = SnowQuality.EXCELLENT
-        elif avg_score >= 4.5:
-            overall_quality = SnowQuality.GOOD
+        elif avg_score >= 6.5:
+            overall_quality = SnowQuality.GREAT
         else:
-            overall_quality = SnowQuality.FAIR
+            overall_quality = SnowQuality.GOOD
 
-        assert overall_quality == SnowQuality.GOOD
+        assert overall_quality == SnowQuality.GREAT
 
 
 class TestSnowAgingPenalty:

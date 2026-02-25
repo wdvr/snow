@@ -79,7 +79,8 @@ class TripService:
             conditions_at_creation=conditions_snapshot,
             latest_conditions=conditions_snapshot,
             alerts=[],
-            alert_preferences=trip_data.alert_preferences or {
+            alert_preferences=trip_data.alert_preferences
+            or {
                 "powder_alerts": True,
                 "warm_spell_warnings": True,
                 "condition_updates": True,
@@ -109,9 +110,7 @@ class TripService:
             Trip object or None if not found
         """
         try:
-            response = self.table.get_item(
-                Key={"trip_id": trip_id, "user_id": user_id}
-            )
+            response = self.table.get_item(Key={"trip_id": trip_id, "user_id": user_id})
             item = response.get("Item")
             if not item:
                 return None
@@ -276,7 +275,9 @@ class TripService:
 
         return alert
 
-    def mark_alerts_read(self, trip_id: str, user_id: str, alert_ids: list[str] | None = None) -> int:
+    def mark_alerts_read(
+        self, trip_id: str, user_id: str, alert_ids: list[str] | None = None
+    ) -> int:
         """Mark alerts as read.
 
         Args:
@@ -351,7 +352,9 @@ class TripService:
         # For now, scan and filter (not ideal for large datasets)
         try:
             today = datetime.now(UTC).strftime("%Y-%m-%d")
-            future = (datetime.now(UTC) + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+            future = (datetime.now(UTC) + timedelta(days=days_ahead)).strftime(
+                "%Y-%m-%d"
+            )
 
             response = self.table.scan(
                 FilterExpression="start_date >= :today AND start_date <= :future AND #s = :planned",
@@ -373,27 +376,37 @@ class TripService:
         except ClientError as e:
             raise Exception(f"Failed to get upcoming trips: {str(e)}")
 
-    def _create_conditions_snapshot(self, resort_id: str) -> TripConditionSnapshot | None:
+    def _create_conditions_snapshot(
+        self, resort_id: str
+    ) -> TripConditionSnapshot | None:
         """Create a conditions snapshot for a resort."""
         if not self.weather_service:
             return None
 
         try:
-            conditions = self.weather_service.get_conditions_for_resort(resort_id, hours_back=6)
+            conditions = self.weather_service.get_conditions_for_resort(
+                resort_id, hours_back=6
+            )
             if not conditions:
                 return None
 
             # Aggregate conditions
             qualities = [c.snow_quality for c in conditions]
-            fresh_snow = sum(c.snowfall_after_freeze_cm or c.fresh_snow_cm for c in conditions) / len(conditions)
+            fresh_snow = sum(
+                c.snowfall_after_freeze_cm or c.fresh_snow_cm for c in conditions
+            ) / len(conditions)
             predicted = max((c.predicted_snow_72h_cm or 0) for c in conditions)
             temps = [c.current_temp_celsius for c in conditions]
 
             # Get best quality
             quality_ranks = {
-                SnowQuality.EXCELLENT: 6,
-                SnowQuality.GOOD: 5,
-                SnowQuality.FAIR: 4,
+                SnowQuality.CHAMPAGNE_POWDER: 10,
+                SnowQuality.POWDER_DAY: 9,
+                SnowQuality.EXCELLENT: 8,
+                SnowQuality.GREAT: 7,
+                SnowQuality.GOOD: 6,
+                SnowQuality.DECENT: 5,
+                SnowQuality.MEDIOCRE: 4,
                 SnowQuality.POOR: 3,
                 SnowQuality.BAD: 2,
                 SnowQuality.HORRIBLE: 1,
@@ -403,10 +416,14 @@ class TripService:
 
             return TripConditionSnapshot(
                 timestamp=datetime.now(UTC).isoformat(),
-                snow_quality=best_quality.value if hasattr(best_quality, "value") else str(best_quality),
+                snow_quality=best_quality.value
+                if hasattr(best_quality, "value")
+                else str(best_quality),
                 fresh_snow_cm=round(fresh_snow, 1),
                 predicted_snow_cm=round(predicted, 1),
-                temperature_celsius=round(sum(temps) / len(temps), 1) if temps else None,
+                temperature_celsius=round(sum(temps) / len(temps), 1)
+                if temps
+                else None,
             )
 
         except Exception:
@@ -464,8 +481,17 @@ class TripService:
         # Condition changes
         if prefs.get("condition_updates", True):
             quality_ranks = {
-                "excellent": 6, "good": 5, "fair": 4,
-                "poor": 3, "bad": 2, "horrible": 1, "unknown": 0,
+                "champagne_powder": 10,
+                "powder_day": 9,
+                "excellent": 8,
+                "great": 7,
+                "good": 6,
+                "decent": 5,
+                "mediocre": 4,
+                "poor": 3,
+                "bad": 2,
+                "horrible": 1,
+                "unknown": 0,
             }
             old_rank = quality_ranks.get(old.snow_quality, 0)
             new_rank = quality_ranks.get(new.snow_quality, 0)

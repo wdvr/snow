@@ -423,9 +423,11 @@
       "day_ticket_price_max_usd": 59,
       "large_resort": true,
       "ski_in_out": true,
-      "green_runs_pct": 100,
+      "green_runs_pct": 18,
       "family_friendly": true,
-      "vertical_drop_m": 811
+      "vertical_drop_m": 811,
+      "blue_runs_pct": 54,
+      "black_runs_pct": 28
     },
     {
       "resort_id": "blue-mountain-resort-collingwood",
@@ -674,7 +676,10 @@
       "mountain_collective": "2 days",
       "large_resort": true,
       "ski_in_out": true,
-      "vertical_drop_m": 2807
+      "vertical_drop_m": 2807,
+      "green_runs_pct": 20,
+      "blue_runs_pct": 45,
+      "black_runs_pct": 35
     },
     {
       "resort_id": "copper-mountain",
@@ -3285,9 +3290,11 @@
       "epic_pass": "local",
       "large_resort": true,
       "ski_in_out": true,
-      "black_runs_pct": 100,
+      "black_runs_pct": 32,
       "expert_terrain": true,
-      "vertical_drop_m": 825
+      "vertical_drop_m": 825,
+      "green_runs_pct": 10,
+      "blue_runs_pct": 58
     },
     {
       "resort_id": "sunday-river",

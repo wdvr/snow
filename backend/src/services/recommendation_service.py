@@ -71,9 +71,13 @@ class RecommendationService:
 
     # Quality score mapping
     QUALITY_SCORES = {
-        SnowQuality.EXCELLENT: 1.0,
-        SnowQuality.GOOD: 0.8,
-        SnowQuality.FAIR: 0.6,
+        SnowQuality.CHAMPAGNE_POWDER: 1.0,
+        SnowQuality.POWDER_DAY: 0.95,
+        SnowQuality.EXCELLENT: 0.9,
+        SnowQuality.GREAT: 0.8,
+        SnowQuality.GOOD: 0.7,
+        SnowQuality.DECENT: 0.6,
+        SnowQuality.MEDIOCRE: 0.5,
         SnowQuality.POOR: 0.4,
         SnowQuality.BAD: 0.2,
         SnowQuality.HORRIBLE: 0.0,
@@ -410,9 +414,13 @@ class RecommendationService:
                 return 0
 
         ranks = {
-            SnowQuality.EXCELLENT: 6,
-            SnowQuality.GOOD: 5,
-            SnowQuality.FAIR: 4,
+            SnowQuality.CHAMPAGNE_POWDER: 10,
+            SnowQuality.POWDER_DAY: 9,
+            SnowQuality.EXCELLENT: 8,
+            SnowQuality.GREAT: 7,
+            SnowQuality.GOOD: 6,
+            SnowQuality.DECENT: 5,
+            SnowQuality.MEDIOCRE: 4,
             SnowQuality.POOR: 3,
             SnowQuality.BAD: 2,
             SnowQuality.HORRIBLE: 1,
@@ -582,14 +590,16 @@ class RecommendationService:
             best_quality.value if hasattr(best_quality, "value") else str(best_quality)
         )
 
-        if quality_value == "excellent":
+        if quality_value in ("champagne_powder", "powder_day"):
+            parts.append("Outstanding powder conditions")
+        elif quality_value == "excellent":
             parts.append("Excellent powder conditions")
-        elif quality_value == "good":
+        elif quality_value in ("great", "good"):
             parts.append("Good snow conditions")
-        elif quality_value == "fair":
-            parts.append("Fair conditions")
+        elif quality_value == "decent":
+            parts.append("Decent conditions")
         else:
-            parts.append(f"{quality_value.title()} conditions")
+            parts.append(f"{quality_value.replace('_', ' ').title()} conditions")
 
         # Fresh snow
         if avg_fresh_snow >= 10:
@@ -621,12 +631,14 @@ class RecommendationService:
         """Generate reason for global recommendation (no distance)."""
         parts = []
 
-        if best_quality == SnowQuality.EXCELLENT:
+        if best_quality in (SnowQuality.CHAMPAGNE_POWDER, SnowQuality.POWDER_DAY):
+            parts.append("Epic powder conditions")
+        elif best_quality == SnowQuality.EXCELLENT:
             parts.append("Top-rated powder conditions")
-        elif best_quality == SnowQuality.GOOD:
+        elif best_quality in (SnowQuality.GREAT, SnowQuality.GOOD):
             parts.append("Good snow conditions")
-        elif best_quality == SnowQuality.FAIR:
-            parts.append("Fair conditions")
+        elif best_quality == SnowQuality.DECENT:
+            parts.append("Decent conditions")
 
         if avg_fresh_snow >= 15:
             parts.append(f"{avg_fresh_snow:.0f}cm of fresh snow")

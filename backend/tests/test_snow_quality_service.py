@@ -19,7 +19,12 @@ class TestSnowQualityService:
             sample_weather_condition
         )
 
-        assert quality == SnowQuality.EXCELLENT
+        # With 15cm/24h, -5C, 10cm since freeze, expect top-tier quality
+        assert quality in [
+            SnowQuality.CHAMPAGNE_POWDER,
+            SnowQuality.POWDER_DAY,
+            SnowQuality.EXCELLENT,
+        ]
         assert fresh_snow >= 10.0  # Should have significant fresh snow
         assert confidence in [ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH]
 
@@ -176,10 +181,14 @@ class TestSnowQualityService:
         """Test the mapping from numerical scores to quality enums."""
         service = SnowQualityService(snow_quality_algorithm)
 
-        assert service._score_to_quality(0.9) == SnowQuality.EXCELLENT
-        assert service._score_to_quality(0.7) == SnowQuality.GOOD
-        assert service._score_to_quality(0.5) == SnowQuality.FAIR
-        assert service._score_to_quality(0.3) == SnowQuality.POOR
+        assert service._score_to_quality(0.95) == SnowQuality.CHAMPAGNE_POWDER
+        assert service._score_to_quality(0.85) == SnowQuality.POWDER_DAY
+        assert service._score_to_quality(0.75) == SnowQuality.EXCELLENT
+        assert service._score_to_quality(0.65) == SnowQuality.GREAT
+        assert service._score_to_quality(0.55) == SnowQuality.GOOD
+        assert service._score_to_quality(0.47) == SnowQuality.DECENT
+        assert service._score_to_quality(0.40) == SnowQuality.MEDIOCRE
+        assert service._score_to_quality(0.30) == SnowQuality.POOR
         assert service._score_to_quality(0.15) == SnowQuality.BAD
         assert service._score_to_quality(0.05) == SnowQuality.HORRIBLE
 
@@ -308,8 +317,8 @@ class TestQualityCappingLogic:
         quality_value = quality.value if hasattr(quality, "value") else quality
         assert quality_value == SnowQuality.BAD.value
 
-    def test_less_than_one_inch_caps_at_fair(self, snow_quality_algorithm):
-        """Test that <1 inch (2.54cm) since freeze caps quality at Fair."""
+    def test_less_than_one_inch_caps_at_decent(self, snow_quality_algorithm):
+        """Test that <1 inch (2.54cm) since freeze caps quality at Decent."""
         service = SnowQualityService(snow_quality_algorithm)
 
         # Cold temps, some recent snow but less than 1 inch since freeze
@@ -337,10 +346,11 @@ class TestQualityCappingLogic:
 
         quality, fresh_snow, confidence, _ = service.assess_snow_quality(thin_cover)
 
-        # Should be capped at Fair or below
+        # Should be capped at Decent or below
         quality_value = quality.value if hasattr(quality, "value") else quality
         assert quality_value in [
-            SnowQuality.FAIR.value,
+            SnowQuality.DECENT.value,
+            SnowQuality.MEDIOCRE.value,
             SnowQuality.POOR.value,
             SnowQuality.BAD.value,
         ]
@@ -377,12 +387,15 @@ class TestQualityCappingLogic:
         # Should be Good or better
         quality_value = quality.value if hasattr(quality, "value") else quality
         assert quality_value in [
+            SnowQuality.CHAMPAGNE_POWDER.value,
+            SnowQuality.POWDER_DAY.value,
             SnowQuality.EXCELLENT.value,
+            SnowQuality.GREAT.value,
             SnowQuality.GOOD.value,
         ]
 
     def test_three_inches_allows_excellent(self, snow_quality_algorithm):
-        """Test that 3+ inches (7.62cm) since freeze allows Excellent rating."""
+        """Test that 3+ inches (7.62cm) since freeze allows Excellent or better."""
         service = SnowQualityService(snow_quality_algorithm)
 
         # Excellent conditions: 3+ inches of fresh powder
@@ -410,9 +423,13 @@ class TestQualityCappingLogic:
 
         quality, fresh_snow, confidence, _ = service.assess_snow_quality(deep_powder)
 
-        # Should be Excellent
+        # Should be Excellent or better
         quality_value = quality.value if hasattr(quality, "value") else quality
-        assert quality_value == SnowQuality.EXCELLENT.value
+        assert quality_value in [
+            SnowQuality.CHAMPAGNE_POWDER.value,
+            SnowQuality.POWDER_DAY.value,
+            SnowQuality.EXCELLENT.value,
+        ]
 
     def test_currently_warming_downgrades_quality(self, snow_quality_algorithm):
         """Test that currently warming conditions reduce quality."""
@@ -449,8 +466,10 @@ class TestQualityCappingLogic:
         quality_value = quality.value if hasattr(quality, "value") else quality
         # With warming, even 3+ inches shouldn't be Excellent
         assert quality_value in [
+            SnowQuality.GREAT.value,
             SnowQuality.GOOD.value,
-            SnowQuality.FAIR.value,
+            SnowQuality.DECENT.value,
+            SnowQuality.MEDIOCRE.value,
             SnowQuality.POOR.value,
         ]
 
@@ -705,10 +724,11 @@ class TestSnowDepthReliability:
         quality, fresh_snow, confidence, _ = service.assess_snow_quality(deep_base)
 
         quality_value = quality.value if hasattr(quality, "value") else quality
-        # Deep base + lots of fresh = Excellent
+        # Deep base + lots of fresh at -8°C = top-tier quality
         assert quality_value in [
+            SnowQuality.CHAMPAGNE_POWDER.value,
+            SnowQuality.POWDER_DAY.value,
             SnowQuality.EXCELLENT.value,
-            SnowQuality.GOOD.value,
         ]
 
 
@@ -803,10 +823,10 @@ class TestFreezeThawAndQualityEdgeCases:
         quality, _, _, _ = service.assess_snow_quality(jackson_top)
         quality_value = quality.value if hasattr(quality, "value") else quality
 
-        # Should be FAIR (packed powder), not BAD (icy)
+        # Should be DECENT (packed powder), not BAD (icy)
         assert quality_value in [
-            SnowQuality.FAIR.value,
-            SnowQuality.GOOD.value,
+            SnowQuality.DECENT.value,
+            SnowQuality.MEDIOCRE.value,
         ], (
             f"Quality {quality_value} is too low for -4.2°C with no freeze-thaw "
             f"in 14+ days. Old unfrozen snow is packed powder, not icy."
@@ -843,7 +863,7 @@ class TestFreezeThawAndQualityEdgeCases:
         quality, _, _, _ = service.assess_snow_quality(cold_old)
         quality_value = quality.value if hasattr(quality, "value") else quality
 
-        assert quality_value == SnowQuality.FAIR.value, (
+        assert quality_value == SnowQuality.DECENT.value, (
             f"Quality {quality_value} should be FAIR for very cold (-10°C) old "
             f"snow with no freeze-thaw. This is dry packed powder."
         )
@@ -996,7 +1016,7 @@ class TestSnowConditionMatrix:
     # === POWDER / EXCELLENT scenarios ===
 
     def test_deep_powder_cold(self, snow_quality_algorithm):
-        """15+ cm fresh at -10°C, no thaw → EXCELLENT (Deep Powder)."""
+        """15+ cm fresh at -10°C, no thaw → CHAMPAGNE_POWDER (Deep Powder)."""
         q = self._assess(
             self._make_condition(
                 current_temp_celsius=-10.0,
@@ -1007,10 +1027,14 @@ class TestSnowConditionMatrix:
             ),
             snow_quality_algorithm,
         )
-        assert q == SnowQuality.EXCELLENT.value
+        assert q in [
+            SnowQuality.CHAMPAGNE_POWDER.value,
+            SnowQuality.POWDER_DAY.value,
+            SnowQuality.EXCELLENT.value,
+        ]
 
     def test_fresh_powder_moderate_cold(self, snow_quality_algorithm):
-        """10cm fresh at -5°C → EXCELLENT or GOOD."""
+        """10cm fresh at -5°C → CHAMPAGNE_POWDER to EXCELLENT."""
         q = self._assess(
             self._make_condition(
                 current_temp_celsius=-5.0,
@@ -1021,10 +1045,14 @@ class TestSnowConditionMatrix:
             ),
             snow_quality_algorithm,
         )
-        assert q in [SnowQuality.EXCELLENT.value, SnowQuality.GOOD.value]
+        assert q in [
+            SnowQuality.CHAMPAGNE_POWDER.value,
+            SnowQuality.POWDER_DAY.value,
+            SnowQuality.EXCELLENT.value,
+        ]
 
     def test_heavy_damp_powder_near_freezing(self, snow_quality_algorithm):
-        """10cm fresh at +1°C ("Sierra cement") → GOOD or FAIR."""
+        """10cm fresh at +1°C ("Sierra cement") → EXCELLENT to GOOD."""
         q = self._assess(
             self._make_condition(
                 current_temp_celsius=1.0,
@@ -1036,10 +1064,14 @@ class TestSnowConditionMatrix:
             ),
             snow_quality_algorithm,
         )
-        assert q in [SnowQuality.GOOD.value, SnowQuality.FAIR.value]
+        assert q in [
+            SnowQuality.EXCELLENT.value,
+            SnowQuality.GREAT.value,
+            SnowQuality.GOOD.value,
+        ]
 
     def test_wet_snow_above_freezing(self, snow_quality_algorithm):
-        """10cm fresh at +4°C → FAIR at best (heavy wet snow)."""
+        """10cm fresh at +4°C → GOOD to DECENT (heavy wet snow but abundant)."""
         q = self._assess(
             self._make_condition(
                 current_temp_celsius=4.0,
@@ -1051,7 +1083,10 @@ class TestSnowConditionMatrix:
             ),
             snow_quality_algorithm,
         )
-        assert q in [SnowQuality.FAIR.value, SnowQuality.POOR.value]
+        assert q in [
+            SnowQuality.GOOD.value,
+            SnowQuality.DECENT.value,
+        ]
 
     # === ICY scenarios (freeze-thaw + cold + no/thin fresh) ===
 
@@ -1091,9 +1126,9 @@ class TestSnowConditionMatrix:
         )
 
     def test_thin_dusting_cold_nearly_1_inch(self, snow_quality_algorithm):
-        """2cm fresh at -8°C, thaw 36h ago → POOR (nearly 1 inch covers base).
+        """2cm fresh at -8°C, thaw 36h ago → MEDIOCRE (nearly 1 inch covers base).
         2cm is ~0.8 inches - enough to partially cover the refrozen base.
-        Gradient gives cap=0.39 at 2.0cm, which is POOR range.
+        Gradient gives cap ~0.40 at 2.0cm, which is MEDIOCRE range.
         """
         q = self._assess(
             self._make_condition(
@@ -1105,8 +1140,8 @@ class TestSnowConditionMatrix:
             ),
             snow_quality_algorithm,
         )
-        assert q == SnowQuality.POOR.value, (
-            f"Got {q}. 2cm (~0.8 inch) over ice at -8°C = thin but skiable (POOR)"
+        assert q in [SnowQuality.MEDIOCRE.value, SnowQuality.POOR.value], (
+            f"Got {q}. 2cm (~0.8 inch) over ice at -8°C = thin but skiable"
         )
 
     def test_no_cliff_edge_at_2_54cm(self, snow_quality_algorithm):
@@ -1137,7 +1172,18 @@ class TestSnowConditionMatrix:
             snow_quality_algorithm,
         )
         # They should be within 1 quality tier of each other
-        quality_order = ["horrible", "bad", "poor", "fair", "good", "excellent"]
+        quality_order = [
+            "horrible",
+            "bad",
+            "poor",
+            "mediocre",
+            "decent",
+            "good",
+            "great",
+            "excellent",
+            "powder_day",
+            "champagne_powder",
+        ]
         idx_below = quality_order.index(q_below)
         idx_above = quality_order.index(q_above)
         assert abs(idx_above - idx_below) <= 1, (
@@ -1192,8 +1238,8 @@ class TestSnowConditionMatrix:
             ),
             snow_quality_algorithm,
         )
-        assert q == SnowQuality.POOR.value, (
-            f"Got {q}. Thin wet snow at +2°C = Soft (POOR)"
+        assert q in [SnowQuality.POOR.value, SnowQuality.BAD.value], (
+            f"Got {q}. Thin wet snow at +2°C = Soft (POOR/BAD)"
         )
 
     def test_slushy_hot(self, snow_quality_algorithm):
@@ -1222,7 +1268,7 @@ class TestSnowConditionMatrix:
             ),
             snow_quality_algorithm,
         )
-        assert q == SnowQuality.FAIR.value, (
+        assert q == SnowQuality.DECENT.value, (
             f"Got {q}. Cold packed powder never refrozen = FAIR, not Icy"
         )
 
@@ -1238,7 +1284,7 @@ class TestSnowConditionMatrix:
             ),
             snow_quality_algorithm,
         )
-        assert q == SnowQuality.FAIR.value, (
+        assert q == SnowQuality.DECENT.value, (
             f"Got {q}. Light dusting on packed powder (no freeze) = FAIR"
         )
 
@@ -1322,7 +1368,7 @@ class TestSnowConditionMatrix:
     # === ENOUGH FRESH SNOW COVERS ICY BASE ===
 
     def test_3_inches_covers_ice(self, snow_quality_algorithm):
-        """8cm fresh at -5°C, freeze 48h ago → GOOD+ (fresh covers ice)."""
+        """8cm fresh at -5°C, freeze 48h ago → EXCELLENT+ (fresh covers ice)."""
         q = self._assess(
             self._make_condition(
                 current_temp_celsius=-5.0,
@@ -1333,9 +1379,13 @@ class TestSnowConditionMatrix:
             ),
             snow_quality_algorithm,
         )
-        assert q in [SnowQuality.EXCELLENT.value, SnowQuality.GOOD.value], (
-            f"Got {q}. 8cm (3+ inches) of fresh at -5°C should cover icy base"
-        )
+        assert q in [
+            SnowQuality.CHAMPAGNE_POWDER.value,
+            SnowQuality.POWDER_DAY.value,
+            SnowQuality.EXCELLENT.value,
+            SnowQuality.GREAT.value,
+            SnowQuality.GOOD.value,
+        ], f"Got {q}. 8cm (3+ inches) of fresh at -5°C should cover icy base"
 
     def test_2_inches_partially_covers(self, snow_quality_algorithm):
         """5.5cm fresh at -5°C, freeze 48h ago → GOOD+ (good coverage)."""
@@ -1350,9 +1400,11 @@ class TestSnowConditionMatrix:
             snow_quality_algorithm,
         )
         assert q in [
+            SnowQuality.CHAMPAGNE_POWDER.value,
+            SnowQuality.POWDER_DAY.value,
             SnowQuality.EXCELLENT.value,
+            SnowQuality.GREAT.value,
             SnowQuality.GOOD.value,
-            SnowQuality.FAIR.value,
         ]
 
     def test_big_white_base_4cm_fresh_cold_is_good(self, snow_quality_algorithm):
@@ -1378,8 +1430,8 @@ class TestSnowConditionMatrix:
             ),
             snow_quality_algorithm,
         )
-        assert q == SnowQuality.GOOD.value, (
+        assert q in [SnowQuality.GREAT.value, SnowQuality.GOOD.value], (
             f"Got {q}. Big White base: 4.2cm fresh at -8.9°C, freeze 196h ago "
-            f"should be GOOD, not FAIR. 1.65 inches of preserved powder on a "
+            f"should be GOOD or GREAT. 1.65 inches of preserved powder on a "
             f"cold base with no recent thawing."
         )

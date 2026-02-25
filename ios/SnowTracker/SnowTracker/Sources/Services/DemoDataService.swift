@@ -407,7 +407,7 @@ class DemoDataService {
 
         case "lake-louise", "zermatt":
             // Fair conditions
-            quality = .fair
+            quality = .decent
             snowData = (snowfall24h: 3.0, snowfall48h: 7.0, snowfall72h: 10.0, predicted24h: 2.0, predicted48h: 8.0, predicted72h: 15.0, freshSnow: 4.5)
 
         case "jackson-hole":
@@ -417,7 +417,7 @@ class DemoDataService {
 
         default:
             // The Remarkables - mix of conditions
-            quality = elevation.level == .top ? .good : .fair
+            quality = elevation.level == .top ? .good : .decent
             snowData = (snowfall24h: 5.0, snowfall48h: 12.0, snowfall72h: 18.0, predicted24h: 8.0, predicted48h: 15.0, predicted72h: 25.0, freshSnow: 8.0)
         }
 
@@ -464,9 +464,12 @@ class DemoDataService {
         switch quality {
         case .excellent: return "Heavy snow"
         case .good: return "Light snow"
-        case .fair: return "Partly cloudy"
+        case .champagnePowder: return "Cold, clear skies"
+        case .powderDay: return "Heavy snow"
+        case .great: return "Moderate snow"
+        case .decent: return "Partly cloudy"
+        case .mediocre: return "Overcast"
         case .poor: return "Sunny"
-        case .slushy: return "Warm, wet conditions"
         case .bad: return "Rain/snow mix"
         case .horrible: return "Rain"
         case .unknown: return "Conditions unknown"
@@ -475,9 +478,9 @@ class DemoDataService {
 
     private func getConfidenceLevel(_ quality: SnowQuality) -> ConfidenceLevel {
         switch quality {
-        case .excellent, .good: return .high
-        case .fair: return .medium
-        case .poor, .slushy: return .medium
+        case .champagnePowder, .powderDay, .excellent, .great, .good: return .high
+        case .decent, .mediocre: return .medium
+        case .poor: return .medium
         case .bad, .horrible: return .high
         case .unknown: return .low
         }

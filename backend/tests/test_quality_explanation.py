@@ -23,7 +23,7 @@ def _make_condition(**kwargs) -> WeatherCondition:
         "snowfall_24h_cm": 0.0,
         "snowfall_48h_cm": 0.0,
         "snowfall_72h_cm": 0.0,
-        "snow_quality": SnowQuality.FAIR,
+        "snow_quality": SnowQuality.DECENT,
         "data_source": "test",
         "source_confidence": "medium",
     }
@@ -88,13 +88,13 @@ class TestGoodExplanation:
             current_temp_celsius=-5.0,
         )
         explanation = generate_quality_explanation(cond)
-        assert "soft" in explanation.lower() or "rideable" in explanation.lower()
+        assert "solid" in explanation.lower() or "good" in explanation.lower()
 
 
 class TestFairExplanation:
     def test_limited_fresh_snow(self):
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             snowfall_24h_cm=0.0,
             snowfall_after_freeze_cm=8.0,
             hours_since_last_snowfall=96.0,
@@ -105,7 +105,7 @@ class TestFairExplanation:
 
     def test_warming_conditions(self):
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             snowfall_after_freeze_cm=5.0,
             currently_warming=True,
             current_temp_celsius=2.0,
@@ -171,7 +171,7 @@ class TestHorribleExplanation:
 class TestTemperatureExplanation:
     def test_very_cold(self):
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             current_temp_celsius=-18.0,
         )
         explanation = generate_quality_explanation(cond)
@@ -179,7 +179,7 @@ class TestTemperatureExplanation:
 
     def test_cold_preservation(self):
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             current_temp_celsius=-10.0,
         )
         explanation = generate_quality_explanation(cond)
@@ -187,7 +187,7 @@ class TestTemperatureExplanation:
 
     def test_warming_above_zero(self):
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             current_temp_celsius=2.0,
             currently_warming=True,
         )
@@ -201,7 +201,7 @@ class TestTemperatureExplanation:
 class TestBaseDepthExplanation:
     def test_deep_base(self):
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             snow_depth_cm=250.0,
         )
         explanation = generate_quality_explanation(cond)
@@ -210,7 +210,7 @@ class TestBaseDepthExplanation:
 
     def test_solid_base(self):
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             snow_depth_cm=120.0,
         )
         explanation = generate_quality_explanation(cond)
@@ -218,7 +218,7 @@ class TestBaseDepthExplanation:
 
     def test_thin_base(self):
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             snow_depth_cm=30.0,
         )
         explanation = generate_quality_explanation(cond)
@@ -232,7 +232,7 @@ class TestBaseDepthExplanation:
 class TestForecastExplanation:
     def test_heavy_snow_24h(self):
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             predicted_snow_24h_cm=15.0,
         )
         explanation = generate_quality_explanation(cond)
@@ -241,7 +241,7 @@ class TestForecastExplanation:
 
     def test_moderate_snow_48h(self):
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             predicted_snow_48h_cm=12.0,
         )
         explanation = generate_quality_explanation(cond)
@@ -249,7 +249,7 @@ class TestForecastExplanation:
 
     def test_no_snow_forecast(self):
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             predicted_snow_72h_cm=0.0,
         )
         explanation = generate_quality_explanation(cond)
@@ -285,7 +285,7 @@ class TestTimelineExplanation:
 
     def test_warm_temperature(self):
         result = generate_timeline_explanation(
-            quality="fair",
+            quality="decent",
             temperature_c=5.0,
             snowfall_cm=0.0,
             snow_depth_cm=80.0,
@@ -296,7 +296,7 @@ class TestTimelineExplanation:
 
     def test_strong_wind(self):
         result = generate_timeline_explanation(
-            quality="fair",
+            quality="decent",
             temperature_c=-5.0,
             snowfall_cm=0.0,
             snow_depth_cm=100.0,
@@ -388,7 +388,7 @@ class TestOverallExplanation:
         conditions = [
             _make_condition(
                 elevation_level="top",
-                snow_quality=SnowQuality.FAIR,
+                snow_quality=SnowQuality.DECENT,
                 fresh_snow_cm=48.0,
                 current_temp_celsius=-3.0,
                 snow_depth_cm=88.0,
@@ -441,7 +441,7 @@ class TestOverallExplanation:
 
     def test_empty_conditions_returns_none(self):
         """Empty conditions list returns None."""
-        result = generate_overall_explanation([], SnowQuality.FAIR)
+        result = generate_overall_explanation([], SnowQuality.DECENT)
         assert result is None
 
     def test_single_matching_condition(self):
@@ -449,11 +449,11 @@ class TestOverallExplanation:
         conditions = [
             _make_condition(
                 elevation_level="top",
-                snow_quality=SnowQuality.FAIR,
+                snow_quality=SnowQuality.DECENT,
                 fresh_snow_cm=10.0,
             ),
         ]
-        result = generate_overall_explanation(conditions, SnowQuality.FAIR)
+        result = generate_overall_explanation(conditions, SnowQuality.DECENT)
         assert result is not None
         # Should use standard fair explanation
         assert "10cm" in result or "fresh" in result.lower()
@@ -468,7 +468,7 @@ class TestWindVisibilityScoreImpact:
     def test_windy_mentions_score(self):
         """Wind above 25 km/h should say it decreases the score."""
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             wind_speed_kmh=30.0,
         )
         explanation = generate_quality_explanation(cond)
@@ -479,7 +479,7 @@ class TestWindVisibilityScoreImpact:
     def test_strong_wind_mentions_score(self):
         """Strong wind (>40 km/h) should say it lowers the score."""
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             wind_speed_kmh=50.0,
         )
         explanation = generate_quality_explanation(cond)
@@ -491,7 +491,7 @@ class TestWindVisibilityScoreImpact:
     def test_strong_gusts_mention_score(self):
         """Strong gusts (>60 km/h) should say it lowers/lower the score."""
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             wind_gust_kmh=70.0,
         )
         explanation = generate_quality_explanation(cond)
@@ -503,7 +503,7 @@ class TestWindVisibilityScoreImpact:
     def test_low_visibility_mentions_score(self):
         """Low visibility (<1000m) should mention score impact."""
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             visibility_m=800.0,
         )
         explanation = generate_quality_explanation(cond)
@@ -514,7 +514,7 @@ class TestWindVisibilityScoreImpact:
     def test_very_low_visibility_mentions_score(self):
         """Very low visibility (<500m) should mention score impact."""
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             visibility_m=300.0,
         )
         explanation = generate_quality_explanation(cond)
@@ -525,7 +525,7 @@ class TestWindVisibilityScoreImpact:
     def test_no_wind_no_visibility_mention(self):
         """Normal wind and visibility should not mention score impact."""
         cond = _make_condition(
-            snow_quality=SnowQuality.FAIR,
+            snow_quality=SnowQuality.DECENT,
             wind_speed_kmh=15.0,
             visibility_m=5000.0,
         )
@@ -540,7 +540,7 @@ class TestTimelineWindVisibilityScoreImpact:
     def test_timeline_wind_mentions_score(self):
         """Timeline wind >25 should mention score decrease."""
         result = generate_timeline_explanation(
-            quality="fair",
+            quality="decent",
             temperature_c=-5.0,
             snowfall_cm=0.0,
             snow_depth_cm=100.0,
@@ -554,7 +554,7 @@ class TestTimelineWindVisibilityScoreImpact:
     def test_timeline_strong_wind_mentions_score(self):
         """Timeline strong wind >40 should say it lowers the score."""
         result = generate_timeline_explanation(
-            quality="fair",
+            quality="decent",
             temperature_c=-5.0,
             snowfall_cm=0.0,
             snow_depth_cm=100.0,
@@ -568,7 +568,7 @@ class TestTimelineWindVisibilityScoreImpact:
     def test_timeline_gusts_mention_score(self):
         """Timeline strong gusts should mention score impact."""
         result = generate_timeline_explanation(
-            quality="fair",
+            quality="decent",
             temperature_c=-5.0,
             snowfall_cm=0.0,
             snow_depth_cm=100.0,
@@ -583,7 +583,7 @@ class TestTimelineWindVisibilityScoreImpact:
     def test_timeline_low_visibility_mentions_score(self):
         """Timeline low visibility should mention score impact."""
         result = generate_timeline_explanation(
-            quality="fair",
+            quality="decent",
             temperature_c=-5.0,
             snowfall_cm=0.0,
             snow_depth_cm=100.0,

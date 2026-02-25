@@ -35,27 +35,35 @@ final class SnowTrackerTests: XCTestCase {
     // MARK: - SnowQuality Tests
 
     func testSnowQualityDisplayName() {
+        XCTAssertEqual(SnowQuality.champagnePowder.displayName, "Champagne Powder")
+        XCTAssertEqual(SnowQuality.powderDay.displayName, "Powder Day")
         XCTAssertEqual(SnowQuality.excellent.displayName, "Excellent")
+        XCTAssertEqual(SnowQuality.great.displayName, "Great")
         XCTAssertEqual(SnowQuality.good.displayName, "Good")
-        XCTAssertEqual(SnowQuality.fair.displayName, "Fair")
+        XCTAssertEqual(SnowQuality.decent.displayName, "Decent")
+        XCTAssertEqual(SnowQuality.mediocre.displayName, "Mediocre")
         XCTAssertEqual(SnowQuality.poor.displayName, "Poor")
-        XCTAssertEqual(SnowQuality.slushy.displayName, "Slushy")
         XCTAssertEqual(SnowQuality.bad.displayName, "Bad")
+        XCTAssertEqual(SnowQuality.horrible.displayName, "Horrible")
         XCTAssertEqual(SnowQuality.unknown.displayName, "Unknown")
     }
 
     func testSnowQualityIcon() {
+        XCTAssertEqual(SnowQuality.champagnePowder.icon, "sparkles")
+        XCTAssertEqual(SnowQuality.powderDay.icon, "snowflake.circle")
         XCTAssertEqual(SnowQuality.excellent.icon, "snowflake")
-        XCTAssertEqual(SnowQuality.good.icon, "cloud.snow")
-        XCTAssertEqual(SnowQuality.fair.icon, "cloud")
-        XCTAssertEqual(SnowQuality.poor.icon, "cloud")
-        XCTAssertEqual(SnowQuality.slushy.icon, "drop.fill")
+        XCTAssertEqual(SnowQuality.great.icon, "cloud.snow")
+        XCTAssertEqual(SnowQuality.good.icon, "sun.max")
+        XCTAssertEqual(SnowQuality.decent.icon, "cloud.sun")
+        XCTAssertEqual(SnowQuality.mediocre.icon, "cloud")
+        XCTAssertEqual(SnowQuality.poor.icon, "cloud.sleet")
         XCTAssertEqual(SnowQuality.bad.icon, "exclamationmark.triangle")
+        XCTAssertEqual(SnowQuality.horrible.icon, "xmark.octagon.fill")
         XCTAssertEqual(SnowQuality.unknown.icon, "questionmark.circle")
     }
 
     func testSnowQualityDescription() {
-        XCTAssertEqual(SnowQuality.excellent.description, "Fresh powder, perfect conditions")
+        XCTAssertEqual(SnowQuality.excellent.description, "Fresh powder, excellent conditions")
         XCTAssertEqual(SnowQuality.unknown.description, "Conditions unknown")
     }
 
@@ -207,7 +215,7 @@ final class SnowTrackerTests: XCTestCase {
             visibilityM: nil,
             minVisibility24hM: nil,
             weatherDescription: nil,
-            snowQuality: .fair,
+            snowQuality: .decent,
             qualityScore: nil,
             confidenceLevel: .medium,
             freshSnowCm: 0.0,
@@ -534,7 +542,7 @@ final class SnowTrackerTests: XCTestCase {
 
     func testMapFilterOptionExcellent() {
         let excellentFilter = MapFilterOption.excellent
-        XCTAssertEqual(excellentFilter.qualities, [.excellent])
+        XCTAssertEqual(excellentFilter.qualities, [.champagnePowder, .powderDay, .excellent])
     }
 
     func testMapFilterOptionPoor() {
@@ -1249,7 +1257,8 @@ final class SnowTrackerTests: XCTestCase {
         let summary = try JSONDecoder().decode(ElevationConditionSummary.self, from: data)
 
         XCTAssertEqual(summary.quality, "fair")
-        XCTAssertEqual(summary.snowQuality, .fair)
+        // "fair" maps to .decent via backward compatibility
+        XCTAssertEqual(summary.snowQuality, .decent)
         XCTAssertEqual(summary.freshSnowCm, 0.0)
     }
 

@@ -1604,7 +1604,7 @@ async def get_user_preferences(
                     "distance": "metric",
                     "snow_depth": "cm",
                 },
-                quality_threshold="fair",
+                quality_threshold="decent",
                 created_at=datetime.now(UTC).isoformat(),
                 updated_at=datetime.now(UTC).isoformat(),
             )

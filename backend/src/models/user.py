@@ -48,8 +48,8 @@ class UserPreferences(BaseModel):
         description="User preferred units",
     )
     quality_threshold: str = Field(
-        default="fair",
-        description="Minimum snow quality to trigger alerts (excellent, good, fair, poor)",
+        default="decent",
+        description="Minimum snow quality to trigger alerts",
     )
     created_at: str = Field(
         ..., description="ISO timestamp when preferences were created"

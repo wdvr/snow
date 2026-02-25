@@ -591,23 +591,27 @@ class TestColdAccumulationBoost:
 
 
 class TestRawScoreToQuality:
-    def test_highest_is_excellent(self):
-        assert raw_score_to_quality(6.0) == SnowQuality.EXCELLENT
+    def test_highest_is_champagne_powder(self):
+        assert raw_score_to_quality(6.0) == SnowQuality.CHAMPAGNE_POWDER
 
     def test_lowest_is_horrible(self):
         assert raw_score_to_quality(1.0) == SnowQuality.HORRIBLE
 
     def test_monotonic_ordering(self):
         """Higher scores should map to better or equal qualities."""
-        scores = [1.0, 1.5, 2.5, 3.5, 4.5, 5.5, 6.0]
+        scores = [1.0, 1.4, 2.3, 2.9, 3.3, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0]
         qualities = [raw_score_to_quality(s) for s in scores]
         quality_order = {
             SnowQuality.HORRIBLE: 0,
             SnowQuality.BAD: 1,
             SnowQuality.POOR: 2,
-            SnowQuality.FAIR: 3,
-            SnowQuality.GOOD: 4,
-            SnowQuality.EXCELLENT: 5,
+            SnowQuality.MEDIOCRE: 3,
+            SnowQuality.DECENT: 4,
+            SnowQuality.GOOD: 5,
+            SnowQuality.GREAT: 6,
+            SnowQuality.EXCELLENT: 7,
+            SnowQuality.POWDER_DAY: 8,
+            SnowQuality.CHAMPAGNE_POWDER: 9,
         }
         orders = [quality_order[q] for q in qualities]
         assert orders == sorted(orders)

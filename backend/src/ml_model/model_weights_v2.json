@@ -18830,11 +18830,15 @@
     ]
   },
   "quality_thresholds": {
-    "excellent": 5.2,
-    "good": 4.2,
-    "fair": 3.4,
-    "poor": 2.5,
-    "bad": 1.5,
+    "champagne_powder": 5.5,
+    "powder_day": 5.0,
+    "excellent": 4.5,
+    "great": 4.0,
+    "good": 3.5,
+    "decent": 3.3,
+    "mediocre": 2.9,
+    "poor": 2.3,
+    "bad": 1.4,
     "horrible": 0.0
   },
   "training_config": {

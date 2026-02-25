@@ -170,8 +170,8 @@ class SnowQualityService:
                 adjusted_score = min(adjusted_score, 0.15)
             elif snow_depth < 50:
                 # Thin cover (20-50cm/8-20") - adequate but not ideal
-                # Cap at FAIR - conditions are skiable but marginal
-                adjusted_score = min(adjusted_score, 0.45)
+                # Cap at DECENT - conditions are skiable but marginal
+                adjusted_score = min(adjusted_score, 0.47)
             elif snow_depth >= 100:
                 # Deep base (100cm+/40"+) - excellent coverage
                 # Boost score slightly for deep powder base
@@ -181,16 +181,16 @@ class SnowQualityService:
             # even if conditions are degraded (warm, icy, no fresh snow).
             # 50+cm confirmed base should never be HORRIBLE (not skiable).
             if snow_depth >= 50:
-                adjusted_score = max(adjusted_score, 0.20)  # At least POOR
+                adjusted_score = max(adjusted_score, 0.27)  # At least POOR
 
         # Apply gradual degradation for warm temps (but don't go to HORRIBLE)
         # Warm temps mean softer snow, but skiing is still possible with base
         if current_temp >= 10.0:
             # Warm spring-like conditions - cap at POOR
-            adjusted_score = min(adjusted_score, 0.25)
+            adjusted_score = min(adjusted_score, 0.27)
         elif current_temp >= 5.0:
-            # Moderately warm - cap at FAIR (conditions are degrading but skiable)
-            adjusted_score = min(adjusted_score, 0.45)
+            # Moderately warm - cap at DECENT (conditions are degrading but skiable)
+            adjusted_score = min(adjusted_score, 0.47)
 
         # Fresh powder assessment - affects quality but not skiability
         # No fresh snow = harder/icier surface, but still skiable
@@ -202,21 +202,21 @@ class SnowQualityService:
                 # This is packed/groomed powder, not icy.
                 if current_temp <= 0:
                     # Below freezing, never refrozen - cold packed powder
-                    adjusted_score = min(adjusted_score, 0.45)  # FAIR
+                    adjusted_score = min(adjusted_score, 0.47)  # DECENT
                 else:
                     # Above freezing - softening old snow
-                    adjusted_score = min(adjusted_score, 0.25)  # POOR
+                    adjusted_score = min(adjusted_score, 0.27)  # POOR
             else:
                 # Recent freeze-thaw occurred - snow texture depends on temp
                 # Use smooth gradient around 0°C instead of hard cutoff
-                if current_temp > 2.0:
+                if current_temp >= 2.0:
                     # Clearly above freezing = SOFT/SLUSHY
-                    adjusted_score = min(adjusted_score, 0.25)  # POOR
+                    adjusted_score = min(adjusted_score, 0.27)  # POOR
                 elif current_temp > 0.0:
                     # Transition zone (0-2°C): blend between icy and soft
-                    # Linear interpolation: 0°C→0.15 (BAD), 2°C→0.25 (POOR)
+                    # Linear interpolation: 0°C→0.15 (BAD), 2°C→0.27 (POOR)
                     blend = current_temp / 2.0
-                    cap = 0.15 + blend * 0.10
+                    cap = 0.15 + blend * 0.12
                     adjusted_score = min(adjusted_score, cap)
                 else:
                     # Below freezing = HARD/ICY (frozen after thaw)
@@ -224,31 +224,33 @@ class SnowQualityService:
         elif snowfall_after_freeze < 5.08:  # Less than 2 inches
             # Thin-to-moderate fresh snow on a base - use smooth gradient.
             # Old code had a cliff at 2.54cm: <2.54→BAD, >=2.54→EXCELLENT.
-            # Fix: continuous gradient from BAD at 0cm through FAIR at 2.54cm
+            # Fix: continuous gradient from BAD at 0cm through DECENT at 2.54cm
             # to GOOD at 5.08cm, eliminating quality jumps from tiny differences.
             if last_freeze_hours is not None and last_freeze_hours < 336:
                 # Recent freeze-thaw: fresh snow gradually covers refrozen base
                 if snowfall_after_freeze < 2.54:
-                    # 0-1 inch: BAD→FAIR gradient
+                    # 0-1 inch: BAD→DECENT gradient
                     blend = snowfall_after_freeze / 2.54
                     if current_temp <= 0:
-                        cap = 0.15 + blend * 0.30  # 0→0.15(BAD), 2.54→0.45(FAIR)
+                        cap = 0.15 + blend * 0.32  # 0→0.15(BAD), 2.54→0.47(DECENT)
                     else:
-                        cap = 0.20 + blend * 0.10  # 0→0.20(POOR), 2.54→0.30(POOR)
+                        cap = 0.20 + blend * 0.12  # 0→0.20(BAD), 2.54→0.32(POOR)
                 else:
-                    # 1-2 inches: FAIR→GOOD gradient
+                    # 1-2 inches: DECENT→GOOD gradient
                     blend = (snowfall_after_freeze - 2.54) / (5.08 - 2.54)
                     if current_temp <= 0:
-                        cap = 0.45 + blend * 0.25  # 2.54→0.45(FAIR), 5.08→0.70(GOOD)
+                        cap = (
+                            0.47 + blend * 0.23
+                        )  # 2.54→0.47(DECENT), 5.08→0.70(EXCELLENT)
                     else:
-                        cap = 0.30 + blend * 0.15  # 2.54→0.30(POOR), 5.08→0.45(FAIR)
+                        cap = 0.32 + blend * 0.15  # 2.54→0.32(POOR), 5.08→0.47(DECENT)
                 adjusted_score = min(adjusted_score, cap)
             else:
                 # No recent freeze: fresh on packed powder base
                 if current_temp <= 0:
-                    adjusted_score = min(adjusted_score, 0.45)  # FAIR
+                    adjusted_score = min(adjusted_score, 0.47)  # DECENT
                 else:
-                    adjusted_score = min(adjusted_score, 0.25)  # POOR (Soft)
+                    adjusted_score = min(adjusted_score, 0.27)  # POOR (Soft)
 
         # Determine quality level
         snow_quality = self._score_to_quality(adjusted_score)
@@ -440,23 +442,35 @@ class SnowQualityService:
     def _score_to_quality(self, score: float) -> SnowQuality:
         """Convert numerical score to snow quality enum.
 
-        Thresholds:
-        - >= 0.8: EXCELLENT (3+ inches fresh powder)
-        - >= 0.6: GOOD (2-3 inches)
-        - >= 0.4: FAIR (1-2 inches)
-        - >= 0.2: POOR (<1 inch)
-        - >= 0.1: BAD (icy, no fresh snow)
-        - < 0.1: HORRIBLE (not skiable, melting)
+        Thresholds (heuristic 0.0-1.0 scale):
+        - >= 0.90: CHAMPAGNE_POWDER
+        - >= 0.80: POWDER_DAY
+        - >= 0.70: EXCELLENT
+        - >= 0.60: GREAT
+        - >= 0.50: GOOD
+        - >= 0.46: DECENT
+        - >= 0.38: MEDIOCRE
+        - >= 0.26: POOR
+        - >= 0.10: BAD
+        - < 0.10: HORRIBLE
         """
-        if score >= 0.8:
+        if score >= 0.90:
+            return SnowQuality.CHAMPAGNE_POWDER
+        elif score >= 0.80:
+            return SnowQuality.POWDER_DAY
+        elif score >= 0.70:
             return SnowQuality.EXCELLENT
-        elif score >= 0.6:
+        elif score >= 0.60:
+            return SnowQuality.GREAT
+        elif score >= 0.50:
             return SnowQuality.GOOD
-        elif score >= 0.4:
-            return SnowQuality.FAIR
-        elif score >= 0.2:
+        elif score >= 0.46:
+            return SnowQuality.DECENT
+        elif score >= 0.38:
+            return SnowQuality.MEDIOCRE
+        elif score >= 0.26:
             return SnowQuality.POOR
-        elif score >= 0.1:
+        elif score >= 0.10:
             return SnowQuality.BAD
         else:
             return SnowQuality.HORRIBLE
@@ -617,9 +631,13 @@ class SnowQualityService:
         with excellent upper mountain conditions.
         """
         quality_scores = {
-            SnowQuality.EXCELLENT: 6,
-            SnowQuality.GOOD: 5,
-            SnowQuality.FAIR: 4,
+            SnowQuality.CHAMPAGNE_POWDER: 10,
+            SnowQuality.POWDER_DAY: 9,
+            SnowQuality.EXCELLENT: 8,
+            SnowQuality.GREAT: 7,
+            SnowQuality.GOOD: 6,
+            SnowQuality.DECENT: 5,
+            SnowQuality.MEDIOCRE: 4,
             SnowQuality.POOR: 3,
             SnowQuality.BAD: 2,
             SnowQuality.HORRIBLE: 1,
@@ -650,12 +668,20 @@ class SnowQualityService:
 
         avg_score = weighted_score / total_weight if total_weight > 0 else 0
 
-        if avg_score >= 5.5:
+        if avg_score >= 9.5:
+            return SnowQuality.CHAMPAGNE_POWDER
+        elif avg_score >= 8.5:
+            return SnowQuality.POWDER_DAY
+        elif avg_score >= 7.5:
             return SnowQuality.EXCELLENT
-        elif avg_score >= 4.5:
+        elif avg_score >= 6.5:
+            return SnowQuality.GREAT
+        elif avg_score >= 5.5:
             return SnowQuality.GOOD
+        elif avg_score >= 4.5:
+            return SnowQuality.DECENT
         elif avg_score >= 3.5:
-            return SnowQuality.FAIR
+            return SnowQuality.MEDIOCRE
         elif avg_score >= 2.5:
             return SnowQuality.POOR
         elif avg_score >= 1.5:

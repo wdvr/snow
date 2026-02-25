@@ -74,11 +74,15 @@ def get_quality_thresholds() -> dict[str, float]:
     if model and "quality_thresholds" in model:
         return model["quality_thresholds"]
     return {
-        "excellent": 5.5,
-        "good": 4.5,
-        "fair": 3.5,
-        "poor": 2.5,
-        "bad": 1.5,
+        "champagne_powder": 5.5,
+        "powder_day": 5.0,
+        "excellent": 4.5,
+        "great": 4.0,
+        "good": 3.5,
+        "decent": 3.3,
+        "mediocre": 2.9,
+        "poor": 2.3,
+        "bad": 1.4,
         "horrible": 0.0,
     }
 
@@ -86,15 +90,23 @@ def get_quality_thresholds() -> dict[str, float]:
 def raw_score_to_quality(score: float) -> SnowQuality:
     """Convert a raw ML score to a SnowQuality enum using model thresholds."""
     t = get_quality_thresholds()
-    if score >= t["excellent"]:
+    if score >= t.get("champagne_powder", 5.5):
+        return SnowQuality.CHAMPAGNE_POWDER
+    elif score >= t.get("powder_day", 5.0):
+        return SnowQuality.POWDER_DAY
+    elif score >= t.get("excellent", 4.5):
         return SnowQuality.EXCELLENT
-    elif score >= t["good"]:
+    elif score >= t.get("great", 4.0):
+        return SnowQuality.GREAT
+    elif score >= t.get("good", 3.5):
         return SnowQuality.GOOD
-    elif score >= t["fair"]:
-        return SnowQuality.FAIR
-    elif score >= t["poor"]:
+    elif score >= t.get("decent", 3.3):
+        return SnowQuality.DECENT
+    elif score >= t.get("mediocre", 2.9):
+        return SnowQuality.MEDIOCRE
+    elif score >= t.get("poor", 2.3):
         return SnowQuality.POOR
-    elif score >= t["bad"]:
+    elif score >= t.get("bad", 1.4):
         return SnowQuality.BAD
     else:
         return SnowQuality.HORRIBLE
@@ -839,15 +851,23 @@ def predict_quality(
 
     # Map to quality
     thresholds = model["quality_thresholds"]
-    if score >= thresholds["excellent"]:
+    if score >= thresholds.get("champagne_powder", 5.5):
+        quality = SnowQuality.CHAMPAGNE_POWDER
+    elif score >= thresholds.get("powder_day", 5.0):
+        quality = SnowQuality.POWDER_DAY
+    elif score >= thresholds.get("excellent", 4.5):
         quality = SnowQuality.EXCELLENT
-    elif score >= thresholds["good"]:
+    elif score >= thresholds.get("great", 4.0):
+        quality = SnowQuality.GREAT
+    elif score >= thresholds.get("good", 3.5):
         quality = SnowQuality.GOOD
-    elif score >= thresholds["fair"]:
-        quality = SnowQuality.FAIR
-    elif score >= thresholds["poor"]:
+    elif score >= thresholds.get("decent", 3.3):
+        quality = SnowQuality.DECENT
+    elif score >= thresholds.get("mediocre", 2.9):
+        quality = SnowQuality.MEDIOCRE
+    elif score >= thresholds.get("poor", 2.3):
         quality = SnowQuality.POOR
-    elif score >= thresholds["bad"]:
+    elif score >= thresholds.get("bad", 1.4):
         quality = SnowQuality.BAD
     else:
         quality = SnowQuality.HORRIBLE
@@ -922,15 +942,23 @@ def predict_quality_at_hour(
     score = max(1.0, min(6.0, score))
 
     thresholds = model["quality_thresholds"]
-    if score >= thresholds["excellent"]:
+    if score >= thresholds.get("champagne_powder", 5.5):
+        quality = SnowQuality.CHAMPAGNE_POWDER
+    elif score >= thresholds.get("powder_day", 5.0):
+        quality = SnowQuality.POWDER_DAY
+    elif score >= thresholds.get("excellent", 4.5):
         quality = SnowQuality.EXCELLENT
-    elif score >= thresholds["good"]:
+    elif score >= thresholds.get("great", 4.0):
+        quality = SnowQuality.GREAT
+    elif score >= thresholds.get("good", 3.5):
         quality = SnowQuality.GOOD
-    elif score >= thresholds["fair"]:
-        quality = SnowQuality.FAIR
-    elif score >= thresholds["poor"]:
+    elif score >= thresholds.get("decent", 3.3):
+        quality = SnowQuality.DECENT
+    elif score >= thresholds.get("mediocre", 2.9):
+        quality = SnowQuality.MEDIOCRE
+    elif score >= thresholds.get("poor", 2.3):
         quality = SnowQuality.POOR
-    elif score >= thresholds["bad"]:
+    elif score >= thresholds.get("bad", 1.4):
         quality = SnowQuality.BAD
     else:
         quality = SnowQuality.HORRIBLE

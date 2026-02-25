@@ -99,7 +99,7 @@ struct ConditionsView: View {
             HStack(spacing: 16) {
                 qualityCountBadge(quality: .excellent)
                 qualityCountBadge(quality: .good)
-                qualityCountBadge(quality: .fair)
+                qualityCountBadge(quality: .decent)
                 qualityCountBadge(quality: .poor)
             }
         }

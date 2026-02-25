@@ -106,7 +106,7 @@ class TestDailyHistoryService:
             temp_min_c=-3.0,
             temp_max_c=2.0,
             quality_score=None,
-            snow_quality="fair",
+            snow_quality="decent",
         )
 
         assert result is True
@@ -131,7 +131,7 @@ class TestDailyHistoryService:
             temp_min_c=-3.0,
             temp_max_c=2.0,
             quality_score=None,
-            snow_quality="fair",
+            snow_quality="decent",
         )
 
         assert result is False
@@ -258,7 +258,7 @@ class TestDailyHistoryService:
                 "snowfall_24h_cm": Decimal("3.0"),
                 "temp_min_c": Decimal("-5.0"),
                 "temp_max_c": Decimal("1.0"),
-                "snow_quality": "fair",
+                "snow_quality": "decent",
                 "updated_at": "2026-02-20T12:00:00+00:00",
             },
         ]

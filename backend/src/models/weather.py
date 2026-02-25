@@ -21,11 +21,17 @@ class ConfidenceLevel(str, Enum):
 class SnowQuality(str, Enum):
     """Snow condition quality levels."""
 
-    EXCELLENT = "excellent"  # Fresh powder, 3+ inches since freeze
-    GOOD = "good"  # Good coverage, 2-3 inches since freeze
-    FAIR = "fair"  # Some fresh, 1-2 inches since freeze
-    POOR = "poor"  # Thin cover, <1 inch since freeze
-    BAD = "bad"  # Icy, no fresh snow since freeze
+    CHAMPAGNE_POWDER = (
+        "champagne_powder"  # Ultra-light dry powder, deep fresh, cold + no wind
+    )
+    POWDER_DAY = "powder_day"  # Deep fresh powder with excellent preservation
+    EXCELLENT = "excellent"  # Fresh powder with cold temperatures
+    GREAT = "great"  # Good coverage of recent snow, no ice
+    GOOD = "good"  # Solid conditions with fresh snow on good base
+    DECENT = "decent"  # Some fresh snow on older base, thin crust possible
+    MEDIOCRE = "mediocre"  # Limited fresh snow, aging surface, firm conditions
+    POOR = "poor"  # Thin cover over refrozen base, hard packed
+    BAD = "bad"  # Icy, no fresh snow on icy base
     HORRIBLE = "horrible"  # Not skiable, no snow cover or actively melting
     UNKNOWN = "unknown"  # Insufficient data
 
@@ -34,34 +40,54 @@ class SnowQuality(str, Enum):
 # Quality is based on "non-refrozen snow" - snow that hasn't been through a freeze-thaw cycle
 # Ice forms when: 3h at +3°C, 6h at +2°C, or 8h at +1°C
 SNOW_QUALITY_EXPLANATIONS: dict[SnowQuality, dict[str, str]] = {
-    SnowQuality.EXCELLENT: {
-        "title": "Excellent - Fresh Powder",
-        "description": "Deep fresh powder with no recent thaw-freeze events. Great conditions for all types of skiing.",
-        "criteria": "High ML score from abundant fresh snow, cold temps, and no recent thaw-freeze",
+    SnowQuality.CHAMPAGNE_POWDER: {
+        "title": "Champagne Powder",
+        "description": "Ultra-light, dry powder — the best snow on earth. Deep fresh snow with cold temps and no wind.",
+        "criteria": "Top ML score from deep fresh snow, very cold temps, low wind, no thaw-freeze",
     },
-    SnowQuality.GOOD: {
-        "title": "Good - Soft Surface",
-        "description": "Good coverage of non-refrozen snow. Surface hasn't iced over. Enjoyable skiing on and off-piste.",
+    SnowQuality.POWDER_DAY: {
+        "title": "Powder Day",
+        "description": "Deep fresh powder with excellent preservation. Multiple inches of new snow since last thaw-freeze.",
+        "criteria": "Very high ML score from abundant fresh snow, cold temps, and no recent thaw-freeze",
+    },
+    SnowQuality.EXCELLENT: {
+        "title": "Excellent",
+        "description": "Fresh powder with cold temperatures. Great conditions for all types of skiing.",
+        "criteria": "High ML score from fresh snow, cold temps, and no recent thaw-freeze",
+    },
+    SnowQuality.GREAT: {
+        "title": "Great",
+        "description": "Good coverage of recent snow. Surface hasn't iced over. Enjoyable skiing on and off-piste.",
         "criteria": "Strong ML score from fresh snow, stable cold temps, limited warming",
     },
-    SnowQuality.FAIR: {
-        "title": "Fair - Some Fresh",
+    SnowQuality.GOOD: {
+        "title": "Good",
+        "description": "Solid conditions with fresh snow on a good base. Groomed runs in excellent shape.",
+        "criteria": "Good ML score from decent fresh snow coverage and cold temps",
+    },
+    SnowQuality.DECENT: {
+        "title": "Decent",
         "description": "Some fresh snow on top of older base. May have thin crust in places. Groomed runs in good shape.",
         "criteria": "Moderate ML score — some fresh snow but aging, or mild warming trends",
     },
+    SnowQuality.MEDIOCRE: {
+        "title": "Mediocre",
+        "description": "Limited fresh snow, aging surface. Firm, groomed-type conditions. Stick to prepared runs.",
+        "criteria": "Below-average ML score — limited fresh snow, firm conditions",
+    },
     SnowQuality.POOR: {
-        "title": "Poor - Thin Cover",
-        "description": "Limited fresh snow since last ice event. Harder surface with some soft spots.",
+        "title": "Poor",
+        "description": "Thin cover over refrozen base. Hard packed surface with minimal fresh snow.",
         "criteria": "Low ML score — minimal fresh snow after thaw-freeze, or surface aging",
     },
     SnowQuality.BAD: {
-        "title": "Icy - Refrozen",
-        "description": "No fresh snow on top of icy base. Recent warm periods have created hard, refrozen surface. Challenging conditions.",
+        "title": "Icy",
+        "description": "No fresh snow on icy base. Recent thaw-freeze created hard, refrozen surface.",
         "criteria": "Very low ML score — recent thaw-freeze with no fresh snow to cover ice",
     },
     SnowQuality.HORRIBLE: {
         "title": "Not Skiable",
-        "description": "Dangerous conditions. No snow cover, actively melting, or exposed rocks/grass. Resort may be closed or limited.",
+        "description": "Dangerous conditions. No snow cover, actively melting, or exposed rocks/grass.",
         "criteria": "Minimal ML score — no skiable snow, warm temps melting remaining cover",
     },
     SnowQuality.UNKNOWN: {

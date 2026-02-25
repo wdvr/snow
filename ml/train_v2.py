@@ -394,15 +394,23 @@ def normalize_features(X):
 
 
 def score_to_quality(score):
-    if score >= 5.2:
+    if score >= 5.5:
+        return "champagne_powder"
+    elif score >= 5.0:
+        return "powder_day"
+    elif score >= 4.5:
         return "excellent"
-    elif score >= 4.2:
+    elif score >= 4.0:
+        return "great"
+    elif score >= 3.5:
         return "good"
-    elif score >= 3.4:
-        return "fair"
-    elif score >= 2.5:
+    elif score >= 3.3:
+        return "decent"
+    elif score >= 2.9:
+        return "mediocre"
+    elif score >= 2.3:
         return "poor"
-    elif score >= 1.5:
+    elif score >= 1.4:
         return "bad"
     else:
         return "horrible"
@@ -421,7 +429,18 @@ def evaluate(y_true, y_pred, metadata, report_file=None):
         y_true
     )
 
-    quality_order = ["horrible", "bad", "poor", "fair", "good", "excellent"]
+    quality_order = [
+        "horrible",
+        "bad",
+        "poor",
+        "mediocre",
+        "decent",
+        "good",
+        "great",
+        "excellent",
+        "powder_day",
+        "champagne_powder",
+    ]
     within_1 = sum(
         1
         for t, p in zip(true_quality, pred_quality)
@@ -497,32 +516,51 @@ def optimize_thresholds(y_true, y_pred):
     for TRUE labels, and optimized thresholds for PREDICTED labels.
     Constraint: must maintain 100% within-1 accuracy.
     """
-    quality_order = ["horrible", "bad", "poor", "fair", "good", "excellent"]
+    quality_order = [
+        "horrible",
+        "bad",
+        "poor",
+        "mediocre",
+        "decent",
+        "good",
+        "great",
+        "excellent",
+        "powder_day",
+        "champagne_powder",
+    ]
 
-    def score_to_quality_custom(score, exc_t, good_t, fair_t):
-        if score >= exc_t:
+    def score_to_quality_custom(score, exc_t, good_t, decent_t):
+        if score >= 5.5:
+            return "champagne_powder"
+        elif score >= 5.0:
+            return "powder_day"
+        elif score >= exc_t:
             return "excellent"
+        elif score >= 4.0:
+            return "great"
         elif score >= good_t:
             return "good"
-        elif score >= fair_t:
-            return "fair"
-        elif score >= 2.5:
+        elif score >= decent_t:
+            return "decent"
+        elif score >= 2.9:
+            return "mediocre"
+        elif score >= 2.3:
             return "poor"
-        elif score >= 1.5:
+        elif score >= 1.4:
             return "bad"
         else:
             return "horrible"
 
     best_accuracy = 0
-    best_thresholds = (5.5, 4.5, 3.5)
+    best_thresholds = (4.5, 3.5, 3.3)
     true_quality = [score_to_quality(s) for s in y_true]
 
     # Search over threshold grid
-    for exc_t in np.arange(5.0, 5.6, 0.05):
-        for good_t in np.arange(4.0, 4.6, 0.05):
-            for fair_t in np.arange(3.0, 3.6, 0.05):
+    for exc_t in np.arange(4.2, 4.8, 0.05):
+        for good_t in np.arange(3.2, 3.8, 0.05):
+            for decent_t in np.arange(3.0, 3.5, 0.05):
                 pred_quality = [
-                    score_to_quality_custom(s, exc_t, good_t, fair_t) for s in y_pred
+                    score_to_quality_custom(s, exc_t, good_t, decent_t) for s in y_pred
                 ]
                 accuracy = sum(
                     1 for t, p in zip(true_quality, pred_quality) if t == p
@@ -538,12 +576,12 @@ def optimize_thresholds(y_true, y_pred):
                     best_thresholds = (
                         round(exc_t, 2),
                         round(good_t, 2),
-                        round(fair_t, 2),
+                        round(decent_t, 2),
                     )
 
     print(
         f"\nOptimal thresholds: excellent={best_thresholds[0]}, "
-        f"good={best_thresholds[1]}, fair={best_thresholds[2]}"
+        f"good={best_thresholds[1]}, decent={best_thresholds[2]}"
     )
     print(f"Asymmetric accuracy: {best_accuracy:.1%}")
     return best_thresholds, best_accuracy
@@ -579,7 +617,18 @@ def train_model(
     if seeds is None:
         seeds = list(range(7, 2000, 123))[:16]  # 16 seeds for wider search
 
-    quality_order = ["horrible", "bad", "poor", "fair", "good", "excellent"]
+    quality_order = [
+        "horrible",
+        "bad",
+        "poor",
+        "mediocre",
+        "decent",
+        "good",
+        "great",
+        "excellent",
+        "powder_day",
+        "champagne_powder",
+    ]
     n_features = X_train.shape[1]
     best_score = float("inf")
     best_val_mae = float("inf")
@@ -730,7 +779,18 @@ def train_model(
 
 def evaluate_by_source(y_true, y_pred, metadata):
     """Evaluate model performance broken down by data source."""
-    quality_order = ["horrible", "bad", "poor", "fair", "good", "excellent"]
+    quality_order = [
+        "horrible",
+        "bad",
+        "poor",
+        "mediocre",
+        "decent",
+        "good",
+        "great",
+        "excellent",
+        "powder_day",
+        "champagne_powder",
+    ]
     sources = set(m.get("source", "real") for m in metadata)
     results = {}
     for src in sorted(sources):

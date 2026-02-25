@@ -42,9 +42,9 @@ struct ResortAnnotation: Identifiable, Hashable {
 
 enum MapFilterOption: String, CaseIterable, Identifiable {
     case all = "All"
-    case excellent = "Excellent"
-    case good = "Good"
-    case fair = "Fair"
+    case excellent = "Excellent+"
+    case good = "Good+"
+    case decent = "Decent"
     case poor = "Poor & Below"
 
     var id: String { rawValue }
@@ -54,13 +54,13 @@ enum MapFilterOption: String, CaseIterable, Identifiable {
         case .all:
             return SnowQuality.allCases
         case .excellent:
-            return [.excellent]
+            return [.champagnePowder, .powderDay, .excellent]
         case .good:
-            return [.good]
-        case .fair:
-            return [.fair]
+            return [.great, .good]
+        case .decent:
+            return [.decent, .mediocre]
         case .poor:
-            return [.poor, .slushy, .bad, .horrible]
+            return [.poor, .bad, .horrible]
         }
     }
 
@@ -69,7 +69,7 @@ enum MapFilterOption: String, CaseIterable, Identifiable {
         case .all: return .blue
         case .excellent: return .green
         case .good: return Color(.systemGreen)
-        case .fair: return .orange
+        case .decent: return .orange
         case .poor: return .red
         }
     }

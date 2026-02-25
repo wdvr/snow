@@ -831,7 +831,7 @@ class TestWeatherProcessorHandler:
                 "error": None,
                 "level": "mid",
                 "weather_condition": SimpleNamespace(
-                    snow_quality=SimpleNamespace(value="fair"),
+                    snow_quality=SimpleNamespace(value="decent"),
                     fresh_snow_cm=5.0,
                     confidence_level=SimpleNamespace(value="medium"),
                 ),

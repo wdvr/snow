@@ -490,11 +490,15 @@ class SnowConditionsManager: ObservableObject {
     /// Map a numeric snow score to a quality string (matches backend thresholds)
     private func qualityFromScore(_ score: Int) -> String {
         let s = Double(score)
-        if s >= 92 { return "excellent" }
-        if s >= 75 { return "good" }
-        if s >= 58 { return "fair" }
-        if s >= 42 { return "poor" }
-        if s >= 25 { return "bad" }
+        if s >= 96 { return "champagne_powder" }
+        if s >= 90 { return "powder_day" }
+        if s >= 82 { return "excellent" }
+        if s >= 72 { return "great" }
+        if s >= 60 { return "good" }
+        if s >= 48 { return "decent" }
+        if s >= 36 { return "mediocre" }
+        if s >= 24 { return "poor" }
+        if s >= 12 { return "bad" }
         return "horrible"
     }
 

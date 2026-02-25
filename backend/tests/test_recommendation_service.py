@@ -403,11 +403,27 @@ class TestRecommendationService:
     def test_quality_score_calculation(self, recommendation_service):
         """Test quality score mapping."""
         assert (
-            recommendation_service._calculate_quality_score(SnowQuality.EXCELLENT)
+            recommendation_service._calculate_quality_score(
+                SnowQuality.CHAMPAGNE_POWDER
+            )
             == 1.0
         )
-        assert recommendation_service._calculate_quality_score(SnowQuality.GOOD) == 0.8
-        assert recommendation_service._calculate_quality_score(SnowQuality.FAIR) == 0.6
+        assert (
+            recommendation_service._calculate_quality_score(SnowQuality.POWDER_DAY)
+            == 0.95
+        )
+        assert (
+            recommendation_service._calculate_quality_score(SnowQuality.EXCELLENT)
+            == 0.9
+        )
+        assert recommendation_service._calculate_quality_score(SnowQuality.GREAT) == 0.8
+        assert recommendation_service._calculate_quality_score(SnowQuality.GOOD) == 0.7
+        assert (
+            recommendation_service._calculate_quality_score(SnowQuality.DECENT) == 0.6
+        )
+        assert (
+            recommendation_service._calculate_quality_score(SnowQuality.MEDIOCRE) == 0.5
+        )
         assert recommendation_service._calculate_quality_score(SnowQuality.POOR) == 0.4
         assert recommendation_service._calculate_quality_score(SnowQuality.BAD) == 0.2
         assert (
@@ -483,7 +499,7 @@ class TestRecommendationService:
                 snowfall_48h_cm=10.0,
                 snowfall_72h_cm=15.0,
                 snowfall_after_freeze_cm=5.0,
-                snow_quality=SnowQuality.FAIR,
+                snow_quality=SnowQuality.DECENT,
                 confidence_level=ConfidenceLevel.MEDIUM,
                 fresh_snow_cm=5.0,
                 data_source="test",
@@ -526,7 +542,7 @@ class TestRecommendationService:
 
         assert "base" in elevation_summary
         assert "top" in elevation_summary
-        assert elevation_summary["base"]["quality"] == "fair"
+        assert elevation_summary["base"]["quality"] == "decent"
         assert elevation_summary["top"]["quality"] == "excellent"
 
     def test_global_ranking_significance_weighting(
@@ -706,9 +722,9 @@ class TestRecommendationService:
         sample_resorts,
     ):
         """Test that displayed quality uses weighted elevation averaging, not best-of."""
-        # Top=excellent (5.8), mid=fair (3.6), base=poor (2.8)
-        # Weighted: 5.8*0.50 + 3.6*0.35 + 2.8*0.15 = 2.90 + 1.26 + 0.42 = 4.58 → GOOD
-        # Best-of would be EXCELLENT — weighted should give GOOD instead
+        # Top=excellent (5.8), mid=decent (3.6), base=poor (2.8)
+        # Weighted: 5.8*0.50 + 3.6*0.35 + 2.8*0.15 = 2.90 + 1.26 + 0.42 = 4.58 → EXCELLENT
+        # Best-of would be CHAMPAGNE_POWDER — weighted should give EXCELLENT instead
         conditions = [
             WeatherCondition(
                 resort_id="nearby-resort",
@@ -739,7 +755,7 @@ class TestRecommendationService:
                 snowfall_48h_cm=10.0,
                 snowfall_72h_cm=15.0,
                 snowfall_after_freeze_cm=5.0,
-                snow_quality=SnowQuality.FAIR,
+                snow_quality=SnowQuality.DECENT,
                 quality_score=3.6,
                 confidence_level=ConfidenceLevel.MEDIUM,
                 fresh_snow_cm=5.0,
@@ -779,5 +795,5 @@ class TestRecommendationService:
         )
 
         assert len(recommendations) == 1
-        # Weighted quality should be GOOD (4.58), not EXCELLENT (best-of)
-        assert recommendations[0].snow_quality == SnowQuality.GOOD
+        # Weighted quality should be EXCELLENT (4.58), not CHAMPAGNE_POWDER (best-of)
+        assert recommendations[0].snow_quality == SnowQuality.EXCELLENT

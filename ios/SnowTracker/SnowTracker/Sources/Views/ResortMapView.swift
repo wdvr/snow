@@ -200,7 +200,7 @@ struct ResortMapView: View {
                 .font(.headline)
                 .padding(.bottom, 4)
 
-            ForEach([SnowQuality.excellent, .good, .fair, .poor, .bad, .horrible], id: \.self) { quality in
+            ForEach([SnowQuality.champagnePowder, .powderDay, .excellent, .great, .good, .decent, .mediocre, .poor, .bad, .horrible], id: \.self) { quality in
                 HStack(spacing: 12) {
                     Circle()
                         .fill(quality.color)

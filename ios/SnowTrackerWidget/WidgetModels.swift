@@ -66,23 +66,38 @@ struct ResortConditionData: Identifiable, Sendable {
 // MARK: - Snow Quality for Widget
 
 enum WidgetSnowQuality: String, Sendable {
+    case champagnePowder = "champagne_powder"
+    case powderDay = "powder_day"
     case excellent = "excellent"
+    case great = "great"
     case good = "good"
-    case fair = "fair"
+    case decent = "decent"
+    case mediocre = "mediocre"
     case poor = "poor"
-    case slushy = "slushy"
     case bad = "bad"
     case horrible = "horrible"
     case unknown = "unknown"
 
+    /// Initialize with backward compatibility for old quality values
+    init(fromString value: String) {
+        switch value {
+        case "fair": self = .decent
+        case "slushy": self = .mediocre
+        default: self = WidgetSnowQuality(rawValue: value) ?? .unknown
+        }
+    }
+
     var displayName: String {
         switch self {
+        case .champagnePowder: return "Champagne Powder"
+        case .powderDay: return "Powder Day"
         case .excellent: return "Excellent"
+        case .great: return "Great"
         case .good: return "Good"
-        case .fair: return "Fair"
+        case .decent: return "Decent"
+        case .mediocre: return "Mediocre"
         case .poor: return "Poor"
-        case .slushy: return "Slushy"
-        case .bad: return "Icy"
+        case .bad: return "Bad"
         case .horrible: return "Not Skiable"
         case .unknown: return "Unknown"
         }
@@ -90,25 +105,31 @@ enum WidgetSnowQuality: String, Sendable {
 
     var color: Color {
         switch self {
-        case .excellent: return .green
-        case .good: return Color(.systemGreen)
-        case .fair: return .orange
-        case .poor: return Color(.systemOrange)
-        case .slushy: return Color(.systemOrange)
+        case .champagnePowder: return Color(red: 0.1, green: 0.2, blue: 0.7)
+        case .powderDay: return Color(red: 0.2, green: 0.4, blue: 0.9)
+        case .excellent: return Color(red: 0.0, green: 0.65, blue: 0.35)
+        case .great: return .green
+        case .good: return Color(red: 0.4, green: 0.75, blue: 0.3)
+        case .decent: return .yellow
+        case .mediocre: return .orange
+        case .poor: return Color(red: 0.8, green: 0.3, blue: 0.1)
         case .bad: return .red
-        case .horrible: return .black
+        case .horrible: return Color(.label)
         case .unknown: return .gray
         }
     }
 
     var icon: String {
         switch self {
+        case .champagnePowder: return "sparkles"
+        case .powderDay: return "snowflake.circle"
         case .excellent: return "snowflake"
-        case .good: return "cloud.snow"
-        case .fair: return "cloud"
-        case .poor: return "drop.fill"
-        case .slushy: return "drop.fill"
-        case .bad: return "thermometer.sun"
+        case .great: return "cloud.snow"
+        case .good: return "sun.max"
+        case .decent: return "cloud.sun"
+        case .mediocre: return "cloud"
+        case .poor: return "cloud.sleet"
+        case .bad: return "exclamationmark.triangle"
         case .horrible: return "xmark.octagon.fill"
         case .unknown: return "questionmark.circle"
         }
@@ -155,7 +176,7 @@ extension ResortConditionData {
         resortId: "zermatt",
         resortName: "Zermatt",
         location: "Valais, CH",
-        snowQuality: .fair,
+        snowQuality: .decent,
         snowScore: 55,
         temperature: -3,
         freshSnow: 8,

@@ -790,7 +790,7 @@ class TestUserService:
                 "distance": "metric",
                 "snow_depth": "cm",
             },
-            "quality_threshold": "fair",
+            "quality_threshold": "decent",
             "created_at": "2026-01-20T10:00:00Z",
             "updated_at": "2026-01-20T11:00:00Z",
         }

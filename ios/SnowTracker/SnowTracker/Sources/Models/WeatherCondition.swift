@@ -66,22 +66,45 @@ enum JSONValue: Codable, Hashable, Sendable {
 // MARK: - Weather and Snow Quality Models
 
 enum SnowQuality: String, CaseIterable, Codable, Sendable {
+    case champagnePowder = "champagne_powder"
+    case powderDay = "powder_day"
     case excellent = "excellent"
+    case great = "great"
     case good = "good"
-    case fair = "fair"
-    case poor = "poor"      // Hard packed, limited fresh snow
-    case slushy = "slushy"  // Future: explicit slushy value
-    case bad = "bad"        // Icy/bare, very poor conditions
+    case decent = "decent"
+    case mediocre = "mediocre"
+    case poor = "poor"
+    case bad = "bad"
     case horrible = "horrible"
     case unknown = "unknown"
 
+    // MARK: - Backward Compatibility Decoder
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        switch rawValue {
+        case "fair": self = .decent
+        case "slushy": self = .mediocre
+        default:
+            guard let quality = SnowQuality(rawValue: rawValue) else {
+                self = .unknown
+                return
+            }
+            self = quality
+        }
+    }
+
     var displayName: String {
         switch self {
+        case .champagnePowder: return "Champagne Powder"
+        case .powderDay: return "Powder Day"
         case .excellent: return "Excellent"
+        case .great: return "Great"
         case .good: return "Good"
-        case .fair: return "Fair"
+        case .decent: return "Decent"
+        case .mediocre: return "Mediocre"
         case .poor: return "Poor"
-        case .slushy: return "Slushy"
         case .bad: return "Bad"
         case .horrible: return "Horrible"
         case .unknown: return "Unknown"
@@ -90,11 +113,14 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
 
     var color: Color {
         switch self {
+        case .champagnePowder: return Color(red: 0.1, green: 0.2, blue: 0.7)
+        case .powderDay: return Color(red: 0.2, green: 0.4, blue: 0.9)
         case .excellent: return Color(red: 0.0, green: 0.65, blue: 0.35) // Emerald green
-        case .good: return Color(.systemGreen)
-        case .fair: return .orange
-        case .poor: return Color(.systemOrange)
-        case .slushy: return Color(.systemOrange)
+        case .great: return .green
+        case .good: return Color(red: 0.4, green: 0.75, blue: 0.3)
+        case .decent: return .yellow
+        case .mediocre: return .orange
+        case .poor: return Color(red: 0.8, green: 0.3, blue: 0.1)
         case .bad: return .red
         case .horrible: return Color(.label)
         case .unknown: return .gray
@@ -103,11 +129,14 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
 
     var icon: String {
         switch self {
+        case .champagnePowder: return "sparkles"
+        case .powderDay: return "snowflake.circle"
         case .excellent: return "snowflake"
-        case .good: return "cloud.snow"
-        case .fair: return "cloud"
-        case .poor: return "cloud"
-        case .slushy: return "drop.fill"
+        case .great: return "cloud.snow"
+        case .good: return "sun.max"
+        case .decent: return "cloud.sun"
+        case .mediocre: return "cloud"
+        case .poor: return "cloud.sleet"
         case .bad: return "exclamationmark.triangle"
         case .horrible: return "xmark.octagon.fill"
         case .unknown: return "questionmark.circle"
@@ -116,11 +145,14 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
 
     var description: String {
         switch self {
-        case .excellent: return "Fresh powder, perfect conditions"
-        case .good: return "Good snow with minimal ice"
-        case .fair: return "Some ice formation present"
-        case .poor: return "Limited fresh snow, firm or aging surface"
-        case .slushy: return "Slushy, wet snow - actively thawing"
+        case .champagnePowder: return "Ultra-light, dry champagne powder"
+        case .powderDay: return "Deep fresh powder, perfect conditions"
+        case .excellent: return "Fresh powder, excellent conditions"
+        case .great: return "Good snow with great coverage"
+        case .good: return "Solid conditions, enjoyable skiing"
+        case .decent: return "Some ice formation present"
+        case .mediocre: return "Limited fresh snow, aging surface"
+        case .poor: return "Hard packed, limited fresh snow"
         case .bad: return "Very poor conditions, icy or bare"
         case .horrible: return "Not skiable, no snow or dangerous"
         case .unknown: return "Conditions unknown"
@@ -130,13 +162,16 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
     /// Sort order for sorting resorts by snow quality (lower = better)
     var sortOrder: Int {
         switch self {
-        case .excellent: return 1
-        case .good: return 2
-        case .fair: return 3
-        case .poor: return 4
-        case .slushy: return 5
-        case .bad: return 6
-        case .horrible: return 7
+        case .champagnePowder: return 1
+        case .powderDay: return 2
+        case .excellent: return 3
+        case .great: return 4
+        case .good: return 5
+        case .decent: return 6
+        case .mediocre: return 7
+        case .poor: return 8
+        case .bad: return 9
+        case .horrible: return 10
         case .unknown: return 99
         }
     }
@@ -144,23 +179,47 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
     /// Detailed explanation for the info (i) indicator
     var detailedInfo: (title: String, description: String, criteria: String) {
         switch self {
+        case .champagnePowder:
+            return (
+                title: "Champagne Powder",
+                description: "Ultra-light, dry powder with extremely low moisture content. The lightest, fluffiest snow — legendary conditions.",
+                criteria: "Highest ML score — abundant fresh snow, very cold temps, low humidity, no warming"
+            )
+        case .powderDay:
+            return (
+                title: "Powder Day",
+                description: "Deep fresh powder blanketing the mountain. Outstanding conditions for all types of skiing and riding.",
+                criteria: "Very high ML score — deep fresh snow, cold temps, no recent thaw-freeze"
+            )
         case .excellent:
             return (
                 title: "Excellent - Fresh Powder",
                 description: "Deep fresh powder with no recent thaw-freeze events. Great conditions for all types of skiing.",
                 criteria: "High ML score from abundant fresh snow, cold temps, and no recent thaw-freeze"
             )
-        case .good:
+        case .great:
             return (
-                title: "Good Conditions",
+                title: "Great Conditions",
                 description: "Good coverage of recent snow. Surface hasn't iced over. Enjoyable skiing on and off-piste.",
                 criteria: "Strong ML score from fresh snow, stable cold temps, limited warming"
             )
-        case .fair:
+        case .good:
             return (
-                title: "Fair - Some Fresh",
+                title: "Good Conditions",
+                description: "Solid snow coverage with decent surface quality. Groomed runs in good shape, off-piste still enjoyable.",
+                criteria: "Good ML score — fresh snow present, stable temperatures"
+            )
+        case .decent:
+            return (
+                title: "Decent - Some Fresh",
                 description: "Some fresh snow on top of older base. May have thin crust in places. Groomed runs in good shape.",
                 criteria: "Moderate ML score — some fresh snow but aging, or mild warming trends"
+            )
+        case .mediocre:
+            return (
+                title: "Mediocre - Aging Snow",
+                description: "Limited fresh snow with aging surface. Snow may be getting heavy or crusty. Stick to groomed runs.",
+                criteria: "Below-average ML score — minimal recent snowfall, surface degrading"
             )
         case .poor:
             return (
@@ -168,15 +227,9 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
                 description: "Limited fresh snow. Surface may be firm and packed (cold) or softening (warm). Groomed runs still skiable.",
                 criteria: "Low ML score — minimal fresh snow, or surface aging"
             )
-        case .slushy:
-            return (
-                title: "Slushy - Wet Snow",
-                description: "Heavy, wet snow from prolonged warm temps. Difficult skiing, slow snow. Spring skiing conditions.",
-                criteria: "Extended warm period, high water content in snow"
-            )
         case .bad:
             return (
-                title: "Icy - Refrozen",
+                title: "Bad - Icy/Refrozen",
                 description: "No fresh snow on top of icy base. Recent warm periods have created hard, refrozen surface. Challenging conditions.",
                 criteria: "Very low ML score — recent thaw-freeze with no fresh snow to cover ice"
             )

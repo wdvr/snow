@@ -62,7 +62,7 @@ final class WidgetDataService: @unchecked Sendable {
                     resortId: rec.resort.resortId,
                     resortName: rec.resort.name,
                     location: "\(rec.resort.region), \(rec.resort.country)",
-                    snowQuality: WidgetSnowQuality(rawValue: rec.snowQuality) ?? .unknown,
+                    snowQuality: WidgetSnowQuality(fromString: rec.snowQuality),
                     snowScore: rec.snowScore,
                     temperature: rec.currentTempCelsius,
                     freshSnow: rec.freshSnowCm,
@@ -109,7 +109,7 @@ final class WidgetDataService: @unchecked Sendable {
                 resortId: resortId,
                 resortName: name.name,
                 location: name.location,
-                snowQuality: WidgetSnowQuality(rawValue: summary.overallQuality) ?? .unknown,
+                snowQuality: WidgetSnowQuality(fromString: summary.overallQuality),
                 snowScore: summary.snowScore,
                 temperature: summary.temperatureC ?? 0,
                 freshSnow: summary.snowfallFreshCm ?? 0,
@@ -119,7 +119,7 @@ final class WidgetDataService: @unchecked Sendable {
 
         // Sort by quality
         let sorted = resorts.sorted { a, b in
-            let qualityOrder: [WidgetSnowQuality] = [.excellent, .good, .fair, .poor, .bad, .unknown]
+            let qualityOrder: [WidgetSnowQuality] = [.champagnePowder, .powderDay, .excellent, .great, .good, .decent, .mediocre, .poor, .bad, .horrible, .unknown]
             let aIndex = qualityOrder.firstIndex(of: a.snowQuality) ?? 5
             let bIndex = qualityOrder.firstIndex(of: b.snowQuality) ?? 5
 

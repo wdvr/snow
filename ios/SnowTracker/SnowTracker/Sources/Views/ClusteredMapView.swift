@@ -352,9 +352,9 @@ final class ResortClusterAnnotationView: MKAnnotationView {
 
         for annotation in memberAnnotations {
             switch annotation.snowQuality {
-            case .excellent, .good:
+            case .champagnePowder, .powderDay, .excellent, .great, .good:
                 greenCount += 1
-            case .fair, .poor, .slushy:
+            case .decent, .mediocre, .poor:
                 orangeCount += 1
             case .bad:
                 redCount += 1

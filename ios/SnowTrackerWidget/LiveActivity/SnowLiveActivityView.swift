@@ -188,12 +188,15 @@ struct SnowLiveActivity: Widget {
 
     private func qualityIcon(for quality: String) -> Image {
         switch quality {
+        case "champagne_powder": Image(systemName: "sparkles")
+        case "powder_day": Image(systemName: "snowflake.circle")
         case "excellent": Image(systemName: "snowflake")
-        case "good": Image(systemName: "cloud.snow")
-        case "fair": Image(systemName: "cloud")
-        case "poor": Image(systemName: "drop.fill")
-        case "slushy": Image(systemName: "drop.fill")
-        case "bad": Image(systemName: "thermometer.sun")
+        case "great": Image(systemName: "cloud.snow")
+        case "good": Image(systemName: "sun.max")
+        case "decent", "fair": Image(systemName: "cloud.sun")
+        case "mediocre", "slushy": Image(systemName: "cloud")
+        case "poor": Image(systemName: "cloud.sleet")
+        case "bad": Image(systemName: "exclamationmark.triangle")
         case "horrible": Image(systemName: "xmark.octagon.fill")
         default: Image(systemName: "questionmark.circle")
         }
@@ -201,25 +204,31 @@ struct SnowLiveActivity: Widget {
 
     private func qualityColor(_ quality: String) -> Color {
         switch quality {
-        case "excellent": .green
-        case "good": Color(.systemGreen)
-        case "fair": .orange
-        case "poor": Color(.systemOrange)
-        case "slushy": Color(.systemOrange)
+        case "champagne_powder": Color(red: 0.1, green: 0.2, blue: 0.7)
+        case "powder_day": Color(red: 0.2, green: 0.4, blue: 0.9)
+        case "excellent": Color(red: 0.0, green: 0.65, blue: 0.35)
+        case "great": .green
+        case "good": Color(red: 0.4, green: 0.75, blue: 0.3)
+        case "decent", "fair": .yellow
+        case "mediocre", "slushy": .orange
+        case "poor": Color(red: 0.8, green: 0.3, blue: 0.1)
         case "bad": .red
-        case "horrible": .black
+        case "horrible": Color(.label)
         default: .gray
         }
     }
 
     private func qualityDisplayName(_ quality: String) -> String {
         switch quality {
+        case "champagne_powder": "Champagne Powder"
+        case "powder_day": "Powder Day"
         case "excellent": "Excellent"
+        case "great": "Great"
         case "good": "Good"
-        case "fair": "Fair"
-        case "poor": "Soft"
-        case "slushy": "Slushy"
-        case "bad": "Icy"
+        case "decent", "fair": "Decent"
+        case "mediocre", "slushy": "Mediocre"
+        case "poor": "Poor"
+        case "bad": "Bad"
         case "horrible": "Not Skiable"
         default: "Unknown"
         }

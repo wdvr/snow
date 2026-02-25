@@ -86,6 +86,7 @@ struct ResortDetailView: View {
                         Group {
                             currentConditionsCard(condition)
                             snowDetailsCard(condition)
+                            FreshSnowChartView(resortId: resort.id, elevation: selectedElevation, condition: condition)
                             TimelineCard(resortId: resort.id, elevation: selectedElevation)
                             predictionsCard(condition)
                             weatherDetailsCard(condition)
@@ -754,45 +755,68 @@ struct ResortDetailView: View {
 
     @ViewBuilder
     private var runDifficultySection: some View {
-        if let green = resort.greenRunsPct, let blue = resort.blueRunsPct, let black = resort.blackRunsPct {
+        // Show if we have at least two trail percentages
+        let green = resort.greenRunsPct
+        let blue = resort.blueRunsPct
+        let black = resort.blackRunsPct
+        let hasEnoughData = [green != nil, blue != nil, black != nil].filter { $0 }.count >= 2
+
+        if hasEnoughData {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Run Difficulty")
                     .font(.headline)
 
                 VStack(spacing: 6) {
                     GeometryReader { geometry in
+                        let total = Double(green ?? 0) + Double(blue ?? 0) + Double(black ?? 0)
+                        let greenPct = total > 0 ? Double(green ?? 0) / total : 0
+                        let bluePct = total > 0 ? Double(blue ?? 0) / total : 0
+                        let blackPct = total > 0 ? Double(black ?? 0) / total : 0
+
                         HStack(spacing: 1) {
-                            Rectangle()
-                                .fill(.green)
-                                .frame(width: geometry.size.width * CGFloat(green) / 100)
-                            Rectangle()
-                                .fill(.blue)
-                                .frame(width: geometry.size.width * CGFloat(blue) / 100)
-                            Rectangle()
-                                .fill(.primary)
-                                .frame(width: geometry.size.width * CGFloat(black) / 100)
+                            if greenPct > 0 {
+                                Rectangle()
+                                    .fill(.green)
+                                    .frame(width: geometry.size.width * greenPct)
+                            }
+                            if bluePct > 0 {
+                                Rectangle()
+                                    .fill(.blue)
+                                    .frame(width: geometry.size.width * bluePct)
+                            }
+                            if blackPct > 0 {
+                                Rectangle()
+                                    .fill(.primary)
+                                    .frame(width: geometry.size.width * blackPct)
+                            }
                         }
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
                     .frame(height: 8)
 
                     HStack(spacing: 12) {
-                        Label("\(green)%", systemImage: "circle.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.green)
-                        Label("\(blue)%", systemImage: "square.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.blue)
-                        Label("\(black)%", systemImage: "diamond.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.primary)
+                        if let green = green {
+                            Label("\(green)%", systemImage: "circle.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.green)
+                        }
+                        if let blue = blue {
+                            Label("\(blue)%", systemImage: "square.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.blue)
+                        }
+                        if let black = black {
+                            Label("\(black)%", systemImage: "diamond.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.primary)
+                        }
                         Spacer()
                     }
                 }
             }
             .cardStyle()
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Run difficulty: \(green)% beginner, \(blue)% intermediate, \(black)% advanced")
+            .accessibilityLabel("Run difficulty: \(green.map { "\($0)% beginner" } ?? ""), \(blue.map { "\($0)% intermediate" } ?? ""), \(black.map { "\($0)% advanced" } ?? "")")
         }
     }
 
