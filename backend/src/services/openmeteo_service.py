@@ -206,6 +206,93 @@ def _smooth_timeline_snow_depth(points: list[dict]) -> None:
                 p["snow_depth_cm"] = round(floor_cm, 1)
 
 
+def _smooth_timeline_scores(points: list[dict]) -> None:
+    """Smooth unrealistic score jumps between consecutive timeline points.
+
+    Open-Meteo's snow depth forecast can make unrealistic jumps (e.g., +8cm
+    overnight with only 0.1cm snowfall) due to model splicing. The ML scorer
+    is sensitive to snow_depth_cm, causing jarring score jumps (e.g., 60 -> 79
+    between afternoon and the next morning).
+
+    This applies a maximum score change cap between consecutive timeline points
+    to produce a smoother, more realistic timeline. The cap is asymmetric:
+    - Improvements are capped at +8 points per step (conditions improve gradually)
+    - Declines are capped at -10 points per step (conditions can worsen faster,
+      e.g., sudden wind/visibility changes)
+
+    Exception: when significant snowfall (>= 2cm) is reported at a point, the
+    improvement cap is relaxed to +15 to allow legitimate powder day jumps.
+
+    The raw quality_score is also smoothed proportionally to keep it consistent
+    with the snow_score. Quality labels are re-derived from the smoothed score.
+    """
+    if len(points) < 2:
+        return
+
+    MAX_IMPROVEMENT_PER_STEP = 8  # max score increase between consecutive points
+    MAX_DECLINE_PER_STEP = 10  # max score decrease between consecutive points
+    SNOWFALL_THRESHOLD = 2.0  # cm — relax improvement cap when snowing
+    MAX_IMPROVEMENT_WITH_SNOW = 15  # relaxed cap for real snowfall events
+
+    for i in range(1, len(points)):
+        prev_score = points[i - 1].get("snow_score")
+        curr_score = points[i].get("snow_score")
+        if prev_score is None or curr_score is None:
+            continue
+
+        delta = curr_score - prev_score
+
+        # Determine max allowed improvement based on snowfall
+        snowfall = points[i].get("snowfall_cm", 0.0) or 0.0
+        max_up = (
+            MAX_IMPROVEMENT_WITH_SNOW
+            if snowfall >= SNOWFALL_THRESHOLD
+            else MAX_IMPROVEMENT_PER_STEP
+        )
+
+        if delta > max_up:
+            # Cap improvement
+            new_score = prev_score + max_up
+            _adjust_point_scores(points[i], curr_score, new_score)
+        elif delta < -MAX_DECLINE_PER_STEP:
+            # Cap decline
+            new_score = prev_score - MAX_DECLINE_PER_STEP
+            _adjust_point_scores(points[i], curr_score, new_score)
+
+
+def _adjust_point_scores(point: dict, old_snow_score: int, new_snow_score: int) -> None:
+    """Adjust a timeline point's scores after smoothing.
+
+    Updates snow_score, quality_score (proportionally), and re-derives the
+    snow_quality label from the adjusted quality_score.
+    """
+    from services.ml_scorer import raw_score_to_quality
+
+    point["snow_score"] = new_snow_score
+
+    # Adjust quality_score proportionally
+    old_quality = point.get("quality_score")
+    if old_quality is not None and old_snow_score != 0:
+        # snow_score = score_to_100(quality_score), which is roughly linear
+        # Invert: adjust quality_score by the same ratio
+        ratio = new_snow_score / old_snow_score
+        new_quality = round(old_quality * ratio, 2)
+        new_quality = max(1.0, min(6.0, new_quality))
+        point["quality_score"] = new_quality
+
+        # Re-derive quality label
+        quality = raw_score_to_quality(new_quality)
+        point["snow_quality"] = (
+            quality.value if hasattr(quality, "value") else str(quality)
+        )
+
+        # Update explanation to reflect smoothed score
+        is_forecast = point.get("is_forecast", False)
+        if is_forecast and point.get("explanation", "").startswith("Expected:"):
+            # Keep forecast prefix — explanation will still be reasonable
+            pass
+
+
 class OpenMeteoService:
     """Service for fetching elevation-aware weather data from Open-Meteo API.
 
@@ -578,6 +665,12 @@ class OpenMeteoService:
             # physically impossible drops (e.g., 165cm to 50cm in hours).
             # Max realistic melt rate: ~10cm/hour; timeline points are 4-8h apart.
             _smooth_timeline_snow_depth(timeline_points)
+
+            # Smooth unrealistic score jumps in the timeline.
+            # Open-Meteo snow depth can make unrealistic jumps (e.g., +8cm
+            # overnight with 0.1cm snowfall), causing ML score jumps of +19.
+            # Cap step-to-step changes for a smoother timeline.
+            _smooth_timeline_scores(timeline_points)
 
             return {
                 "timeline": timeline_points,

@@ -8,7 +8,11 @@ from fastapi.testclient import TestClient
 
 from models.resort import ElevationLevel, ElevationPoint, Resort
 from models.weather import ConfidenceLevel, SnowQuality
-from services.openmeteo_service import OpenMeteoService, _smooth_timeline_snow_depth
+from services.openmeteo_service import (
+    OpenMeteoService,
+    _smooth_timeline_scores,
+    _smooth_timeline_snow_depth,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers to build realistic mock Open-Meteo hourly data (14 days * 24 hours)
@@ -623,3 +627,158 @@ class TestTimelineSnowDepthSmoothing:
         # 24h × 0.625 = 15 max pair drop → 100 - 15 = 85
         # Floor: above-zero 100 - 1*15 = 85
         assert points[1]["snow_depth_cm"] == 85.0
+
+
+# ---------------------------------------------------------------------------
+# 7. Timeline score smoothing
+# ---------------------------------------------------------------------------
+
+
+class TestTimelineScoreSmoothing:
+    """Tests for _smooth_timeline_scores which caps step-to-step score changes.
+
+    Verifies that unrealistic score jumps caused by Open-Meteo snow depth
+    splicing are smoothed to produce a more realistic timeline.
+    """
+
+    def _make_point(
+        self, score, snowfall=0.0, quality_score=3.5, quality="decent", forecast=False
+    ):
+        """Helper to build a minimal timeline point for score smoothing tests."""
+        return {
+            "snow_score": score,
+            "quality_score": quality_score,
+            "snow_quality": quality,
+            "snowfall_cm": snowfall,
+            "is_forecast": forecast,
+        }
+
+    def test_caps_large_improvement(self):
+        """Score jump of +19 (Big White bug) should be capped to +8."""
+        points = [
+            self._make_point(60, quality_score=3.39),
+            self._make_point(79, quality_score=4.28),  # +19 jump
+        ]
+        _smooth_timeline_scores(points)
+
+        assert points[1]["snow_score"] == 68  # 60 + 8
+        assert points[1]["quality_score"] < 4.28  # adjusted down
+
+    def test_caps_large_decline(self):
+        """Score drop of -23 should be capped to -10."""
+        points = [
+            self._make_point(61, quality_score=3.40),
+            self._make_point(38, quality_score=2.87),  # -23 drop
+        ]
+        _smooth_timeline_scores(points)
+
+        assert points[1]["snow_score"] == 51  # 61 - 10
+        assert points[1]["quality_score"] > 2.87  # adjusted up
+
+    def test_allows_small_changes(self):
+        """Changes within +-8/10 should not be modified."""
+        points = [
+            self._make_point(60, quality_score=3.39),
+            self._make_point(65, quality_score=3.50),  # +5
+            self._make_point(58, quality_score=3.30),  # -7
+        ]
+        _smooth_timeline_scores(points)
+
+        assert points[1]["snow_score"] == 65  # unchanged
+        assert points[2]["snow_score"] == 58  # unchanged
+
+    def test_snowfall_relaxes_improvement_cap(self):
+        """With >= 2cm snowfall, improvement cap is relaxed to +15."""
+        points = [
+            self._make_point(50, quality_score=3.00),
+            self._make_point(70, snowfall=5.0, quality_score=4.00),  # +20 with snowfall
+        ]
+        _smooth_timeline_scores(points)
+
+        # With 5cm snowfall, cap is +15, so 50 + 15 = 65
+        assert points[1]["snow_score"] == 65
+
+    def test_snowfall_below_threshold_uses_normal_cap(self):
+        """With < 2cm snowfall, normal +8 cap applies."""
+        points = [
+            self._make_point(50, quality_score=3.00),
+            self._make_point(
+                70, snowfall=0.1, quality_score=4.00
+            ),  # +20 with tiny snowfall
+        ]
+        _smooth_timeline_scores(points)
+
+        assert points[1]["snow_score"] == 58  # 50 + 8
+
+    def test_cascading_smoothing(self):
+        """Multiple consecutive jumps should all be smoothed."""
+        points = [
+            self._make_point(50, quality_score=3.00),
+            self._make_point(75, quality_score=4.20),  # +25
+            self._make_point(100, quality_score=5.50),  # +25
+        ]
+        _smooth_timeline_scores(points)
+
+        assert points[1]["snow_score"] == 58  # 50 + 8
+        assert points[2]["snow_score"] == 66  # 58 + 8
+
+    def test_cascading_decline(self):
+        """Multiple consecutive drops should all be capped."""
+        points = [
+            self._make_point(80, quality_score=4.50),
+            self._make_point(50, quality_score=3.00),  # -30
+            self._make_point(20, quality_score=1.50),  # -30
+        ]
+        _smooth_timeline_scores(points)
+
+        assert points[1]["snow_score"] == 70  # 80 - 10
+        assert points[2]["snow_score"] == 60  # 70 - 10
+
+    def test_quality_label_updated(self):
+        """Snow quality label should be re-derived from smoothed quality_score."""
+        points = [
+            self._make_point(60, quality_score=3.39, quality="decent"),
+            self._make_point(79, quality_score=4.28, quality="great"),  # +19 jump
+        ]
+        _smooth_timeline_scores(points)
+
+        # After smoothing, quality_score should be lower than 4.0 (great threshold)
+        # so quality label should change from "great" to something lower
+        assert points[1]["snow_quality"] != "great"
+
+    def test_single_point_no_error(self):
+        """Single point should not cause errors."""
+        points = [self._make_point(60)]
+        _smooth_timeline_scores(points)
+        assert points[0]["snow_score"] == 60
+
+    def test_empty_list_no_error(self):
+        """Empty list should not cause errors."""
+        _smooth_timeline_scores([])
+
+    def test_big_white_scenario(self):
+        """Reproduce the exact Big White Feb 16->17 jump scenario."""
+        points = [
+            # Feb 16 afternoon: decent conditions, score 60
+            self._make_point(60, snowfall=0.0, quality_score=3.39, quality="decent"),
+            # Feb 17 morning: snow depth jumped +8cm but only 0.1cm snowfall
+            self._make_point(79, snowfall=0.1, quality_score=4.28, quality="great"),
+            # Feb 17 midday: still high
+            self._make_point(75, snowfall=0.0, quality_score=4.08, quality="great"),
+            # Feb 17 afternoon: still high
+            self._make_point(77, snowfall=0.0, quality_score=4.16, quality="great"),
+            # Feb 18 morning: drops back
+            self._make_point(64, snowfall=0.1, quality_score=3.48, quality="decent"),
+        ]
+        _smooth_timeline_scores(points)
+
+        # The +19 jump should be smoothed to max +8
+        assert points[1]["snow_score"] <= 68
+        # Subsequent points cascade from the smoothed value
+        assert points[2]["snow_score"] <= 76
+        assert points[3]["snow_score"] <= 84
+        # No jump should exceed 8 between consecutive points
+        for i in range(1, len(points)):
+            delta = points[i]["snow_score"] - points[i - 1]["snow_score"]
+            assert delta <= 8, f"Step {i}: delta={delta} exceeds +8 cap"
+            assert delta >= -10, f"Step {i}: delta={delta} exceeds -10 cap"
