@@ -31,6 +31,24 @@ Open-Meteo's forecast snow depth model predicted unrealistic snowpack collapse (
 |-----|---------|-----|-----|
 | n/a | n/a | n/a | done |
 
+### Timeline: Score change delta explanations
+When viewing the 7-day forecast timeline, each point now shows WHY the score changed vs the previous period. E.g., "Fresh snow +5cm", "Warming to 3°C softens snow", "Refreezing creates icy conditions". Uses `generate_score_change_reason()` comparing consecutive timeline points. Shows colored delta arrows (green up, red down) with compact keyword, full reason in popover.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### List View: Fix region display showing internal keys
+Resort list showed raw internal region keys like "na_west_BC" instead of human-readable names. Added `regionDisplayName` computed property mapping internal keys to readable display names (e.g., "British Columbia", "Western Alps"). Expanded country code coverage to 20+ countries.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Timeline: Smooth ML score jumps from snow depth artifacts
+Open-Meteo snow depth can make unrealistic jumps (e.g., +8cm overnight with 0.1cm snowfall), causing ML score jumps of +19 points. Added pre-ML hourly snow depth smoothing that caps increases at snowfall*1.5+0.5cm/hr and decreases at temperature-aware melt rates. Also added post-scoring smoothing to cap step-to-step score changes. 10 new tests.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ### Weather Processor: Fix 576 grey resorts
 876 non-NA resorts had empty `region` in DynamoDB because `populate_resorts.py` used `state_province` (only set for NA). Weather processor grouped all 876 into a single Lambda worker that timed out at 600s. Fixed: use `region` from resorts.json (alps, scandinavia, etc.) with `state_province` suffix for NA. Added chunking in weather processor (max 100 per worker). Re-populated DynamoDB, triggered weather processor.
 | iOS | Android | Web | API |
