@@ -7,12 +7,12 @@ struct OnboardingView: View {
 
     // Default regions (northern hemisphere) - selected by default
     private let northernHemisphereRegions: [SkiRegion] = [
-        .naWest, .naRockies, .naEast, .alps, .scandinavia
+        .naWest, .naRockies, .naEast, .alps, .europeEast, .scandinavia
     ]
 
-    // Southern hemisphere regions - deselected by default
+    // Southern hemisphere & other regions - deselected by default
     private let southernHemisphereRegions: [SkiRegion] = [
-        .japan, .oceania, .southAmerica
+        .japan, .asia, .oceania, .southAmerica
     ]
 
     init(onComplete: @escaping () -> Void) {

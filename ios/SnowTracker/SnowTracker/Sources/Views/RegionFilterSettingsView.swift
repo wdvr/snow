@@ -26,7 +26,7 @@ struct RegionFilterSettingsView: View {
 
             // Europe Section
             Section {
-                ForEach([SkiRegion.alps, .scandinavia], id: \.self) { region in
+                ForEach([SkiRegion.alps, .europeEast, .scandinavia], id: \.self) { region in
                     RegionToggleRow(
                         region: region,
                         resortCount: resortCount(for: region)
@@ -38,7 +38,7 @@ struct RegionFilterSettingsView: View {
 
             // Asia Pacific Section
             Section {
-                ForEach([SkiRegion.japan, .oceania], id: \.self) { region in
+                ForEach([SkiRegion.japan, .asia, .oceania], id: \.self) { region in
                     RegionToggleRow(
                         region: region,
                         resortCount: resortCount(for: region)
@@ -47,7 +47,7 @@ struct RegionFilterSettingsView: View {
             } header: {
                 Text("Asia Pacific")
             } footer: {
-                Text("Japan and Oceania (Australia & New Zealand) are hidden by default as they have opposite ski seasons.")
+                Text("Japan, Asia, and Oceania (Australia & New Zealand) are hidden by default as they have opposite ski seasons or limited data.")
             }
 
             // South America Section

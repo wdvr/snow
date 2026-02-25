@@ -82,7 +82,9 @@ enum MapRegionPreset: String, CaseIterable, Identifiable {
     case naWest = "NA West Coast"
     case naRockies = "NA Rockies"
     case alps = "Alps"
+    case europeEast = "Eastern Europe"
     case japan = "Japan"
+    case asia = "Asia"
     case oceania = "Oceania"
 
     var id: String { rawValue }
@@ -110,10 +112,20 @@ enum MapRegionPreset: String, CaseIterable, Identifiable {
                 center: CLLocationCoordinate2D(latitude: 46.5, longitude: 8.5),
                 span: MKCoordinateSpan(latitudeDelta: 5, longitudeDelta: 8)
             )
+        case .europeEast:
+            return MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: 50.0, longitude: 19.0),
+                span: MKCoordinateSpan(latitudeDelta: 15, longitudeDelta: 20)
+            )
         case .japan:
             return MKCoordinateRegion(
                 center: CLLocationCoordinate2D(latitude: 36.5, longitude: 138.0),
                 span: MKCoordinateSpan(latitudeDelta: 5, longitudeDelta: 6)
+            )
+        case .asia:
+            return MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: 37.0, longitude: 128.0),
+                span: MKCoordinateSpan(latitudeDelta: 20, longitudeDelta: 30)
             )
         case .oceania:
             return MKCoordinateRegion(
@@ -129,7 +141,9 @@ enum MapRegionPreset: String, CaseIterable, Identifiable {
         case .naWest: return "sun.max"
         case .naRockies: return "mountain.2.fill"
         case .alps: return "flag.fill"
+        case .europeEast: return "building.columns"
         case .japan: return "globe.asia.australia.fill"
+        case .asia: return "globe.asia.australia.fill"
         case .oceania: return "globe"
         }
     }

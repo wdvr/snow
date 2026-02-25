@@ -12,6 +12,8 @@ struct ResortMapView: View {
     @State private var mapStyle: MapStyle = .standard
     @State private var clusterResorts: [Resort] = []
     @State private var showClusterList: Bool = false
+    @State private var regionChangeTask: Task<Void, Never>?
+    @State private var isFetchingVisibleConditions: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -126,19 +128,59 @@ struct ResortMapView: View {
 
         // Proactively fetch conditions for all visible resorts in the background
         // so map icons show fresh quality data without needing to tap each one
-        fetchConditionsForVisibleResorts()
+        Task { await fetchConditionsForVisibleResorts() }
+    }
+
+    /// Debounce region-change fetches: cancel any pending fetch and start a new one
+    /// after a 1.5-second pause so we don't fire on every tiny pan.
+    private func debouncedFetchConditionsForVisibleResorts() {
+        regionChangeTask?.cancel()
+        regionChangeTask = Task {
+            try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+            guard !Task.isCancelled else { return }
+            await fetchConditionsForVisibleResorts()
+        }
     }
 
     /// Fetch full conditions for resorts currently visible on the map.
     /// This runs in the background so icons update to show live quality data.
-    private func fetchConditionsForVisibleResorts() {
+    /// Only fetches for resorts not already present in the conditions cache.
+    @discardableResult
+    private func fetchConditionsForVisibleResorts() async -> Bool {
         let visibleIds = mapViewModel.annotations.map(\.resort.id)
-        guard !visibleIds.isEmpty else { return }
+        guard !visibleIds.isEmpty else { return false }
+
+        // Only fetch for resorts whose conditions are not yet cached
+        let uncachedIds = visibleIds.filter { snowConditionsManager.conditions[$0] == nil }
+        guard !uncachedIds.isEmpty else { return false }
+
+        isFetchingVisibleConditions = true
+        defer { isFetchingVisibleConditions = false }
 
         // Fetch in batches to avoid overloading the API
-        Task {
+        let batchSize = 30
+        for batch in stride(from: 0, to: uncachedIds.count, by: batchSize) {
+            guard !Task.isCancelled else { return false }
+            let end = min(batch + batchSize, uncachedIds.count)
+            let batchIds = Array(uncachedIds[batch..<end])
+            await snowConditionsManager.fetchConditionsForResorts(resortIds: batchIds)
+        }
+        return true
+    }
+
+    /// Force-refresh conditions for all visible resorts (ignores cache).
+    private func forceRefreshVisibleResorts() {
+        regionChangeTask?.cancel()
+        regionChangeTask = Task {
+            let visibleIds = mapViewModel.annotations.map(\.resort.id)
+            guard !visibleIds.isEmpty else { return }
+
+            isFetchingVisibleConditions = true
+            defer { isFetchingVisibleConditions = false }
+
             let batchSize = 30
             for batch in stride(from: 0, to: visibleIds.count, by: batchSize) {
+                guard !Task.isCancelled else { return }
                 let end = min(batch + batchSize, visibleIds.count)
                 let batchIds = Array(visibleIds[batch..<end])
                 await snowConditionsManager.fetchConditionsForResorts(resortIds: batchIds)
@@ -147,6 +189,8 @@ struct ResortMapView: View {
     }
 
     private func handleDisappear() {
+        regionChangeTask?.cancel()
+        regionChangeTask = nil
         AnalyticsService.shared.trackScreenExit("Map")
     }
 
@@ -184,6 +228,9 @@ struct ResortMapView: View {
                 clusterResorts = resorts
                 showClusterList = true
                 AnalyticsService.shared.trackMapInteraction(action: "cluster_tap")
+            },
+            onRegionChange: { _ in
+                debouncedFetchConditionsForVisibleResorts()
             }
         )
         .ignoresSafeArea(edges: .bottom)
@@ -341,6 +388,19 @@ struct ResortMapView: View {
 
     private var trailingToolbarItems: some View {
         HStack(spacing: 16) {
+            Button {
+                forceRefreshVisibleResorts()
+            } label: {
+                if isFetchingVisibleConditions {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Image(systemName: "arrow.clockwise")
+                }
+            }
+            .disabled(isFetchingVisibleConditions)
+            .accessibilityLabel("Refresh conditions")
+
             Button {
                 withAnimation {
                     showLegend.toggle()

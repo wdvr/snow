@@ -35,6 +35,7 @@ struct ClusteredMapView: UIViewRepresentable {
     let showUserLocation: Bool
     var onAnnotationTap: ((Resort) -> Void)?
     var onClusterTap: (([Resort]) -> Void)?
+    var onRegionChange: ((MKCoordinateRegion) -> Void)?
 
     // Cluster identifier
     private static let clusterIdentifier = "resortCluster"
@@ -206,13 +207,17 @@ struct ClusteredMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+            let region = mapView.region
             // Skip binding update for programmatic changes (prevents feedback loop)
             if isProgrammaticRegionChange {
                 isProgrammaticRegionChange = false
+                // Still notify about region change so conditions get fetched for new area
+                parent.onRegionChange?(region)
                 return
             }
             // Update the binding when user interacts with map
-            parent.cameraPosition = .region(mapView.region)
+            parent.cameraPosition = .region(region)
+            parent.onRegionChange?(region)
         }
     }
 }

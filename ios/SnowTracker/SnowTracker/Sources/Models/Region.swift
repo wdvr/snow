@@ -7,8 +7,10 @@ enum SkiRegion: String, CaseIterable, Identifiable, Codable {
     case naRockies = "na_rockies"
     case naEast = "na_east"
     case alps = "alps"
+    case europeEast = "europe_east"
     case scandinavia = "scandinavia"
     case japan = "japan"
+    case asia = "asia"
     case oceania = "oceania"
     case southAmerica = "south_america"
 
@@ -20,8 +22,10 @@ enum SkiRegion: String, CaseIterable, Identifiable, Codable {
         case .naRockies: return "Rockies"
         case .naEast: return "NA East Coast"
         case .alps: return "Alps"
+        case .europeEast: return "Eastern Europe"
         case .scandinavia: return "Scandinavia"
         case .japan: return "Japan"
+        case .asia: return "Asia"
         case .oceania: return "Oceania"
         case .southAmerica: return "South America"
         }
@@ -33,8 +37,10 @@ enum SkiRegion: String, CaseIterable, Identifiable, Codable {
         case .naRockies: return "North America - Rocky Mountains"
         case .naEast: return "North America - East Coast"
         case .alps: return "European Alps"
+        case .europeEast: return "Eastern Europe"
         case .scandinavia: return "Scandinavia"
         case .japan: return "Japan"
+        case .asia: return "Asia"
         case .oceania: return "Australia & New Zealand"
         case .southAmerica: return "South America"
         }
@@ -46,8 +52,10 @@ enum SkiRegion: String, CaseIterable, Identifiable, Codable {
         case .naRockies: return "mountain.2"
         case .naEast: return "snowflake"
         case .alps: return "mountain.2.fill"
+        case .europeEast: return "building.columns"
         case .scandinavia: return "snowflake.circle"
         case .japan: return "circle.inset.filled"  // Represents Japanese flag
+        case .asia: return "globe.asia.australia.fill"
         case .oceania: return "globe.asia.australia"
         case .southAmerica: return "globe.americas"
         }
@@ -58,9 +66,11 @@ enum SkiRegion: String, CaseIterable, Identifiable, Codable {
         case .naWest: return ["CA", "US"]
         case .naRockies: return ["CA", "US"]
         case .naEast: return ["CA", "US"]
-        case .alps: return ["FR", "CH", "AT", "IT", "DE"]
+        case .alps: return ["FR", "CH", "AT", "IT", "DE", "SI", "ES", "AD"]
+        case .europeEast: return ["PL", "CZ", "SK", "RO", "BG"]
         case .scandinavia: return ["NO", "SE", "FI"]
         case .japan: return ["JP"]
+        case .asia: return ["KR", "CN"]
         case .oceania: return ["AU", "NZ"]
         case .southAmerica: return ["CL", "AR"]
         }
@@ -126,12 +136,16 @@ extension Resort {
                 }
             }
             return .naRockies
-        case "FR", "CH", "AT", "IT", "DE":
+        case "FR", "CH", "AT", "IT", "DE", "SI", "ES", "AD":
             return .alps
+        case "PL", "CZ", "SK", "RO", "BG":
+            return .europeEast
         case "NO", "SE", "FI":
             return .scandinavia
         case "JP":
             return .japan
+        case "KR", "CN":
+            return .asia
         case "AU", "NZ":
             return .oceania
         case "CL", "AR":
