@@ -123,6 +123,27 @@ struct ResortMapView: View {
             mapViewModel.centerOnUserLocation(userLocation)
         }
         AnalyticsService.shared.trackScreen("Map", screenClass: "ResortMapView")
+
+        // Proactively fetch conditions for all visible resorts in the background
+        // so map icons show fresh quality data without needing to tap each one
+        fetchConditionsForVisibleResorts()
+    }
+
+    /// Fetch full conditions for resorts currently visible on the map.
+    /// This runs in the background so icons update to show live quality data.
+    private func fetchConditionsForVisibleResorts() {
+        let visibleIds = mapViewModel.annotations.map(\.resort.id)
+        guard !visibleIds.isEmpty else { return }
+
+        // Fetch in batches to avoid overloading the API
+        Task {
+            let batchSize = 30
+            for batch in stride(from: 0, to: visibleIds.count, by: batchSize) {
+                let end = min(batch + batchSize, visibleIds.count)
+                let batchIds = Array(visibleIds[batch..<end])
+                await snowConditionsManager.fetchConditionsForResorts(resortIds: batchIds)
+            }
+        }
     }
 
     private func handleDisappear() {

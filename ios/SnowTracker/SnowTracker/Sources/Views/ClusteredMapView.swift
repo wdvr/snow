@@ -344,8 +344,9 @@ final class ResortClusterAnnotationView: MKAnnotationView {
         let memberAnnotations = cluster.memberAnnotations.compactMap { $0 as? ResortPointAnnotation }
         let count = memberAnnotations.count
 
-        // Count by quality category (simplified: excellent/good = green, fair/poor = orange, bad/horrible = red)
+        // Count by quality category
         var greenCount = 0
+        var yellowCount = 0
         var orangeCount = 0
         var redCount = 0
         var blackCount = 0
@@ -354,19 +355,21 @@ final class ResortClusterAnnotationView: MKAnnotationView {
             switch annotation.snowQuality {
             case .champagnePowder, .powderDay, .excellent, .great, .good:
                 greenCount += 1
-            case .decent, .mediocre, .poor:
+            case .decent:
+                yellowCount += 1
+            case .mediocre, .poor:
                 orangeCount += 1
             case .bad:
                 redCount += 1
             case .horrible:
                 blackCount += 1
             case .unknown:
-                orangeCount += 1  // Treat unknown as orange
+                orangeCount += 1
             }
         }
 
         // Draw pie chart
-        drawPieChart(green: greenCount, orange: orangeCount, red: redCount, black: blackCount, total: count)
+        drawPieChart(green: greenCount, yellow: yellowCount, orange: orangeCount, red: redCount, black: blackCount, total: count)
 
         countLabel.text = count > 99 ? "99+" : "\(count)"
 
@@ -374,9 +377,10 @@ final class ResortClusterAnnotationView: MKAnnotationView {
         isAccessibilityElement = true
         var qualityParts: [String] = []
         if greenCount > 0 { qualityParts.append("\(greenCount) excellent or good") }
-        if orangeCount > 0 { qualityParts.append("\(orangeCount) fair or soft") }
-        if redCount > 0 { qualityParts.append("\(redCount) icy") }
-        if blackCount > 0 { qualityParts.append("\(blackCount) not skiable") }
+        if yellowCount > 0 { qualityParts.append("\(yellowCount) decent") }
+        if orangeCount > 0 { qualityParts.append("\(orangeCount) mediocre or poor") }
+        if redCount > 0 { qualityParts.append("\(redCount) bad") }
+        if blackCount > 0 { qualityParts.append("\(blackCount) horrible") }
         accessibilityLabel = "Cluster of \(count) resorts: \(qualityParts.joined(separator: ", "))"
         accessibilityTraits = .button
 
@@ -395,7 +399,7 @@ final class ResortClusterAnnotationView: MKAnnotationView {
         layer.shadowOpacity = 0.5
     }
 
-    private func drawPieChart(green: Int, orange: Int, red: Int, black: Int, total: Int) {
+    private func drawPieChart(green: Int, yellow: Int, orange: Int, red: Int, black: Int, total: Int) {
         // Remove old sublayers
         pieChartLayer.sublayers?.forEach { $0.removeFromSuperlayer() }
 
@@ -405,6 +409,7 @@ final class ResortClusterAnnotationView: MKAnnotationView {
 
         let segments: [(count: Int, color: UIColor)] = [
             (green, UIColor.systemGreen),
+            (yellow, UIColor.systemYellow),
             (orange, UIColor.orange),
             (red, UIColor.red),
             (black, UIColor.black)
