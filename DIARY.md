@@ -7,6 +7,18 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 25, 2026
 
+### Score: Fix list/detail vs timeline score mismatch
+Batch/summary scores used weighted average across all elevations (50% top + 35% mid + 15% base) while timeline showed single mid-elevation score. Changed batch/summary to use representative elevation (mid > top > base), matching timeline default and explanation text. Big White went from showing 61 in list but 66 in timeline to consistent scores.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Timeline: Improve score change reason explanations
+Many timeline entries showed generic "Conditions declining (-7 pts)" without explaining the specific cause. Rewrote `generate_score_change_reason()` with: lowered thresholds (wind delta 5km/h, temp 2C, snowfall 0.5cm, depth -5cm), new patterns (snow aging, daytime warming, overnight cooling, absolute high wind), smart fallback that identifies the largest changing factor instead of generic message. Fixed contradictory messages (e.g., "Visibility improving worsens conditions") by tracking factor directionality and preferring aligned factors. Added minimum wind thresholds so calm wind isn't cited. Added 9 new tests (74 total).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ### Map: Fix clustering breaking when panning between regions
 Clustering broke when zooming out, panning to Europe, zooming in/out, going to Asia. Root cause: individual removeAnnotation/addAnnotation calls during quality updates confused MKMapView's clustering engine. Fixed by batching all add/remove operations into single calls and re-setting clusteringIdentifier on configure() to survive view reuse.
 | iOS | Android | Web | API |
@@ -38,7 +50,7 @@ When viewing the 7-day forecast timeline, each point now shows WHY the score cha
 | done | pending | n/a | done |
 
 ### List View: Fix region display showing internal keys
-Resort list showed raw internal region keys like "na_west_BC" instead of human-readable names. Added `regionDisplayName` computed property mapping internal keys to readable display names (e.g., "British Columbia", "Western Alps"). Expanded country code coverage to 20+ countries.
+Resort list showed raw internal region keys like "na_west_BC" instead of human-readable names. Root cause: `regionDisplayName` only matched exact internal keys ("na_west") but API returns compound keys ("na_west_BC"). Fixed by parsing compound keys: extract suffix after known prefix, look up in US state / Canadian province dictionaries. Non-NA compound keys (alps_FR) return empty (show country only). Added comprehensive test coverage for all compound key patterns.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
 | done | pending | n/a | n/a |
