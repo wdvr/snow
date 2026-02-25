@@ -68,27 +68,32 @@ struct FreshSnowChartView: View {
                 Chart {
                     // Snowfall bars
                     ForEach(dailyData) { day in
-                        BarMark(
-                            x: .value("Date", day.shortDate),
-                            y: .value("Snow", day.snowfallDisplay(prefs))
-                        )
-                        .foregroundStyle(day.isForecast ? Color.cyan.opacity(0.4) : Color.cyan.opacity(0.8))
+                        if let dateVal = day.dateValue {
+                            BarMark(
+                                x: .value("Date", dateVal, unit: .day),
+                                y: .value("Snow", day.snowfallDisplay(prefs))
+                            )
+                            .foregroundStyle(day.isForecast ? Color.cyan.opacity(0.4) : Color.cyan.opacity(0.8))
+                        }
                     }
 
                     // Temperature range area
                     ForEach(dailyData) { day in
-                        AreaMark(
-                            x: .value("Date", day.shortDate),
-                            yStart: .value("Min", day.minTempDisplay(prefs)),
-                            yEnd: .value("Max", day.maxTempDisplay(prefs))
-                        )
-                        .foregroundStyle(.red.opacity(0.1))
+                        if let dateVal = day.dateValue {
+                            AreaMark(
+                                x: .value("Date", dateVal, unit: .day),
+                                yStart: .value("Min", day.minTempDisplay(prefs)),
+                                yEnd: .value("Max", day.maxTempDisplay(prefs))
+                            )
+                            .foregroundStyle(.red.opacity(0.1))
+                        }
                     }
 
                     // Freeze line
                     if let freezeDate = freezeDate,
-                       let freezeDay = dailyData.first(where: { $0.date == freezeDate }) {
-                        RuleMark(x: .value("Freeze", freezeDay.shortDate))
+                       let freezeDay = dailyData.first(where: { $0.date == freezeDate }),
+                       let freezeDateVal = freezeDay.dateValue {
+                        RuleMark(x: .value("Freeze", freezeDateVal, unit: .day))
                             .foregroundStyle(.orange)
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 3]))
                             .annotation(position: .top, alignment: .leading) {
@@ -98,7 +103,13 @@ struct FreshSnowChartView: View {
                             }
                     }
                 }
-                .chartYAxisLabel(prefs.snowDepth == .centimeters ? "cm" : "in")
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .day, count: 3)) { value in
+                        AxisGridLine()
+                        AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                    }
+                }
+                .chartYAxisLabel(prefs.temperature == .celsius ? "°C / cm" : "°F / in")
                 .frame(height: 200)
             } else if !isLoading {
                 Text("No timeline data available")
@@ -148,8 +159,12 @@ struct DailySnowData: Identifiable {
         return f
     }()
 
+    var dateValue: Date? {
+        Self.dateParser.date(from: date)
+    }
+
     var shortDate: String {
-        guard let dateObj = Self.dateParser.date(from: date) else { return date }
+        guard let dateObj = dateValue else { return date }
         return Self.shortFormatter.string(from: dateObj)
     }
 
