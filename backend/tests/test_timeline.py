@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from models.resort import ElevationLevel, ElevationPoint, Resort
 from models.weather import ConfidenceLevel, SnowQuality
-from services.openmeteo_service import OpenMeteoService
+from services.openmeteo_service import OpenMeteoService, _smooth_timeline_snow_depth
 
 # ---------------------------------------------------------------------------
 # Helpers to build realistic mock Open-Meteo hourly data (14 days * 24 hours)
@@ -382,3 +382,244 @@ class TestTimelineEndpoint:
 
         assert resp.status_code == 400
         assert "invalid elevation" in resp.json()["detail"].lower()
+
+
+# ---------------------------------------------------------------------------
+# 6. Temperature-aware timeline snow depth smoothing
+# ---------------------------------------------------------------------------
+
+
+class TestTimelineSnowDepthSmoothing:
+    """Tests for temperature-aware snow depth smoothing in the timeline.
+
+    Verifies that _smooth_timeline_snow_depth uses temperature to determine
+    melt rates, matching the ML scorer logic:
+    - Sub-zero temps: max 3cm/day (sublimation only)
+    - Above-zero temps: max 15cm/day (active melt)
+    - Forecast points enforce a floor from last observed depth
+    """
+
+    def test_subzero_prevents_unrealistic_drop(self):
+        """The core bug: 144cm should not drop to 11cm in 4 days at sub-zero."""
+        points = [
+            {
+                "date": "2026-02-20",
+                "hour": 12,
+                "snow_depth_cm": 144.0,
+                "temperature_c": -8.0,
+                "is_forecast": False,
+            },
+            {
+                "date": "2026-02-21",
+                "hour": 12,
+                "snow_depth_cm": 120.0,
+                "temperature_c": -6.0,
+                "is_forecast": True,
+            },
+            {
+                "date": "2026-02-22",
+                "hour": 12,
+                "snow_depth_cm": 80.0,
+                "temperature_c": -5.0,
+                "is_forecast": True,
+            },
+            {
+                "date": "2026-02-23",
+                "hour": 12,
+                "snow_depth_cm": 40.0,
+                "temperature_c": -7.0,
+                "is_forecast": True,
+            },
+            {
+                "date": "2026-02-24",
+                "hour": 12,
+                "snow_depth_cm": 11.0,
+                "temperature_c": -6.0,
+                "is_forecast": True,
+            },
+        ]
+        _smooth_timeline_snow_depth(points)
+
+        # Sub-zero: max 3cm/day. After 4 days: 144 - 12 = 132 floor minimum
+        # All forecast points should be well above 100cm
+        assert points[1]["snow_depth_cm"] >= 140.0
+        assert points[2]["snow_depth_cm"] >= 137.0
+        assert points[3]["snow_depth_cm"] >= 134.0
+        assert points[4]["snow_depth_cm"] >= 130.0
+
+    def test_above_zero_allows_more_melt(self):
+        """Above-zero temps should allow up to 15cm/day loss."""
+        points = [
+            {
+                "date": "2026-02-20",
+                "hour": 12,
+                "snow_depth_cm": 100.0,
+                "temperature_c": 3.0,
+                "is_forecast": False,
+            },
+            {
+                "date": "2026-02-21",
+                "hour": 12,
+                "snow_depth_cm": 60.0,
+                "temperature_c": 5.0,
+                "is_forecast": True,
+            },
+            {
+                "date": "2026-02-22",
+                "hour": 12,
+                "snow_depth_cm": 30.0,
+                "temperature_c": 4.0,
+                "is_forecast": True,
+            },
+        ]
+        _smooth_timeline_snow_depth(points)
+
+        # Above-zero: 15cm/day
+        # Day 1: 100 - 15 = 85 (floor), pair smoothing also caps at 15cm
+        assert points[1]["snow_depth_cm"] == 85.0
+        # Day 2: 100 - 30 = 70 (floor from observed), pair from 85 → 85-15=70
+        assert points[2]["snow_depth_cm"] == 70.0
+
+    def test_snow_increase_not_smoothed(self):
+        """Snow depth increases from new snowfall should never be modified."""
+        points = [
+            {
+                "date": "2026-02-21",
+                "hour": 7,
+                "snow_depth_cm": 50.0,
+                "temperature_c": -5.0,
+                "is_forecast": False,
+            },
+            {
+                "date": "2026-02-21",
+                "hour": 12,
+                "snow_depth_cm": 80.0,
+                "temperature_c": -5.0,
+                "is_forecast": True,
+            },
+            {
+                "date": "2026-02-21",
+                "hour": 16,
+                "snow_depth_cm": 110.0,
+                "temperature_c": -5.0,
+                "is_forecast": True,
+            },
+        ]
+        _smooth_timeline_snow_depth(points)
+
+        assert points[1]["snow_depth_cm"] == 80.0
+        assert points[2]["snow_depth_cm"] == 110.0
+
+    def test_mixed_observed_and_forecast(self):
+        """Only forecast points get the global floor; observed points use pair smoothing only."""
+        points = [
+            {
+                "date": "2026-02-21",
+                "hour": 7,
+                "snow_depth_cm": 100.0,
+                "temperature_c": -5.0,
+                "is_forecast": False,
+            },
+            {
+                "date": "2026-02-21",
+                "hour": 12,
+                "snow_depth_cm": 98.0,
+                "temperature_c": -5.0,
+                "is_forecast": False,
+            },
+            # Forecast starts here - Open-Meteo drops it
+            {
+                "date": "2026-02-22",
+                "hour": 7,
+                "snow_depth_cm": 20.0,
+                "temperature_c": -5.0,
+                "is_forecast": True,
+            },
+        ]
+        _smooth_timeline_snow_depth(points)
+
+        # Last observed: 98cm at 2026-02-21 hour 12
+        # Forecast point: 19h later, sub-zero floor = 98 - (19/24)*3 = 95.6
+        # Pair smoothing: 19h × 0.125 = 2.375 → 98 - 2.4 = 95.6
+        assert points[2]["snow_depth_cm"] >= 95.0
+
+    def test_no_observed_points_still_smooths(self):
+        """If all points are forecast, pair smoothing still works (no floor applied)."""
+        points = [
+            {
+                "date": "2026-02-22",
+                "hour": 7,
+                "snow_depth_cm": 100.0,
+                "temperature_c": -5.0,
+                "is_forecast": True,
+            },
+            {
+                "date": "2026-02-22",
+                "hour": 12,
+                "snow_depth_cm": 10.0,
+                "temperature_c": -5.0,
+                "is_forecast": True,
+            },
+        ]
+        _smooth_timeline_snow_depth(points)
+
+        # Pair smoothing still limits drop: 5h × 0.125 = 0.625 → 100 - 0.6 = 99.4
+        # No observed depth → no floor applied
+        assert points[1]["snow_depth_cm"] == 99.4
+
+    def test_multiday_subzero_forecast_stays_stable(self):
+        """A 7-day forecast at sub-zero should only lose ~21cm total (3cm/day)."""
+        points = [
+            {
+                "date": "2026-02-20",
+                "hour": 12,
+                "snow_depth_cm": 150.0,
+                "temperature_c": -10.0,
+                "is_forecast": False,
+            },
+        ]
+        # Add 7 days of forecast points
+        for day_offset in range(1, 8):
+            d = f"2026-02-{20 + day_offset:02d}"
+            points.append(
+                {
+                    "date": d,
+                    "hour": 12,
+                    "snow_depth_cm": 50.0,
+                    "temperature_c": -10.0,
+                    "is_forecast": True,
+                }
+            )
+
+        _smooth_timeline_snow_depth(points)
+
+        # After 7 days at sub-zero: 150 - 7*3 = 129 floor
+        assert points[-1]["snow_depth_cm"] >= 129.0
+        # Should not have lost more than ~21cm
+        assert points[-1]["snow_depth_cm"] >= 128.0
+
+    def test_transition_from_cold_to_warm(self):
+        """When temp transitions from sub-zero to above-zero, rate should increase."""
+        points = [
+            {
+                "date": "2026-02-21",
+                "hour": 12,
+                "snow_depth_cm": 100.0,
+                "temperature_c": -5.0,
+                "is_forecast": False,
+            },
+            # Next day: warm spell
+            {
+                "date": "2026-02-22",
+                "hour": 12,
+                "snow_depth_cm": 50.0,
+                "temperature_c": 5.0,
+                "is_forecast": True,
+            },
+        ]
+        _smooth_timeline_snow_depth(points)
+
+        # avg_temp = (-5+5)/2 = 0.0, which is >= 0 → above-zero rate
+        # 24h × 0.625 = 15 max pair drop → 100 - 15 = 85
+        # Floor: above-zero 100 - 1*15 = 85
+        assert points[1]["snow_depth_cm"] == 85.0

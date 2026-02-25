@@ -76,24 +76,53 @@ def _request_with_retry(
     raise last_exception
 
 
-# Max snow depth drop per hour (cm) considered physically realistic.
-# Real-world max snowmelt is ~5-10cm/day even in extreme warm/rain-on-snow
-# conditions. 2cm/hour is generous but catches Open-Meteo model splice artifacts
-# (e.g., ERA5→GFS transitions causing 100+ cm phantom drops in hours).
-_MAX_DEPTH_DROP_PER_HOUR = 2.0
+# Temperature-aware melt rates (cm/day), matching ML scorer logic.
+# Sub-zero: only sublimation (~3cm/day). Above-zero: active melt (~15cm/day).
+_MELT_RATE_SUBZERO_PER_DAY = 3.0  # cm/day
+_MELT_RATE_ABOVE_ZERO_PER_DAY = 15.0  # cm/day
+
+
+def _get_melt_rate_per_hour(temperature_c: float | None) -> float:
+    """Return the max allowed snow depth drop per hour based on temperature.
+
+    Sub-zero temps: 3cm/day = 0.125 cm/hour (sublimation only).
+    Above-zero temps: 15cm/day = 0.625 cm/hour (active melt).
+    """
+    if temperature_c is not None and temperature_c >= 0:
+        return _MELT_RATE_ABOVE_ZERO_PER_DAY / 24.0
+    return _MELT_RATE_SUBZERO_PER_DAY / 24.0
 
 
 def _smooth_timeline_snow_depth(points: list[dict]) -> None:
     """Smooth unrealistic snow depth drops between consecutive timeline points.
 
     Open-Meteo forecast models can splice different data sources, producing
-    physically impossible snow depth drops (e.g., 165cm to 50cm in 4 hours).
-    This applies a max-drop-rate cap to prevent misleading timeline data.
+    physically impossible snow depth drops (e.g., 144cm to 11cm in 4 days at
+    sub-zero temps). This applies a temperature-aware max-drop-rate cap to
+    prevent misleading timeline data, matching the ML scorer logic:
+    - Sub-zero temps: max 3cm/day depth loss (sublimation only)
+    - Above-zero temps: max 15cm/day loss (active melt)
+
+    For forecast points, an additional global floor is enforced based on the
+    last observed depth minus (days_elapsed * melt_rate), preventing the
+    forecast from drifting unrealistically low over multiple days.
+
     Increases (new snowfall) are never modified.
     """
     if len(points) < 2:
         return
 
+    # --- Pass 1: Find the last observed (non-forecast) point with depth ---
+    last_observed_depth = None
+    last_observed_date = None
+    last_observed_hour = None
+    for p in points:
+        if not p.get("is_forecast", False) and p.get("snow_depth_cm") is not None:
+            last_observed_depth = p["snow_depth_cm"]
+            last_observed_date = p.get("date", "")
+            last_observed_hour = p.get("hour", 12)
+
+    # --- Pass 2: Apply consecutive-pair smoothing with temperature awareness ---
     for i in range(1, len(points)):
         prev_depth = points[i - 1].get("snow_depth_cm")
         curr_depth = points[i].get("snow_depth_cm")
@@ -116,12 +145,65 @@ def _smooth_timeline_snow_depth(points: list[dict]) -> None:
         else:
             hours_gap = max(1, (24 - prev_hour) + curr_hour)
 
-        max_drop = hours_gap * _MAX_DEPTH_DROP_PER_HOUR
+        # Use the average temperature of the two points to pick the melt rate
+        prev_temp = points[i - 1].get("temperature_c")
+        curr_temp = points[i].get("temperature_c")
+        if prev_temp is not None and curr_temp is not None:
+            avg_temp = (prev_temp + curr_temp) / 2.0
+        elif curr_temp is not None:
+            avg_temp = curr_temp
+        elif prev_temp is not None:
+            avg_temp = prev_temp
+        else:
+            avg_temp = None
+
+        melt_per_hour = _get_melt_rate_per_hour(avg_temp)
+        max_drop = hours_gap * melt_per_hour
         actual_drop = prev_depth - curr_depth
 
         if actual_drop > max_drop:
             smoothed = round(prev_depth - max_drop, 1)
             points[i]["snow_depth_cm"] = max(0, smoothed)
+
+    # --- Pass 3: Forecast floor based on last observed depth ---
+    if last_observed_depth is not None and last_observed_date is not None:
+        for i in range(len(points)):
+            p = points[i]
+            if not p.get("is_forecast", False):
+                continue
+            if p.get("snow_depth_cm") is None:
+                continue
+
+            curr_date = p.get("date", "")
+            curr_hour = p.get("hour", 12)
+
+            # Calculate hours since last observed point
+            # Simple date-based calculation (dates are YYYY-MM-DD strings)
+            try:
+                from datetime import date as date_type
+
+                obs_d = date_type.fromisoformat(last_observed_date)
+                cur_d = date_type.fromisoformat(curr_date)
+                day_diff = (cur_d - obs_d).days
+                hours_since = day_diff * 24 + (curr_hour - last_observed_hour)
+            except (ValueError, TypeError):
+                continue
+
+            if hours_since <= 0:
+                continue
+
+            days_elapsed = hours_since / 24.0
+
+            # Use the forecast point's temperature to determine melt rate
+            curr_temp = p.get("temperature_c")
+            if curr_temp is not None and curr_temp >= 0:
+                daily_rate = _MELT_RATE_ABOVE_ZERO_PER_DAY
+            else:
+                daily_rate = _MELT_RATE_SUBZERO_PER_DAY
+
+            floor_cm = max(0.0, last_observed_depth - days_elapsed * daily_rate)
+            if p["snow_depth_cm"] < floor_cm:
+                p["snow_depth_cm"] = round(floor_cm, 1)
 
 
 class OpenMeteoService:
