@@ -47,9 +47,19 @@ class SnowQualityService:
                 ml_quality, ml_score = predict_quality(weather, elevation_m)
                 if ml_quality != SnowQuality.UNKNOWN:
                     # Post-ML adjustments for features the model doesn't see.
-                    # snow_depth_cm (scraped base depth) isn't a model feature.
-                    # Apply a floor: confirmed deep base means skiing IS possible.
                     snow_depth = getattr(weather, "snow_depth_cm", None)
+                    current_temp = weather.current_temp_celsius
+
+                    # Summer override: warm temps + no snow = not skiable
+                    # ML model was trained on ski-season data, so summer
+                    # conditions (15°C+, no snow) are outside its distribution.
+                    no_fresh = (getattr(weather, "snowfall_24h_cm", 0) or 0) <= 0
+                    no_depth = snow_depth is None or snow_depth <= 0
+                    if current_temp >= 10.0 and no_fresh and no_depth:
+                        ml_quality = SnowQuality.HORRIBLE
+                        ml_score = 1.0
+
+                    # Floor: confirmed deep base means skiing IS possible.
                     if snow_depth is not None and snow_depth >= 50:
                         if ml_quality == SnowQuality.HORRIBLE:
                             ml_quality = SnowQuality.BAD
@@ -151,13 +161,13 @@ class SnowQualityService:
         if snow_depth is not None and snow_depth <= 0 and snow_depth_reliable:
             if snowfall_after_freeze <= 0 and (weather.snowfall_24h_cm or 0) <= 0:
                 adjusted_score = 0.0  # HORRIBLE - confirmed no snow
-        if current_temp >= 20.0:
-            # True summer temps (>20°C) - extremely unlikely to have snow
-            adjusted_score = min(adjusted_score, 0.02)  # HORRIBLE
-        elif current_temp >= 15.0 and snow_depth is None:
-            # Very warm, unknown snow depth - probably no skiable conditions
-            # But cap at BAD, not HORRIBLE, since we're not certain
-            adjusted_score = min(adjusted_score, 0.15)
+        if current_temp >= 10.0 and (snow_depth is None or snow_depth <= 0):
+            no_fresh = (
+                snowfall_after_freeze <= 0 and (weather.snowfall_24h_cm or 0) <= 0
+            )
+            if no_fresh:
+                # Warm temps + no snow depth + no fresh snow = summer / not skiable
+                adjusted_score = 0.0  # HORRIBLE
 
         # Snow depth quality adjustment - base depth affects ski quality
         # Only apply hard caps when snow_depth data is reliable (resort-reported
