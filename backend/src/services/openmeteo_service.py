@@ -93,6 +93,74 @@ def _get_melt_rate_per_hour(temperature_c: float | None) -> float:
     return _MELT_RATE_SUBZERO_PER_DAY / 24.0
 
 
+def _smooth_hourly_snow_depth(
+    snow_depth_m: list[float | None],
+    snowfall_cm: list[float | None],
+    temps: list[float | None],
+) -> list[float | None]:
+    """Smooth the raw hourly snow_depth array from Open-Meteo before ML scoring.
+
+    Open-Meteo's forecast can splice different model outputs, producing
+    unrealistic hour-to-hour snow depth jumps:
+    - Unrealistic INCREASES: +8cm overnight with only 0.1cm measured snowfall
+    - Unrealistic DECREASES: 144cm -> 11cm in 4 days at sub-zero temps
+
+    This function caps both increases and decreases:
+    - Increases: snow_depth can grow by at most the hourly snowfall * 1.5
+      (the 1.5x factor accounts for snow-to-depth expansion ratio and
+      measurement noise). A minimum gain of 0.5cm/hour is always allowed
+      to handle fractional snowfall accumulation.
+    - Decreases: capped at the temperature-aware melt rate (3cm/day sub-zero,
+      15cm/day above-zero), same as the timeline smoothing.
+
+    Args:
+        snow_depth_m: Hourly snow depth in METERS (as from Open-Meteo).
+        snowfall_cm: Hourly snowfall in CM.
+        temps: Hourly temperature in Celsius.
+
+    Returns:
+        New smoothed snow_depth array (in meters) — same length, None values
+        preserved. The input list is NOT modified.
+    """
+    if not snow_depth_m:
+        return snow_depth_m
+
+    result = list(snow_depth_m)  # shallow copy
+
+    for i in range(1, len(result)):
+        prev = result[i - 1]
+        curr = result[i]
+        if prev is None or curr is None:
+            continue
+
+        prev_cm = prev * 100.0
+        curr_cm = curr * 100.0
+        delta_cm = curr_cm - prev_cm
+
+        # --- Cap increases ---
+        if delta_cm > 0:
+            # How much snowfall justifies this increase?
+            sf = 0.0
+            if snowfall_cm and i < len(snowfall_cm) and snowfall_cm[i] is not None:
+                sf = snowfall_cm[i]
+            # Allow snowfall * 1.5 (expansion ratio) + 0.5cm tolerance per hour
+            max_gain_cm = sf * 1.5 + 0.5
+            if delta_cm > max_gain_cm:
+                result[i] = (prev_cm + max_gain_cm) / 100.0
+
+        # --- Cap decreases ---
+        elif delta_cm < 0:
+            temp = None
+            if temps and i < len(temps):
+                temp = temps[i]
+            melt_per_hour_cm = _get_melt_rate_per_hour(temp)
+            max_drop_cm = melt_per_hour_cm  # per hour
+            if abs(delta_cm) > max_drop_cm:
+                result[i] = (prev_cm - max_drop_cm) / 100.0
+
+    return result
+
+
 def _smooth_timeline_snow_depth(points: list[dict]) -> None:
     """Smooth unrealistic snow depth drops between consecutive timeline points.
 
@@ -514,6 +582,15 @@ class OpenMeteoService:
                 d = t[:10]
                 if not dates_seen or dates_seen[-1] != d:
                     dates_seen.append(d)
+
+            # Smooth hourly snow depth BEFORE ML scoring to prevent
+            # unrealistic jumps from feeding into the model. Open-Meteo can
+            # splice different forecast models causing +8cm jumps overnight
+            # with only 0.1cm snowfall, which the ML scorer amplifies into
+            # large score swings.
+            hourly_snow_depth = _smooth_hourly_snow_depth(
+                hourly_snow_depth, hourly_snowfall, hourly_temps
+            )
 
             # Use ML model for timeline quality predictions
             from services.ml_scorer import predict_quality_at_hour

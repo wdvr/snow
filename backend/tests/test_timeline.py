@@ -10,6 +10,7 @@ from models.resort import ElevationLevel, ElevationPoint, Resort
 from models.weather import ConfidenceLevel, SnowQuality
 from services.openmeteo_service import (
     OpenMeteoService,
+    _smooth_hourly_snow_depth,
     _smooth_timeline_scores,
     _smooth_timeline_snow_depth,
 )
@@ -782,3 +783,139 @@ class TestTimelineScoreSmoothing:
             delta = points[i]["snow_score"] - points[i - 1]["snow_score"]
             assert delta <= 8, f"Step {i}: delta={delta} exceeds +8 cap"
             assert delta >= -10, f"Step {i}: delta={delta} exceeds -10 cap"
+
+
+# ---------------------------------------------------------------------------
+# 8. Hourly snow depth smoothing (pre-ML scoring)
+# ---------------------------------------------------------------------------
+
+
+class TestSmoothHourlySnowDepth:
+    """Tests for _smooth_hourly_snow_depth which smooths the raw hourly
+    snow_depth array from Open-Meteo before it is fed to the ML scorer.
+
+    This prevents unrealistic snow depth jumps (both increases and decreases)
+    from causing ML score artifacts in the timeline.
+    """
+
+    def test_caps_unrealistic_increase(self):
+        """Snow depth should not increase more than snowfall justifies.
+
+        Big White scenario: +8cm overnight with only 0.1cm snowfall.
+        The function should cap the increase.
+        """
+        # 5 hours, steady at 1.34m, then jumps to 1.42m
+        snow_depth = [1.34, 1.34, 1.34, 1.34, 1.42]
+        snowfall = [0.0, 0.0, 0.0, 0.0, 0.1]  # only 0.1cm snowfall
+        temps = [-8.0, -8.0, -8.0, -8.0, -8.0]
+
+        result = _smooth_hourly_snow_depth(snow_depth, snowfall, temps)
+
+        # Max gain at hour 4: 0.1 * 1.5 + 0.5 = 0.65cm = 0.0065m
+        # So max depth: 1.34 + 0.0065 = 1.3465m
+        assert result[4] < 1.35  # much less than the original 1.42
+        assert result[4] >= 1.34  # at least as much as previous
+
+    def test_allows_increase_with_snowfall(self):
+        """Legitimate snowfall should allow depth increases."""
+        snow_depth = [1.00, 1.00, 1.10]  # +10cm in one hour
+        snowfall = [0.0, 0.0, 8.0]  # 8cm snowfall
+        temps = [-5.0, -5.0, -5.0]
+
+        result = _smooth_hourly_snow_depth(snow_depth, snowfall, temps)
+
+        # Max gain: 8.0 * 1.5 + 0.5 = 12.5cm = 0.125m
+        # 10cm gain is within limit, should not be modified
+        assert result[2] == 1.10
+
+    def test_caps_unrealistic_decrease_subzero(self):
+        """Large hourly drops at sub-zero should be capped to 0.125cm/hour."""
+        snow_depth = [1.50, 1.40]  # -10cm in one hour at sub-zero
+        snowfall = [0.0, 0.0]
+        temps = [-10.0, -10.0]
+
+        result = _smooth_hourly_snow_depth(snow_depth, snowfall, temps)
+
+        # Max drop: 3cm/day / 24 = 0.125cm/hour = 0.00125m
+        # 1.50 - 0.00125 = 1.49875
+        assert result[1] >= 1.498
+
+    def test_allows_decrease_above_zero(self):
+        """Above-zero temps allow faster melting (15cm/day = 0.625cm/hour)."""
+        snow_depth = [1.00, 0.995]  # -0.5cm in one hour
+        snowfall = [0.0, 0.0]
+        temps = [3.0, 3.0]
+
+        result = _smooth_hourly_snow_depth(snow_depth, snowfall, temps)
+
+        # Max drop: 0.625cm/hour = 0.00625m
+        # 0.5cm drop is within limit
+        assert result[1] == 0.995  # unchanged
+
+    def test_preserves_none_values(self):
+        """None values in the array should be preserved."""
+        snow_depth = [1.0, None, 1.0]
+        snowfall = [0.0, 0.0, 0.0]
+        temps = [-5.0, -5.0, -5.0]
+
+        result = _smooth_hourly_snow_depth(snow_depth, snowfall, temps)
+
+        assert result[1] is None
+        assert result[0] == 1.0
+        assert result[2] == 1.0
+
+    def test_empty_list_returns_empty(self):
+        """Empty input should return empty output."""
+        result = _smooth_hourly_snow_depth([], [], [])
+        assert result == []
+
+    def test_single_value_unchanged(self):
+        """Single-element list should be returned unchanged."""
+        result = _smooth_hourly_snow_depth([1.5], [0.0], [-5.0])
+        assert result == [1.5]
+
+    def test_does_not_modify_input(self):
+        """The original list should not be modified."""
+        original = [1.34, 1.42]
+        snowfall = [0.0, 0.0]
+        temps = [-5.0, -5.0]
+
+        _smooth_hourly_snow_depth(original, snowfall, temps)
+
+        assert original == [1.34, 1.42]
+
+    def test_big_white_full_scenario(self):
+        """Simulate the Big White Feb 16-17 pattern over 24 hours.
+
+        Snow depth at 134cm, then Open-Meteo model splice causes jump to 142cm
+        overnight with negligible snowfall. The smoothing should keep depth
+        close to 134cm + accumulated snowfall.
+        """
+        # 24 hours: steady at 1.34m for 16h, then jumps to 1.42m at hour 17
+        snow_depth = [1.34] * 17 + [1.42] * 7
+        snowfall = [0.0] * 16 + [0.1] + [0.0] * 7  # 0.1cm at hour 16
+        temps = [-8.0] * 24
+
+        result = _smooth_hourly_snow_depth(snow_depth, snowfall, temps)
+
+        # At hour 17, max gain from 1.34: 0.1*1.5 + 0.5 = 0.65cm = 0.0065m
+        # So depth should be ~1.3465m, not 1.42m
+        assert result[17] < 1.36  # well below the 1.42 artifact
+        # Hours 18-23 should cascade from the smoothed value
+        for h in range(17, 24):
+            assert result[h] < 1.40  # none should reach 1.42
+
+    def test_gradual_accumulation_preserved(self):
+        """Gradual accumulation over many hours with steady snowfall
+        should be preserved (each hour within limits).
+        """
+        # 10 hours, each gaining ~1cm with 0.5cm snowfall
+        snow_depth = [1.00 + i * 0.01 for i in range(10)]  # +1cm/hour
+        snowfall = [0.5] * 10  # 0.5cm per hour
+        temps = [-5.0] * 10
+
+        result = _smooth_hourly_snow_depth(snow_depth, snowfall, temps)
+
+        # Each hour gain: 1cm. Limit: 0.5*1.5 + 0.5 = 1.25cm. So all within limits.
+        for i in range(10):
+            assert result[i] == pytest.approx(snow_depth[i], abs=0.001)
