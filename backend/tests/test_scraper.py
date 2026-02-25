@@ -372,7 +372,7 @@ class TestResortPopulator:
         assert resort.resort_id == "big-white"
         assert resort.name == "Big White Ski Resort"
         assert resort.country == "CA"
-        assert resort.region == "BC"  # Uses state_province
+        assert resort.region == "na_west_BC"  # region + state_province for NA resorts
         assert resort.timezone == "America/Vancouver"
         assert resort.official_website == "https://www.bigwhite.com"
         assert len(resort.elevation_points) == 3

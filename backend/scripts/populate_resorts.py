@@ -333,8 +333,15 @@ class ResortPopulator:
             ),
         ]
 
-        # Determine region for Resort model (use state_province if available)
-        region = data.get("state_province", data.get("region", ""))
+        # Determine region for Resort model
+        # Use region from resorts.json (always set: alps, na_east, etc.)
+        # Append state_province for NA resorts to get finer distribution
+        base_region = data.get("region", "")
+        state_province = data.get("state_province", "")
+        if state_province and base_region.startswith("na_"):
+            region = f"{base_region}_{state_province}"
+        else:
+            region = base_region
 
         return Resort(
             resort_id=data["resort_id"],

@@ -312,9 +312,27 @@ def orchestrate_parallel_processing(context) -> dict[str, Any]:
 
     logger.info(f"Grouped {len(resorts)} resorts into {len(resorts_by_region)} regions")
 
-    # Invoke worker Lambda for each region (asynchronously)
-    invocations = []
+    # Split large regions into chunks of max 100 resorts per worker
+    MAX_RESORTS_PER_WORKER = 100
+    chunked_regions: dict[str, list[str]] = {}
     for region, resort_ids in resorts_by_region.items():
+        if len(resort_ids) <= MAX_RESORTS_PER_WORKER:
+            chunked_regions[region] = resort_ids
+        else:
+            for i in range(0, len(resort_ids), MAX_RESORTS_PER_WORKER):
+                chunk = resort_ids[i : i + MAX_RESORTS_PER_WORKER]
+                chunk_key = f"{region}_chunk{i // MAX_RESORTS_PER_WORKER}"
+                chunked_regions[chunk_key] = chunk
+            logger.info(
+                f"Split region {region} ({len(resort_ids)} resorts) into "
+                f"{(len(resort_ids) + MAX_RESORTS_PER_WORKER - 1) // MAX_RESORTS_PER_WORKER} chunks"
+            )
+
+    logger.info(f"Total workers to invoke: {len(chunked_regions)}")
+
+    # Invoke worker Lambda for each region/chunk (asynchronously)
+    invocations = []
+    for region, resort_ids in chunked_regions.items():
         try:
             payload = {
                 "resort_ids": resort_ids,
@@ -370,7 +388,7 @@ def orchestrate_parallel_processing(context) -> dict[str, Any]:
                 "workers_invoked": successful,
                 "workers_failed": failed,
                 "total_resorts": len(resorts),
-                "regions": list(resorts_by_region.keys()),
+                "regions": list(chunked_regions.keys()),
                 "duration_seconds": duration,
                 "invocations": invocations,
             }
