@@ -7,6 +7,12 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 25, 2026
 
+### Map: Forecast time slider updates all annotation pins
+When selecting a future day in the date selector, all map pins now update to show predicted quality for that day — not just the 5 nearby resort cards. Moved date selector above nearby carousel so it's always visible. Added forecast banner and loading indicator. Timeline fetches batched (10 concurrent) with session caching. Region changes also fetch timelines when in forecast mode.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
 ### Timeline: Temperature-aware snow depth smoothing
 Open-Meteo's forecast snow depth model predicted unrealistic snowpack collapse (e.g. 144cm → 11cm in 4 days at sub-zero temps). Replaced flat max-drop-per-hour with temperature-aware melt rates: 3cm/day sub-zero, 15cm/day above-zero. Three-pass smoothing: find last observed, consecutive pair smoothing with temperature, forecast floor clamping. 13 new tests.
 | iOS | Android | Web | API |
