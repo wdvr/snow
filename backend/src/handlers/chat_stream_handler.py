@@ -737,6 +737,67 @@ def _execute_tool(tool_name: str, tool_input: dict, dynamodb) -> dict:
         nearby.sort(key=lambda x: x["distance_km"])
         return {"results": nearby[:20], "count": len(nearby)}
 
+    elif tool_name == "get_resort_details_batch":
+        resort_ids = tool_input.get("resort_ids", [])
+        if not resort_ids:
+            return {"error": "No resort IDs provided"}
+        resort_ids = resort_ids[:10]
+        resorts_table = dynamodb.Table(f"snow-tracker-resorts-{env}")
+        conditions_table = dynamodb.Table(f"snow-tracker-weather-conditions-{env}")
+        results = []
+        for rid in resort_ids:
+            entry = {"resort_id": rid}
+            try:
+                # Resort info
+                r_resp = resorts_table.get_item(Key={"resort_id": rid})
+                resort = r_resp.get("Item", {})
+                entry["name"] = resort.get("name", rid)
+                entry["country"] = resort.get("country")
+                entry["region"] = resort.get("region")
+                if resort.get("day_ticket_price_min_usd"):
+                    entry["day_ticket_price_usd"] = _to_float(
+                        resort["day_ticket_price_min_usd"]
+                    )
+                passes = []
+                if resort.get("epic_pass"):
+                    passes.append(f"Epic ({resort['epic_pass']})")
+                if resort.get("ikon_pass"):
+                    passes.append(f"Ikon ({resort['ikon_pass']})")
+                if passes:
+                    entry["pass_affiliations"] = passes
+
+                # Conditions
+                c_resp = conditions_table.query(
+                    KeyConditionExpression=Key("resort_id").eq(rid),
+                    ScanIndexForward=False,
+                    Limit=3,
+                )
+                conditions = c_resp.get("Items", [])
+                if conditions:
+                    # Representative condition (mid > top > base)
+                    rep = None
+                    for pref in ["mid", "top", "base"]:
+                        for c in conditions:
+                            if c.get("elevation_level") == pref:
+                                rep = c
+                                break
+                        if rep:
+                            break
+                    if not rep:
+                        rep = conditions[0]
+                    entry["snow_quality"] = rep.get("snow_quality", "unknown")
+                    entry["snow_score"] = _to_float(rep.get("quality_score"))
+                    entry["fresh_snow_cm"] = _to_float(rep.get("fresh_snow_cm"))
+                    entry["temperature_c"] = _to_float(rep.get("current_temp_celsius"))
+                    entry["snow_depth_cm"] = _to_float(rep.get("snow_depth_cm"))
+                    entry["wind_speed_kmh"] = _to_float(rep.get("wind_speed_kmh"))
+                    entry["snowfall_24h_cm"] = _to_float(rep.get("snowfall_24h_cm"))
+            except Exception as e:
+                logger.warning("Batch detail error for %s: %s", rid, e)
+                entry["error"] = str(e)
+            results.append(entry)
+        return {"resorts": results, "count": len(results)}
+
     return {"error": f"Unknown tool: {tool_name}"}
 
 
