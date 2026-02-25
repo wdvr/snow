@@ -133,89 +133,86 @@ final class VerificationTests: XCTestCase {
         }
     }
 
-    func testMapView_ZoomAndClusterBehavior() throws {
+    func testMapView_RegionSwitching() throws {
         let tabBar = app.tabBars.firstMatch
         tabBar.buttons["Map"].tap()
         sleep(3)
 
-        // Take initial screenshot to see what the map tab looks like
+        // Take initial screenshot
         let initial = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         initial.name = "map-00-initial"
         initial.lifetime = .keepAlways
         add(initial)
 
-        // MKMapView isn't exposed as XCUIElement.maps — use the navigation title to verify
         let mapTitle = app.navigationBars["Map"]
         XCTAssertTrue(mapTitle.waitForExistence(timeout: 10), "Map tab should show Map title")
 
-        // Wait for annotations to load and conditions to fetch
+        // Wait for annotations to load
         sleep(8)
 
-        // Screenshot after data loads
         let loaded = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         loaded.name = "map-01-loaded"
         loaded.lifetime = .keepAlways
         add(loaded)
 
-        // Navigate to Alps via the globe/region menu
-        let globeButton = app.buttons["Region"]
-        if globeButton.waitForExistence(timeout: 3) {
-            globeButton.tap()
-            sleep(1)
-            let alpsOption = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Alps'")).firstMatch
-            if alpsOption.waitForExistence(timeout: 3) {
-                alpsOption.tap()
-                sleep(5) // Wait for region change + data loading
-            }
+        // Verify map element exists
+        let mapView = app.maps.firstMatch
+        XCTAssertTrue(mapView.exists, "MKMapView should be present")
+
+        // Navigate to Alps via the Region menu
+        let regionButton = app.buttons["Region"]
+        guard regionButton.waitForExistence(timeout: 3) else {
+            XCTFail("Region button not found")
+            return
         }
+        regionButton.tap()
+        sleep(1)
+
+        let alpsOption = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Alps'")).firstMatch
+        guard alpsOption.waitForExistence(timeout: 3) else {
+            XCTFail("Alps option not found in region menu")
+            return
+        }
+        alpsOption.tap()
+        sleep(5)
 
         let alpsView = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         alpsView.name = "map-02-alps-region"
         alpsView.lifetime = .keepAlways
         add(alpsView)
 
-        // Pinch on the map area only (avoid tab bar at bottom)
-        // Use the map element or constrain to upper portion of screen
-        let mapView = app.maps.firstMatch
-        let pinchTarget = mapView.exists ? mapView : app.otherElements.firstMatch
-        pinchTarget.pinch(withScale: 0.3, velocity: -2.0)
-        sleep(4)
+        // Navigate to Japan
+        regionButton.tap()
+        sleep(1)
+        let japanOption = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Japan'")).firstMatch
+        if japanOption.waitForExistence(timeout: 3) {
+            japanOption.tap()
+            sleep(5)
+        }
 
-        let zoomOut1 = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        zoomOut1.name = "map-03-zoomed-out"
-        zoomOut1.lifetime = .keepAlways
-        add(zoomOut1)
+        let japanView = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        japanView.name = "map-03-japan-region"
+        japanView.lifetime = .keepAlways
+        add(japanView)
 
-        // Zoom out more
-        pinchTarget.pinch(withScale: 0.3, velocity: -2.0)
-        sleep(4)
+        // Navigate back to NA Rockies
+        regionButton.tap()
+        sleep(1)
+        let rockiesOption = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Rockies'")).firstMatch
+        if rockiesOption.waitForExistence(timeout: 3) {
+            rockiesOption.tap()
+            sleep(5)
+        }
 
-        let zoomOut2 = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        zoomOut2.name = "map-04-zoomed-out-more"
-        zoomOut2.lifetime = .keepAlways
-        add(zoomOut2)
+        let rockiesView = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        rockiesView.name = "map-04-rockies-region"
+        rockiesView.lifetime = .keepAlways
+        add(rockiesView)
 
-        // Zoom back in
-        pinchTarget.pinch(withScale: 5.0, velocity: 5.0)
-        sleep(4)
-
-        let zoomIn1 = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        zoomIn1.name = "map-05-zoomed-in"
-        zoomIn1.lifetime = .keepAlways
-        add(zoomIn1)
-
-        // Zoom in more
-        pinchTarget.pinch(withScale: 5.0, velocity: 5.0)
-        sleep(4)
-
-        let zoomIn2 = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        zoomIn2.name = "map-06-zoomed-in-detail"
-        zoomIn2.lifetime = .keepAlways
-        add(zoomIn2)
-
-        // Verify app is still responsive and we're still on Map tab
-        XCTAssertTrue(tabBar.exists, "Tab bar should remain visible after zoom operations")
-        XCTAssertTrue(mapTitle.exists, "Should still be on Map tab after zoom operations")
+        // Verify still on Map tab after all region switches
+        XCTAssertTrue(tabBar.exists, "Tab bar should remain visible")
+        XCTAssertTrue(mapTitle.exists, "Should still be on Map tab")
+        XCTAssertTrue(mapView.exists, "Map should still be present")
     }
 
     // MARK: - Fresh Powder Chart Verification
