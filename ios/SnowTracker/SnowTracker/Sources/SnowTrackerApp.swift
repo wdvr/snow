@@ -106,9 +106,11 @@ struct SnowTrackerApp: App {
                                      ProcessInfo.processInfo.arguments.contains("DEMO_DATA")
                     showOnboarding = isTestMode ? false : !userPreferencesManager.hasCompletedOnboarding
 
-                    // Request notification permissions when user is authenticated
-                    Task {
-                        await pushNotificationService.requestAuthorization()
+                    // Request notification permissions when user is authenticated (skip in test mode)
+                    if !ProcessInfo.processInfo.arguments.contains("UI_TESTING") {
+                        Task {
+                            await pushNotificationService.requestAuthorization()
+                        }
                     }
                 }
             }

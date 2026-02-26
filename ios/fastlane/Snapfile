@@ -2,9 +2,8 @@
 
 # Devices to capture screenshots on (Xcode 26 / iOS 19 simulators)
 devices([
-  "iPhone 17 Pro Max",
-  "iPhone 17 Pro",
-  "iPhone 16e"
+  "iPad Pro 13-inch (M5)",
+  "iPad Pro 11-inch (M5)"
 ])
 
 # Languages to capture
@@ -19,7 +18,7 @@ scheme("SnowTracker")
 output_directory("./screenshots")
 
 # Clear previous screenshots
-clear_previous_screenshots(true)
+clear_previous_screenshots(false)
 
 # Override the status bar
 override_status_bar(true)
