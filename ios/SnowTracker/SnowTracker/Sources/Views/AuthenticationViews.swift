@@ -18,6 +18,7 @@ struct WelcomeView: View {
                 Text("Powder Chaser")
                     .font(.largeTitle)
                     .fontWeight(.bold)
+                    .accessibilityIdentifier(AccessibilityID.Welcome.appTitle)
 
                 Text("Track snow conditions at your favorite ski resorts")
                     .font(.body)
@@ -97,6 +98,7 @@ struct WelcomeView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
+                .accessibilityIdentifier(AccessibilityID.Welcome.continueButton)
                 .padding(.top, 8)
             }
 

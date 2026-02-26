@@ -31,6 +31,7 @@ struct ChatView: View {
                         Image(systemName: "clock.arrow.circlepath")
                     }
                     .accessibilityLabel("Conversation history")
+                    .accessibilityIdentifier(AccessibilityID.Chat.historyButton)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -39,6 +40,7 @@ struct ChatView: View {
                         Image(systemName: "square.and.pencil")
                     }
                     .accessibilityLabel("New conversation")
+                    .accessibilityIdentifier(AccessibilityID.Chat.newConversationButton)
                 }
             }
             .sheet(isPresented: $viewModel.showConversationList) {
@@ -72,6 +74,7 @@ struct ChatView: View {
                 Text("Ask about snow conditions")
                     .font(.title2)
                     .fontWeight(.semibold)
+                    .accessibilityIdentifier(AccessibilityID.Chat.emptyState)
 
                 Text("Get personalized recommendations, condition updates, and ski trip advice.")
                     .font(.body)
@@ -192,6 +195,7 @@ struct ChatView: View {
                     .padding(.vertical, 10)
                     .background(Color(.systemGray6))
                     .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .accessibilityIdentifier(AccessibilityID.Chat.messageInput)
                     .onSubmit {
                         sendCurrentMessage()
                     }
@@ -211,6 +215,7 @@ struct ChatView: View {
                 .disabled(!canSend)
                 .sensoryFeedback(.impact, trigger: sendTrigger)
                 .accessibilityLabel(viewModel.isSending ? "Sending message" : "Send message")
+                .accessibilityIdentifier(AccessibilityID.Chat.sendButton)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)

@@ -7,6 +7,12 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 25, 2026
 
+### iOS: UI test framework with accessibility identifiers
+Added `AccessibilityIdentifiers.swift` — centralized enum of stable test IDs shared between app and UI tests. Added `.accessibilityIdentifier()` to key views (WelcomeView, MainTabView chat FAB, ChatView inputs/buttons, ResortDetailView toolbar). Created `UITestHelpers.swift` with `TestID` mirrored constants, `XCUIApplication`/`XCUIElement` extensions (`waitToExist`, `waitAndTap`, `navigateToTab`, `openChat`, `takeScreenshot`). New `SmokeTests.swift` — 8 quick tests covering resort list, detail, all tabs, map, chat send, settings, regressions, data source. Created `/test-ui` skill for easy invocation. All 8 smoke tests passing.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
 ### Feature: Multi-source weather data (Snow-Forecast + WeatherKit + MultiSourceMerger)
 Open-Meteo missed 3cm snowfall at Big White on Feb 24 (all 4 models showed 0.0cm). Added 3 supplementary data sources with weighted averaging to catch what grid models miss:
 - **Snow-Forecast scraper** (`snowforecast_scraper.py`): Scrapes snow-forecast.com for 3300+ resorts. Auto-generates URL slugs with override file. Runs as prefetch Lambda every 6 hours, writes cache to S3.

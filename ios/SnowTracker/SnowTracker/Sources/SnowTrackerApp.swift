@@ -218,6 +218,7 @@ struct MainTabView: View {
             .padding(.trailing, 16)
             .padding(.bottom, 72) // Above the tab bar
             .accessibilityLabel("Ask AI about snow conditions")
+            .accessibilityIdentifier(AccessibilityID.Tab.chatFAB)
         }
         .sheet(isPresented: $showingChat) {
             NavigationStack {

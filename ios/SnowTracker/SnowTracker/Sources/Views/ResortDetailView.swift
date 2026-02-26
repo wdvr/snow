@@ -147,6 +147,7 @@ struct ResortDetailView: View {
                             .foregroundStyle(.blue)
                     }
                     .accessibilityLabel("Share \(resort.name)")
+                    .accessibilityIdentifier(AccessibilityID.ResortDetail.shareButton)
 
                     Button {
                         let wasFavorite = userPreferencesManager.isFavorite(resortId: resort.id)
@@ -162,6 +163,7 @@ struct ResortDetailView: View {
                     }
                     .sensoryFeedback(.impact(weight: .light), trigger: userPreferencesManager.isFavorite(resortId: resort.id))
                     .accessibilityLabel(userPreferencesManager.isFavorite(resortId: resort.id) ? "Remove from favorites" : "Add to favorites")
+                    .accessibilityIdentifier(AccessibilityID.ResortDetail.favoriteButton)
                 }
             }
         }

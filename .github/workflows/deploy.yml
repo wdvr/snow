@@ -271,9 +271,10 @@ jobs:
           aws lambda wait function-updated --function-name "$WEATHER_LAMBDA" --region us-west-2
 
           # Update Weather Lambda environment variables with Weather API key and parallel processing config
+          WEBSITE_BUCKET=$(pulumi stack output website_bucket_name 2>/dev/null || echo "")
           aws lambda update-function-configuration \
             --function-name "$WEATHER_LAMBDA" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},SNOW_SUMMARY_TABLE=snow-tracker-snow-summary-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,WEATHER_API_KEY=${{ secrets.WEATHER_API_KEY }},PARALLEL_PROCESSING=true,WEATHER_WORKER_LAMBDA=snow-tracker-weather-worker-${{ env.ENVIRONMENT }}}" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},SNOW_SUMMARY_TABLE=snow-tracker-snow-summary-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,WEATHER_API_KEY=${{ secrets.WEATHER_API_KEY }},PARALLEL_PROCESSING=true,WEATHER_WORKER_LAMBDA=snow-tracker-weather-worker-${{ env.ENVIRONMENT }},ENABLE_SNOWFORECAST=${{ vars.ENABLE_SNOWFORECAST || 'false' }},ENABLE_WEATHERKIT=${{ vars.ENABLE_WEATHERKIT || 'false' }},WEBSITE_BUCKET=$WEBSITE_BUCKET}" \
             --region us-west-2
           # Wait for configuration update to complete before invoking
           aws lambda wait function-updated --function-name "$WEATHER_LAMBDA" --region us-west-2
@@ -292,12 +293,33 @@ jobs:
           aws lambda wait function-updated --function-name "$WORKER_LAMBDA" --region us-west-2
 
           # Update Worker Lambda environment variables
+          WEBSITE_BUCKET=$(pulumi stack output website_bucket_name 2>/dev/null || echo "")
           aws lambda update-function-configuration \
             --function-name "$WORKER_LAMBDA" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},SNOW_SUMMARY_TABLE=snow-tracker-snow-summary-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,ENABLE_SCRAPING=true}" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},SNOW_SUMMARY_TABLE=snow-tracker-snow-summary-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,ENABLE_SCRAPING=true,ENABLE_SNOWFORECAST=${{ vars.ENABLE_SNOWFORECAST || 'false' }},ENABLE_WEATHERKIT=${{ vars.ENABLE_WEATHERKIT || 'false' }},WEATHERKIT_KEY_ID=${{ secrets.WEATHERKIT_KEY_ID }},WEATHERKIT_TEAM_ID=${{ secrets.WEATHERKIT_TEAM_ID }},WEATHERKIT_SERVICE_ID=${{ secrets.WEATHERKIT_SERVICE_ID }},WEATHERKIT_PRIVATE_KEY=${{ secrets.APNS_PRIVATE_KEY }},WEBSITE_BUCKET=$WEBSITE_BUCKET}" \
             --region us-west-2
           aws lambda wait function-updated --function-name "$WORKER_LAMBDA" --region us-west-2
           echo "Weather worker Lambda updated"
+        fi
+
+        # Deploy Snow-Forecast Prefetch Lambda
+        SNOWFORECAST_PREFETCH=$(pulumi stack output snowforecast_prefetch_lambda_name 2>/dev/null || echo "")
+        if [ -n "$SNOWFORECAST_PREFETCH" ]; then
+          echo "Deploying Snow-Forecast prefetch Lambda: $SNOWFORECAST_PREFETCH"
+          aws lambda update-function-code \
+            --function-name "$SNOWFORECAST_PREFETCH" \
+            --s3-bucket "$S3_BUCKET" \
+            --s3-key "$S3_KEY" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$SNOWFORECAST_PREFETCH" --region us-west-2
+
+          WEBSITE_BUCKET=$(pulumi stack output website_bucket_name 2>/dev/null || echo "")
+          aws lambda update-function-configuration \
+            --function-name "$SNOWFORECAST_PREFETCH" \
+            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEBSITE_BUCKET=$WEBSITE_BUCKET,AWS_REGION_NAME=us-west-2,ENABLE_SNOWFORECAST=${{ vars.ENABLE_SNOWFORECAST || 'false' }}}" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$SNOWFORECAST_PREFETCH" --region us-west-2
+          echo "Snow-Forecast prefetch Lambda updated"
         fi
 
         # Deploy Notification Processor Lambda

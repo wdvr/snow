@@ -14,10 +14,10 @@
 		11D0DB5A4864269D0A8598E3 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF33CA8F73FA5BD6D0F6BD2D /* ChatView.swift */; };
 		13A14C16F7CFE989DFFE1964 /* ChatModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1635B7A93AAE200DEC375BC6 /* ChatModels.swift */; };
 		14C97521780E220BC435156D /* FavoriteResortsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8AB00E37F5DF1C8E10BC49 /* FavoriteResortsWidget.swift */; };
+		1621BD9D05478CC336F103C2 /* VerificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9C83313B88102F6A965AA5 /* VerificationTests.swift */; };
 		23634E16039127E287DA8579 /* MarkdownTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCCCD6C11E9F488422A568CB /* MarkdownTextView.swift */; };
 		24A3BDA567803E68B65547C7 /* AuthenticationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3612902D14F964CD974A7E /* AuthenticationViews.swift */; };
 		2699A5371F1EFF464AB8F9E9 /* FeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D94F3FDE9BBCEF47C3DC8547 /* FeedbackView.swift */; };
-		A1B2C3D4E5F6A7B8C9D0E1F2 /* FreshSnowChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A6978899AABBCC /* FreshSnowChartView.swift */; };
 		27E922B1DB9A3CE6F24C50FB /* SnowHistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFCC44C01CB34330491CAD12 /* SnowHistoryViewModel.swift */; };
 		2893B3FE0ED2A4CA70943CF3 /* ChatStreamService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F2757D08B81B5039D42E6A /* ChatStreamService.swift */; };
 		28C91E5DC315AE071CA75619 /* SnowActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBB345FFD1FF45422315F20B /* SnowActivityAttributes.swift */; };
@@ -29,6 +29,7 @@
 		4C2533C919834F8578674A2B /* SnapshotHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C195DDF1D0D05A96F34D77AC /* SnapshotHelper.swift */; };
 		5017E601E16B16F2F0196F07 /* Get in Frameworks */ = {isa = PBXBuildFile; productRef = 5074AE9C4AA03E9E7DB9DBC6 /* Get */; };
 		514E4F8C914B124E8CF32B6D /* ConditionsCardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAA0B72B2C9EE91340F25C97 /* ConditionsCardRenderer.swift */; };
+		530BAA061BBF702320C3958D /* FreshSnowChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 784F025B0629DA3DF47E99A2 /* FreshSnowChartView.swift */; };
 		583A1EF95BA90FA045E5D0E0 /* ResortMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D2E198287C4AD2358752184 /* ResortMapView.swift */; };
 		5C548AAEA20DC47384E0E971 /* ConditionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E42DC701CEC0DFCAD7762C72 /* ConditionsView.swift */; };
 		5DA15732F63A651618B8C70F /* SnowTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600A8FDCB572F6C887540554 /* SnowTrackerTests.swift */; };
@@ -43,6 +44,7 @@
 		75E9966D6DAC958DE49B8269 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9DA3C8E41208AE034CEF3110 /* Assets.xcassets */; };
 		7AB63FA94855BFFC3BC3D96D /* CacheService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8480267002B460788F226295 /* CacheService.swift */; };
 		7B4D64BE9D189ECF26FE05D7 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85F8A84962506DB38BA81FB7 /* TimelineView.swift */; };
+		7F454047904F2C987BA23E8F /* UITestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68F05866A07C8909E2AE72C6 /* UITestHelpers.swift */; };
 		83BFBF66519B19306415836C /* LiveActivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B48EC86DA1144402981A655C /* LiveActivityService.swift */; };
 		846AE61CF19B698637C23B0B /* WidgetDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCFAE2F42CB31F05913BA69F /* WidgetDataService.swift */; };
 		8630CE68111A71BAD075A768 /* ResortComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 539BF9159F2A3F98AAA6BB3D /* ResortComparisonView.swift */; };
@@ -59,7 +61,6 @@
 		9D87FE6D1BD3A9D9E7B82B90 /* SnowTrackerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 00C42DA351EFF0BEC9BA422F /* SnowTrackerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A4382A7758E7EBE091690413 /* ResortListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D49E6B5DE0674E438239F0C7 /* ResortListView.swift */; };
 		A54716CE89BF74F69590ABB8 /* AppStoreScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A4D65C5E4661E9DBBBB32F /* AppStoreScreenshotTests.swift */; };
-		AB1234567890ABCDEF123456 /* VerificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD1234567890ABCDEF654321 /* VerificationTests.swift */; };
 		A559B6F611A845A81B6E08EF /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = D306BA8EC8E75B251574AF45 /* GoogleService-Info.plist */; };
 		A79CA1D7F4A1253EFC65CB4B /* DemoDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C1BA087DD0B345FC02441ED /* DemoDataService.swift */; };
 		A998E46579EE3277F6D34651 /* RecommendationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE39AEFA27BB224346186A6A /* RecommendationsView.swift */; };
@@ -79,10 +80,12 @@
 		D04213A2BEB06ED263D9142A /* ConditionReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 797AF28B33149DFC927CC903 /* ConditionReportView.swift */; };
 		DBA4D59F60EA8E60D3D11FF2 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B59B0D2F334DE813DE1268D1 /* SplashView.swift */; };
 		DE52E62806A7F2BDDCC1E5C1 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = F3EC6FA3AFD9ECE413C5A241 /* Localizable.strings */; };
+		DEE333AC4B8B72D6B65D1F55 /* AccessibilityIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 790104AF335F140B9D56348F /* AccessibilityIdentifiers.swift */; };
 		E7549391673F80171524838C /* WeatherOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B196943034A048B5D01CCD3 /* WeatherOverlayView.swift */; };
 		E7CF494BB70849124947F9DE /* SnowHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B3B591AC2743684FF45B6A5 /* SnowHistoryView.swift */; };
 		E89342C149C896FEBF733BE5 /* ComparisonViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BED613B04136F3F4C1D7D1 /* ComparisonViewModel.swift */; };
 		EA531D55CCE208840DBD24CA /* Region.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C040FB3169E04F140636D1 /* Region.swift */; };
+		EF9D4968D873BB951FE525A6 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FC2F4FAAAB5ABCF58B565C /* SmokeTests.swift */; };
 		F9020C24571C7C3A61EC859C /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E79FF0C0BD7247085E14C267 /* NetworkMonitor.swift */; };
 		FC67304268676D8710EE8B4C /* SnowActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBB345FFD1FF45422315F20B /* SnowActivityAttributes.swift */; };
 		FD496A542126404D40F9C045 /* ElevationProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02AB28D2400C161669AD5B88 /* ElevationProfileView.swift */; };
@@ -157,10 +160,13 @@
 		5E8AB00E37F5DF1C8E10BC49 /* FavoriteResortsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteResortsWidget.swift; sourceTree = "<group>"; };
 		600A8FDCB572F6C887540554 /* SnowTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowTrackerTests.swift; sourceTree = "<group>"; };
 		61CA3C498827FBF30FCBE0C5 /* ClusteredMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClusteredMapView.swift; sourceTree = "<group>"; };
+		68F05866A07C8909E2AE72C6 /* UITestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestHelpers.swift; sourceTree = "<group>"; };
 		6C1BA087DD0B345FC02441ED /* DemoDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoDataService.swift; sourceTree = "<group>"; };
 		74BED613B04136F3F4C1D7D1 /* ComparisonViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonViewModel.swift; sourceTree = "<group>"; };
 		7541873DA49F1D2D2DD57767 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		784F025B0629DA3DF47E99A2 /* FreshSnowChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreshSnowChartView.swift; sourceTree = "<group>"; };
 		788B314D9D64678AD7BBA620 /* SnowTracker.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SnowTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		790104AF335F140B9D56348F /* AccessibilityIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityIdentifiers.swift; sourceTree = "<group>"; };
 		797AF28B33149DFC927CC903 /* ConditionReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionReportView.swift; sourceTree = "<group>"; };
 		7EA770DE28FAAFB7C82C04D9 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
 		803860FB4C86259454D90307 /* nb */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nb; path = nb.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -194,7 +200,6 @@
 		C195DDF1D0D05A96F34D77AC /* SnapshotHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotHelper.swift; sourceTree = "<group>"; };
 		C1CD2C514C419D7264FB7E0D /* SnowTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowTrackerApp.swift; sourceTree = "<group>"; };
 		C8A4D65C5E4661E9DBBBB32F /* AppStoreScreenshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotTests.swift; sourceTree = "<group>"; };
-		CD1234567890ABCDEF654321 /* VerificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerificationTests.swift; sourceTree = "<group>"; };
 		C9D8809765B1DAE070C75605 /* GoogleService-Info.plist.template */ = {isa = PBXFileReference; path = "GoogleService-Info.plist.template"; sourceTree = "<group>"; };
 		CBB345FFD1FF45422315F20B /* SnowActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowActivityAttributes.swift; sourceTree = "<group>"; };
 		CF54F2EE12C18F789C609199 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
@@ -204,7 +209,6 @@
 		D49E6B5DE0674E438239F0C7 /* ResortListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResortListView.swift; sourceTree = "<group>"; };
 		D767B6D865228C265F2ABFFD /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = nl.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D94F3FDE9BBCEF47C3DC8547 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
-		F1E2D3C4B5A6978899AABBCC /* FreshSnowChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreshSnowChartView.swift; sourceTree = "<group>"; };
 		DCCCD6C11E9F488422A568CB /* MarkdownTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownTextView.swift; sourceTree = "<group>"; };
 		DD047E2A750245979D8452D8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DF4178DE92CCE9002408C907 /* RegionFilterSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionFilterSettingsView.swift; sourceTree = "<group>"; };
@@ -212,12 +216,14 @@
 		E32383CBDD1468C74E618025 /* SnowTrackerUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SnowTrackerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E42DC701CEC0DFCAD7762C72 /* ConditionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionsView.swift; sourceTree = "<group>"; };
 		E584D4547756C9B47E811A69 /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
+		E6FC2F4FAAAB5ABCF58B565C /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
 		E79FF0C0BD7247085E14C267 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		EF33CA8F73FA5BD6D0F6BD2D /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		F56FE154DA2CD3D9259038B2 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
 		F6DA2B806F38369F0414AA36 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 		F791186240D2E89D57EBE5B3 /* TimelineData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineData.swift; sourceTree = "<group>"; };
 		FAA0B72B2C9EE91340F25C97 /* ConditionsCardRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionsCardRenderer.swift; sourceTree = "<group>"; };
+		FC9C83313B88102F6A965AA5 /* VerificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerificationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -294,7 +300,7 @@
 				02AB28D2400C161669AD5B88 /* ElevationProfileView.swift */,
 				1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */,
 				D94F3FDE9BBCEF47C3DC8547 /* FeedbackView.swift */,
-				F1E2D3C4B5A6978899AABBCC /* FreshSnowChartView.swift */,
+				784F025B0629DA3DF47E99A2 /* FreshSnowChartView.swift */,
 				DCCCD6C11E9F488422A568CB /* MarkdownTextView.swift */,
 				279D40CEA622F25142C8FD65 /* NotificationSettingsView.swift */,
 				9C9690886D46EBB22DBF795D /* OnboardingView.swift */,
@@ -354,9 +360,11 @@
 			children = (
 				C8A4D65C5E4661E9DBBBB32F /* AppStoreScreenshotTests.swift */,
 				B70DB3D9D6611B6FD69120E7 /* Info.plist */,
+				E6FC2F4FAAAB5ABCF58B565C /* SmokeTests.swift */,
 				C195DDF1D0D05A96F34D77AC /* SnapshotHelper.swift */,
 				04113168D514491AA588BD9E /* SnowTrackerUITests.swift */,
-				CD1234567890ABCDEF654321 /* VerificationTests.swift */,
+				68F05866A07C8909E2AE72C6 /* UITestHelpers.swift */,
+				FC9C83313B88102F6A965AA5 /* VerificationTests.swift */,
 			);
 			name = SnowTrackerUITests;
 			path = SnowTracker/SnowTrackerUITests;
@@ -369,6 +377,7 @@
 				285960ACA67185390B9A0DFC /* Services */,
 				1E3908A7EEE6BA35E8EA44FB /* ViewModels */,
 				2B26478395424C45EDF16B48 /* Views */,
+				790104AF335F140B9D56348F /* AccessibilityIdentifiers.swift */,
 				C1CD2C514C419D7264FB7E0D /* SnowTrackerApp.swift */,
 			);
 			name = Sources;
@@ -590,6 +599,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				74BA625B9E4FE88B4C6172C6 /* APIClient.swift in Sources */,
+				DEE333AC4B8B72D6B65D1F55 /* AccessibilityIdentifiers.swift in Sources */,
 				0AAE22343FF726A2537D8CEB /* AnalyticsService.swift in Sources */,
 				006044A1947385DE91B47537 /* AppBackground.swift in Sources */,
 				38D5CCC28385D7DC0208CB70 /* AuthenticationService.swift in Sources */,
@@ -612,7 +622,7 @@
 				FD496A542126404D40F9C045 /* ElevationProfileView.swift in Sources */,
 				C0711EC616F41F08730D790A /* FavoritesView.swift in Sources */,
 				2699A5371F1EFF464AB8F9E9 /* FeedbackView.swift in Sources */,
-				A1B2C3D4E5F6A7B8C9D0E1F2 /* FreshSnowChartView.swift in Sources */,
+				530BAA061BBF702320C3958D /* FreshSnowChartView.swift in Sources */,
 				83BFBF66519B19306415836C /* LiveActivityService.swift in Sources */,
 				9BF10F65F1BF8419E4A87267 /* LocationManager.swift in Sources */,
 				8720BD7F787971D36BBEE343 /* Managers.swift in Sources */,
@@ -666,9 +676,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				A54716CE89BF74F69590ABB8 /* AppStoreScreenshotTests.swift in Sources */,
+				EF9D4968D873BB951FE525A6 /* SmokeTests.swift in Sources */,
 				4C2533C919834F8578674A2B /* SnapshotHelper.swift in Sources */,
 				B2357528C3D50AC74D4E81FF /* SnowTrackerUITests.swift in Sources */,
-				AB1234567890ABCDEF123456 /* VerificationTests.swift in Sources */,
+				7F454047904F2C987BA23E8F /* UITestHelpers.swift in Sources */,
+				1621BD9D05478CC336F103C2 /* VerificationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
