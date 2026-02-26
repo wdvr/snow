@@ -73,6 +73,30 @@ Replaced generic chat suggestions with practical examples: "Best snow within 500
 |-----|---------|-----|-----|
 | done | pending | n/a | n/a |
 
+### Fix: Raw JSON tool calls visible in AI chat
+AI sometimes hallucinated `<tool_call>`/`<tool_response>` XML blocks in text responses instead of using native tool_use. Fixed: (1) iOS strips these blocks before rendering, (2) backend system prompt now explicitly forbids raw JSON in responses, (3) intermediate "thinking" messages hidden from display.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Feature: Rich resort cards in AI chat carousel
+Overhauled resort cards from basic name+stats to visually rich cards: quality gradient header with snow score (0-100), SF Symbol quality icon, trail difficulty bar (green/blue/black/double-black proportional), lift ticket price range, pass badges (Epic/Ikon/Indy), temperature/snow/depth stats, country/region display. Cards expand to full resort detail on tap.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Fix: Improved markdown table rendering
+Better column sizing (auto-calculated based on column count), alternating row backgrounds, cleaner dividers, proper padding. Tables are horizontally scrollable with rounded corners.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Feature: Enriched nearby resorts data in chat
+`get_nearby_resorts` tool in stream handler now returns pricing, pass affiliations, and current conditions inline — avoids needing a second `get_resort_details_batch` call. Faster responses for "resorts near me" queries.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ## Feb 26, 2026
 
 ### Fix: Replace weighted-average merge with outlier detection + majority consensus
