@@ -20,43 +20,51 @@
 - [x] Update App Store screenshot tests (add AI chat, iPad)
 - [x] Update release notes for v1.1
 - [x] TestFlight build uploaded (build 698)
-- [ ] Generate final screenshots (iPhone + iPad) — running
+- [x] Generate final screenshots (iPhone 17 Pro Max + iPhone 17)
+- [ ] Generate iPad screenshots (iPad Pro 13" + 11")
 - [ ] Upload metadata + screenshots to App Store Connect
 - [ ] Submit for App Store review
 - [x] Create `/ios-release` skill with lessons learned
 
 #### Dynamic Chat Suggestions
-- [ ] Create DynamoDB table for chat suggestions
-- [ ] Add API endpoint to fetch suggestions
-- [ ] Make 12/16 suggestions location/favorites-aware with interpolation tokens
-- [ ] Default to embedded 16 if table empty
-- [ ] Update iOS, Android, Web to fetch from API
-- [ ] Document table schema and update process
+- [x] Create DynamoDB table for chat suggestions (in Pulumi)
+- [x] Add API endpoint `GET /api/v1/chat/suggestions` (no auth required)
+- [x] Make 12/16 suggestions location/favorites-aware with interpolation tokens
+- [x] Default to embedded 16 if table empty
+- [x] Update iOS to fetch from API with token interpolation
+- [ ] Update Android, Web to fetch from API
+- [ ] Seed chat suggestions table (after infrastructure deploys)
 
 #### Resort Logos
-- [ ] Research logo availability for all 1040 resorts
-- [ ] Find/scrape logo URLs (skiresort.info, official sites)
+- [x] Research logo availability — Google Favicon API covers 74%
+- [x] Generated `backend/data/resort_logos.json` with URLs
 - [ ] Add logo_url to resorts.json
 - [ ] Display in resort detail view top cell (iOS, Android, Web)
 
-#### Resort Data Deep Audit
-- [ ] Cross-country only resort check (especially Scandinavia, Alps)
-- [ ] Duplicate resort detection
-- [ ] Coordinate accuracy verification
-- [ ] Elevation data validation
-- [ ] Ticket price sanity check
-- [ ] Pass affiliation accuracy
-- [ ] Region assignment verification
-- [ ] Report findings in BUGS.md
+#### Resort Data Deep Audit — COMPLETED
+- [x] Cross-country only resort check → Removed 22 non-downhill resorts (1040→1018)
+- [x] Duplicate resort detection → 2 exact + ~14 combined-area identified
+- [x] Coordinate accuracy verification → Fixed Hafjell, Nesfjellet, Dollar Mountain
+- [x] Elevation data validation → Nulled 26 bogus, fixed 7 specific errors
+- [x] Ticket price sanity check → Nulled 21 local-currency-as-USD prices
+- [x] Pass affiliation accuracy → Added Ikon/Epic for 6 resorts
+- [x] Added missing Alyeska Resort (biggest AK, Ikon full)
+- [x] Report in BUGS.md
 
-#### Snow Quality & Prediction Audit
-- [ ] Verify active snowfall → high quality correlation
-- [ ] Verify cold+dry → low quality
-- [ ] Prediction stability across days
-- [ ] Impossible value detection (negative snow, extreme temps)
-- [ ] Source data consistency check
-- [ ] API response validation (all endpoints)
-- [ ] Report issues in BUGS.md
+#### Snow Quality & Prediction Audit — COMPLETED
+- [x] BUG-008 FIXED: Timeline phantom champagne powder → no-snowfall-cap in ML scorer
+- [x] BUG-001 FIXED: Limit/offset pagination on /api/v1/resorts
+- [x] BUG-005 FIXED: "Not skiable" explanation with 81cm base → depth-aware logic
+- [x] BUG-009 FIXED: Finnish bogus elevations corrupting recommendations
+- [x] CQA-001 FIXED: iOS SSE UTF-8 corruption
+- [x] CQA-002/006 FIXED: React Query cache mutations from .sort()
+- [x] CQA-003 FIXED: setState during render in useChat
+- [x] CQA-007 FIXED: Web fetch timeout (30s AbortController)
+- [x] API response validation — 17/17 endpoints healthy
+- [x] Backend tests: 1592 passing
+- [ ] BUG-003: Scores too low for fresh snow (Lake Louise 21cm=-7.5C=26)
+- [ ] BUG-006: Breckenridge depth mismatch (static JSON vs live)
+- [ ] BUG-011: Source disagreement not triggering outlier detection
 
 ### TODO: iOS / Backend / Cross-platform
 
