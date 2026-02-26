@@ -26,6 +26,7 @@ import com.powderchaserapp.android.data.api.Resort
 import com.powderchaserapp.android.data.api.SnowQualitySummaryLight
 import com.powderchaserapp.android.data.repository.ResortRepository
 import com.powderchaserapp.android.data.repository.SnowQualityRepository
+import com.powderchaserapp.android.ui.components.ResortLogo
 import com.powderchaserapp.android.ui.theme.SnowColors
 import com.powderchaserapp.android.ui.theme.snowQualityColor
 import com.powderchaserapp.android.util.UnitConversions
@@ -409,7 +410,13 @@ fun ResortListItem(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Flag + name + location
+                // Logo + flag + name + location
+                ResortLogo(
+                    resortName = resort.name,
+                    officialWebsite = resort.officialWebsite,
+                    size = 36.dp,
+                )
+                Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(

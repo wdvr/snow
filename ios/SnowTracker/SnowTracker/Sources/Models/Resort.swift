@@ -30,8 +30,8 @@ struct ElevationPoint: Codable, Identifiable, Hashable {
     let level: ElevationLevel
     let elevationMeters: Double
     let elevationFeet: Double
-    let latitude: Double
-    let longitude: Double
+    let latitude: Double?
+    let longitude: Double?
     let weatherStationId: String?
 
     private enum CodingKeys: String, CodingKey {
@@ -53,8 +53,9 @@ struct ElevationPoint: Codable, Identifiable, Hashable {
         self.weatherStationId = weatherStationId
     }
 
-    var coordinate: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    var coordinate: CLLocationCoordinate2D? {
+        guard let latitude, let longitude else { return nil }
+        return CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
 
     var formattedElevation: String {

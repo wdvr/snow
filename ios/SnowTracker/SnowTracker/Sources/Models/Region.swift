@@ -126,10 +126,10 @@ extension Resort {
         switch country.uppercased() {
         case "CA", "US":
             // Check longitude to distinguish west coast vs rockies vs east
-            if let point = elevationPoints.first {
-                if point.longitude < -115 {
+            if let point = elevationPoints.first, let lon = point.longitude {
+                if lon < -115 {
                     return .naWest
-                } else if point.longitude < -100 {
+                } else if lon < -100 {
                     return .naRockies
                 } else {
                     return .naEast

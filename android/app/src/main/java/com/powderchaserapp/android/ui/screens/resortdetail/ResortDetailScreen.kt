@@ -30,6 +30,7 @@ import androidx.lifecycle.viewModelScope
 import com.powderchaserapp.android.R
 import com.powderchaserapp.android.data.api.*
 import com.powderchaserapp.android.data.repository.*
+import com.powderchaserapp.android.ui.components.ResortLogo
 import com.powderchaserapp.android.ui.theme.SnowColors
 import com.powderchaserapp.android.ui.theme.snowQualityColor
 import com.powderchaserapp.android.ui.theme.visibilityCategoryColor
@@ -386,6 +387,12 @@ private fun ResortHeaderCard(resort: Resort, quality: SnowQualitySummary?, units
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                ResortLogo(
+                    resortName = resort.name,
+                    officialWebsite = resort.officialWebsite,
+                    size = 44.dp,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = countryCodeToFlag(resort.country),
                     style = MaterialTheme.typography.headlineMedium,

@@ -128,6 +128,12 @@ extension Resort {
         return point?.coordinate ?? CLLocationCoordinate2D(latitude: 0, longitude: 0)
     }
 
+    /// Whether this resort has valid coordinates for map display
+    var hasValidCoordinates: Bool {
+        let coord = primaryCoordinate
+        return coord.latitude != 0 || coord.longitude != 0
+    }
+
     /// Get distance from user to resort
     func distance(from location: CLLocation) -> CLLocationDistance {
         let resortLocation = CLLocation(latitude: primaryCoordinate.latitude, longitude: primaryCoordinate.longitude)

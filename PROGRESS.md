@@ -89,7 +89,7 @@
 3. [x] **Resort day ticket prices seem off** — Verified and corrected prices for 65+ resorts. Whistler $175-260, Vail $189-356, etc. Created `enrich_resort_data.py` with 90+ manually verified 2025/26 prices.
 4. [x] **Chat history still doesn't work** — Fixed: Float→Decimal DynamoDB error in chat_stream_handler.py. iOS UX improved: error display, loading states, retry button.
 5. [x] **Add city to resort titles** — Added city and state_province fields to 955/1040 resorts via Nominatim reverse geocoding + manual overrides. iOS displays "Big White, Kelowna, BC, Canada" style titles.
-6. [ ] **Resort logo in detail view** — Deferred: logos not readily available as URLs from skiresort.info. Infrastructure prepared but needs logo source.
+6. [x] **Resort logo in detail view** — Google Favicon API from officialWebsite domain, client-side URL construction, initials fallback
 7. [x] **Snow history still empty** — Fixed: DAILY_HISTORY_TABLE env var missing from Lambda functions. Note: deploys may wipe env vars — always re-verify after deploy.
 8. [x] **Website opens in new tab** — Website, trail map, and webcam links now open in embedded SFSafariViewController overlay instead of leaving the app.
 9. [x] **Webcam pages / main webcam on detail view** — Added webcam_url to all 1040 resorts (skiresort.info webcam pages). iOS detail view shows "Webcams" link in header links row.
@@ -107,7 +107,7 @@
 - [x] Add trail_map_url to resorts.json + DynamoDB (725 resorts, 71%)
 - [x] iOS: full-screen zoomable TrailMapView (pinch-to-zoom, double-tap, drag, share)
 - [x] Integrated scraping into enrich_resorts.py for future runs
-- [ ] **Fix missing trail maps for notable resorts**: Mammoth, Heavenly, Steamboat, Telluride, Val d'Isere, St. Anton, Kitzbuhel, Hakuba — need slug overrides
+- [x] **Fix missing trail maps for notable resorts**: Mammoth, Heavenly, Steamboat, Telluride, Val d'Isere, St. Anton, Kitzbuhel, Hakuba — slug overrides added, coverage now 736/1019 (72.2%)
 - [ ] Find trail maps for remaining 294 resorts (mostly SI, CZ, PL, RO, SE, SK small resorts)
 - [ ] Web: full-screen image modal in resort detail
 - [ ] Android: full-screen image viewer in resort detail
@@ -135,7 +135,7 @@
 - [x] Populate DynamoDB with updated pass data (both staging + prod)
 - [x] iOS: add Indy filter chip to resort list + badges in all views
 - [x] Web: add Indy filter button to resort list + badges in cards/detail/map
-- [ ] Android: add Indy filter chip to resort list
+- [x] Android: add Indy filter chip to resort list + badges in detail/chat
 
 #### iOS Chat Ellipsis Bug — FIXED
 - [x] **BUG**: Chat output truncates text with "..." in bullet points
@@ -154,22 +154,22 @@
 
 #### Resort Logos in Detail View + Map Popup
 - [x] **Research**: resort_logos.json exists with 877/1040 URLs (84%) via Google Favicon API
-- [ ] iOS: Add logo to resort detail header (client-side URL from officialWebsite domain)
-- [ ] iOS: Add logo to map popup resort selection
-- [ ] Web: Add logo to resort detail + resort cards
-- [ ] Android: Add logo to resort detail
-- Approach: extract domain from officialWebsite, construct `https://t3.gstatic.com/faviconV2?...&url=http://{domain}&size=128`, AsyncImage with initials fallback
+- [x] iOS: Add logo to resort detail header (44px, client-side URL from officialWebsite domain)
+- [x] iOS: Add logo to map popup resort selection (36px)
+- [x] Web: Add logo to resort detail (48px) + resort cards (36px) + map popup (28px)
+- [ ] Android: Add logo to resort detail + list (subagent working)
+- Approach: extract domain from officialWebsite, construct Google Favicon URL, AsyncImage/img with initials fallback
 
 #### Map Popup Enhancements (iOS)
-- [ ] Add webcam button to map resort popup (currently only website + "View Full Details")
-- [ ] Add trail map button to map resort popup
+- [x] Add webcam button to map resort popup
+- [x] Add trail map button to map resort popup
 - [ ] Add webcam preview image (AsyncImage from webcam page screenshot or similar)
-- [ ] Add resort logo to map popup header
-- Current: ResortMapView.swift `ResortMapDetailSheet` lines 892-924
+- [x] Add resort logo to map popup header
 
-#### Android Indy Pass Filter
-- [ ] Add Indy Pass filter chip to Android resort list (green, matching iOS)
-- [ ] Show Indy badge in resort cards/detail/comparison views
+#### Android Indy Pass Filter — DONE
+- [x] Add Indy Pass filter chip to Android resort list (green, matching iOS)
+- [x] Show Indy badge in resort cards/detail/chat views
+- [x] 13 locale string files updated
 
 ### TODO: Cross-platform (Web + Android)
 
@@ -178,7 +178,7 @@
 - [x] Implement pending Web features/fixes from diary — 13 quality levels, trail distribution, 48h forecast column, compound regions
 
 ### Remaining Issues
-- [ ] Resort logo source needed (deferred)
+- [x] Resort logos — Google Favicon API, client-side URL generation from officialWebsite domain
 - [ ] Map forecast refresh on zoom (not yet implemented)
 - [x] Deploy wipes DAILY_HISTORY_TABLE env var from API handler — FIXED: added all missing env vars to deploy.yml hardcoded configs
 - [x] Populate Resorts Database workflow triggered — DONE: city/webcam/prices now in prod DynamoDB

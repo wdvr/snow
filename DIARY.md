@@ -7,6 +7,18 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### Feature: Resort logos in detail views + map popups
+Added resort logos across all platforms using Google Favicon API. Extracts hostname from `officialWebsite` field and constructs favicon URL client-side (`https://t3.gstatic.com/faviconV2?...&url=http://{hostname}&size=128`). Shows initials fallback (gradient blue-cyan box) when logo unavailable. iOS: `ResortLogoView` component (44px detail, 36px map popup). Web: `ResortLogo` component (48px detail, 36px cards, 28px map popup). Android: `ResortLogo` composable (44dp detail header, 36dp list cards) using Coil `AsyncImage`. Also enhanced iOS map popup with webcam + trail map quick-action buttons alongside the existing website button.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | done | done | n/a |
+
+### Feature: Indy Pass filter + badges (Android)
+Added Indy Pass filter chip (green) to Android resort list, matching iOS behavior. Indy badges shown in resort detail (AssistChip), resort cards, and chat suggestions. Updated `Models.kt` with `indyPass` field, `Color.kt` with `IndyGreen`, 13 locale string files with `pass_indy` string. All 55 Android tests passing.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | done | done | done |
+
 ### Feature: Suggest an Edit (iOS + web)
 Added "Suggest an Edit" functionality to resort detail views on both iOS and web. Users can select a section (elevation data, lift/trail count, location, pass info, website/webcam, trail map, other) and submit a correction. iOS uses `FeedbackSubmission` model via `APIClient`; web uses `SuggestEditModal` component via `api.submitFeedback()`. Unauthenticated web users are auto-signed in as guest. Submissions stored in DynamoDB feedback table.
 | iOS | Android | Web | API |
@@ -29,10 +41,10 @@ Chat AI responses with bullet points were showing truncated text with "..." (e.g
 Compiled 248 Indy Pass resorts from multiple sources and matched 41 to our 1019-resort database using fuzzy name matching with country cross-reference. Covers resorts across 12 countries (US, CA, AT, JP, CH, SE, CL, CZ, ES, IT, NO, SI). Added `indy_pass` field to `resorts.json` and pushed to DynamoDB via populate workflow. Backend model and iOS model already supported the field; chat service already displays Indy Pass info.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | pending | done |
+| done | done | done | done |
 
-### Feature: Trail map images (725 resorts) + zoomable iOS viewer
-Scraped trail map URLs for all 1019 resorts: 686 from skiresort.info (DZI tiles), 39 from snow-forecast.com (JPEG piste maps). 725/1019 (71%) now have `trail_map_url` in resorts.json. iOS: Added full-screen `TrailMapView` with pinch-to-zoom, double-tap zoom, drag-to-pan, share button. Resort detail opens native viewer instead of Safari. Integrated trail map + webcam scraping into `enrich_resorts.py` for future enrichment runs.
+### Feature: Trail map images (736 resorts) + zoomable iOS viewer
+Scraped trail map URLs for all 1019 resorts: 697 from skiresort.info (DZI tiles), 39 from snow-forecast.com (JPEG piste maps). Fixed 13 notable resort slug overrides (Mammoth, Heavenly, Steamboat, Telluride, Val d'Isere, St. Anton, Kitzbuhel, Hakuba, etc.). 736/1019 (72.2%) now have `trail_map_url` in resorts.json. iOS: Added full-screen `TrailMapView` with pinch-to-zoom, double-tap zoom, drag-to-pan, share button. Resort detail opens native viewer instead of Safari. Integrated trail map + webcam scraping into `enrich_resorts.py` for future enrichment runs.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
 | done | pending | done | done |
