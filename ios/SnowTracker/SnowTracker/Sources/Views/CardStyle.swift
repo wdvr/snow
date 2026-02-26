@@ -39,6 +39,50 @@ extension View {
     }
 }
 
+// MARK: - Resort Logo
+
+struct ResortLogoView: View {
+    let resort: Resort
+    var size: CGFloat = 40
+
+    var body: some View {
+        if let logoURL = resort.logoURL {
+            AsyncImage(url: logoURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: size, height: size)
+                        .clipShape(RoundedRectangle(cornerRadius: size * 0.2))
+                case .failure:
+                    initialsFallback
+                default:
+                    initialsFallback
+                        .redacted(reason: .placeholder)
+                }
+            }
+        } else {
+            initialsFallback
+        }
+    }
+
+    private var initialsFallback: some View {
+        Text(resort.initials)
+            .font(.system(size: size * 0.35, weight: .bold, design: .rounded))
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(
+                LinearGradient(
+                    colors: [.blue.opacity(0.7), .cyan.opacity(0.7)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.2))
+    }
+}
+
 // MARK: - Pass Badge
 
 struct PassBadge: View {

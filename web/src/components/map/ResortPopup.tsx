@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Thermometer, Snowflake, ArrowRight } from 'lucide-react'
 import type { Resort, SnowQualitySummary } from '../../api/types'
 import { QualityBadge } from '../resort/QualityBadge'
+import { ResortLogo } from '../resort/ResortLogo'
 import { countryFlag } from '../../utils/format'
 import { useUnits } from '../../hooks/useUnits'
 
@@ -15,13 +16,16 @@ export function ResortPopup({ resort, quality }: ResortPopupProps) {
   return (
     <div className="min-w-[200px] max-w-[260px]">
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="min-w-0">
-          <h3 className="font-semibold text-gray-900 text-sm leading-tight">
-            {resort.name}
-          </h3>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {countryFlag(resort.country)} {resort.country}
-          </p>
+        <div className="flex items-center gap-2 min-w-0">
+          <ResortLogo name={resort.name} officialWebsite={resort.official_website} size={28} className="shrink-0" />
+          <div className="min-w-0">
+            <h3 className="font-semibold text-gray-900 text-sm leading-tight">
+              {resort.name}
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {countryFlag(resort.country)} {resort.country}
+            </p>
+          </div>
         </div>
         <QualityBadge
           quality={quality?.overall_quality}

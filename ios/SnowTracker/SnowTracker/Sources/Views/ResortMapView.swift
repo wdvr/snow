@@ -636,6 +636,8 @@ struct ResortMapDetailSheet: View {
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @Environment(\.dismiss) private var dismiss
     @State private var isLoadingConditions = true
+    @State private var safariURL: IdentifiableURL?
+    @State private var showingTrailMap = false
 
     private var condition: WeatherCondition? {
         snowConditionsManager.getLatestCondition(for: resort.id)
@@ -698,12 +700,20 @@ struct ResortMapDetailSheet: View {
                 defer { isLoadingConditions = false }
                 await snowConditionsManager.fetchConditionsForResort(resort.id)
             }
+            .safariOverlay(url: $safariURL)
+            .fullScreenCover(isPresented: $showingTrailMap) {
+                if let urlStr = resort.trailMapUrl, let url = URL(string: urlStr) {
+                    TrailMapView(url: url, resortName: resort.name)
+                }
+            }
         }
     }
 
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
+                ResortLogoView(resort: resort, size: 36)
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text(resort.displayLocation)
                         .font(.subheadline)
@@ -907,18 +917,49 @@ struct ResortMapDetailSheet: View {
             }
             .buttonStyle(.plain)
 
-            if let website = resort.officialWebsite, let url = URL(string: website) {
-                Link(destination: url) {
-                    HStack {
-                        Text("Visit Resort Website")
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
+            // Quick links row
+            HStack(spacing: 12) {
+                if let website = resort.officialWebsite, let url = URL(string: website) {
+                    Button {
+                        safariURL = IdentifiableURL(url: url)
+                    } label: {
+                        Label("Website", systemImage: "safari")
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(Color(.secondarySystemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
-                    .padding()
-                    .background(Color(.secondarySystemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+
+                if let mapUrlStr = resort.trailMapUrl, URL(string: mapUrlStr) != nil {
+                    Button {
+                        showingTrailMap = true
+                    } label: {
+                        Label("Map", systemImage: "map")
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(Color(.secondarySystemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if let webcamUrlStr = resort.webcamUrl, let webcamUrl = URL(string: webcamUrlStr) {
+                    Button {
+                        safariURL = IdentifiableURL(url: webcamUrl)
+                    } label: {
+                        Label("Cams", systemImage: "web.camera")
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(Color(.secondarySystemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
     }

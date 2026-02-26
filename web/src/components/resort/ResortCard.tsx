@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Thermometer, Snowflake, Wind, Heart, Navigation } from 'lucide-react'
 import type { Resort, SnowQualitySummary } from '../../api/types'
 import { QualityBadge } from './QualityBadge'
+import { ResortLogo } from './ResortLogo'
 import { countryFlag, regionDisplayName } from '../../utils/format'
 import { useUnits } from '../../hooks/useUnits'
 
@@ -21,13 +22,16 @@ export function ResortCard({ resort, quality, isFavorite, onToggleFavorite, dist
       className="block bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow group"
     >
       <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="min-w-0">
-          <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
-            {resort.name}
-          </h3>
-          <p className="text-sm text-gray-500 truncate">
-            {countryFlag(resort.country)} {regionDisplayName(resort.region)}, {resort.country}
-          </p>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <ResortLogo name={resort.name} officialWebsite={resort.official_website} size={36} className="shrink-0" />
+          <div className="min-w-0">
+            <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+              {resort.name}
+            </h3>
+            <p className="text-sm text-gray-500 truncate">
+              {countryFlag(resort.country)} {regionDisplayName(resort.region)}, {resort.country}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <QualityBadge

@@ -40,6 +40,7 @@ import { formatDate, countryFlag, regionDisplayName } from '../utils/format'
 import { useUnits } from '../hooks/useUnits'
 import { ConditionReportForm } from '../components/resort/ConditionReportForm'
 import { SuggestEditModal } from '../components/resort/SuggestEditModal'
+import { ResortLogo } from '../components/resort/ResortLogo'
 import type { SnowQuality, ConditionType } from '../api/types'
 
 type Tab = 'conditions' | 'forecast' | 'history' | 'reports'
@@ -154,6 +155,7 @@ export function ResortDetailPage() {
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
+              <ResortLogo name={resort.name} officialWebsite={resort.official_website} size={48} className="shrink-0" />
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                 {countryFlag(resort.country)} {resort.name}
               </h1>

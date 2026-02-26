@@ -291,6 +291,8 @@ struct ResortDetailView: View {
     private var resortHeader: some View {
         VStack(spacing: 8) {
             HStack {
+                ResortLogoView(resort: resort, size: 44)
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text(resort.displayLocation)
                         .font(.subheadline)

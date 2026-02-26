@@ -302,6 +302,23 @@ struct Resort: Codable, Identifiable, Hashable {
         return "\(min) - \(max) \(unit)"
     }
 
+    /// Logo URL derived from official website domain via Google Favicon API
+    var logoURL: URL? {
+        guard let website = officialWebsite,
+              let components = URLComponents(string: website),
+              let host = components.host else { return nil }
+        return URL(string: "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://\(host)&size=128")
+    }
+
+    /// Initials for fallback when logo isn't available
+    var initials: String {
+        let words = name.split(separator: " ").filter { !["ski", "resort", "mountain", "area"].contains($0.lowercased()) }
+        if words.count >= 2 {
+            return String(words[0].prefix(1) + words[1].prefix(1)).uppercased()
+        }
+        return String(name.prefix(2)).uppercased()
+    }
+
     var baseElevation: ElevationPoint? {
         elevationPoints.first { $0.level == .base }
     }
