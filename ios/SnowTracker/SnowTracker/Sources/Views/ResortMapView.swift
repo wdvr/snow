@@ -188,8 +188,7 @@ struct ResortMapView: View {
 
             // If forecast mode is active, also fetch timelines for newly visible resorts
             if mapViewModel.selectedForecastDate != nil {
-                let visibleIds = mapViewModel.annotations.map(\.resort.id)
-                await mapViewModel.fetchTimelinesForVisible(resortIds: visibleIds)
+                await mapViewModel.fetchTimelinesForVisible(resortIds: mapViewModel.visibleResortIds())
             }
         }
     }
@@ -279,7 +278,8 @@ struct ResortMapView: View {
                 showClusterList = true
                 AnalyticsService.shared.trackMapInteraction(action: "cluster_tap")
             },
-            onRegionChange: { _ in
+            onRegionChange: { region in
+                mapViewModel.currentVisibleRegion = region
                 debouncedFetchConditionsForVisibleResorts()
             }
         )
@@ -381,8 +381,7 @@ struct ResortMapView: View {
                         : Calendar.current.isDate(date, inSameDayAs: mapViewModel.selectedForecastDate ?? .distantPast)
 
                     Button {
-                        let visibleIds = mapViewModel.annotations.map(\.resort.id)
-                        mapViewModel.selectForecastDate(isToday ? nil : date, visibleResortIds: visibleIds)
+                        mapViewModel.selectForecastDate(isToday ? nil : date)
                     } label: {
                         Text(isToday ? "Today" : dayAbbreviation(date))
                             .font(.caption)

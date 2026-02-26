@@ -197,6 +197,7 @@ class MapViewModel: ObservableObject {
     @Published var selectedForecastDate: Date? = nil
     @Published var isFetchingTimelines = false
     @Published var timelineBatchCount = 0
+    var currentVisibleRegion: MKCoordinateRegion?
 
     private let locationManager = LocationManager.shared
     private var cancellables = Set<AnyCancellable>()
@@ -357,14 +358,36 @@ class MapViewModel: ObservableObject {
         return String(format: "%.0f km", distance / 1000)
     }
 
+    // MARK: - Viewport Helpers
+
+    /// Returns resort IDs for annotations within the current visible map region.
+    func visibleResortIds() -> [String] {
+        guard let region = currentVisibleRegion else {
+            return annotations.map(\.id)
+        }
+        let minLat = region.center.latitude - region.span.latitudeDelta / 2
+        let maxLat = region.center.latitude + region.span.latitudeDelta / 2
+        let minLon = region.center.longitude - region.span.longitudeDelta / 2
+        let maxLon = region.center.longitude + region.span.longitudeDelta / 2
+
+        return annotations.compactMap { annotation in
+            let lat = annotation.coordinate.latitude
+            let lon = annotation.coordinate.longitude
+            if lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon {
+                return annotation.id
+            }
+            return nil
+        }
+    }
+
     // MARK: - Forecast Date Selection
 
-    func selectForecastDate(_ date: Date?, visibleResortIds: [String] = []) {
+    func selectForecastDate(_ date: Date?) {
         selectedForecastDate = date
         if date != nil {
             Task {
                 await fetchTimelinesForNearby()
-                await fetchTimelinesForVisible(resortIds: visibleResortIds)
+                await fetchTimelinesForVisible(resortIds: visibleResortIds())
             }
         }
     }
@@ -393,14 +416,11 @@ class MapViewModel: ObservableObject {
         let uncached = resortIds.filter { timelineCache[$0] == nil }
         guard !uncached.isEmpty else { return }
 
-        // Limit to 150 resorts max to avoid excessive API calls
-        let toFetch = Array(uncached.prefix(150))
-
         isFetchingTimelines = true
         let batchSize = 30
-        for batch in stride(from: 0, to: toFetch.count, by: batchSize) {
-            let end = min(batch + batchSize, toFetch.count)
-            let batchIds = Array(toFetch[batch..<end])
+        for batch in stride(from: 0, to: uncached.count, by: batchSize) {
+            let end = min(batch + batchSize, uncached.count)
+            let batchIds = Array(uncached[batch..<end])
             await withTaskGroup(of: (String, TimelineResponse?).self) { group in
                 for resortId in batchIds {
                     group.addTask {
