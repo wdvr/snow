@@ -22,8 +22,12 @@ class ElevationPoint(BaseModel):
         ..., description="Elevation in meters above sea level"
     )
     elevation_feet: int = Field(..., description="Elevation in feet above sea level")
-    latitude: float = Field(..., ge=-90, le=90, description="Latitude coordinate")
-    longitude: float = Field(..., ge=-180, le=180, description="Longitude coordinate")
+    latitude: float | None = Field(
+        None, ge=-90, le=90, description="Latitude coordinate"
+    )
+    longitude: float | None = Field(
+        None, ge=-180, le=180, description="Longitude coordinate"
+    )
     weather_station_id: str | None = Field(
         None, description="External weather station ID if available"
     )
