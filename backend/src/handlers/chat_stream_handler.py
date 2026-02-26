@@ -713,6 +713,7 @@ def _execute_tool(tool_name: str, tool_input: dict, dynamodb) -> dict:
         import math
 
         table = dynamodb.Table(f"snow-tracker-resorts-{env}")
+        conditions_table = dynamodb.Table(f"snow-tracker-weather-conditions-{env}")
         resp = table.scan()
         items = resp.get("Items", [])
         nearby = []
@@ -726,16 +727,64 @@ def _execute_tool(tool_name: str, tool_input: dict, dynamodb) -> dict:
             dist = _haversine(lat, lon, rlat, rlon)
             radius = tool_input.get("radius_km", 200)
             if dist <= radius:
-                nearby.append(
-                    {
-                        "resort_id": r["resort_id"],
-                        "name": r.get("name"),
-                        "country": r.get("country"),
-                        "distance_km": round(dist, 1),
-                    }
-                )
+                entry = {
+                    "resort_id": r["resort_id"],
+                    "name": r.get("name"),
+                    "country": r.get("country"),
+                    "region": r.get("region"),
+                    "distance_km": round(dist, 1),
+                }
+                # Include pricing and pass info
+                if r.get("day_ticket_price_min_usd"):
+                    entry["day_ticket_price_usd"] = int(
+                        float(r["day_ticket_price_min_usd"])
+                    )
+                if r.get("day_ticket_price_max_usd"):
+                    entry["day_ticket_price_max_usd"] = int(
+                        float(r["day_ticket_price_max_usd"])
+                    )
+                passes = []
+                if r.get("epic_pass"):
+                    passes.append(f"Epic ({r['epic_pass']})")
+                if r.get("ikon_pass"):
+                    passes.append(f"Ikon ({r['ikon_pass']})")
+                if r.get("indy_pass"):
+                    passes.append(f"Indy ({r['indy_pass']})")
+                if passes:
+                    entry["pass_affiliations"] = passes
+                nearby.append(entry)
         nearby.sort(key=lambda x: x["distance_km"])
-        return {"results": nearby[:20], "count": len(nearby)}
+
+        # Enrich top results with conditions
+        top_nearby = nearby[:20]
+        for entry in top_nearby:
+            try:
+                c_resp = conditions_table.query(
+                    KeyConditionExpression=Key("resort_id").eq(entry["resort_id"]),
+                    ScanIndexForward=False,
+                    Limit=3,
+                )
+                conditions = c_resp.get("Items", [])
+                if conditions:
+                    rep = None
+                    for pref in ["mid", "top", "base"]:
+                        for c in conditions:
+                            if c.get("elevation_level") == pref:
+                                rep = c
+                                break
+                        if rep:
+                            break
+                    if not rep:
+                        rep = conditions[0]
+                    entry["snow_quality"] = rep.get("snow_quality", "unknown")
+                    entry["snow_score"] = _to_float(rep.get("quality_score"))
+                    entry["fresh_snow_cm"] = _to_float(rep.get("fresh_snow_cm"))
+                    entry["temperature_c"] = _to_float(rep.get("current_temp_celsius"))
+                    entry["snowfall_24h_cm"] = _to_float(rep.get("snowfall_24h_cm"))
+            except Exception:
+                pass
+
+        return {"results": top_nearby, "count": len(nearby)}
 
     elif tool_name == "get_resort_details_batch":
         resort_ids = tool_input.get("resort_ids", [])

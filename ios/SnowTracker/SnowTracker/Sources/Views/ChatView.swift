@@ -290,14 +290,41 @@ private enum ChatContentSegment {
     case resortCards([String])
 }
 
+/// Strip hallucinated tool call XML blocks from AI responses
+private func cleanToolCallArtifacts(_ text: String) -> String {
+    // Remove <tool_call>...</tool_call> and <tool_response>...</tool_response> blocks
+    var cleaned = text
+    let patterns = [
+        #"<tool_call>\s*\{[^}]*\}\s*</tool_call>"#,
+        #"<tool_response>\s*\{[\s\S]*?\}\s*</tool_response>"#,
+        #"<tool_call>[\s\S]*?</tool_call>"#,
+        #"<tool_response>[\s\S]*?</tool_response>"#,
+    ]
+    for pattern in patterns {
+        if let regex = try? NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators]) {
+            cleaned = regex.stringByReplacingMatches(
+                in: cleaned,
+                range: NSRange(cleaned.startIndex..., in: cleaned),
+                withTemplate: ""
+            )
+        }
+    }
+    // Clean up multiple blank lines left behind
+    while cleaned.contains("\n\n\n") {
+        cleaned = cleaned.replacingOccurrences(of: "\n\n\n", with: "\n\n")
+    }
+    return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
 private func parseChatContent(_ text: String) -> [ChatContentSegment] {
+    let cleaned = cleanToolCallArtifacts(text)
     let pattern = #"\[\[resort:([a-z0-9-]+)\]\]"#
     guard let regex = try? NSRegularExpression(pattern: pattern) else {
-        return [.text(text)]
+        return [.text(cleaned)]
     }
 
     var segments: [ChatContentSegment] = []
-    let lines = text.components(separatedBy: "\n")
+    let lines = cleaned.components(separatedBy: "\n")
     var textLines: [String] = []
     var resortIds: [String] = []
 
