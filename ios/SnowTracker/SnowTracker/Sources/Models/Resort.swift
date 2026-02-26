@@ -86,10 +86,13 @@ struct Resort: Codable, Identifiable, Hashable {
     let name: String
     let country: String
     let region: String
+    let city: String?
+    let stateProvince: String?
     let elevationPoints: [ElevationPoint]
     let timezone: String
     let officialWebsite: String?
     let trailMapUrl: String?
+    let webcamUrl: String?
     let greenRunsPct: Int?
     let blueRunsPct: Int?
     let blackRunsPct: Int?
@@ -115,10 +118,13 @@ struct Resort: Codable, Identifiable, Hashable {
         case name
         case country
         case region
+        case city
+        case stateProvince = "state_province"
         case elevationPoints = "elevation_points"
         case timezone
         case officialWebsite = "official_website"
         case trailMapUrl = "trail_map_url"
+        case webcamUrl = "webcam_url"
         case greenRunsPct = "green_runs_pct"
         case blueRunsPct = "blue_runs_pct"
         case blackRunsPct = "black_runs_pct"
@@ -142,6 +148,15 @@ struct Resort: Codable, Identifiable, Hashable {
 
     // Computed properties for UI
     var displayLocation: String {
+        // Prefer city + state/province + country when available
+        if let city = city, !city.isEmpty {
+            let state = stateProvince ?? regionDisplayName
+            if state.isEmpty || state == countryName {
+                return "\(city), \(countryName)"
+            }
+            return "\(city), \(state), \(countryName)"
+        }
+
         let readableRegion = regionDisplayName
         // For NA resorts, show "State/Province, Country"
         // For others, if region is meaningful (not a raw key), show "Region, Country"
@@ -313,6 +328,8 @@ extension Resort {
             name: "Big White Ski Resort",
             country: "CA",
             region: "na_west_BC",
+            city: "Kelowna",
+            stateProvince: "BC",
             elevationPoints: [
                 ElevationPoint(
                     level: .base,
@@ -342,6 +359,7 @@ extension Resort {
             timezone: "America/Vancouver",
             officialWebsite: "https://www.bigwhite.com",
             trailMapUrl: nil,
+            webcamUrl: "https://www.skiresort.info/ski-resort/big-white/webcams/",
             greenRunsPct: 18,
             blueRunsPct: 56,
             blackRunsPct: 26,
@@ -367,6 +385,8 @@ extension Resort {
             name: "Lake Louise Ski Resort",
             country: "CA",
             region: "na_rockies_AB",
+            city: "Lake Louise",
+            stateProvince: "AB",
             elevationPoints: [
                 ElevationPoint(
                     level: .base,
@@ -396,6 +416,7 @@ extension Resort {
             timezone: "America/Edmonton",
             officialWebsite: "https://www.skilouise.com",
             trailMapUrl: nil,
+            webcamUrl: "https://www.skiresort.info/ski-resort/lake-louise/webcams/",
             greenRunsPct: 25,
             blueRunsPct: 45,
             blackRunsPct: 30,
@@ -421,6 +442,8 @@ extension Resort {
             name: "Silver Star Mountain Resort",
             country: "CA",
             region: "na_west_BC",
+            city: "Vernon",
+            stateProvince: "BC",
             elevationPoints: [
                 ElevationPoint(
                     level: .base,
@@ -450,6 +473,7 @@ extension Resort {
             timezone: "America/Vancouver",
             officialWebsite: "https://www.skisilverstar.com",
             trailMapUrl: nil,
+            webcamUrl: "https://www.skiresort.info/ski-resort/silver-star/webcams/",
             greenRunsPct: 20,
             blueRunsPct: 50,
             blackRunsPct: 30,

@@ -7,6 +7,12 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### Feature: Resort data enrichment — city, webcam URLs, price audit
+Four-part resort data enrichment: (1) **Price audit**: Verified and corrected day ticket prices for 65+ resorts (e.g., Whistler was $66, now $175-260 USD; Vail $189-356). Created `enrich_resort_data.py` with 90+ manually verified 2025/26 prices. (2) **City geocoding**: Added `city` and `state_province` fields to 955/1040 resorts (91%) via Nominatim reverse geocoding + 90 manual overrides. iOS `displayLocation` now shows "Big White, Kelowna, BC, Canada" instead of "British Columbia, Canada". (3) **Webcam URLs**: Added `webcam_url` to all 1040 resorts (skiresort.info webcam pages). iOS detail view shows "Webcams" link opening in-app Safari overlay. (4) **Safari overlay**: Added `IdentifiableURL`, `SafariView`, and `.safariOverlay()` modifier so website, trail map, and webcam links open in embedded SFSafariViewController instead of leaving the app. Backend model, populate script, iOS model/cache/demo data all updated. 1563 backend + 119 iOS tests passing.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | pending | done |
+
 ### Fix: Table column alignment in AI chat markdown renderer
 Tables with alternating row colors had misaligned columns because each row's HStack was laid out independently in a VStack. Fixed by: (1) computing an explicit `totalWidth` from column widths + separator widths, (2) applying `.frame(width: totalWidth)` to every row HStack and the container VStack, (3) extracting a shared `tableRow()` builder so header and data rows use identical layout code, (4) adding explicit widths to inter-row separator lines. All columns now align perfectly across all rows.
 | iOS | Android | Web | API |

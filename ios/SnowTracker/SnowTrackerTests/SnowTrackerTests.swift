@@ -101,11 +101,11 @@ final class SnowTrackerTests: XCTestCase {
     func testResortDisplayLocation() {
         let bigWhite = Resort.sampleResorts.first { $0.id == "big-white" }
         XCTAssertNotNil(bigWhite)
-        XCTAssertEqual(bigWhite?.displayLocation, "British Columbia, Canada")
+        XCTAssertEqual(bigWhite?.displayLocation, "Kelowna, BC, Canada")
 
         let lakeLouise = Resort.sampleResorts.first { $0.id == "lake-louise" }
         XCTAssertNotNil(lakeLouise)
-        XCTAssertEqual(lakeLouise?.displayLocation, "Alberta, Canada")
+        XCTAssertEqual(lakeLouise?.displayLocation, "Lake Louise, AB, Canada")
     }
 
     func testRegionDisplayNameCompoundKeys() throws {
