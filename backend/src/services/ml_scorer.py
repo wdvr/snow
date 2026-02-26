@@ -399,8 +399,10 @@ def extract_features_from_condition(
         "visibility_m": float(visibility_m),
         "min_visibility_24h_m": float(min_visibility_24h_m),
         "max_wind_gust_24h": float(max_wind_gust_24h),
-        "hours_since_last_snowfall": float(
-            getattr(condition, "hours_since_last_snowfall", None) or 336.0
+        "hours_since_last_snowfall": (
+            float(getattr(condition, "hours_since_last_snowfall", None))
+            if getattr(condition, "hours_since_last_snowfall", None) is not None
+            else 336.0
         ),
     }
 
@@ -849,28 +851,12 @@ def predict_quality(
         score = _forward_single(normalized, model["weights"])
     score = max(1.0, min(6.0, score))
 
-    # Map to quality
-    thresholds = model["quality_thresholds"]
-    if score >= thresholds.get("champagne_powder", 5.5):
-        quality = SnowQuality.CHAMPAGNE_POWDER
-    elif score >= thresholds.get("powder_day", 5.0):
-        quality = SnowQuality.POWDER_DAY
-    elif score >= thresholds.get("excellent", 4.5):
-        quality = SnowQuality.EXCELLENT
-    elif score >= thresholds.get("great", 4.0):
-        quality = SnowQuality.GREAT
-    elif score >= thresholds.get("good", 3.5):
-        quality = SnowQuality.GOOD
-    elif score >= thresholds.get("decent", 3.3):
-        quality = SnowQuality.DECENT
-    elif score >= thresholds.get("mediocre", 2.9):
-        quality = SnowQuality.MEDIOCRE
-    elif score >= thresholds.get("poor", 2.3):
-        quality = SnowQuality.POOR
-    elif score >= thresholds.get("bad", 1.4):
-        quality = SnowQuality.BAD
-    else:
-        quality = SnowQuality.HORRIBLE
+    # Apply physics constraint: no powder without fresh snow
+    # (same cap as predict_quality_at_hour — ensures real-time conditions
+    # endpoint is also protected from hallucinated powder scores)
+    score = _apply_no_snowfall_cap(score, raw_features)
+
+    quality = raw_score_to_quality(score)
 
     return quality, score
 

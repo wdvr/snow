@@ -1007,12 +1007,13 @@ class OpenMeteoService:
                 else False
             )
 
-            # Find hours since last snowfall (search up to 14 days)
+            # Find hours since last significant snowfall (>0.1cm, same threshold
+            # as ml_scorer._extract_features_at_hour to avoid counting sensor noise)
             for i in range(current_index, start_historical - 1, -1):
                 if (
                     i < len(hourly_snowfall)
                     and hourly_snowfall[i] is not None
-                    and hourly_snowfall[i] > 0
+                    and hourly_snowfall[i] > 0.1
                 ):
                     result["hours_since_last_snowfall"] = float(current_index - i)
                     break
