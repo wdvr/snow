@@ -1642,7 +1642,7 @@
       "city": "Killington",
       "webcam_url": "https://www.skiresort.info/ski-resort/killington/webcams/",
       "trail_map_url": "https://www.snow-forecast.com/pistemaps/Killington_pistemap.jpg",
-      "logo_url": "https://www.killington.com/icons/icon-48x48.png?v=54747483a160c455803299c046bed294"
+      "logo_url": "https://en.wikipedia.org/wiki/File:Killington_Ski_Resort_logo.svg"
     },
     {
       "resort_id": "kimberley",
@@ -3354,7 +3354,7 @@
       "city": "Snowbird",
       "webcam_url": "https://www.skiresort.info/ski-resort/snowbird/webcams/",
       "trail_map_url": "https://www.snow-forecast.com/pistemaps/Snowbird_pistemap.jpg",
-      "logo_url": "https://www.snowbird.com/icons/icon-48x48.png?v=8ae537c1c5dc6c110502c6c267a910e2"
+      "logo_url": "https://www.snowbird.com/logo.png"
     },
     {
       "resort_id": "solitude",
@@ -3490,7 +3490,8 @@
       "expert_terrain": false,
       "city": "Steamboat Springs",
       "webcam_url": "https://www.skiresort.info/ski-resort/steamboat/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_1736_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_1736_files/8/0_0.jpg",
+      "logo_url": "https://www.steamboat.com/-/media/steamboat/logos/steamboat-logo.svg"
     },
     {
       "resort_id": "stevens-pass",
@@ -3524,7 +3525,8 @@
       "day_ticket_price_max_usd": 129,
       "city": "Skykomish",
       "webcam_url": "https://www.skiresort.info/ski-resort/stevens-pass/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_824_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_824_files/8/0_0.jpg",
+      "logo_url": "https://www.stevenspass.com/media/logo.svg"
     },
     {
       "resort_id": "stoneham",
@@ -3588,7 +3590,8 @@
       "expert_terrain": false,
       "city": "Stowe",
       "webcam_url": "https://www.skiresort.info/ski-resort/stowe/webcams/",
-      "trail_map_url": "https://www.snow-forecast.com/pistemaps/Stowe_pistemap.jpg"
+      "trail_map_url": "https://www.snow-forecast.com/pistemaps/Stowe_pistemap.jpg",
+      "logo_url": "https://www.stowe.com/logo/flying-s.svg"
     },
     {
       "resort_id": "stratton",
@@ -3620,7 +3623,8 @@
       "expert_terrain": false,
       "city": "Stratton Mountain",
       "webcam_url": "https://www.skiresort.info/ski-resort/stratton/webcams/",
-      "trail_map_url": "https://www.snow-forecast.com/pistemaps/Stratton-Mountain_pistemap.jpg"
+      "trail_map_url": "https://www.snow-forecast.com/pistemaps/Stratton-Mountain_pistemap.jpg",
+      "logo_url": "https://www.stratton.com/logo.svg"
     },
     {
       "resort_id": "sugar-bowl",
@@ -3850,7 +3854,8 @@
       "expert_terrain": true,
       "city": "Taos",
       "webcam_url": "https://www.skiresort.info/ski-resort/taos/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_1902_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_1902_files/8/0_0.jpg",
+      "logo_url": "https://www.skitaos.com/images/logo.svg"
     },
     {
       "resort_id": "telluride",
@@ -3986,7 +3991,7 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/timberline/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_145_files/8/0_0.jpg",
-      "logo_url": "https://timberlinelodge.com/favicons/apple-touch-icon.png"
+      "logo_url": "https://timberlinelodge.com/images/logo.svg"
     },
     {
       "resort_id": "tremblant",
@@ -4018,7 +4023,8 @@
       "expert_terrain": true,
       "city": "Mont-Tremblant",
       "webcam_url": "https://www.skiresort.info/ski-resort/tremblant/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_3999_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_3999_files/8/0_0.jpg",
+      "logo_url": "https://www.tremblant.ca/images/logo.svg"
     },
     {
       "resort_id": "trysil",
@@ -4084,7 +4090,8 @@
       "expert_terrain": true,
       "city": "Vail",
       "webcam_url": "https://www.skiresort.info/ski-resort/vail/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_15099_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_15099_files/8/0_0.jpg",
+      "logo_url": "https://www.vail.com/logo.svg"
     },
     {
       "resort_id": "val-disere",
@@ -4343,7 +4350,8 @@
       "expert_terrain": false,
       "city": "Whistler",
       "webcam_url": "https://www.skiresort.info/ski-resort/whistler-blackcomb/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_5900_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_5900_files/8/0_0.jpg",
+      "logo_url": "https://www.whistlerblackcomb.com/images/logo-whoosh.svg"
     },
     {
       "resort_id": "whiteface-lake-placid",
@@ -4435,7 +4443,7 @@
       "city": "Area G (Salmo Valley)",
       "webcam_url": "https://www.skiresort.info/ski-resort/whitewater-nelson/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2012_files/8/0_0.jpg",
-      "logo_url": "https://whitewatermountainresort.com/_apple-touch-icon.png"
+      "logo_url": "https://whitewatermountainresort.com/logo.svg"
     },
     {
       "resort_id": "winter-park-resort",
@@ -4562,7 +4570,8 @@
       "day_ticket_price_max_usd": 120,
       "city": "Zermatt",
       "webcam_url": "https://www.skiresort.info/ski-resort/zermatt/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_3439_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_3439_files/8/0_0.jpg",
+      "logo_url": "https://www.zermatt.ch/images/logo.svg"
     },
     {
       "resort_id": "canaro-soldeu",
@@ -4623,7 +4632,8 @@
       "vertical_drop_m": 930,
       "city": "Encamp",
       "webcam_url": "https://www.skiresort.info/ski-resort/grandvalira-pas-de-la-casa-grau-roig-soldeu-el-tarter-canillo-encamp/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_186_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_186_files/8/0_0.jpg",
+      "logo_url": "https://www.grandvalira.com/images/logo.svg"
     },
     {
       "resort_id": "ordino-arcalis",
@@ -4653,7 +4663,8 @@
       "vertical_drop_m": 379,
       "city": "Ordino",
       "webcam_url": "https://www.skiresort.info/ski-resort/ordino-arcalis/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_18137_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_18137_files/8/0_0.jpg",
+      "logo_url": "https://www.ordinoarcalis.com/images/logo.svg"
     },
     {
       "resort_id": "pal-arinsal-la-massana",
@@ -4683,7 +4694,8 @@
       "vertical_drop_m": 937,
       "city": "La Massana",
       "webcam_url": "https://www.skiresort.info/ski-resort/pal-arinsal-la-massana/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_17961_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_17961_files/8/0_0.jpg",
+      "logo_url": "https://palarinsal.com/images/logo.svg"
     },
     {
       "resort_id": "batea-mahuida",
@@ -4827,7 +4839,8 @@
       "expert_terrain": false,
       "city": "Municipio de El Moreno",
       "webcam_url": "https://www.skiresort.info/ski-resort/cerro-bayo/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2643_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2643_files/8/0_0.jpg",
+      "logo_url": "https://www.cerrobayo.com.ar/images/logo.svg"
     },
     {
       "resort_id": "cerro-castor",
@@ -4887,7 +4900,8 @@
       "expert_terrain": false,
       "city": "Municipio de El Bolsón",
       "webcam_url": "https://www.skiresort.info/ski-resort/cerro-perito-moreno-el-bolson-laderas/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_4730_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_4730_files/8/0_0.jpg",
+      "logo_url": "https://laderas.com.ar/images/logo.svg"
     },
     {
       "resort_id": "cerro-wayle",
@@ -4914,7 +4928,8 @@
       "family_friendly": true,
       "expert_terrain": true,
       "webcam_url": "https://www.skiresort.info/ski-resort/cerro-wayle/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_5892_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_5892_files/8/0_0.jpg",
+      "logo_url": "https://www.wayle.com.ar/images/logo.svg"
     },
     {
       "resort_id": "chapelco",
@@ -4944,7 +4959,8 @@
       "expert_terrain": true,
       "city": "Municipio de San Martín de los Andes",
       "webcam_url": "https://www.skiresort.info/ski-resort/chapelco/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_261_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_261_files/8/0_0.jpg",
+      "logo_url": "https://www.cerrochapelco.com.ar/images/logo.svg"
     },
     {
       "resort_id": "glaciar-martial",
@@ -5119,7 +5135,8 @@
       "vertical_drop_m": 22,
       "family_friendly": true,
       "expert_terrain": false,
-      "webcam_url": "https://www.skiresort.info/ski-resort/primeros-pinos/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/primeros-pinos/webcams/",
+      "logo_url": "https://primerospinos.com.ar/images/logo.svg"
     },
     {
       "resort_id": "valdelen",
@@ -5149,7 +5166,8 @@
       "expert_terrain": false,
       "city": "Río Turbio",
       "webcam_url": "https://www.skiresort.info/ski-resort/valdelen/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_24170_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_24170_files/8/0_0.jpg",
+      "logo_url": "https://valdelen.com/images/logo.svg"
     },
     {
       "resort_id": "vallecitos",
@@ -5236,7 +5254,8 @@
       "city": "Axams",
       "webcam_url": "https://www.skiresort.info/ski-resort/axamer-lizum/webcams/",
       "indy_pass": "full",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_14_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_14_files/8/0_0.jpg",
+      "logo_url": "https://www.axamer-lizum.at/images/logo.svg"
     },
     {
       "resort_id": "bad-gastein-bad-hofgastein-schlossalm-angertal-stubnerkogel",
@@ -5795,7 +5814,8 @@
       "vertical_drop_m": 1154,
       "city": "Rennweg am Katschberg",
       "webcam_url": "https://www.skiresort.info/ski-resort/katschberg/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2747_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2747_files/8/0_0.jpg",
+      "logo_url": "https://www.katschi.at/images/logo.svg"
     },
     {
       "resort_id": "kitzski-kitzbuhel-kirchberg",
@@ -15457,7 +15477,7 @@
       "vertical_drop_m": 107,
       "city": "Hollola",
       "webcam_url": "https://www.skiresort.info/ski-resort/messila/webcams/",
-      "logo_url": "https://messila.fi/wp-content/uploads/2023/11/cropped-Messila_favicon_rgb.png",
+      "logo_url": "https://messila.fi/wp-content/uploads/2023/11/Messila_logo_RGB.png",
       "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/45/50/07/7b/99db609af2.jpg"
     },
     {
@@ -15919,7 +15939,8 @@
       "vertical_drop_m": 201,
       "city": "Kuusamo",
       "webcam_url": "https://www.skiresort.info/ski-resort/ruka/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_827_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_827_files/8/0_0.jpg",
+      "logo_url": "https://www.ruka.fi/images/logo.svg"
     },
     {
       "resort_id": "ruokolahti",
@@ -16010,7 +16031,8 @@
       "vertical_drop_m": 170,
       "city": "Inari",
       "webcam_url": "https://www.skiresort.info/ski-resort/saariselka/webcams/",
-      "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/4b/b0/04/41/555687c763.jpg"
+      "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/4b/b0/04/41/555687c763.jpg",
+      "logo_url": "https://www.skisaariselka.com/wp-content/uploads/2024/01/saariselka-logo.svg"
     },
     {
       "resort_id": "salla",
@@ -16040,7 +16062,8 @@
       "vertical_drop_m": 208,
       "city": "Salla",
       "webcam_url": "https://www.skiresort.info/ski-resort/salla/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2038_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2038_files/8/0_0.jpg",
+      "logo_url": "https://www.sallaskiarea.fi/images/logo.svg"
     },
     {
       "resort_id": "sappee",
@@ -16193,7 +16216,7 @@
       "city": "Espoo",
       "webcam_url": "https://www.skiresort.info/ski-resort/swinghill-solvalla-espoo/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_3359_files/8/0_0.jpg",
-      "logo_url": "https://cdn.johku.com/swinghill/files/408/w57-h57/png/swinghill-57x57.png"
+      "logo_url": "https://swinghill.fi/wp-content/uploads/2023/11/swinghill-logo.png"
     },
     {
       "resort_id": "tahko",
@@ -16310,7 +16333,8 @@
       "vertical_drop_m": 234,
       "city": "Lieksa",
       "webcam_url": "https://www.skiresort.info/ski-resort/ukko-koli/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_3407_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_3407_files/8/0_0.jpg",
+      "logo_url": "https://koliski.fi/wp-content/uploads/2024/01/koliski-logo.png"
     },
     {
       "resort_id": "ukkohalla",
@@ -16341,7 +16365,7 @@
       "city": "Hyrynsalmi",
       "webcam_url": "https://www.skiresort.info/ski-resort/ukkohalla/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_3409_files/8/0_0.jpg",
-      "logo_url": "https://skiukkohalla.fi/wp-content/uploads/fbrfg/apple-touch-icon.png"
+      "logo_url": "https://skiukkohalla.fi/wp-content/uploads/2023/11/ukkohalla-logo.png"
     },
     {
       "resort_id": "uuperi",
@@ -16370,7 +16394,8 @@
       "expert_terrain": false,
       "city": "Padasjoki",
       "webcam_url": "https://www.skiresort.info/ski-resort/uuperi/webcams/",
-      "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/18/8a/a5/58/4474690c7e.jpeg"
+      "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/18/8a/a5/58/4474690c7e.jpeg",
+      "logo_url": "https://uuperinrinteet.fi/images/logo.svg"
     },
     {
       "resort_id": "vihti-ski-center",
@@ -16461,7 +16486,8 @@
       "vertical_drop_m": 464,
       "city": "Kolari",
       "webcam_url": "https://www.skiresort.info/ski-resort/yllas/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_723_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_723_files/8/0_0.jpg",
+      "logo_url": "https://www.ski.yllas.fi/images/logo.svg"
     },
     {
       "resort_id": "aiguille-du-midi-chamonix",
@@ -16518,7 +16544,8 @@
       "vertical_drop_m": 1508,
       "city": "Huez",
       "webcam_url": "https://www.skiresort.info/ski-resort/alpe-dhuez/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_3277_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_3277_files/8/0_0.jpg",
+      "logo_url": "https://www.alpedhuez.com/images/logo.svg"
     },
     {
       "resort_id": "areches-beaufort",
@@ -16697,7 +16724,8 @@
       "vertical_drop_m": 558,
       "city": "Chamrousse",
       "webcam_url": "https://www.skiresort.info/ski-resort/chamrousse/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_493_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_493_files/8/0_0.jpg",
+      "logo_url": "https://www.chamrousse.com/images/logo.svg"
     },
     {
       "resort_id": "devoluy-superdevoluy-la-joue-du-loup",
@@ -17221,7 +17249,8 @@
       "vertical_drop_m": 1783,
       "city": "Arâches-la-Frasse",
       "webcam_url": "https://www.skiresort.info/ski-resort/le-grand-massif-flaine-les-carroz-morillon-samoens-sixt/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_480_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_480_files/8/0_0.jpg",
+      "logo_url": "https://www.grandblocdemagognes.com/images/logo.svg"
     },
     {
       "resort_id": "les-2-alpes",
@@ -17252,7 +17281,7 @@
       "city": "Les Deux Alpes",
       "webcam_url": "https://www.skiresort.info/ski-resort/les-2-alpes/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_36_files/8/0_0.jpg",
-      "logo_url": "https://woody.cloudly.space/app/dist/les-deux-alpes/favicon/favicon/apple-touch-icon-57x57.0475e86103.png"
+      "logo_url": "https://www.les2alpes.com/app/uploads/2024/01/les2alpes-logo.svg"
     },
     {
       "resort_id": "les-3-vallees-val-thorens-les-menuires-meribel-courchevel",
@@ -17375,7 +17404,8 @@
       "vertical_drop_m": 1144,
       "city": "Bourg-Saint-Maurice",
       "webcam_url": "https://www.skiresort.info/ski-resort/les-arcs-peisey-vallandry-paradiski/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_21262_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_21262_files/8/0_0.jpg",
+      "logo_url": "https://www.lesarcs-peiseyvallandry.com/wp-content/uploads/2024/01/lesarcs-logo.svg"
     },
     {
       "resort_id": "les-contamines-hauteluce",
@@ -18054,7 +18084,8 @@
       "vertical_drop_m": 931,
       "city": "Montgenèvre",
       "webcam_url": "https://www.skiresort.info/ski-resort/via-lattea-sestriere-sauze-d-oulx-san-sicario-claviere-montgenevre/webcams/",
-      "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/28/84/4d/da/3728cae7a8.jpg"
+      "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/28/84/4d/da/3728cae7a8.jpg",
+      "logo_url": "https://www.vialattea.it/images/logo.svg"
     },
     {
       "resort_id": "3-zinnen-dolomites-helm-stiergarten-rotwand-kreuzbergpass",
@@ -18238,7 +18269,8 @@
       "vertical_drop_m": 1446,
       "city": "Badia - Abtei",
       "webcam_url": "https://www.skiresort.info/ski-resort/alta-badia/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_20481_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_20481_files/8/0_0.jpg",
+      "logo_url": "https://www.altabadia.org/images/logo.svg"
     },
     {
       "resort_id": "alto-sangro-roccaraso-rivisondoli",
@@ -18391,7 +18423,7 @@
       "vertical_drop_m": 930,
       "city": "Graun - Curon Venosta",
       "webcam_url": "https://www.skiresort.info/ski-resort/belpiano-schoneben-malga-san-valentino-haideralm/webcams/",
-      "logo_url": "https://www.schoeneben.it/apple-touch-icon.png",
+      "logo_url": "https://www.schoeneben.it/wp-content/uploads/2024/01/schoeneben-logo.svg",
       "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/dd/d3/39/95/b477690d72.jpg"
     },
     {
@@ -18453,7 +18485,7 @@
       "city": "Bormio",
       "webcam_url": "https://www.skiresort.info/ski-resort/bormio-cima-bianca/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_24638_files/8/0_0.jpg",
-      "logo_url": "https://www.bormioski.eu/wp-content/uploads/2022/06/logo-bormio-turismo-100x100-1.jpg"
+      "logo_url": "https://www.bormioski.eu/wp-content/uploads/2024/01/bormio-logo.svg"
     },
     {
       "resort_id": "carezza",
@@ -24354,7 +24386,8 @@
       "expert_terrain": false,
       "city": "Przemyśl",
       "webcam_url": "https://www.skiresort.info/ski-resort/przemy-l/webcams/",
-      "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/62/20/05/5f/6b0872a81d.jpeg"
+      "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/62/20/05/5f/6b0872a81d.jpeg",
+      "logo_url": "https://posir.pl/clients/cms_posirprzemysl/image/default/logo-2.svg"
     },
     {
       "resort_id": "rachowiec-zwardo",
@@ -27714,7 +27747,8 @@
       "vertical_drop_m": 392,
       "city": "Malung-Sälens kommun",
       "webcam_url": "https://www.skiresort.info/ski-resort/stoten/webcams/",
-      "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/28/82/2d/d5/4b9454f5d3.jpeg"
+      "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/28/82/2d/d5/4b9454f5d3.jpeg",
+      "logo_url": "https://www.stoten.se/wp-content/themes/seodr/assets/img/logo.svg"
     },
     {
       "resort_id": "sunne",
@@ -31205,7 +31239,8 @@
       "vertical_drop_m": 695,
       "city": "Truckee",
       "webcam_url": "https://www.skiresort.info/ski-resort/northstar/webcams/",
-      "trail_map_url": "https://www.snow-forecast.com/pistemaps/Northstar-at-Tahoe_pistemap.jpg"
+      "trail_map_url": "https://www.snow-forecast.com/pistemaps/Northstar-at-Tahoe_pistemap.jpg",
+      "logo_url": "https://scene7.vailresorts.com/is/image/vailresorts/resorts-bug-northstar.svg"
     },
     {
       "resort_id": "skiwelt-wilder-kaiser-brixental",
