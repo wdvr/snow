@@ -15,26 +15,32 @@
 
 ### TODO: iOS / Backend / Cross-platform
 
-1. [ ] **Chat table column alignment** — Tables in chat have nicely alternating row colors, but rows have different column widths. Fix so all rows share the same column widths per column.
-2. [ ] **16 chat suggestion examples with random rotation** — We want 16 example prompts, showing a random selection of 4 each time. Generate 12 more realistic examples of what users might search for.
+1. [x] **Chat table column alignment** — Fixed: explicit `totalWidth` on all rows, shared `tableRow()` builder for header and data rows. All columns now align.
+2. [x] **16 chat suggestion examples with random rotation** — Verified: 16 diverse suggestions covering proximity, budget, comparisons, regional, family, pass-based, forecasts, hidden gems. Shows random 4 each visit.
 3. [x] **Resort day ticket prices seem off** — Verified and corrected prices for 65+ resorts. Whistler $175-260, Vail $189-356, etc. Created `enrich_resort_data.py` with 90+ manually verified 2025/26 prices.
-4. [ ] **Chat history still doesn't work** — Is it linked to the logged-in user? Do I need to logout/login? Repro this and iterate until it works end-to-end in the app.
+4. [x] **Chat history still doesn't work** — Fixed: Float→Decimal DynamoDB error in chat_stream_handler.py. iOS UX improved: error display, loading states, retry button.
 5. [x] **Add city to resort titles** — Added city and state_province fields to 955/1040 resorts via Nominatim reverse geocoding + manual overrides. iOS displays "Big White, Kelowna, BC, Canada" style titles.
 6. [ ] **Resort logo in detail view** — Deferred: logos not readily available as URLs from skiresort.info. Infrastructure prepared but needs logo source.
-7. [x] **Snow history still empty** — Fixed: DAILY_HISTORY_TABLE env var missing from weather worker, weather processor, and API handler Lambdas (prod + staging). Also added SNOW_SUMMARY_TABLE to API handler. Fixed Pulumi infra to persist these env vars.
+7. [x] **Snow history still empty** — Fixed: DAILY_HISTORY_TABLE env var missing from Lambda functions. Note: deploys may wipe env vars — always re-verify after deploy.
 8. [x] **Website opens in new tab** — Website, trail map, and webcam links now open in embedded SFSafariViewController overlay instead of leaving the app.
 9. [x] **Webcam pages / main webcam on detail view** — Added webcam_url to all 1040 resorts (skiresort.info webcam pages). iOS detail view shows "Webcams" link in header links row.
-10. [ ] **Map: default to hybrid, remember selection, forecast refresh on zoom** — Standard map should default to hybrid style. Remember user's map style selection in UserDefaults. In forecast mode, trigger refresh of new resorts in view on zoom release (not only on date selector change).
-11. [ ] **Clarify or remove pin icon** — There's a pin icon next to the heart (favorite) icon. Heart = favorite, but what is pin? Clarify its purpose or remove it.
-12. [ ] **Re-launch onboarding from settings** — Allow user to restart the onboarding tutorial from settings. Also review onboarding pages and update if needed.
-13. [x] **Push notifications don't work** — Fixed: Debug endpoints blocked all prod requests (TestFlight uses prod API). Added admin user check via email hash so admin users can use debug endpoints in prod. Also fixed APNS_SANDBOX→APNS for prod notifications.
-14. [ ] **App still called "Snow Tracker" in places** — All references should be "Powder Chaser." Find and fix all remaining "Snow Tracker" references.
+10. [x] **Map: default to hybrid, remember selection** — Map defaults to hybrid, persisted via @AppStorage. (Forecast refresh on zoom still TODO.)
+11. [x] **Clarify or remove pin icon** — Changed to antenna/broadcast icon with "Live" label for Live Activities.
+12. [x] **Re-launch onboarding from settings** — "Restart Tutorial" button in settings, pre-populates current preferences.
+13. [x] **Push notifications don't work** — Fixed: Debug endpoints blocked all prod requests. Added admin email hash check. Fixed APNS_SANDBOX→APNS for prod.
+14. [x] **App still called "Snow Tracker" in places** — Renamed to "Powder Chaser" in Info.plist, project.yml, all 13 Localizable.strings.
 
 ### TODO: Cross-platform (Web + Android)
 
-- [ ] Review DIARY.md for all features/fixes marked `pending` on Android and Web
-- [ ] Implement pending Android features/fixes from diary
-- [ ] Implement pending Web features/fixes from diary
+- [x] Review DIARY.md for all features/fixes marked `pending` on Android and Web
+- [x] Implement pending Android features/fixes from diary — 13 quality levels, chat improvements, map layers, compound regions, trail map links
+- [x] Implement pending Web features/fixes from diary — 13 quality levels, trail distribution, 48h forecast column, compound regions
+
+### Remaining Issues
+- [ ] Resort logo source needed (deferred)
+- [ ] Map forecast refresh on zoom (not yet implemented)
+- [ ] Deploy wipes DAILY_HISTORY_TABLE env var from API handler — Pulumi state may be out of sync
+- [ ] Populate Resorts Database workflow triggered — waiting for city/webcam data to appear in prod DynamoDB
 
 ---
 

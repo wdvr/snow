@@ -140,19 +140,26 @@ export interface TimelineResponse {
 
 export interface HistoryDay {
   date: string
-  snowfall_cm: number
+  snowfall_24h_cm: number
   snow_depth_cm: number | null
-  min_temp_c: number | null
-  max_temp_c: number | null
+  temp_min_c: number | null
+  temp_max_c: number | null
   snow_quality: string | null
   quality_score: number | null
 }
 
+export interface SeasonSummary {
+  total_snowfall_cm: number
+  snow_days: number
+  avg_quality_score: number | null
+  best_day: HistoryDay | null
+  days_tracked: number
+}
+
 export interface HistoryResponse {
   resort_id: string
-  days: HistoryDay[]
-  season_total_cm: number
-  season_total_inches: number
+  history: HistoryDay[]
+  season_summary: SeasonSummary
 }
 
 // --- Regions ---

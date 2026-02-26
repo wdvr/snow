@@ -250,10 +250,10 @@ export function ResortDetailPage() {
                       Season Total
                     </div>
                     <p className="text-lg font-bold text-gray-900">
-                      {Math.round(history.season_total_cm)} cm
+                      {Math.round(history.season_summary.total_snowfall_cm)} cm
                     </p>
                     <p className="text-xs text-gray-500">
-                      {Math.round(history.season_total_inches)}"
+                      {Math.round(history.season_summary.total_snowfall_cm / 2.54)}"
                     </p>
                   </div>
                   <div className="bg-blue-50 rounded-lg p-3">
@@ -262,14 +262,11 @@ export function ResortDetailPage() {
                       Best Day
                     </div>
                     {(() => {
-                      const best = history.days.reduce(
-                        (max, d) => ((d.snowfall_cm ?? 0) > (max?.snowfall_cm ?? 0) ? d : max),
-                        history.days[0],
-                      )
+                      const best = history.season_summary.best_day
                       return best ? (
                         <>
                           <p className="text-lg font-bold text-gray-900">
-                            {formatSnowCm(best.snowfall_cm)}
+                            {formatSnowCm(best.snowfall_24h_cm)}
                           </p>
                           <p className="text-xs text-gray-500">{formatDate(best.date)}</p>
                         </>
@@ -284,9 +281,9 @@ export function ResortDetailPage() {
                       Avg High
                     </div>
                     {(() => {
-                      const temps = history.days
-                        .filter((d) => d.max_temp_c != null)
-                        .map((d) => d.max_temp_c!)
+                      const temps = history.history
+                        .filter((d) => d.temp_max_c != null)
+                        .map((d) => d.temp_max_c!)
                       const avg = temps.length ? temps.reduce((a, b) => a + b, 0) / temps.length : null
                       return <p className="text-lg font-bold text-gray-900">{formatTemp(avg)}</p>
                     })()}
@@ -297,12 +294,12 @@ export function ResortDetailPage() {
                       Snow Days
                     </div>
                     <p className="text-lg font-bold text-gray-900">
-                      {history.days.filter((d) => (d.snowfall_cm ?? 0) > 0.5).length}
+                      {history.season_summary.snow_days}
                     </p>
-                    <p className="text-xs text-gray-500">of {history.days.length} days</p>
+                    <p className="text-xs text-gray-500">of {history.season_summary.days_tracked} days</p>
                   </div>
                 </div>
-                <HistoryChart history={history.days} />
+                <HistoryChart history={history.history} />
               </div>
             ) : (
               <div className="flex items-center justify-center py-12">

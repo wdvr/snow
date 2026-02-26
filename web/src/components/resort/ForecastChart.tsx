@@ -141,7 +141,7 @@ export function HistoryChart({ history }: HistoryChartProps) {
 
   const data = history.map((day) => ({
     date: new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    snowfall: Math.round((day.snowfall_cm ?? 0) * 10) / 10,
+    snowfall: Math.round((day.snowfall_24h_cm ?? 0) * 10) / 10,
     depth: day.snow_depth_cm != null ? Math.round(day.snow_depth_cm) : null,
   }))
 
