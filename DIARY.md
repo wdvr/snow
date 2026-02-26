@@ -5,6 +5,34 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Feb 26, 2026
+
+### Fix: Replace weighted-average merge with outlier detection + majority consensus
+Open-Meteo=0cm + OTS=3cm + SF=3cm used to produce 1.3cm (weighted avg). Now: outlier detection via median — Open-Meteo's 0 is >50% from median 3, gets dropped, consensus {3,3} averages to 3.0cm. Two-source disagreements still fall back to weighted average. 33 tests (8 new for outlier scenarios).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: Timeline explanations — "gusts increase score" and "warming to -11°C worsens"
+Two bugs in `generate_score_change_reason()`: (1) When no factor aligned with score direction, fallback picked dominant factor regardless, creating nonsensical explanations like "gusts up to 48km/h improves conditions". Fixed by falling through to generic message when no aligned factor exists. (2) Sub-zero warming (e.g. -15→-11°C) blamed for score drops via `temp_delta > 2 and not improving`. Added `cur_temp > -3` guard — only attribute warming when near/above freezing.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: Timeline popover text overflow
+Explanation text in conditions timeline popover was cut off due to narrow `maxWidth: 260`. Widened to 320pt.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Fix: WeatherKit 401 "NOT_ENABLED" → all 4 sources working
+Root cause: JWT `sub` claim used App ID (`com.wouterdevriendt.snowtracker`) instead of Services ID. WeatherKit REST API requires a registered Services ID. Fix: created Services ID `com.wouterdevriendt.snowtracker.weatherkit` in Apple Developer Portal, updated `WEATHERKIT_SERVICE_ID` GitHub secret. Now all 4 sources merge: `onthesnow.com + open-meteo.com + snowforecast.com + weatherkit.apple.com`. Created `/weatherkit-debug` skill with full troubleshooting guide.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
 ## Feb 25, 2026
 
 ### iOS: UI test framework with accessibility identifiers
