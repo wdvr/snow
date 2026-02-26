@@ -7,6 +7,36 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### Fix: Table column alignment in AI chat markdown renderer
+Tables with alternating row colors had misaligned columns because each row's HStack was laid out independently in a VStack. Fixed by: (1) computing an explicit `totalWidth` from column widths + separator widths, (2) applying `.frame(width: totalWidth)` to every row HStack and the container VStack, (3) extracting a shared `tableRow()` builder so header and data rows use identical layout code, (4) adding explicit widths to inter-row separator lines. All columns now align perfectly across all rows.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Fix: Chat history not loading end-to-end in iOS app
+Backend was fixed (Float->Decimal), but iOS app had multiple UX issues preventing history from working properly: (1) ConversationListView swallowed errors silently — if loading failed, user just saw "No Conversations" with no retry option. Added dedicated `isLoadingConversations` and `conversationListError` states with error display and retry button. (2) Tapping a conversation dismissed the sheet immediately before the load completed, so messages appeared with no feedback. Now waits for the API call to finish (with per-row spinner) before dismissing. (3) Main chat view showed empty suggestions when `isLoading` was true during conversation load. Now shows a centered "Loading conversation..." spinner. (4) Added cleanup of streaming state before loading historical conversations to prevent stale data.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Verified: 16 diverse chat suggestions already in place
+Confirmed 16 ChatSuggestion entries covering: proximity-based, budget, resort comparisons, regional (Rockies/Alps/Japan), family-friendly, pass-based (Ikon/Epic), forecasts, hidden gems, snowpack, and temperature queries. No changes needed.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Fix: Snow history empty — DAILY_HISTORY_TABLE env var missing from Lambda functions
+Root cause (again): `DAILY_HISTORY_TABLE` env var was not present on the weather worker, weather processor, or API handler Lambda functions in prod and staging. Despite being defined in Pulumi infrastructure code, the infra was never deployed after adding it. Weather worker defaulted to `snow-tracker-daily-history-dev` (which doesn't exist), so all history writes silently failed. Also missing: `SNOW_SUMMARY_TABLE` on API handler, `SNOW_SUMMARY_TABLE` on weather processor Pulumi config. Fixed: set env vars on all 6 Lambda functions (3 prod + 3 staging) via AWS CLI, updated Pulumi infra to include `SNOW_SUMMARY_TABLE` for weather processor, weather worker, and API handler. Triggered weather processor to backfill data. Table went from 122 to 1066+ records.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: Debug notification testing returns "debug features not available" on TestFlight
+Debug endpoints (`/api/v1/debug/test-push-notification` and `/api/v1/debug/trigger-notifications`) blocked ALL production requests with HTTP 403. TestFlight builds use the production API (not staging), so admin users testing via TestFlight always got blocked. Fix: added admin user identification via SHA256 email hash check (same hash list as iOS `Configuration.swift`). Admin users can now access debug endpoints in production. Also fixed test notification using `APNS_SANDBOX` in prod (should be `APNS` for production push certificates). Added 7 new tests for debug endpoint access control. Total: 1563 backend tests passing.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ### Feature: Data sources moved to bottom, shows excluded sources with reasons
 Data sources card moved from inline (between conditions cards) to the very bottom of resort detail view. Backend now includes all 4 known sources (Open-Meteo, OnTheSnow, Snow-Forecast, WeatherKit) in `source_details` even when a source has no data for the resort (status: `no_data`). Sources sorted by status: consensus first, then included, outlier, unavailable. Excluded outlier values shown with strikethrough and orange reason text. Unavailable sources shown as greyed "N/A".
 | iOS | Android | Web | API |

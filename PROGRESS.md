@@ -21,13 +21,13 @@
 4. [ ] **Chat history still doesn't work** — Is it linked to the logged-in user? Do I need to logout/login? Repro this and iterate until it works end-to-end in the app.
 5. [ ] **Add city to resort titles** — Show "Big White, Kelowna, BC, Canada" style titles. Add city field to all resorts; fetch/collect this data if needed via agents.
 6. [ ] **Resort logo in detail view** — If available, show a logo for the resort in the top cell of the detail view.
-7. [ ] **Snow history still empty** — e.g., Big White snowed yesterday and the feature has existed for 5+ days. Diagnose and fix.
+7. [x] **Snow history still empty** — Fixed: DAILY_HISTORY_TABLE env var missing from weather worker, weather processor, and API handler Lambdas (prod + staging). Also added SNOW_SUMMARY_TABLE to API handler. Fixed Pulumi infra to persist these env vars.
 8. [ ] **Website opens in new tab** — Open powderchaserapp.com in an embedded browser overlay, not a new Safari tab.
 9. [ ] **Webcam pages / main webcam on detail view** — Collect webcam page URLs for all resorts; if possible, show the main webcam image on the resort detail front page.
 10. [ ] **Map: default to hybrid, remember selection, forecast refresh on zoom** — Standard map should default to hybrid style. Remember user's map style selection in UserDefaults. In forecast mode, trigger refresh of new resorts in view on zoom release (not only on date selector change).
 11. [ ] **Clarify or remove pin icon** — There's a pin icon next to the heart (favorite) icon. Heart = favorite, but what is pin? Clarify its purpose or remove it.
 12. [ ] **Re-launch onboarding from settings** — Allow user to restart the onboarding tutorial from settings. Also review onboarding pages and update if needed.
-13. [ ] **Push notifications don't work** — Test notifications as a dev (debug staging via login email). The test section is always present but doesn't work via TestFlight: "debug features not available in this environment." Fix this.
+13. [x] **Push notifications don't work** — Fixed: Debug endpoints blocked all prod requests (TestFlight uses prod API). Added admin user check via email hash so admin users can use debug endpoints in prod. Also fixed APNS_SANDBOX→APNS for prod notifications.
 14. [ ] **App still called "Snow Tracker" in places** — All references should be "Powder Chaser." Find and fix all remaining "Snow Tracker" references.
 
 ### TODO: Cross-platform (Web + Android)

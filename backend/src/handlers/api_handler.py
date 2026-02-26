@@ -2932,8 +2932,42 @@ async def delete_condition_report(
 
 
 # =============================================================================
-# MARK: - Test/Debug Endpoints (for development only)
+# MARK: - Test/Debug Endpoints (for development and admin users)
 # =============================================================================
+
+# SHA256 hashes of admin email addresses (same as iOS Configuration.swift)
+ADMIN_EMAIL_HASHES = {
+    "6e5c948b6cd14e94776b2abf9d324aa3a6606a3411bf7aefc36d0e74fd15faa0"
+}
+
+
+def _is_admin_user(user_id: str | None) -> bool:
+    """Check if the user is an admin based on their email hash."""
+    if not user_id:
+        return False
+    try:
+        import hashlib
+
+        user_service = get_user_service()
+        user = user_service.get_user(user_id)
+        if user and user.email:
+            email_hash = hashlib.sha256(user.email.lower().encode("utf-8")).hexdigest()
+            return email_hash in ADMIN_EMAIL_HASHES
+    except Exception as e:
+        logger.warning("Failed to check admin status for user %s: %s", user_id, e)
+    return False
+
+
+def _check_debug_access(environment: str, user_id: str | None):
+    """Check if debug endpoints are accessible. Allows staging/dev or admin users in prod."""
+    if environment != "prod":
+        return  # Always allowed in non-prod
+    if _is_admin_user(user_id):
+        return  # Admin users can access debug endpoints in prod
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="This endpoint is not available in production",
+    )
 
 
 @app.post("/api/v1/debug/trigger-notifications")
@@ -2943,18 +2977,13 @@ async def trigger_notifications(
     """
     Manually trigger the notification processor for testing.
     This invokes the notification Lambda asynchronously.
-    Only available in staging environment. Auth is optional.
+    Available in staging/dev, or for admin users in production.
     """
     import boto3
 
     environment = os.environ.get("ENVIRONMENT", "dev")
 
-    # Only allow in staging for testing
-    if environment == "prod":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="This endpoint is not available in production",
-        )
+    _check_debug_access(environment, user_id)
 
     try:
         lambda_client = boto3.client(
@@ -3001,18 +3030,13 @@ async def test_push_notification(
     """
     Send a test push notification to devices.
     If authenticated, sends to user's devices. Otherwise, sends to all devices.
-    Only available in staging environment. Auth is optional.
+    Available in staging/dev, or for admin users in production.
     """
     import boto3
 
     environment = os.environ.get("ENVIRONMENT", "dev")
 
-    # Only allow in staging for testing
-    if environment == "prod":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="This endpoint is not available in production",
-        )
+    _check_debug_access(environment, user_id)
 
     try:
         # Get device tokens
@@ -3081,9 +3105,11 @@ async def test_push_notification(
                     "test": True,
                 }
 
+                # Use APNS for prod, APNS_SANDBOX for staging/dev
+                apns_key = "APNS" if environment == "prod" else "APNS_SANDBOX"
                 sns_client.publish(
                     TargetArn=endpoint_arn,
-                    Message=json.dumps({"APNS_SANDBOX": json.dumps(apns_payload)}),
+                    Message=json.dumps({apns_key: json.dumps(apns_payload)}),
                     MessageStructure="json",
                 )
 

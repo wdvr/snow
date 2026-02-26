@@ -527,6 +527,7 @@ weather_processor_lambda = aws.lambda_.Function(
             # Static JSON API generation (uploads to website bucket)
             "ENABLE_STATIC_JSON": config.get("enableStaticJson") or "true",
             "WEBSITE_BUCKET": website_bucket_name,
+            "SNOW_SUMMARY_TABLE": f"{app_name}-snow-summary-{environment}",
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
             # Multi-source weather data
             "ENABLE_SNOWFORECAST": config.get("enableSnowForecast") or "false",
@@ -572,6 +573,7 @@ weather_worker_lambda = aws.lambda_.Function(
             "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
             "AWS_REGION_NAME": aws_region,
             "ENABLE_SCRAPING": "true",
+            "SNOW_SUMMARY_TABLE": f"{app_name}-snow-summary-{environment}",
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
             "WEBSITE_BUCKET": website_bucket_name,
             # Multi-source weather data
@@ -1320,7 +1322,12 @@ def get_conditions(resort_id, headers):
             "CHAT_TABLE": f"{app_name}-chat-{environment}",
             "CHAT_RATE_LIMIT_TABLE_NAME": chat_rate_limit_table.name,
             "CONDITION_REPORTS_TABLE": f"{app_name}-condition-reports-{environment}",
+            "SNOW_SUMMARY_TABLE": f"{app_name}-snow-summary-{environment}",
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
+            "APNS_PLATFORM_APP_ARN": apns_platform_app_arn
+            if apns_platform_app_arn
+            else "",
+            "WEBSITE_BUCKET": website_bucket_name,
             "AWS_REGION_NAME": aws_region,
         }
     ),

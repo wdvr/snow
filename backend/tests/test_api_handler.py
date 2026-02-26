@@ -1721,3 +1721,71 @@ class TestErrorHandlers:
         schema = resp.json()
         assert "openapi" in schema
         assert "paths" in schema
+
+
+class TestDebugEndpoints:
+    """Test debug/admin endpoint access control."""
+
+    def test_debug_trigger_blocked_in_prod_for_non_admin(self, client):
+        """Debug trigger-notifications should return 403 in prod for non-admin users."""
+        with patch.dict("os.environ", {"ENVIRONMENT": "prod"}):
+            resp = client.post("/api/v1/debug/trigger-notifications")
+            assert resp.status_code == 403
+
+    def test_debug_test_push_blocked_in_prod_for_non_admin(self, client):
+        """Debug test-push-notification should return 403 in prod for non-admin users."""
+        with patch.dict("os.environ", {"ENVIRONMENT": "prod"}):
+            resp = client.post("/api/v1/debug/test-push-notification")
+            assert resp.status_code == 403
+
+    @patch("handlers.api_handler._is_admin_user", return_value=True)
+    @patch("boto3.client")
+    def test_debug_trigger_allowed_in_prod_for_admin(
+        self, mock_boto3_client, mock_admin, client
+    ):
+        """Debug trigger-notifications should be allowed for admin users in prod."""
+        mock_lambda = MagicMock()
+        mock_boto3_client.return_value = mock_lambda
+        mock_lambda.invoke.return_value = {"StatusCode": 202}
+        with patch.dict("os.environ", {"ENVIRONMENT": "prod"}):
+            resp = client.post("/api/v1/debug/trigger-notifications")
+            assert resp.status_code == 200
+
+    @patch("boto3.client")
+    def test_debug_trigger_allowed_in_staging(self, mock_boto3_client, client):
+        """Debug trigger-notifications should be allowed in staging."""
+        mock_lambda = MagicMock()
+        mock_boto3_client.return_value = mock_lambda
+        mock_lambda.invoke.return_value = {"StatusCode": 202}
+        with patch.dict("os.environ", {"ENVIRONMENT": "staging"}):
+            resp = client.post("/api/v1/debug/trigger-notifications")
+            assert resp.status_code == 200
+
+    def test_check_debug_access_non_prod(self):
+        """_check_debug_access should not raise for non-prod environments."""
+        from handlers.api_handler import _check_debug_access
+
+        # Should not raise for staging/dev
+        _check_debug_access("staging", None)
+        _check_debug_access("dev", None)
+
+    def test_check_debug_access_prod_no_user(self):
+        """_check_debug_access should raise HTTPException for prod with no user."""
+        from fastapi import HTTPException
+
+        from handlers.api_handler import _check_debug_access
+
+        with pytest.raises(HTTPException) as exc_info:
+            _check_debug_access("prod", None)
+        assert exc_info.value.status_code == 403
+
+    @patch("handlers.api_handler._is_admin_user", return_value=False)
+    def test_check_debug_access_prod_non_admin(self, mock_admin):
+        """_check_debug_access should raise HTTPException for prod with non-admin user."""
+        from fastapi import HTTPException
+
+        from handlers.api_handler import _check_debug_access
+
+        with pytest.raises(HTTPException) as exc_info:
+            _check_debug_access("prod", "some-user-id")
+        assert exc_info.value.status_code == 403
