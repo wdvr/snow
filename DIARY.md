@@ -7,6 +7,18 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### Fix: Deploy workflow wiping Lambda env vars (CRITICAL)
+Root cause of recurring snow history/chat/condition reports breakage after each deploy. The GitHub Actions deploy workflow (`deploy.yml`) had hardcoded `update-function-configuration` calls for each Lambda that OVERWROTE whatever Pulumi set. The API handler was missing: `DAILY_HISTORY_TABLE`, `SNOW_SUMMARY_TABLE`, `CHAT_TABLE`, `CONDITION_REPORTS_TABLE`, `CHAT_RATE_LIMIT_TABLE_NAME`. Weather processor and worker were missing `DAILY_HISTORY_TABLE`. Every deploy silently reverted these to defaults (non-existent dev tables), breaking history writes and chat persistence. Fixed all three Lambda configurations in deploy.yml.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: Web history page API response mismatch
+Web `HistoryResponse` type expected `days[]` + `season_total_cm` but API returns `history[]` + `season_summary`. Web `HistoryDay` used `snowfall_cm`/`min_temp_c`/`max_temp_c` but API uses `snowfall_24h_cm`/`temp_min_c`/`temp_max_c`. Fixed types.ts, ResortDetailPage.tsx, and ForecastChart.tsx to match actual API response. Web history tab was completely broken before this fix.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | done | n/a |
+
 ### Feature: Android & Web cross-platform feature parity batch
 Major cross-platform update implementing 20+ pending features:
 **Android (Models.kt, Color.kt, CountryFlags.kt, ResortMapScreen.kt, ResortDetailScreen.kt, ChatScreen.kt):**
