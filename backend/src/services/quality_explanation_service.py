@@ -742,9 +742,9 @@ def generate_score_change_reason(
     if cur_time == "morning" and temp_delta < -2 and improving and cur_temp < 0:
         return f"Overnight cooling to {cur_temp:.0f}\u00b0C {magnitude}firms up snow"
 
-    # 7. Significant temperature change (lowered from 3/5 to 2)
-    if temp_delta > 2 and not improving:
-        return f"Warming to {cur_temp:.0f}\u00b0C {magnitude}worsens conditions"
+    # 7. Significant temperature change (only blame warming near/above freezing)
+    if temp_delta > 2 and not improving and cur_temp > -3:
+        return f"Warming to {cur_temp:.0f}\u00b0C {magnitude}softens conditions"
     if temp_delta < -5 and cur_temp < -15:
         return f"Extreme cold ({cur_temp:.0f}\u00b0C) {magnitude}worsens conditions"
     if temp_delta < -2 and improving and cur_temp < 0:
@@ -781,7 +781,8 @@ def generate_score_change_reason(
     if abs(temp_delta) > 0.5:
         desc = f"{cur_temp:.0f}\u00b0C" if cur_temp != 0 else "0\u00b0C"
         if temp_delta > 0:
-            factors.append((abs(temp_delta) * 3, f"warming to {desc}", True))
+            # Warming is only negative near/above freezing; sub-zero warming is neutral
+            factors.append((abs(temp_delta) * 3, f"warming to {desc}", cur_temp > -3))
         else:
             factors.append((abs(temp_delta) * 3, f"cooling to {desc}", False))
     # Wind change (only mention if wind is actually significant)
@@ -829,14 +830,15 @@ def generate_score_change_reason(
         aligned = [
             f for f in factors if (f[2] and not improving) or (not f[2] and improving)
         ]
-        chosen = aligned if aligned else factors
-        chosen.sort(key=lambda x: x[0], reverse=True)
-        top_factor = chosen[0][1]
-        top_factor_cap = top_factor[0].upper() + top_factor[1:]
-        if improving:
-            return f"{top_factor_cap} {magnitude}improves conditions"
-        else:
-            return f"{top_factor_cap} {magnitude}worsens conditions"
+        if aligned:
+            aligned.sort(key=lambda x: x[0], reverse=True)
+            top_factor = aligned[0][1]
+            top_factor_cap = top_factor[0].upper() + top_factor[1:]
+            if improving:
+                return f"{top_factor_cap} {magnitude}improves conditions"
+            else:
+                return f"{top_factor_cap} {magnitude}worsens conditions"
+        # No aligned factors — don't misattribute (e.g. "gusts improve conditions")
 
     # 13. Ultimate fallback (should rarely be reached)
     if improving:

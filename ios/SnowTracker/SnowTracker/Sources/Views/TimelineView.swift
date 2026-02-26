@@ -382,7 +382,7 @@ struct TimelinePointCard: View {
                     }
                 }
                 .padding()
-                .frame(maxWidth: 260)
+                .frame(maxWidth: 320)
                 .presentationCompactAdaptation(.popover)
             }
         }
