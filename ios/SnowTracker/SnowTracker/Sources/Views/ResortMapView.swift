@@ -9,7 +9,7 @@ struct ResortMapView: View {
 
     @State private var selectedResort: Resort?
     @State private var showLegend: Bool = false
-    @State private var mapStyle: MapStyle = .standard
+    @State private var mapStyle: MapDisplayStyle = .standard
     @State private var clusterResorts: [Resort] = []
     @State private var showClusterList: Bool = false
     @State private var regionChangeTask: Task<Void, Never>?
@@ -47,6 +47,12 @@ struct ResortMapView: View {
             ))
             .onChange(of: mapViewModel.isFetchingTimelines) { _, newValue in
                 if !newValue && mapViewModel.selectedForecastDate != nil {
+                    updateAnnotations()
+                }
+            }
+            .onChange(of: mapViewModel.timelineBatchCount) { _, _ in
+                // Progressive update: refresh pins after each timeline batch completes
+                if mapViewModel.selectedForecastDate != nil {
                     updateAnnotations()
                 }
             }
@@ -245,10 +251,8 @@ struct ResortMapView: View {
         AnalyticsService.shared.trackFilterApplied(filterType: "map_filter", filterValue: newValue.rawValue)
     }
 
-    private func handleMapStyleChange(_ newValue: MapStyle) {
-        // MapStyle doesn't conform to Equatable, so use string representation
-        let styleName = String(describing: newValue)
-        AnalyticsService.shared.trackMapStyleChanged(style: styleName)
+    private func handleMapStyleChange(_ newValue: MapDisplayStyle) {
+        AnalyticsService.shared.trackMapStyleChanged(style: newValue.rawValue)
     }
 
     // MARK: - Map Content
@@ -412,9 +416,13 @@ struct ResortMapView: View {
 
     private var mapStyleMenu: some View {
         Menu {
-            Button("Standard") { mapStyle = .standard }
-            Button("Satellite") { mapStyle = .imagery }
-            Button("Hybrid") { mapStyle = .hybrid }
+            ForEach(MapDisplayStyle.allCases) { style in
+                Button {
+                    mapStyle = style
+                } label: {
+                    Label(style.displayName, systemImage: style.icon)
+                }
+            }
         } label: {
             Image(systemName: "map")
         }

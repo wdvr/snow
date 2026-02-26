@@ -2,6 +2,40 @@ import SwiftUI
 import MapKit
 import Combine
 
+// MARK: - Map Display Style
+
+enum MapDisplayStyle: String, CaseIterable, Identifiable {
+    case standard = "standard"
+    case satellite = "satellite"
+    case hybrid = "hybrid"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .standard: return "Standard"
+        case .satellite: return "Satellite"
+        case .hybrid: return "Hybrid"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .standard: return "map"
+        case .satellite: return "globe.americas"
+        case .hybrid: return "map.fill"
+        }
+    }
+
+    var mapType: MKMapType {
+        switch self {
+        case .standard: return .standard
+        case .satellite: return .satellite
+        case .hybrid: return .hybrid
+        }
+    }
+}
+
 // MARK: - Resort Annotation
 
 struct ResortAnnotation: Identifiable, Hashable {
@@ -162,6 +196,7 @@ class MapViewModel: ObservableObject {
     @Published var sortByDistance: Bool = false
     @Published var selectedForecastDate: Date? = nil
     @Published var isFetchingTimelines = false
+    @Published var timelineBatchCount = 0
 
     private let locationManager = LocationManager.shared
     private var cancellables = Set<AnyCancellable>()
@@ -358,11 +393,14 @@ class MapViewModel: ObservableObject {
         let uncached = resortIds.filter { timelineCache[$0] == nil }
         guard !uncached.isEmpty else { return }
 
+        // Limit to 150 resorts max to avoid excessive API calls
+        let toFetch = Array(uncached.prefix(150))
+
         isFetchingTimelines = true
-        let batchSize = 10
-        for batch in stride(from: 0, to: uncached.count, by: batchSize) {
-            let end = min(batch + batchSize, uncached.count)
-            let batchIds = Array(uncached[batch..<end])
+        let batchSize = 30
+        for batch in stride(from: 0, to: toFetch.count, by: batchSize) {
+            let end = min(batch + batchSize, toFetch.count)
+            let batchIds = Array(toFetch[batch..<end])
             await withTaskGroup(of: (String, TimelineResponse?).self) { group in
                 for resortId in batchIds {
                     group.addTask {
@@ -374,6 +412,8 @@ class MapViewModel: ObservableObject {
                     if let response { timelineCache[resortId] = response }
                 }
             }
+            // Increment counter after each batch so map pins update progressively
+            timelineBatchCount += 1
         }
         isFetchingTimelines = false
     }

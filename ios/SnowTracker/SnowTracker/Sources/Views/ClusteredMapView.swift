@@ -31,7 +31,7 @@ struct ClusteredMapView: UIViewRepresentable {
     @Binding var cameraPosition: MapCameraPosition
     @Binding var pendingRegion: MKCoordinateRegion?
     let annotations: [ResortAnnotation]
-    let mapStyle: MapStyle
+    let mapStyle: MapDisplayStyle
     let showUserLocation: Bool
     var onAnnotationTap: ((Resort) -> Void)?
     var onClusterTap: (([Resort]) -> Void)?
@@ -91,15 +91,7 @@ struct ClusteredMapView: UIViewRepresentable {
     // MARK: - Private Methods
 
     private func updateMapType(_ mapView: MKMapView) {
-        // MapStyle doesn't conform to Equatable, so we use String comparison
-        let styleDescription = String(describing: mapStyle)
-        if styleDescription.contains("imagery") {
-            mapView.mapType = .satellite
-        } else if styleDescription.contains("hybrid") {
-            mapView.mapType = .hybrid
-        } else {
-            mapView.mapType = .standard
-        }
+        mapView.mapType = mapStyle.mapType
     }
 
     private func updateAnnotations(_ mapView: MKMapView) {
