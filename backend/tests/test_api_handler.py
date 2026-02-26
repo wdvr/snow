@@ -383,6 +383,325 @@ class TestGetResorts:
         resp = client.get("/api/v1/resorts?offset=-1")
         assert resp.status_code == 422
 
+    # -- sort_by tests --
+
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_by_name_default(self, mock_cached, client):
+        """Default sort is by name ascending."""
+        r_b = _make_resort(resort_id="b-resort", name="Bravo", lat=49.1, lon=-120.0)
+        r_a = _make_resort(resort_id="a-resort", name="Alpha", lat=49.2, lon=-120.0)
+        r_c = _make_resort(resort_id="c-resort", name="Charlie", lat=49.3, lon=-120.0)
+        mock_cached.return_value = [r_b, r_a, r_c]
+
+        resp = client.get("/api/v1/resorts")
+        assert resp.status_code == 200
+        names = [r["name"] for r in resp.json()["resorts"]]
+        assert names == ["Alpha", "Bravo", "Charlie"]
+
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_by_name_desc(self, mock_cached, client):
+        r_a = _make_resort(resort_id="a-resort", name="Alpha", lat=49.0, lon=-120.0)
+        r_b = _make_resort(resort_id="b-resort", name="Bravo", lat=49.1, lon=-120.0)
+        mock_cached.return_value = [r_a, r_b]
+
+        resp = client.get("/api/v1/resorts?sort_by=name&sort_order=desc")
+        assert resp.status_code == 200
+        names = [r["name"] for r in resp.json()["resorts"]]
+        assert names == ["Bravo", "Alpha"]
+
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_by_name_case_insensitive(self, mock_cached, client):
+        r_lower = _make_resort(resort_id="lower", name="alpha", lat=49.0, lon=-120.0)
+        r_upper = _make_resort(resort_id="upper", name="Bravo", lat=49.1, lon=-120.0)
+        mock_cached.return_value = [r_upper, r_lower]
+
+        resp = client.get("/api/v1/resorts?sort_by=name")
+        assert resp.status_code == 200
+        names = [r["name"] for r in resp.json()["resorts"]]
+        assert names == ["alpha", "Bravo"]
+
+    @patch("handlers.api_handler._get_static_snow_quality_from_s3")
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_by_quality_score(self, mock_cached, mock_sq, client):
+        r1 = _make_resort(resort_id="low", name="Low", lat=49.0, lon=-120.0)
+        r2 = _make_resort(resort_id="high", name="High", lat=49.1, lon=-120.0)
+        r3 = _make_resort(resort_id="mid", name="Mid", lat=49.2, lon=-120.0)
+        mock_cached.return_value = [r1, r2, r3]
+        mock_sq.return_value = {
+            "low": {"snow_score": 30, "snowfall_fresh_cm": 2},
+            "high": {"snow_score": 90, "snowfall_fresh_cm": 20},
+            "mid": {"snow_score": 60, "snowfall_fresh_cm": 10},
+        }
+
+        # Default sort_order for quality_score is desc (best first)
+        resp = client.get("/api/v1/resorts?sort_by=quality_score")
+        assert resp.status_code == 200
+        ids = [r["resort_id"] for r in resp.json()["resorts"]]
+        assert ids == ["high", "mid", "low"]
+
+    @patch("handlers.api_handler._get_static_snow_quality_from_s3")
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_by_quality_score_asc(self, mock_cached, mock_sq, client):
+        r1 = _make_resort(resort_id="low", name="Low", lat=49.0, lon=-120.0)
+        r2 = _make_resort(resort_id="high", name="High", lat=49.1, lon=-120.0)
+        mock_cached.return_value = [r1, r2]
+        mock_sq.return_value = {
+            "low": {"snow_score": 30, "snowfall_fresh_cm": 2},
+            "high": {"snow_score": 90, "snowfall_fresh_cm": 20},
+        }
+
+        resp = client.get("/api/v1/resorts?sort_by=quality_score&sort_order=asc")
+        assert resp.status_code == 200
+        ids = [r["resort_id"] for r in resp.json()["resorts"]]
+        assert ids == ["low", "high"]
+
+    @patch("handlers.api_handler._get_static_snow_quality_from_s3")
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_by_quality_score_missing_data_sorts_last(
+        self, mock_cached, mock_sq, client
+    ):
+        r1 = _make_resort(resort_id="has-score", name="Scored", lat=49.0, lon=-120.0)
+        r2 = _make_resort(resort_id="no-score", name="NoScore", lat=49.1, lon=-120.0)
+        mock_cached.return_value = [r2, r1]
+        mock_sq.return_value = {
+            "has-score": {"snow_score": 50, "snowfall_fresh_cm": 5},
+            # no-score not in data
+        }
+
+        resp = client.get("/api/v1/resorts?sort_by=quality_score")
+        assert resp.status_code == 200
+        ids = [r["resort_id"] for r in resp.json()["resorts"]]
+        assert ids == ["has-score", "no-score"]
+
+    @patch("handlers.api_handler._get_static_snow_quality_from_s3")
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_by_snowfall(self, mock_cached, mock_sq, client):
+        r1 = _make_resort(resort_id="dry", name="Dry", lat=49.0, lon=-120.0)
+        r2 = _make_resort(resort_id="snowy", name="Snowy", lat=49.1, lon=-120.0)
+        mock_cached.return_value = [r1, r2]
+        mock_sq.return_value = {
+            "dry": {"snow_score": 30, "snowfall_fresh_cm": 1},
+            "snowy": {"snow_score": 90, "snowfall_fresh_cm": 25},
+        }
+
+        # Default sort_order for snowfall is desc (most first)
+        resp = client.get("/api/v1/resorts?sort_by=snowfall")
+        assert resp.status_code == 200
+        ids = [r["resort_id"] for r in resp.json()["resorts"]]
+        assert ids == ["snowy", "dry"]
+
+    @patch("handlers.api_handler._get_static_snow_quality_from_s3")
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_by_snowfall_asc(self, mock_cached, mock_sq, client):
+        r1 = _make_resort(resort_id="dry", name="Dry", lat=49.0, lon=-120.0)
+        r2 = _make_resort(resort_id="snowy", name="Snowy", lat=49.1, lon=-120.0)
+        mock_cached.return_value = [r1, r2]
+        mock_sq.return_value = {
+            "dry": {"snow_score": 30, "snowfall_fresh_cm": 1},
+            "snowy": {"snow_score": 90, "snowfall_fresh_cm": 25},
+        }
+
+        resp = client.get("/api/v1/resorts?sort_by=snowfall&sort_order=asc")
+        assert resp.status_code == 200
+        ids = [r["resort_id"] for r in resp.json()["resorts"]]
+        assert ids == ["dry", "snowy"]
+
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_by_elevation(self, mock_cached, client):
+        low = Resort(
+            resort_id="low",
+            name="Low Resort",
+            country="CA",
+            region="BC",
+            elevation_points=[
+                ElevationPoint(
+                    level=ElevationLevel.BASE,
+                    elevation_meters=1000,
+                    elevation_feet=3281,
+                    latitude=49.0,
+                    longitude=-120.0,
+                ),
+                ElevationPoint(
+                    level=ElevationLevel.TOP,
+                    elevation_meters=2000,
+                    elevation_feet=6562,
+                    latitude=49.01,
+                    longitude=-120.01,
+                ),
+            ],
+            timezone="America/Vancouver",
+        )
+        high = Resort(
+            resort_id="high",
+            name="High Resort",
+            country="CA",
+            region="BC",
+            elevation_points=[
+                ElevationPoint(
+                    level=ElevationLevel.BASE,
+                    elevation_meters=2000,
+                    elevation_feet=6562,
+                    latitude=49.1,
+                    longitude=-120.1,
+                ),
+                ElevationPoint(
+                    level=ElevationLevel.TOP,
+                    elevation_meters=3500,
+                    elevation_feet=11483,
+                    latitude=49.11,
+                    longitude=-120.11,
+                ),
+            ],
+            timezone="America/Vancouver",
+        )
+        mock_cached.return_value = [low, high]
+
+        # Default sort_order for elevation is desc (highest first)
+        resp = client.get("/api/v1/resorts?sort_by=elevation")
+        assert resp.status_code == 200
+        ids = [r["resort_id"] for r in resp.json()["resorts"]]
+        assert ids == ["high", "low"]
+
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_by_elevation_asc(self, mock_cached, client):
+        low = Resort(
+            resort_id="low",
+            name="Low Resort",
+            country="CA",
+            region="BC",
+            elevation_points=[
+                ElevationPoint(
+                    level=ElevationLevel.BASE,
+                    elevation_meters=1000,
+                    elevation_feet=3281,
+                    latitude=49.0,
+                    longitude=-120.0,
+                ),
+                ElevationPoint(
+                    level=ElevationLevel.TOP,
+                    elevation_meters=2000,
+                    elevation_feet=6562,
+                    latitude=49.01,
+                    longitude=-120.01,
+                ),
+            ],
+            timezone="America/Vancouver",
+        )
+        high = Resort(
+            resort_id="high",
+            name="High Resort",
+            country="CA",
+            region="BC",
+            elevation_points=[
+                ElevationPoint(
+                    level=ElevationLevel.BASE,
+                    elevation_meters=2000,
+                    elevation_feet=6562,
+                    latitude=49.1,
+                    longitude=-120.1,
+                ),
+                ElevationPoint(
+                    level=ElevationLevel.TOP,
+                    elevation_meters=3500,
+                    elevation_feet=11483,
+                    latitude=49.11,
+                    longitude=-120.11,
+                ),
+            ],
+            timezone="America/Vancouver",
+        )
+        mock_cached.return_value = [low, high]
+
+        resp = client.get("/api/v1/resorts?sort_by=elevation&sort_order=asc")
+        assert resp.status_code == 200
+        ids = [r["resort_id"] for r in resp.json()["resorts"]]
+        assert ids == ["low", "high"]
+
+    @patch("handlers.api_handler._get_static_snow_quality_from_s3")
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_before_pagination(self, mock_cached, mock_sq, client):
+        """Sorting must happen before limit/offset is applied."""
+        r_a = _make_resort(resort_id="a", name="Alpha", lat=49.0, lon=-120.0)
+        r_b = _make_resort(resort_id="b", name="Bravo", lat=49.1, lon=-120.0)
+        r_c = _make_resort(resort_id="c", name="Charlie", lat=49.2, lon=-120.0)
+        mock_cached.return_value = [r_a, r_b, r_c]
+        mock_sq.return_value = {
+            "a": {"snow_score": 10, "snowfall_fresh_cm": 1},
+            "b": {"snow_score": 90, "snowfall_fresh_cm": 25},
+            "c": {"snow_score": 50, "snowfall_fresh_cm": 10},
+        }
+
+        # Sort by quality_score desc, then take first 2
+        resp = client.get("/api/v1/resorts?sort_by=quality_score&limit=2")
+        assert resp.status_code == 200
+        data = resp.json()
+        ids = [r["resort_id"] for r in data["resorts"]]
+        assert ids == ["b", "c"]  # best scores first, limited to 2
+        assert data["total_count"] == 3
+
+    @patch("handlers.api_handler._get_static_snow_quality_from_s3")
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_with_offset(self, mock_cached, mock_sq, client):
+        """Sort + offset should return correct page."""
+        r_a = _make_resort(resort_id="a", name="Alpha", lat=49.0, lon=-120.0)
+        r_b = _make_resort(resort_id="b", name="Bravo", lat=49.1, lon=-120.0)
+        r_c = _make_resort(resort_id="c", name="Charlie", lat=49.2, lon=-120.0)
+        mock_cached.return_value = [r_a, r_b, r_c]
+        mock_sq.return_value = {
+            "a": {"snow_score": 10, "snowfall_fresh_cm": 1},
+            "b": {"snow_score": 90, "snowfall_fresh_cm": 25},
+            "c": {"snow_score": 50, "snowfall_fresh_cm": 10},
+        }
+
+        # Sort by quality_score desc, skip first 1
+        resp = client.get("/api/v1/resorts?sort_by=quality_score&offset=1&limit=1")
+        assert resp.status_code == 200
+        data = resp.json()
+        ids = [r["resort_id"] for r in data["resorts"]]
+        assert ids == ["c"]  # second-best score
+        assert data["total_count"] == 3
+
+    def test_invalid_sort_by(self, client):
+        resp = client.get("/api/v1/resorts?sort_by=invalid")
+        assert resp.status_code == 400
+        assert "Invalid sort_by" in resp.json()["detail"]
+
+    def test_invalid_sort_order(self, client):
+        resp = client.get("/api/v1/resorts?sort_order=random")
+        assert resp.status_code == 400
+        assert "Invalid sort_order" in resp.json()["detail"]
+
+    @patch("handlers.api_handler._get_static_snow_quality_from_s3")
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_by_quality_no_s3_data(self, mock_cached, mock_sq, client):
+        """When S3 data is unavailable, all resorts have no scores and appear in stable order."""
+        r_a = _make_resort(resort_id="a", name="Alpha", lat=49.0, lon=-120.0)
+        r_b = _make_resort(resort_id="b", name="Bravo", lat=49.1, lon=-120.0)
+        mock_cached.return_value = [r_a, r_b]
+        mock_sq.return_value = None  # S3 not available
+
+        resp = client.get("/api/v1/resorts?sort_by=quality_score")
+        assert resp.status_code == 200
+        # Both have no data, so they both sort to "last" bucket, stable order preserved
+        assert len(resp.json()["resorts"]) == 2
+
+    @patch("handlers.api_handler._get_static_snow_quality_from_s3")
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_sort_by_snowfall_null_value_sorts_last(self, mock_cached, mock_sq, client):
+        """Resort with null snowfall_fresh_cm should sort last."""
+        r1 = _make_resort(resort_id="has-snow", name="Snowy", lat=49.0, lon=-120.0)
+        r2 = _make_resort(resort_id="no-snow", name="NoSnow", lat=49.1, lon=-120.0)
+        mock_cached.return_value = [r2, r1]
+        mock_sq.return_value = {
+            "has-snow": {"snow_score": 50, "snowfall_fresh_cm": 10},
+            "no-snow": {"snow_score": 30, "snowfall_fresh_cm": None},
+        }
+
+        resp = client.get("/api/v1/resorts?sort_by=snowfall")
+        assert resp.status_code == 200
+        ids = [r["resort_id"] for r in resp.json()["resorts"]]
+        assert ids == ["has-snow", "no-snow"]
+
 
 class TestGetResortById:
     """Tests for GET /api/v1/resorts/{resort_id}."""

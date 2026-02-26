@@ -747,6 +747,74 @@ def _has_valid_coordinates(resort: Resort) -> bool:
     return False
 
 
+VALID_SORT_BY = ["name", "quality_score", "snowfall", "elevation"]
+# Default sort order per sort_by field
+_DEFAULT_SORT_ORDER = {
+    "name": "asc",
+    "quality_score": "desc",
+    "snowfall": "desc",
+    "elevation": "desc",
+}
+
+
+def _sort_resorts(
+    resorts: list[Resort],
+    sort_by: str,
+    sort_order: str,
+) -> list[Resort]:
+    """Sort resorts by the given field and order.
+
+    For quality_score and snowfall, data is loaded from the S3 static JSON
+    (the same file used by the batch snow-quality endpoint).
+    Resorts without data sort last regardless of sort order.
+    """
+    reverse = sort_order == "desc"
+
+    if sort_by == "name":
+        return sorted(resorts, key=lambda r: r.name.lower(), reverse=reverse)
+
+    if sort_by == "elevation":
+        # Sort by top elevation (meters). Resorts without top elevation sort last.
+        def _elev_key(r: Resort) -> tuple[bool, float]:
+            top = r.top_elevation
+            if top is not None:
+                return (
+                    False,
+                    -top.elevation_meters if reverse else top.elevation_meters,
+                )
+            return (True, 0)
+
+        return sorted(resorts, key=_elev_key)
+
+    # quality_score or snowfall — need S3 static JSON data
+    snow_quality_data = _get_static_snow_quality_from_s3() or {}
+
+    if sort_by == "quality_score":
+
+        def _score_key(r: Resort) -> tuple[bool, float]:
+            entry = snow_quality_data.get(r.resort_id)
+            if entry and entry.get("snow_score") is not None:
+                score = entry["snow_score"]
+                return (False, -score if reverse else score)
+            return (True, 0)
+
+        return sorted(resorts, key=_score_key)
+
+    if sort_by == "snowfall":
+
+        def _snowfall_key(r: Resort) -> tuple[bool, float]:
+            entry = snow_quality_data.get(r.resort_id)
+            if entry and entry.get("snowfall_fresh_cm") is not None:
+                val = entry["snowfall_fresh_cm"]
+                return (False, -val if reverse else val)
+            return (True, 0)
+
+        return sorted(resorts, key=_snowfall_key)
+
+    # Fallback (should not reach here due to validation)
+    return resorts
+
+
 @app.get("/api/v1/resorts")
 async def get_resorts(
     response: Response,
@@ -755,6 +823,15 @@ async def get_resorts(
     ),
     region: str | None = Query(
         None, description="Filter by region (na_west, alps, japan, etc.)"
+    ),
+    sort_by: str = Query(
+        "name",
+        description="Sort field: name, quality_score, snowfall, elevation",
+    ),
+    sort_order: str | None = Query(
+        None,
+        description="Sort order: asc or desc. Defaults depend on sort_by "
+        "(asc for name, desc for others)",
     ),
     limit: int | None = Query(
         None, ge=1, le=500, description="Maximum number of resorts to return"
@@ -772,9 +849,26 @@ async def get_resorts(
     By default, resorts with invalid (0,0) coordinates are excluded.
     Use include_no_coords=true to include them.
 
+    Supports sorting via sort_by and sort_order parameters.
     Supports pagination via limit and offset parameters.
+    Sorting is applied before pagination so pages are consistent.
     """
     try:
+        # Validate sort_by
+        if sort_by not in VALID_SORT_BY:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid sort_by. Must be one of: {VALID_SORT_BY}",
+            )
+
+        # Validate sort_order
+        effective_sort_order = sort_order or _DEFAULT_SORT_ORDER[sort_by]
+        if effective_sort_order not in ("asc", "desc"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid sort_order. Must be 'asc' or 'desc'",
+            )
+
         # Validate region if provided
         if region and region not in VALID_REGIONS:
             raise HTTPException(
@@ -795,6 +889,9 @@ async def get_resorts(
         # Apply country filter
         if country:
             resorts = [r for r in resorts if r.country.upper() == country.upper()]
+
+        # Apply sorting BEFORE pagination
+        resorts = _sort_resorts(resorts, sort_by, effective_sort_order)
 
         # Track total before pagination
         total_count = len(resorts)
