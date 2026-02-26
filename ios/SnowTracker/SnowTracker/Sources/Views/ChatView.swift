@@ -1,10 +1,12 @@
 import SwiftUI
 
 struct ChatView: View {
+    @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @ObservedObject private var locationManager = LocationManager.shared
     @StateObject private var viewModel = ChatViewModel()
     @State private var messageText = ""
     @State private var sendTrigger = 0
+    @State private var selectedResort: Resort?
     @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
@@ -45,6 +47,14 @@ struct ChatView: View {
             }
             .sheet(isPresented: $viewModel.showConversationList) {
                 ConversationListView(viewModel: viewModel)
+            }
+            .sheet(item: $selectedResort) { resort in
+                NavigationStack {
+                    ResortDetailView(resort: resort)
+                        .environmentObject(snowConditionsManager)
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
             }
             .onAppear {
                 AnalyticsService.shared.trackScreen("AskAI", screenClass: "ChatView")
@@ -122,8 +132,14 @@ struct ChatView: View {
                                 message: message,
                                 isStreaming: isCurrentlyStreaming,
                                 displayedText: text,
+                                resorts: snowConditionsManager.resorts,
+                                conditions: snowConditionsManager.conditions,
+                                summaries: snowConditionsManager.snowQualitySummaries,
                                 onTapToSkip: {
                                     viewModel.skipStreaming()
+                                },
+                                onResortTap: { resort in
+                                    selectedResort = resort
                                 }
                             )
                             .id(message.id)
@@ -265,13 +281,73 @@ struct ChatView: View {
     }
 }
 
+// MARK: - Message Content Parsing
+
+private enum ChatContentSegment {
+    case text(String)
+    case resortCards([String])
+}
+
+private func parseChatContent(_ text: String) -> [ChatContentSegment] {
+    let pattern = #"\[\[resort:([a-z0-9-]+)\]\]"#
+    guard let regex = try? NSRegularExpression(pattern: pattern) else {
+        return [.text(text)]
+    }
+
+    var segments: [ChatContentSegment] = []
+    let lines = text.components(separatedBy: "\n")
+    var textLines: [String] = []
+    var resortIds: [String] = []
+
+    for line in lines {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        let range = NSRange(trimmed.startIndex..., in: trimmed)
+        if let match = regex.firstMatch(in: trimmed, range: range),
+           let idRange = Range(match.range(at: 1), in: trimmed) {
+            // Flush any accumulated text
+            if !textLines.isEmpty {
+                let joined = textLines.joined(separator: "\n")
+                if !joined.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    segments.append(.text(joined))
+                }
+                textLines = []
+            }
+            resortIds.append(String(trimmed[idRange]))
+        } else {
+            // Flush any accumulated resort IDs
+            if !resortIds.isEmpty {
+                segments.append(.resortCards(resortIds))
+                resortIds = []
+            }
+            textLines.append(line)
+        }
+    }
+
+    // Flush remaining
+    if !resortIds.isEmpty {
+        segments.append(.resortCards(resortIds))
+    }
+    if !textLines.isEmpty {
+        let joined = textLines.joined(separator: "\n")
+        if !joined.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            segments.append(.text(joined))
+        }
+    }
+
+    return segments
+}
+
 // MARK: - Message Bubble
 
 private struct MessageBubbleView: View {
     let message: ChatMessage
     let isStreaming: Bool
     let displayedText: String
+    let resorts: [Resort]
+    let conditions: [String: [WeatherCondition]]
+    let summaries: [String: SnowQualitySummaryLight]
     let onTapToSkip: () -> Void
+    let onResortTap: (Resort) -> Void
 
     var body: some View {
         HStack {
@@ -279,33 +355,27 @@ private struct MessageBubbleView: View {
                 Spacer(minLength: 60)
             }
 
-            VStack(alignment: message.isFromUser ? .trailing : .leading, spacing: 4) {
-                Group {
-                    if message.isFromUser {
-                        Text(displayedText)
-                            .font(.body)
-                            .foregroundStyle(.white)
-                    } else if message.isIntermediate {
-                        Text(displayedText)
-                            .font(.body)
-                            .italic()
-                            .foregroundStyle(.secondary)
-                    } else {
-                        MarkdownTextView(displayedText, foregroundColor: .primary)
-                            .font(.body)
+            VStack(alignment: message.isFromUser ? .trailing : .leading, spacing: 8) {
+                if message.isFromUser || message.isIntermediate {
+                    textBubble(displayedText)
+                } else {
+                    // Parse for resort cards
+                    let segments = parseChatContent(displayedText)
+                    ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
+                        switch segment {
+                        case .text(let text):
+                            textBubble(text, isAssistant: true)
+                        case .resortCards(let ids):
+                            ChatResortCarousel(
+                                resortIds: ids,
+                                resorts: resorts,
+                                conditions: conditions,
+                                summaries: summaries,
+                                onResortTap: onResortTap
+                            )
+                        }
                     }
                 }
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(
-                        message.isFromUser
-                            ? Color.blue
-                            : message.isIntermediate
-                                ? Color(.tertiarySystemBackground)
-                                : Color(.secondarySystemBackground)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
 
                 if isStreaming {
                     Text("Tap to skip")
@@ -313,7 +383,6 @@ private struct MessageBubbleView: View {
                         .foregroundStyle(.tertiary)
                         .padding(.leading, 4)
                         .transition(.opacity)
-                        .accessibilityLabel("Tap to skip streaming animation")
                 }
             }
             .contentShape(Rectangle())
@@ -327,6 +396,150 @@ private struct MessageBubbleView: View {
                 Spacer(minLength: 60)
             }
         }
+    }
+
+    @ViewBuilder
+    private func textBubble(_ text: String, isAssistant: Bool = false) -> some View {
+        Group {
+            if message.isFromUser {
+                Text(text)
+                    .font(.body)
+                    .foregroundStyle(.white)
+            } else if message.isIntermediate {
+                Text(text)
+                    .font(.body)
+                    .italic()
+                    .foregroundStyle(.secondary)
+            } else {
+                MarkdownTextView(text, foregroundColor: .primary)
+                    .font(.body)
+            }
+        }
+        .textSelection(.enabled)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            message.isFromUser
+                ? Color.blue
+                : message.isIntermediate
+                    ? Color(.tertiarySystemBackground)
+                    : Color(.secondarySystemBackground)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+}
+
+// MARK: - Resort Card Carousel
+
+private struct ChatResortCarousel: View {
+    let resortIds: [String]
+    let resorts: [Resort]
+    let conditions: [String: [WeatherCondition]]
+    let summaries: [String: SnowQualitySummaryLight]
+    let onResortTap: (Resort) -> Void
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(resortIds, id: \.self) { resortId in
+                    if let resort = resorts.first(where: { $0.id == resortId }) {
+                        ChatResortCard(
+                            resort: resort,
+                            condition: bestCondition(for: resortId),
+                            quality: summaries[resortId]?.overallSnowQuality
+                        ) {
+                            onResortTap(resort)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func bestCondition(for resortId: String) -> WeatherCondition? {
+        let resortConditions = conditions[resortId] ?? []
+        return resortConditions.first { $0.elevationLevel == "mid" }
+            ?? resortConditions.first { $0.elevationLevel == "top" }
+            ?? resortConditions.first
+    }
+}
+
+private struct ChatResortCard: View {
+    let resort: Resort
+    let condition: WeatherCondition?
+    let quality: SnowQuality?
+    let onTap: () -> Void
+
+    private var displayQuality: SnowQuality {
+        condition?.snowQuality ?? quality ?? .unknown
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 6) {
+                // Quality badge
+                HStack {
+                    Text(displayQuality.displayName)
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(displayQuality.color, in: Capsule())
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                // Resort name
+                Text(resort.name)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                // Stats
+                HStack(spacing: 12) {
+                    if let condition {
+                        if condition.freshSnowCm > 0 {
+                            Label(String(format: "%.0fcm", condition.freshSnowCm), systemImage: "snowflake")
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                        }
+                        Label(String(format: "%.0f°", condition.currentTempCelsius), systemImage: "thermometer.medium")
+                            .font(.caption)
+                            .foregroundStyle(condition.currentTempCelsius > 0 ? .orange : .cyan)
+                        if let depth = condition.snowDepthCm, depth > 0 {
+                            Label(String(format: "%.0fcm base", depth), systemImage: "ruler")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Text("Loading...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                // Country/region
+                Text(resort.countryName)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(12)
+            .frame(width: 180)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(displayQuality.color.opacity(0.3), lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
