@@ -31,11 +31,11 @@ Compiled 248 Indy Pass resorts from multiple sources and matched 41 to our 1019-
 |-----|---------|-----|-----|
 | done | pending | pending | done |
 
-### Data: Trail map scraping (in progress)
-Built `scrape_trail_maps.py` script to find trail map image URLs for all 1019 resorts from two sources: skiresort.info (DZI tiles, highest quality) and snow-forecast.com (direct JPEG piste maps). Includes 70+ manual slug overrides for resorts with non-obvious URLs. Script supports resume mode, limits, and single-resort testing. Full scrape running (~35 min).
+### Feature: Trail map images (725 resorts) + zoomable iOS viewer
+Scraped trail map URLs for all 1019 resorts: 686 from skiresort.info (DZI tiles), 39 from snow-forecast.com (JPEG piste maps). 725/1019 (71%) now have `trail_map_url` in resorts.json. iOS: Added full-screen `TrailMapView` with pinch-to-zoom, double-tap zoom, drag-to-pan, share button. Resort detail opens native viewer instead of Safari. Integrated trail map + webcam scraping into `enrich_resorts.py` for future enrichment runs.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| pending | pending | pending | pending |
+| done | pending | done | done |
 
 ### QA Round 2: Scoring physics, API hardening, chat crash, infrastructure fixes
 Comprehensive QA audit with 6 parallel agents found and fixed: (1) **ML scorer**: `hours_since_last_snowfall=0.0` was treated as falsy via `or 336.0`, defaulting to 14 days without snow — fixed with explicit None check. Also applied `_apply_no_snowfall_cap()` to `predict_quality()` (real-time endpoint), not just timeline. (2) **API hardening**: Added `_validate_resource_id()` regex validation to all path-parameter endpoints, sanitized error messages to not echo user input or AWS internals, added DynamoDB scan pagination to `get_all_resorts()`. (3) **Chat Float→Decimal crash**: Location queries with lat/lon floats crashed DynamoDB PutItem — fixed with `json.loads(json.dumps(tool_calls), parse_float=Decimal)`. (4) **UserPreferences validation**: Old DynamoDB records missing `updated_at` caused Pydantic validation errors — made fields optional with defaults. (5) **IAM fix**: `chat_suggestions_table` ARN added to Lambda policy in Pulumi. (6) **OpenMeteo threshold**: Aligned snowfall threshold to >0.1cm to ignore sensor noise. All 1592 backend tests passing.
