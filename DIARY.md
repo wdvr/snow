@@ -7,6 +7,12 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### Feature: Ski trail/piste overlay on map view (iOS + web)
+Added OpenSnowMap piste tile overlay to the map view. Uses `tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png` — transparent PNG tiles showing color-coded ski trails from OpenStreetMap data. iOS: `MKTileOverlay` added to `ClusteredMapView` at `.aboveRoads` level, toggle button with `figure.skiing.downhill` icon in toolbar, attribution banner. Web: Leaflet `TileLayer` with zoom-aware rendering (only at z12+), toggle button with Mountain icon. Tiles verified at Whistler (15.5KB), Chamonix (9.7KB), Vail (1.4KB) — good coverage worldwide.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | done | n/a |
+
 ### Feature: Resort logos in detail views + map popups
 Added resort logos across all platforms using Google Favicon API. Extracts hostname from `officialWebsite` field and constructs favicon URL client-side (`https://t3.gstatic.com/faviconV2?...&url=http://{hostname}&size=128`). Shows initials fallback (gradient blue-cyan box) when logo unavailable. iOS: `ResortLogoView` component (44px detail, 36px map popup). Web: `ResortLogo` component (48px detail, 36px cards, 28px map popup). Android: `ResortLogo` composable (44dp detail header, 36dp list cards) using Coil `AsyncImage`. Also enhanced iOS map popup with webcam + trail map quick-action buttons alongside the existing website button.
 | iOS | Android | Web | API |

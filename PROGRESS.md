@@ -112,12 +112,11 @@
 - [ ] Web: full-screen image modal in resort detail
 - [ ] Android: full-screen image viewer in resort detail
 
-#### Ski Trail Overlay on Main Map (POST-RELEASE)
-- [x] **Research completed**: 3 viable options identified
-- Option A (easiest): OpenSnowMap raster overlay `tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png` — transparent piste tiles, 1-2 days work
-- Option B (best): OpenSkiMap vector PBF tiles `tiles.openskimap.org/tiles/openskimap/{z}/{x}/{y}.pbf` — difficulty-colored, clickable trails, ~1 week
-- Option C (richest): On-demand Overpass API per resort (Whistler = 827 piste ways in 1.3MB GeoJSON)
-- [ ] Choose approach and implement (post-release feature)
+#### Ski Trail Overlay on Main Map — DONE
+- [x] **Research completed**: OpenSnowMap raster tiles confirmed working (Whistler 15.5KB, Chamonix 9.7KB at z13). OpenSkiMap PBF tiles returned empty.
+- [x] **iOS**: Toggle button (skiing icon) in map toolbar, MKTileOverlay at z12-18, above-roads level, attribution banner
+- [x] **Web**: Toggle button + Leaflet TileLayer, zoom-aware (only renders z12+), 85% opacity, attribution badge
+- Using Option A: OpenSnowMap raster overlay `tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png`
 
 #### Suggest an Edit (iOS + Web + Android)
 - [x] **"Suggest an Edit" button** on every resort detail view
