@@ -12,9 +12,12 @@ final class CachedResort {
     var name: String
     var country: String
     var region: String
+    var city: String?
+    var stateProvince: String?
     var timezone: String
     var officialWebsite: String?
     var trailMapUrl: String?
+    var webcamUrl: String?
     var greenRunsPct: Int?
     var blueRunsPct: Int?
     var blackRunsPct: Int?
@@ -40,9 +43,12 @@ final class CachedResort {
         self.name = resort.name
         self.country = resort.country
         self.region = resort.region
+        self.city = resort.city
+        self.stateProvince = resort.stateProvince
         self.timezone = resort.timezone
         self.officialWebsite = resort.officialWebsite
         self.trailMapUrl = resort.trailMapUrl
+        self.webcamUrl = resort.webcamUrl
         self.greenRunsPct = resort.greenRunsPct
         self.blueRunsPct = resort.blueRunsPct
         self.blackRunsPct = resort.blackRunsPct
@@ -80,10 +86,13 @@ final class CachedResort {
             name: name,
             country: country,
             region: region,
+            city: city,
+            stateProvince: stateProvince,
             elevationPoints: elevationPoints,
             timezone: timezone,
             officialWebsite: officialWebsite,
             trailMapUrl: trailMapUrl,
+            webcamUrl: webcamUrl,
             greenRunsPct: greenRunsPct,
             blueRunsPct: blueRunsPct,
             blackRunsPct: blackRunsPct,

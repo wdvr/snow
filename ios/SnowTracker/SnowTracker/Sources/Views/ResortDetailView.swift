@@ -1,3 +1,4 @@
+import SafariServices
 import SwiftUI
 
 struct ResortDetailView: View {
@@ -10,6 +11,7 @@ struct ResortDetailView: View {
     @State private var showThawFreezeInfo: Bool = false
     @State private var isRetrying: Bool = false
     @State private var showDataSources: Bool = false
+    @State private var safariURL: IdentifiableURL?
 
     private var conditions: [WeatherCondition] {
         snowConditionsManager.conditions[resort.id] ?? []
@@ -138,11 +140,17 @@ struct ResortDetailView: View {
                         Button {
                             toggleLiveActivity()
                         } label: {
-                            Image(systemName: liveActivityService.isActive(for: resort.id) ? "pin.fill" : "pin")
-                                .foregroundStyle(liveActivityService.isActive(for: resort.id) ? .green : .gray)
+                            VStack(spacing: 2) {
+                                Image(systemName: liveActivityService.isActive(for: resort.id) ? "antenna.radiowaves.left.and.right.circle.fill" : "antenna.radiowaves.left.and.right.circle")
+                                    .foregroundStyle(liveActivityService.isActive(for: resort.id) ? .green : .gray)
+                                Text("Live")
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundStyle(liveActivityService.isActive(for: resort.id) ? .green : .gray)
+                            }
                         }
                         .sensoryFeedback(.impact(weight: .light), trigger: liveActivityService.isActive(for: resort.id))
-                        .accessibilityLabel(liveActivityService.isActive(for: resort.id) ? "Stop Live Activity" : "Start Live Activity")
+                        .accessibilityLabel(liveActivityService.isActive(for: resort.id) ? "Stop Live Activity tracking" : "Start Live Activity tracking for \(resort.name)")
+                        .accessibilityHint(liveActivityService.isActive(for: resort.id) ? "Removes the live conditions widget from your Lock Screen" : "Shows live snow conditions on your Lock Screen and Dynamic Island")
                     }
 
                     Button {
@@ -183,6 +191,7 @@ struct ResortDetailView: View {
             )
             ShareSheet(items: [image, shareText])
         }
+        .safariOverlay(url: $safariURL)
         .refreshable {
             AnalyticsService.shared.trackPullToRefresh(screen: "ResortDetail")
             await snowConditionsManager.fetchConditionsForResort(resort.id, forceRefresh: true)
@@ -328,18 +337,29 @@ struct ResortDetailView: View {
             // Links row
             HStack(spacing: 16) {
                 if let website = resort.officialWebsite, let url = URL(string: website) {
-                    Link(destination: url) {
+                    Button {
+                        AnalyticsService.shared.trackResortWebsiteVisited(resortId: resort.id, resortName: resort.name)
+                        safariURL = IdentifiableURL(url: url)
+                    } label: {
                         Label("Website", systemImage: "safari")
                             .font(.caption)
                     }
-                    .simultaneousGesture(TapGesture().onEnded {
-                        AnalyticsService.shared.trackResortWebsiteVisited(resortId: resort.id, resortName: resort.name)
-                    })
                 }
 
                 if let mapUrlStr = resort.trailMapUrl, let mapUrl = URL(string: mapUrlStr) {
-                    Link(destination: mapUrl) {
+                    Button {
+                        safariURL = IdentifiableURL(url: mapUrl)
+                    } label: {
                         Label("Trail Map", systemImage: "map")
+                            .font(.caption)
+                    }
+                }
+
+                if let webcamUrlStr = resort.webcamUrl, let webcamUrl = URL(string: webcamUrlStr) {
+                    Button {
+                        safariURL = IdentifiableURL(url: webcamUrl)
+                    } label: {
+                        Label("Webcams", systemImage: "web.camera")
                             .font(.caption)
                     }
                 }
@@ -1140,6 +1160,32 @@ struct ResortDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .cardStyle()
+    }
+}
+
+// MARK: - Safari Overlay
+
+struct IdentifiableURL: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
+struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
+}
+
+extension View {
+    func safariOverlay(url: Binding<IdentifiableURL?>) -> some View {
+        self.sheet(item: url) { identifiableURL in
+            SafariView(url: identifiableURL.url)
+                .ignoresSafeArea()
+        }
     }
 }
 

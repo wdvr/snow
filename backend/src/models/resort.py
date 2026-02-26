@@ -36,6 +36,10 @@ class Resort(BaseModel):
     name: str = Field(..., description="Resort display name")
     country: str = Field(..., description="Country code (US, CA)")
     region: str = Field(..., description="State/Province")
+    city: str | None = Field(None, description="Nearest city or town")
+    state_province: str | None = Field(
+        None, description="State/province abbreviation or name"
+    )
     elevation_points: list[ElevationPoint] = Field(
         ..., description="Base, mid, top elevation data"
     )
@@ -44,6 +48,7 @@ class Resort(BaseModel):
     )
     official_website: str | None = Field(None, description="Resort official website")
     trail_map_url: str | None = Field(None, description="URL to trail map image or PDF")
+    webcam_url: str | None = Field(None, description="URL to webcam page")
     green_runs_pct: int | None = Field(
         None, description="Percentage of beginner/green runs"
     )

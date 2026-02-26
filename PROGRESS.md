@@ -17,13 +17,13 @@
 
 1. [ ] **Chat table column alignment** — Tables in chat have nicely alternating row colors, but rows have different column widths. Fix so all rows share the same column widths per column.
 2. [ ] **16 chat suggestion examples with random rotation** — We want 16 example prompts, showing a random selection of 4 each time. Generate 12 more realistic examples of what users might search for.
-3. [ ] **Resort day ticket prices seem off** — Double-check price sources. Big White, Revelstoke seem wrong. Whistler at $66 is way too cheap. Audit and fix.
+3. [x] **Resort day ticket prices seem off** — Verified and corrected prices for 65+ resorts. Whistler $175-260, Vail $189-356, etc. Created `enrich_resort_data.py` with 90+ manually verified 2025/26 prices.
 4. [ ] **Chat history still doesn't work** — Is it linked to the logged-in user? Do I need to logout/login? Repro this and iterate until it works end-to-end in the app.
-5. [ ] **Add city to resort titles** — Show "Big White, Kelowna, BC, Canada" style titles. Add city field to all resorts; fetch/collect this data if needed via agents.
-6. [ ] **Resort logo in detail view** — If available, show a logo for the resort in the top cell of the detail view.
+5. [x] **Add city to resort titles** — Added city and state_province fields to 955/1040 resorts via Nominatim reverse geocoding + manual overrides. iOS displays "Big White, Kelowna, BC, Canada" style titles.
+6. [ ] **Resort logo in detail view** — Deferred: logos not readily available as URLs from skiresort.info. Infrastructure prepared but needs logo source.
 7. [x] **Snow history still empty** — Fixed: DAILY_HISTORY_TABLE env var missing from weather worker, weather processor, and API handler Lambdas (prod + staging). Also added SNOW_SUMMARY_TABLE to API handler. Fixed Pulumi infra to persist these env vars.
-8. [ ] **Website opens in new tab** — Open powderchaserapp.com in an embedded browser overlay, not a new Safari tab.
-9. [ ] **Webcam pages / main webcam on detail view** — Collect webcam page URLs for all resorts; if possible, show the main webcam image on the resort detail front page.
+8. [x] **Website opens in new tab** — Website, trail map, and webcam links now open in embedded SFSafariViewController overlay instead of leaving the app.
+9. [x] **Webcam pages / main webcam on detail view** — Added webcam_url to all 1040 resorts (skiresort.info webcam pages). iOS detail view shows "Webcams" link in header links row.
 10. [ ] **Map: default to hybrid, remember selection, forecast refresh on zoom** — Standard map should default to hybrid style. Remember user's map style selection in UserDefaults. In forecast mode, trigger refresh of new resorts in view on zoom release (not only on date selector change).
 11. [ ] **Clarify or remove pin icon** — There's a pin icon next to the heart (favorite) icon. Heart = favorite, but what is pin? Clarify its purpose or remove it.
 12. [ ] **Re-launch onboarding from settings** — Allow user to restart the onboarding tutorial from settings. Also review onboarding pages and update if needed.
