@@ -83,17 +83,17 @@ struct ChatView: View {
                     .padding(.horizontal, 40)
 
                 VStack(spacing: 12) {
-                    SuggestionChip(text: "Best powder right now?") {
-                        sendSuggestion("Where has the best powder right now?")
+                    SuggestionChip(text: "Best snow within 500 miles") {
+                        sendSuggestion("Where's the best snow within 500 miles of me right now?")
+                    }
+                    SuggestionChip(text: "Cheap resorts within 6h drive") {
+                        sendSuggestion("What are the cheapest ski resorts within a 6 hour drive from me with decent snow right now?")
+                    }
+                    SuggestionChip(text: "Non-Epic resorts under $150/day") {
+                        sendSuggestion("Show me non-Epic pass resorts with good snow conditions where a day pass is under $150")
                     }
                     SuggestionChip(text: "Compare Whistler vs Jackson Hole") {
-                        sendSuggestion("Compare Whistler and Jackson Hole conditions")
-                    }
-                    SuggestionChip(text: "How's the season at Vail?") {
-                        sendSuggestion("How has the season been at Vail so far?")
-                    }
-                    SuggestionChip(text: "Weekend ski trip ideas") {
-                        sendSuggestion("Where should I ski this weekend?")
+                        sendSuggestion("Compare current conditions at Whistler and Jackson Hole in a table")
                     }
                 }
                 .padding(.top, 8)

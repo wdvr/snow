@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Renders markdown content with proper formatting for AI chat responses.
-/// Supports headers, bold/italic, bullet/numbered lists, code blocks, and inline code.
+/// Supports headers, bold/italic, bullet/numbered lists, code blocks, tables, and inline code.
 struct MarkdownTextView: View {
     let text: String
     let foregroundColor: Color
@@ -27,6 +27,7 @@ struct MarkdownTextView: View {
         case codeBlock(language: String?, code: String)
         case bulletList([String])
         case numberedList([String])
+        case table(headers: [String], rows: [[String]])
     }
 
     // MARK: - Block Rendering
@@ -75,6 +76,9 @@ struct MarkdownTextView: View {
                 }
             }
             .padding(.leading, 4)
+
+        case .table(let headers, let rows):
+            tableView(headers: headers, rows: rows)
         }
     }
 
@@ -83,6 +87,58 @@ struct MarkdownTextView: View {
         case 1: return .title3
         case 2: return .headline
         default: return .subheadline
+        }
+    }
+
+    // MARK: - Table Rendering
+
+    private func tableView(headers: [String], rows: [[String]]) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Header row
+                HStack(spacing: 0) {
+                    ForEach(Array(headers.enumerated()), id: \.offset) { colIndex, header in
+                        Text(inlineAttributed(header.trimmingCharacters(in: .whitespaces)))
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(foregroundColor)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 6)
+                            .frame(minWidth: 60, alignment: .leading)
+                        if colIndex < headers.count - 1 {
+                            Divider()
+                        }
+                    }
+                }
+                .background(Color(.tertiarySystemBackground))
+
+                Divider()
+
+                // Data rows
+                ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, row in
+                    HStack(spacing: 0) {
+                        ForEach(Array(row.enumerated()), id: \.offset) { colIndex, cell in
+                            Text(inlineAttributed(cell.trimmingCharacters(in: .whitespaces)))
+                                .font(.caption)
+                                .foregroundStyle(foregroundColor)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 5)
+                                .frame(minWidth: 60, alignment: .leading)
+                            if colIndex < row.count - 1 {
+                                Divider()
+                            }
+                        }
+                    }
+                    if rowIndex < rows.count - 1 {
+                        Divider()
+                    }
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Color(.separator).opacity(0.5), lineWidth: 0.5)
+            )
         }
     }
 
@@ -146,6 +202,24 @@ struct MarkdownTextView: View {
                 continue
             }
 
+            // Table (lines starting with |)
+            if isTableRow(trimmed) {
+                var tableLines: [String] = []
+                while index < lines.count {
+                    let tableLine = lines[index].trimmingCharacters(in: .whitespaces)
+                    if isTableRow(tableLine) || isTableSeparator(tableLine) {
+                        tableLines.append(tableLine)
+                        index += 1
+                    } else {
+                        break
+                    }
+                }
+                if let table = parseTable(tableLines) {
+                    blocks.append(table)
+                }
+                continue
+            }
+
             // Bullet list
             if trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") || trimmed.hasPrefix("+ ") {
                 var items: [String] = []
@@ -201,7 +275,8 @@ struct MarkdownTextView: View {
                     || paraTrimmed.hasPrefix("- ")
                     || paraTrimmed.hasPrefix("* ")
                     || paraTrimmed.hasPrefix("+ ")
-                    || isNumberedListItem(paraTrimmed) {
+                    || isNumberedListItem(paraTrimmed)
+                    || isTableRow(paraTrimmed) {
                     break
                 }
                 paragraphLines.append(paraTrimmed)
@@ -253,5 +328,51 @@ struct MarkdownTextView: View {
             i += 1
         }
         return String(chars[i...])
+    }
+
+    /// Check if a line looks like a markdown table row: starts and ends with |
+    private func isTableRow(_ line: String) -> Bool {
+        line.hasPrefix("|") && line.hasSuffix("|") && line.contains(" ")
+    }
+
+    /// Check if a line is a table separator like |---|---|
+    private func isTableSeparator(_ line: String) -> Bool {
+        guard line.hasPrefix("|") else { return false }
+        let cleaned = line.replacingOccurrences(of: "|", with: "")
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: ":", with: "")
+            .trimmingCharacters(in: .whitespaces)
+        return cleaned.isEmpty
+    }
+
+    /// Parse collected table lines into a table block
+    private func parseTable(_ lines: [String]) -> MarkdownBlock? {
+        // Filter out separator lines
+        let dataLines = lines.filter { !isTableSeparator($0) }
+        guard dataLines.count >= 2 else {
+            // Need at least header + 1 data row
+            if dataLines.count == 1 {
+                let headers = parseTableCells(dataLines[0])
+                return .table(headers: headers, rows: [])
+            }
+            return nil
+        }
+
+        let headers = parseTableCells(dataLines[0])
+        let rows = dataLines.dropFirst().map { parseTableCells($0) }
+        return .table(headers: headers, rows: Array(rows))
+    }
+
+    /// Split "| cell1 | cell2 | cell3 |" into ["cell1", "cell2", "cell3"]
+    private func parseTableCells(_ line: String) -> [String] {
+        var cells = line.components(separatedBy: "|")
+        // Remove empty first and last elements from leading/trailing pipes
+        if cells.first?.trimmingCharacters(in: .whitespaces).isEmpty == true {
+            cells.removeFirst()
+        }
+        if cells.last?.trimmingCharacters(in: .whitespaces).isEmpty == true {
+            cells.removeLast()
+        }
+        return cells
     }
 }

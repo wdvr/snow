@@ -537,7 +537,7 @@ class ChatService:
         try:
             items = []
             query_params = {
-                "IndexName": "UserIndex",
+                "IndexName": "user_id-index",
                 "KeyConditionExpression": Key("user_id").eq(user_id),
                 "ScanIndexForward": False,
             }
