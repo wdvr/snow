@@ -15,12 +15,27 @@ import { RegionFilter } from '../components/resort/RegionFilter'
 import { QualityBadge } from '../components/resort/QualityBadge'
 import { countryFlag } from '../utils/format'
 
-type SortOption = 'quality' | 'snow' | 'name' | 'favorites'
+type SortOption = 'quality' | 'snow' | 'name' | 'favorites' | 'distance'
+type PassFilter = 'all' | 'epic' | 'ikon'
+
+/** Haversine distance in km between two lat/lon pairs */
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
 
 export function HomePage() {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('quality')
+  const [passFilter, setPassFilter] = useState<PassFilter>('all')
 
   const geo = useGeolocation()
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
@@ -36,6 +51,20 @@ export function HomePage() {
   const resortIds = useMemo(() => resorts?.map((r) => r.resort_id) ?? [], [resorts])
   const { data: qualityMap } = useSnowQualityBatch(resortIds)
 
+  // Compute distances for each resort (for distance sorting)
+  const distanceMap = useMemo(() => {
+    if (!resorts || geo.latitude == null || geo.longitude == null) return null
+    const map: Record<string, number> = {}
+    for (const r of resorts) {
+      // Use the first elevation point's lat/lon (usually mid or base)
+      const ep = r.elevation_points[0]
+      if (ep) {
+        map[r.resort_id] = haversineKm(geo.latitude, geo.longitude, ep.latitude, ep.longitude)
+      }
+    }
+    return map
+  }, [resorts, geo.latitude, geo.longitude])
+
   // Filter and sort resorts
   const filteredResorts = useMemo(() => {
     if (!resorts) return []
@@ -44,6 +73,13 @@ export function HomePage() {
     // Favorites filter
     if (selectedRegion === 'favorites') {
       filtered = filtered.filter((r) => favorites.includes(r.resort_id))
+    }
+
+    // Pass filter
+    if (passFilter === 'epic') {
+      filtered = filtered.filter((r) => r.epic_pass != null)
+    } else if (passFilter === 'ikon') {
+      filtered = filtered.filter((r) => r.ikon_pass != null)
     }
 
     // Search filter
@@ -85,11 +121,16 @@ export function HomePage() {
         }
         case 'name':
           return a.name.localeCompare(b.name)
+        case 'distance': {
+          const distA = distanceMap?.[a.resort_id] ?? Infinity
+          const distB = distanceMap?.[b.resort_id] ?? Infinity
+          return distA - distB
+        }
         default:
           return 0
       }
     })
-  }, [resorts, search, sortBy, qualityMap, selectedRegion, favorites])
+  }, [resorts, search, sortBy, qualityMap, selectedRegion, favorites, passFilter, distanceMap])
 
   const isLoading = resortsLoading || regionsLoading
 
@@ -210,7 +251,7 @@ export function HomePage() {
           </section>
         )}
 
-        {/* Region filter + sort */}
+        {/* Region filter + pass filter + sort */}
         <section className="mb-6 space-y-4">
           <div className="flex items-center gap-2">
             {favorites.length > 0 && (
@@ -242,6 +283,28 @@ export function HomePage() {
             </div>
           </div>
 
+          {/* Pass filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500 shrink-0">Pass:</span>
+            {([
+              { value: 'all' as PassFilter, label: 'All', colors: 'bg-blue-600 text-white' },
+              { value: 'epic' as PassFilter, label: 'Epic Pass', colors: 'bg-purple-600 text-white' },
+              { value: 'ikon' as PassFilter, label: 'Ikon Pass', colors: 'bg-orange-500 text-white' },
+            ]).map(({ value, label, colors }) => (
+              <button
+                key={value}
+                onClick={() => setPassFilter(value)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  passFilter === value
+                    ? colors
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">
               {isLoading ? 'Loading...' : `${filteredResorts.length} resorts`}
@@ -250,12 +313,19 @@ export function HomePage() {
               <span className="text-sm text-gray-500">Sort by:</span>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                onChange={(e) => {
+                  const val = e.target.value as SortOption
+                  if (val === 'distance' && geo.latitude == null) {
+                    geo.requestLocation()
+                  }
+                  setSortBy(val)
+                }}
                 className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="quality">Quality Score</option>
                 <option value="snow">Fresh Snow</option>
                 <option value="name">Name</option>
+                <option value="distance">Distance</option>
                 {favorites.length > 0 && <option value="favorites">Favorites First</option>}
               </select>
             </div>
@@ -288,6 +358,7 @@ export function HomePage() {
                 quality={qualityMap?.[resort.resort_id]}
                 isFavorite={isFavorite(resort.resort_id)}
                 onToggleFavorite={toggleFavorite}
+                distanceKm={sortBy === 'distance' ? (distanceMap?.[resort.resort_id] ?? null) : null}
               />
             ))}
           </div>

@@ -39,8 +39,52 @@
 ### Remaining Issues
 - [ ] Resort logo source needed (deferred)
 - [ ] Map forecast refresh on zoom (not yet implemented)
-- [ ] Deploy wipes DAILY_HISTORY_TABLE env var from API handler — Pulumi state may be out of sync
-- [ ] Populate Resorts Database workflow triggered — waiting for city/webcam data to appear in prod DynamoDB
+- [x] Deploy wipes DAILY_HISTORY_TABLE env var from API handler — FIXED: added all missing env vars to deploy.yml hardcoded configs
+- [x] Populate Resorts Database workflow triggered — DONE: city/webcam/prices now in prod DynamoDB
+
+---
+
+## Cross-Platform Feature Parity (Feb 26)
+
+Reference platform: **iOS** (most complete). Goal: Web + Android at 100% parity.
+
+### Web Parity Gaps (vs iOS)
+
+#### HIGH PRIORITY
+- [x] **W1: Map View** — Leaflet.js interactive map with clustering, quality-colored markers, region presets (8 regions), quality filter tiers, tile layer switch (Standard/Satellite/Terrain), nearby carousel, resort popup on click
+- [x] **W2: Data Sources Card** — Collapsible card showing merge method, source count, per-source snowfall with consensus/outlier status color-coding
+- [x] **W3: Elevation Picker** — Segmented control (Summit/Mid/Base) with elevation meters, auto-selects available level
+- [x] **W4: Expanded Conditions** — SnowDetailsCard with fresh snow, 24h/48h/72h snowfall, warming indicator, freeze/thaw time, snow since freeze, base depth warning, weather description
+- [x] **W5: Weather Details** — WeatherDetailsCard with min/max temp, humidity, wind speed, wind gust, max gust 24h, visibility with severity colors, min visibility 24h, weather description
+- [ ] **W6: Timeline/Hourly Forecast** — Hourly conditions cards (lower priority, forecast chart covers daily view)
+- [x] **W7: Condition Report Submission** — ConditionReportForm modal with condition type, score slider, elevation, comment
+- [x] **W8: Unit Preferences** — UnitProvider context with °C/°F and cm/inches toggle, localStorage persistence, formatTemp/formatSnow/formatSnowInt helpers
+- [x] **W9: Pass Filter** — Epic/Ikon filter buttons on home page resort list
+- [x] **W10: Distance Sorting** — Haversine distance calculation, sort-by-distance with geolocation
+
+#### MEDIUM PRIORITY
+- [x] **W11: Settings Page** — Full settings page with unit preferences (temp + snow), account management, about section
+- [x] **W12: All Elevations Summary** — Side-by-side base/mid/top cards showing quality, temp, fresh snow, depth, 24h snowfall
+- [x] **W13: Share Button** — Web Share API with clipboard fallback, toast notification
+- [x] **W14: Snow Forecast Card** — 24h/48h/72h predicted snowfall with storm badges
+- [x] **W15: Fresh Snow Chart** — 7-day daily snowfall bar chart using Recharts
+- [x] **W16: Webcam Link** — Camera icon + webcam link in resort detail header
+
+### Android Parity Gaps (vs iOS)
+
+#### HIGH PRIORITY
+- [x] **A1: Data Sources Card** — Expandable card in resort detail showing per-source snowfall, consensus/outlier status, merge method
+- [x] **A2: Map Clustering** — Google Maps Compose clustering with custom marker/cluster rendering, quality-colored badges
+- [x] **A3: Map Region Presets** — 9 region FilterChips (Show All, NA West, Rockies, NA East, Alps, Scandinavia, Japan, Oceania, S. America)
+- [x] **A4: Streaming Chat** — SSE streaming via ChatStreamService with OkHttp, integrated in ChatRepository with fallback to REST
+- [x] **A5: Map Forecast Mode** — Date selector chips, forecast loading per-resort, forecast banner with loading state
+
+#### MEDIUM PRIORITY
+- [ ] **A6: Google Sign-In** — Button exists but onClick is placeholder (not functional)
+- [ ] **A7: Trip Creation** — FAB button has TODO comment, not implemented
+- [ ] **A8: Comparison View** — Stub screen with placeholder text
+- [ ] **A9: Onboarding Flow** — No first-launch region selection
+- [ ] **A10: Fresh Snow Chart** — 7-day per-elevation snowfall chart
 
 ---
 

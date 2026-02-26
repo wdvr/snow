@@ -106,6 +106,21 @@ class ApiClient {
     return data.reports
   }
 
+  submitConditionReport(
+    resortId: string,
+    report: {
+      condition_type: string
+      score: number
+      elevation_level?: string
+      comment?: string
+    },
+  ): Promise<ConditionReport> {
+    return this.fetch<ConditionReport>(`/api/v1/resorts/${resortId}/condition-reports`, {
+      method: 'POST',
+      body: JSON.stringify(report),
+    })
+  }
+
   getNearbyResorts(lat: number, lon: number, radius?: number, limit?: number): Promise<{ resorts: Array<{ resort: Resort; distance_km: number }>; count: number }> {
     const params = new URLSearchParams({ lat: String(lat), lon: String(lon) })
     if (radius) params.set('radius', String(radius))

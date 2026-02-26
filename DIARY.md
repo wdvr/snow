@@ -7,6 +7,30 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### Feature: Web cross-platform parity — Map View
+Full interactive map page using Leaflet.js + react-leaflet with MarkerClusterGroup for resort clustering. Quality-colored circle markers, 8 region preset buttons (NA West, Rockies, NA East, Alps, Scandinavia, Japan, Oceania, S. America), quality filter tiers (All/Powder+/Excellent+/Good+/Mediocre+), tile layer switching (Standard/Satellite/Terrain), nearby resort carousel with geolocation, resort popup with quality badge on click. New files: MapPage.tsx, QualityFilter.tsx, RegionPresets.tsx, ResortPopup.tsx, NearbyCarousel.tsx.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | done | done | n/a |
+
+### Feature: Web cross-platform parity — Resort detail enhancements
+Comprehensive resort detail overhaul: (1) **ElevationPicker** — segmented Summit/Mid/Base control with elevation meters. (2) **SnowDetailsCard** — fresh snow, 24h/48h/72h snowfall, warming indicator, freeze/thaw time, snow since freeze, base depth warning, weather description. (3) **WeatherDetailsCard** — min/max temp, humidity, wind speed, gust, max gust 24h, visibility with severity colors, min visibility 24h. (4) **SnowForecastCard** — 24h/48h/72h predictions with storm badges. (5) **DataSourcesCard** — collapsible card showing merge method, per-source snowfall with consensus/outlier status. (6) **AllElevationsSummary** — side-by-side base/mid/top cards. (7) **FreshSnowChart** — 7-day daily snowfall bar chart. (8) **Webcam link** in header.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | done | n/a |
+
+### Feature: Web cross-platform parity — Settings, reports, share, units
+(1) **SettingsPage** — unit preferences (°C/°F, cm/inches), account management (guest sign in/out), about section. Routed at /settings with nav link. (2) **UnitProvider** context — localStorage-backed unit preferences with formatTemp/formatSnow/formatSnowInt helpers used in history tab. (3) **ConditionReportForm** — modal with condition type dropdown, score slider, elevation picker, comment textarea, POST to API. Submit Report button on reports tab. (4) **Share button** — Web Share API with clipboard fallback + toast notification. (5) **Pass filter** — Epic/Ikon filter buttons on home page. (6) **Distance sorting** — haversine distance + sort-by-distance option.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | done | n/a |
+
+### Feature: Android cross-platform parity — Data sources, clustering, streaming, forecast
+(1) **DataSourcesCard** — expandable card in resort detail showing per-source snowfall, consensus/outlier status with color coding, merge method display. Added SourceDetails/SourceInfo models. (2) **Map Clustering** — Google Maps Compose clustering via maps-compose-utils with ResortClusterItem wrapper, custom marker rendering (quality-colored badges with score), custom cluster badges with count. (3) **Region Presets** — 9 region FilterChips with lat/lng/zoom presets. (4) **SSE Streaming Chat** — ChatStreamService using OkHttp with 120s read timeout, parses SSE events (status/tool_start/tool_done/text_delta/done/error), integrated in ChatRepository with REST fallback. (5) **Map Forecast Mode** — date selector chips, forecast loading per-resort timeline, forecast banner with loading state, forecast quality overlay on markers.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | done | n/a | n/a |
+
 ### Fix: Deploy workflow wiping Lambda env vars (CRITICAL)
 Root cause of recurring snow history/chat/condition reports breakage after each deploy. The GitHub Actions deploy workflow (`deploy.yml`) had hardcoded `update-function-configuration` calls for each Lambda that OVERWROTE whatever Pulumi set. The API handler was missing: `DAILY_HISTORY_TABLE`, `SNOW_SUMMARY_TABLE`, `CHAT_TABLE`, `CONDITION_REPORTS_TABLE`, `CHAT_RATE_LIMIT_TABLE_NAME`. Weather processor and worker were missing `DAILY_HISTORY_TABLE`. Every deploy silently reverted these to defaults (non-existent dev tables), breaking history writes and chat persistence. Fixed all three Lambda configurations in deploy.yml.
 | iOS | Android | Web | API |

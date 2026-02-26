@@ -120,8 +120,9 @@ dependencies {
     // EncryptedSharedPreferences
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
-    // Google Maps Compose
+    // Google Maps Compose + Clustering
     implementation("com.google.maps.android:maps-compose:6.2.1")
+    implementation("com.google.maps.android:maps-compose-utils:6.2.1")
     implementation("com.google.android.gms:play-services-maps:19.0.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
 

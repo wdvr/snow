@@ -47,6 +47,7 @@ export interface Resort {
   timezone: string
   official_website: string | null
   trail_map_url: string | null
+  webcam_url: string | null
   green_runs_pct: number | null
   blue_runs_pct: number | null
   black_runs_pct: number | null
@@ -58,6 +59,19 @@ export interface Resort {
 }
 
 // --- Weather / Conditions ---
+
+export interface SourceDetail {
+  snowfall_24h_cm: number | null
+  reason: string
+  status: 'included' | 'outlier' | 'no_data' | 'consensus' | string
+}
+
+export interface SourceDetails {
+  sources: Record<string, SourceDetail>
+  consensus_value_cm: number | null
+  source_count: number
+  merge_method: string
+}
 
 export interface WeatherCondition {
   resort_id: string
@@ -83,13 +97,17 @@ export interface WeatherCondition {
   wind_speed_kmh: number | null
   wind_gust_kmh: number | null
   max_wind_gust_24h_kmh: number | null
+  max_wind_gust_24h: number | null
   visibility_m: number | null
   min_visibility_24h_m: number | null
   weather_description: string | null
   snow_quality: SnowQuality
   quality_score: number | null
+  confidence_level: string | null
   fresh_snow_cm: number
   data_source: string
+  source_confidence: string | null
+  source_details: SourceDetails | null
 }
 
 // --- Snow Quality Batch ---

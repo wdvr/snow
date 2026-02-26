@@ -11,12 +11,18 @@ import {
   Line,
 } from 'recharts'
 import type { TimelinePoint, HistoryDay } from '../../api/types'
+import { useUnits } from '../../hooks/useUnits'
+import { cToF } from '../../utils/format'
 
 interface ForecastChartProps {
   timeline: TimelinePoint[]
 }
 
 export function ForecastChart({ timeline }: ForecastChartProps) {
+  const { tempUnit, snowUnit, tempLabel, snowLabel } = useUnits()
+  const convertTemp = (c: number) => tempUnit === 'fahrenheit' ? Math.round(cToF(c)) : Math.round(c)
+  const convertSnow = (cm: number) => snowUnit === 'inches' ? Math.round((cm / 2.54) * 10) / 10 : Math.round(cm * 10) / 10
+
   if (timeline.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -51,9 +57,9 @@ export function ForecastChart({ timeline }: ForecastChartProps) {
 
   const data = Array.from(dailyMap.values()).map((d) => ({
     date: new Date(d.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-    snowfall: Math.round(d.snowfall_cm * 10) / 10,
-    tempMin: Math.round(d.temp_min),
-    tempMax: Math.round(d.temp_max),
+    snowfall: convertSnow(d.snowfall_cm),
+    tempMin: convertTemp(d.temp_min),
+    tempMax: convertTemp(d.temp_max),
   }))
 
   return (
@@ -75,7 +81,7 @@ export function ForecastChart({ timeline }: ForecastChartProps) {
             tick={{ fontSize: 12, fill: '#6b7280' }}
             tickLine={false}
             axisLine={false}
-            label={{ value: 'cm', position: 'insideTopLeft', offset: -5, style: { fontSize: 11, fill: '#9ca3af' } }}
+            label={{ value: snowLabel, position: 'insideTopLeft', offset: -5, style: { fontSize: 11, fill: '#9ca3af' } }}
           />
           <YAxis
             yAxisId="temp"
@@ -83,7 +89,7 @@ export function ForecastChart({ timeline }: ForecastChartProps) {
             tick={{ fontSize: 12, fill: '#6b7280' }}
             tickLine={false}
             axisLine={false}
-            label={{ value: '\u00B0C', position: 'insideTopRight', offset: -5, style: { fontSize: 11, fill: '#9ca3af' } }}
+            label={{ value: tempLabel, position: 'insideTopRight', offset: -5, style: { fontSize: 11, fill: '#9ca3af' } }}
           />
           <Tooltip
             contentStyle={{
@@ -97,7 +103,7 @@ export function ForecastChart({ timeline }: ForecastChartProps) {
           <Bar
             yAxisId="snow"
             dataKey="snowfall"
-            name="Snowfall (cm)"
+            name={`Snowfall (${snowLabel})`}
             fill="#3b82f6"
             radius={[4, 4, 0, 0]}
             barSize={24}
@@ -106,7 +112,7 @@ export function ForecastChart({ timeline }: ForecastChartProps) {
             yAxisId="temp"
             type="monotone"
             dataKey="tempMax"
-            name="High (\u00B0C)"
+            name={`High (${tempLabel})`}
             stroke="#ef4444"
             strokeWidth={2}
             dot={{ r: 3 }}
@@ -115,7 +121,7 @@ export function ForecastChart({ timeline }: ForecastChartProps) {
             yAxisId="temp"
             type="monotone"
             dataKey="tempMin"
-            name="Low (\u00B0C)"
+            name={`Low (${tempLabel})`}
             stroke="#6366f1"
             strokeWidth={2}
             dot={{ r: 3 }}
@@ -131,6 +137,9 @@ interface HistoryChartProps {
 }
 
 export function HistoryChart({ history }: HistoryChartProps) {
+  const { snowUnit, snowLabel } = useUnits()
+  const convertSnow = (cm: number) => snowUnit === 'inches' ? Math.round((cm / 2.54) * 10) / 10 : Math.round(cm * 10) / 10
+
   if (history.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -141,8 +150,8 @@ export function HistoryChart({ history }: HistoryChartProps) {
 
   const data = history.map((day) => ({
     date: new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    snowfall: Math.round((day.snowfall_24h_cm ?? 0) * 10) / 10,
-    depth: day.snow_depth_cm != null ? Math.round(day.snow_depth_cm) : null,
+    snowfall: convertSnow(day.snowfall_24h_cm ?? 0),
+    depth: day.snow_depth_cm != null ? convertSnow(day.snow_depth_cm) : null,
   }))
 
   return (
@@ -165,7 +174,7 @@ export function HistoryChart({ history }: HistoryChartProps) {
             tick={{ fontSize: 12, fill: '#6b7280' }}
             tickLine={false}
             axisLine={false}
-            label={{ value: 'cm', position: 'insideTopLeft', offset: -5, style: { fontSize: 11, fill: '#9ca3af' } }}
+            label={{ value: snowLabel, position: 'insideTopLeft', offset: -5, style: { fontSize: 11, fill: '#9ca3af' } }}
           />
           <YAxis
             yAxisId="depth"
@@ -173,7 +182,7 @@ export function HistoryChart({ history }: HistoryChartProps) {
             tick={{ fontSize: 12, fill: '#6b7280' }}
             tickLine={false}
             axisLine={false}
-            label={{ value: 'depth cm', position: 'insideTopRight', offset: -5, style: { fontSize: 11, fill: '#9ca3af' } }}
+            label={{ value: `depth ${snowLabel}`, position: 'insideTopRight', offset: -5, style: { fontSize: 11, fill: '#9ca3af' } }}
           />
           <Tooltip
             contentStyle={{
@@ -187,7 +196,7 @@ export function HistoryChart({ history }: HistoryChartProps) {
           <Bar
             yAxisId="snow"
             dataKey="snowfall"
-            name="Daily Snowfall (cm)"
+            name={`Daily Snowfall (${snowLabel})`}
             fill="#60a5fa"
             radius={[2, 2, 0, 0]}
           />
@@ -195,7 +204,7 @@ export function HistoryChart({ history }: HistoryChartProps) {
             yAxisId="depth"
             type="monotone"
             dataKey="depth"
-            name="Snow Depth (cm)"
+            name={`Snow Depth (${snowLabel})`}
             stroke="#a78bfa"
             fill="#a78bfa"
             fillOpacity={0.15}

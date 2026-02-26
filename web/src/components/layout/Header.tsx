@@ -1,33 +1,20 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Snowflake, MessageCircle, Mountain, Menu, X, User } from 'lucide-react'
-import { useAuth } from '../../auth/useAuth'
+import { Snowflake, MessageCircle, Mountain, Map, Menu, X, Settings } from 'lucide-react'
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
-  const { isAuthenticated, loginAsGuest, logout, isLoading } = useAuth()
 
   const navLinks = [
     { to: '/', label: 'Explore', icon: Mountain },
+    { to: '/map', label: 'Map', icon: Map },
     { to: '/chat', label: 'Chat', icon: MessageCircle },
   ]
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/'
     return location.pathname.startsWith(path)
-  }
-
-  const handleAuth = async () => {
-    if (isAuthenticated) {
-      logout()
-    } else {
-      try {
-        await loginAsGuest()
-      } catch {
-        // Auth error handled silently
-      }
-    }
   }
 
   return (
@@ -62,16 +49,19 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Auth + mobile menu button */}
+          {/* Settings + mobile menu button */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleAuth}
-              disabled={isLoading}
-              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+            <Link
+              to="/settings"
+              className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/settings')
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
             >
-              <User className="w-4 h-4" />
-              {isAuthenticated ? 'Sign Out' : 'Sign In'}
-            </button>
+              <Settings className="w-4 h-4" />
+              Settings
+            </Link>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
@@ -101,17 +91,18 @@ export function Header() {
                 {label}
               </Link>
             ))}
-            <button
-              onClick={() => {
-                handleAuth()
-                setMobileMenuOpen(false)
-              }}
-              disabled={isLoading}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 w-full text-left"
+            <Link
+              to="/settings"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/settings')
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
             >
-              <User className="w-5 h-5" />
-              {isAuthenticated ? 'Sign Out' : 'Sign In'}
-            </button>
+              <Settings className="w-5 h-5" />
+              Settings
+            </Link>
           </div>
         </div>
       )}

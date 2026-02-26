@@ -275,6 +275,11 @@ fun ResortDetailScreen(
                         WeatherDetailsCard(condition, units)
                     }
 
+                    // Data sources card (transparency)
+                    selectedCondition?.let { condition ->
+                        DataSourcesCard(condition, units)
+                    }
+
                     // Run difficulty
                     uiState.resort?.let { resort ->
                         if (resort.greenRunsPct != null || resort.blueRunsPct != null || resort.blackRunsPct != null) {
@@ -1091,6 +1096,228 @@ private fun ConditionItem(label: String, value: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+@Composable
+private fun DataSourcesCard(condition: WeatherCondition, units: UnitPreferences) {
+    val details = condition.sourceDetails ?: return
+    if (details.sourceCount <= 0) return
+
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Expandable header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Default.CellTower,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "Data Sources",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                )
+
+                // Confidence badge
+                Surface(
+                    color = sourceConfidenceColor(condition.sourceConfidence).copy(alpha = 0.15f),
+                    shape = MaterialTheme.shapes.small,
+                ) {
+                    Text(
+                        text = condition.sourceConfidence.displayName,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = sourceConfidenceColor(condition.sourceConfidence),
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Merge method info
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Settings,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        formatMergeMethod(details.mergeMethod),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = MaterialTheme.shapes.small,
+                    ) {
+                        Text(
+                            "${details.sourceCount} sources",
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Per-source details: sorted consensus first, then included, outlier, no_data
+                val sortedSources = details.sources.entries.sortedBy { sourceStatusOrder(it.value.status) }
+                sortedSources.forEach { (sourceName, info) ->
+                    SourceRow(sourceName, info, units)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SourceRow(sourceName: String, info: SourceInfo, units: UnitPreferences) {
+    val isExcluded = info.status == "outlier" || info.status == "no_data"
+    val statusColor = sourceStatusColor(info.status)
+
+    Column(modifier = Modifier.padding(vertical = 3.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Status icon
+            Icon(
+                when (info.status) {
+                    "consensus" -> Icons.Default.CheckCircle
+                    "outlier" -> Icons.Default.Cancel
+                    "included" -> Icons.Default.Circle
+                    "no_data" -> Icons.Default.RemoveCircle
+                    else -> Icons.Default.Circle
+                },
+                contentDescription = info.status,
+                tint = statusColor,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // Source name
+            Text(
+                sourceName,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isExcluded) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+            )
+
+            // Reported value
+            if (info.snowfall24hCm != null) {
+                Text(
+                    UnitConversions.formatSnowShort(info.snowfall24hCm, units.useMetricSnow),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = if (isExcluded) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                )
+            } else {
+                Text(
+                    if (info.status == "no_data") "N/A" else "No data",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Status label badge
+            Surface(
+                color = statusColor.copy(alpha = 0.1f),
+                shape = MaterialTheme.shapes.small,
+            ) {
+                Text(
+                    text = sourceStatusLabel(info.status),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Medium,
+                    color = statusColor,
+                )
+            }
+        }
+
+        // Reason text
+        info.reason?.let { reason ->
+            Text(
+                reason,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isExcluded) SnowColors.SunsetOrange else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 26.dp, top = 2.dp),
+            )
+        }
+    }
+}
+
+private fun formatMergeMethod(method: String): String = when (method) {
+    "outlier_detection" -> "Outlier Detection"
+    "weighted_average" -> "Weighted Average"
+    "simple_average" -> "Simple Average"
+    "single_source" -> "Single Source"
+    else -> method.replace("_", " ").replaceFirstChar { it.uppercase() }
+}
+
+private fun sourceStatusOrder(status: String): Int = when (status) {
+    "consensus" -> 0
+    "included" -> 1
+    "outlier" -> 2
+    "no_data" -> 3
+    else -> 4
+}
+
+private fun sourceStatusLabel(status: String): String = when (status) {
+    "consensus" -> "Consensus"
+    "outlier" -> "Excluded"
+    "included" -> "Included"
+    "no_data" -> "Unavailable"
+    else -> status.replaceFirstChar { it.uppercase() }
+}
+
+@Composable
+private fun sourceStatusColor(status: String): androidx.compose.ui.graphics.Color = when (status) {
+    "consensus" -> SnowColors.QualityGood
+    "outlier" -> SnowColors.SunsetOrange
+    "included" -> MaterialTheme.colorScheme.primary
+    "no_data" -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+    else -> MaterialTheme.colorScheme.onSurfaceVariant
+}
+
+@Composable
+private fun sourceConfidenceColor(confidence: ConfidenceLevel): androidx.compose.ui.graphics.Color = when (confidence) {
+    ConfidenceLevel.VERY_HIGH -> SnowColors.QualityExcellent
+    ConfidenceLevel.HIGH -> SnowColors.QualityGood
+    ConfidenceLevel.MEDIUM -> SnowColors.QualityMediocre
+    ConfidenceLevel.LOW -> SnowColors.SunsetOrange
+    ConfidenceLevel.VERY_LOW -> SnowColors.QualityBad
 }
 
 @Composable

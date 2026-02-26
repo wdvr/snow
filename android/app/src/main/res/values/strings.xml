@@ -190,6 +190,11 @@
     <string name="thinking">Thinking\u2026</string>
     <string name="new_conversation">New Conversation</string>
     <string name="conversation_history">Conversation History</string>
+    <string name="skip">Skip</string>
+
+    <!-- Data Sources -->
+    <string name="data_sources">Data Sources</string>
+    <string name="source_count">%1$d sources</string>
 
     <!-- Date -->
     <string name="today">Today</string>

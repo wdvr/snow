@@ -1,17 +1,20 @@
 import { Link } from 'react-router-dom'
-import { Thermometer, Snowflake, Wind, Heart } from 'lucide-react'
+import { Thermometer, Snowflake, Wind, Heart, Navigation } from 'lucide-react'
 import type { Resort, SnowQualitySummary } from '../../api/types'
 import { QualityBadge } from './QualityBadge'
-import { formatTemp, formatSnowCm, countryFlag, regionDisplayName } from '../../utils/format'
+import { countryFlag, regionDisplayName } from '../../utils/format'
+import { useUnits } from '../../hooks/useUnits'
 
 interface ResortCardProps {
   resort: Resort
   quality?: SnowQualitySummary
   isFavorite?: boolean
   onToggleFavorite?: (id: string) => void
+  distanceKm?: number | null
 }
 
-export function ResortCard({ resort, quality, isFavorite, onToggleFavorite }: ResortCardProps) {
+export function ResortCard({ resort, quality, isFavorite, onToggleFavorite, distanceKm }: ResortCardProps) {
+  const { formatTemp, formatSnow } = useUnits()
   return (
     <Link
       to={`/resort/${resort.resort_id}`}
@@ -55,7 +58,7 @@ export function ResortCard({ resort, quality, isFavorite, onToggleFavorite }: Re
           <Snowflake className="w-3.5 h-3.5 text-blue-400 shrink-0" />
           <span className="truncate">
             {quality?.snowfall_fresh_cm != null
-              ? formatSnowCm(quality.snowfall_fresh_cm)
+              ? formatSnow(quality.snowfall_fresh_cm)
               : '--'}
           </span>
         </div>
@@ -69,11 +72,21 @@ export function ResortCard({ resort, quality, isFavorite, onToggleFavorite }: Re
           <Wind className="w-3.5 h-3.5 text-gray-400 shrink-0" />
           <span className="truncate">
             {quality?.snow_depth_cm != null
-              ? formatSnowCm(quality.snow_depth_cm)
+              ? formatSnow(quality.snow_depth_cm)
               : '--'}
           </span>
         </div>
       </div>
+
+      {/* Distance badge */}
+      {distanceKm != null && (
+        <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-gray-50 text-sm text-gray-500">
+          <Navigation className="w-3.5 h-3.5" />
+          {distanceKm < 100
+            ? `${Math.round(distanceKm)} km`
+            : `${Math.round(distanceKm)} km`}
+        </div>
+      )}
 
       {/* Pass badges */}
       {(resort.epic_pass || resort.ikon_pass) && (

@@ -253,6 +253,25 @@ data class Resort(
 }
 
 // =============================================================================
+// MARK: - Source Details (Data Transparency)
+// =============================================================================
+
+@Serializable
+data class SourceInfo(
+    @SerialName("snowfall_24h_cm") val snowfall24hCm: Double? = null,
+    val status: String, // "consensus", "outlier", "included", "no_data"
+    val reason: String? = null,
+)
+
+@Serializable
+data class SourceDetails(
+    val sources: Map<String, SourceInfo> = emptyMap(),
+    @SerialName("merge_method") val mergeMethod: String = "single_source",
+    @SerialName("consensus_value_cm") val consensusValueCm: Double? = null,
+    @SerialName("source_count") val sourceCount: Int = 0,
+)
+
+// =============================================================================
 // MARK: - Weather Condition
 // =============================================================================
 
@@ -290,6 +309,7 @@ data class WeatherCondition(
     @SerialName("fresh_snow_cm") val freshSnowCm: Double,
     @SerialName("data_source") val dataSource: String,
     @SerialName("source_confidence") val sourceConfidence: ConfidenceLevel,
+    @SerialName("source_details") val sourceDetails: SourceDetails? = null,
 ) {
     val currentTempFahrenheit: Double
         get() = currentTempCelsius * 9.0 / 5.0 + 32.0
