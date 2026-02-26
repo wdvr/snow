@@ -174,10 +174,15 @@ def _describe_surface(
         return "Icy, refrozen surface. No significant fresh snow."
 
     if quality == SnowQuality.HORRIBLE:
-        if temp > 5:
+        depth = condition.snow_depth_cm
+        if temp > 5 and (depth is None or depth < 30):
             return (
                 f"Not skiable: warm temperatures ({temp:.0f}°C) actively melting snow."
             )
+        elif temp > 5 and depth is not None and depth >= 30:
+            return f"Very poor conditions: warm ({temp:.0f}°C) and degrading fast despite {depth:.0f}cm base."
+        elif depth is not None and depth >= 30:
+            return f"Very poor conditions: icy, degraded surface despite {depth:.0f}cm base."
         return "Not skiable: insufficient snow cover."
 
     return ""

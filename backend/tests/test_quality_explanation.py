@@ -165,6 +165,41 @@ class TestHorribleExplanation:
         explanation = generate_quality_explanation(cond)
         assert "not skiable" in explanation.lower()
 
+    def test_good_base_depth_not_insufficient(self):
+        """BUG-005: 81cm base should NOT say 'insufficient snow cover'."""
+        cond = _make_condition(
+            snow_quality=SnowQuality.HORRIBLE,
+            current_temp_celsius=-2.0,
+            snow_depth_cm=81.0,
+        )
+        explanation = generate_quality_explanation(cond)
+        assert "insufficient" not in explanation.lower()
+        assert "81cm" in explanation
+        assert "icy" in explanation.lower() or "degraded" in explanation.lower()
+
+    def test_warm_with_good_base_mentions_base(self):
+        """Warm temps + significant base should mention degrading, not 'not skiable'."""
+        cond = _make_condition(
+            snow_quality=SnowQuality.HORRIBLE,
+            current_temp_celsius=8.0,
+            snow_depth_cm=60.0,
+        )
+        explanation = generate_quality_explanation(cond)
+        assert "not skiable" not in explanation.lower()
+        assert "60cm" in explanation
+        assert "8°C" in explanation
+
+    def test_thin_base_still_insufficient(self):
+        """Thin base (<30cm) + cold should still say insufficient."""
+        cond = _make_condition(
+            snow_quality=SnowQuality.HORRIBLE,
+            current_temp_celsius=-2.0,
+            snow_depth_cm=15.0,
+        )
+        explanation = generate_quality_explanation(cond)
+        assert "not skiable" in explanation.lower()
+        assert "insufficient" in explanation.lower()
+
 
 # MARK: - Temperature description tests
 
