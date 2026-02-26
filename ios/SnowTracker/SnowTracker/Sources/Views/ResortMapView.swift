@@ -10,6 +10,7 @@ struct ResortMapView: View {
     @State private var selectedResort: Resort?
     @State private var showLegend: Bool = false
     @State private var mapStyle: MapDisplayStyle = .standard
+    @State private var showPisteOverlay: Bool = false
     @State private var clusterResorts: [Resort] = []
     @State private var showClusterList: Bool = false
     @State private var regionChangeTask: Task<Void, Never>?
@@ -98,6 +99,12 @@ struct ResortMapView: View {
             if showLegend {
                 qualityLegend
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+
+            // Piste overlay attribution
+            if showPisteOverlay {
+                pisteAttribution
+                    .transition(.opacity)
             }
 
             // Forecast indicator when showing predicted quality
@@ -264,6 +271,7 @@ struct ResortMapView: View {
             annotations: mapViewModel.annotations,
             mapStyle: mapStyle,
             showUserLocation: true,
+            showPisteOverlay: showPisteOverlay,
             onAnnotationTap: { resort in
                 selectedResort = resort
                 AnalyticsService.shared.trackResortClicked(
@@ -338,6 +346,29 @@ struct ResortMapView: View {
         }
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    // MARK: - Piste Attribution
+
+    private var pisteAttribution: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "figure.skiing.downhill")
+                .font(.caption2)
+                .foregroundStyle(.blue)
+
+            Text("Ski trails: OpenSnowMap.org / OpenStreetMap")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            Spacer()
+
+            Text("Zoom in to see trails")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
     }
 
     // MARK: - Nearby Resorts Carousel
@@ -441,6 +472,18 @@ struct ResortMapView: View {
             }
             .disabled(isFetchingVisibleConditions)
             .accessibilityLabel("Refresh conditions")
+
+            Button {
+                withAnimation {
+                    showPisteOverlay.toggle()
+                }
+            } label: {
+                Image(systemName: showPisteOverlay ? "figure.skiing.downhill" : "figure.skiing.downhill")
+                    .foregroundStyle(showPisteOverlay ? .blue : .primary)
+            }
+            .accessibilityIdentifier(AccessibilityID.Map.pisteToggle)
+            .accessibilityLabel(showPisteOverlay ? "Hide ski trails" : "Show ski trails")
+            .sensoryFeedback(.selection, trigger: showPisteOverlay)
 
             Button {
                 withAnimation {

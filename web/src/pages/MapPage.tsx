@@ -1,8 +1,8 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Loader2, Layers } from 'lucide-react'
+import { Loader2, Layers, Mountain } from 'lucide-react'
 import L from 'leaflet'
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap, useMapEvents } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import 'leaflet/dist/leaflet.css'
 
@@ -85,6 +85,37 @@ const TILE_LAYERS = {
 
 type TileLayerKey = keyof typeof TILE_LAYERS
 
+// --- Piste overlay (OpenSnowMap) ---
+
+const PISTE_OVERLAY = {
+  url: 'https://tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png',
+  attribution: '&copy; <a href="https://www.opensnowmap.org">OpenSnowMap</a> / <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  minZoom: 12,
+}
+
+// Component that shows/hides piste overlay based on zoom level and toggle
+function PisteOverlay({ enabled }: { enabled: boolean }) {
+  const [zoom, setZoom] = useState(3)
+
+  useMapEvents({
+    zoomend: (e) => {
+      setZoom(e.target.getZoom())
+    },
+  })
+
+  if (!enabled || zoom < PISTE_OVERLAY.minZoom) return null
+
+  return (
+    <TileLayer
+      url={PISTE_OVERLAY.url}
+      attribution={PISTE_OVERLAY.attribution}
+      minZoom={PISTE_OVERLAY.minZoom}
+      maxZoom={18}
+      opacity={0.85}
+    />
+  )
+}
+
 // --- Main Page ---
 
 export function MapPage() {
@@ -92,6 +123,7 @@ export function MapPage() {
   const [qualityTier, setQualityTier] = useState<QualityTier>('all')
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
   const [tileLayer, setTileLayer] = useState<TileLayerKey>('standard')
+  const [showPistes, setShowPistes] = useState(false)
   const [flyTo, setFlyTo] = useState<{ center: [number, number]; zoom: number } | null>(null)
 
   // Fly to resort location from URL query params (e.g. ?lat=46.8&lon=6.9&zoom=12)
@@ -203,8 +235,20 @@ export function MapPage() {
         </div>
       </div>
 
-      {/* Tile layer toggle button */}
-      <div className="absolute bottom-6 right-3 z-[1000]">
+      {/* Map control buttons */}
+      <div className="absolute bottom-6 right-3 z-[1000] flex flex-col gap-2">
+        <button
+          onClick={() => setShowPistes((prev) => !prev)}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg shadow-md border transition-colors text-sm font-medium ${
+            showPistes
+              ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
+              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+          }`}
+          title={showPistes ? 'Hide ski trails' : 'Show ski trails (zoom in to see)'}
+        >
+          <Mountain className="w-4 h-4" />
+          <span className="hidden sm:inline">Trails</span>
+        </button>
         <button
           onClick={cycleTileLayer}
           className="flex items-center gap-1.5 px-3 py-2 bg-white rounded-lg shadow-md border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
@@ -215,8 +259,13 @@ export function MapPage() {
         </button>
       </div>
 
-      {/* Resort count badge */}
-      <div className="absolute bottom-6 left-3 z-[1000]">
+      {/* Resort count badge + piste attribution */}
+      <div className="absolute bottom-6 left-3 z-[1000] flex flex-col gap-1.5">
+        {showPistes && (
+          <div className="px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200 text-xs text-gray-500">
+            Ski trails: <a href="https://www.opensnowmap.org" target="_blank" rel="noopener noreferrer" className="underline">OpenSnowMap</a> / OSM &middot; Zoom in to see trails
+          </div>
+        )}
         <div className="px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200 text-xs text-gray-600">
           {isLoading ? 'Loading...' : `${markers.length} resorts`}
         </div>
@@ -241,6 +290,7 @@ export function MapPage() {
         attributionControl={true}
       >
         <TileLayer url={tile.url} attribution={tile.attribution} />
+        <PisteOverlay enabled={showPistes} />
         <MapController flyTo={flyTo} />
 
         <MarkerClusterGroup

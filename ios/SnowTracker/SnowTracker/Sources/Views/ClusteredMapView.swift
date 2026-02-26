@@ -33,12 +33,20 @@ struct ClusteredMapView: UIViewRepresentable {
     let annotations: [ResortAnnotation]
     let mapStyle: MapDisplayStyle
     let showUserLocation: Bool
+    let showPisteOverlay: Bool
     var onAnnotationTap: ((Resort) -> Void)?
     var onClusterTap: (([Resort]) -> Void)?
     var onRegionChange: ((MKCoordinateRegion) -> Void)?
 
     // Cluster identifier
     private static let clusterIdentifier = "resortCluster"
+
+    // OpenSnowMap piste tile overlay URL template
+    private static let pisteOverlayURLTemplate = "https://tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png"
+
+    /// Minimum zoom level (MKMapView) at which piste overlays become visible.
+    /// MKMapView zoom ~12 corresponds roughly to tile zoom 12, which shows individual runs.
+    private static let pisteMinimumZoomLevel: Int = 12
 
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView()
@@ -65,12 +73,20 @@ struct ClusteredMapView: UIViewRepresentable {
             mapView.setRegion(MapRegionPreset.naRockies.region, animated: false)
         }
 
+        // Add piste overlay if enabled
+        if showPisteOverlay {
+            addPisteOverlay(to: mapView, coordinator: context.coordinator)
+        }
+
         return mapView
     }
 
     func updateUIView(_ mapView: MKMapView, context: Context) {
         // Update map type
         updateMapType(mapView)
+
+        // Update piste overlay visibility
+        updatePisteOverlay(mapView, coordinator: context.coordinator)
 
         // Apply pending region change (from preset selection, fitAll, etc.)
         if let region = pendingRegion {
@@ -92,6 +108,28 @@ struct ClusteredMapView: UIViewRepresentable {
 
     private func updateMapType(_ mapView: MKMapView) {
         mapView.mapType = mapStyle.mapType
+    }
+
+    private func addPisteOverlay(to mapView: MKMapView, coordinator: Coordinator) {
+        let overlay = MKTileOverlay(urlTemplate: Self.pisteOverlayURLTemplate)
+        overlay.canReplaceMapContent = false
+        overlay.minimumZ = Self.pisteMinimumZoomLevel
+        overlay.maximumZ = 18
+        mapView.addOverlay(overlay, level: .aboveRoads)
+        coordinator.pisteOverlay = overlay
+    }
+
+    private func updatePisteOverlay(_ mapView: MKMapView, coordinator: Coordinator) {
+        let hasPisteOverlay = coordinator.pisteOverlay != nil
+
+        if showPisteOverlay && !hasPisteOverlay {
+            addPisteOverlay(to: mapView, coordinator: coordinator)
+        } else if !showPisteOverlay && hasPisteOverlay {
+            if let overlay = coordinator.pisteOverlay {
+                mapView.removeOverlay(overlay)
+                coordinator.pisteOverlay = nil
+            }
+        }
     }
 
     private func updateAnnotations(_ mapView: MKMapView) {
@@ -132,6 +170,7 @@ struct ClusteredMapView: UIViewRepresentable {
         var parent: ClusteredMapView
         var isProgrammaticRegionChange = false
         var hasInitialized = false
+        var pisteOverlay: MKTileOverlay?
 
         init(_ parent: ClusteredMapView) {
             self.parent = parent
@@ -211,6 +250,13 @@ struct ClusteredMapView: UIViewRepresentable {
             // Update the binding when user interacts with map
             parent.cameraPosition = .region(region)
             parent.onRegionChange?(region)
+        }
+
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            if let tileOverlay = overlay as? MKTileOverlay {
+                return MKTileOverlayRenderer(overlay: tileOverlay)
+            }
+            return MKOverlayRenderer(overlay: overlay)
         }
     }
 }

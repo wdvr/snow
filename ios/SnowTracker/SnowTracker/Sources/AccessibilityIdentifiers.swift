@@ -56,6 +56,7 @@ enum AccessibilityID {
         static let legendButton = "map_legendButton"
         static let legendPanel = "map_legendPanel"
         static let filterAll = "map_filterAll"
+        static let pisteToggle = "map_pisteToggle"
         static let annotation = "map_annotation_" // append resort id
     }
 
