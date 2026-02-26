@@ -5,6 +5,16 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Feb 26, 2026
+
+### Feature: Data sources moved to bottom, shows excluded sources with reasons
+Data sources card moved from inline (between conditions cards) to the very bottom of resort detail view. Backend now includes all 4 known sources (Open-Meteo, OnTheSnow, Snow-Forecast, WeatherKit) in `source_details` even when a source has no data for the resort (status: `no_data`). Sources sorted by status: consensus first, then included, outlier, unavailable. Excluded outlier values shown with strikethrough and orange reason text. Unavailable sources shown as greyed "N/A".
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+---
+
 ## Feb 25, 2026
 
 ### Fix: Chat messages not persisting (Float→Decimal DynamoDB error)
