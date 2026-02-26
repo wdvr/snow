@@ -1,19 +1,25 @@
-Version 1.1 — Smarter Snow Quality
+Version 1.1 — AI Chat, New Map & 1000+ Resorts
 
 NEW:
-- Map cluster tap now shows snow quality for all resorts in the cluster
-- Single resort tap on map shows quality immediately while loading details
-- 7-day snow quality forecast on map view with day selector
-- Temperature-aware descriptions: cold snow correctly described as "dry packed powder"
+- AI Snow Assistant: ask about powder conditions, comparisons, and forecasts
+- Completely redesigned map with clustering, region presets, and forecast mode
+- 1040 ski resorts across 25 countries (was ~130)
+- Community condition reports: share what you see on the mountain
+- Wind gust and visibility data with color-coded severity
+- 7-day fresh powder chart with per-elevation breakdown
+- Live Activities & Dynamic Island for real-time conditions
+- Push notifications for powder alerts
 
 IMPROVEMENTS:
-- Snow quality explanations now match actual conditions (no more "soft" at -20°C)
-- Better loading states throughout the map experience
-- Smoother timeline forecasts with improved data smoothing
-- 1100+ backend tests ensuring reliability
+- 10-level snow quality scale for more nuanced ratings
+- Data source transparency: see which weather sources contribute to each score
+- Unit preferences: switch between °C/°F and cm/inches
+- Enriched resort data: city names, webcams, trail maps, ticket prices
+- Improved ML model (v15): 40 features, 81% exact accuracy, 100% within 1 level
+- Faster resort list loading with S3-backed batch endpoint
 
 BUG FIXES:
-- Fixed map cluster list showing empty snow quality
-- Fixed resort detail sheet not showing quality badge until conditions loaded
-- Fixed timeline snow depth drops from weather model artifacts
-- Fixed conditions endpoint returning too many entries
+- Fixed chat conversation history not loading
+- Fixed map showing empty data on first tap
+- Fixed snow depth forecast showing unrealistic drops
+- Fixed push notifications not reaching production devices

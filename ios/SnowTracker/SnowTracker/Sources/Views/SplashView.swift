@@ -75,17 +75,7 @@ struct SplashView: View {
                 }
                 .offset(y: -geometry.size.height * 0.1)
 
-                // Loading indicator
-                VStack {
-                    Spacer()
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(1.2)
-                        .opacity(showSubtitle ? 1 : 0)
-                        .animation(.easeIn(duration: 0.3).delay(0.7), value: showSubtitle)
-                    Spacer()
-                        .frame(height: geometry.size.height * 0.15)
-                }
+
             }
         }
         .onAppear {

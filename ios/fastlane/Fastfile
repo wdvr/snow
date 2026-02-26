@@ -191,7 +191,8 @@ platform :ios do
       devices: [
         "iPhone 17 Pro Max",      # 6.9" display (required)
         "iPhone 17 Pro",          # 6.3" display
-        "iPhone 16e"              # smaller display
+        "iPad Pro 13-inch (M5)",  # 12.9" class (required for iPad)
+        "iPad Pro 11-inch (M5)"   # 11" class
       ],
       languages: ["en-US"],
       output_directory: "./screenshots",

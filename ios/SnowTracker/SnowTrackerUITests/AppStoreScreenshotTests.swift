@@ -175,9 +175,57 @@ final class AppStoreScreenshotTests: XCTestCase {
         takeScreenshot(name: "09-ipad-resort-detail")
     }
 
+    // MARK: - AI Chat Screenshots
+
+    func testScreenshot10_AIChat() throws {
+        let tabBar = ensureTabBar()
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
+
+        // Tap the floating AI chat button
+        let chatFAB = app.buttons["tab_chatFAB"]
+        if chatFAB.waitForExistence(timeout: 5) {
+            chatFAB.tap()
+            sleep(2)
+
+            // Type a question to show the chat interface
+            let textField = app.textFields.firstMatch
+            if textField.waitForExistence(timeout: 5) {
+                textField.tap()
+                textField.typeText("Where's the best powder right now?")
+                sleep(1)
+            }
+
+            takeScreenshot(name: "10-ai-chat")
+        }
+    }
+
+    func testScreenshot11_AIChatIPad() throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else {
+            throw XCTSkip("iPad-only test")
+        }
+
+        let tabBar = ensureTabBar()
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
+
+        let chatFAB = app.buttons["tab_chatFAB"]
+        if chatFAB.waitForExistence(timeout: 5) {
+            chatFAB.tap()
+            sleep(2)
+
+            let textField = app.textFields.firstMatch
+            if textField.waitForExistence(timeout: 5) {
+                textField.tap()
+                textField.typeText("Where's the best powder right now?")
+                sleep(1)
+            }
+
+            takeScreenshot(name: "11-ipad-ai-chat")
+        }
+    }
+
     // MARK: - Special Feature Screenshots
 
-    func testScreenshot10_SearchResults() throws {
+    func testScreenshot12_SearchResults() throws {
         let tabBar = ensureTabBar()
         XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
 
@@ -190,11 +238,11 @@ final class AppStoreScreenshotTests: XCTestCase {
             searchField.tap()
             searchField.typeText("Chamonix")
             sleep(2)
-            takeScreenshot(name: "10-search-results")
+            takeScreenshot(name: "12-search-results")
         }
     }
 
-    func testScreenshot11_Favorites() throws {
+    func testScreenshot13_Favorites() throws {
         let tabBar = ensureTabBar()
         XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
 
@@ -202,6 +250,6 @@ final class AppStoreScreenshotTests: XCTestCase {
         tabBar.buttons["Favorites"].tap()
         sleep(2)
 
-        takeScreenshot(name: "11-favorites")
+        takeScreenshot(name: "13-favorites")
     }
 }
