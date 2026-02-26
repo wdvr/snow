@@ -7,6 +7,12 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### Fix: Resort data cleanup — bogus elevations, duplicates, non-resorts (BUG-009)
+Critical data quality fix for `backend/data/resorts.json`. Finnish bunny hills were scoring as "powder day" because fake 2800m+ elevations caused Open-Meteo temperature lapse rate to make temps artificially cold. Changes: (1) Removed 20 non-downhill entries (heli-ski, backcountry, planned/unbuilt, indoor, summer-only). (2) Removed 2 duplicates (northstar-california, silverstar with wrong Ontario coordinates). (3) Fixed 7 resorts with known-wrong elevations (Espace San Bernardo base=7m, Buttermilk swapped base/VD, Aspen Mountain base=400m, Aspen Snowmass base=813m, Diavolezza base=600m, Myoko Akakura top=3029m, Espace Lumiere base=54m). (4) Nulled bogus elevations for 26 resorts across NO/SE/PL/RO/SK (Oslo Tryvann at 2000m, Kungsberget at 2033m, etc.). (5) Fixed coordinates for Hafjell (was in Voss, now Lillehammer) and Nesfjellet (was in Narvik, now Hallingdal). (6) Nulled 21 local-currency prices for RO/PL resorts (>$100 threshold). Resort count: 1040 -> 1018. All 1569 backend tests pass.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ### Feature: Dynamic chat suggestions
 Replaced 16 hardcoded AI chat suggestion queries with a DynamoDB-backed dynamic system. New `snow-tracker-chat-suggestions-{env}` table stores suggestions with interpolation tokens (`{resort_name}`, `{nearby_city}`, `{region}`, `{resort_name_2}`). Backend `GET /api/v1/chat/suggestions` returns active suggestions sorted by priority, with hardcoded fallback on error. iOS interpolates tokens using user's favorites, nearby resorts, and location context. Includes seed script (`scripts/seed_chat_suggestions.py`), Pulumi infrastructure, API Gateway route, 6 backend tests.
 | iOS | Android | Web | API |
