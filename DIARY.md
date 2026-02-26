@@ -7,6 +7,12 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### Feature: Android Fresh Snow Chart (A10 — feature parity)
+Added FreshSnowChart composable to Android resort detail screen. Renders a 7-day per-day snowfall bar chart using Compose Canvas (no external chart library). Aggregates hourly timeline points into daily totals, shows cm/in values above bars, date labels on x-axis, distinguishes actual vs forecast data with different opacity bars. Includes "Fresh Powder" header with total snowfall since last thaw. Placed between Snow Details card and Predictions card in resort detail layout. Matches iOS FreshSnowChartView functionality.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | done | done | n/a |
+
 ### Feature: Web cross-platform parity — Map View
 Full interactive map page using Leaflet.js + react-leaflet with MarkerClusterGroup for resort clustering. Quality-colored circle markers, 8 region preset buttons (NA West, Rockies, NA East, Alps, Scandinavia, Japan, Oceania, S. America), quality filter tiers (All/Powder+/Excellent+/Good+/Mediocre+), tile layer switching (Standard/Satellite/Terrain), nearby resort carousel with geolocation, resort popup with quality badge on click. New files: MapPage.tsx, QualityFilter.tsx, RegionPresets.tsx, ResortPopup.tsx, NearbyCarousel.tsx.
 | iOS | Android | Web | API |
@@ -17,7 +23,7 @@ Full interactive map page using Leaflet.js + react-leaflet with MarkerClusterGro
 Comprehensive resort detail overhaul: (1) **ElevationPicker** — segmented Summit/Mid/Base control with elevation meters. (2) **SnowDetailsCard** — fresh snow, 24h/48h/72h snowfall, warming indicator, freeze/thaw time, snow since freeze, base depth warning, weather description. (3) **WeatherDetailsCard** — min/max temp, humidity, wind speed, gust, max gust 24h, visibility with severity colors, min visibility 24h. (4) **SnowForecastCard** — 24h/48h/72h predictions with storm badges. (5) **DataSourcesCard** — collapsible card showing merge method, per-source snowfall with consensus/outlier status. (6) **AllElevationsSummary** — side-by-side base/mid/top cards. (7) **FreshSnowChart** — 7-day daily snowfall bar chart. (8) **Webcam link** in header.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | done | n/a |
+| done | done | done | n/a |
 
 ### Feature: Web cross-platform parity — Settings, reports, share, units
 (1) **SettingsPage** — unit preferences (°C/°F, cm/inches), account management (guest sign in/out), about section. Routed at /settings with nav link. (2) **UnitProvider** context — localStorage-backed unit preferences with formatTemp/formatSnow/formatSnowInt helpers used in history tab. (3) **ConditionReportForm** — modal with condition type dropdown, score slider, elevation picker, comment textarea, POST to API. Submit Report button on reports tab. (4) **Share button** — Web Share API with clipboard fallback + toast notification. (5) **Pass filter** — Epic/Ikon filter buttons on home page. (6) **Distance sorting** — haversine distance + sort-by-distance option.
@@ -410,7 +416,7 @@ Map annotations showed stale quality data from S3 batch JSON. Only updated when 
 - Subtitle now says "since last thaw" not "since last freeze"
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | n/a | n/a |
 
 ### Quality Labels: Expand from 6 to 10 levels
 New scale: Horrible, Bad, Poor, Mediocre, Decent, Good, Great, Excellent, Powder Day, Champagne Powder. With distinct colors and icons. Android: expanded SnowQuality enum with all 13 values, updated Color.kt with distinct colors, map markers, and tests. Web: expanded SnowQuality type, qualityColors, and formatQuality labels.

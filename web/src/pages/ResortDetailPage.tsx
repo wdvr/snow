@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
   ExternalLink,
@@ -13,6 +13,7 @@ import {
   Share2,
   Plus,
   Camera,
+  MapPin,
 } from 'lucide-react'
 import { useResort } from '../hooks/useResorts'
 import { useFavorites } from '../hooks/useFavorites'
@@ -54,6 +55,7 @@ const CONDITION_TYPE_LABELS: Record<ConditionType, string> = {
 
 export function ResortDetailPage() {
   const { resortId } = useParams<{ resortId: string }>()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<Tab>('conditions')
   const [selectedElevation, setSelectedElevation] = useState<string>('mid')
   const [showReportForm, setShowReportForm] = useState(false)
@@ -168,6 +170,23 @@ export function ResortDetailPage() {
                 title="Share resort"
               >
                 <Share2 className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+              </button>
+              <button
+                onClick={() => {
+                  const mid = resort.elevation_points?.find((e) => e.level === 'mid')
+                  const top = resort.elevation_points?.find((e) => e.level === 'top')
+                  const base = resort.elevation_points?.find((e) => e.level === 'base')
+                  const point = mid ?? top ?? base
+                  if (point?.latitude && point?.longitude) {
+                    navigate(`/map?resort=${resortId}&lat=${point.latitude}&lon=${point.longitude}&zoom=12`)
+                  } else {
+                    navigate('/map')
+                  }
+                }}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                title="Show on map"
+              >
+                <MapPin className="w-5 h-5 text-gray-400 hover:text-gray-600" />
               </button>
             </div>
             {/* Share toast */}

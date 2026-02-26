@@ -265,6 +265,15 @@ fun ResortDetailScreen(
                         SnowDetailsCard(condition, units)
                     }
 
+                    // Fresh snow chart (7-day daily snowfall bars)
+                    uiState.timeline?.let { timeline ->
+                        FreshSnowChart(
+                            timeline = timeline,
+                            condition = selectedCondition,
+                            units = units,
+                        )
+                    }
+
                     // Predictions card
                     selectedCondition?.let { condition ->
                         PredictionsCard(condition, units)

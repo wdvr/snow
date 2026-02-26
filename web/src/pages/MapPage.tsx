@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Loader2, Layers } from 'lucide-react'
 import L from 'leaflet'
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet'
@@ -87,10 +88,24 @@ type TileLayerKey = keyof typeof TILE_LAYERS
 // --- Main Page ---
 
 export function MapPage() {
+  const [searchParams] = useSearchParams()
   const [qualityTier, setQualityTier] = useState<QualityTier>('all')
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
   const [tileLayer, setTileLayer] = useState<TileLayerKey>('standard')
   const [flyTo, setFlyTo] = useState<{ center: [number, number]; zoom: number } | null>(null)
+
+  // Fly to resort location from URL query params (e.g. ?lat=46.8&lon=6.9&zoom=12)
+  const hasAppliedUrlParams = useRef(false)
+  useEffect(() => {
+    if (hasAppliedUrlParams.current) return
+    const lat = parseFloat(searchParams.get('lat') ?? '')
+    const lon = parseFloat(searchParams.get('lon') ?? '')
+    const zoom = parseInt(searchParams.get('zoom') ?? '12', 10)
+    if (!isNaN(lat) && !isNaN(lon)) {
+      hasAppliedUrlParams.current = true
+      setFlyTo({ center: [lat, lon], zoom })
+    }
+  }, [searchParams])
 
   const geo = useGeolocation()
   const { data: resorts, isLoading: resortsLoading } = useResorts()

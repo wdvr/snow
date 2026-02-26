@@ -92,6 +92,8 @@
     <string name="snow_since_freeze">Snow since then</string>
     <string name="last_thaw_freeze">Last thaw/freeze</string>
     <string name="condition_reports">Condition Reports</string>
+    <string name="fresh_powder">Fresh Powder</string>
+    <string name="since_last_thaw_amount">%1$s since last thaw</string>
 
     <!-- Feedback -->
     <string name="send_feedback">Send Feedback</string>
