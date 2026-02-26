@@ -729,6 +729,12 @@ async def get_resorts(
     region: str | None = Query(
         None, description="Filter by region (na_west, alps, japan, etc.)"
     ),
+    limit: int | None = Query(
+        None, ge=1, le=500, description="Maximum number of resorts to return"
+    ),
+    offset: int = Query(
+        0, ge=0, description="Number of resorts to skip (for pagination)"
+    ),
     include_no_coords: bool = Query(
         False,
         description="Include resorts without valid coordinates (default: exclude)",
@@ -738,6 +744,8 @@ async def get_resorts(
 
     By default, resorts with invalid (0,0) coordinates are excluded.
     Use include_no_coords=true to include them.
+
+    Supports pagination via limit and offset parameters.
     """
     try:
         # Validate region if provided
@@ -761,10 +769,18 @@ async def get_resorts(
         if country:
             resorts = [r for r in resorts if r.country.upper() == country.upper()]
 
+        # Track total before pagination
+        total_count = len(resorts)
+
+        # Apply pagination
+        resorts = resorts[offset:]
+        if limit is not None:
+            resorts = resorts[:limit]
+
         # Set cache headers - resort data is public and can be cached
         response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
 
-        return {"resorts": resorts}
+        return {"resorts": resorts, "total_count": total_count}
 
     except HTTPException:
         raise

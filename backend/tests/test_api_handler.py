@@ -292,6 +292,97 @@ class TestGetResorts:
         assert resp.status_code == 500
         assert "Failed to retrieve resorts" in resp.json()["detail"]
 
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_limit_parameter(self, mock_cached, client):
+        resorts = [
+            _make_resort(resort_id=f"resort-{i}", lat=49.0 + i * 0.1, lon=-120.0)
+            for i in range(10)
+        ]
+        mock_cached.return_value = resorts
+
+        resp = client.get("/api/v1/resorts?limit=5")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["resorts"]) == 5
+        assert data["total_count"] == 10
+
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_offset_parameter(self, mock_cached, client):
+        resorts = [
+            _make_resort(resort_id=f"resort-{i}", lat=49.0 + i * 0.1, lon=-120.0)
+            for i in range(10)
+        ]
+        mock_cached.return_value = resorts
+
+        resp = client.get("/api/v1/resorts?offset=7")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["resorts"]) == 3
+        assert data["total_count"] == 10
+
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_limit_and_offset_together(self, mock_cached, client):
+        resorts = [
+            _make_resort(resort_id=f"resort-{i}", lat=49.0 + i * 0.1, lon=-120.0)
+            for i in range(10)
+        ]
+        mock_cached.return_value = resorts
+
+        resp = client.get("/api/v1/resorts?limit=3&offset=2")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["resorts"]) == 3
+        assert data["resorts"][0]["resort_id"] == "resort-2"
+        assert data["total_count"] == 10
+
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_limit_with_country_filter(self, mock_cached, client):
+        ca_resorts = [
+            _make_resort(
+                resort_id=f"ca-{i}", country="CA", lat=49.0 + i * 0.1, lon=-120.0
+            )
+            for i in range(5)
+        ]
+        us_resorts = [
+            _make_resort(
+                resort_id=f"us-{i}", country="US", lat=40.0 + i * 0.1, lon=-110.0
+            )
+            for i in range(5)
+        ]
+        mock_cached.return_value = ca_resorts + us_resorts
+
+        resp = client.get("/api/v1/resorts?country=CA&limit=2")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["resorts"]) == 2
+        assert data["total_count"] == 5  # total after filter, before pagination
+
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_no_limit_returns_all(self, mock_cached, client):
+        resorts = [
+            _make_resort(resort_id=f"resort-{i}", lat=49.0 + i * 0.1, lon=-120.0)
+            for i in range(10)
+        ]
+        mock_cached.return_value = resorts
+
+        resp = client.get("/api/v1/resorts")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["resorts"]) == 10
+        assert data["total_count"] == 10
+
+    def test_limit_validation_min(self, client):
+        resp = client.get("/api/v1/resorts?limit=0")
+        assert resp.status_code == 422
+
+    def test_limit_validation_max(self, client):
+        resp = client.get("/api/v1/resorts?limit=501")
+        assert resp.status_code == 422
+
+    def test_offset_validation_negative(self, client):
+        resp = client.get("/api/v1/resorts?offset=-1")
+        assert resp.status_code == 422
+
 
 class TestGetResortById:
     """Tests for GET /api/v1/resorts/{resort_id}."""
