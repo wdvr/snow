@@ -1436,6 +1436,79 @@ api_handler_permission = aws.lambda_.Permission(
     source_arn=pulumi.Output.concat(api_gateway.execution_arn, "/*"),
 )
 
+# --- CORS: Gateway responses for 4XX/5XX errors ---
+# This ensures that even API Gateway-generated errors (e.g., 403 for missing
+# OPTIONS method) include CORS headers so browsers can read the error.
+cors_4xx_response = aws.apigateway.Response(
+    f"{app_name}-cors-4xx-response-{environment}",
+    rest_api_id=api_gateway.id,
+    response_type="DEFAULT_4XX",
+    response_parameters={
+        "gatewayresponse.header.Access-Control-Allow-Origin": "'*'",
+        "gatewayresponse.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "gatewayresponse.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+    },
+)
+
+cors_5xx_response = aws.apigateway.Response(
+    f"{app_name}-cors-5xx-response-{environment}",
+    rest_api_id=api_gateway.id,
+    response_type="DEFAULT_5XX",
+    response_parameters={
+        "gatewayresponse.header.Access-Control-Allow-Origin": "'*'",
+        "gatewayresponse.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "gatewayresponse.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+    },
+)
+
+
+# --- CORS: Helper to add OPTIONS mock integration to a resource ---
+def add_cors_options(resource_name: str, resource_id, rest_api_id):
+    """Add an OPTIONS method with MOCK integration for CORS preflight."""
+    method = aws.apigateway.Method(
+        f"{app_name}-{resource_name}-options-method-{environment}",
+        rest_api=rest_api_id,
+        resource_id=resource_id,
+        http_method="OPTIONS",
+        authorization="NONE",
+    )
+    integration = aws.apigateway.Integration(
+        f"{app_name}-{resource_name}-options-integration-{environment}",
+        rest_api=rest_api_id,
+        resource_id=resource_id,
+        http_method=method.http_method,
+        type="MOCK",
+        request_templates={"application/json": '{"statusCode": 200}'},
+    )
+    method_response = aws.apigateway.MethodResponse(
+        f"{app_name}-{resource_name}-options-method-response-{environment}",
+        rest_api=rest_api_id,
+        resource_id=resource_id,
+        http_method=method.http_method,
+        status_code="200",
+        response_parameters={
+            "method.response.header.Access-Control-Allow-Headers": True,
+            "method.response.header.Access-Control-Allow-Methods": True,
+            "method.response.header.Access-Control-Allow-Origin": True,
+        },
+        opts=pulumi.ResourceOptions(depends_on=[integration]),
+    )
+    integration_response = aws.apigateway.IntegrationResponse(
+        f"{app_name}-{resource_name}-options-integration-response-{environment}",
+        rest_api=rest_api_id,
+        resource_id=resource_id,
+        http_method=method.http_method,
+        status_code="200",
+        response_parameters={
+            "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+            "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+            "method.response.header.Access-Control-Allow-Origin": "'*'",
+        },
+        opts=pulumi.ResourceOptions(depends_on=[method_response]),
+    )
+    return method, integration, method_response, integration_response
+
+
 # API v1 resource: /api
 api_resource = aws.apigateway.Resource(
     f"{app_name}-api-resource-{environment}",
@@ -1478,6 +1551,7 @@ regions_integration = aws.apigateway.Integration(
     type="AWS_PROXY",
     uri=api_handler_lambda.invoke_arn,
 )
+add_cors_options("regions", regions_resource.id, api_gateway.id)
 
 # Resorts resource: /api/v1/resorts
 resorts_resource = aws.apigateway.Resource(
@@ -1505,6 +1579,7 @@ resorts_integration = aws.apigateway.Integration(
     type="AWS_PROXY",
     uri=api_handler_lambda.invoke_arn,
 )
+add_cors_options("resorts", resorts_resource.id, api_gateway.id)
 
 # Nearby resorts resource: /api/v1/resorts/nearby
 nearby_resource = aws.apigateway.Resource(
@@ -1532,6 +1607,7 @@ nearby_integration = aws.apigateway.Integration(
     type="AWS_PROXY",
     uri=api_handler_lambda.invoke_arn,
 )
+add_cors_options("nearby", nearby_resource.id, api_gateway.id)
 
 # Single resort resource: /api/v1/resorts/{resortId}
 resort_resource = aws.apigateway.Resource(
@@ -2790,6 +2866,56 @@ admin_backfill_geohashes_integration = aws.apigateway.Integration(
     type="AWS_PROXY",
     uri=api_handler_lambda.invoke_arn,
 )
+
+# --- CORS: Add OPTIONS to all API resources ---
+# Required for browser CORS preflight requests (triggered by Content-Type or Authorization headers)
+add_cors_options("resort", resort_resource.id, api_gateway.id)
+add_cors_options("conditions", conditions_resource.id, api_gateway.id)
+add_cors_options(
+    "conditions-elevation", conditions_elevation_resource.id, api_gateway.id
+)
+add_cors_options("resort-snow-quality", resort_snow_quality_resource.id, api_gateway.id)
+add_cors_options("events", events_resource.id, api_gateway.id)
+add_cors_options("event", event_resource.id, api_gateway.id)
+add_cors_options("timeline", timeline_resource.id, api_gateway.id)
+add_cors_options("history", history_resource.id, api_gateway.id)
+add_cors_options("condition-reports", condition_reports_resource.id, api_gateway.id)
+add_cors_options("condition-report", condition_report_resource.id, api_gateway.id)
+add_cors_options("batch-conditions", batch_conditions_resource.id, api_gateway.id)
+add_cors_options("snow-quality-batch", snow_quality_batch_resource.id, api_gateway.id)
+add_cors_options("recommendations", recommendations_resource.id, api_gateway.id)
+add_cors_options(
+    "recommendations-best", recommendations_best_resource.id, api_gateway.id
+)
+add_cors_options("user-preferences", user_preferences_resource.id, api_gateway.id)
+add_cors_options("device-tokens", device_tokens_resource.id, api_gateway.id)
+add_cors_options(
+    "notification-settings", notification_settings_resource.id, api_gateway.id
+)
+add_cors_options(
+    "resort-notification-setting",
+    resort_notification_setting_resource.id,
+    api_gateway.id,
+)
+add_cors_options(
+    "user-condition-reports", user_condition_reports_resource.id, api_gateway.id
+)
+add_cors_options(
+    "quality-explanations", quality_explanations_resource.id, api_gateway.id
+)
+add_cors_options("auth-apple", auth_apple_resource.id, api_gateway.id)
+add_cors_options("auth-guest", auth_guest_resource.id, api_gateway.id)
+add_cors_options("auth-refresh", auth_refresh_resource.id, api_gateway.id)
+add_cors_options("auth-me", auth_me_resource.id, api_gateway.id)
+add_cors_options("trips", trips_resource.id, api_gateway.id)
+add_cors_options("trip", trip_resource.id, api_gateway.id)
+add_cors_options("trip-refresh", trip_refresh_resource.id, api_gateway.id)
+add_cors_options("trip-alerts-read", trip_alerts_read_resource.id, api_gateway.id)
+add_cors_options("feedback", feedback_resource.id, api_gateway.id)
+add_cors_options("chat", chat_resource.id, api_gateway.id)
+add_cors_options("chat-suggestions", chat_suggestions_resource.id, api_gateway.id)
+add_cors_options("chat-conversations", chat_conversations_resource.id, api_gateway.id)
+add_cors_options("chat-conversation", chat_conversation_resource.id, api_gateway.id)
 
 # API Gateway Deployment (depends on all integrations)
 # Note: triggers parameter forces recreation when routes change
