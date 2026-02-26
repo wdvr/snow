@@ -7,6 +7,18 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### Feature: Massive trail map + logo enrichment via parallel subagents
+Enriched resorts.json with trail maps and high-quality logos for 1019 resorts using parallel AI subagent approach. Trail maps: 29 subagents (10 resorts each) searched web for missing trail maps — coverage went from 72.2% to 93.9% (957/1019). Sources: skiresort.info DZI tiles, snow-forecast.com pistemaps, resort websites, skimap.org. Also fixed DZI zoom level bug (level 0 = 1px blue square → level 8 = usable thumbnails). Logos: 10 subagents (100 resorts each) searched for SVG/PNG logos on official resort websites. Added logo_url field to backend model, iOS Resort.swift, Android Models.kt, web types.ts. All platforms prefer server logo_url over Google Favicon fallback. Final: 813/1019 logos (79.8%), 379 SVG + 379 PNG + 55 other. Smart merge script only upgrades, never downgrades existing good logos.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | done | done | done |
+
+### Cost Optimization: Exclude raw_data from DynamoDB writes (~$71/mo savings)
+Discovered `raw_data` field (57KB raw Open-Meteo API response) was being written to `weather-conditions` table but never read back — all reads use ProjectionExpression excluding it. ML scorer only uses raw_data from in-memory objects during weather processing. Excluded it from `save_weather_condition()` in both `weather_worker.py` and `weather_processor.py` via `model_dump(exclude={"raw_data"})`. Reduces each write from ~59 WCU to ~2 WCU (~96% reduction). Also confirmed CloudWatch custom metrics ($52.71/mo) were already removed on Feb 19 (commit 15ccb7a). Combined March savings: ~$124/mo.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ### Feature: Ski trail/piste overlay on map view (iOS + web)
 Added OpenSnowMap piste tile overlay to the map view. Uses `tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png` — transparent PNG tiles showing color-coded ski trails from OpenStreetMap data. iOS: `MKTileOverlay` added to `ClusteredMapView` at `.aboveRoads` level, toggle button with `figure.skiing.downhill` icon in toolbar, attribution banner. Web: Leaflet `TileLayer` with zoom-aware rendering (only at z12+), toggle button with Mountain icon. Tiles verified at Whistler (15.5KB), Chamonix (9.7KB), Vail (1.4KB) — good coverage worldwide.
 | iOS | Android | Web | API |
