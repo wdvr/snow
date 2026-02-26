@@ -1,5 +1,6 @@
 package com.powderchaserapp.android.data.api
 
+import com.powderchaserapp.android.util.regionDisplayName
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -23,8 +24,13 @@ enum class ElevationLevel(val value: String) {
 
 @Serializable
 enum class SnowQuality(val value: String) {
+    @SerialName("champagne_powder") CHAMPAGNE_POWDER("champagne_powder"),
+    @SerialName("powder_day") POWDER_DAY("powder_day"),
     @SerialName("excellent") EXCELLENT("excellent"),
+    @SerialName("great") GREAT("great"),
     @SerialName("good") GOOD("good"),
+    @SerialName("decent") DECENT("decent"),
+    @SerialName("mediocre") MEDIOCRE("mediocre"),
     @SerialName("fair") FAIR("fair"),
     @SerialName("poor") POOR("poor"),
     @SerialName("slushy") SLUSHY("slushy"),
@@ -34,8 +40,13 @@ enum class SnowQuality(val value: String) {
 
     val displayName: String
         get() = when (this) {
+            CHAMPAGNE_POWDER -> "Champagne Powder"
+            POWDER_DAY -> "Powder Day"
             EXCELLENT -> "Excellent"
+            GREAT -> "Great"
             GOOD -> "Good"
+            DECENT -> "Decent"
+            MEDIOCRE -> "Mediocre"
             FAIR -> "Fair"
             POOR -> "Soft"
             SLUSHY -> "Slushy"
@@ -46,20 +57,30 @@ enum class SnowQuality(val value: String) {
 
     val sortOrder: Int
         get() = when (this) {
-            EXCELLENT -> 1
-            GOOD -> 2
-            FAIR -> 3
-            POOR -> 4
-            SLUSHY -> 5
-            BAD -> 6
-            HORRIBLE -> 7
+            CHAMPAGNE_POWDER -> 1
+            POWDER_DAY -> 2
+            EXCELLENT -> 3
+            GREAT -> 4
+            GOOD -> 5
+            DECENT -> 6
+            MEDIOCRE -> 7
+            FAIR -> 8
+            POOR -> 9
+            SLUSHY -> 10
+            BAD -> 11
+            HORRIBLE -> 12
             UNKNOWN -> 99
         }
 
     val description: String
         get() = when (this) {
+            CHAMPAGNE_POWDER -> "Ultra-light, dry powder - best snow on earth"
+            POWDER_DAY -> "Deep fresh powder, incredible skiing"
             EXCELLENT -> "Fresh powder, perfect conditions"
+            GREAT -> "Very good snow, mostly fresh"
             GOOD -> "Good snow with minimal ice"
+            DECENT -> "Reasonable conditions, some hard pack"
+            MEDIOCRE -> "Below average, variable surface"
             FAIR -> "Some ice formation present"
             POOR -> "Soft, thawing snow - warming conditions"
             SLUSHY -> "Slushy, wet snow - actively thawing"
@@ -186,7 +207,7 @@ data class Resort(
     @SerialName("updated_at") val updatedAt: String? = null,
 ) {
     val displayLocation: String
-        get() = "$region, $countryName"
+        get() = "${regionDisplayName(region)}, $countryName"
 
     val countryName: String
         get() = when (country.uppercase()) {
@@ -200,9 +221,21 @@ data class Resort(
             "NZ" -> "New Zealand"
             "AU" -> "Australia"
             "CL" -> "Chile"
+            "AR" -> "Argentina"
             "DE" -> "Germany"
             "NO" -> "Norway"
             "SE" -> "Sweden"
+            "FI" -> "Finland"
+            "KR" -> "South Korea"
+            "CN" -> "China"
+            "PL" -> "Poland"
+            "CZ" -> "Czech Republic"
+            "SK" -> "Slovakia"
+            "RO" -> "Romania"
+            "BG" -> "Bulgaria"
+            "SI" -> "Slovenia"
+            "ES" -> "Spain"
+            "AD" -> "Andorra"
             else -> country
         }
 

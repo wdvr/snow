@@ -317,8 +317,10 @@ class ModelDeserializationTest {
 
     @Test
     fun `snow quality enum sort order`() {
-        assertEquals(1, SnowQuality.EXCELLENT.sortOrder)
-        assertEquals(7, SnowQuality.HORRIBLE.sortOrder)
+        assertEquals(1, SnowQuality.CHAMPAGNE_POWDER.sortOrder)
+        assertEquals(2, SnowQuality.POWDER_DAY.sortOrder)
+        assertEquals(3, SnowQuality.EXCELLENT.sortOrder)
+        assertEquals(12, SnowQuality.HORRIBLE.sortOrder)
         assertEquals(99, SnowQuality.UNKNOWN.sortOrder)
     }
 

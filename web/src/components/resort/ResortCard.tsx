@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Thermometer, Snowflake, Wind, Heart } from 'lucide-react'
 import type { Resort, SnowQualitySummary } from '../../api/types'
 import { QualityBadge } from './QualityBadge'
-import { formatTemp, formatSnowCm, countryFlag } from '../../utils/format'
+import { formatTemp, formatSnowCm, countryFlag, regionDisplayName } from '../../utils/format'
 
 interface ResortCardProps {
   resort: Resort
@@ -23,7 +23,7 @@ export function ResortCard({ resort, quality, isFavorite, onToggleFavorite }: Re
             {resort.name}
           </h3>
           <p className="text-sm text-gray-500 truncate">
-            {countryFlag(resort.country)} {resort.region}, {resort.country}
+            {countryFlag(resort.country)} {regionDisplayName(resort.region)}, {resort.country}
           </p>
         </div>
         <div className="flex items-center gap-1">

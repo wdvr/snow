@@ -60,6 +60,31 @@ class CountryFlagsTest {
     }
 
     @Test
+    fun `asia and eastern europe region display names`() {
+        assertEquals("Asia", regionDisplayName("asia"))
+        assertEquals("Eastern Europe", regionDisplayName("eastern_europe"))
+    }
+
+    @Test
+    fun `compound region key with US state`() {
+        assertEquals("NA West Coast (California)", regionDisplayName("na_west_CA"))
+        assertEquals("NA Rockies (Colorado)", regionDisplayName("na_rockies_CO"))
+        assertEquals("NA East Coast (Vermont)", regionDisplayName("na_east_VT"))
+    }
+
+    @Test
+    fun `compound region key with Canadian province`() {
+        assertEquals("NA West Coast (British Columbia)", regionDisplayName("na_west_BC"))
+        assertEquals("NA Rockies (Alberta)", regionDisplayName("na_rockies_AB"))
+    }
+
+    @Test
+    fun `compound region key for non-NA returns base name`() {
+        assertEquals("European Alps", regionDisplayName("alps_FR"))
+        assertEquals("European Alps", regionDisplayName("alps_CH"))
+    }
+
+    @Test
     fun `unknown region capitalizes first letter`() {
         assertEquals("Custom_region", regionDisplayName("custom_region"))
     }
@@ -151,6 +176,41 @@ class CountryFlagsTest {
     @Test
     fun `Canada Quebec maps to na_east`() {
         assertEquals("na_east", inferRegion("CA", "QC"))
+    }
+
+    @Test
+    fun `korea maps to asia`() {
+        assertEquals("asia", inferRegion("KR", ""))
+    }
+
+    @Test
+    fun `china maps to asia`() {
+        assertEquals("asia", inferRegion("CN", ""))
+    }
+
+    @Test
+    fun `poland maps to eastern europe`() {
+        assertEquals("eastern_europe", inferRegion("PL", ""))
+    }
+
+    @Test
+    fun `czech republic maps to eastern europe`() {
+        assertEquals("eastern_europe", inferRegion("CZ", ""))
+    }
+
+    @Test
+    fun `slovakia maps to eastern europe`() {
+        assertEquals("eastern_europe", inferRegion("SK", ""))
+    }
+
+    @Test
+    fun `romania maps to eastern europe`() {
+        assertEquals("eastern_europe", inferRegion("RO", ""))
+    }
+
+    @Test
+    fun `bulgaria maps to eastern europe`() {
+        assertEquals("eastern_europe", inferRegion("BG", ""))
     }
 
     @Test

@@ -23,7 +23,8 @@ import {
 import { QualityBadge } from '../components/resort/QualityBadge'
 import { ConditionsTable } from '../components/resort/ConditionsTable'
 import { ForecastChart, HistoryChart } from '../components/resort/ForecastChart'
-import { formatTemp, formatSnowCm, formatDate, countryFlag } from '../utils/format'
+import { TrailDistribution } from '../components/resort/TrailDistribution'
+import { formatTemp, formatSnowCm, formatDate, countryFlag, regionDisplayName } from '../utils/format'
 import type { SnowQuality, ConditionType } from '../api/types'
 
 type Tab = 'conditions' | 'forecast' | 'history' | 'reports'
@@ -112,7 +113,7 @@ export function ResortDetailPage() {
               </button>
             </div>
             <p className="text-gray-500">
-              {resort.region}, {resort.country}
+              {regionDisplayName(resort.region)}, {resort.country}
               {resort.official_website && (
                 <>
                   {' '}
@@ -123,6 +124,19 @@ export function ResortDetailPage() {
                     className="inline-flex items-center gap-1 text-blue-600 hover:underline"
                   >
                     Website <ExternalLink className="w-3 h-3" />
+                  </a>
+                </>
+              )}
+              {resort.trail_map_url && (
+                <>
+                  {' '}
+                  <a
+                    href={resort.trail_map_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                  >
+                    Trail Map <ExternalLink className="w-3 h-3" />
                   </a>
                 </>
               )}
@@ -152,6 +166,10 @@ export function ResortDetailPage() {
                 </div>
               )}
             </div>
+            {/* Trail distribution */}
+            {(resort.green_runs_pct != null || resort.blue_runs_pct != null || resort.black_runs_pct != null) && (
+              <TrailDistribution resort={resort} />
+            )}
           </div>
 
           {/* Overall quality */}

@@ -17,6 +17,25 @@ export function QualityBadge({
 }: QualityBadgeProps) {
   const colors = getQualityColor(quality as SnowQuality)
 
+  if (size === 'lg') {
+    return (
+      <div className="flex flex-col items-center gap-1">
+        {score != null && (
+          <span
+            className={`text-3xl font-bold ${colors.text}`}
+          >
+            {score}
+          </span>
+        )}
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full font-semibold text-white ${colors.bg} px-4 py-1.5 text-base`}
+        >
+          {showLabel && <span>{formatQuality(quality)}</span>}
+        </span>
+      </div>
+    )
+  }
+
   const sizeClasses = {
     sm: 'px-2 py-0.5 text-xs',
     md: 'px-3 py-1 text-sm',

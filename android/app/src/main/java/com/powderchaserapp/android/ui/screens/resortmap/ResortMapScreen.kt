@@ -24,11 +24,18 @@ import com.powderchaserapp.android.util.*
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+enum class MapDisplayStyle(val label: String) {
+    NORMAL("Standard"),
+    SATELLITE("Satellite"),
+    TERRAIN("Terrain"),
+}
 
 data class MapUiState(
     val resorts: List<Resort> = emptyList(),
@@ -37,6 +44,7 @@ data class MapUiState(
     val selectedResort: Resort? = null,
     val selectedQuality: SnowQualitySummaryLight? = null,
     val unitPreferences: UnitPreferences = UnitPreferences(),
+    val mapStyle: MapDisplayStyle = MapDisplayStyle.NORMAL,
 )
 
 @HiltViewModel
@@ -92,6 +100,10 @@ class ResortMapViewModel @Inject constructor(
     fun clearSelection() {
         _uiState.update { it.copy(selectedResort = null, selectedQuality = null) }
     }
+
+    fun setMapStyle(style: MapDisplayStyle) {
+        _uiState.update { it.copy(mapStyle = style) }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,29 +122,44 @@ fun ResortMapScreen(
         return
     }
 
+    // Default to NA Rockies (most users are in NA)
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(46.8, 8.2), 4f)
+        position = CameraPosition.fromLatLngZoom(LatLng(40.6, -111.5), 5f)
     }
+
+    // Map type from style selection
+    val mapType = when (uiState.mapStyle) {
+        MapDisplayStyle.NORMAL -> MapType.NORMAL
+        MapDisplayStyle.SATELLITE -> MapType.SATELLITE
+        MapDisplayStyle.TERRAIN -> MapType.TERRAIN
+    }
+    val mapProperties = MapProperties(mapType = mapType)
 
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
+            properties = mapProperties,
         ) {
             uiState.resorts.forEach { resort ->
                 val point = resort.midElevation ?: resort.baseElevation ?: return@forEach
                 val quality = uiState.qualityMap[resort.id]
 
-                // Map quality to marker color
+                // Map quality to marker color (10-level scale)
                 val hue = quality?.let {
                     when (it.overallSnowQuality.value) {
+                        "champagne_powder" -> BitmapDescriptorFactory.HUE_VIOLET
+                        "powder_day" -> BitmapDescriptorFactory.HUE_AZURE
                         "excellent" -> BitmapDescriptorFactory.HUE_GREEN
+                        "great" -> BitmapDescriptorFactory.HUE_GREEN + 15f
                         "good" -> BitmapDescriptorFactory.HUE_GREEN + 30f
+                        "decent" -> BitmapDescriptorFactory.HUE_YELLOW
+                        "mediocre" -> BitmapDescriptorFactory.HUE_YELLOW + 15f
                         "fair" -> BitmapDescriptorFactory.HUE_ORANGE
                         "poor" -> BitmapDescriptorFactory.HUE_ORANGE
-                        "slushy" -> BitmapDescriptorFactory.HUE_YELLOW
+                        "slushy" -> BitmapDescriptorFactory.HUE_ORANGE + 10f
                         "bad" -> BitmapDescriptorFactory.HUE_RED
-                        "horrible" -> BitmapDescriptorFactory.HUE_VIOLET
+                        "horrible" -> BitmapDescriptorFactory.HUE_ROSE
                         else -> BitmapDescriptorFactory.HUE_AZURE
                     }
                 } ?: BitmapDescriptorFactory.HUE_AZURE
@@ -164,6 +191,48 @@ fun ResortMapScreen(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                 style = MaterialTheme.typography.labelMedium,
             )
+        }
+
+        // Map style toggle (top-right)
+        var showStyleMenu by remember { mutableStateOf(false) }
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp),
+        ) {
+            Surface(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                shape = MaterialTheme.shapes.small,
+                shadowElevation = 2.dp,
+            ) {
+                IconButton(onClick = { showStyleMenu = !showStyleMenu }) {
+                    Icon(Icons.Default.Layers, contentDescription = "Map style")
+                }
+            }
+            DropdownMenu(
+                expanded = showStyleMenu,
+                onDismissRequest = { showStyleMenu = false },
+            ) {
+                MapDisplayStyle.entries.forEach { style ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                style.label,
+                                fontWeight = if (style == uiState.mapStyle) FontWeight.Bold else FontWeight.Normal,
+                            )
+                        },
+                        onClick = {
+                            viewModel.setMapStyle(style)
+                            showStyleMenu = false
+                        },
+                        leadingIcon = {
+                            if (style == uiState.mapStyle) {
+                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                            }
+                        },
+                    )
+                }
+            }
         }
 
         // Bottom sheet for selected resort

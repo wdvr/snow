@@ -127,12 +127,38 @@ class ChatViewModel @Inject constructor(
     }
 }
 
-private val suggestionChips = listOf(
+private val allSuggestions = listOf(
     "What's the best resort for powder right now?",
     "Which resorts have fresh snow?",
     "Where should I ski this weekend?",
     "Compare conditions in the Alps vs Rockies",
+    "Best snow within 500 miles of Denver",
+    "Cheap resorts within 6h drive of Salt Lake City",
+    "Non-Epic resorts under $150/day",
+    "Compare Whistler vs Jackson Hole",
+    "Best conditions in Japan right now?",
+    "Which Ikon Pass resorts have the most snow?",
+    "Hidden gem resorts with great powder",
+    "Family-friendly resorts with good conditions",
+    "Best resorts for beginners with fresh snow",
+    "What's the snowpack like in the Rockies?",
+    "Which resorts are expecting a storm this week?",
+    "Best Epic Pass resorts to visit right now",
 )
+
+/** 4 random suggestions, reshuffled each composition. */
+@Composable
+private fun rememberSuggestionChips(): List<String> {
+    return remember { allSuggestions.shuffled().take(4) }
+}
+
+/** Strip tool_call/tool_response XML blocks from assistant messages. */
+private fun stripToolCalls(text: String): String {
+    return text
+        .replace(Regex("<tool_call>.*?</tool_call>", RegexOption.DOT_MATCHES_ALL), "")
+        .replace(Regex("<tool_response>.*?</tool_response>", RegexOption.DOT_MATCHES_ALL), "")
+        .trim()
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -240,8 +266,9 @@ fun ChatScreen(
                             )
                             Spacer(modifier = Modifier.height(24.dp))
 
-                            // Suggestion chips
-                            suggestionChips.forEach { suggestion ->
+                            // Suggestion chips (4 random from pool of 16)
+                            val suggestions = rememberSuggestionChips()
+                            suggestions.forEach { suggestion ->
                                 SuggestionChip(
                                     onClick = {
                                         viewModel.sendMessage(suggestion)
@@ -310,6 +337,11 @@ fun ChatScreen(
 @Composable
 private fun ChatBubble(message: ChatMessage) {
     val isUser = message.isFromUser
+    val displayText = if (isUser) message.content else stripToolCalls(message.content)
+
+    // Skip empty messages (can happen after stripping tool calls)
+    if (displayText.isBlank()) return
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
@@ -323,16 +355,134 @@ private fun ChatBubble(message: ChatMessage) {
             shape = MaterialTheme.shapes.medium,
             modifier = Modifier.widthIn(max = 300.dp),
         ) {
-            Text(
-                text = message.content,
-                modifier = Modifier.padding(12.dp),
-                color = if (isUser) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            if (isUser) {
+                Text(
+                    text = displayText,
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            } else {
+                MarkdownText(
+                    text = displayText,
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
+    }
+}
+
+/** Simple markdown rendering: bold, italic, headers, lists, and tables. */
+@Composable
+private fun MarkdownText(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+) {
+    val annotated = remember(text) {
+        val builder = androidx.compose.ui.text.AnnotatedString.Builder()
+        val lines = text.split("\n")
+
+        for ((i, line) in lines.withIndex()) {
+            if (i > 0) builder.append("\n")
+
+            when {
+                // Headers
+                line.startsWith("### ") -> {
+                    builder.pushStyle(
+                        androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold),
+                    )
+                    builder.append(line.removePrefix("### "))
+                    builder.pop()
+                }
+                line.startsWith("## ") -> {
+                    builder.pushStyle(
+                        androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold),
+                    )
+                    builder.append(line.removePrefix("## "))
+                    builder.pop()
+                }
+                line.startsWith("# ") -> {
+                    builder.pushStyle(
+                        androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold),
+                    )
+                    builder.append(line.removePrefix("# "))
+                    builder.pop()
+                }
+                // Bullet lists
+                line.trimStart().startsWith("- ") || line.trimStart().startsWith("* ") -> {
+                    val indent = line.length - line.trimStart().length
+                    repeat(indent / 2) { builder.append("  ") }
+                    builder.append("\u2022 ")
+                    appendInlineMarkdown(builder, line.trimStart().removePrefix("- ").removePrefix("* "))
+                }
+                // Numbered lists
+                line.trimStart().matches(Regex("^\\d+\\.\\s.*")) -> {
+                    builder.append(line.trimStart())
+                }
+                // Table separator rows (skip)
+                line.trimStart().matches(Regex("^\\|[-|: ]+\\|$")) -> {
+                    // Skip separator rows
+                }
+                else -> {
+                    appendInlineMarkdown(builder, line)
+                }
+            }
+        }
+        builder.toAnnotatedString()
+    }
+
+    Text(
+        text = annotated,
+        modifier = modifier,
+        style = MaterialTheme.typography.bodyMedium,
+        color = color,
+    )
+}
+
+/** Append text with inline bold (**text**) and italic (*text*) handling. */
+private fun appendInlineMarkdown(
+    builder: androidx.compose.ui.text.AnnotatedString.Builder,
+    text: String,
+) {
+    var remaining = text
+    val boldRegex = Regex("\\*\\*(.+?)\\*\\*")
+    val italicRegex = Regex("\\*(.+?)\\*")
+
+    while (remaining.isNotEmpty()) {
+        val boldMatch = boldRegex.find(remaining)
+        val italicMatch = italicRegex.find(remaining)
+
+        // Find the earliest match
+        val earliest = listOfNotNull(boldMatch, italicMatch).minByOrNull { it.range.first }
+
+        if (earliest == null) {
+            builder.append(remaining)
+            break
+        }
+
+        // Append text before the match
+        if (earliest.range.first > 0) {
+            builder.append(remaining.substring(0, earliest.range.first))
+        }
+
+        if (earliest == boldMatch) {
+            builder.pushStyle(
+                androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold),
+            )
+            builder.append(earliest.groupValues[1])
+            builder.pop()
+        } else {
+            builder.pushStyle(
+                androidx.compose.ui.text.SpanStyle(
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                ),
+            )
+            builder.append(earliest.groupValues[1])
+            builder.pop()
+        }
+
+        remaining = remaining.substring(earliest.range.last + 1)
     }
 }

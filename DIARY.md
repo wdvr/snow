@@ -7,6 +7,38 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### Feature: Android & Web cross-platform feature parity batch
+Major cross-platform update implementing 20+ pending features:
+**Android (Models.kt, Color.kt, CountryFlags.kt, ResortMapScreen.kt, ResortDetailScreen.kt, ChatScreen.kt):**
+- Expanded SnowQuality enum from 6 to 13 values (champagne_powder through unknown) with distinct colors
+- Compound region key display ("na_west_BC" -> "NA West Coast (British Columbia)")
+- Asia (KR, CN) and Eastern Europe (PL, CZ, SK, RO, BG) region support
+- Map style switching (Standard/Satellite/Terrain) with dropdown toggle
+- Map initial zoom defaults to NA Rockies instead of Alps
+- Trail map link card in resort detail (opens browser)
+- Elevation range display in resort header (base - top with unit prefs)
+- Enhanced ElevationPicker showing elevation values per level
+- Enhanced share text with conditions data (temp, fresh, depth, forecast)
+- 16 randomized chat suggestions (pool of 16, shows 4 per visit)
+- Markdown rendering in chat (bold, italic, headers, lists)
+- Tool call XML stripping in chat messages
+- Country name lookup for 25 countries including new regions
+- Updated all map marker hues for 10-level quality scale
+- 12 new unit tests for compound keys and regions
+**Web (types.ts, colors.ts, format.ts, ResortDetailPage.tsx, QualityBadge.tsx, ConditionsTable.tsx, ResortCard.tsx):**
+- 13-level SnowQuality type with distinct color palette
+- formatQuality labels for all 13 quality levels
+- Compound region key display in resort cards and detail page
+- Trail map link in resort header
+- TrailDistribution component with stacked bar chart
+- Predicted snowfall (48h forecast) column in ConditionsTable
+- Enhanced QualityBadge with prominent score in lg size
+- Region display uses regionDisplayName everywhere
+All 187 Android tasks passing, web TypeScript clean.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | done | done | n/a |
+
 ### Feature: Resort data enrichment — city, webcam URLs, price audit
 Four-part resort data enrichment: (1) **Price audit**: Verified and corrected day ticket prices for 65+ resorts (e.g., Whistler was $66, now $175-260 USD; Vail $189-356). Created `enrich_resort_data.py` with 90+ manually verified 2025/26 prices. (2) **City geocoding**: Added `city` and `state_province` fields to 955/1040 resorts (91%) via Nominatim reverse geocoding + 90 manual overrides. iOS `displayLocation` now shows "Big White, Kelowna, BC, Canada" instead of "British Columbia, Canada". (3) **Webcam URLs**: Added `webcam_url` to all 1040 resorts (skiresort.info webcam pages). iOS detail view shows "Webcams" link opening in-app Safari overlay. (4) **Safari overlay**: Added `IdentifiableURL`, `SafariView`, and `.safariOverlay()` modifier so website, trail map, and webcam links open in embedded SFSafariViewController instead of leaving the app. Backend model, populate script, iOS model/cache/demo data all updated. 1563 backend + 119 iOS tests passing.
 | iOS | Android | Web | API |
@@ -17,7 +49,7 @@ Four-part resort data enrichment: (1) **Price audit**: Verified and corrected da
 Tables with alternating row colors had misaligned columns because each row's HStack was laid out independently in a VStack. Fixed by: (1) computing an explicit `totalWidth` from column widths + separator widths, (2) applying `.frame(width: totalWidth)` to every row HStack and the container VStack, (3) extracting a shared `tableRow()` builder so header and data rows use identical layout code, (4) adding explicit widths to inter-row separator lines. All columns now align perfectly across all rows.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | n/a | n/a |
 
 ### Fix: Chat history not loading end-to-end in iOS app
 Backend was fixed (Float->Decimal), but iOS app had multiple UX issues preventing history from working properly: (1) ConversationListView swallowed errors silently — if loading failed, user just saw "No Conversations" with no retry option. Added dedicated `isLoadingConversations` and `conversationListError` states with error display and retry button. (2) Tapping a conversation dismissed the sheet immediately before the load completed, so messages appeared with no feedback. Now waits for the API call to finish (with per-row spinner) before dismissing. (3) Main chat view showed empty suggestions when `isLoading` was true during conversation load. Now shows a centered "Loading conversation..." spinner. (4) Added cleanup of streaming state before loading historical conversations to prevent stale data.
@@ -29,7 +61,7 @@ Backend was fixed (Float->Decimal), but iOS app had multiple UX issues preventin
 Confirmed 16 ChatSuggestion entries covering: proximity-based, budget, resort comparisons, regional (Rockies/Alps/Japan), family-friendly, pass-based (Ikon/Epic), forecasts, hidden gems, snowpack, and temperature queries. No changes needed.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | n/a | n/a |
 
 ### Fix: Snow history empty — DAILY_HISTORY_TABLE env var missing from Lambda functions
 Root cause (again): `DAILY_HISTORY_TABLE` env var was not present on the weather worker, weather processor, or API handler Lambda functions in prod and staging. Despite being defined in Pulumi infrastructure code, the infra was never deployed after adding it. Weather worker defaulted to `snow-tracker-daily-history-dev` (which doesn't exist), so all history writes silently failed. Also missing: `SNOW_SUMMARY_TABLE` on API handler, `SNOW_SUMMARY_TABLE` on weather processor Pulumi config. Fixed: set env vars on all 6 Lambda functions (3 prod + 3 staging) via AWS CLI, updated Pulumi infra to include `SNOW_SUMMARY_TABLE` for weather processor, weather worker, and API handler. Triggered weather processor to backfill data. Table went from 122 to 1066+ records.
@@ -47,7 +79,7 @@ Debug endpoints (`/api/v1/debug/test-push-notification` and `/api/v1/debug/trigg
 Data sources card moved from inline (between conditions cards) to the very bottom of resort detail view. Backend now includes all 4 known sources (Open-Meteo, OnTheSnow, Snow-Forecast, WeatherKit) in `source_details` even when a source has no data for the resort (status: `no_data`). Sources sorted by status: consensus first, then included, outlier, unavailable. Excluded outlier values shown with strikethrough and orange reason text. Unavailable sources shown as greyed "N/A".
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | done |
+| done | backlog | n/a | done |
 
 ---
 
@@ -63,25 +95,25 @@ Chat stream handler was saving tool_calls data containing Python floats (resort 
 Expanded AI chat from 4 hardcoded suggestion chips to a pool of 16 diverse prompts (compare resorts, find powder, budget trips, regional conditions, pass comparisons). Shows 4 randomly selected on each visit. Suggestions include specific resort comparisons, Ikon/Epic pass queries, Japan conditions, hidden gems, and budget filters.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | n/a | n/a |
 
 ### Fix: Markdown table column widths content-based
 Tables used uniform column widths, making wide tables poorly formatted. Changed to per-column content-based width calculation: `max(60, min(220, charCount * 7 + 20))` per column. Headers and data cells are measured independently. Results in compact columns for short data and wider columns for long text.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | n/a | n/a |
 
 ### Feature: Per-source reason text in data source transparency
 Added `reason` field to source details showing why each source was included/excluded (e.g., "Reported 5cm, 67% from median 3cm — excluded as outlier (>50%)" or "Within 12% of each other (threshold: 30%)"). Backend includes human-readable reasons with median values, deviation percentages, and thresholds. iOS displays reason text below each source row.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | done |
+| done | backlog | n/a | done |
 
 ### Fix: Map style switching broken — always shows satellite
-`String(describing: MapStyle)` no longer produces reliable output for comparison in newer Xcode. Replaced with custom `MapDisplayStyle` enum that maps directly to `MKMapType` values. Standard/Satellite/Hybrid toggle now works correctly.
+`String(describing: MapStyle)` no longer produces reliable output for comparison in newer Xcode. Replaced with custom `MapDisplayStyle` enum that maps directly to `MKMapType` values. Standard/Satellite/Hybrid toggle now works correctly. Android: added `MapDisplayStyle` enum with Standard/Satellite/Terrain options and Layers dropdown toggle.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | n/a | n/a |
 
 ### Fix: Forecast mode on map spins forever / loads very slowly
 Timeline data was fetched one-resort-at-a-time in sequential batches of 10. For 1000+ resorts, this meant 100+ sequential API batches. Fixed: batch size increased from 10→30 parallel requests, limited to 150 resorts max, and map pins update progressively after each batch instead of waiting for all to complete.
@@ -93,7 +125,7 @@ Timeline data was fetched one-resort-at-a-time in sequential batches of 10. For 
 Users can now see which of the 4 weather sources (Open-Meteo, OnTheSnow, Snow-Forecast, WeatherKit) contributed to each snowfall reading, which were in consensus, and which were dropped as outliers. Backend `merge()` returns `source_details` with per-source snowfall values, status (consensus/outlier), merge method, and source count. iOS shows collapsible "Data Sources" card in resort detail with color-coded status per source. 8 new backend tests.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | done |
+| done | backlog | n/a | done |
 
 ### Fix: Community report TTL 365→90 days
 Reports were kept for a full year; reduced to 90 days to keep community data fresh and relevant.
@@ -105,7 +137,7 @@ Reports were kept for a full year; reduced to 90 days to keep community data fre
 Report timestamps used `.tertiary` foreground style (nearly invisible on light backgrounds). Changed to `.secondary` for better readability.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | n/a | n/a |
 
 ### Fix: Chat history always empty on iOS
 `list_conversations()` queried non-existent DynamoDB GSI "UserIndex" — the actual index name is "user_id-index". One-line fix.
@@ -114,10 +146,10 @@ Report timestamps used `.tertiary` foreground style (nearly invisible on light b
 | n/a | n/a | n/a | done |
 
 ### Feature: Markdown table rendering in AI chat
-AI chat responses now render markdown tables with proper header styling, column dividers, and horizontal scrolling for wide tables. Added full table parsing to MarkdownTextView (pipe-delimited `| col | col |` syntax).
+AI chat responses now render markdown tables with proper header styling, column dividers, and horizontal scrolling for wide tables. Added full table parsing to MarkdownTextView (pipe-delimited `| col | col |` syntax). Android: added MarkdownText composable with bold/italic/header/list/table-separator support via AnnotatedString.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | n/a | n/a |
 
 ### Feature: Interactive resort card carousel in AI chat
 When the AI recommends specific resorts, it embeds `[[resort:resort-id]]` markers that iOS renders as tappable resort cards in a horizontal carousel. Cards show quality badge (color-coded), resort name, fresh snow, temperature, snow depth, and country. Tapping opens the full resort detail sheet. Backend system prompt updated to instruct AI to use card markers.
@@ -135,13 +167,13 @@ Removed arbitrary 150-resort limit for forecast fetching. Now tracks the current
 Replaced generic chat suggestions with practical examples: "Best snow within 500 miles", "Cheap resorts within 6h drive", "Non-Epic resorts under $150/day", "Compare Whistler vs Jackson Hole".
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | n/a | n/a |
 
 ### Fix: Raw JSON tool calls visible in AI chat
-AI sometimes hallucinated `<tool_call>`/`<tool_response>` XML blocks in text responses instead of using native tool_use. Fixed: (1) iOS strips these blocks before rendering, (2) backend system prompt now explicitly forbids raw JSON in responses, (3) intermediate "thinking" messages hidden from display.
+AI sometimes hallucinated `<tool_call>`/`<tool_response>` XML blocks in text responses instead of using native tool_use. Fixed: (1) iOS strips these blocks before rendering, (2) backend system prompt now explicitly forbids raw JSON in responses, (3) intermediate "thinking" messages hidden from display. Android: added `stripToolCalls()` regex to remove XML blocks before rendering.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | done |
+| done | done | n/a | done |
 
 ### Feature: Rich resort cards in AI chat carousel
 Overhauled resort cards from basic name+stats to visually rich cards: quality gradient header with snow score (0-100), SF Symbol quality icon, trail difficulty bar (green/blue/black/double-black proportional), lift ticket price range, pass badges (Epic/Ikon/Indy), temperature/snow/depth stats, country/region display. Cards expand to full resort detail on tap.
@@ -153,7 +185,7 @@ Overhauled resort cards from basic name+stats to visually rich cards: quality gr
 Better column sizing (auto-calculated based on column count), alternating row backgrounds, cleaner dividers, proper padding. Tables are horizontally scrollable with rounded corners.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | n/a | n/a |
 
 ### Feature: Enriched nearby resorts data in chat
 `get_nearby_resorts` tool in stream handler now returns pricing, pass affiliations, and current conditions inline — avoids needing a second `get_resort_details_batch` call. Faster responses for "resorts near me" queries.
@@ -179,7 +211,7 @@ Two bugs in `generate_score_change_reason()`: (1) When no factor aligned with sc
 Explanation text in conditions timeline popover was cut off due to narrow `maxWidth: 260`. Widened to 320pt.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | n/a | n/a | n/a |
 
 ### Fix: WeatherKit 401 "NOT_ENABLED" → all 4 sources working
 Root cause: JWT `sub` claim used App ID (`com.wouterdevriendt.snowtracker`) instead of Services ID. WeatherKit REST API requires a registered Services ID. Fix: created Services ID `com.wouterdevriendt.snowtracker.weatherkit` in Apple Developer Portal, updated `WEATHERKIT_SERVICE_ID` GitHub secret. Now all 4 sources merge: `onthesnow.com + open-meteo.com + snowforecast.com + weatherkit.apple.com`. Created `/weatherkit-debug` skill with full troubleshooting guide.
@@ -254,7 +286,7 @@ When viewing the 7-day forecast timeline, each point now shows WHY the score cha
 Resort list showed raw internal region keys like "na_west_BC" instead of human-readable names. Root cause: `regionDisplayName` only matched exact internal keys ("na_west") but API returns compound keys ("na_west_BC"). Fixed by parsing compound keys: extract suffix after known prefix, look up in US state / Canadian province dictionaries. Non-NA compound keys (alps_FR) return empty (show country only). Added comprehensive test coverage for all compound key patterns.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | done | n/a |
 
 ### Timeline: Smooth ML score jumps from snow depth artifacts
 Open-Meteo snow depth can make unrealistic jumps (e.g., +8cm overnight with 0.1cm snowfall), causing ML score jumps of +19 points. Added pre-ML hourly snow depth smoothing that caps increases at snowfall*1.5+0.5cm/hr and decreases at temperature-aware melt rates. Also added post-scoring smoothing to cap step-to-step score changes. 10 new tests.
@@ -269,10 +301,10 @@ Open-Meteo snow depth can make unrealistic jumps (e.g., +8cm overnight with 0.1c
 | n/a | n/a | n/a | done |
 
 ### Map: Add Asia and Eastern Europe regions
-iOS was missing Asia (KR, CN) and Eastern Europe (PL, CZ, SK, RO, BG) from SkiRegion enum, map presets, filter settings, and onboarding. Backend had 66 + 222 resorts in these regions. Also fixed Alps countries to include SI, ES, AD.
+iOS was missing Asia (KR, CN) and Eastern Europe (PL, CZ, SK, RO, BG) from SkiRegion enum, map presets, filter settings, and onboarding. Backend had 66 + 222 resorts in these regions. Also fixed Alps countries to include SI, ES, AD. Android: added asia/eastern_europe to inferRegion, regionDisplayName, and country name lookups with tests. Web: added asia/eastern_europe to regionDisplayName and format.ts.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | pending | n/a |
+| done | done | done | n/a |
 
 ### Map: Auto-refresh quality on region change
 Map only fetched conditions once on appear. Panning/zooming to new areas showed grey pins. Added debounced (1.5s) auto-fetch on viewport change, plus manual reload button (arrow.clockwise) in toolbar. Only fetches uncached resorts in batches of 30.
@@ -345,16 +377,16 @@ Map annotations showed stale quality data from S3 batch JSON. Only updated when 
 | done | pending | n/a | n/a |
 
 ### Quality Labels: Expand from 6 to 10 levels
-New scale: Horrible, Bad, Poor, Mediocre, Decent, Good, Great, Excellent, Powder Day, Champagne Powder. With distinct colors and icons.
+New scale: Horrible, Bad, Poor, Mediocre, Decent, Good, Great, Excellent, Powder Day, Champagne Powder. With distinct colors and icons. Android: expanded SnowQuality enum with all 13 values, updated Color.kt with distinct colors, map markers, and tests. Web: expanded SnowQuality type, qualityColors, and formatQuality labels.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | pending | done |
+| done | done | done | done |
 
 ### Trail Distribution: Fix missing data for Big White and others
-Trail percentages (green/blue/black runs) weren't passed through the API transform. Fixed `_transform_resort()` passthrough.
+Trail percentages (green/blue/black runs) weren't passed through the API transform. Fixed `_transform_resort()` passthrough. Web: added TrailDistribution component with stacked bar and labels on resort detail page.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | pending | done |
+| done | done | done | done |
 
 ### ML Model v14-v15: Physics-based scoring overhaul
 v14 added `hours_since_last_snowfall` feature, removed manual hacks (aging penalty, cold boost, smoothing). v15 added physics-based audit of training data, expanded eval suite (64 edge cases, 14 constraints), targeted synthetic data. Cold+dry now correctly scores POOR not FAIR.
@@ -403,10 +435,10 @@ Forecast scores were jittering due to freeze-thaw state changes. Added freeze-th
 | done | n/a | n/a | n/a |
 
 ### Map: Initial zoom showing entire world
-1040 resorts scattered globally looked bad. Default to NA Rockies region, user location when available.
+1040 resorts scattered globally looked bad. Default to NA Rockies region, user location when available. Android: changed default camera to LatLng(40.6, -111.5) zoom 5f (Rockies area).
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | n/a | n/a |
 
 ### Chat: JWT import crash in streaming Lambda
 `ModuleNotFoundError: No module named 'jwt'` — changed to `from jose import jwt`.
@@ -593,10 +625,10 @@ Search now matches "CA" for Canada, "Epic" for Epic Pass resorts, etc.
 | done | pending | n/a | n/a |
 
 ### Share Text: Snow score, depth, and forecast
-Share card now includes snow score, current depth, and forecast data instead of just resort name.
+Share card now includes snow score, current depth, and forecast data instead of just resort name. Android: enhanced share text to include temperature, fresh snow, depth, 48h forecast alongside quality and score.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | n/a | n/a |
 
 ### Batch Quality: Snow depth and forecast data
 Added snow_depth_cm, forecast_snowfall_cm to batch quality response so list/map views show depth and forecast without individual API calls.
@@ -611,10 +643,10 @@ Added new sort options to resort list for sorting by current snow depth or predi
 | done | pending | n/a | n/a |
 
 ### Chat: Markdown rendering
-AI chat responses now render markdown (bold, italic, lists, links, code) instead of plain text.
+AI chat responses now render markdown (bold, italic, lists, links, code) instead of plain text. Android: added MarkdownText composable with bold (**), italic (*), headers (#), bullet lists, and table separator handling via AnnotatedString.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | done | n/a |
+| done | done | done | n/a |
 
 ### Chat: Snow history and comparison tools
 Added `get_snow_history` and `compare_resorts` tools so AI can answer historical questions and compare resorts side-by-side.
@@ -635,10 +667,10 @@ Added pass type filter to resort list. Pass badges shown on list and favorites v
 | done | pending | n/a | n/a |
 
 ### Elevation Display: Unit preferences
-Elevation displays now respect user unit preferences (meters vs feet) everywhere in the app.
+Elevation displays now respect user unit preferences (meters vs feet) everywhere in the app. Android: added elevation range to resort header card using formatElevation, enhanced ElevationPicker to show elevation values alongside level names.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | n/a |
+| done | done | n/a | n/a |
 
 ### DynamoDB Backups and Missing API Routes
 Enabled point-in-time recovery on all DynamoDB tables. Added missing API Gateway routes for regions, auth, trips, snow-quality, events, and notification endpoints.
@@ -693,10 +725,10 @@ List view hung on main thread due to synchronous DynamoDB batch calls during scr
 | done | n/a | n/a | n/a |
 
 ### Trail Maps and Run Difficulty
-Added trail map links and run difficulty percentage breakdown (green/blue/black) to resort detail view. Required populating trail data for all resorts.
+Added trail map links and run difficulty percentage breakdown (green/blue/black) to resort detail view. Required populating trail data for all resorts. Android: added trail map link card (opens in browser) and RunDifficultyCard already existed. Web: added trail map link in header, TrailDistribution bar component.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | pending | done |
+| done | done | done | done |
 
 ### Elevation Profile Redesign
 Redesigned elevation profile visualization to look like a mountain shape instead of flat bars.
@@ -837,10 +869,10 @@ Timeline snow depth was dropping too fast (10cm/h melt rate). Lowered to 2cm/h f
 | n/a | n/a | n/a | done |
 
 ### Snow Score (0-100) and Quality Explanations
-Added human-readable 0-100 snow score alongside quality label. Explanations describe what's driving the score (fresh snow, temperature, wind, etc.). Added to static JSON generator.
+Added human-readable 0-100 snow score alongside quality label. Explanations describe what's driving the score (fresh snow, temperature, wind, etc.). Added to static JSON generator. Web: enhanced QualityBadge lg size with prominent score display above label.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | pending | done |
+| done | done | done | done |
 
 ### Cap fresh_snow_cm at snow_depth_cm
 API could return `fresh_snow_cm: 20, snow_depth_cm: 5` — contradictory. Capped fresh snow at depth.

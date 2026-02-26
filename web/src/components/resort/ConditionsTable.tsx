@@ -69,7 +69,13 @@ export function ConditionsTable({ conditions }: ConditionsTableProps) {
                 Visibility
               </div>
             </th>
-            <th className="pb-3 pl-4 font-medium">24h Snow</th>
+            <th className="pb-3 px-4 font-medium">24h Snow</th>
+            <th className="pb-3 pl-4 font-medium">
+              <div className="flex items-center gap-1.5">
+                <Snowflake className="w-4 h-4 text-blue-400" />
+                48h Forecast
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -112,8 +118,17 @@ export function ConditionsTable({ conditions }: ConditionsTableProps) {
               <td className={`py-3 px-4 text-sm text-gray-700 ${visibilitySeverity(condition.visibility_m)}`}>
                 {formatVisibility(condition.visibility_m)}
               </td>
-              <td className="py-3 pl-4 text-sm text-gray-700">
+              <td className="py-3 px-4 text-sm text-gray-700">
                 {formatSnowCm(condition.snowfall_24h_cm)}
+              </td>
+              <td className="py-3 pl-4 text-sm text-gray-700">
+                {condition.predicted_snow_48h_cm != null && condition.predicted_snow_48h_cm > 0 ? (
+                  <span className="text-blue-600 font-medium">
+                    {formatSnowCm(condition.predicted_snow_48h_cm)}
+                  </span>
+                ) : (
+                  <span className="text-gray-400">--</span>
+                )}
               </td>
             </tr>
           ))}

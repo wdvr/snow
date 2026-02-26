@@ -28,14 +28,20 @@ object SnowColors {
     val SurfaceVariantLight = Color(0xFFE1E6EF)
     val SurfaceVariantDark = Color(0xFF3B4354)
 
-    // Snow quality colors
-    val QualityExcellent = Color(0xFF00A65A)
-    val QualityGood = Color(0xFF34C759)
-    val QualityFair = Color(0xFFFF9500)
-    val QualityPoor = Color(0xFFFF9500)
-    val QualityBad = Color(0xFFFF3B30)
-    val QualityHorrible = Color(0xFF8E8E93)
-    val QualityUnknown = Color(0xFF8E8E93)
+    // Snow quality colors (10-level scale)
+    val QualityChampagnePowder = Color(0xFF6366F1) // Indigo — the best
+    val QualityPowderDay = Color(0xFF3B82F6)       // Blue — deep fresh
+    val QualityExcellent = Color(0xFF00A65A)        // Emerald
+    val QualityGreat = Color(0xFF22C55E)            // Green
+    val QualityGood = Color(0xFF34C759)             // Light green
+    val QualityDecent = Color(0xFFA3E635)           // Lime
+    val QualityMediocre = Color(0xFFEAB308)         // Yellow
+    val QualityFair = Color(0xFFFF9500)             // Orange
+    val QualityPoor = Color(0xFFFF9500)             // Orange
+    val QualitySlushy = Color(0xFFF97316)           // Dark orange
+    val QualityBad = Color(0xFFFF3B30)              // Red
+    val QualityHorrible = Color(0xFF8E8E93)         // Gray
+    val QualityUnknown = Color(0xFF8E8E93)          // Gray
 
     // Functional
     val SnowWhite = Color(0xFFF0F4FA)
@@ -52,11 +58,16 @@ object SnowColors {
 
 fun snowQualityColor(quality: String): Color {
     return when (quality) {
+        "champagne_powder" -> SnowColors.QualityChampagnePowder
+        "powder_day" -> SnowColors.QualityPowderDay
         "excellent" -> SnowColors.QualityExcellent
+        "great" -> SnowColors.QualityGreat
         "good" -> SnowColors.QualityGood
+        "decent" -> SnowColors.QualityDecent
+        "mediocre" -> SnowColors.QualityMediocre
         "fair" -> SnowColors.QualityFair
         "poor" -> SnowColors.QualityPoor
-        "slushy" -> SnowColors.QualityFair
+        "slushy" -> SnowColors.QualitySlushy
         "bad" -> SnowColors.QualityBad
         "horrible" -> SnowColors.QualityHorrible
         else -> SnowColors.QualityUnknown

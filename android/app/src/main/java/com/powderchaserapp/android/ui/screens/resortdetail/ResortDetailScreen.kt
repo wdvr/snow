@@ -1,7 +1,9 @@
 package com.powderchaserapp.android.ui.screens.resortdetail
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -156,12 +158,28 @@ fun ResortDetailScreen(
                     IconButton(onClick = {
                         uiState.resort?.let { resort ->
                             val shareText = buildString {
-                                append("${resort.name} - ")
+                                append("${resort.name}")
                                 uiState.snowQuality?.let { q ->
-                                    append("${q.overallSnowQuality.displayName}")
+                                    append(" - ${q.overallSnowQuality.displayName}")
                                     q.overallSnowScore?.let { append(" ($it/100)") }
                                 }
-                                append("\n${resort.officialWebsite ?: ""}")
+                                // Add conditions from selected elevation
+                                val cond = uiState.conditions.firstOrNull {
+                                    it.elevationLevel == uiState.selectedElevation.value
+                                }
+                                cond?.let { c ->
+                                    append("\n${UnitConversions.formatTemperature(c.currentTempCelsius, units.useMetricTemp)}")
+                                    if (c.freshSnowCm > 0) {
+                                        append(" | Fresh: ${UnitConversions.formatSnowShort(c.freshSnowCm, units.useMetricSnow)}")
+                                    }
+                                    c.snowDepthCm?.let { depth ->
+                                        if (depth > 0) append(" | Depth: ${UnitConversions.formatSnowShort(depth, units.useMetricSnow)}")
+                                    }
+                                    c.predictedSnow48hCm?.let { pred ->
+                                        if (pred > 0) append(" | 48h forecast: ${UnitConversions.formatSnowShort(pred, units.useMetricSnow)}")
+                                    }
+                                }
+                                resort.officialWebsite?.let { append("\n$it") }
                             }
                             val intent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
@@ -225,6 +243,8 @@ fun ResortDetailScreen(
                     ElevationPicker(
                         selected = uiState.selectedElevation,
                         onSelect = { viewModel.selectElevation(it) },
+                        resort = uiState.resort,
+                        units = units,
                     )
 
                     // Snow quality card
@@ -259,6 +279,34 @@ fun ResortDetailScreen(
                     uiState.resort?.let { resort ->
                         if (resort.greenRunsPct != null || resort.blueRunsPct != null || resort.blackRunsPct != null) {
                             RunDifficultyCard(resort)
+                        }
+                    }
+
+                    // Trail map link
+                    uiState.resort?.trailMapUrl?.let { trailMapUrl ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .clickable {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(trailMapUrl))
+                                    context.startActivity(intent)
+                                },
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(Icons.Default.Map, contentDescription = null)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    "View Trail Map",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
                         }
                     }
 
@@ -336,6 +384,16 @@ private fun ResortHeaderCard(resort: Resort, quality: SnowQualitySummary?, units
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    // Elevation range
+                    val baseElev = resort.baseElevation?.elevationMeters
+                    val topElev = resort.topElevation?.elevationMeters
+                    if (baseElev != null && topElev != null) {
+                        Text(
+                            "${UnitConversions.formatElevation(baseElev, units.useMetricDistance)} - ${UnitConversions.formatElevation(topElev, units.useMetricDistance)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
 
@@ -379,7 +437,12 @@ private fun ResortHeaderCard(resort: Resort, quality: SnowQualitySummary?, units
 }
 
 @Composable
-private fun ElevationPicker(selected: ElevationLevel, onSelect: (ElevationLevel) -> Unit) {
+private fun ElevationPicker(
+    selected: ElevationLevel,
+    onSelect: (ElevationLevel) -> Unit,
+    resort: Resort? = null,
+    units: UnitPreferences = UnitPreferences(),
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -392,10 +455,16 @@ private fun ElevationPicker(selected: ElevationLevel, onSelect: (ElevationLevel)
                 ElevationLevel.MID -> SnowColors.ElevationMid
                 ElevationLevel.TOP -> SnowColors.ElevationTop
             }
+            val elevMeters = resort?.elevationPoint(level)?.elevationMeters
+            val elevLabel = if (elevMeters != null) {
+                "${level.displayName} ${UnitConversions.formatElevation(elevMeters, units.useMetricDistance)}"
+            } else {
+                level.displayName
+            }
             FilterChip(
                 selected = selected == level,
                 onClick = { onSelect(level) },
-                label = { Text(level.displayName) },
+                label = { Text(elevLabel) },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = color.copy(alpha = 0.2f),
                     selectedLabelColor = color,

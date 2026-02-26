@@ -1,10 +1,16 @@
 // --- Enums ---
 
 export type SnowQuality =
+  | 'champagne_powder'
+  | 'powder_day'
   | 'excellent'
+  | 'great'
   | 'good'
+  | 'decent'
+  | 'mediocre'
   | 'fair'
   | 'poor'
+  | 'slushy'
   | 'bad'
   | 'horrible'
   | 'unknown'

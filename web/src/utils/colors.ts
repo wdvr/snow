@@ -1,17 +1,47 @@
 import type { SnowQuality } from '../api/types'
 
 export const qualityColors: Record<SnowQuality, { bg: string; text: string; border: string; hex: string }> = {
+  champagne_powder: {
+    bg: 'bg-indigo-500',
+    text: 'text-indigo-500',
+    border: 'border-indigo-500',
+    hex: '#6366f1',
+  },
+  powder_day: {
+    bg: 'bg-blue-600',
+    text: 'text-blue-600',
+    border: 'border-blue-600',
+    hex: '#2563eb',
+  },
   excellent: {
     bg: 'bg-emerald-500',
     text: 'text-emerald-500',
     border: 'border-emerald-500',
     hex: '#10b981',
   },
+  great: {
+    bg: 'bg-green-500',
+    text: 'text-green-500',
+    border: 'border-green-500',
+    hex: '#22c55e',
+  },
   good: {
     bg: 'bg-blue-500',
     text: 'text-blue-500',
     border: 'border-blue-500',
     hex: '#3b82f6',
+  },
+  decent: {
+    bg: 'bg-lime-500',
+    text: 'text-lime-500',
+    border: 'border-lime-500',
+    hex: '#84cc16',
+  },
+  mediocre: {
+    bg: 'bg-yellow-500',
+    text: 'text-yellow-500',
+    border: 'border-yellow-500',
+    hex: '#eab308',
   },
   fair: {
     bg: 'bg-amber-500',
@@ -24,6 +54,12 @@ export const qualityColors: Record<SnowQuality, { bg: string; text: string; bord
     text: 'text-orange-500',
     border: 'border-orange-500',
     hex: '#f97316',
+  },
+  slushy: {
+    bg: 'bg-orange-600',
+    text: 'text-orange-600',
+    border: 'border-orange-600',
+    hex: '#ea580c',
   },
   bad: {
     bg: 'bg-red-500',
