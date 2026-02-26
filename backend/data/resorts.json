@@ -115,7 +115,10 @@
       "longitude": -149.0983,
       "timezone": "America/Anchorage",
       "website": "https://www.alyeskaresort.com",
-      "features": ["night_skiing", "glacier_views"],
+      "features": [
+        "night_skiing",
+        "glacier_views"
+      ],
       "annual_snowfall_cm": 1676,
       "source": "manual",
       "ikon_pass": "full",
@@ -219,7 +222,8 @@
       "family_friendly": false,
       "expert_terrain": true,
       "city": "Area I (Skaha West/Kaleden/Apex)",
-      "webcam_url": "https://www.skiresort.info/ski-resort/apex-mountain-resort/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/apex-mountain-resort/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "arapahoe-basin",
@@ -363,7 +367,8 @@
       "family_friendly": true,
       "expert_terrain": false,
       "city": "Area E (Beaverdell/West Boundary)",
-      "webcam_url": "https://www.skiresort.info/ski-resort/baldy-mountain-resort/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/baldy-mountain-resort/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "beaver-creek",
@@ -481,7 +486,8 @@
       "blue_runs_pct": 54,
       "black_runs_pct": 28,
       "city": "Kelowna",
-      "webcam_url": "https://www.skiresort.info/ski-resort/big-white/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/big-white/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "blue-mountain-resort-collingwood",
@@ -531,7 +537,7 @@
       "scraped_at": "2026-02-23T08:18:25.371876",
       "day_ticket_price_min_usd": 19,
       "day_ticket_price_max_usd": 19,
-      "indy_pass": "2 days",
+      "indy_pass": "full",
       "large_resort": false,
       "green_runs_pct": 50,
       "blue_runs_pct": 33,
@@ -711,7 +717,7 @@
       "scraped_at": "2026-02-23T08:18:25.371930",
       "day_ticket_price_min_usd": 71,
       "day_ticket_price_max_usd": 71,
-      "indy_pass": "2 days",
+      "indy_pass": "full",
       "large_resort": true,
       "green_runs_pct": 10,
       "blue_runs_pct": 21,
@@ -1428,7 +1434,8 @@
       "day_ticket_price_min_usd": 89,
       "day_ticket_price_max_usd": 129,
       "city": "Jay",
-      "webcam_url": "https://www.skiresort.info/ski-resort/jay-peak/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/jay-peak/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "june-mountain",
@@ -2001,7 +2008,8 @@
       "vertical_drop_m": 529,
       "family_friendly": false,
       "expert_terrain": false,
-      "webcam_url": "https://www.skiresort.info/ski-resort/marble-mountain-steady-brook-humber-valley/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/marble-mountain-steady-brook-humber-valley/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "marmot-basin-jasper",
@@ -2118,7 +2126,8 @@
       "family_friendly": false,
       "expert_terrain": true,
       "city": "Mont-Valin",
-      "webcam_url": "https://www.skiresort.info/ski-resort/mont-edouard-lanse-saint-jean/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/mont-edouard-lanse-saint-jean/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "mont-orford",
@@ -2264,7 +2273,8 @@
       "family_friendly": true,
       "expert_terrain": true,
       "city": "Sutton",
-      "webcam_url": "https://www.skiresort.info/ski-resort/mont-sutton/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/mont-sutton/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "mount-seymour",
@@ -2439,7 +2449,7 @@
       "scraped_at": "2026-02-23T08:18:25.372434",
       "day_ticket_price_min_usd": 75,
       "day_ticket_price_max_usd": 75,
-      "indy_pass": "2 days",
+      "indy_pass": "full",
       "large_resort": true,
       "green_runs_pct": 15,
       "blue_runs_pct": 50,
@@ -2596,7 +2606,8 @@
       "family_friendly": true,
       "expert_terrain": false,
       "city": "Stanstead (Canton)",
-      "webcam_url": "https://www.skiresort.info/ski-resort/owls-head/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/owls-head/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "palisades-tahoe",
@@ -2942,7 +2953,8 @@
       "family_friendly": true,
       "expert_terrain": false,
       "city": "Kiruna kommun",
-      "webcam_url": "https://www.skiresort.info/ski-resort/riksgransen/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/riksgransen/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "saalbach-hinterglemm",
@@ -3090,7 +3102,8 @@
       "family_friendly": true,
       "expert_terrain": false,
       "city": "Jackson",
-      "webcam_url": "https://www.skiresort.info/ski-resort/snow-king-mountain-jackson/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/snow-king-mountain-jackson/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "snowbasin",
@@ -4937,7 +4950,8 @@
       "expert_terrain": true,
       "vertical_drop_m": 780,
       "city": "Axams",
-      "webcam_url": "https://www.skiresort.info/ski-resort/axamer-lizum/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/axamer-lizum/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "bad-gastein-bad-hofgastein-schlossalm-angertal-stubnerkogel",
@@ -5373,7 +5387,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 1038,
       "city": "Arzl im Pitztal",
-      "webcam_url": "https://www.skiresort.info/ski-resort/hochzeiger-jerzens/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/hochzeiger-jerzens/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "ischgl-samnaun-silvretta-arena",
@@ -5750,7 +5765,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 346,
       "city": "Sankt Leonhard im Pitztal",
-      "webcam_url": "https://www.skiresort.info/ski-resort/pitztal-glacier-pitztaler-gletscher/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/pitztal-glacier-pitztaler-gletscher/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "ramsau-am-dachstein-rittisberg",
@@ -6184,7 +6200,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 2281,
       "city": "Waidring",
-      "webcam_url": "https://www.skiresort.info/ski-resort/steinplatte-winklmoosalm-waidring-reit-im-winkl/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/steinplatte-winklmoosalm-waidring-reit-im-winkl/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "stubai-glacier-stubaier-gletscher",
@@ -8136,7 +8153,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 1641,
       "city": "Saas-Grund",
-      "webcam_url": "https://www.skiresort.info/ski-resort/hohsaas-saas-grund/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/hohsaas-saas-grund/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "jakobshorn-davos-klosters",
@@ -8282,7 +8300,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 1269,
       "city": "Morzine",
-      "webcam_url": "https://www.skiresort.info/ski-resort/les-portes-du-soleil-morzine-avoriaz-les-gets-chatel-morgins-champery/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/les-portes-du-soleil-morzine-avoriaz-les-gets-chatel-morgins-champery/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "madrisa-davos-klosters",
@@ -9002,7 +9021,8 @@
       "family_friendly": true,
       "expert_terrain": false,
       "city": "Curacautín",
-      "webcam_url": "https://www.skiresort.info/ski-resort/corralco/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/corralco/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "el-colorado-farellones",
@@ -11119,7 +11139,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 270,
       "city": "Malá Úpa",
-      "webcam_url": "https://www.skiresort.info/ski-resort/mala-upa/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/mala-upa/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "moninec-sedlec-pr-ice",
@@ -13323,7 +13344,8 @@
       "family_friendly": true,
       "expert_terrain": false,
       "city": "Naut Aran",
-      "webcam_url": "https://www.skiresort.info/ski-resort/baqueira-beret/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/baqueira-beret/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "boi-taull",
@@ -17905,7 +17927,8 @@
       "family_friendly": false,
       "expert_terrain": false,
       "city": "Pila",
-      "webcam_url": "https://www.skiresort.info/ski-resort/pila/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/pila/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "plose-brixen-bressanone",
@@ -18331,7 +18354,8 @@
       "expert_terrain": true,
       "vertical_drop_m": 608,
       "city": "秋田市",
-      "webcam_url": "https://www.skiresort.info/ski-resort/akitaken-tazawako/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/akitaken-tazawako/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "alts-bandai",
@@ -18387,7 +18411,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 525,
       "city": "鰺ヶ沢町",
-      "webcam_url": "https://www.skiresort.info/ski-resort/aomori-spring/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/aomori-spring/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "appi-kogen",
@@ -18474,7 +18499,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 447,
       "city": "郡上市",
-      "webcam_url": "https://www.skiresort.info/ski-resort/dynaland/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/dynaland/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "geto-kogen",
@@ -18503,7 +18529,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 430,
       "city": "北上市",
-      "webcam_url": "https://www.skiresort.info/ski-resort/geto-kogen/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/geto-kogen/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "hachikogen-hachi-kita-kogen",
@@ -18906,7 +18933,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 601,
       "city": "旭川市",
-      "webcam_url": "https://www.skiresort.info/ski-resort/kamui-ski-links/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/kamui-ski-links/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "kiroro",
@@ -18934,7 +18962,8 @@
       "family_friendly": true,
       "expert_terrain": true,
       "city": "浦幌町",
-      "webcam_url": "https://www.skiresort.info/ski-resort/kiroro/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/kiroro/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "lotte-arai-resort",
@@ -18992,7 +19021,8 @@
       "expert_terrain": true,
       "vertical_drop_m": 540,
       "city": "信濃町",
-      "webcam_url": "https://www.skiresort.info/ski-resort/madarao-tangram/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/madarao-tangram/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "maiko-snow-resort",
@@ -19021,7 +19051,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 660,
       "city": "南魚沼市",
-      "webcam_url": "https://www.skiresort.info/ski-resort/maiko-snow-resort/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/maiko-snow-resort/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "meiho",
@@ -19275,7 +19306,7 @@
       "day_ticket_price_min_usd": 33,
       "day_ticket_price_max_usd": 40,
       "blue_runs_pct": 29,
-      "indy_pass": "2 days",
+      "indy_pass": "full",
       "large_resort": true,
       "green_runs_pct": 50,
       "black_runs_pct": 21,
@@ -19342,7 +19373,8 @@
       "family_friendly": true,
       "expert_terrain": false,
       "city": "嬬恋村",
-      "webcam_url": "https://www.skiresort.info/ski-resort/palcall-tsumagoi/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/palcall-tsumagoi/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "rusutsu",
@@ -19515,7 +19547,8 @@
       "family_friendly": true,
       "expert_terrain": false,
       "city": "郡上市",
-      "webcam_url": "https://www.skiresort.info/ski-resort/takasu-snow-park/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/takasu-snow-park/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "togakushi",
@@ -19544,7 +19577,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 528,
       "city": "長野市",
-      "webcam_url": "https://www.skiresort.info/ski-resort/togakushi/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/togakushi/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "tsugaike-kogen",
@@ -19602,7 +19636,8 @@
       "family_friendly": true,
       "expert_terrain": false,
       "city": "郡上市",
-      "webcam_url": "https://www.skiresort.info/ski-resort/washigatake-white-pia/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/washigatake-white-pia/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "winghills-shirotori-resort",
@@ -19688,7 +19723,8 @@
       "expert_terrain": true,
       "vertical_drop_m": 404,
       "city": "夕張市",
-      "webcam_url": "https://www.skiresort.info/ski-resort/yubari-resort-mount-racey/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/yubari-resort-mount-racey/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "yuzawa-kogen-gala-yuzawa-ishiuchi-maruyama",
@@ -20964,7 +21000,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 1010,
       "city": "Krødsherad",
-      "webcam_url": "https://www.skiresort.info/ski-resort/norefjell/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/norefjell/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "oppdal",
@@ -25344,7 +25381,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 500,
       "city": "Årjängs kommun",
-      "webcam_url": "https://www.skiresort.info/ski-resort/fjallby-bjorkliden/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/fjallby-bjorkliden/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "fjatervalen",
@@ -26885,7 +26923,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 521,
       "city": "Nova Gorica",
-      "webcam_url": "https://www.skiresort.info/ski-resort/krvavec/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/krvavec/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "ledinica-iri",
@@ -29464,7 +29503,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 1249,
       "city": "Kirchberg in Tirol",
-      "webcam_url": "https://www.skiresort.info/ski-resort/skiwelt-wilder-kaiser-brixental/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/skiwelt-wilder-kaiser-brixental/webcams/",
+      "indy_pass": "full"
     },
     {
       "resort_id": "aspen-snowmass",
