@@ -390,6 +390,7 @@ private fun ResortHeaderCard(resort: Resort, quality: SnowQualitySummary?, units
                 ResortLogo(
                     resortName = resort.name,
                     officialWebsite = resort.officialWebsite,
+                    logoUrl = resort.logoUrl,
                     size = 44.dp,
                 )
                 Spacer(modifier = Modifier.width(12.dp))

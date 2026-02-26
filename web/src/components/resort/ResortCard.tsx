@@ -23,7 +23,7 @@ export function ResortCard({ resort, quality, isFavorite, onToggleFavorite, dist
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <ResortLogo name={resort.name} officialWebsite={resort.official_website} size={36} className="shrink-0" />
+          <ResortLogo name={resort.name} officialWebsite={resort.official_website} logoUrl={resort.logo_url} size={36} className="shrink-0" />
           <div className="min-w-0">
             <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
               {resort.name}

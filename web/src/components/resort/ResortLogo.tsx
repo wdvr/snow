@@ -3,6 +3,7 @@ import { useState } from 'react'
 interface ResortLogoProps {
   name: string
   officialWebsite?: string | null
+  logoUrl?: string | null
   size?: number
   className?: string
 }
@@ -25,9 +26,9 @@ function getLogoUrl(website: string): string | null {
   }
 }
 
-export function ResortLogo({ name, officialWebsite, size = 40, className = '' }: ResortLogoProps) {
+export function ResortLogo({ name, officialWebsite, logoUrl: serverLogoUrl, size = 40, className = '' }: ResortLogoProps) {
   const [imgError, setImgError] = useState(false)
-  const logoUrl = officialWebsite ? getLogoUrl(officialWebsite) : null
+  const logoUrl = serverLogoUrl || (officialWebsite ? getLogoUrl(officialWebsite) : null)
 
   const initials = getInitials(name)
   const fallback = (

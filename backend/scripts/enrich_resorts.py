@@ -637,9 +637,11 @@ class ResortEnricher:
             if not trailmap_ids:
                 return None
             primary_id = trailmap_ids[0]
+            # Use level 8 for a usable thumbnail (~200px for typical maps)
+            # Level 0 = 1x1 pixel (useless)
             return (
                 f"https://www.skiresort.info/uploads/tx_mgskiresort/"
-                f"trailmapsV2/trailmap_{primary_id}_files/0/0_0.jpg"
+                f"trailmapsV2/trailmap_{primary_id}_files/8/0_0.jpg"
             )
         except Exception:
             return None

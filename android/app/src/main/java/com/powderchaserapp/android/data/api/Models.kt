@@ -196,6 +196,7 @@ data class Resort(
     @SerialName("elevation_points") val elevationPoints: List<ElevationPoint>,
     val timezone: String,
     @SerialName("official_website") val officialWebsite: String? = null,
+    @SerialName("logo_url") val logoUrl: String? = null,
     @SerialName("trail_map_url") val trailMapUrl: String? = null,
     @SerialName("green_runs_pct") val greenRunsPct: Int? = null,
     @SerialName("blue_runs_pct") val blueRunsPct: Int? = null,

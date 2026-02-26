@@ -481,7 +481,10 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         guard let hours = lastFreezeThawHoursAgo else {
             return "Unknown"
         }
-        if hours >= 72 {
+        // Backend caps at 336h (14 days) due to Open-Meteo history limit
+        if hours >= 336 {
+            return "14+ days ago"
+        } else if hours >= 72 {
             let days = Int(hours / 24)
             return "\(days) days ago"
         } else if hours >= 24 {

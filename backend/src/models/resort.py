@@ -51,6 +51,7 @@ class Resort(BaseModel):
         ..., description="Resort timezone (e.g., 'America/Vancouver')"
     )
     official_website: str | None = Field(None, description="Resort official website")
+    logo_url: str | None = Field(None, description="URL to resort logo image")
     trail_map_url: str | None = Field(None, description="URL to trail map image or PDF")
     webcam_url: str | None = Field(None, description="URL to webcam page")
     green_runs_pct: int | None = Field(

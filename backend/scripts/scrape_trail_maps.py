@@ -220,7 +220,9 @@ def try_skiresort_info(
         # Fetch XML to get dimensions for computing zoom levels
         image_width = None
         image_height = None
-        thumbnail_url = f"{dzi_base}_files/0/0_0.jpg"  # fallback: 1px tile
+        # Default to level 8 which gives ~200px thumbnails for typical trail maps
+        # (most trail maps are 3000-10000px wide, level 8 = 254px single tile)
+        thumbnail_url = f"{dzi_base}_files/8/0_0.jpg"
         try:
             time.sleep(REQUEST_DELAY)
             xml_r = session.get(xml_url, timeout=10)
@@ -248,7 +250,7 @@ def try_skiresort_info(
                             break
                     thumbnail_url = f"{dzi_base}_files/{thumb_level}/0_0.jpg"
         except requests.RequestException:
-            pass  # XML fetch failed; use level-0 thumbnail
+            pass  # XML fetch failed; use level-8 default (good for most maps)
 
         result = {
             "skiresort_info_slug": slug,

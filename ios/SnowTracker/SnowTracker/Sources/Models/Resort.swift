@@ -92,6 +92,7 @@ struct Resort: Codable, Identifiable, Hashable {
     let elevationPoints: [ElevationPoint]
     let timezone: String
     let officialWebsite: String?
+    var logoUrl: String? = nil
     let trailMapUrl: String?
     let webcamUrl: String?
     let greenRunsPct: Int?
@@ -124,6 +125,7 @@ struct Resort: Codable, Identifiable, Hashable {
         case elevationPoints = "elevation_points"
         case timezone
         case officialWebsite = "official_website"
+        case logoUrl = "logo_url"
         case trailMapUrl = "trail_map_url"
         case webcamUrl = "webcam_url"
         case greenRunsPct = "green_runs_pct"
@@ -303,8 +305,11 @@ struct Resort: Codable, Identifiable, Hashable {
         return "\(min) - \(max) \(unit)"
     }
 
-    /// Logo URL derived from official website domain via Google Favicon API
+    /// Logo URL: prefer server-provided logo, fall back to Google Favicon API
     var logoURL: URL? {
+        if let logoUrl, let url = URL(string: logoUrl) {
+            return url
+        }
         guard let website = officialWebsite,
               let components = URLComponents(string: website),
               let host = components.host else { return nil }

@@ -414,6 +414,7 @@ fun ResortListItem(
                 ResortLogo(
                     resortName = resort.name,
                     officialWebsite = resort.officialWebsite,
+                    logoUrl = resort.logoUrl,
                     size = 36.dp,
                 )
                 Spacer(modifier = Modifier.width(10.dp))

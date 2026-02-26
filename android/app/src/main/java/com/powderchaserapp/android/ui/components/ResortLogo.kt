@@ -64,10 +64,11 @@ private fun faviconUrl(officialWebsite: String?): String? {
 fun ResortLogo(
     resortName: String,
     officialWebsite: String?,
+    logoUrl: String? = null,
     size: Dp,
     modifier: Modifier = Modifier,
 ) {
-    val url = remember(officialWebsite) { faviconUrl(officialWebsite) }
+    val url = remember(logoUrl, officialWebsite) { logoUrl ?: faviconUrl(officialWebsite) }
     val initials = remember(resortName) { resortInitials(resortName) }
     val shape = RoundedCornerShape(8.dp)
     val fontSize = (size.value * 0.38f).sp

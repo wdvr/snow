@@ -46,6 +46,7 @@ export interface Resort {
   elevation_points: ElevationPoint[]
   timezone: string
   official_website: string | null
+  logo_url: string | null
   trail_map_url: string | null
   webcam_url: string | null
   green_runs_pct: number | null

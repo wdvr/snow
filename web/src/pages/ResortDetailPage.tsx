@@ -155,7 +155,7 @@ export function ResortDetailPage() {
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <ResortLogo name={resort.name} officialWebsite={resort.official_website} size={48} className="shrink-0" />
+              <ResortLogo name={resort.name} officialWebsite={resort.official_website} logoUrl={resort.logo_url} size={48} className="shrink-0" />
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                 {countryFlag(resort.country)} {resort.name}
               </h1>

@@ -17,7 +17,7 @@ export function ResortPopup({ resort, quality }: ResortPopupProps) {
     <div className="min-w-[200px] max-w-[260px]">
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 min-w-0">
-          <ResortLogo name={resort.name} officialWebsite={resort.official_website} size={28} className="shrink-0" />
+          <ResortLogo name={resort.name} officialWebsite={resort.official_website} logoUrl={resort.logo_url} size={28} className="shrink-0" />
           <div className="min-w-0">
             <h3 className="font-semibold text-gray-900 text-sm leading-tight">
               {resort.name}

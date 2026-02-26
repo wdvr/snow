@@ -147,6 +147,7 @@ class ResortLoader:
             elevation_points=elevation_points,
             timezone=raw.get("timezone", "UTC"),
             official_website=raw.get("website"),
+            logo_url=raw.get("logo_url"),
             trail_map_url=raw.get("trail_map_url"),
             green_runs_pct=raw.get("green_runs_pct"),
             blue_runs_pct=raw.get("blue_runs_pct"),
