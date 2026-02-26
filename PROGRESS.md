@@ -11,7 +11,34 @@
 
 ---
 
-## Active Work (Feb 25)
+## Active Work (Feb 26)
+
+### TODO: iOS / Backend / Cross-platform
+
+1. [ ] **Chat table column alignment** — Tables in chat have nicely alternating row colors, but rows have different column widths. Fix so all rows share the same column widths per column.
+2. [ ] **16 chat suggestion examples with random rotation** — We want 16 example prompts, showing a random selection of 4 each time. Generate 12 more realistic examples of what users might search for.
+3. [ ] **Resort day ticket prices seem off** — Double-check price sources. Big White, Revelstoke seem wrong. Whistler at $66 is way too cheap. Audit and fix.
+4. [ ] **Chat history still doesn't work** — Is it linked to the logged-in user? Do I need to logout/login? Repro this and iterate until it works end-to-end in the app.
+5. [ ] **Add city to resort titles** — Show "Big White, Kelowna, BC, Canada" style titles. Add city field to all resorts; fetch/collect this data if needed via agents.
+6. [ ] **Resort logo in detail view** — If available, show a logo for the resort in the top cell of the detail view.
+7. [ ] **Snow history still empty** — e.g., Big White snowed yesterday and the feature has existed for 5+ days. Diagnose and fix.
+8. [ ] **Website opens in new tab** — Open powderchaserapp.com in an embedded browser overlay, not a new Safari tab.
+9. [ ] **Webcam pages / main webcam on detail view** — Collect webcam page URLs for all resorts; if possible, show the main webcam image on the resort detail front page.
+10. [ ] **Map: default to hybrid, remember selection, forecast refresh on zoom** — Standard map should default to hybrid style. Remember user's map style selection in UserDefaults. In forecast mode, trigger refresh of new resorts in view on zoom release (not only on date selector change).
+11. [ ] **Clarify or remove pin icon** — There's a pin icon next to the heart (favorite) icon. Heart = favorite, but what is pin? Clarify its purpose or remove it.
+12. [ ] **Re-launch onboarding from settings** — Allow user to restart the onboarding tutorial from settings. Also review onboarding pages and update if needed.
+13. [ ] **Push notifications don't work** — Test notifications as a dev (debug staging via login email). The test section is always present but doesn't work via TestFlight: "debug features not available in this environment." Fix this.
+14. [ ] **App still called "Snow Tracker" in places** — All references should be "Powder Chaser." Find and fix all remaining "Snow Tracker" references.
+
+### TODO: Cross-platform (Web + Android)
+
+- [ ] Review DIARY.md for all features/fixes marked `pending` on Android and Web
+- [ ] Implement pending Android features/fixes from diary
+- [ ] Implement pending Web features/fixes from diary
+
+---
+
+## Previous Work (Feb 25)
 
 ### Workstream 6: Weather Data & Grey Resorts Fix
 
