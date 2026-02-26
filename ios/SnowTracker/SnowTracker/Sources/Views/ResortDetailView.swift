@@ -824,42 +824,52 @@ struct ResortDetailView: View {
                         let prefs = userPreferencesManager.preferredUnits
                         ForEach(Array(details.sources.keys.sorted()), id: \.self) { sourceName in
                             if let info = details.sources[sourceName] {
-                                HStack(spacing: 10) {
-                                    // Status icon
-                                    Image(systemName: statusIcon(info.status))
-                                        .foregroundStyle(statusColor(info.status))
-                                        .font(.subheadline)
-
-                                    // Source name
-                                    Text(sourceName)
-                                        .font(.subheadline)
-                                        .lineLimit(1)
-
-                                    Spacer()
-
-                                    // Reported value
-                                    if let snowfall = info.snowfall24hCm {
-                                        Text(WeatherCondition.formatSnow(snowfall, prefs: prefs))
+                                VStack(alignment: .leading, spacing: 2) {
+                                    HStack(spacing: 10) {
+                                        // Status icon
+                                        Image(systemName: statusIcon(info.status))
+                                            .foregroundStyle(statusColor(info.status))
                                             .font(.subheadline)
+
+                                        // Source name
+                                        Text(sourceName)
+                                            .font(.subheadline)
+                                            .lineLimit(1)
+
+                                        Spacer()
+
+                                        // Reported value
+                                        if let snowfall = info.snowfall24hCm {
+                                            Text(WeatherCondition.formatSnow(snowfall, prefs: prefs))
+                                                .font(.subheadline)
+                                                .fontWeight(.medium)
+                                                .foregroundStyle(info.status == "consensus" ? .primary : .secondary)
+                                        } else {
+                                            Text("No data")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+
+                                        // Status label
+                                        Text(statusLabel(info.status))
+                                            .font(.caption2)
                                             .fontWeight(.medium)
-                                            .foregroundStyle(info.status == "consensus" ? .primary : .secondary)
-                                    } else {
-                                        Text("No data")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(statusColor(info.status))
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(
+                                                Capsule()
+                                                    .fill(statusColor(info.status).opacity(0.1))
+                                            )
                                     }
 
-                                    // Status label
-                                    Text(statusLabel(info.status))
-                                        .font(.caption2)
-                                        .fontWeight(.medium)
-                                        .foregroundStyle(statusColor(info.status))
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(
-                                            Capsule()
-                                                .fill(statusColor(info.status).opacity(0.1))
-                                        )
+                                    // Reason text
+                                    if let reason = info.reason {
+                                        Text(reason)
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                            .padding(.leading, 26)
+                                    }
                                 }
                                 .padding(.vertical, 2)
                             }

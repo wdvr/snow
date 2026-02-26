@@ -305,11 +305,13 @@ struct SourceDetails: Codable, Hashable, Sendable {
 
     struct SourceInfo: Codable, Hashable, Sendable {
         let snowfall24hCm: Double?
-        let status: String  // "consensus" or "outlier"
+        let status: String  // "consensus", "outlier", or "included"
+        let reason: String?
 
         private enum CodingKeys: String, CodingKey {
             case snowfall24hCm = "snowfall_24h_cm"
             case status
+            case reason
         }
     }
 

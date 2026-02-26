@@ -176,6 +176,9 @@ class MultiSourceMerger:
         # Build source_details for transparency
         # Always include when there are supplementary sources, even if only
         # one source has snowfall data (scrapers may report depth but not snowfall)
+        reasons = (
+            source_details_24h.get("source_reasons", {}) if source_details_24h else {}
+        )
         if source_details_24h is not None:
             sources_info = {}
             for name in source_details_24h["source_statuses"]:
@@ -187,6 +190,7 @@ class MultiSourceMerger:
                 sources_info[domain] = {
                     "snowfall_24h_cm": val,
                     "status": source_details_24h["source_statuses"][name],
+                    "reason": reasons.get(name),
                 }
             merged["source_details"] = {
                 "sources": sources_info,
@@ -202,9 +206,15 @@ class MultiSourceMerger:
                 domain = SOURCE_DOMAIN_MAP.get(name, f"{name}.com")
                 source_obj = available_sources[name]
                 val = getattr(source_obj, "snowfall_24h_cm", None)
+                reason = (
+                    "No snowfall data reported by this source"
+                    if val is None
+                    else "Only source with snowfall data"
+                )
                 sources_info[domain] = {
                     "snowfall_24h_cm": val,
                     "status": "included",
+                    "reason": reason,
                 }
             merged["source_details"] = {
                 "sources": sources_info,
@@ -264,6 +274,7 @@ class MultiSourceMerger:
             return val, {
                 "merge_method": "single_source",
                 "source_statuses": {name: "consensus"},
+                "source_reasons": {},
                 "consensus_value_cm": val,
             }
 
@@ -275,34 +286,64 @@ class MultiSourceMerger:
             # Both near zero or within 30%: simple average
             if max_val < 1.0 or (max_val > 0 and abs(v1 - v2) / max_val <= 0.3):
                 avg = round((v1 + v2) / 2, 1)
+                diff_pct = round(abs(v1 - v2) / max_val * 100) if max_val > 0 else 0
                 return avg, {
                     "merge_method": "simple_average",
                     "source_statuses": {n: "consensus" for n in values_by_source},
+                    "source_reasons": {
+                        n: f"Within {diff_pct}% of each other (threshold: 30%)"
+                        for n in values_by_source
+                    },
                     "consensus_value_cm": avg,
                 }
             # Can't determine majority with 2 — weighted average tiebreaker
+            diff_pct = round(abs(v1 - v2) / max_val * 100) if max_val > 0 else 0
             result = MultiSourceMerger._weighted_average(
                 values_by_source, normalized_weights
             )
             return result, {
                 "merge_method": "weighted_average",
                 "source_statuses": {n: "included" for n in values_by_source},
+                "source_reasons": {
+                    n: f"Sources disagree by {diff_pct}% (>30%), using weighted average"
+                    for n in values_by_source
+                },
                 "consensus_value_cm": result,
             }
 
         # 3+ sources: outlier detection via median
         median_val = calc_median(all_vals)
+        reasons: dict[str, str] = {}
 
         if median_val < 1.0:
             # Near-zero median: use absolute threshold
-            consensus = {n: v for n, v in values_by_source.items() if v <= 1.0}
+            consensus = {}
+            for n, v in values_by_source.items():
+                if v <= 1.0:
+                    consensus[n] = v
+                    reasons[n] = f"Reported {v}cm, within near-zero threshold (<=1cm)"
+                else:
+                    reasons[n] = (
+                        f"Reported {v}cm, exceeds near-zero threshold "
+                        f"(median {median_val:.1f}cm, value >1cm)"
+                    )
         else:
             # Standard: >50% deviation from median = outlier
-            consensus = {
-                n: v
-                for n, v in values_by_source.items()
-                if abs(v - median_val) / median_val <= 0.5
-            }
+            consensus = {}
+            for n, v in values_by_source.items():
+                deviation = abs(v - median_val) / median_val
+                dev_pct = round(deviation * 100)
+                if deviation <= 0.5:
+                    consensus[n] = v
+                    reasons[n] = (
+                        f"Reported {v}cm, {dev_pct}% from median "
+                        f"{median_val:.1f}cm (threshold: 50%)"
+                    )
+                else:
+                    reasons[n] = (
+                        f"Reported {v}cm, {dev_pct}% from median "
+                        f"{median_val:.1f}cm — excluded as outlier (>50%)"
+                    )
 
         if len(consensus) >= 2:
             # Majority agrees — average the consensus group
@@ -313,6 +354,7 @@ class MultiSourceMerger:
                     n: "consensus" if n in consensus else "outlier"
                     for n in values_by_source
                 },
+                "source_reasons": reasons,
                 "consensus_value_cm": avg,
             }
 
@@ -323,5 +365,9 @@ class MultiSourceMerger:
         return result, {
             "merge_method": "weighted_average",
             "source_statuses": {n: "included" for n in values_by_source},
+            "source_reasons": {
+                n: "No clear consensus, using weighted average fallback"
+                for n in values_by_source
+            },
             "consensus_value_cm": result,
         }
