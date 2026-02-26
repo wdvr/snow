@@ -265,13 +265,16 @@ struct ResortComparisonView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
 
-                    if resort.epicPass != nil || resort.ikonPass != nil {
+                    if resort.epicPass != nil || resort.ikonPass != nil || resort.indyPass != nil {
                         HStack(spacing: 4) {
                             if resort.epicPass != nil {
                                 PassBadge(passName: "Epic", color: .indigo)
                             }
                             if resort.ikonPass != nil {
                                 PassBadge(passName: "Ikon", color: .orange)
+                            }
+                            if resort.indyPass != nil {
+                                PassBadge(passName: "Indy", color: .green)
                             }
                         }
                     }

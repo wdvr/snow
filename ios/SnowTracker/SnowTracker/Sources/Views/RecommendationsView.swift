@@ -334,6 +334,9 @@ struct RecommendationCard: View {
                         if recommendation.resort.ikonPass != nil {
                             PassBadge(passName: "Ikon", color: .orange)
                         }
+                        if recommendation.resort.indyPass != nil {
+                            PassBadge(passName: "Indy", color: .green)
+                        }
                     }
 
                     Text(recommendation.resort.displayLocation)

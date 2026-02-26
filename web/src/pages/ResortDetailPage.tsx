@@ -262,7 +262,7 @@ export function ResortDetailPage() {
                   .map((ep) => `${ep.elevation_meters}m`)
                   .join(' - ')}
               </div>
-              {(resort.epic_pass || resort.ikon_pass) && (
+              {(resort.epic_pass || resort.ikon_pass || resort.indy_pass) && (
                 <div className="flex items-center gap-1.5">
                   {resort.epic_pass && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">
@@ -272,6 +272,11 @@ export function ResortDetailPage() {
                   {resort.ikon_pass && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 font-medium">
                       Ikon: {resort.ikon_pass}
+                    </span>
+                  )}
+                  {resort.indy_pass && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">
+                      Indy: {resort.indy_pass}
                     </span>
                   )}
                 </div>

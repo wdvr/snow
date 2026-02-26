@@ -295,13 +295,16 @@ struct ResortDetailView: View {
                         .foregroundStyle(.secondary)
 
                     // Pass affiliation badges
-                    if resort.epicPass != nil || resort.ikonPass != nil {
+                    if resort.epicPass != nil || resort.ikonPass != nil || resort.indyPass != nil {
                         HStack(spacing: 6) {
                             if let epicPass = resort.epicPass {
                                 PassBadge(passName: "Epic", detail: epicPass, color: .indigo)
                             }
                             if let ikonPass = resort.ikonPass {
                                 PassBadge(passName: "Ikon", detail: ikonPass, color: .orange)
+                            }
+                            if let indyPass = resort.indyPass {
+                                PassBadge(passName: "Indy", detail: indyPass, color: .green)
                             }
                         }
                     }

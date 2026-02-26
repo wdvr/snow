@@ -18,7 +18,7 @@ import { QualityBadge } from '../components/resort/QualityBadge'
 import { countryFlag } from '../utils/format'
 
 type SortOption = 'quality' | 'snow' | 'name' | 'favorites' | 'distance'
-type PassFilter = 'all' | 'epic' | 'ikon'
+type PassFilter = 'all' | 'epic' | 'ikon' | 'indy'
 
 /** Map client-side sort option to API sort_by param */
 function toApiSort(sortBy: SortOption): { sort_by?: string; sort_order?: string } {
@@ -113,6 +113,8 @@ export function HomePage() {
       filtered = filtered.filter((r) => r.epic_pass != null)
     } else if (passFilter === 'ikon') {
       filtered = filtered.filter((r) => r.ikon_pass != null)
+    } else if (passFilter === 'indy') {
+      filtered = filtered.filter((r) => r.indy_pass != null)
     }
 
     // Search filter
@@ -324,6 +326,7 @@ export function HomePage() {
               { value: 'all' as PassFilter, label: 'All', colors: 'bg-blue-600 text-white' },
               { value: 'epic' as PassFilter, label: 'Epic Pass', colors: 'bg-purple-600 text-white' },
               { value: 'ikon' as PassFilter, label: 'Ikon Pass', colors: 'bg-orange-500 text-white' },
+              { value: 'indy' as PassFilter, label: 'Indy Pass', colors: 'bg-green-600 text-white' },
             ]).map(({ value, label, colors }) => (
               <button
                 key={value}

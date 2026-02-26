@@ -56,6 +56,7 @@ export interface Resort {
   updated_at: string | null
   epic_pass: string | null
   ikon_pass: string | null
+  indy_pass: string | null
 }
 
 // --- Weather / Conditions ---

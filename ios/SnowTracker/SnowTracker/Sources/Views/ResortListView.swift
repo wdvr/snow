@@ -27,12 +27,14 @@ enum PassFilter: String, CaseIterable {
     case all = "All"
     case epic = "Epic"
     case ikon = "Ikon"
+    case indy = "Indy"
 
     var icon: String {
         switch self {
         case .all: return "creditcard"
         case .epic: return "star.fill"
         case .ikon: return "mountain.2.fill"
+        case .indy: return "figure.skiing.downhill"
         }
     }
 
@@ -41,6 +43,7 @@ enum PassFilter: String, CaseIterable {
         case .all: return .blue
         case .epic: return .indigo
         case .ikon: return .orange
+        case .indy: return .green
         }
     }
 }
@@ -89,6 +92,8 @@ struct ResortListView: View {
             passFiltered = regionFiltered.filter { $0.epicPass != nil }
         case .ikon:
             passFiltered = regionFiltered.filter { $0.ikonPass != nil }
+        case .indy:
+            passFiltered = regionFiltered.filter { $0.indyPass != nil }
         }
 
         // Apply search filter
@@ -102,7 +107,8 @@ struct ResortListView: View {
                 resort.country.localizedCaseInsensitiveContains(searchText) ||
                 resort.region.localizedCaseInsensitiveContains(searchText) ||
                 (resort.epicPass != nil && "epic".localizedCaseInsensitiveContains(searchText)) ||
-                (resort.ikonPass != nil && "ikon".localizedCaseInsensitiveContains(searchText))
+                (resort.ikonPass != nil && "ikon".localizedCaseInsensitiveContains(searchText)) ||
+                (resort.indyPass != nil && "indy".localizedCaseInsensitiveContains(searchText))
             }
         }
 
@@ -484,6 +490,9 @@ struct ResortRowView: View {
                         }
                         if resort.ikonPass != nil {
                             PassBadge(passName: "Ikon", color: .orange)
+                        }
+                        if resort.indyPass != nil {
+                            PassBadge(passName: "Indy", color: .green)
                         }
                     }
 

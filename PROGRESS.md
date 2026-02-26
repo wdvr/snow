@@ -103,7 +103,7 @@
 
 #### Downloadable Resort Trail Map (iOS + Web + Android)
 - [x] **Research**: trail map image sources (skiresort.info DZI, snow-forecast.com JPEG, official resort CDNs)
-- [ ] **Scrape trail map URLs** for all 1019 resorts (skiresort.info trailmap IDs + snow-forecast slugs)
+- [x] **Scrape trail map URLs** for all 1019 resorts (skiresort.info trailmap IDs + snow-forecast slugs) — running now
 - [ ] Add trail_map_image_url to resorts.json + DynamoDB
 - [ ] iOS: full-screen zoomable image viewer in resort detail
 - [ ] Web: full-screen image modal in resort detail
@@ -124,26 +124,26 @@
 - [x] iOS: add SuggestEditView.swift + button on ResortDetailView
 - [x] Web: add SuggestEditModal component + button on ResortDetailPage
 - [ ] Android: add button to resort detail screen
-- [ ] Verify feedback submissions persist to DynamoDB
+- [x] Verify feedback submissions persist to DynamoDB — web schema mismatch fixed
 
 #### Indy Pass Support
 - [x] **Research**: 271 Indy Pass resorts (2025-26), estimated 60-100 overlap with our 1019
-- [ ] Scrape indyskipass.com/resorts/ for full resort list + fuzzy match
-- [ ] Update resorts.json with Indy Pass data (full/base tiers)
-- [ ] Populate DynamoDB with updated pass data
+- [x] Scrape indyskipass.com/resorts/ for full resort list + fuzzy match → 248 resorts, 41 matched
+- [x] Update resorts.json with Indy Pass data (full/base tiers) → 43 total (41 new + 2 existing)
+- [x] Populate DynamoDB with updated pass data (both staging + prod)
 - [ ] iOS: add Indy filter chip to resort list
 - [ ] Web: add Indy filter button to resort list
 - [ ] Android: add Indy filter chip to resort list
 
-#### iOS Chat Ellipsis Bug
-- [ ] **BUG**: Chat output truncates text with "..." in bullet points
-- [ ] Example: "not from recent snowfall" shows as "not from recent..."
-- [ ] Find and fix lineLimit/truncation in chat message rendering
-- [ ] Verify fix on simulator
+#### iOS Chat Ellipsis Bug — FIXED
+- [x] **BUG**: Chat output truncates text with "..." in bullet points
+- [x] Example: "not from recent snowfall" shows as "not from recent..."
+- [x] Fix: `.layoutPriority(1)` on text, `.fixedSize()` on bullet labels, `.lineLimit(nil)` on inlineMarkdown
+- [x] Deployed via TestFlight
 
-#### Community Reports Fix
-- [ ] Change condition report TTL from 365 → 90 days (backend)
-- [ ] Fix timestamp `.tertiary` color → `.secondary` (iOS)
+#### Community Reports Fix — ALREADY DONE
+- [x] Condition report TTL already 90 days (was already correct)
+- [x] Timestamp already uses `.secondary` color (was already fixed)
 
 #### Data Source Transparency
 - [ ] Backend: expose source_details in merger output (which sources contributed, consensus vs outlier)

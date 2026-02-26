@@ -89,7 +89,7 @@ export function ResortCard({ resort, quality, isFavorite, onToggleFavorite, dist
       )}
 
       {/* Pass badges */}
-      {(resort.epic_pass || resort.ikon_pass) && (
+      {(resort.epic_pass || resort.ikon_pass || resort.indy_pass) && (
         <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-gray-50">
           {resort.epic_pass && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">
@@ -99,6 +99,11 @@ export function ResortCard({ resort, quality, isFavorite, onToggleFavorite, dist
           {resort.ikon_pass && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 font-medium">
               Ikon
+            </span>
+          )}
+          {resort.indy_pass && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">
+              Indy
             </span>
           )}
         </div>

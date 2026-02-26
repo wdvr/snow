@@ -7,6 +7,36 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### Feature: Suggest an Edit (iOS + web)
+Added "Suggest an Edit" functionality to resort detail views on both iOS and web. Users can select a section (elevation data, lift/trail count, location, pass info, website/webcam, trail map, other) and submit a correction. iOS uses `FeedbackSubmission` model via `APIClient`; web uses `SuggestEditModal` component via `api.submitFeedback()`. Unauthenticated web users are auto-signed in as guest. Submissions stored in DynamoDB feedback table.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | done | done |
+
+### Fix: Web feedback API schema mismatch
+Web `SuggestEditModal` was sending `type`/`resort_id` fields but backend expects `subject`/`message`/`app_version`/`build_number`. Web also expected response `feedback_id` but backend returns `id`. Fixed `client.ts` `submitFeedback` signature and `SuggestEditModal.tsx` to match backend `FeedbackSubmission` model. iOS was already correct.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | done | n/a |
+
+### Fix: iOS chat text truncation in bullet/numbered lists
+Chat AI responses with bullet points were showing truncated text with "..." (e.g., "and not from recent..."). Root cause: SwiftUI HStack layout negotiation in `MarkdownTextView` — bullet/number labels competed with text for horizontal space. Fixed by adding `.layoutPriority(1)` on text views, `.fixedSize()` on bullet labels, and `.lineLimit(nil)` + `.fixedSize(horizontal: false, vertical: true)` on `inlineMarkdown` helper.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Data: Indy Pass resort matching (41 resorts)
+Compiled 248 Indy Pass resorts from multiple sources and matched 41 to our 1019-resort database using fuzzy name matching with country cross-reference. Covers resorts across 12 countries (US, CA, AT, JP, CH, SE, CL, CZ, ES, IT, NO, SI). Added `indy_pass` field to `resorts.json` and pushed to DynamoDB via populate workflow. Backend model and iOS model already supported the field; chat service already displays Indy Pass info.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | pending | done |
+
+### Data: Trail map scraping (in progress)
+Built `scrape_trail_maps.py` script to find trail map image URLs for all 1019 resorts from two sources: skiresort.info (DZI tiles, highest quality) and snow-forecast.com (direct JPEG piste maps). Includes 70+ manual slug overrides for resorts with non-obvious URLs. Script supports resume mode, limits, and single-resort testing. Full scrape running (~35 min).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| pending | pending | pending | pending |
+
 ### QA Round 2: Scoring physics, API hardening, chat crash, infrastructure fixes
 Comprehensive QA audit with 6 parallel agents found and fixed: (1) **ML scorer**: `hours_since_last_snowfall=0.0` was treated as falsy via `or 336.0`, defaulting to 14 days without snow — fixed with explicit None check. Also applied `_apply_no_snowfall_cap()` to `predict_quality()` (real-time endpoint), not just timeline. (2) **API hardening**: Added `_validate_resource_id()` regex validation to all path-parameter endpoints, sanitized error messages to not echo user input or AWS internals, added DynamoDB scan pagination to `get_all_resorts()`. (3) **Chat Float→Decimal crash**: Location queries with lat/lon floats crashed DynamoDB PutItem — fixed with `json.loads(json.dumps(tool_calls), parse_float=Decimal)`. (4) **UserPreferences validation**: Old DynamoDB records missing `updated_at` caused Pydantic validation errors — made fields optional with defaults. (5) **IAM fix**: `chat_suggestions_table` ARN added to Lambda policy in Pulumi. (6) **OpenMeteo threshold**: Aligned snowfall threshold to >0.1cm to ignore sensor noise. All 1592 backend tests passing.
 | iOS | Android | Web | API |

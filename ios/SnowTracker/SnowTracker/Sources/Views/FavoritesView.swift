@@ -422,6 +422,9 @@ struct FavoriteResortRow: View {
                     if resort.ikonPass != nil {
                         PassBadge(passName: "Ikon", color: .orange)
                     }
+                    if resort.indyPass != nil {
+                        PassBadge(passName: "Indy", color: .green)
+                    }
                 }
 
                 Text(resort.displayLocation)
