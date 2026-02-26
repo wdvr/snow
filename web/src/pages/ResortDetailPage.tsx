@@ -63,12 +63,24 @@ export function ResortDetailPage() {
 
   const { formatTemp, formatSnow, formatSnowInt } = useUnits()
   const { toggleFavorite, isFavorite } = useFavorites()
-  const { data: resort, isLoading: resortLoading } = useResort(resortId!)
-  const { data: conditions, isLoading: conditionsLoading } = useResortConditions(resortId!)
-  const { data: timeline } = useResortTimeline(resortId!)
-  const { data: history } = useResortHistory(resortId!)
-  const { data: snowQuality } = useResortSnowQuality(resortId!)
-  const { data: reports } = useConditionReports(resortId!)
+  const { data: resort, isLoading: resortLoading } = useResort(resortId ?? '')
+  const { data: conditions, isLoading: conditionsLoading } = useResortConditions(resortId ?? '')
+  const { data: timeline } = useResortTimeline(resortId ?? '')
+  const { data: history } = useResortHistory(resortId ?? '')
+  const { data: snowQuality } = useResortSnowQuality(resortId ?? '')
+  const { data: reports } = useConditionReports(resortId ?? '')
+
+  if (!resortId) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
+        <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Resort not found</h2>
+        <Link to="/" className="text-blue-600 hover:underline text-sm">
+          Back to all resorts
+        </Link>
+      </div>
+    )
+  }
 
   if (resortLoading) {
     return (
@@ -143,11 +155,11 @@ export function ResortDetailPage() {
                 {countryFlag(resort.country)} {resort.name}
               </h1>
               <button
-                onClick={() => toggleFavorite(resortId!)}
+                onClick={() => toggleFavorite(resortId)}
                 className="p-2 rounded-full hover:bg-gray-100 transition-colors"
               >
                 <Heart
-                  className={`w-6 h-6 ${isFavorite(resortId!) ? 'fill-red-500 text-red-500' : 'text-gray-300'}`}
+                  className={`w-6 h-6 ${isFavorite(resortId) ? 'fill-red-500 text-red-500' : 'text-gray-300'}`}
                 />
               </button>
               <button
@@ -242,7 +254,7 @@ export function ResortDetailPage() {
             <div className="flex items-center gap-4 mt-3 text-sm text-gray-600">
               <div className="flex items-center gap-1.5">
                 <Mountain className="w-4 h-4 text-gray-400" />
-                {resort.elevation_points
+                {[...resort.elevation_points]
                   .sort((a, b) => a.elevation_meters - b.elevation_meters)
                   .map((ep) => `${ep.elevation_meters}m`)
                   .join(' - ')}
@@ -526,7 +538,7 @@ export function ResortDetailPage() {
       {/* Condition report modal */}
       {showReportForm && (
         <ConditionReportForm
-          resortId={resortId!}
+          resortId={resortId}
           onClose={() => setShowReportForm(false)}
         />
       )}

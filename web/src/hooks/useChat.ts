@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError } from '../api/client'
 import type { ChatMessage } from '../api/types'
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 
 const STREAM_URL = import.meta.env.VITE_CHAT_STREAM_URL || ''
 
@@ -62,14 +62,16 @@ export function useChatSession(initialConversationId?: string) {
 
   // Sync messages from server
   const serverMessages = conversationQuery.data
-  if (
-    serverMessages &&
-    serverMessages.length > 0 &&
-    messages.length === 0 &&
-    conversationId
-  ) {
-    setMessages(serverMessages)
-  }
+  useEffect(() => {
+    if (
+      serverMessages &&
+      serverMessages.length > 0 &&
+      messages.length === 0 &&
+      conversationId
+    ) {
+      setMessages(serverMessages)
+    }
+  }, [serverMessages, conversationId])
 
   const sendMessage = useCallback(
     async (content: string) => {

@@ -39,15 +39,22 @@ class ApiClient {
     if (this.accessToken) {
       headers['Authorization'] = `Bearer ${this.accessToken}`
     }
-    const res = await fetch(`${API_BASE}${path}`, {
-      ...options,
-      headers: { ...headers, ...options?.headers },
-    })
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ detail: res.statusText }))
-      throw new ApiError(res.status, error.detail || 'Request failed')
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30_000)
+    try {
+      const res = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers: { ...headers, ...options?.headers },
+        signal: options?.signal ?? controller.signal,
+      })
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ detail: res.statusText }))
+        throw new ApiError(res.status, error.detail || 'Request failed')
+      }
+      return res.json()
+    } finally {
+      clearTimeout(timeoutId)
     }
-    return res.json()
   }
 
   // --- Resorts ---

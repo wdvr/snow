@@ -29,7 +29,7 @@ export function useRegions() {
 
 export function useSnowQualityBatch(resortIds: string[]) {
   return useQuery({
-    queryKey: ['snow-quality-batch', resortIds.sort().join(',')],
+    queryKey: ['snow-quality-batch', [...resortIds].sort().join(',')],
     queryFn: () => api.getSnowQualityBatch(resortIds),
     staleTime: 5 * 60 * 1000,
     enabled: resortIds.length > 0,

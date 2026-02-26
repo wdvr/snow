@@ -119,17 +119,17 @@ final class ChatStreamService {
         }
 
         let decoder = JSONDecoder()
-        var buffer = ""
+        var dataBuffer = Data()
 
         for try await byte in bytes {
-            let char = Character(UnicodeScalar(byte))
-            buffer.append(char)
+            dataBuffer.append(byte)
 
-            // Process complete lines
-            while let newlineRange = buffer.range(of: "\n") {
-                let line = String(buffer[buffer.startIndex..<newlineRange.lowerBound])
-                buffer.removeSubrange(buffer.startIndex...newlineRange.lowerBound)
+            // Process complete lines (delimited by newline bytes)
+            while let newlineIndex = dataBuffer.firstIndex(of: UInt8(ascii: "\n")) {
+                let lineData = dataBuffer[dataBuffer.startIndex..<newlineIndex]
+                dataBuffer.removeSubrange(dataBuffer.startIndex...newlineIndex)
 
+                guard let line = String(data: Data(lineData), encoding: .utf8) else { continue }
                 guard line.hasPrefix("data: ") else { continue }
                 let jsonString = String(line.dropFirst(6))
                 guard let jsonData = jsonString.data(using: .utf8) else { continue }
