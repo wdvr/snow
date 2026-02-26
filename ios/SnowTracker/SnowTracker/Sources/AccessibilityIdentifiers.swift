@@ -98,6 +98,12 @@ enum AccessibilityID {
         static let conditionPicker = "conditionReport_conditionPicker"
     }
 
+    // MARK: - Suggest Edit
+    enum SuggestEdit {
+        static let button = "suggestEdit_button"
+        static let submitButton = "suggestEdit_submitButton"
+    }
+
     // MARK: - Onboarding
     enum Onboarding {
         static let continueButton = "onboarding_continueButton"

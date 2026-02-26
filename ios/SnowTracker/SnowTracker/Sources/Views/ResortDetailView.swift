@@ -12,6 +12,7 @@ struct ResortDetailView: View {
     @State private var isRetrying: Bool = false
     @State private var showDataSources: Bool = false
     @State private var safariURL: IdentifiableURL?
+    @State private var showingSuggestEdit: Bool = false
 
     private var conditions: [WeatherCondition] {
         snowConditionsManager.conditions[resort.id] ?? []
@@ -126,6 +127,9 @@ struct ResortDetailView: View {
                     if let condition = conditionForSelectedElevation {
                         dataSourcesCard(condition)
                     }
+
+                    // Suggest an Edit
+                    suggestEditButton
                 }
                 .padding()
             }
@@ -190,6 +194,9 @@ struct ResortDetailView: View {
                 prefs: userPreferencesManager.preferredUnits
             )
             ShareSheet(items: [image, shareText])
+        }
+        .sheet(isPresented: $showingSuggestEdit) {
+            SuggestEditView(resortId: resort.id, resortName: resort.name)
         }
         .safariOverlay(url: $safariURL)
         .refreshable {
@@ -777,6 +784,25 @@ struct ResortDetailView: View {
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title): \(value)")
+    }
+
+    // MARK: - Suggest an Edit
+
+    private var suggestEditButton: some View {
+        Button {
+            showingSuggestEdit = true
+        } label: {
+            HStack {
+                Image(systemName: "pencil.line")
+                Text("Suggest an Edit")
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+        }
+        .accessibilityIdentifier(AccessibilityID.SuggestEdit.button)
+        .accessibilityLabel("Suggest an edit to \(resort.name) information")
     }
 
     // MARK: - Data Sources Card

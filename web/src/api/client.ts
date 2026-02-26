@@ -201,6 +201,19 @@ class ApiClient {
     })
   }
 
+  // --- Feedback ---
+
+  submitFeedback(feedback: {
+    type: string
+    resort_id?: string
+    message: string
+  }): Promise<{ feedback_id: string }> {
+    return this.fetch<{ feedback_id: string }>('/api/v1/feedback', {
+      method: 'POST',
+      body: JSON.stringify(feedback),
+    })
+  }
+
   // --- Auth ---
 
   guestAuth(deviceId: string): Promise<AuthTokens> {

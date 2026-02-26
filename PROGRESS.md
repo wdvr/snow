@@ -27,13 +27,13 @@
 - [x] Create `/ios-release` skill with lessons learned
 
 #### Web App Fixes (Feb 26)
-- [ ] **W-BUG-001: Quality shows "Unknown" for all resorts** — batch quality call sends all 1019 IDs at once, exceeds 200 limit → need chunking in useSnowQualityBatch
-- [ ] **W-BUG-002: No pagination** — all 1019 resorts load at once → slow experience. Need server-side sort + pagination
-- [ ] **W-BUG-003: Server-side sort_by param** — API needs sort_by support (name, quality_score, snowfall) to enable paginated+sorted results from DynamoDB
-- [ ] Web: chunk batch quality requests into ≤200 ID batches
-- [ ] Web: add limit/offset/sort_by to getResorts() API client
-- [ ] Web: infinite scroll or "Load more" pagination in resort list
-- [ ] Backend: add sort_by query param to GET /api/v1/resorts
+- [x] **W-BUG-001: Quality shows "Unknown" for all resorts** — batch quality call sends all 1019 IDs at once, exceeds 200 limit → chunked to ≤200 per request
+- [x] **W-BUG-002: No pagination** — switched to useInfiniteQuery, 50 per page, "Load more" button
+- [x] **W-BUG-003: Server-side sort_by param** — Added sort_by (name/quality_score/snowfall/elevation) + sort_order to GET /api/v1/resorts
+- [x] Web: chunk batch quality requests into ≤200 ID batches
+- [x] Web: add limit/offset/sort_by to getResorts() API client
+- [x] Web: infinite scroll or "Load more" pagination in resort list
+- [x] Backend: add sort_by query param to GET /api/v1/resorts
 
 #### Dynamic Chat Suggestions
 - [x] Create DynamoDB table for chat suggestions (in Pulumi)
@@ -98,6 +98,57 @@
 12. [x] **Re-launch onboarding from settings** — "Restart Tutorial" button in settings, pre-populates current preferences.
 13. [x] **Push notifications don't work** — Fixed: Debug endpoints blocked all prod requests. Added admin email hash check. Fixed APNS_SANDBOX→APNS for prod.
 14. [x] **App still called "Snow Tracker" in places** — Renamed to "Powder Chaser" in Info.plist, project.yml, all 13 Localizable.strings.
+
+### New Features (Feb 26 — Pre-Release)
+
+#### Downloadable Resort Trail Map (iOS + Web + Android)
+- [x] **Research**: trail map image sources (skiresort.info DZI, snow-forecast.com JPEG, official resort CDNs)
+- [ ] **Scrape trail map URLs** for all 1019 resorts (skiresort.info trailmap IDs + snow-forecast slugs)
+- [ ] Add trail_map_image_url to resorts.json + DynamoDB
+- [ ] iOS: full-screen zoomable image viewer in resort detail
+- [ ] Web: full-screen image modal in resort detail
+- [ ] Android: full-screen image viewer in resort detail
+- Sources found: skiresort.info DZI tiles (5472×3639px, zoomable), snow-forecast.com JPEG (~400-500 resorts), official resort CDNs (annual URL changes)
+
+#### Ski Trail Overlay on Main Map (POST-RELEASE)
+- [x] **Research completed**: 3 viable options identified
+- Option A (easiest): OpenSnowMap raster overlay `tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png` — transparent piste tiles, 1-2 days work
+- Option B (best): OpenSkiMap vector PBF tiles `tiles.openskimap.org/tiles/openskimap/{z}/{x}/{y}.pbf` — difficulty-colored, clickable trails, ~1 week
+- Option C (richest): On-demand Overpass API per resort (Whistler = 827 piste ways in 1.3MB GeoJSON)
+- [ ] Choose approach and implement (post-release feature)
+
+#### Suggest an Edit (iOS + Web + Android)
+- [x] **"Suggest an Edit" button** on every resort detail view
+- [x] Opens pre-filled feedback form with resort name + section
+- [x] Submits to existing /api/v1/feedback endpoint with type="resort_edit"
+- [x] iOS: add SuggestEditView.swift + button on ResortDetailView
+- [x] Web: add SuggestEditModal component + button on ResortDetailPage
+- [ ] Android: add button to resort detail screen
+- [ ] Verify feedback submissions persist to DynamoDB
+
+#### Indy Pass Support
+- [x] **Research**: 271 Indy Pass resorts (2025-26), estimated 60-100 overlap with our 1019
+- [ ] Scrape indyskipass.com/resorts/ for full resort list + fuzzy match
+- [ ] Update resorts.json with Indy Pass data (full/base tiers)
+- [ ] Populate DynamoDB with updated pass data
+- [ ] iOS: add Indy filter chip to resort list
+- [ ] Web: add Indy filter button to resort list
+- [ ] Android: add Indy filter chip to resort list
+
+#### iOS Chat Ellipsis Bug
+- [ ] **BUG**: Chat output truncates text with "..." in bullet points
+- [ ] Example: "not from recent snowfall" shows as "not from recent..."
+- [ ] Find and fix lineLimit/truncation in chat message rendering
+- [ ] Verify fix on simulator
+
+#### Community Reports Fix
+- [ ] Change condition report TTL from 365 → 90 days (backend)
+- [ ] Fix timestamp `.tertiary` color → `.secondary` (iOS)
+
+#### Data Source Transparency
+- [ ] Backend: expose source_details in merger output (which sources contributed, consensus vs outlier)
+- [ ] iOS: add DataSourcesCard showing per-source info
+- [ ] Already partially implemented in web (W2: Data Sources Card)
 
 ### TODO: Cross-platform (Web + Android)
 

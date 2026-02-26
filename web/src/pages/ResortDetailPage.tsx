@@ -14,6 +14,7 @@ import {
   Plus,
   Camera,
   MapPin,
+  Pencil,
 } from 'lucide-react'
 import { useResort } from '../hooks/useResorts'
 import { useFavorites } from '../hooks/useFavorites'
@@ -38,6 +39,7 @@ import { DataSourcesCard } from '../components/resort/DataSourcesCard'
 import { formatDate, countryFlag, regionDisplayName } from '../utils/format'
 import { useUnits } from '../hooks/useUnits'
 import { ConditionReportForm } from '../components/resort/ConditionReportForm'
+import { SuggestEditModal } from '../components/resort/SuggestEditModal'
 import type { SnowQuality, ConditionType } from '../api/types'
 
 type Tab = 'conditions' | 'forecast' | 'history' | 'reports'
@@ -59,6 +61,7 @@ export function ResortDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>('conditions')
   const [selectedElevation, setSelectedElevation] = useState<string>('mid')
   const [showReportForm, setShowReportForm] = useState(false)
+  const [showSuggestEdit, setShowSuggestEdit] = useState(false)
   const [shareToast, setShareToast] = useState(false)
 
   const { formatTemp, formatSnow, formatSnowInt } = useUnits()
@@ -535,11 +538,31 @@ export function ResortDetailPage() {
         )}
       </div>
 
+      {/* Suggest an edit link */}
+      <div className="mt-6 text-center">
+        <button
+          onClick={() => setShowSuggestEdit(true)}
+          className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          Suggest an Edit
+        </button>
+      </div>
+
       {/* Condition report modal */}
       {showReportForm && (
         <ConditionReportForm
           resortId={resortId}
           onClose={() => setShowReportForm(false)}
+        />
+      )}
+
+      {/* Suggest edit modal */}
+      {showSuggestEdit && (
+        <SuggestEditModal
+          resortId={resortId}
+          resortName={resort.name}
+          onClose={() => setShowSuggestEdit(false)}
         />
       )}
     </div>
