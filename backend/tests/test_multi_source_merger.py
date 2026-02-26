@@ -77,8 +77,8 @@ class TestMultiSourceMergerSingleSource:
         )
         result = MultiSourceMerger.merge(base, [onthesnow])
 
-        # Normalized weights: open-meteo=0.50/0.75=0.667, onthesnow=0.25/0.75=0.333
-        # 24h: (0.0 * 0.667 + 3.0 * 0.333) / 1.0 = 1.0
+        # Two sources disagree (0 vs 3, >30% diff) → weighted average fallback
+        # Normalized: open-meteo=0.50/0.75=0.667, onthesnow=0.25/0.75=0.333
         expected_24h = round(0.0 * (0.50 / 0.75) + 3.0 * (0.25 / 0.75), 1)
         assert result["snowfall_24h_cm"] == expected_24h
 
@@ -118,8 +118,8 @@ class TestMultiSourceMergerSingleSource:
 class TestMultiSourceMergerMultipleSources:
     """Tests with multiple supplementary sources."""
 
-    def test_three_sources_weighted_average(self):
-        """Three sources should produce properly weighted snowfall average."""
+    def test_three_sources_consensus_average(self):
+        """Three agreeing sources produce simple average (no outliers)."""
         base = {
             "snowfall_24h_cm": 2.0,
             "snowfall_48h_cm": 5.0,
@@ -138,22 +138,18 @@ class TestMultiSourceMergerMultipleSources:
         )
         result = MultiSourceMerger.merge(base, [onthesnow, snowforecast])
 
-        # All 3 sources available: normalized weights
-        # open-meteo=0.50/0.90, onthesnow=0.25/0.90, snowforecast=0.15/0.90
-        w_om = 0.50 / 0.90
-        w_ots = 0.25 / 0.90
-        w_sf = 0.15 / 0.90
-        expected_24h = round(2.0 * w_om + 4.0 * w_ots + 3.0 * w_sf, 1)
-        assert result["snowfall_24h_cm"] == expected_24h
+        # All 3 within 50% of median → consensus → simple average
+        assert result["snowfall_24h_cm"] == round((2.0 + 4.0 + 3.0) / 3, 1)
+        assert result["snowfall_48h_cm"] == round((5.0 + 8.0 + 7.0) / 3, 1)
 
         # OnTheSnow has highest depth priority
         assert result["snow_depth_cm"] == 100.0
 
-        # 3 sources with data = HIGH confidence
+        # 3 agreeing sources = HIGH confidence
         assert result["source_confidence"] == ConfidenceLevel.HIGH
 
-    def test_all_four_sources(self):
-        """All four sources produce correctly weighted average."""
+    def test_all_four_sources_outlier_dropped(self):
+        """Open-Meteo outlier (0cm) dropped when 3 others report snow."""
         base = {"snowfall_24h_cm": 0.0}
         sources = [
             SourceData(source_name="onthesnow", snowfall_24h_cm=5.0),
@@ -162,9 +158,9 @@ class TestMultiSourceMergerMultipleSources:
         ]
         result = MultiSourceMerger.merge(base, sources)
 
-        # All weights sum to 1.0, so normalized = original
-        expected = round(0.0 * 0.50 + 5.0 * 0.25 + 3.0 * 0.15 + 4.0 * 0.10, 1)
-        assert result["snowfall_24h_cm"] == expected
+        # Open-Meteo=0 is outlier (>50% from median 3.5)
+        # Consensus: {5, 3, 4} → avg = 4.0
+        assert result["snowfall_24h_cm"] == 4.0
 
     def test_depth_priority_onthesnow_over_snowforecast(self):
         """OnTheSnow depth should take priority over Snow-Forecast."""
@@ -300,16 +296,18 @@ class TestMultiSourceMergerEdgeCases:
         base = {"snowfall_24h_cm": 0.0}
         ots = SourceData(source_name="onthesnow", snowfall_24h_cm=5.0)
         result = MultiSourceMerger.merge(base, [ots])
-        # Should be weighted average of 0.0 and 5.0, not just 5.0
+        # Two sources disagree → weighted average fallback (not just 5.0)
         assert 0 < result["snowfall_24h_cm"] < 5.0
 
     def test_custom_weights(self):
-        """Custom weights should override defaults."""
+        """Custom weights used in weighted average fallback for disagreeing sources."""
         base = {"snowfall_24h_cm": 10.0}
         ots = SourceData(source_name="onthesnow", snowfall_24h_cm=0.0)
         custom_weights = {"open-meteo": 0.50, "onthesnow": 0.50}
         result = MultiSourceMerger.merge(base, [ots], weights=custom_weights)
-        assert result["snowfall_24h_cm"] == 5.0  # 50/50 of 10 and 0
+        assert (
+            result["snowfall_24h_cm"] == 5.0
+        )  # Disagree → weighted avg: 50/50 of 10 and 0
 
     def test_raw_data_preserved(self):
         """Raw data from sources stored for debugging."""
@@ -338,28 +336,117 @@ class TestMultiSourceMergerEdgeCases:
         assert result["raw_data"]["scraped_onthesnow"]["source"] == "ots"
 
 
-class TestMultiSourceMergerBackwardCompatibility:
-    """Ensure backward compatibility with existing OnTheSnow 70/30 merge pattern."""
+class TestMultiSourceMergerTwoSourceFallback:
+    """Test behavior when only 2 sources disagree (weighted average fallback)."""
 
-    def test_only_onthesnow_produces_similar_weights(self):
-        """With only Open-Meteo + OnTheSnow, weights should be approximately 67/33.
-
-        Old system: 70% scraped + 30% API
-        New system: normalized 0.50/(0.50+0.25)=0.667 Open-Meteo + 0.25/0.75=0.333 OnTheSnow
-
-        This is close enough — the old system weighted scraped MORE (70%),
-        but the new system gives Open-Meteo more weight as the primary source.
-        The key difference: old system trusted scraper more, new system trusts
-        the primary source more but still blends in the scraper.
-        """
+    def test_two_disagreeing_sources_weighted_average(self):
+        """With only Open-Meteo + OnTheSnow disagreeing, falls back to weighted average."""
         base = {"snowfall_24h_cm": 0.0}
         ots = SourceData(source_name="onthesnow", snowfall_24h_cm=7.62)
 
         result = MultiSourceMerger.merge(base, [ots])
 
-        # New: 0.0 * 0.667 + 7.62 * 0.333 = ~2.5
-        # Old: 7.62 * 0.7 + 0.0 * 0.3 = 5.33
-        # This IS different — the new merger trusts the primary source more.
-        # That's intentional: Open-Meteo is always there, supplementary sources add signal.
         new_value = result["snowfall_24h_cm"]
-        assert 2.0 < new_value < 3.0  # Roughly 0.333 * 7.62
+        assert 2.0 < new_value < 3.0  # Weighted avg: 0.333 * 7.62
+
+    def test_two_agreeing_sources_simple_average(self):
+        """Two sources within 30% → simple average (no weighted fallback)."""
+        base = {"snowfall_24h_cm": 5.0}
+        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=5.5)
+
+        result = MultiSourceMerger.merge(base, [ots])
+
+        # Within 30% → simple average
+        assert result["snowfall_24h_cm"] == round((5.0 + 5.5) / 2, 1)
+
+
+class TestMultiSourceMergerOutlierDetection:
+    """Tests for the outlier detection + majority consensus algorithm."""
+
+    def test_big_white_scenario(self):
+        """The motivating case: Open-Meteo misses snow that scrapers catch.
+
+        Open-Meteo=0cm, OnTheSnow=3cm, Snow-Forecast=3cm → should be 3.0cm
+        (not 1.3cm as with old weighted average).
+        """
+        base = {"snowfall_24h_cm": 0.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=3.0),
+            SourceData(source_name="snowforecast", snowfall_24h_cm=3.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        # Open-Meteo=0 is outlier, consensus={3,3} → avg=3.0
+        assert result["snowfall_24h_cm"] == 3.0
+
+    def test_high_outlier_dropped(self):
+        """One source reports much higher than others → dropped."""
+        base = {"snowfall_24h_cm": 5.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=5.0),
+            SourceData(source_name="snowforecast", snowfall_24h_cm=15.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        # SF=15 is outlier (>50% from median 5), consensus={5,5} → avg=5.0
+        assert result["snowfall_24h_cm"] == 5.0
+
+    def test_all_zeros_consensus(self):
+        """All sources report zero → consensus on zero."""
+        base = {"snowfall_24h_cm": 0.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=0.0),
+            SourceData(source_name="snowforecast", snowfall_24h_cm=0.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        assert result["snowfall_24h_cm"] == 0.0
+
+    def test_near_zero_majority_wins(self):
+        """Two sources say zero, one says snow → majority wins (zero)."""
+        base = {"snowfall_24h_cm": 0.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=0.0),
+            SourceData(source_name="snowforecast", snowfall_24h_cm=3.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        # Median=0, absolute threshold: 0 and 0 ≤ 1.0 (consensus), 3 > 1.0 (outlier)
+        assert result["snowfall_24h_cm"] == 0.0
+
+    def test_all_agree_no_outlier(self):
+        """All sources similar → average all."""
+        base = {"snowfall_24h_cm": 4.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=5.0),
+            SourceData(source_name="snowforecast", snowfall_24h_cm=4.5),
+            SourceData(source_name="weatherkit", snowfall_24h_cm=4.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        # All within 50% of median → consensus → avg
+        assert result["snowfall_24h_cm"] == round((4.0 + 5.0 + 4.5 + 4.0) / 4, 1)
+
+    def test_no_consensus_weighted_fallback(self):
+        """All values wildly different → weighted average fallback."""
+        base = {"snowfall_24h_cm": 0.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=10.0),
+            SourceData(source_name="snowforecast", snowfall_24h_cm=30.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        # {0, 10, 30}: median=10, only {10} in consensus → weighted avg fallback
+        assert result["snowfall_24h_cm"] > 0
+
+    def test_outlier_detection_confidence_medium(self):
+        """When outlier is detected, confidence should be MEDIUM."""
+        base = {"snowfall_24h_cm": 0.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=5.0),
+            SourceData(source_name="snowforecast", snowfall_24h_cm=4.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        # Open-Meteo=0 disagrees with scrapers → MEDIUM
+        assert result["source_confidence"] == ConfidenceLevel.MEDIUM

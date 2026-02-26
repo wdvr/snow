@@ -1,15 +1,16 @@
 """Multi-source weather data merger.
 
 Combines weather data from multiple sources (Open-Meteo, OnTheSnow,
-Snow-Forecast, WeatherKit) using weighted averaging with normalized
-weights when sources are missing.
+Snow-Forecast, WeatherKit) using outlier detection and majority consensus.
 
-Replaces the inline 70/30 merge logic in OnTheSnow scraper with a
-generic multi-source approach.
+When 3+ sources are available, outlier values (>50% from median) are
+dropped and the remaining consensus group is averaged. With only 2
+sources, disagreement falls back to weighted average.
 """
 
 import logging
 from dataclasses import dataclass, field
+from statistics import median as calc_median
 from typing import Any
 
 from models.weather import ConfidenceLevel
@@ -104,27 +105,18 @@ class MultiSourceMerger:
             for name in available_sources
         }
 
-        # Merge snowfall using weighted average
+        # Merge snowfall using outlier detection + majority consensus
         for snowfall_key in ["snowfall_24h_cm", "snowfall_48h_cm", "snowfall_72h_cm"]:
-            sources_with_data = {
-                name: source
+            values_by_source = {
+                name: getattr(source, snowfall_key)
                 for name, source in available_sources.items()
                 if getattr(source, snowfall_key, None) is not None
             }
 
-            if len(sources_with_data) > 1:
-                # Multiple sources have data - weighted average
-                data_weight_sum = sum(
-                    normalized_weights[name] for name in sources_with_data
+            if len(values_by_source) > 1:
+                merged[snowfall_key] = MultiSourceMerger._merge_snowfall_values(
+                    values_by_source, normalized_weights
                 )
-                if data_weight_sum > 0:
-                    weighted_sum = sum(
-                        getattr(source, snowfall_key)
-                        * normalized_weights[name]
-                        / data_weight_sum
-                        for name, source in sources_with_data.items()
-                    )
-                    merged[snowfall_key] = round(weighted_sum, 1)
 
         # Snow depth: use priority-based override (resort-reported > model)
         for priority_source in DEPTH_PRIORITY:
@@ -142,20 +134,22 @@ class MultiSourceMerger:
             if getattr(s, "snowfall_24h_cm", None) is not None
         ]
 
-        if source_count >= 3 and len(snowfall_values) >= 3:
-            merged["source_confidence"] = ConfidenceLevel.HIGH
-        elif source_count >= 2 and len(snowfall_values) >= 2:
-            # Check if sources agree (within 50% of mean)
-            mean_val = (
-                sum(snowfall_values) / len(snowfall_values) if snowfall_values else 0
-            )
-            if mean_val > 0:
-                agreement = all(
-                    abs(v - mean_val) / mean_val < 0.5 for v in snowfall_values
+        if source_count >= 2 and len(snowfall_values) >= 2:
+            median_val = calc_median(snowfall_values)
+            if median_val >= 1.0:
+                all_agree = all(
+                    abs(v - median_val) / median_val <= 0.5 for v in snowfall_values
                 )
-                merged["source_confidence"] = (
-                    ConfidenceLevel.HIGH if agreement else ConfidenceLevel.MEDIUM
-                )
+            else:
+                all_agree = all(v < 1.0 for v in snowfall_values)
+
+            if source_count >= 3 and all_agree:
+                merged["source_confidence"] = ConfidenceLevel.HIGH
+            elif source_count >= 3:
+                # Sources disagree (outlier detected)
+                merged["source_confidence"] = ConfidenceLevel.MEDIUM
+            elif all_agree:
+                merged["source_confidence"] = ConfidenceLevel.HIGH
             else:
                 merged["source_confidence"] = ConfidenceLevel.MEDIUM
         # 1 source = keep existing confidence (baseline)
@@ -174,8 +168,73 @@ class MultiSourceMerger:
             merged["raw_data"][f"scraped_{source.source_name}"] = source.raw_data
 
         logger.info(
-            f"Merged {len(available_sources)} sources: "
-            f"{', '.join(f'{n}(w={normalized_weights[n]:.2f})' for n in source_names)}"
+            f"Merged {len(available_sources)} sources: {', '.join(source_names)}"
         )
 
         return merged
+
+    @staticmethod
+    def _weighted_average(
+        values_by_source: dict[str, float],
+        normalized_weights: dict[str, float],
+    ) -> float:
+        """Weighted average fallback for when no consensus can be determined."""
+        weight_sum = sum(normalized_weights.get(name, 0) for name in values_by_source)
+        if weight_sum <= 0:
+            return round(sum(values_by_source.values()) / len(values_by_source), 1)
+        return round(
+            sum(
+                val * normalized_weights.get(name, 0) / weight_sum
+                for name, val in values_by_source.items()
+            ),
+            1,
+        )
+
+    @staticmethod
+    def _merge_snowfall_values(
+        values_by_source: dict[str, float],
+        normalized_weights: dict[str, float],
+    ) -> float:
+        """Merge snowfall using outlier detection + majority consensus.
+
+        Strategy:
+        - 1 source: use its value
+        - 2 sources: if they agree (within 30%), average; else weighted avg
+        - 3+ sources: detect outliers via median, drop them, average consensus
+        """
+        if len(values_by_source) == 1:
+            return round(next(iter(values_by_source.values())), 1)
+
+        all_vals = sorted(values_by_source.values())
+
+        if len(values_by_source) == 2:
+            v1, v2 = all_vals
+            max_val = max(abs(v1), abs(v2))
+            # Both near zero or within 30%: simple average
+            if max_val < 1.0 or (max_val > 0 and abs(v1 - v2) / max_val <= 0.3):
+                return round((v1 + v2) / 2, 1)
+            # Can't determine majority with 2 — weighted average tiebreaker
+            return MultiSourceMerger._weighted_average(
+                values_by_source, normalized_weights
+            )
+
+        # 3+ sources: outlier detection via median
+        median_val = calc_median(all_vals)
+
+        if median_val < 1.0:
+            # Near-zero median: use absolute threshold
+            consensus = {n: v for n, v in values_by_source.items() if v <= 1.0}
+        else:
+            # Standard: >50% deviation from median = outlier
+            consensus = {
+                n: v
+                for n, v in values_by_source.items()
+                if abs(v - median_val) / median_val <= 0.5
+            }
+
+        if len(consensus) >= 2:
+            # Majority agrees — average the consensus group
+            return round(sum(consensus.values()) / len(consensus), 1)
+
+        # No clear consensus — weighted average fallback
+        return MultiSourceMerger._weighted_average(values_by_source, normalized_weights)
