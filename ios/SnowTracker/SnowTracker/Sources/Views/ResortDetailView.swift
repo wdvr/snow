@@ -13,6 +13,7 @@ struct ResortDetailView: View {
     @State private var showDataSources: Bool = false
     @State private var safariURL: IdentifiableURL?
     @State private var showingSuggestEdit: Bool = false
+    @State private var showingTrailMap: Bool = false
 
     private var conditions: [WeatherCondition] {
         snowConditionsManager.conditions[resort.id] ?? []
@@ -198,6 +199,11 @@ struct ResortDetailView: View {
         .sheet(isPresented: $showingSuggestEdit) {
             SuggestEditView(resortId: resort.id, resortName: resort.name)
         }
+        .fullScreenCover(isPresented: $showingTrailMap) {
+            if let urlStr = resort.trailMapUrl, let url = URL(string: urlStr) {
+                TrailMapView(url: url, resortName: resort.name)
+            }
+        }
         .safariOverlay(url: $safariURL)
         .refreshable {
             AnalyticsService.shared.trackPullToRefresh(screen: "ResortDetail")
@@ -356,9 +362,9 @@ struct ResortDetailView: View {
                     }
                 }
 
-                if let mapUrlStr = resort.trailMapUrl, let mapUrl = URL(string: mapUrlStr) {
+                if let mapUrlStr = resort.trailMapUrl, URL(string: mapUrlStr) != nil {
                     Button {
-                        safariURL = IdentifiableURL(url: mapUrl)
+                        showingTrailMap = true
                     } label: {
                         Label("Trail Map", systemImage: "map")
                             .font(.caption)

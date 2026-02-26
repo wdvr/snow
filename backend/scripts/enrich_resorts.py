@@ -600,7 +600,49 @@ class ResortEnricher:
         if snow_match:
             result["annual_snowfall_cm"] = int(snow_match.group(1))
 
+        # --- Trail map URL ---
+        # The trail map is on a separate /trail-map/ subpage of the resort
+        trail_map_url = self._scrape_trail_map(url)
+        if trail_map_url:
+            result["trail_map_url"] = trail_map_url
+
+        # --- Webcam URL ---
+        # skiresort.info has webcam pages at /ski-resort/{slug}/webcams/
+        webcam_url = url.rstrip("/") + "/webcams/"
+        try:
+            self._rate_limit()
+            resp = self.session.head(webcam_url, timeout=10, allow_redirects=True)
+            if resp.status_code == 200:
+                result["webcam_url"] = webcam_url
+        except Exception:
+            pass
+
         return result
+
+    def _scrape_trail_map(self, resort_url: str) -> str | None:
+        """Scrape trail map image URL from skiresort.info trail-map subpage."""
+        trail_map_page = resort_url.rstrip("/") + "/trail-map/"
+        try:
+            self._rate_limit()
+            resp = self.session.get(trail_map_page, timeout=15, allow_redirects=False)
+            if resp.status_code in (301, 302):
+                location = resp.headers.get("Location", "")
+                if location.rstrip("/") == "https://www.skiresort.info":
+                    return None
+                resp = self.session.get(location, timeout=15)
+            if resp.status_code != 200:
+                return None
+            # Find trailmap IDs in the page JavaScript
+            trailmap_ids = re.findall(r"init_trailmap_(\d+)", resp.text)
+            if not trailmap_ids:
+                return None
+            primary_id = trailmap_ids[0]
+            return (
+                f"https://www.skiresort.info/uploads/tx_mgskiresort/"
+                f"trailmapsV2/trailmap_{primary_id}_files/0/0_0.jpg"
+            )
+        except Exception:
+            return None
 
     def enrich_resort(self, resort: dict) -> dict:
         """Enrich a single resort with all available data."""
@@ -622,6 +664,8 @@ class ResortEnricher:
                     "day_ticket_price_min_usd",
                     "day_ticket_price_max_usd",
                     "annual_snowfall_cm",
+                    "trail_map_url",
+                    "webcam_url",
                 ]
             )
             if needs_scrape:

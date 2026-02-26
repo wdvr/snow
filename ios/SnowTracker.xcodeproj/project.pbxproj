@@ -19,6 +19,7 @@
 		24A3BDA567803E68B65547C7 /* AuthenticationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3612902D14F964CD974A7E /* AuthenticationViews.swift */; };
 		2699A5371F1EFF464AB8F9E9 /* FeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D94F3FDE9BBCEF47C3DC8547 /* FeedbackView.swift */; };
 		0FA1B105B4D7E41BD3B38014 /* SuggestEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD37937AF5C761E4CDA9F3B /* SuggestEditView.swift */; };
+		F41EB8388EFB9F4AFE693CDB /* TrailMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B4674E80AF308E974B4D211 /* TrailMapView.swift */; };
 		27E922B1DB9A3CE6F24C50FB /* SnowHistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFCC44C01CB34330491CAD12 /* SnowHistoryViewModel.swift */; };
 		2893B3FE0ED2A4CA70943CF3 /* ChatStreamService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F2757D08B81B5039D42E6A /* ChatStreamService.swift */; };
 		28C91E5DC315AE071CA75619 /* SnowActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBB345FFD1FF45422315F20B /* SnowActivityAttributes.swift */; };
@@ -211,6 +212,7 @@
 		D767B6D865228C265F2ABFFD /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = nl.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D94F3FDE9BBCEF47C3DC8547 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
 		ACD37937AF5C761E4CDA9F3B /* SuggestEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestEditView.swift; sourceTree = "<group>"; };
+		9B4674E80AF308E974B4D211 /* TrailMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrailMapView.swift; sourceTree = "<group>"; };
 		DCCCD6C11E9F488422A568CB /* MarkdownTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownTextView.swift; sourceTree = "<group>"; };
 		DD047E2A750245979D8452D8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DF4178DE92CCE9002408C907 /* RegionFilterSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionFilterSettingsView.swift; sourceTree = "<group>"; };
@@ -316,6 +318,7 @@
 				0B3B591AC2743684FF45B6A5 /* SnowHistoryView.swift */,
 				B59B0D2F334DE813DE1268D1 /* SplashView.swift */,
 				ACD37937AF5C761E4CDA9F3B /* SuggestEditView.swift */,
+				9B4674E80AF308E974B4D211 /* TrailMapView.swift */,
 				85F8A84962506DB38BA81FB7 /* TimelineView.swift */,
 				34B3DE91A8041E068949717A /* TripPlanningViews.swift */,
 				9B196943034A048B5D01CCD3 /* WeatherOverlayView.swift */,
@@ -652,6 +655,7 @@
 				91143F070673A22F8B3D3849 /* SnowTrackerApp.swift in Sources */,
 				DBA4D59F60EA8E60D3D11FF2 /* SplashView.swift in Sources */,
 				0FA1B105B4D7E41BD3B38014 /* SuggestEditView.swift in Sources */,
+				F41EB8388EFB9F4AFE693CDB /* TrailMapView.swift in Sources */,
 				29CB1CC93326CC0862BD53D7 /* TimelineData.swift in Sources */,
 				7B4D64BE9D189ECF26FE05D7 /* TimelineView.swift in Sources */,
 				CCD8A0284D887301091D486F /* TripPlanningViews.swift in Sources */,

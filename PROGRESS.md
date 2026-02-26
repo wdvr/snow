@@ -131,8 +131,8 @@
 - [x] Scrape indyskipass.com/resorts/ for full resort list + fuzzy match → 248 resorts, 41 matched
 - [x] Update resorts.json with Indy Pass data (full/base tiers) → 43 total (41 new + 2 existing)
 - [x] Populate DynamoDB with updated pass data (both staging + prod)
-- [ ] iOS: add Indy filter chip to resort list
-- [ ] Web: add Indy filter button to resort list
+- [x] iOS: add Indy filter chip to resort list + badges in all views
+- [x] Web: add Indy filter button to resort list + badges in cards/detail/map
 - [ ] Android: add Indy filter chip to resort list
 
 #### iOS Chat Ellipsis Bug — FIXED
@@ -145,10 +145,10 @@
 - [x] Condition report TTL already 90 days (was already correct)
 - [x] Timestamp already uses `.secondary` color (was already fixed)
 
-#### Data Source Transparency
-- [ ] Backend: expose source_details in merger output (which sources contributed, consensus vs outlier)
-- [ ] iOS: add DataSourcesCard showing per-source info
-- [ ] Already partially implemented in web (W2: Data Sources Card)
+#### Data Source Transparency — ALREADY DONE
+- [x] Backend: expose source_details in merger output (which sources contributed, consensus vs outlier)
+- [x] iOS: add DataSourcesCard showing per-source info (collapsible, shows consensus/outlier per source)
+- [x] Web: Data Sources Card already implemented
 
 ### TODO: Cross-platform (Web + Android)
 
