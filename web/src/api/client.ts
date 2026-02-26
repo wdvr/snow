@@ -204,11 +204,14 @@ class ApiClient {
   // --- Feedback ---
 
   submitFeedback(feedback: {
-    type: string
-    resort_id?: string
+    subject: string
     message: string
-  }): Promise<{ feedback_id: string }> {
-    return this.fetch<{ feedback_id: string }>('/api/v1/feedback', {
+    email?: string
+    app_version: string
+    build_number: string
+    device_model?: string
+  }): Promise<{ id: string; status: string }> {
+    return this.fetch<{ id: string; status: string }>('/api/v1/feedback', {
       method: 'POST',
       body: JSON.stringify(feedback),
     })

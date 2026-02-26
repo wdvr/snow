@@ -41,9 +41,10 @@ export function SuggestEditModal({ resortId, resortName, onClose }: SuggestEditM
       }
 
       await api.submitFeedback({
-        type: 'resort_edit',
-        resort_id: resortId,
-        message: `Resort: ${resortName}\nSection: ${section}\nSuggestion: ${suggestion.trim()}`,
+        subject: `Resort Edit: ${resortName} - ${section}`,
+        message: `[Resort Edit Suggestion]\nResort: ${resortName} (${resortId})\nSection: ${section}\n\nSuggested correction:\n${suggestion.trim()}`,
+        app_version: 'web-1.0',
+        build_number: '1',
       })
 
       setSuccess(true)
