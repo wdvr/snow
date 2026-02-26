@@ -59,7 +59,7 @@ WEATHER_CONDITIONS_TTL_DAYS = 60
 def save_weather_condition(table, weather_condition: WeatherCondition) -> None:
     """Save weather condition to DynamoDB table."""
     try:
-        item = weather_condition.model_dump()
+        item = weather_condition.model_dump(exclude={"raw_data"})
         item = prepare_for_dynamodb(item)
         table.put_item(Item=item)
     except ClientError as e:
