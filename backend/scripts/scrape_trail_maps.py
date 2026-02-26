@@ -73,6 +73,8 @@ SKIRESORT_INFO_SLUG_OVERRIDES = {
     "st-anton": "st-anton-st-christoph-stuben-lech-zuers-warth-schroecken-ski-arlberg",
     "lech-zuers": "st-anton-st-christoph-stuben-lech-zuers-warth-schroecken-ski-arlberg",
     "kitzbuehel": "kitzski-kitzbuehel-kirchberg",
+    "kitzski-kitzbuhel-kirchberg": "kitzski-kitzbuehel-kirchberg",  # umlaut mismatch
+    "saalbach-hinterglemm": "saalbach-hinterglemm-leogang-fieberbrunn-skicircus",
     "solden": "soelden",
     "ischgl": "ischgl-samnaun-silvretta-arena",
     #
@@ -84,7 +86,7 @@ SKIRESORT_INFO_SLUG_OVERRIDES = {
     #
     # --- Japan ---
     "niseko": "niseko-united-annupurigrand-hirafuhanazononiseko-village",
-    "hakuba": "hakuba-47-goryu",  # Hakuba split into areas; 47/Goryu as representative
+    "hakuba": "happo-one-hakuba",  # Our 'hakuba' resort is Happo-One
     #
     # --- North America ---
     "aspen": "aspen-mountain",  # Aspen Snowmass split; use Aspen Mountain
@@ -95,6 +97,7 @@ SKIRESORT_INFO_SLUG_OVERRIDES = {
     "sunday-river": "sunday-river-resort",
     "sugarloaf": "sugarloaf-mountain",
     "stratton": "stratton-mountain",
+    "snoqualmie-pass": "the-summit-at-snoqualmie",
 }
 
 # Snow-forecast.com slug overrides for resorts where our resort_id doesn't map cleanly.

@@ -103,12 +103,14 @@
 
 #### Downloadable Resort Trail Map (iOS + Web + Android)
 - [x] **Research**: trail map image sources (skiresort.info DZI, snow-forecast.com JPEG, official resort CDNs)
-- [x] **Scrape trail map URLs** for all 1019 resorts (skiresort.info trailmap IDs + snow-forecast slugs) — running now
-- [ ] Add trail_map_image_url to resorts.json + DynamoDB
-- [ ] iOS: full-screen zoomable image viewer in resort detail
+- [x] **Scrape trail map URLs** for all 1019 resorts → 725 found (686 skiresort.info + 39 snow-forecast.com)
+- [x] Add trail_map_url to resorts.json + DynamoDB (725 resorts, 71%)
+- [x] iOS: full-screen zoomable TrailMapView (pinch-to-zoom, double-tap, drag, share)
+- [x] Integrated scraping into enrich_resorts.py for future runs
+- [ ] **Fix missing trail maps for notable resorts**: Mammoth, Heavenly, Steamboat, Telluride, Val d'Isere, St. Anton, Kitzbuhel, Hakuba — need slug overrides
+- [ ] Find trail maps for remaining 294 resorts (mostly SI, CZ, PL, RO, SE, SK small resorts)
 - [ ] Web: full-screen image modal in resort detail
 - [ ] Android: full-screen image viewer in resort detail
-- Sources found: skiresort.info DZI tiles (5472×3639px, zoomable), snow-forecast.com JPEG (~400-500 resorts), official resort CDNs (annual URL changes)
 
 #### Ski Trail Overlay on Main Map (POST-RELEASE)
 - [x] **Research completed**: 3 viable options identified
@@ -149,6 +151,25 @@
 - [x] Backend: expose source_details in merger output (which sources contributed, consensus vs outlier)
 - [x] iOS: add DataSourcesCard showing per-source info (collapsible, shows consensus/outlier per source)
 - [x] Web: Data Sources Card already implemented
+
+#### Resort Logos in Detail View + Map Popup
+- [x] **Research**: resort_logos.json exists with 877/1040 URLs (84%) via Google Favicon API
+- [ ] iOS: Add logo to resort detail header (client-side URL from officialWebsite domain)
+- [ ] iOS: Add logo to map popup resort selection
+- [ ] Web: Add logo to resort detail + resort cards
+- [ ] Android: Add logo to resort detail
+- Approach: extract domain from officialWebsite, construct `https://t3.gstatic.com/faviconV2?...&url=http://{domain}&size=128`, AsyncImage with initials fallback
+
+#### Map Popup Enhancements (iOS)
+- [ ] Add webcam button to map resort popup (currently only website + "View Full Details")
+- [ ] Add trail map button to map resort popup
+- [ ] Add webcam preview image (AsyncImage from webcam page screenshot or similar)
+- [ ] Add resort logo to map popup header
+- Current: ResortMapView.swift `ResortMapDetailSheet` lines 892-924
+
+#### Android Indy Pass Filter
+- [ ] Add Indy Pass filter chip to Android resort list (green, matching iOS)
+- [ ] Show Indy badge in resort cards/detail/comparison views
 
 ### TODO: Cross-platform (Web + Android)
 

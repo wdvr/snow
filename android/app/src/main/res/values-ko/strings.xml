@@ -120,6 +120,7 @@
     <string name="pass_all">전체</string>
     <string name="pass_epic">Epic</string>
     <string name="pass_ikon">Ikon</string>
+    <string name="pass_indy">Indy</string>
     <string name="snow_details">적설 상세</string>
     <string name="base_depth">기본 적설 깊이</string>
     <string name="snow_since_freeze">이후 적설량</string>

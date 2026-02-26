@@ -120,6 +120,7 @@
     <string name="pass_all">全部</string>
     <string name="pass_epic">Epic</string>
     <string name="pass_ikon">Ikon</string>
+    <string name="pass_indy">Indy</string>
     <string name="snow_details">积雪详情</string>
     <string name="base_depth">基础雪深</string>
     <string name="snow_since_freeze">此后降雪</string>

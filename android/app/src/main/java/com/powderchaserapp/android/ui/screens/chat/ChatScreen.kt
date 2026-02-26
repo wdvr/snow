@@ -310,6 +310,7 @@ private val allSuggestions = listOf(
     "What's the snowpack like in the Rockies?",
     "Which resorts are expecting a storm this week?",
     "Best Epic Pass resorts to visit right now",
+    "Best Indy Pass resorts with fresh powder",
 )
 
 /** 4 random suggestions, reshuffled each composition. */

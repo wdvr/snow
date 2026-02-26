@@ -202,6 +202,7 @@ data class Resort(
     @SerialName("black_runs_pct") val blackRunsPct: Int? = null,
     @SerialName("epic_pass") val epicPass: String? = null,
     @SerialName("ikon_pass") val ikonPass: String? = null,
+    @SerialName("indy_pass") val indyPass: String? = null,
     @SerialName("weather_sources") val weatherSources: List<String> = emptyList(),
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,

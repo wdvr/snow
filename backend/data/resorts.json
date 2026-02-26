@@ -1072,7 +1072,8 @@
       "family_friendly": true,
       "expert_terrain": false,
       "city": "Fernie",
-      "webcam_url": "https://www.skiresort.info/ski-resort/fernie/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/fernie/webcams/",
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_330_files/0/0_0.jpg"
     },
     {
       "resort_id": "fortress-mountain",
@@ -1287,7 +1288,8 @@
       "family_friendly": false,
       "expert_terrain": true,
       "city": "South Lake Tahoe",
-      "webcam_url": "https://www.skiresort.info/ski-resort/heavenly/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/heavenly/webcams/",
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_772_files/0/0_0.jpg"
     },
     {
       "resort_id": "hemsedal",
@@ -1692,7 +1694,7 @@
       "expert_terrain": false,
       "city": "Kitzbühel",
       "webcam_url": "https://www.skiresort.info/ski-resort/kitzbuehel/webcams/",
-      "trail_map_url": "https://www.snow-forecast.com/pistemaps/Kitzbuhel_pistemap.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2854_files/0/0_0.jpg"
     },
     {
       "resort_id": "la-plagne",
@@ -1911,7 +1913,8 @@
       "family_friendly": true,
       "expert_terrain": false,
       "city": "Lech",
-      "webcam_url": "https://www.skiresort.info/ski-resort/lech-zuers/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/lech-zuers/webcams/",
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_17351_files/0/0_0.jpg"
     },
     {
       "resort_id": "les-arcs",
@@ -2035,7 +2038,8 @@
       "family_friendly": false,
       "expert_terrain": false,
       "city": "Mammoth Lakes",
-      "webcam_url": "https://www.skiresort.info/ski-resort/mammoth-mountain/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/mammoth-mountain/webcams/",
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_19249_files/0/0_0.jpg"
     },
     {
       "resort_id": "marble-mountain-steady-brook-humber-valley",
@@ -3067,7 +3071,8 @@
       "family_friendly": true,
       "expert_terrain": false,
       "city": "Saalbach-Hinterglemm",
-      "webcam_url": "https://www.skiresort.info/ski-resort/saalbach-hinterglemm/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/saalbach-hinterglemm/webcams/",
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2108_files/0/0_0.jpg"
     },
     {
       "resort_id": "sierra-at-tahoe",
@@ -3161,7 +3166,8 @@
       "vertical_drop_m": 665,
       "family_friendly": false,
       "expert_terrain": false,
-      "webcam_url": "https://www.skiresort.info/ski-resort/snoqualmie-pass/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/snoqualmie-pass/webcams/",
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_150_files/0/0_0.jpg"
     },
     {
       "resort_id": "snow-king-mountain-jackson",
@@ -3354,7 +3360,7 @@
       "day_ticket_price_max_usd": 81,
       "city": "St. Anton am Arlberg",
       "webcam_url": "https://www.skiresort.info/ski-resort/st-anton/webcams/",
-      "trail_map_url": "https://www.snow-forecast.com/pistemaps/St-Anton_pistemap.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_17351_files/0/0_0.jpg"
     },
     {
       "resort_id": "steamboat",
@@ -3388,7 +3394,8 @@
       "family_friendly": false,
       "expert_terrain": false,
       "city": "Steamboat Springs",
-      "webcam_url": "https://www.skiresort.info/ski-resort/steamboat/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/steamboat/webcams/",
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_1736_files/0/0_0.jpg"
     },
     {
       "resort_id": "stevens-pass",
@@ -3773,7 +3780,8 @@
       "family_friendly": false,
       "expert_terrain": false,
       "city": "Telluride",
-      "webcam_url": "https://www.skiresort.info/ski-resort/telluride/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/telluride/webcams/",
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_598_files/0/0_0.jpg"
     },
     {
       "resort_id": "thredbo",
@@ -4002,7 +4010,8 @@
       "day_ticket_price_min_usd": 59,
       "day_ticket_price_max_usd": 76,
       "city": "Val d'Isere",
-      "webcam_url": "https://www.skiresort.info/ski-resort/val-disere/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/val-disere/webcams/",
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_96_files/0/0_0.jpg"
     },
     {
       "resort_id": "val-saint-come",
@@ -5660,7 +5669,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 1200,
       "city": "Jochberg",
-      "webcam_url": "https://www.skiresort.info/ski-resort/kitzski-kitzbuhel-kirchberg/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/kitzski-kitzbuhel-kirchberg/webcams/",
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2854_files/0/0_0.jpg"
     },
     {
       "resort_id": "kitzsteinhorn-maiskogel-kaprun",
@@ -19242,7 +19252,8 @@
       "family_friendly": true,
       "expert_terrain": false,
       "city": "Hakuba",
-      "webcam_url": "https://www.skiresort.info/ski-resort/hakuba/webcams/"
+      "webcam_url": "https://www.skiresort.info/ski-resort/hakuba/webcams/",
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_1882_files/0/0_0.jpg"
     },
     {
       "resort_id": "hoshino-resorts-tomamu",

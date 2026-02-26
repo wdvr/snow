@@ -49,6 +49,7 @@ class ModelDeserializationTest {
             "official_website": "https://www.bigwhite.com",
             "epic_pass": "7 days",
             "ikon_pass": null,
+            "indy_pass": "unlimited",
             "weather_sources": ["weatherapi"],
             "green_runs_pct": 18,
             "blue_runs_pct": 56,
@@ -65,6 +66,7 @@ class ModelDeserializationTest {
         assertEquals("America/Vancouver", resort.timezone)
         assertEquals("7 days", resort.epicPass)
         assertNull(resort.ikonPass)
+        assertEquals("unlimited", resort.indyPass)
         assertEquals("Canada", resort.countryName)
         assertEquals("BC, Canada", resort.displayLocation)
         assertNotNull(resort.baseElevation)

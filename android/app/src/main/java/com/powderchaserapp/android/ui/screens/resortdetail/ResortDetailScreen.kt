@@ -435,7 +435,7 @@ private fun ResortHeaderCard(resort: Resort, quality: SnowQualitySummary?, units
             }
 
             // Pass badges
-            if (resort.epicPass != null || resort.ikonPass != null) {
+            if (resort.epicPass != null || resort.ikonPass != null || resort.indyPass != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     resort.epicPass?.let {
@@ -443,6 +443,16 @@ private fun ResortHeaderCard(resort: Resort, quality: SnowQualitySummary?, units
                     }
                     resort.ikonPass?.let {
                         AssistChip(onClick = {}, label = { Text("Ikon: $it") })
+                    }
+                    resort.indyPass?.let {
+                        AssistChip(
+                            onClick = {},
+                            label = { Text("Indy: $it") },
+                            colors = AssistChipDefaults.assistChipColors(
+                                containerColor = SnowColors.IndyGreen.copy(alpha = 0.15f),
+                                labelColor = SnowColors.IndyGreen,
+                            ),
+                        )
                     }
                 }
             }

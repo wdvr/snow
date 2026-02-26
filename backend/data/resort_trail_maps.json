@@ -372,13 +372,15 @@
   },
   "fernie": {
     "name": "Fernie Alpine Resort",
-    "skiresort_info_trailmap_id": null,
-    "skiresort_info_all_trailmap_ids": null,
-    "skiresort_info_slug": null,
-    "skiresort_info_image_url": null,
-    "skiresort_info_xml_url": null,
+    "skiresort_info_trailmap_id": 330,
+    "skiresort_info_all_trailmap_ids": [
+      330
+    ],
+    "skiresort_info_slug": "fernie",
+    "skiresort_info_image_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_330_files/0/0_0.jpg",
+    "skiresort_info_xml_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_330.xml",
     "snow_forecast_url": null,
-    "source": null
+    "source": "skiresort.info"
   },
   "fortress-mountain": {
     "name": "Fortress Mountain",
@@ -453,13 +455,15 @@
   },
   "heavenly": {
     "name": "Heavenly Mountain Resort",
-    "skiresort_info_trailmap_id": null,
-    "skiresort_info_all_trailmap_ids": null,
-    "skiresort_info_slug": null,
-    "skiresort_info_image_url": null,
-    "skiresort_info_xml_url": null,
+    "skiresort_info_trailmap_id": 772,
+    "skiresort_info_all_trailmap_ids": [
+      772
+    ],
+    "skiresort_info_slug": "heavenly",
+    "skiresort_info_image_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_772_files/0/0_0.jpg",
+    "skiresort_info_xml_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_772.xml",
     "snow_forecast_url": null,
-    "source": null
+    "source": "skiresort.info"
   },
   "hemsedal": {
     "name": "Hemsedal",
@@ -601,13 +605,15 @@
   },
   "kitzbuehel": {
     "name": "Kitzbühel",
-    "skiresort_info_trailmap_id": null,
-    "skiresort_info_all_trailmap_ids": null,
-    "skiresort_info_slug": null,
-    "skiresort_info_image_url": null,
-    "skiresort_info_xml_url": null,
+    "skiresort_info_trailmap_id": 2854,
+    "skiresort_info_all_trailmap_ids": [
+      2854
+    ],
+    "skiresort_info_slug": "kitzski-kitzbuehel-kirchberg",
+    "skiresort_info_image_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2854_files/0/0_0.jpg",
+    "skiresort_info_xml_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2854.xml",
     "snow_forecast_url": "https://www.snow-forecast.com/pistemaps/Kitzbuhel_pistemap.jpg",
-    "source": "snow-forecast.com"
+    "source": "skiresort.info"
   },
   "la-plagne": {
     "name": "La Plagne",
@@ -682,13 +688,15 @@
   },
   "lech-zuers": {
     "name": "Lech Zürs",
-    "skiresort_info_trailmap_id": null,
-    "skiresort_info_all_trailmap_ids": null,
-    "skiresort_info_slug": null,
-    "skiresort_info_image_url": null,
-    "skiresort_info_xml_url": null,
+    "skiresort_info_trailmap_id": 17351,
+    "skiresort_info_all_trailmap_ids": [
+      17351
+    ],
+    "skiresort_info_slug": "st-anton-st-christoph-stuben-lech-zuers-warth-schroecken-ski-arlberg",
+    "skiresort_info_image_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_17351_files/0/0_0.jpg",
+    "skiresort_info_xml_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_17351.xml",
     "snow_forecast_url": null,
-    "source": null
+    "source": "skiresort.info"
   },
   "les-arcs": {
     "name": "Les Arcs",
@@ -726,13 +734,15 @@
   },
   "mammoth-mountain": {
     "name": "Mammoth Mountain",
-    "skiresort_info_trailmap_id": null,
-    "skiresort_info_all_trailmap_ids": null,
-    "skiresort_info_slug": null,
-    "skiresort_info_image_url": null,
-    "skiresort_info_xml_url": null,
+    "skiresort_info_trailmap_id": 19249,
+    "skiresort_info_all_trailmap_ids": [
+      19249
+    ],
+    "skiresort_info_slug": "mammoth-mountain",
+    "skiresort_info_image_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_19249_files/0/0_0.jpg",
+    "skiresort_info_xml_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_19249.xml",
     "snow_forecast_url": null,
-    "source": null
+    "source": "skiresort.info"
   },
   "marble-mountain-steady-brook-humber-valley": {
     "name": "Marble Mountain – Steady Brook (Humber Valley)",
@@ -1122,13 +1132,15 @@
   },
   "saalbach-hinterglemm": {
     "name": "Saalbach Hinterglemm",
-    "skiresort_info_trailmap_id": null,
-    "skiresort_info_all_trailmap_ids": null,
-    "skiresort_info_slug": null,
-    "skiresort_info_image_url": null,
-    "skiresort_info_xml_url": null,
+    "skiresort_info_trailmap_id": 2108,
+    "skiresort_info_all_trailmap_ids": [
+      2108
+    ],
+    "skiresort_info_slug": "saalbach-hinterglemm-leogang-fieberbrunn-skicircus",
+    "skiresort_info_image_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2108_files/0/0_0.jpg",
+    "skiresort_info_xml_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2108.xml",
     "snow_forecast_url": null,
-    "source": null
+    "source": "skiresort.info"
   },
   "sierra-at-tahoe": {
     "name": "Sierra at Tahoe",
@@ -1156,13 +1168,17 @@
   },
   "snoqualmie-pass": {
     "name": "The Summit at Snoqualmie",
-    "skiresort_info_trailmap_id": null,
-    "skiresort_info_all_trailmap_ids": null,
-    "skiresort_info_slug": null,
-    "skiresort_info_image_url": null,
-    "skiresort_info_xml_url": null,
+    "skiresort_info_trailmap_id": 150,
+    "skiresort_info_all_trailmap_ids": [
+      150,
+      22795,
+      22796
+    ],
+    "skiresort_info_slug": "the-summit-at-snoqualmie",
+    "skiresort_info_image_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_150_files/0/0_0.jpg",
+    "skiresort_info_xml_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_150.xml",
     "snow_forecast_url": null,
-    "source": null
+    "source": "skiresort.info"
   },
   "snow-king-mountain-jackson": {
     "name": "Snow King Mountain – Jackson",
@@ -1225,23 +1241,27 @@
   },
   "st-anton": {
     "name": "St. Anton am Arlberg",
-    "skiresort_info_trailmap_id": null,
-    "skiresort_info_all_trailmap_ids": null,
-    "skiresort_info_slug": null,
-    "skiresort_info_image_url": null,
-    "skiresort_info_xml_url": null,
+    "skiresort_info_trailmap_id": 17351,
+    "skiresort_info_all_trailmap_ids": [
+      17351
+    ],
+    "skiresort_info_slug": "st-anton-st-christoph-stuben-lech-zuers-warth-schroecken-ski-arlberg",
+    "skiresort_info_image_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_17351_files/0/0_0.jpg",
+    "skiresort_info_xml_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_17351.xml",
     "snow_forecast_url": "https://www.snow-forecast.com/pistemaps/St-Anton_pistemap.jpg",
-    "source": "snow-forecast.com"
+    "source": "skiresort.info"
   },
   "steamboat": {
     "name": "Steamboat Ski Resort",
-    "skiresort_info_trailmap_id": null,
-    "skiresort_info_all_trailmap_ids": null,
-    "skiresort_info_slug": null,
-    "skiresort_info_image_url": null,
-    "skiresort_info_xml_url": null,
+    "skiresort_info_trailmap_id": 1736,
+    "skiresort_info_all_trailmap_ids": [
+      1736
+    ],
+    "skiresort_info_slug": "steamboat",
+    "skiresort_info_image_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_1736_files/0/0_0.jpg",
+    "skiresort_info_xml_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_1736.xml",
     "snow_forecast_url": null,
-    "source": null
+    "source": "skiresort.info"
   },
   "stevens-pass": {
     "name": "Stevens Pass",
@@ -1369,13 +1389,18 @@
   },
   "telluride": {
     "name": "Telluride Ski Resort",
-    "skiresort_info_trailmap_id": null,
-    "skiresort_info_all_trailmap_ids": null,
-    "skiresort_info_slug": null,
-    "skiresort_info_image_url": null,
-    "skiresort_info_xml_url": null,
+    "skiresort_info_trailmap_id": 598,
+    "skiresort_info_all_trailmap_ids": [
+      598,
+      18404,
+      18405,
+      4644
+    ],
+    "skiresort_info_slug": "telluride",
+    "skiresort_info_image_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_598_files/0/0_0.jpg",
+    "skiresort_info_xml_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_598.xml",
     "snow_forecast_url": null,
-    "source": null
+    "source": "skiresort.info"
   },
   "thredbo": {
     "name": "Thredbo",
@@ -1449,13 +1474,17 @@
   },
   "val-disere": {
     "name": "Val d'Isère",
-    "skiresort_info_trailmap_id": null,
-    "skiresort_info_all_trailmap_ids": null,
-    "skiresort_info_slug": null,
-    "skiresort_info_image_url": null,
-    "skiresort_info_xml_url": null,
+    "skiresort_info_trailmap_id": 96,
+    "skiresort_info_all_trailmap_ids": [
+      96,
+      23995,
+      23523
+    ],
+    "skiresort_info_slug": "tignes-val-disere",
+    "skiresort_info_image_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_96_files/0/0_0.jpg",
+    "skiresort_info_xml_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_96.xml",
     "snow_forecast_url": null,
-    "source": null
+    "source": "skiresort.info"
   },
   "val-saint-come": {
     "name": "Val Saint-Côme",
@@ -2099,13 +2128,15 @@
   },
   "kitzski-kitzbuhel-kirchberg": {
     "name": "KitzSki – Kitzbühel/Kirchberg",
-    "skiresort_info_trailmap_id": null,
-    "skiresort_info_all_trailmap_ids": null,
-    "skiresort_info_slug": null,
-    "skiresort_info_image_url": null,
-    "skiresort_info_xml_url": null,
+    "skiresort_info_trailmap_id": 2854,
+    "skiresort_info_all_trailmap_ids": [
+      2854
+    ],
+    "skiresort_info_slug": "kitzski-kitzbuehel-kirchberg",
+    "skiresort_info_image_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2854_files/0/0_0.jpg",
+    "skiresort_info_xml_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2854.xml",
     "snow_forecast_url": null,
-    "source": null
+    "source": "skiresort.info"
   },
   "kitzsteinhorn-maiskogel-kaprun": {
     "name": "Kitzsteinhorn/Maiskogel – Kaprun",
@@ -7518,13 +7549,15 @@
   },
   "hakuba": {
     "name": "Happo-One – Hakuba",
-    "skiresort_info_trailmap_id": null,
-    "skiresort_info_all_trailmap_ids": null,
-    "skiresort_info_slug": null,
-    "skiresort_info_image_url": null,
-    "skiresort_info_xml_url": null,
+    "skiresort_info_trailmap_id": 1882,
+    "skiresort_info_all_trailmap_ids": [
+      1882
+    ],
+    "skiresort_info_slug": "happo-one-hakuba",
+    "skiresort_info_image_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_1882_files/0/0_0.jpg",
+    "skiresort_info_xml_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_1882.xml",
     "snow_forecast_url": null,
-    "source": null
+    "source": "skiresort.info"
   },
   "hoshino-resorts-tomamu": {
     "name": "Hoshino Resorts Tomamu",

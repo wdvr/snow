@@ -67,6 +67,7 @@ enum class PassFilter(val displayName: String) {
     ALL("All"),
     EPIC("Epic"),
     IKON("Ikon"),
+    INDY("Indy"),
 }
 
 @HiltViewModel
@@ -193,6 +194,7 @@ fun ResortListScreen(
                     PassFilter.ALL -> true
                     PassFilter.EPIC -> resort.epicPass != null
                     PassFilter.IKON -> resort.ikonPass != null
+                    PassFilter.INDY -> resort.indyPass != null
                 }
 
                 matchesSearch && matchesRegion && matchesPass
@@ -506,7 +508,7 @@ fun ResortListItem(
             }
 
             // Pass badges
-            if (resort.epicPass != null || resort.ikonPass != null) {
+            if (resort.epicPass != null || resort.ikonPass != null || resort.indyPass != null) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     resort.epicPass?.let {
@@ -532,6 +534,19 @@ fun ResortListItem(
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            )
+                        }
+                    }
+                    resort.indyPass?.let {
+                        Surface(
+                            color = SnowColors.IndyGreen.copy(alpha = 0.15f),
+                            shape = MaterialTheme.shapes.extraSmall,
+                        ) {
+                            Text(
+                                text = "Indy",
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = SnowColors.IndyGreen,
                             )
                         }
                     }

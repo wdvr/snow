@@ -50,6 +50,9 @@ object SnowColors {
     val PineGreen = Color(0xFF2D5016)
     val SunsetOrange = Color(0xFFFF6B35)
 
+    // Pass badge colors
+    val IndyGreen = Color(0xFF2E7D32)
+
     // Elevation colors
     val ElevationBase = Color(0xFF8BC34A)
     val ElevationMid = Color(0xFF42A5F5)

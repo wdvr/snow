@@ -184,6 +184,7 @@
     <string name="pass_all">All</string>
     <string name="pass_epic">Epic</string>
     <string name="pass_ikon">Ikon</string>
+    <string name="pass_indy">Indy</string>
 
     <!-- Chat -->
     <string name="ask_ai">Ask AI</string>
