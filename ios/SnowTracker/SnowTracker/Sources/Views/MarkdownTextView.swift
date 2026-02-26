@@ -58,7 +58,9 @@ struct MarkdownTextView: View {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text("\u{2022}")
                             .foregroundStyle(foregroundColor.opacity(0.6))
+                            .fixedSize()
                         inlineMarkdown(item)
+                            .layoutPriority(1)
                     }
                 }
             }
@@ -71,7 +73,9 @@ struct MarkdownTextView: View {
                         Text("\(index + 1).")
                             .foregroundStyle(foregroundColor.opacity(0.6))
                             .monospacedDigit()
+                            .fixedSize()
                         inlineMarkdown(item)
+                            .layoutPriority(1)
                     }
                 }
             }
@@ -173,6 +177,8 @@ struct MarkdownTextView: View {
     private func inlineMarkdown(_ text: String) -> some View {
         Text(inlineAttributed(text))
             .foregroundStyle(foregroundColor)
+            .lineLimit(nil)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     /// Convert inline markdown (bold, italic, code, links) to AttributedString
