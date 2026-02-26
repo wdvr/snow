@@ -299,11 +299,11 @@ class MultiSourceMerger:
                 diff_pct = round(abs(v1 - v2) / max_val * 100) if max_val > 0 else 0
                 return avg, {
                     "merge_method": "simple_average",
-                    "source_statuses": {n: "consensus" for n in values_by_source},
-                    "source_reasons": {
-                        n: f"Within {diff_pct}% of each other (threshold: 30%)"
-                        for n in values_by_source
-                    },
+                    "source_statuses": dict.fromkeys(values_by_source, "consensus"),
+                    "source_reasons": dict.fromkeys(
+                        values_by_source,
+                        f"Within {diff_pct}% of each other (threshold: 30%)",
+                    ),
                     "consensus_value_cm": avg,
                 }
             # Can't determine majority with 2 — weighted average tiebreaker
@@ -313,11 +313,11 @@ class MultiSourceMerger:
             )
             return result, {
                 "merge_method": "weighted_average",
-                "source_statuses": {n: "included" for n in values_by_source},
-                "source_reasons": {
-                    n: f"Sources disagree by {diff_pct}% (>30%), using weighted average"
-                    for n in values_by_source
-                },
+                "source_statuses": dict.fromkeys(values_by_source, "included"),
+                "source_reasons": dict.fromkeys(
+                    values_by_source,
+                    f"Sources disagree by {diff_pct}% (>30%), using weighted average",
+                ),
                 "consensus_value_cm": result,
             }
 
@@ -374,10 +374,9 @@ class MultiSourceMerger:
         )
         return result, {
             "merge_method": "weighted_average",
-            "source_statuses": {n: "included" for n in values_by_source},
-            "source_reasons": {
-                n: "No clear consensus, using weighted average fallback"
-                for n in values_by_source
-            },
+            "source_statuses": dict.fromkeys(values_by_source, "included"),
+            "source_reasons": dict.fromkeys(
+                values_by_source, "No clear consensus, using weighted average fallback"
+            ),
             "consensus_value_cm": result,
         }
