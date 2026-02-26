@@ -273,7 +273,7 @@ snow/
 |   |   |   +-- daily_history_service.py   # Snow history aggregation
 |   |   +-- models/               # Pydantic data models
 |   |   +-- ml_model/             # Model weights (JSON)
-|   +-- tests/                    # pytest test suite (1390+ tests)
+|   +-- tests/                    # pytest test suite (1550+ tests)
 +-- ml/                           # ML training pipeline
 |   +-- train_v2.py               # Neural network training script
 |   +-- collect_data.py           # Feature collection from Open-Meteo
@@ -313,7 +313,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Run tests (1390+ tests)
+# Run tests (1550+ tests)
 PYTHONPATH=src python3 -m pytest tests/ -x -q
 
 # Run locally
@@ -439,10 +439,10 @@ gh workflow run trigger-weather.yml -f environment=prod
 ## Testing
 
 ```bash
-# Backend (1390+ tests)
+# Backend (1550+ tests)
 cd backend && PYTHONPATH=src python3 -m pytest tests/ -x -q
 
-# iOS (118 tests)
+# iOS (119 tests)
 xcodebuild test -project ios/SnowTracker.xcodeproj -scheme SnowTracker \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   -only-testing:SnowTrackerTests

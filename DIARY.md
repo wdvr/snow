@@ -7,6 +7,24 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 25, 2026
 
+### Fix: Chat messages not persisting (Float→Decimal DynamoDB error)
+Chat stream handler was saving tool_calls data containing Python floats (resort coordinates, temperatures, snowfall amounts) directly to DynamoDB, which rejects float types. Added `_convert_floats()` to recursively convert floats to Decimal before `put_item()`. This was the actual root cause of chat history appearing empty — assistant messages with tool results silently failed to save.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Feature: Randomized chat suggestion rotation (4 of 16)
+Expanded AI chat from 4 hardcoded suggestion chips to a pool of 16 diverse prompts (compare resorts, find powder, budget trips, regional conditions, pass comparisons). Shows 4 randomly selected on each visit. Suggestions include specific resort comparisons, Ikon/Epic pass queries, Japan conditions, hidden gems, and budget filters.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Fix: Markdown table column widths content-based
+Tables used uniform column widths, making wide tables poorly formatted. Changed to per-column content-based width calculation: `max(60, min(220, charCount * 7 + 20))` per column. Headers and data cells are measured independently. Results in compact columns for short data and wider columns for long text.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
 ### Feature: Per-source reason text in data source transparency
 Added `reason` field to source details showing why each source was included/excluded (e.g., "Reported 5cm, 67% from median 3cm — excluded as outlier (>50%)" or "Within 12% of each other (threshold: 30%)"). Backend includes human-readable reasons with median values, deviation percentages, and thresholds. iOS displays reason text below each source row.
 | iOS | Android | Web | API |
