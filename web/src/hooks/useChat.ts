@@ -135,7 +135,7 @@ export function useChatSession(initialConversationId?: string) {
       const controller = new AbortController()
       abortRef.current = controller
 
-      const token = localStorage.getItem('snow_access_token')
+      const token = localStorage.getItem('pc_access_token')
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (token) headers['Authorization'] = `Bearer ${token}`
 

@@ -33,8 +33,12 @@ class ApiClient {
   }
 
   async fetch<T>(path: string, options?: RequestInit): Promise<T> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+    const headers: Record<string, string> = {}
+    // Only set Content-Type for requests with a body (POST, PUT, etc.)
+    // Setting it on GET requests triggers a CORS preflight OPTIONS request,
+    // which API Gateway rejects with 403.
+    if (options?.body) {
+      headers['Content-Type'] = 'application/json'
     }
     if (this.accessToken) {
       headers['Authorization'] = `Bearer ${this.accessToken}`
