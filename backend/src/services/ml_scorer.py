@@ -875,6 +875,61 @@ def predict_quality(
     return quality, score
 
 
+def _apply_no_snowfall_cap(
+    score: float,
+    raw_features: dict[str, float],
+) -> float:
+    """Cap score when there is no recent snowfall — a physics constraint.
+
+    "Champagne powder" and "powder day" ratings are physically impossible
+    without fresh snow. The ML model can hallucinate high scores for
+    forecast time slots when other features (cold temps, high snow depth)
+    look favorable but snowfall is zero. This post-scoring guard enforces
+    the physical constraint.
+
+    Rules (conservative — only constrain impossible cases):
+    - No snowfall in 72h (< 0.5cm): cap at 4.0 (GREAT). Fresh powder
+      labels require actual fresh snow.
+    - No snowfall in 24h but some in 72h (< 5cm total): cap at 4.5
+      (EXCELLENT). Aging snow from 2-3 days ago can still be very good
+      in cold conditions but is not "powder".
+
+    Args:
+        score: Raw ML score (1.0-6.0)
+        raw_features: Dict of raw features from _extract_features_at_hour
+
+    Returns:
+        Capped score (1.0-6.0)
+    """
+    snow_24h = raw_features.get("snowfall_24h_cm", 0.0)
+    snow_72h = raw_features.get("snowfall_72h_cm", 0.0)
+
+    if snow_72h < 0.5:
+        # No meaningful snowfall in 72h — impossible to have powder
+        # Cap at GREAT (4.0); conditions can still be good with cold temps
+        # and existing snow depth, but not "powder day" or "champagne powder"
+        cap = 4.0
+        if score > cap:
+            logger.debug(
+                f"No-snowfall cap: score {score:.2f} -> {cap:.1f} "
+                f"(snow_24h={snow_24h:.1f}, snow_72h={snow_72h:.1f})"
+            )
+            return cap
+    elif snow_24h < 0.5 and snow_72h < 5.0:
+        # No fresh snow in 24h, modest amount in 72h — aging snow
+        # Cap at EXCELLENT (4.5); 2-3 day old snow in cold conditions
+        # can be excellent but not quite "powder day" territory
+        cap = 4.5
+        if score > cap:
+            logger.debug(
+                f"No-snowfall cap: score {score:.2f} -> {cap:.1f} "
+                f"(snow_24h={snow_24h:.1f}, snow_72h={snow_72h:.1f})"
+            )
+            return cap
+
+    return score
+
+
 def predict_quality_at_hour(
     hourly_times: list[str],
     temps: list[float | None],
@@ -941,26 +996,9 @@ def predict_quality_at_hour(
         score = _forward_single(normalized, model["weights"])
     score = max(1.0, min(6.0, score))
 
-    thresholds = model["quality_thresholds"]
-    if score >= thresholds.get("champagne_powder", 5.5):
-        quality = SnowQuality.CHAMPAGNE_POWDER
-    elif score >= thresholds.get("powder_day", 5.0):
-        quality = SnowQuality.POWDER_DAY
-    elif score >= thresholds.get("excellent", 4.5):
-        quality = SnowQuality.EXCELLENT
-    elif score >= thresholds.get("great", 4.0):
-        quality = SnowQuality.GREAT
-    elif score >= thresholds.get("good", 3.5):
-        quality = SnowQuality.GOOD
-    elif score >= thresholds.get("decent", 3.3):
-        quality = SnowQuality.DECENT
-    elif score >= thresholds.get("mediocre", 2.9):
-        quality = SnowQuality.MEDIOCRE
-    elif score >= thresholds.get("poor", 2.3):
-        quality = SnowQuality.POOR
-    elif score >= thresholds.get("bad", 1.4):
-        quality = SnowQuality.BAD
-    else:
-        quality = SnowQuality.HORRIBLE
+    # Apply physics constraint: no powder without fresh snow
+    score = _apply_no_snowfall_cap(score, raw_features)
+
+    quality = raw_score_to_quality(score)
 
     return quality, score

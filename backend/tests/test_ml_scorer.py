@@ -9,6 +9,7 @@ import pytest
 from models.weather import SnowQuality
 from services.ml_scorer import (
     _apply_cold_accumulation_boost,
+    _apply_no_snowfall_cap,
     _apply_snow_aging_penalty,
     _compute_wind_chill,
     _extract_features_at_hour,
@@ -585,6 +586,86 @@ class TestColdAccumulationBoost:
         """Score should not exceed 6.0."""
         result = _apply_cold_accumulation_boost(5.8, 150.0, 10.0, -25.0)
         assert result <= 6.0
+
+
+# ── No-snowfall cap ─────────────────────────────────────────────────────────
+
+
+class TestNoSnowfallCap:
+    """Tests for _apply_no_snowfall_cap which enforces physics constraints.
+
+    Champagne powder and powder day ratings are physically impossible
+    without fresh snowfall. This cap prevents the ML model from
+    hallucinating high scores when snowfall is zero.
+    """
+
+    def test_no_cap_with_fresh_snow(self):
+        """Score should not be capped when there's fresh snowfall."""
+        features = {"snowfall_24h_cm": 10.0, "snowfall_72h_cm": 20.0}
+        assert _apply_no_snowfall_cap(5.8, features) == 5.8
+
+    def test_cap_at_4_0_no_snow_72h(self):
+        """Score should be capped at 4.0 when no snowfall in 72h."""
+        features = {"snowfall_24h_cm": 0.0, "snowfall_72h_cm": 0.0}
+        assert _apply_no_snowfall_cap(6.0, features) == 4.0
+
+    def test_cap_at_4_0_trace_snow_72h(self):
+        """Trace snowfall (< 0.5cm) in 72h should still trigger the cap."""
+        features = {"snowfall_24h_cm": 0.0, "snowfall_72h_cm": 0.3}
+        assert _apply_no_snowfall_cap(5.5, features) == 4.0
+
+    def test_cap_at_4_5_no_24h_modest_72h(self):
+        """No snow in 24h but modest 72h total should cap at 4.5."""
+        features = {"snowfall_24h_cm": 0.0, "snowfall_72h_cm": 3.0}
+        assert _apply_no_snowfall_cap(5.5, features) == 4.5
+
+    def test_no_cap_when_score_below_threshold(self):
+        """Score below the cap should not be modified."""
+        features = {"snowfall_24h_cm": 0.0, "snowfall_72h_cm": 0.0}
+        assert _apply_no_snowfall_cap(3.5, features) == 3.5
+
+    def test_no_cap_sufficient_72h_snow(self):
+        """With >= 5cm in 72h and some in 24h, no cap should apply."""
+        features = {"snowfall_24h_cm": 2.0, "snowfall_72h_cm": 8.0}
+        assert _apply_no_snowfall_cap(5.5, features) == 5.5
+
+    def test_no_cap_sufficient_72h_no_24h(self):
+        """With >= 5cm in 72h but none in 24h, no cap at 4.5 applies (mid-tier only)."""
+        features = {"snowfall_24h_cm": 0.0, "snowfall_72h_cm": 6.0}
+        # 72h >= 5.0 and 24h < 0.5 -> second rule doesn't apply because 72h >= 5.0
+        # First rule doesn't apply because 72h >= 0.5
+        assert _apply_no_snowfall_cap(5.0, features) == 5.0
+
+    def test_champagne_powder_impossible_no_snow(self):
+        """Champagne powder (6.0) should never occur with zero snowfall."""
+        features = {"snowfall_24h_cm": 0.0, "snowfall_72h_cm": 0.0}
+        result = _apply_no_snowfall_cap(6.0, features)
+        assert result <= 4.0
+
+    def test_powder_day_impossible_no_snow(self):
+        """Powder day (5.0+) should never occur with zero snowfall."""
+        features = {"snowfall_24h_cm": 0.0, "snowfall_72h_cm": 0.0}
+        result = _apply_no_snowfall_cap(5.2, features)
+        assert result <= 4.0
+
+    def test_missing_keys_default_to_zero(self):
+        """Missing snowfall keys should default to 0.0 (triggering cap)."""
+        result = _apply_no_snowfall_cap(5.5, {})
+        assert result <= 4.0
+
+    def test_borderline_72h_at_threshold(self):
+        """Exactly 0.5cm in 72h should NOT trigger the strict cap."""
+        features = {"snowfall_24h_cm": 0.0, "snowfall_72h_cm": 0.5}
+        # 72h = 0.5, not < 0.5, so first rule doesn't apply
+        # 24h < 0.5 and 72h < 5.0 -> second rule applies, cap at 4.5
+        assert _apply_no_snowfall_cap(5.0, features) == 4.5
+
+    def test_borderline_24h_at_threshold(self):
+        """Exactly 0.5cm in 24h should NOT trigger the second cap."""
+        features = {"snowfall_24h_cm": 0.5, "snowfall_72h_cm": 2.0}
+        # 72h >= 0.5 -> first rule doesn't apply
+        # 24h = 0.5, not < 0.5 -> second rule doesn't apply
+        assert _apply_no_snowfall_cap(5.0, features) == 5.0
 
 
 # ── raw_score_to_quality ─────────────────────────────────────────────────────
