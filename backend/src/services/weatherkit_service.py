@@ -132,6 +132,10 @@ class WeatherKitService:
 
             return self._parse_response(data, resort_id)
 
+        except requests.exceptions.HTTPError as e:
+            body = e.response.text[:200] if e.response is not None else "no body"
+            logger.warning(f"WeatherKit request failed for {resort_id}: {e} — {body}")
+            return None
         except requests.exceptions.RequestException as e:
             logger.warning(f"WeatherKit request failed for {resort_id}: {e}")
             return None
