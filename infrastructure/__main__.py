@@ -528,6 +528,15 @@ weather_processor_lambda = aws.lambda_.Function(
             "ENABLE_STATIC_JSON": config.get("enableStaticJson") or "true",
             "WEBSITE_BUCKET": website_bucket_name,
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
+            # Multi-source weather data
+            "ENABLE_SNOWFORECAST": config.get("enableSnowForecast") or "false",
+            "ENABLE_WEATHERKIT": config.get("enableWeatherKit") or "false",
+            "WEATHERKIT_KEY_ID": config.get("weatherKitKeyId") or "",
+            "WEATHERKIT_TEAM_ID": config.get("weatherKitTeamId") or "",
+            "WEATHERKIT_SERVICE_ID": config.get("weatherKitServiceId") or "",
+            "WEATHERKIT_PRIVATE_KEY": config.get_secret("weatherKitPrivateKey")
+            or config.get_secret("apnsPrivateKey")
+            or "",
         }
     ),
     tags=tags,
@@ -564,6 +573,16 @@ weather_worker_lambda = aws.lambda_.Function(
             "AWS_REGION_NAME": aws_region,
             "ENABLE_SCRAPING": "true",
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
+            "WEBSITE_BUCKET": website_bucket_name,
+            # Multi-source weather data
+            "ENABLE_SNOWFORECAST": config.get("enableSnowForecast") or "false",
+            "ENABLE_WEATHERKIT": config.get("enableWeatherKit") or "false",
+            "WEATHERKIT_KEY_ID": config.get("weatherKitKeyId") or "",
+            "WEATHERKIT_TEAM_ID": config.get("weatherKitTeamId") or "",
+            "WEATHERKIT_SERVICE_ID": config.get("weatherKitServiceId") or "",
+            "WEATHERKIT_PRIVATE_KEY": config.get_secret("weatherKitPrivateKey")
+            or config.get_secret("apnsPrivateKey")
+            or "",
         }
     ),
     tags=tags,
@@ -659,6 +678,72 @@ static_json_schedule_target = aws.cloudwatch.EventTarget(
     f"{app_name}-static-json-schedule-target-{environment}",
     rule=static_json_schedule_rule.name,
     arn=static_json_lambda.arn,
+)
+
+# =============================================================================
+# Snow-Forecast Prefetch Lambda - Scrapes Snow-Forecast for all resorts
+# =============================================================================
+
+# Snow-Forecast prefetch log group
+snowforecast_prefetch_log_group = aws.cloudwatch.LogGroup(
+    f"{app_name}-snowforecast-prefetch-logs-{environment}",
+    name=f"/aws/lambda/{app_name}-snowforecast-prefetch-{environment}",
+    retention_in_days=14,
+    tags=tags,
+)
+
+# Snow-Forecast prefetch Lambda
+snowforecast_prefetch_lambda = aws.lambda_.Function(
+    f"{app_name}-snowforecast-prefetch-{environment}",
+    name=f"{app_name}-snowforecast-prefetch-{environment}",
+    role=lambda_role.arn,
+    handler="handlers.snowforecast_prefetch.snowforecast_prefetch_handler",
+    runtime="python3.12",
+    timeout=900,  # 15 minutes for sequential scraping with 1s delay
+    memory_size=512,
+    code=pulumi.AssetArchive(
+        {
+            "index.py": pulumi.StringAsset(placeholder_lambda_code),
+        }
+    ),
+    environment=aws.lambda_.FunctionEnvironmentArgs(
+        variables={
+            "ENVIRONMENT": environment,
+            "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
+            "WEBSITE_BUCKET": website_bucket_name,
+            "AWS_REGION_NAME": aws_region,
+            "ENABLE_SNOWFORECAST": config.get("enableSnowForecast") or "false",
+        }
+    ),
+    tags=tags,
+    opts=pulumi.ResourceOptions(
+        depends_on=[lambda_role, snowforecast_prefetch_log_group]
+    ),
+)
+
+# Schedule Snow-Forecast prefetch every 6 hours
+snowforecast_prefetch_schedule_rule = aws.cloudwatch.EventRule(
+    f"{app_name}-snowforecast-prefetch-schedule-{environment}",
+    name=f"{app_name}-snowforecast-prefetch-schedule-{environment}",
+    description="Prefetch Snow-Forecast data every 6 hours",
+    schedule_expression="rate(6 hours)",
+    tags=tags,
+)
+
+# Permission for CloudWatch Events to invoke the Snow-Forecast prefetch Lambda
+snowforecast_prefetch_schedule_permission = aws.lambda_.Permission(
+    f"{app_name}-snowforecast-prefetch-schedule-permission-{environment}",
+    action="lambda:InvokeFunction",
+    function=snowforecast_prefetch_lambda.name,
+    principal="events.amazonaws.com",
+    source_arn=snowforecast_prefetch_schedule_rule.arn,
+)
+
+# CloudWatch Events target for Snow-Forecast prefetch
+snowforecast_prefetch_schedule_target = aws.cloudwatch.EventTarget(
+    f"{app_name}-snowforecast-prefetch-schedule-target-{environment}",
+    rule=snowforecast_prefetch_schedule_rule.name,
+    arn=snowforecast_prefetch_lambda.arn,
 )
 
 # =============================================================================
@@ -3614,6 +3699,11 @@ pulumi.export("notification_schedule_rule_name", notification_schedule_rule.name
 pulumi.export("weekly_digest_schedule_rule_name", weekly_digest_schedule_rule.name)
 pulumi.export("static_json_lambda_name", static_json_lambda.name)
 pulumi.export("static_json_schedule_rule_name", static_json_schedule_rule.name)
+pulumi.export("snowforecast_prefetch_lambda_name", snowforecast_prefetch_lambda.name)
+pulumi.export(
+    "snowforecast_prefetch_schedule_rule_name",
+    snowforecast_prefetch_schedule_rule.name,
+)
 if apns_platform_app:
     pulumi.export("apns_platform_app_arn", apns_platform_app.arn)
 else:

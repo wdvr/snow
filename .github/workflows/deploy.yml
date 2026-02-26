@@ -161,6 +161,22 @@ jobs:
           echo "APNs credentials not set - push notifications will not be available"
         fi
 
+        # Configure WeatherKit if credentials are available (reuses APNs .p8 key)
+        if [ -n "${{ secrets.WEATHERKIT_KEY_ID }}" ]; then
+          echo "Configuring WeatherKit credentials..."
+          pulumi config set snow-tracker-infrastructure:weatherKitKeyId "${{ secrets.WEATHERKIT_KEY_ID }}"
+          pulumi config set snow-tracker-infrastructure:weatherKitTeamId "${{ secrets.WEATHERKIT_TEAM_ID }}"
+          pulumi config set snow-tracker-infrastructure:weatherKitServiceId "${{ secrets.WEATHERKIT_SERVICE_ID }}"
+          # Private key: use dedicated secret or fall back to APNS key (same .p8)
+          WK_KEY="${{ secrets.WEATHERKIT_PRIVATE_KEY }}"
+          if [ -z "$WK_KEY" ]; then
+            WK_KEY="${{ secrets.APNS_PRIVATE_KEY }}"
+          fi
+          printf '%s' "$WK_KEY" | pulumi config set --secret snow-tracker-infrastructure:weatherKitPrivateKey --
+          unset WK_KEY
+          echo "WeatherKit credentials configured"
+        fi
+
         # Clear any pending operations from previous failed deployments
         # pulumi refresh --yes can't clear pending CREATEs, so we use stack export/import
         if pulumi stack export 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); ops=d.get('deployment',{}).get('pending_operations',[]); sys.exit(0 if ops else 1)" 2>/dev/null; then

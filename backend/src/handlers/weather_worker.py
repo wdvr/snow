@@ -17,6 +17,7 @@ from botocore.exceptions import ClientError
 
 from models.weather import WeatherCondition
 from services.daily_history_service import DailyHistoryService
+from services.multi_source_merger import MultiSourceMerger, SourceData
 from services.onthesnow_scraper import OnTheSnowScraper
 from services.openmeteo_service import OpenMeteoService
 from services.snow_quality_service import SnowQualityService
@@ -29,6 +30,7 @@ logger.setLevel(logging.INFO)
 
 # Initialize AWS clients
 dynamodb = boto3.resource("dynamodb")
+s3_client = boto3.client("s3")
 # Environment variables
 RESORTS_TABLE = os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
 WEATHER_CONDITIONS_TABLE = os.environ.get(
@@ -41,6 +43,9 @@ DAILY_HISTORY_TABLE = os.environ.get(
     "DAILY_HISTORY_TABLE", "snow-tracker-daily-history-dev"
 )
 ENABLE_SCRAPING = os.environ.get("ENABLE_SCRAPING", "true").lower() == "true"
+ENABLE_SNOWFORECAST = os.environ.get("ENABLE_SNOWFORECAST", "false").lower() == "true"
+ENABLE_WEATHERKIT = os.environ.get("ENABLE_WEATHERKIT", "false").lower() == "true"
+WEBSITE_BUCKET = os.environ.get("WEBSITE_BUCKET", "")
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
 # Number of elevation points to process concurrently
 ELEVATION_CONCURRENCY = int(os.environ.get("ELEVATION_CONCURRENCY", "3"))
@@ -62,6 +67,118 @@ def save_weather_condition(table, weather_condition: WeatherCondition) -> None:
         raise
 
 
+def _load_snowforecast_cache() -> dict[str, Any]:
+    """Load Snow-Forecast cache from S3. Returns empty dict on failure."""
+    if not ENABLE_SNOWFORECAST or not WEBSITE_BUCKET:
+        return {}
+    try:
+        response = s3_client.get_object(
+            Bucket=WEBSITE_BUCKET, Key="data/snowforecast-cache.json"
+        )
+        data = json.loads(response["Body"].read().decode("utf-8"))
+        # Cache file wraps resort data under "resorts" key
+        return data.get("resorts", data) if isinstance(data, dict) else {}
+    except Exception as e:
+        logger.warning(f"Failed to load Snow-Forecast cache from S3: {e}")
+        return {}
+
+
+def _build_supplementary_sources(
+    resort_id: str,
+    scraper: OnTheSnowScraper | None,
+    scraped_data: Any | None,
+    snowforecast_cache: dict[str, Any],
+    weatherkit_service: Any | None,
+    lat: float,
+    lon: float,
+    elevation_level: str,
+) -> list[SourceData]:
+    """Build list of supplementary SourceData from available sources."""
+    sources: list[SourceData] = []
+
+    # OnTheSnow scraped data
+    if scraped_data and scraper:
+        depth = scraper._get_scraped_depth_for_level(scraped_data, elevation_level)
+        sources.append(
+            SourceData(
+                source_name="onthesnow",
+                snowfall_24h_cm=getattr(scraped_data, "snowfall_24h_cm", None),
+                snowfall_48h_cm=getattr(scraped_data, "snowfall_48h_cm", None),
+                snowfall_72h_cm=getattr(scraped_data, "snowfall_72h_cm", None),
+                snow_depth_cm=depth,
+                raw_data={
+                    "snowfall_24h_inches": getattr(
+                        scraped_data, "snowfall_24h_inches", None
+                    ),
+                    "snowfall_48h_inches": getattr(
+                        scraped_data, "snowfall_48h_inches", None
+                    ),
+                    "snowfall_72h_inches": getattr(
+                        scraped_data, "snowfall_72h_inches", None
+                    ),
+                    "base_depth_inches": getattr(
+                        scraped_data, "base_depth_inches", None
+                    ),
+                    "summit_depth_inches": getattr(
+                        scraped_data, "summit_depth_inches", None
+                    ),
+                    "surface_conditions": getattr(
+                        scraped_data, "surface_conditions", None
+                    ),
+                    "source_url": getattr(scraped_data, "source_url", None),
+                },
+            )
+        )
+
+    # Snow-Forecast cached data
+    if ENABLE_SNOWFORECAST and resort_id in snowforecast_cache:
+        sf_data = snowforecast_cache[resort_id]
+        # Pick depth based on elevation level
+        if elevation_level == "base":
+            sf_depth = sf_data.get("lower_depth_cm")
+        elif elevation_level == "top":
+            sf_depth = sf_data.get("upper_depth_cm") or sf_data.get("lower_depth_cm")
+        else:  # mid
+            upper = sf_data.get("upper_depth_cm")
+            lower = sf_data.get("lower_depth_cm")
+            if upper is not None and lower is not None:
+                sf_depth = (upper + lower) / 2.0
+            else:
+                sf_depth = upper or lower
+        sources.append(
+            SourceData(
+                source_name="snowforecast",
+                snowfall_24h_cm=sf_data.get("snowfall_24h_cm"),
+                snowfall_48h_cm=sf_data.get("snowfall_48h_cm"),
+                snowfall_72h_cm=sf_data.get("snowfall_72h_cm"),
+                snow_depth_cm=sf_depth,
+                surface_conditions=sf_data.get("surface_conditions"),
+                raw_data=sf_data,
+            )
+        )
+
+    # WeatherKit inline fetch
+    if ENABLE_WEATHERKIT and weatherkit_service:
+        try:
+            wk_data = weatherkit_service.get_weather(lat, lon, resort_id=resort_id)
+            if wk_data:
+                sources.append(
+                    SourceData(
+                        source_name="weatherkit",
+                        snowfall_24h_cm=wk_data.snowfall_24h_cm,
+                        temperature_c=wk_data.temperature_c,
+                        raw_data={
+                            "snowfall_24h_mm": wk_data.snowfall_24h_mm,
+                            "precipitation_type": wk_data.precipitation_type,
+                        },
+                    )
+                )
+        except Exception as e:
+            logger.warning(f"WeatherKit failed for {resort_id}: {e}")
+
+    return sources
+
+
 def process_elevation_point(
     elevation_point: dict | Any,
     resort_id: str,
@@ -72,6 +189,8 @@ def process_elevation_point(
     scraped_data: Any | None,
     snow_summary_service: SnowSummaryService | None = None,
     daily_history_service: DailyHistoryService | None = None,
+    snowforecast_cache: dict[str, Any] | None = None,
+    weatherkit_service: Any | None = None,
 ) -> dict[str, Any]:
     """Process a single elevation point and save the weather condition.
 
@@ -114,10 +233,20 @@ def process_elevation_point(
             last_known_freeze_date=last_known_freeze_date,
         )
 
-        # Merge with scraped data if available
-        if scraped_data and scraper:
-            weather_data = scraper.merge_with_weather_data(
-                weather_data, scraped_data, elevation_level=level
+        # Merge with all available supplementary sources
+        supplementary_sources = _build_supplementary_sources(
+            resort_id=resort_id,
+            scraper=scraper,
+            scraped_data=scraped_data,
+            snowforecast_cache=snowforecast_cache or {},
+            weatherkit_service=weatherkit_service,
+            lat=lat,
+            lon=lon,
+            elevation_level=level,
+        )
+        if supplementary_sources:
+            weather_data = MultiSourceMerger.merge(
+                weather_data, supplementary_sources, elevation_level=level
             )
 
         # Ensure cumulative snowfall windows are consistent after all merges
@@ -335,6 +464,29 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
 
         # Initialize scraper if enabled
         scraper = OnTheSnowScraper() if ENABLE_SCRAPING else None
+
+        # Load Snow-Forecast cache from S3 (one read per worker invocation)
+        snowforecast_cache = _load_snowforecast_cache()
+        if snowforecast_cache:
+            logger.info(
+                f"Loaded Snow-Forecast cache with {len(snowforecast_cache)} resorts"
+            )
+
+        # Initialize WeatherKit service if enabled
+        weatherkit_service = None
+        if ENABLE_WEATHERKIT:
+            try:
+                from services.weatherkit_service import WeatherKitService
+
+                weatherkit_service = WeatherKitService()
+                if weatherkit_service.configured:
+                    logger.info("WeatherKit service initialized")
+                else:
+                    logger.info("WeatherKit not configured - missing credentials")
+                    weatherkit_service = None
+            except ImportError:
+                logger.warning("WeatherKit service not available (PyJWT not installed)")
+
         logger.info(
             f"Snow summary service initialized with table: {SNOW_SUMMARY_TABLE}"
         )
@@ -402,6 +554,8 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
                             scraped_data,
                             snow_summary_service,
                             daily_history_service,
+                            snowforecast_cache,
+                            weatherkit_service,
                         ): elevation_point
                         for elevation_point in elevation_points
                     }

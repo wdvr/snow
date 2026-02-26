@@ -320,9 +320,19 @@ class TestProcessElevationPoint:
         ep = _make_elevation_point_dict("top")
 
         scraper = MagicMock()
-        scraped_data = SimpleNamespace(snowfall_24h_cm=20.0, snowfall_48h_cm=30.0)
-        merged_data = _make_weather_data(snowfall_24h_cm=20.0)
-        scraper.merge_with_weather_data.return_value = merged_data
+        scraper._get_scraped_depth_for_level.return_value = 150.0
+        scraped_data = SimpleNamespace(
+            snowfall_24h_cm=20.0,
+            snowfall_48h_cm=30.0,
+            snowfall_72h_cm=None,
+            snowfall_24h_inches=7.9,
+            snowfall_48h_inches=11.8,
+            snowfall_72h_inches=None,
+            base_depth_inches=40.0,
+            summit_depth_inches=60.0,
+            surface_conditions="Packed Powder",
+            source_url="https://www.onthesnow.com/test",
+        )
 
         result = process_elevation_point(
             elevation_point=ep,
@@ -336,10 +346,11 @@ class TestProcessElevationPoint:
         )
 
         assert result["success"] is True
-        scraper.merge_with_weather_data.assert_called_once()
+        # MultiSourceMerger is now used instead of scraper.merge_with_weather_data
+        scraper._get_scraped_depth_for_level.assert_called_once()
 
     def test_scraper_not_called_without_scraped_data(self):
-        """If scraped_data is None, scraper.merge should not be called."""
+        """If scraped_data is None, no supplementary sources are built."""
         from handlers.weather_worker import process_elevation_point
 
         ws, sqs, table, sss = _setup_services()
@@ -358,7 +369,7 @@ class TestProcessElevationPoint:
         )
 
         assert result["success"] is True
-        scraper.merge_with_weather_data.assert_not_called()
+        scraper._get_scraped_depth_for_level.assert_not_called()
 
     def test_without_snow_summary_service(self):
         from handlers.weather_worker import process_elevation_point

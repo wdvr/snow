@@ -7,6 +7,17 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 25, 2026
 
+### Feature: Multi-source weather data (Snow-Forecast + WeatherKit + MultiSourceMerger)
+Open-Meteo missed 3cm snowfall at Big White on Feb 24 (all 4 models showed 0.0cm). Added 3 supplementary data sources with weighted averaging to catch what grid models miss:
+- **Snow-Forecast scraper** (`snowforecast_scraper.py`): Scrapes snow-forecast.com for 3300+ resorts. Auto-generates URL slugs with override file. Runs as prefetch Lambda every 6 hours, writes cache to S3.
+- **Apple WeatherKit** (`weatherkit_service.py`): ES256 JWT auth, fetches currentWeather + forecastHourly, converts SWE to snowfall. Called inline (~200ms) per resort.
+- **MultiSourceMerger** (`multi_source_merger.py`): Replaces inline 70/30 OnTheSnow merge. Normalized weighted average (Open-Meteo 0.50, OnTheSnow 0.25, Snow-Forecast 0.15, WeatherKit 0.10). Priority-based snow depth (resort-reported > model). Confidence: 3+ sources = HIGH.
+- Infrastructure: Prefetch Lambda (512MB/900s) + CloudWatch 6hr schedule. Feature flags: `ENABLE_SNOWFORECAST`, `ENABLE_WEATHERKIT` (both default off).
+- 149 new tests (1539 total), all passing.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ### Score: Fix list/detail vs timeline score mismatch
 Batch/summary scores used weighted average across all elevations (50% top + 35% mid + 15% base) while timeline showed single mid-elevation score. Changed batch/summary to use representative elevation (mid > top > base), matching timeline default and explanation text. Big White went from showing 61 in list but 66 in timeline to consistent scores.
 | iOS | Android | Web | API |
