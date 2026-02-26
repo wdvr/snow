@@ -63,13 +63,24 @@ class ApiClient {
 
   // --- Resorts ---
 
-  async getResorts(params?: { region?: string; country?: string }): Promise<Resort[]> {
+  async getResorts(params?: {
+    region?: string
+    country?: string
+    limit?: number
+    offset?: number
+    sort_by?: string
+    sort_order?: string
+  }): Promise<{ resorts: Resort[]; total_count: number }> {
     const searchParams = new URLSearchParams()
     if (params?.region) searchParams.set('region', params.region)
     if (params?.country) searchParams.set('country', params.country)
+    if (params?.limit != null) searchParams.set('limit', String(params.limit))
+    if (params?.offset != null) searchParams.set('offset', String(params.offset))
+    if (params?.sort_by) searchParams.set('sort_by', params.sort_by)
+    if (params?.sort_order) searchParams.set('sort_order', params.sort_order)
     const qs = searchParams.toString()
-    const data = await this.fetch<{ resorts: Resort[] }>(`/api/v1/resorts${qs ? `?${qs}` : ''}`)
-    return data.resorts
+    const data = await this.fetch<{ resorts: Resort[]; total_count: number }>(`/api/v1/resorts${qs ? `?${qs}` : ''}`)
+    return { resorts: data.resorts, total_count: data.total_count ?? data.resorts.length }
   }
 
   getResort(id: string): Promise<Resort> {
@@ -82,10 +93,33 @@ class ApiClient {
   }
 
   async getSnowQualityBatch(ids: string[]): Promise<Record<string, SnowQualitySummary>> {
-    const data = await this.fetch<{ results: Record<string, SnowQualitySummary> }>(
-      `/api/v1/snow-quality/batch?resort_ids=${ids.join(',')}`,
+    // Backend has a 200-resort limit per batch call — chunk and fetch in parallel
+    const CHUNK_SIZE = 200
+    if (ids.length <= CHUNK_SIZE) {
+      const data = await this.fetch<{ results: Record<string, SnowQualitySummary> }>(
+        `/api/v1/snow-quality/batch?resort_ids=${ids.join(',')}`,
+      )
+      return data.results
+    }
+
+    const chunks: string[][] = []
+    for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+      chunks.push(ids.slice(i, i + CHUNK_SIZE))
+    }
+
+    const results = await Promise.all(
+      chunks.map((chunk) =>
+        this.fetch<{ results: Record<string, SnowQualitySummary> }>(
+          `/api/v1/snow-quality/batch?resort_ids=${chunk.join(',')}`,
+        ),
+      ),
     )
-    return data.results
+
+    const merged: Record<string, SnowQualitySummary> = {}
+    for (const r of results) {
+      Object.assign(merged, r.results)
+    }
+    return merged
   }
 
   getResortSnowQuality(id: string): Promise<Record<string, unknown>> {

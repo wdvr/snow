@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Trophy, ArrowRight, Loader2, MapPin, Navigation, Heart } from 'lucide-react'
+import { Search, Trophy, ArrowRight, Loader2, MapPin, Navigation, Heart, ChevronDown } from 'lucide-react'
 import {
   useResorts,
+  flattenResorts,
+  getTotalCount,
   useRegions,
   useSnowQualityBatch,
   useBestConditions,
@@ -17,6 +19,21 @@ import { countryFlag } from '../utils/format'
 
 type SortOption = 'quality' | 'snow' | 'name' | 'favorites' | 'distance'
 type PassFilter = 'all' | 'epic' | 'ikon'
+
+/** Map client-side sort option to API sort_by param */
+function toApiSort(sortBy: SortOption): { sort_by?: string; sort_order?: string } {
+  switch (sortBy) {
+    case 'quality':
+      return { sort_by: 'quality_score', sort_order: 'desc' }
+    case 'snow':
+      return { sort_by: 'snowfall', sort_order: 'desc' }
+    case 'name':
+      return { sort_by: 'name', sort_order: 'asc' }
+    default:
+      // 'favorites' and 'distance' are client-side sorts — fall back to quality
+      return { sort_by: 'quality_score', sort_order: 'desc' }
+  }
+}
 
 /** Haversine distance in km between two lat/lon pairs */
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -42,18 +59,34 @@ export function HomePage() {
   const { data: nearbyResorts } = useNearbyResorts(geo.latitude, geo.longitude)
 
   const { data: regions, isLoading: regionsLoading } = useRegions()
-  const { data: resorts, isLoading: resortsLoading } = useResorts(
-    selectedRegion === 'favorites' ? undefined : selectedRegion || undefined,
-  )
+
+  // Compute API sort params from the selected sort option
+  const apiSort = toApiSort(sortBy)
+
+  const {
+    data: resortsData,
+    isLoading: resortsLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useResorts({
+    region: selectedRegion === 'favorites' ? undefined : selectedRegion || undefined,
+    sortBy: apiSort.sort_by,
+    sortOrder: apiSort.sort_order,
+  })
+
+  const resorts = flattenResorts(resortsData)
+  const totalCount = getTotalCount(resortsData)
+
   const { data: bestConditions } = useBestConditions(5)
 
-  // Fetch quality for all resorts
-  const resortIds = useMemo(() => resorts?.map((r) => r.resort_id) ?? [], [resorts])
+  // Fetch quality for loaded resorts
+  const resortIds = useMemo(() => resorts.map((r) => r.resort_id), [resorts])
   const { data: qualityMap } = useSnowQualityBatch(resortIds)
 
   // Compute distances for each resort (for distance sorting)
   const distanceMap = useMemo(() => {
-    if (!resorts || geo.latitude == null || geo.longitude == null) return null
+    if (resorts.length === 0 || geo.latitude == null || geo.longitude == null) return null
     const map: Record<string, number> = {}
     for (const r of resorts) {
       // Use the first elevation point's lat/lon (usually mid or base)
@@ -65,9 +98,9 @@ export function HomePage() {
     return map
   }, [resorts, geo.latitude, geo.longitude])
 
-  // Filter and sort resorts
+  // Filter and sort resorts (client-side filtering for search, favorites, pass; client-side sort for distance/favorites)
   const filteredResorts = useMemo(() => {
-    if (!resorts) return []
+    if (resorts.length === 0) return []
     let filtered = resorts
 
     // Favorites filter
@@ -93,46 +126,47 @@ export function HomePage() {
       )
     }
 
-    // Sort
-    return [...filtered].sort((a, b) => {
-      const qa = qualityMap?.[a.resort_id]
-      const qb = qualityMap?.[b.resort_id]
-
-      // Favorites first sort: put favorites at top, then sort by quality
-      if (sortBy === 'favorites') {
+    // Client-side sort for favorites-first and distance modes
+    // (quality, snow, name are handled server-side)
+    if (sortBy === 'favorites') {
+      return [...filtered].sort((a, b) => {
         const aFav = favorites.includes(a.resort_id) ? 1 : 0
         const bFav = favorites.includes(b.resort_id) ? 1 : 0
         if (aFav !== bFav) return bFav - aFav
+        const qa = qualityMap?.[a.resort_id]
+        const qb = qualityMap?.[b.resort_id]
         const scoreA = qa?.snow_score ?? -1
         const scoreB = qb?.snow_score ?? -1
         return scoreB - scoreA
-      }
+      })
+    }
 
-      switch (sortBy) {
-        case 'quality': {
-          const scoreA = qa?.snow_score ?? -1
-          const scoreB = qb?.snow_score ?? -1
-          return scoreB - scoreA
-        }
-        case 'snow': {
-          const snowA = qa?.snowfall_fresh_cm ?? 0
-          const snowB = qb?.snowfall_fresh_cm ?? 0
-          return snowB - snowA
-        }
-        case 'name':
-          return a.name.localeCompare(b.name)
-        case 'distance': {
-          const distA = distanceMap?.[a.resort_id] ?? Infinity
-          const distB = distanceMap?.[b.resort_id] ?? Infinity
-          return distA - distB
-        }
-        default:
-          return 0
-      }
-    })
+    if (sortBy === 'distance') {
+      return [...filtered].sort((a, b) => {
+        const distA = distanceMap?.[a.resort_id] ?? Infinity
+        const distB = distanceMap?.[b.resort_id] ?? Infinity
+        return distA - distB
+      })
+    }
+
+    // Server already sorted for quality/snow/name — preserve order
+    return filtered
   }, [resorts, search, sortBy, qualityMap, selectedRegion, favorites, passFilter, distanceMap])
 
   const isLoading = resortsLoading || regionsLoading
+
+  // Count text: "Showing X of Y resorts"
+  const countText = (() => {
+    if (isLoading) return 'Loading...'
+    if (search || passFilter !== 'all' || selectedRegion === 'favorites') {
+      // Client-side filtering active — show filtered count
+      return `${filteredResorts.length} resorts`
+    }
+    if (totalCount > 0 && resorts.length < totalCount) {
+      return `Showing ${resorts.length} of ${totalCount} resorts`
+    }
+    return `${filteredResorts.length} resorts`
+  })()
 
   return (
     <div>
@@ -307,7 +341,7 @@ export function HomePage() {
 
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              {isLoading ? 'Loading...' : `${filteredResorts.length} resorts`}
+              {countText}
             </p>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Sort by:</span>
@@ -350,18 +384,43 @@ export function HomePage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredResorts.map((resort) => (
-              <ResortCard
-                key={resort.resort_id}
-                resort={resort}
-                quality={qualityMap?.[resort.resort_id]}
-                isFavorite={isFavorite(resort.resort_id)}
-                onToggleFavorite={toggleFavorite}
-                distanceKm={sortBy === 'distance' ? (distanceMap?.[resort.resort_id] ?? null) : null}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredResorts.map((resort) => (
+                <ResortCard
+                  key={resort.resort_id}
+                  resort={resort}
+                  quality={qualityMap?.[resort.resort_id]}
+                  isFavorite={isFavorite(resort.resort_id)}
+                  onToggleFavorite={toggleFavorite}
+                  distanceKm={sortBy === 'distance' ? (distanceMap?.[resort.resort_id] ?? null) : null}
+                />
+              ))}
+            </div>
+
+            {/* Load more button */}
+            {hasNextPage && (
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isFetchingNextPage ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Loading more...
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4" />
+                      Load more resorts
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -6,7 +6,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaf
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import 'leaflet/dist/leaflet.css'
 
-import { useResorts, useSnowQualityBatch, useNearbyResorts } from '../hooks/useResorts'
+import { useResorts, flattenResorts, useSnowQualityBatch, useNearbyResorts } from '../hooks/useResorts'
 import { useGeolocation } from '../hooks/useGeolocation'
 import { getQualityColor } from '../utils/colors'
 import type { Resort, SnowQualitySummary, SnowQuality, ElevationPoint } from '../api/types'
@@ -108,11 +108,25 @@ export function MapPage() {
   }, [searchParams])
 
   const geo = useGeolocation()
-  const { data: resorts, isLoading: resortsLoading } = useResorts()
+  const {
+    data: resortsData,
+    isLoading: resortsLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useResorts()
+  const resorts = useMemo(() => flattenResorts(resortsData), [resortsData])
   const { data: nearbyData } = useNearbyResorts(geo.latitude, geo.longitude)
 
+  // Auto-load all pages for the map (we need all markers)
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
   // Batch quality for all resorts
-  const resortIds = useMemo(() => resorts?.map((r) => r.resort_id) ?? [], [resorts])
+  const resortIds = useMemo(() => resorts.map((r) => r.resort_id), [resorts])
   const { data: qualityMap } = useSnowQualityBatch(resortIds)
 
   // Allowed qualities for the selected tier
@@ -120,7 +134,7 @@ export function MapPage() {
 
   // Filter resorts by quality tier and compute coords
   const markers = useMemo(() => {
-    if (!resorts) return []
+    if (resorts.length === 0) return []
 
     return resorts
       .map((resort) => {

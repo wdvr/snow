@@ -1,13 +1,47 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
-import type { Region, SnowQualitySummary } from '../api/types'
+import type { Resort, Region, SnowQualitySummary } from '../api/types'
 
-export function useResorts(region?: string) {
-  return useQuery({
-    queryKey: ['resorts', region],
-    queryFn: () => api.getResorts(region ? { region } : undefined),
+const PAGE_SIZE = 50
+
+export interface UseResortsOptions {
+  region?: string
+  sortBy?: string
+  sortOrder?: string
+}
+
+export function useResorts(options?: UseResortsOptions) {
+  return useInfiniteQuery({
+    queryKey: ['resorts', options?.region, options?.sortBy, options?.sortOrder],
+    queryFn: async ({ pageParam = 0 }) => {
+      return api.getResorts({
+        region: options?.region,
+        limit: PAGE_SIZE,
+        offset: pageParam as number,
+        sort_by: options?.sortBy,
+        sort_order: options?.sortOrder,
+      })
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((sum, page) => sum + page.resorts.length, 0)
+      if (loaded >= lastPage.total_count) return undefined
+      return loaded
+    },
     staleTime: 5 * 60 * 1000,
   })
+}
+
+/** Flatten all pages into a single array of resorts */
+export function flattenResorts(data: { pages: Array<{ resorts: Resort[]; total_count: number }> } | undefined): Resort[] {
+  if (!data) return []
+  return data.pages.flatMap((page) => page.resorts)
+}
+
+/** Get total count from paginated data */
+export function getTotalCount(data: { pages: Array<{ resorts: Resort[]; total_count: number }> } | undefined): number {
+  if (!data || data.pages.length === 0) return 0
+  return data.pages[0].total_count
 }
 
 export function useResort(id: string) {
@@ -66,5 +100,5 @@ export function useNearbyResorts(lat: number | null, lon: number | null, radius 
 
 export function useResortsByRegion(_regions: Region[] | undefined, selectedRegion: string | null) {
   // This hook is for convenience - actual filtering is handled by the API
-  return useResorts(selectedRegion || undefined)
+  return useResorts({ region: selectedRegion || undefined })
 }
