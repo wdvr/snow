@@ -223,6 +223,16 @@ class MultiSourceMerger:
                 "source_count": len(available_sources),
             }
 
+        # Add missing sources (not available for this resort) so the UI
+        # can show all 4 known sources with excluded ones marked
+        for _internal_name, domain in SOURCE_DOMAIN_MAP.items():
+            if domain not in merged["source_details"]["sources"]:
+                merged["source_details"]["sources"][domain] = {
+                    "snowfall_24h_cm": None,
+                    "status": "no_data",
+                    "reason": "No data available for this resort",
+                }
+
         # Store raw data from all supplementary sources for debugging
         if "raw_data" not in merged:
             merged["raw_data"] = {}

@@ -91,7 +91,6 @@ struct ResortDetailView: View {
                             TimelineCard(resortId: resort.id, elevation: selectedElevation)
                             predictionsCard(condition)
                             weatherDetailsCard(condition)
-                            dataSourcesCard(condition)
                         }
                         .transition(.opacity.combined(with: .move(edge: .trailing)))
                         .id(selectedElevation)
@@ -120,6 +119,11 @@ struct ResortDetailView: View {
 
                     // All elevations summary
                     allElevationsSummary
+
+                    // Data sources (at the very bottom)
+                    if let condition = conditionForSelectedElevation {
+                        dataSourcesCard(condition)
+                    }
                 }
                 .padding()
             }
@@ -759,7 +763,7 @@ struct ResortDetailView: View {
 
     @ViewBuilder
     private func dataSourcesCard(_ condition: WeatherCondition) -> some View {
-        if let details = condition.sourceDetails, details.sourceCount > 1 {
+        if let details = condition.sourceDetails, details.sourceCount > 0 {
             VStack(alignment: .leading, spacing: 12) {
                 // Expandable header
                 Button {
@@ -820,59 +824,13 @@ struct ResortDetailView: View {
 
                         Divider()
 
-                        // Per-source details
+                        // Per-source details — sort: consensus first, then included, then outlier, then no_data
                         let prefs = userPreferencesManager.preferredUnits
-                        ForEach(Array(details.sources.keys.sorted()), id: \.self) { sourceName in
-                            if let info = details.sources[sourceName] {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    HStack(spacing: 10) {
-                                        // Status icon
-                                        Image(systemName: statusIcon(info.status))
-                                            .foregroundStyle(statusColor(info.status))
-                                            .font(.subheadline)
-
-                                        // Source name
-                                        Text(sourceName)
-                                            .font(.subheadline)
-                                            .lineLimit(1)
-
-                                        Spacer()
-
-                                        // Reported value
-                                        if let snowfall = info.snowfall24hCm {
-                                            Text(WeatherCondition.formatSnow(snowfall, prefs: prefs))
-                                                .font(.subheadline)
-                                                .fontWeight(.medium)
-                                                .foregroundStyle(info.status == "consensus" ? .primary : .secondary)
-                                        } else {
-                                            Text("No data")
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                        }
-
-                                        // Status label
-                                        Text(statusLabel(info.status))
-                                            .font(.caption2)
-                                            .fontWeight(.medium)
-                                            .foregroundStyle(statusColor(info.status))
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(
-                                                Capsule()
-                                                    .fill(statusColor(info.status).opacity(0.1))
-                                            )
-                                    }
-
-                                    // Reason text
-                                    if let reason = info.reason {
-                                        Text(reason)
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                            .padding(.leading, 26)
-                                    }
-                                }
-                                .padding(.vertical, 2)
-                            }
+                        let sortedSources = details.sources.sorted { a, b in
+                            sourceStatusOrder(a.value.status) < sourceStatusOrder(b.value.status)
+                        }
+                        ForEach(sortedSources, id: \.key) { sourceName, info in
+                            sourceRow(sourceName: sourceName, info: info, prefs: prefs)
                         }
                     }
                     .transition(.opacity.combined(with: .move(edge: .top)))
@@ -882,6 +840,61 @@ struct ResortDetailView: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Data Sources, \(details.sourceCount) sources, confidence \(condition.sourceConfidence.displayName)")
         }
+    }
+
+    @ViewBuilder
+    private func sourceRow(sourceName: String, info: SourceDetails.SourceInfo, prefs: UnitPreferences) -> some View {
+        let isExcluded = info.status == "outlier" || info.status == "no_data"
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 10) {
+                // Status icon
+                Image(systemName: statusIcon(info.status))
+                    .foregroundStyle(statusColor(info.status))
+                    .font(.subheadline)
+
+                // Source name
+                Text(sourceName)
+                    .font(.subheadline)
+                    .foregroundStyle(isExcluded ? .secondary : .primary)
+                    .lineLimit(1)
+
+                Spacer()
+
+                // Reported value
+                if let snowfall = info.snowfall24hCm {
+                    Text(WeatherCondition.formatSnow(snowfall, prefs: prefs))
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(isExcluded ? .secondary : .primary)
+                        .strikethrough(info.status == "outlier", color: .orange.opacity(0.6))
+                } else {
+                    Text(info.status == "no_data" ? "N/A" : "No data")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+
+                // Status label
+                Text(statusLabel(info.status))
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .foregroundStyle(statusColor(info.status))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(statusColor(info.status).opacity(0.1))
+                    )
+            }
+
+            // Reason text — always show for excluded sources
+            if let reason = info.reason {
+                Text(reason)
+                    .font(.caption2)
+                    .foregroundStyle(isExcluded ? .orange : .secondary)
+                    .padding(.leading, 26)
+            }
+        }
+        .padding(.vertical, 2)
     }
 
     private func formatMergeMethod(_ method: String) -> String {
@@ -894,11 +907,22 @@ struct ResortDetailView: View {
         }
     }
 
+    private func sourceStatusOrder(_ status: String) -> Int {
+        switch status {
+        case "consensus": return 0
+        case "included": return 1
+        case "outlier": return 2
+        case "no_data": return 3
+        default: return 4
+        }
+    }
+
     private func statusIcon(_ status: String) -> String {
         switch status {
         case "consensus": return "checkmark.circle.fill"
         case "outlier": return "xmark.circle.fill"
         case "included": return "circle.fill"
+        case "no_data": return "minus.circle"
         default: return "circle"
         }
     }
@@ -906,8 +930,9 @@ struct ResortDetailView: View {
     private func statusLabel(_ status: String) -> String {
         switch status {
         case "consensus": return "Consensus"
-        case "outlier": return "Outlier"
+        case "outlier": return "Excluded"
         case "included": return "Included"
+        case "no_data": return "Unavailable"
         default: return status.capitalized
         }
     }
@@ -917,6 +942,7 @@ struct ResortDetailView: View {
         case "consensus": return .green
         case "outlier": return .orange
         case "included": return .blue
+        case "no_data": return .gray
         default: return .secondary
         }
     }
