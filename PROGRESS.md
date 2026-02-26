@@ -19,12 +19,21 @@
 - [x] Remove duplicate splash screen spinner (iOS)
 - [x] Update App Store screenshot tests (add AI chat, iPad)
 - [x] Update release notes for v1.1
-- [x] TestFlight build uploaded (build 698)
+- [x] TestFlight build uploaded (build 717, v1.1.0)
 - [x] Generate final screenshots (iPhone 17 Pro Max + iPhone 17)
 - [ ] Generate iPad screenshots (iPad Pro 13" + 11")
 - [ ] Upload metadata + screenshots to App Store Connect
 - [ ] Submit for App Store review
 - [x] Create `/ios-release` skill with lessons learned
+
+#### Web App Fixes (Feb 26)
+- [ ] **W-BUG-001: Quality shows "Unknown" for all resorts** — batch quality call sends all 1019 IDs at once, exceeds 200 limit → need chunking in useSnowQualityBatch
+- [ ] **W-BUG-002: No pagination** — all 1019 resorts load at once → slow experience. Need server-side sort + pagination
+- [ ] **W-BUG-003: Server-side sort_by param** — API needs sort_by support (name, quality_score, snowfall) to enable paginated+sorted results from DynamoDB
+- [ ] Web: chunk batch quality requests into ≤200 ID batches
+- [ ] Web: add limit/offset/sort_by to getResorts() API client
+- [ ] Web: infinite scroll or "Load more" pagination in resort list
+- [ ] Backend: add sort_by query param to GET /api/v1/resorts
 
 #### Dynamic Chat Suggestions
 - [x] Create DynamoDB table for chat suggestions (in Pulumi)
