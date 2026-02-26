@@ -412,7 +412,21 @@ def generate_timeline_explanation(
     elif q == SnowQuality.BAD:
         parts.append(f"{prefix}Icy, refrozen surface.")
     elif q == SnowQuality.HORRIBLE:
-        parts.append(f"{prefix}Not skiable.")
+        # Depth-aware logic matching _describe_surface() for HORRIBLE quality
+        if temperature_c > 5 and (snow_depth_cm is None or snow_depth_cm < 30):
+            parts.append(
+                f"{prefix}Not skiable: warm temperatures ({temperature_c:.0f}\u00b0C) actively melting snow."
+            )
+        elif temperature_c > 5 and snow_depth_cm is not None and snow_depth_cm >= 30:
+            parts.append(
+                f"{prefix}Very poor conditions: warm ({temperature_c:.0f}\u00b0C) and degrading fast despite {snow_depth_cm:.0f}cm base."
+            )
+        elif snow_depth_cm is not None and snow_depth_cm >= 30:
+            parts.append(
+                f"{prefix}Very poor conditions: icy, degraded surface despite {snow_depth_cm:.0f}cm base."
+            )
+        else:
+            parts.append(f"{prefix}Not skiable: insufficient snow cover.")
     else:
         return "Conditions data unavailable."
 

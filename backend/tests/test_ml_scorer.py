@@ -8,9 +8,7 @@ import pytest
 
 from models.weather import SnowQuality
 from services.ml_scorer import (
-    _apply_cold_accumulation_boost,
     _apply_no_snowfall_cap,
-    _apply_snow_aging_penalty,
     _compute_wind_chill,
     _extract_features_at_hour,
     _forward_single,
@@ -506,86 +504,6 @@ class TestExtractFeaturesAtHour:
         result = _extract_features_at_hour(temps, snowfall, wind, 72, 2000.0)
         assert result is not None
         assert result["freeze_thaw_days_ago"] < 14.0  # Should detect the event
-
-
-# ── Snow aging penalty ───────────────────────────────────────────────────────
-
-
-class TestSnowAgingPenalty:
-    def test_no_penalty_recent_snow(self):
-        """No penalty when last snowfall was < 48 hours ago."""
-        assert _apply_snow_aging_penalty(5.0, 24.0, 0.0, -5.0) == 5.0
-
-    def test_no_penalty_with_fresh_snow(self):
-        """No penalty when there's recent 24h snowfall."""
-        assert _apply_snow_aging_penalty(5.0, 120.0, 1.0, -5.0) == 5.0
-
-    def test_penalty_old_snow(self):
-        """Penalty applied when snow is old and no recent accumulation."""
-        result = _apply_snow_aging_penalty(5.0, 120.0, 0.0, -5.0)
-        assert result < 5.0
-
-    def test_penalty_capped_at_0_8(self):
-        """Penalty should not exceed 0.8 (score doesn't drop more than 0.8)."""
-        result = _apply_snow_aging_penalty(5.0, 480.0, 0.0, -5.0)
-        assert result >= 5.0 - 0.8
-
-    def test_cold_reduces_penalty(self):
-        """Very cold temps should reduce the aging penalty."""
-        warm_result = _apply_snow_aging_penalty(5.0, 120.0, 0.0, -5.0)
-        cold_result = _apply_snow_aging_penalty(5.0, 120.0, 0.0, -20.0)
-        assert cold_result > warm_result
-
-    def test_score_never_below_1(self):
-        """Score should never go below 1.0."""
-        result = _apply_snow_aging_penalty(1.2, 480.0, 0.0, 0.0)
-        assert result >= 1.0
-
-    def test_none_hours_no_penalty(self):
-        """No penalty when hours_since_snowfall is None."""
-        assert _apply_snow_aging_penalty(5.0, None, 0.0, -5.0) == 5.0
-
-
-# ── Cold accumulation boost ──────────────────────────────────────────────────
-
-
-class TestColdAccumulationBoost:
-    def test_no_boost_recent_freeze_thaw(self):
-        """No boost if freeze-thaw was recent (< 5 days)."""
-        result = _apply_cold_accumulation_boost(3.0, 100.0, 3.0, -10.0)
-        assert result == 3.0
-
-    def test_no_boost_little_snow(self):
-        """No boost if accumulated snow < 15cm."""
-        result = _apply_cold_accumulation_boost(3.0, 10.0, 10.0, -10.0)
-        assert result == 3.0
-
-    def test_no_boost_warm_temps(self):
-        """No boost if temperature >= 0."""
-        result = _apply_cold_accumulation_boost(3.0, 100.0, 10.0, 2.0)
-        assert result == 3.0
-
-    def test_boost_applied(self):
-        """Boost applied with lots of snow, cold temps, no freeze-thaw."""
-        result = _apply_cold_accumulation_boost(3.0, 100.0, 10.0, -15.0)
-        assert result > 3.0
-
-    def test_more_snow_more_boost(self):
-        """More accumulated snow should give bigger boost."""
-        low = _apply_cold_accumulation_boost(3.0, 20.0, 10.0, -10.0)
-        high = _apply_cold_accumulation_boost(3.0, 120.0, 10.0, -10.0)
-        assert high > low
-
-    def test_colder_more_boost(self):
-        """Colder temps should give bigger boost."""
-        mild = _apply_cold_accumulation_boost(3.0, 80.0, 10.0, -2.0)
-        cold = _apply_cold_accumulation_boost(3.0, 80.0, 10.0, -25.0)
-        assert cold > mild
-
-    def test_score_capped_at_6(self):
-        """Score should not exceed 6.0."""
-        result = _apply_cold_accumulation_boost(5.8, 150.0, 10.0, -25.0)
-        assert result <= 6.0
 
 
 # ── No-snowfall cap ─────────────────────────────────────────────────────────

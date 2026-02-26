@@ -1086,7 +1086,6 @@ class ChatService:
         """Find resorts near given coordinates with snow quality scores and ticket prices."""
         from services.ml_scorer import raw_score_to_quality
         from services.quality_explanation_service import score_to_100
-        from utils.constants import DEFAULT_ELEVATION_WEIGHT, ELEVATION_WEIGHTS
 
         nearby = self.resort_service.get_nearby_resorts(
             latitude=latitude,
@@ -1108,18 +1107,21 @@ class ChatService:
                 if not conditions:
                     return resort_id, None
 
-                weighted_raw = 0.0
-                total_w = 0.0
-                for c in conditions:
-                    if c.quality_score is not None:
-                        w = ELEVATION_WEIGHTS.get(
-                            c.elevation_level, DEFAULT_ELEVATION_WEIGHT
-                        )
-                        weighted_raw += c.quality_score * w
-                        total_w += w
+                # Use representative elevation (mid > top > base) for overall quality,
+                # consistent with api_handler and static_json_generator
+                representative = None
+                for pref in ["mid", "top", "base"]:
+                    for c in conditions:
+                        if c.elevation_level == pref:
+                            representative = c
+                            break
+                    if representative:
+                        break
+                if not representative:
+                    representative = conditions[0]
 
-                if total_w > 0:
-                    overall_raw = weighted_raw / total_w
+                if representative.quality_score is not None:
+                    overall_raw = representative.quality_score
                     return resort_id, {
                         "snow_quality": raw_score_to_quality(overall_raw).value,
                         "snow_score": score_to_100(overall_raw),
@@ -1412,27 +1414,11 @@ class ChatService:
             }
 
             if conditions:
-                # Compute overall quality from weighted raw scores
                 from services.ml_scorer import raw_score_to_quality
                 from services.quality_explanation_service import score_to_100
-                from utils.constants import DEFAULT_ELEVATION_WEIGHT, ELEVATION_WEIGHTS
 
-                weighted_raw = 0.0
-                total_w = 0.0
-                for c in conditions:
-                    if c.quality_score is not None:
-                        w = ELEVATION_WEIGHTS.get(
-                            c.elevation_level, DEFAULT_ELEVATION_WEIGHT
-                        )
-                        weighted_raw += c.quality_score * w
-                        total_w += w
-
-                if total_w > 0:
-                    overall_raw = weighted_raw / total_w
-                    entry["overall_quality"] = raw_score_to_quality(overall_raw).value
-                    entry["quality_score"] = score_to_100(overall_raw)
-
-                # Pick representative condition (mid > top > base)
+                # Pick representative condition (mid > top > base) for overall quality,
+                # consistent with api_handler and static_json_generator
                 representative = None
                 for pref in ["mid", "top", "base"]:
                     for c in conditions:
@@ -1443,6 +1429,11 @@ class ChatService:
                         break
                 if not representative:
                     representative = conditions[0]
+
+                if representative.quality_score is not None:
+                    overall_raw = representative.quality_score
+                    entry["overall_quality"] = raw_score_to_quality(overall_raw).value
+                    entry["quality_score"] = score_to_100(overall_raw)
 
                 entry["fresh_snow_cm"] = representative.fresh_snow_cm
                 entry["temperature_c"] = representative.current_temp_celsius
@@ -1470,7 +1461,6 @@ class ChatService:
         """Get detailed conditions, forecasts, ticket prices for multiple resorts at once."""
         from services.ml_scorer import raw_score_to_quality
         from services.quality_explanation_service import score_to_100
-        from utils.constants import DEFAULT_ELEVATION_WEIGHT, ELEVATION_WEIGHTS
 
         if not resort_ids:
             return {"error": "No resort IDs provided."}
@@ -1517,22 +1507,8 @@ class ChatService:
                 # Current conditions with overall quality
                 conditions = self.weather_service.get_conditions_for_resort(resort_id)
                 if conditions:
-                    weighted_raw = 0.0
-                    total_w = 0.0
-                    for c in conditions:
-                        if c.quality_score is not None:
-                            w = ELEVATION_WEIGHTS.get(
-                                c.elevation_level, DEFAULT_ELEVATION_WEIGHT
-                            )
-                            weighted_raw += c.quality_score * w
-                            total_w += w
-
-                    if total_w > 0:
-                        overall_raw = weighted_raw / total_w
-                        entry["snow_quality"] = raw_score_to_quality(overall_raw).value
-                        entry["snow_score"] = score_to_100(overall_raw)
-
-                    # Representative condition (mid > top > base)
+                    # Use representative elevation (mid > top > base) for overall quality,
+                    # consistent with api_handler and static_json_generator
                     representative = None
                     for pref in ["mid", "top", "base"]:
                         for c in conditions:
@@ -1543,6 +1519,11 @@ class ChatService:
                             break
                     if not representative:
                         representative = conditions[0]
+
+                    if representative.quality_score is not None:
+                        overall_raw = representative.quality_score
+                        entry["snow_quality"] = raw_score_to_quality(overall_raw).value
+                        entry["snow_score"] = score_to_100(overall_raw)
 
                     entry["fresh_snow_cm"] = representative.fresh_snow_cm
                     entry["temperature_c"] = representative.current_temp_celsius

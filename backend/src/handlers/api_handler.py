@@ -840,7 +840,10 @@ def _get_all_resorts_cached():
 async def get_nearby_resorts(
     response: Response,
     lat: float = Query(..., ge=-90, le=90, description="User's latitude"),
-    lon: float = Query(..., ge=-180, le=180, description="User's longitude"),
+    lon: float | None = Query(None, ge=-180, le=180, description="User's longitude"),
+    lng: float | None = Query(
+        None, ge=-180, le=180, description="User's longitude (alias for lon)"
+    ),
     radius: float = Query(
         200, ge=1, le=2000, description="Search radius in kilometers (default 200km)"
     ),
@@ -852,11 +855,21 @@ async def get_nearby_resorts(
     Returns resorts sorted by distance from the provided coordinates,
     within the specified radius. Each resort includes its distance in
     both kilometers and miles.
+
+    Accepts either `lon` or `lng` for longitude (both are supported).
     """
+    # Accept both lon and lng as aliases for longitude
+    longitude = lon if lon is not None else lng
+    if longitude is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Either 'lon' or 'lng' query parameter is required",
+        )
+
     try:
         nearby = get_resort_service().get_nearby_resorts(
             latitude=lat,
-            longitude=lon,
+            longitude=longitude,
             radius_km=radius,
             limit=limit,
         )
@@ -877,10 +890,12 @@ async def get_nearby_resorts(
         return {
             "resorts": results,
             "count": len(results),
-            "search_center": {"latitude": lat, "longitude": lon},
+            "search_center": {"latitude": lat, "longitude": longitude},
             "search_radius_km": radius,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Nearby resorts error: %s", e, exc_info=True)
         raise HTTPException(
@@ -2439,7 +2454,10 @@ async def get_current_user(user_id: str = Depends(get_current_user_id)):
 async def get_recommendations(
     response: Response,
     lat: float = Query(..., ge=-90, le=90, description="User's latitude"),
-    lng: float = Query(..., ge=-180, le=180, description="User's longitude"),
+    lng: float | None = Query(None, ge=-180, le=180, description="User's longitude"),
+    lon: float | None = Query(
+        None, ge=-180, le=180, description="User's longitude (alias for lng)"
+    ),
     radius: float = Query(500, ge=10, le=2000, description="Search radius in km"),
     limit: int = Query(10, ge=1, le=50, description="Number of recommendations"),
     min_quality: str | None = Query(None, description="Minimum snow quality filter"),
@@ -2453,7 +2471,17 @@ async def get_recommendations(
     - Distance from user (closer is better, with diminishing returns)
     - Current snow quality (excellent > good > fair > poor)
     - Fresh/predicted snowfall (more snow = higher score)
+
+    Accepts either `lng` or `lon` for longitude (both are supported).
     """
+    # Accept both lng and lon as aliases for longitude
+    longitude = lng if lng is not None else lon
+    if longitude is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Either 'lng' or 'lon' query parameter is required",
+        )
+
     try:
         # Parse min_quality if provided
         quality_filter = None
@@ -2469,7 +2497,7 @@ async def get_recommendations(
         # Get recommendations
         recommendations = get_recommendation_service().get_recommendations(
             latitude=lat,
-            longitude=lng,
+            longitude=longitude,
             radius_km=radius,
             limit=limit,
             min_quality=quality_filter,
@@ -2480,7 +2508,7 @@ async def get_recommendations(
         return {
             "recommendations": [r.to_dict() for r in recommendations],
             "count": len(recommendations),
-            "search_center": {"latitude": lat, "longitude": lng},
+            "search_center": {"latitude": lat, "longitude": longitude},
             "search_radius_km": radius,
             "generated_at": datetime.now(UTC).isoformat(),
         }
@@ -2489,7 +2517,11 @@ async def get_recommendations(
         raise
     except Exception as e:
         logger.error(
-            "Recommendations error (lat=%s, lng=%s): %s", lat, lng, e, exc_info=True
+            "Recommendations error (lat=%s, lng=%s): %s",
+            lat,
+            longitude,
+            e,
+            exc_info=True,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -19,6 +19,12 @@ Added physics constraint to ML scorer: high snow quality ratings (powder day, ch
 |-----|---------|-----|-----|
 | n/a | n/a | n/a | done |
 
+### Fix: DynamoDB sync — delete removed resorts + fix bogus elevations (BUG-009b)
+Synced DynamoDB prod table with cleaned resorts.json. The populate workflow only adds/updates — it never deletes. Three actions: (1) Ran populate workflow with `update_existing=true` to push corrected data for 845 valid-elevation resorts. (2) Deleted 22 removed resorts directly from DynamoDB (heli-ski, backcountry, planned, indoor, duplicates). (3) Fixed 136 resorts with null elevations directly in DynamoDB — set mid/top to base elevation for flat-terrain resorts (e.g., MeriTeijo top went from bogus 2869m to correct 71m). (4) Regenerated static S3 JSON via Lambda to refresh API cache. Verified: API total_count=1019, MeriTeijo top=71m, deleted resorts return 404.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ### Fix: Resort data cleanup — bogus elevations, duplicates, non-resorts (BUG-009)
 Critical data quality fix for `backend/data/resorts.json`. Finnish bunny hills were scoring as "powder day" because fake 2800m+ elevations caused Open-Meteo temperature lapse rate to make temps artificially cold. Changes: (1) Removed 20 non-downhill entries (heli-ski, backcountry, planned/unbuilt, indoor, summer-only). (2) Removed 2 duplicates (northstar-california, silverstar with wrong Ontario coordinates). (3) Fixed 7 resorts with known-wrong elevations (Espace San Bernardo base=7m, Buttermilk swapped base/VD, Aspen Mountain base=400m, Aspen Snowmass base=813m, Diavolezza base=600m, Myoko Akakura top=3029m, Espace Lumiere base=54m). (4) Nulled bogus elevations for 26 resorts across NO/SE/PL/RO/SK (Oslo Tryvann at 2000m, Kungsberget at 2033m, etc.). (5) Fixed coordinates for Hafjell (was in Voss, now Lillehammer) and Nesfjellet (was in Narvik, now Hallingdal). (6) Nulled 21 local-currency prices for RO/PL resorts (>$100 threshold). Resort count: 1040 -> 1018. All 1569 backend tests pass.
 | iOS | Android | Web | API |
