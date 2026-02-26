@@ -83,7 +83,7 @@ Reference platform: **iOS** (most complete). Goal: Web + Android at 100% parity.
 - [ ] **A6: Google Sign-In** — Button exists but onClick is placeholder (not functional)
 - [ ] **A7: Trip Creation** — FAB button has TODO comment, not implemented
 - [ ] **A8: Comparison View** — Stub screen with placeholder text
-- [ ] **A9: Onboarding Flow** — No first-launch region selection
+- [x] **A9: Onboarding Flow** — Multi-step: Welcome screen with feature highlights, region selection grid (8 regions), saves hidden regions to preferences
 - [ ] **A10: Fresh Snow Chart** — 7-day per-elevation snowfall chart
 
 ---
