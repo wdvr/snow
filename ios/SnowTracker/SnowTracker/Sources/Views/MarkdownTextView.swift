@@ -93,51 +93,66 @@ struct MarkdownTextView: View {
     // MARK: - Table Rendering
 
     private func tableView(headers: [String], rows: [[String]]) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        let colCount = headers.count
+        // Estimate column widths based on content
+        let colWidth = max(80, min(160, Int(300 / max(colCount, 1))))
+
+        return ScrollView(.horizontal, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 // Header row
                 HStack(spacing: 0) {
                     ForEach(Array(headers.enumerated()), id: \.offset) { colIndex, header in
                         Text(inlineAttributed(header.trimmingCharacters(in: .whitespaces)))
                             .font(.caption)
-                            .fontWeight(.semibold)
+                            .fontWeight(.bold)
                             .foregroundStyle(foregroundColor)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 6)
-                            .frame(minWidth: 60, alignment: .leading)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .frame(minWidth: CGFloat(colWidth), alignment: .leading)
                         if colIndex < headers.count - 1 {
-                            Divider()
+                            Rectangle()
+                                .fill(Color(.separator).opacity(0.3))
+                                .frame(width: 0.5)
                         }
                     }
                 }
                 .background(Color(.tertiarySystemBackground))
 
-                Divider()
+                Rectangle()
+                    .fill(Color(.separator).opacity(0.5))
+                    .frame(height: 1)
 
                 // Data rows
                 ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, row in
                     HStack(spacing: 0) {
-                        ForEach(Array(row.enumerated()), id: \.offset) { colIndex, cell in
-                            Text(inlineAttributed(cell.trimmingCharacters(in: .whitespaces)))
+                        ForEach(0..<colCount, id: \.self) { colIndex in
+                            let cellText = colIndex < row.count ? row[colIndex] : ""
+                            Text(inlineAttributed(cellText.trimmingCharacters(in: .whitespaces)))
                                 .font(.caption)
                                 .foregroundStyle(foregroundColor)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 5)
-                                .frame(minWidth: 60, alignment: .leading)
-                            if colIndex < row.count - 1 {
-                                Divider()
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 7)
+                                .frame(minWidth: CGFloat(colWidth), alignment: .leading)
+                            if colIndex < colCount - 1 {
+                                Rectangle()
+                                    .fill(Color(.separator).opacity(0.2))
+                                    .frame(width: 0.5)
                             }
                         }
                     }
+                    .background(rowIndex % 2 == 1 ? Color(.tertiarySystemBackground).opacity(0.5) : Color.clear)
+
                     if rowIndex < rows.count - 1 {
-                        Divider()
+                        Rectangle()
+                            .fill(Color(.separator).opacity(0.15))
+                            .frame(height: 0.5)
                     }
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(Color(.separator).opacity(0.5), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(Color(.separator).opacity(0.4), lineWidth: 0.5)
             )
         }
     }

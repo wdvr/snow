@@ -126,8 +126,10 @@ struct ChatView: View {
                             ? viewModel.displayedText
                             : message.content
 
-                        // Don't show empty bubbles (e.g. failed AI responses with no content)
-                        if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isCurrentlyStreaming {
+                        // Skip intermediate "thinking" messages — tool status already handles this
+                        if message.isIntermediate {
+                            EmptyView()
+                        } else if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isCurrentlyStreaming {
                             MessageBubbleView(
                                 message: message,
                                 isStreaming: isCurrentlyStreaming,
@@ -356,7 +358,7 @@ private struct MessageBubbleView: View {
             }
 
             VStack(alignment: message.isFromUser ? .trailing : .leading, spacing: 8) {
-                if message.isFromUser || message.isIntermediate {
+                if message.isFromUser {
                     textBubble(displayedText)
                 } else {
                     // Parse for resort cards
@@ -405,11 +407,6 @@ private struct MessageBubbleView: View {
                 Text(text)
                     .font(.body)
                     .foregroundStyle(.white)
-            } else if message.isIntermediate {
-                Text(text)
-                    .font(.body)
-                    .italic()
-                    .foregroundStyle(.secondary)
             } else {
                 MarkdownTextView(text, foregroundColor: .primary)
                     .font(.body)
@@ -421,9 +418,7 @@ private struct MessageBubbleView: View {
         .background(
             message.isFromUser
                 ? Color.blue
-                : message.isIntermediate
-                    ? Color(.tertiarySystemBackground)
-                    : Color(.secondarySystemBackground)
+                : Color(.secondarySystemBackground)
         )
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
@@ -440,19 +435,20 @@ private struct ChatResortCarousel: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 ForEach(resortIds, id: \.self) { resortId in
                     if let resort = resorts.first(where: { $0.id == resortId }) {
                         ChatResortCard(
                             resort: resort,
                             condition: bestCondition(for: resortId),
-                            quality: summaries[resortId]?.overallSnowQuality
+                            summary: summaries[resortId]
                         ) {
                             onResortTap(resort)
                         }
                     }
                 }
             }
+            .padding(.vertical, 4)
         }
     }
 
@@ -467,71 +463,81 @@ private struct ChatResortCarousel: View {
 private struct ChatResortCard: View {
     let resort: Resort
     let condition: WeatherCondition?
-    let quality: SnowQuality?
+    let summary: SnowQualitySummaryLight?
     let onTap: () -> Void
 
     private var displayQuality: SnowQuality {
-        condition?.snowQuality ?? quality ?? .unknown
+        condition?.snowQuality ?? summary?.overallSnowQuality ?? .unknown
+    }
+
+    private var snowScore: Int? {
+        condition?.snowScore ?? summary?.snowScore
     }
 
     var body: some View {
         Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 6) {
-                // Quality badge
-                HStack {
-                    Text(displayQuality.displayName)
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(displayQuality.color, in: Capsule())
+            VStack(alignment: .leading, spacing: 0) {
+                // Top: quality gradient header
+                ZStack(alignment: .topLeading) {
+                    LinearGradient(
+                        colors: [displayQuality.color, displayQuality.color.opacity(0.6)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .frame(height: 56)
 
-                    Spacer()
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(displayQuality.displayName.uppercased())
+                                .font(.caption2)
+                                .fontWeight(.heavy)
+                                .foregroundStyle(.white)
+                            if let score = snowScore {
+                                Text("\(score)/100")
+                                    .font(.system(.title3, design: .rounded))
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                        Spacer()
+                        Image(systemName: displayQuality.icon)
+                            .font(.title2)
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                }
 
-                    Image(systemName: "chevron.right")
+                // Body content
+                VStack(alignment: .leading, spacing: 8) {
+                    // Resort name
+                    Text(resort.name)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+
+                    // Location
+                    Text(resort.displayLocation)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                }
 
-                // Resort name
-                Text(resort.name)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.primary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
+                    // Weather stats row
+                    weatherStatsRow
 
-                // Stats
-                HStack(spacing: 12) {
-                    if let condition {
-                        if condition.freshSnowCm > 0 {
-                            Label(String(format: "%.0fcm", condition.freshSnowCm), systemImage: "snowflake")
-                                .font(.caption)
-                                .foregroundStyle(.blue)
-                        }
-                        Label(String(format: "%.0f°", condition.currentTempCelsius), systemImage: "thermometer.medium")
-                            .font(.caption)
-                            .foregroundStyle(condition.currentTempCelsius > 0 ? .orange : .cyan)
-                        if let depth = condition.snowDepthCm, depth > 0 {
-                            Label(String(format: "%.0fcm base", depth), systemImage: "ruler")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    } else {
-                        Text("Loading...")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    // Trail difficulty bar
+                    if hasTrailData {
+                        trailDifficultyBar
                     }
-                }
 
-                // Country/region
-                Text(resort.countryName)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    // Price + Pass row
+                    priceAndPassRow
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
             }
-            .padding(12)
-            .frame(width: 180)
+            .frame(width: 200)
             .background(Color(.secondarySystemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .overlay(
@@ -540,6 +546,162 @@ private struct ChatResortCard: View {
             )
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - Weather Stats
+
+    @ViewBuilder
+    private var weatherStatsRow: some View {
+        HStack(spacing: 10) {
+            if let condition {
+                if condition.freshSnowCm > 0 {
+                    statItem(
+                        icon: "snowflake",
+                        value: String(format: "%.0f cm", condition.freshSnowCm),
+                        color: .blue
+                    )
+                } else if condition.snowfall24hCm > 0 {
+                    statItem(
+                        icon: "cloud.snow",
+                        value: String(format: "%.0f cm/24h", condition.snowfall24hCm),
+                        color: .blue
+                    )
+                }
+                statItem(
+                    icon: "thermometer.medium",
+                    value: String(format: "%.0f\u{00B0}", condition.currentTempCelsius),
+                    color: condition.currentTempCelsius > 0 ? .orange : .cyan
+                )
+                if let depth = condition.snowDepthCm, depth > 0 {
+                    statItem(
+                        icon: "ruler",
+                        value: String(format: "%.0f cm", depth),
+                        color: .secondary
+                    )
+                }
+            } else if let summary {
+                if let fresh = summary.snowfallFreshCm, fresh > 0 {
+                    statItem(icon: "snowflake", value: String(format: "%.0f cm", fresh), color: .blue)
+                }
+                if let temp = summary.temperatureC {
+                    statItem(
+                        icon: "thermometer.medium",
+                        value: String(format: "%.0f\u{00B0}", temp),
+                        color: temp > 0 ? .orange : .cyan
+                    )
+                }
+            } else {
+                Text("No data")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func statItem(icon: String, value: String, color: Color) -> some View {
+        HStack(spacing: 2) {
+            Image(systemName: icon)
+                .font(.system(size: 9))
+                .foregroundStyle(color)
+            Text(value)
+                .font(.caption2)
+                .foregroundStyle(color)
+        }
+    }
+
+    // MARK: - Trail Difficulty Bar
+
+    private var hasTrailData: Bool {
+        resort.greenRunsPct != nil || resort.blueRunsPct != nil || resort.blackRunsPct != nil
+    }
+
+    private var trailDifficultyBar: some View {
+        let green = Double(resort.greenRunsPct ?? 0)
+        let blue = Double(resort.blueRunsPct ?? 0)
+        let black = Double(resort.blackRunsPct ?? 0)
+        let dblack = Double(resort.doubleBlackRunsPct ?? 0)
+        let total = max(green + blue + black + dblack, 1)
+
+        return GeometryReader { geo in
+            HStack(spacing: 1) {
+                if green > 0 {
+                    Rectangle()
+                        .fill(Color.green)
+                        .frame(width: geo.size.width * green / total)
+                }
+                if blue > 0 {
+                    Rectangle()
+                        .fill(Color.blue)
+                        .frame(width: geo.size.width * blue / total)
+                }
+                if black > 0 {
+                    Rectangle()
+                        .fill(Color(.label))
+                        .frame(width: geo.size.width * black / total)
+                }
+                if dblack > 0 {
+                    Rectangle()
+                        .fill(Color(.label))
+                        .frame(width: geo.size.width * dblack / total)
+                        .overlay(
+                            // Double diamond pattern
+                            HStack(spacing: 1) {
+                                ForEach(0..<2, id: \.self) { _ in
+                                    Image(systemName: "diamond.fill")
+                                        .font(.system(size: 4))
+                                        .foregroundStyle(.white)
+                                }
+                            }
+                        )
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 2))
+        }
+        .frame(height: 6)
+    }
+
+    // MARK: - Price & Pass
+
+    @ViewBuilder
+    private var priceAndPassRow: some View {
+        HStack(spacing: 6) {
+            // Price
+            if let minPrice = resort.dayTicketPriceMinUsd {
+                if let maxPrice = resort.dayTicketPriceMaxUsd, maxPrice != minPrice {
+                    Text("$\(minPrice)-\(maxPrice)")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                } else {
+                    Text("$\(minPrice)")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                }
+            }
+
+            Spacer()
+
+            // Pass badges
+            if resort.epicPass != nil {
+                passBadge("Epic", color: .blue)
+            }
+            if resort.ikonPass != nil {
+                passBadge("Ikon", color: .orange)
+            }
+            if resort.indyPass != nil {
+                passBadge("Indy", color: .green)
+            }
+        }
+    }
+
+    private func passBadge(_ name: String, color: Color) -> some View {
+        Text(name)
+            .font(.system(size: 8, weight: .bold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(color, in: Capsule())
     }
 }
 
@@ -551,32 +713,15 @@ private struct ToolStatusView: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 6) {
-                if let status = statusMessage {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .controlSize(.small)
+            HStack(spacing: 10) {
+                ProgressView()
+                    .controlSize(.small)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    if let status = statusMessage {
                         Text(status)
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                if !activeTools.isEmpty {
-                    HStack(spacing: 6) {
-                        ForEach(activeTools, id: \.self) { tool in
-                            HStack(spacing: 4) {
-                                Image(systemName: "wrench.and.screwdriver")
-                                    .font(.caption2)
-                                Text(tool)
-                                    .font(.caption)
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.blue.opacity(0.1))
-                            .foregroundStyle(.blue)
-                            .clipShape(Capsule())
-                        }
+                            .foregroundStyle(.primary)
                     }
                 }
             }
