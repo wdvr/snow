@@ -7,6 +7,24 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 25, 2026
 
+### Feature: Per-source reason text in data source transparency
+Added `reason` field to source details showing why each source was included/excluded (e.g., "Reported 5cm, 67% from median 3cm — excluded as outlier (>50%)" or "Within 12% of each other (threshold: 30%)"). Backend includes human-readable reasons with median values, deviation percentages, and thresholds. iOS displays reason text below each source row.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Fix: Map style switching broken — always shows satellite
+`String(describing: MapStyle)` no longer produces reliable output for comparison in newer Xcode. Replaced with custom `MapDisplayStyle` enum that maps directly to `MKMapType` values. Standard/Satellite/Hybrid toggle now works correctly.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Fix: Forecast mode on map spins forever / loads very slowly
+Timeline data was fetched one-resort-at-a-time in sequential batches of 10. For 1000+ resorts, this meant 100+ sequential API batches. Fixed: batch size increased from 10→30 parallel requests, limited to 150 resorts max, and map pins update progressively after each batch instead of waiting for all to complete.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
 ### Feature: Data source transparency — show which sources contributed to each score
 Users can now see which of the 4 weather sources (Open-Meteo, OnTheSnow, Snow-Forecast, WeatherKit) contributed to each snowfall reading, which were in consensus, and which were dropped as outliers. Backend `merge()` returns `source_details` with per-source snowfall values, status (consensus/outlier), merge method, and source count. iOS shows collapsible "Data Sources" card in resort detail with color-coded status per source. 8 new backend tests.
 | iOS | Android | Web | API |
@@ -21,6 +39,36 @@ Reports were kept for a full year; reduced to 90 days to keep community data fre
 
 ### Fix: Community report timestamp nearly invisible
 Report timestamps used `.tertiary` foreground style (nearly invisible on light backgrounds). Changed to `.secondary` for better readability.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Fix: Chat history always empty on iOS
+`list_conversations()` queried non-existent DynamoDB GSI "UserIndex" — the actual index name is "user_id-index". One-line fix.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Feature: Markdown table rendering in AI chat
+AI chat responses now render markdown tables with proper header styling, column dividers, and horizontal scrolling for wide tables. Added full table parsing to MarkdownTextView (pipe-delimited `| col | col |` syntax).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Feature: Interactive resort card carousel in AI chat
+When the AI recommends specific resorts, it embeds `[[resort:resort-id]]` markers that iOS renders as tappable resort cards in a horizontal carousel. Cards show quality badge (color-coded), resort name, fresh snow, temperature, snow depth, and country. Tapping opens the full resort detail sheet. Backend system prompt updated to instruct AI to use card markers.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Fix: Viewport-based forecast loading on map
+Removed arbitrary 150-resort limit for forecast fetching. Now tracks the current visible map region and only fetches timelines for resorts visible in the viewport. Re-fetches when user pans/zooms to a new area.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Feature: Updated AI chat prompt suggestions
+Replaced generic chat suggestions with practical examples: "Best snow within 500 miles", "Cheap resorts within 6h drive", "Non-Epic resorts under $150/day", "Compare Whistler vs Jackson Hole".
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
 | done | pending | n/a | n/a |
