@@ -13,6 +13,51 @@
 
 ## Active Work (Feb 26)
 
+### Pre-Release Audit & Final Polish
+
+#### App Store Release
+- [x] Remove duplicate splash screen spinner (iOS)
+- [x] Update App Store screenshot tests (add AI chat, iPad)
+- [x] Update release notes for v1.1
+- [x] TestFlight build uploaded (build 698)
+- [ ] Generate final screenshots (iPhone + iPad) — running
+- [ ] Upload metadata + screenshots to App Store Connect
+- [ ] Submit for App Store review
+- [x] Create `/ios-release` skill with lessons learned
+
+#### Dynamic Chat Suggestions
+- [ ] Create DynamoDB table for chat suggestions
+- [ ] Add API endpoint to fetch suggestions
+- [ ] Make 12/16 suggestions location/favorites-aware with interpolation tokens
+- [ ] Default to embedded 16 if table empty
+- [ ] Update iOS, Android, Web to fetch from API
+- [ ] Document table schema and update process
+
+#### Resort Logos
+- [ ] Research logo availability for all 1040 resorts
+- [ ] Find/scrape logo URLs (skiresort.info, official sites)
+- [ ] Add logo_url to resorts.json
+- [ ] Display in resort detail view top cell (iOS, Android, Web)
+
+#### Resort Data Deep Audit
+- [ ] Cross-country only resort check (especially Scandinavia, Alps)
+- [ ] Duplicate resort detection
+- [ ] Coordinate accuracy verification
+- [ ] Elevation data validation
+- [ ] Ticket price sanity check
+- [ ] Pass affiliation accuracy
+- [ ] Region assignment verification
+- [ ] Report findings in BUGS.md
+
+#### Snow Quality & Prediction Audit
+- [ ] Verify active snowfall → high quality correlation
+- [ ] Verify cold+dry → low quality
+- [ ] Prediction stability across days
+- [ ] Impossible value detection (negative snow, extreme temps)
+- [ ] Source data consistency check
+- [ ] API response validation (all endpoints)
+- [ ] Report issues in BUGS.md
+
 ### TODO: iOS / Backend / Cross-platform
 
 1. [x] **Chat table column alignment** — Fixed: explicit `totalWidth` on all rows, shared `tableRow()` builder for header and data rows. All columns now align.
@@ -84,7 +129,7 @@ Reference platform: **iOS** (most complete). Goal: Web + Android at 100% parity.
 - [ ] **A7: Trip Creation** — FAB button has TODO comment, not implemented
 - [ ] **A8: Comparison View** — Stub screen with placeholder text
 - [x] **A9: Onboarding Flow** — Multi-step: Welcome screen with feature highlights, region selection grid (8 regions), saves hidden regions to preferences
-- [ ] **A10: Fresh Snow Chart** — 7-day per-elevation snowfall chart
+- [x] **A10: Fresh Snow Chart** — Compose Canvas 7-day snowfall bar chart with per-elevation breakdown, unit-aware formatting
 
 ---
 

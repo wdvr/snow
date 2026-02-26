@@ -3235,6 +3235,129 @@ async def send_chat_message(
         )
 
 
+# Hardcoded fallback suggestions when DynamoDB table is empty or unavailable
+_DEFAULT_CHAT_SUGGESTIONS = [
+    {
+        "id": "s1",
+        "text": "What are the snow conditions like today?",
+        "category": "general",
+    },
+    {
+        "id": "s2",
+        "text": "Which resort has the most fresh snow?",
+        "category": "general",
+    },
+    {"id": "s3", "text": "Compare Whistler and Vail conditions", "category": "general"},
+    {
+        "id": "s4",
+        "text": "What's the snow quality forecast for this week?",
+        "category": "general",
+    },
+    {
+        "id": "s5",
+        "text": "How's the powder at {resort_name} today?",
+        "category": "favorites_aware",
+    },
+    {
+        "id": "s6",
+        "text": "Best snow near {nearby_city} this weekend?",
+        "category": "location_aware",
+    },
+    {
+        "id": "s7",
+        "text": "What's the forecast for {resort_name}?",
+        "category": "favorites_aware",
+    },
+    {
+        "id": "s8",
+        "text": "Should I go to {resort_name} or {resort_name_2} tomorrow?",
+        "category": "favorites_aware",
+    },
+    {
+        "id": "s9",
+        "text": "Any fresh snow expected at {resort_name}?",
+        "category": "favorites_aware",
+    },
+    {
+        "id": "s10",
+        "text": "How deep is the base at {resort_name}?",
+        "category": "favorites_aware",
+    },
+    {
+        "id": "s11",
+        "text": "What are conditions like in {region}?",
+        "category": "location_aware",
+    },
+    {
+        "id": "s12",
+        "text": "Best resort for beginners near {nearby_city}?",
+        "category": "location_aware",
+    },
+    {
+        "id": "s13",
+        "text": "Is {resort_name} worth the trip today?",
+        "category": "favorites_aware",
+    },
+    {
+        "id": "s14",
+        "text": "Will it snow at {resort_name} this week?",
+        "category": "favorites_aware",
+    },
+    {
+        "id": "s15",
+        "text": "Hidden gems near {nearby_city} with good powder?",
+        "category": "location_aware",
+    },
+    {
+        "id": "s16",
+        "text": "How's the weather looking in {region} this weekend?",
+        "category": "location_aware",
+    },
+]
+
+
+@app.get("/api/v1/chat/suggestions")
+async def get_chat_suggestions():
+    """Return active chat suggestions for the AI chat empty state.
+
+    Reads from the chat-suggestions DynamoDB table. Falls back to hardcoded
+    defaults if the table is empty or unavailable.
+    """
+    try:
+        environment = os.environ.get("ENVIRONMENT", "dev")
+        table_name = os.environ.get(
+            "CHAT_SUGGESTIONS_TABLE",
+            f"snow-tracker-chat-suggestions-{environment}",
+        )
+        table = get_dynamodb().Table(table_name)
+        response = table.scan(
+            FilterExpression="active = :active",
+            ExpressionAttributeValues={":active": True},
+        )
+        items = response.get("Items", [])
+
+        if not items:
+            logger.info("No active suggestions in DynamoDB, returning defaults")
+            return {"suggestions": _DEFAULT_CHAT_SUGGESTIONS}
+
+        # Sort by priority (lower number = higher priority)
+        items.sort(key=lambda x: int(x.get("priority", 999)))
+
+        suggestions = [
+            {
+                "id": item["suggestion_id"],
+                "text": item["text"],
+                "category": item.get("category", "general"),
+            }
+            for item in items
+        ]
+        return {"suggestions": suggestions}
+
+    except Exception as e:
+        logger.warning("Failed to fetch chat suggestions from DynamoDB: %s", e)
+        return {"suggestions": _DEFAULT_CHAT_SUGGESTIONS}
+
+
 @app.get("/api/v1/chat/conversations")
 async def list_conversations(
     user_id: str = Depends(get_current_user_id),

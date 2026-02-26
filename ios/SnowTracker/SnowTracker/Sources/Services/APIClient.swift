@@ -669,6 +669,26 @@ final class APIClient {
         }
     }
 
+    /// Fetch chat suggestions for the empty state
+    func getChatSuggestions() async throws -> [ChatSuggestionItem] {
+        let url = baseURL.appendingPathComponent("api/v1/chat/suggestions")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url)
+                .validate()
+                .responseDecodable(of: ChatSuggestionsResponse.self) { response in
+                    switch response.result {
+                    case .success(let suggestionsResponse):
+                        self.log.debug("Fetched \(suggestionsResponse.suggestions.count) chat suggestions")
+                        continuation.resume(returning: suggestionsResponse.suggestions)
+                    case .failure(let error):
+                        self.log.error("Error fetching chat suggestions: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
     /// Get all chat conversations for the current user
     func getConversations() async throws -> [ChatConversation] {
         let url = baseURL.appendingPathComponent("api/v1/chat/conversations")
@@ -1414,6 +1434,16 @@ struct ChatConversationsResponse: Codable {
 
 struct ChatMessagesResponse: Codable {
     let messages: [ChatMessage]
+}
+
+struct ChatSuggestionItem: Codable, Identifiable {
+    let id: String
+    let text: String
+    let category: String
+}
+
+struct ChatSuggestionsResponse: Codable {
+    let suggestions: [ChatSuggestionItem]
 }
 
 // MARK: - Feedback Submission Model

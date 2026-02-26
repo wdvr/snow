@@ -612,6 +612,124 @@ class TestCheckAnonymousChatLimit:
         assert _check_anonymous_chat_limit("1.2.3.4") is True
 
 
+# ---------------------------------------------------------------------------
+# GET /api/v1/chat/suggestions
+# ---------------------------------------------------------------------------
+
+
+class TestGetChatSuggestions:
+    """Tests for the GET /api/v1/chat/suggestions endpoint."""
+
+    @patch("handlers.api_handler.get_dynamodb")
+    def test_returns_suggestions_from_dynamodb(self, mock_dynamodb, client):
+        """Should return active suggestions from DynamoDB sorted by priority."""
+        table = MagicMock()
+        table.scan.return_value = {
+            "Items": [
+                {
+                    "suggestion_id": "s2",
+                    "text": "Which resort has the most fresh snow?",
+                    "category": "general",
+                    "priority": 2,
+                    "active": True,
+                },
+                {
+                    "suggestion_id": "s1",
+                    "text": "What are the snow conditions like today?",
+                    "category": "general",
+                    "priority": 1,
+                    "active": True,
+                },
+            ]
+        }
+        mock_dynamodb.return_value.Table.return_value = table
+
+        resp = client.get("/api/v1/chat/suggestions")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["suggestions"]) == 2
+        # Should be sorted by priority
+        assert data["suggestions"][0]["id"] == "s1"
+        assert data["suggestions"][1]["id"] == "s2"
+        assert (
+            data["suggestions"][0]["text"] == "What are the snow conditions like today?"
+        )
+
+    @patch("handlers.api_handler.get_dynamodb")
+    def test_returns_defaults_when_table_empty(self, mock_dynamodb, client):
+        """Should return hardcoded defaults when no items in table."""
+        table = MagicMock()
+        table.scan.return_value = {"Items": []}
+        mock_dynamodb.return_value.Table.return_value = table
+
+        resp = client.get("/api/v1/chat/suggestions")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["suggestions"]) == 16
+        assert data["suggestions"][0]["id"] == "s1"
+
+    @patch("handlers.api_handler.get_dynamodb")
+    def test_returns_defaults_on_dynamodb_error(self, mock_dynamodb, client):
+        """Should return hardcoded defaults when DynamoDB errors."""
+        table = MagicMock()
+        table.scan.side_effect = Exception("DynamoDB timeout")
+        mock_dynamodb.return_value.Table.return_value = table
+
+        resp = client.get("/api/v1/chat/suggestions")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["suggestions"]) == 16
+
+    def test_no_auth_required(self, client):
+        """Should not require authentication."""
+        # The endpoint uses get_dynamodb which will fail in test context,
+        # but it should still return 200 with defaults (not 401).
+        resp = client.get("/api/v1/chat/suggestions")
+        assert resp.status_code == 200
+        data = resp.json()
+        # Falls back to defaults since no real DynamoDB in test
+        assert len(data["suggestions"]) == 16
+
+    @patch("handlers.api_handler.get_dynamodb")
+    def test_suggestion_has_expected_fields(self, mock_dynamodb, client):
+        """Each suggestion should have id, text, and category fields."""
+        table = MagicMock()
+        table.scan.return_value = {
+            "Items": [
+                {
+                    "suggestion_id": "s5",
+                    "text": "How's the powder at {resort_name} today?",
+                    "category": "favorites_aware",
+                    "priority": 5,
+                    "active": True,
+                }
+            ]
+        }
+        mock_dynamodb.return_value.Table.return_value = table
+
+        resp = client.get("/api/v1/chat/suggestions")
+        data = resp.json()
+        suggestion = data["suggestions"][0]
+        assert "id" in suggestion
+        assert "text" in suggestion
+        assert "category" in suggestion
+        assert suggestion["category"] == "favorites_aware"
+
+    @patch("handlers.api_handler.get_dynamodb")
+    def test_default_suggestions_include_all_categories(self, mock_dynamodb, client):
+        """Default suggestions should include general, location_aware, and favorites_aware."""
+        table = MagicMock()
+        table.scan.return_value = {"Items": []}
+        mock_dynamodb.return_value.Table.return_value = table
+
+        resp = client.get("/api/v1/chat/suggestions")
+        data = resp.json()
+        categories = {s["category"] for s in data["suggestions"]}
+        assert "general" in categories
+        assert "location_aware" in categories
+        assert "favorites_aware" in categories
+
+
 class TestGetClientIp:
     """Tests for the _get_client_ip helper."""
 

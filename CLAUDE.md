@@ -189,6 +189,7 @@ PUT  /api/v1/trips/{id}               - Update trip
 DELETE /api/v1/trips/{id}             - Delete trip
 POST /api/v1/feedback                  - Submit feedback
 POST /api/v1/chat                      - AI conditions chat (Bedrock Claude Sonnet 4.6)
+GET  /api/v1/chat/suggestions          - Dynamic chat suggestions (no auth required)
 GET  /api/v1/chat/conversations        - List chat conversations
 GET  /api/v1/chat/conversations/{id}   - Get conversation messages
 DELETE /api/v1/chat/conversations/{id} - Delete conversation
@@ -211,6 +212,7 @@ snow-tracker-resort-events-{env}           - Resort events
 snow-tracker-feedback-{env}                - User feedback
 snow-tracker-chat-{env}                    - AI chat conversations (30d TTL)
 snow-tracker-condition-reports-{env}       - User condition reports (90d TTL)
+snow-tracker-chat-suggestions-{env}       - Dynamic AI chat suggestions (no TTL)
 ```
 
 ### Bedrock Configuration

@@ -2,12 +2,14 @@ import SwiftUI
 
 struct ChatView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @ObservedObject private var locationManager = LocationManager.shared
     @StateObject private var viewModel = ChatViewModel()
     @State private var messageText = ""
     @State private var sendTrigger = 0
     @State private var selectedResort: Resort?
     @State private var visibleSuggestions: [ChatSuggestion] = []
+    @State private var allSuggestionsLoaded: [ChatSuggestion] = []
     @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
@@ -60,6 +62,7 @@ struct ChatView: View {
             .onAppear {
                 AnalyticsService.shared.trackScreen("AskAI", screenClass: "ChatView")
                 updateViewModelLocation()
+                loadSuggestions()
             }
             .onChange(of: locationManager.userLocation) { _, _ in
                 updateViewModelLocation()
@@ -103,7 +106,10 @@ struct ChatView: View {
                 .padding(.top, 8)
                 .onAppear {
                     if visibleSuggestions.isEmpty {
-                        visibleSuggestions = Array(Self.allSuggestions.shuffled().prefix(4))
+                        let pool = allSuggestionsLoaded.isEmpty
+                            ? Self.fallbackSuggestions
+                            : allSuggestionsLoaded
+                        visibleSuggestions = Array(pool.shuffled().prefix(4))
                     }
                 }
 
@@ -275,7 +281,8 @@ struct ChatView: View {
         let prompt: String
     }
 
-    private static let allSuggestions: [ChatSuggestion] = [
+    /// Hardcoded fallback suggestions used when the API is unavailable
+    private static let fallbackSuggestions: [ChatSuggestion] = [
         ChatSuggestion(label: "Best snow within 500 miles", prompt: "Where's the best snow within 500 miles of me right now?"),
         ChatSuggestion(label: "Cheap resorts within 6h drive", prompt: "What are the cheapest ski resorts within a 6 hour drive from me with decent snow right now?"),
         ChatSuggestion(label: "Non-Epic resorts under $150/day", prompt: "Show me non-Epic pass resorts with good snow conditions where a day pass is under $150"),
@@ -293,6 +300,95 @@ struct ChatView: View {
         ChatSuggestion(label: "Warmest resort with good snow", prompt: "Which resort has the warmest temperatures while still having good snow quality?"),
         ChatSuggestion(label: "Epic vs Ikon conditions", prompt: "Compare the best Epic Pass resort vs the best Ikon Pass resort right now"),
     ]
+
+    // MARK: - Dynamic Suggestion Loading
+
+    /// Fetch suggestions from the API and interpolate tokens with user context
+    private func loadSuggestions() {
+        Task {
+            do {
+                let items = try await APIClient.shared.getChatSuggestions()
+                let interpolated = items.compactMap { item -> ChatSuggestion? in
+                    interpolateSuggestion(item)
+                }
+                await MainActor.run {
+                    allSuggestionsLoaded = interpolated
+                    // Refresh visible suggestions if they were showing fallbacks
+                    if !allSuggestionsLoaded.isEmpty {
+                        visibleSuggestions = Array(allSuggestionsLoaded.shuffled().prefix(4))
+                    }
+                }
+            } catch {
+                // Fall back to hardcoded suggestions silently
+            }
+        }
+    }
+
+    /// Replace interpolation tokens in a suggestion with real data from the user's context.
+    /// Returns nil if a required token cannot be resolved (e.g. {resort_name} but no favorites).
+    private func interpolateSuggestion(_ item: ChatSuggestionItem) -> ChatSuggestion? {
+        var text = item.text
+        let favoriteResorts = snowConditionsManager.resorts
+            .filter { userPreferencesManager.favoriteResorts.contains($0.id) }
+        let nearbyResorts = nearbyResortsSorted()
+
+        // {resort_name} — pick from favorites first, then nearby, then any resort
+        if text.contains("{resort_name}") {
+            guard let resort = favoriteResorts.randomElement()
+                    ?? nearbyResorts.first
+                    ?? snowConditionsManager.resorts.randomElement() else {
+                return nil
+            }
+            text = text.replacingOccurrences(of: "{resort_name}", with: resort.name)
+        }
+
+        // {resort_name_2} — pick a second resort different from the first one used
+        if text.contains("{resort_name_2}") {
+            // Find the resort name already substituted to avoid duplicating
+            let usedName = favoriteResorts.first?.name
+                ?? nearbyResorts.first?.name
+                ?? snowConditionsManager.resorts.first?.name
+            let pool = (favoriteResorts + nearbyResorts + snowConditionsManager.resorts)
+                .filter { $0.name != usedName }
+            guard let secondResort = pool.first else {
+                return nil
+            }
+            text = text.replacingOccurrences(of: "{resort_name_2}", with: secondResort.name)
+        }
+
+        // {nearby_city} — use nearest resort's city, or a known city
+        if text.contains("{nearby_city}") {
+            let city = nearbyResorts.compactMap(\.city).first
+                ?? favoriteResorts.compactMap(\.city).first
+                ?? snowConditionsManager.resorts.compactMap(\.city).first
+            guard let resolvedCity = city else {
+                return nil
+            }
+            text = text.replacingOccurrences(of: "{nearby_city}", with: resolvedCity)
+        }
+
+        // {region} — use nearest resort's region display name
+        if text.contains("{region}") {
+            let region = nearbyResorts.first?.regionDisplayName
+                ?? favoriteResorts.first?.regionDisplayName
+                ?? snowConditionsManager.resorts.first?.regionDisplayName
+            guard let resolvedRegion = region, !resolvedRegion.isEmpty else {
+                return nil
+            }
+            text = text.replacingOccurrences(of: "{region}", with: resolvedRegion)
+        }
+
+        // Use a truncated version for the chip label
+        let label = text.count > 50 ? String(text.prefix(47)) + "..." : text
+        return ChatSuggestion(label: label, prompt: text)
+    }
+
+    /// Resorts sorted by distance from the user's current location
+    private func nearbyResortsSorted() -> [Resort] {
+        guard let userLocation = locationManager.userLocation else { return [] }
+        return snowConditionsManager.resorts
+            .sorted { $0.distance(from: userLocation) < $1.distance(from: userLocation) }
+    }
 
     private func scrollToBottom(proxy: ScrollViewProxy) {
         withAnimation(.easeOut(duration: 0.3)) {

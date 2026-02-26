@@ -317,6 +317,18 @@ condition_reports_table = aws.dynamodb.Table(
     tags=tags,
 )
 
+# Chat suggestions table for dynamic AI chat prompt suggestions
+chat_suggestions_table = aws.dynamodb.Table(
+    f"{app_name}-chat-suggestions-{environment}",
+    name=f"{app_name}-chat-suggestions-{environment}",
+    billing_mode="PAY_PER_REQUEST",
+    hash_key="suggestion_id",
+    attributes=[
+        {"name": "suggestion_id", "type": "S"},
+    ],
+    tags=tags,
+)
+
 # IAM Role for Lambda functions
 lambda_role = aws.iam.Role(
     f"{app_name}-lambda-role-{environment}",
@@ -1324,6 +1336,7 @@ def get_conditions(resort_id, headers):
             "CONDITION_REPORTS_TABLE": f"{app_name}-condition-reports-{environment}",
             "SNOW_SUMMARY_TABLE": f"{app_name}-snow-summary-{environment}",
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
+            "CHAT_SUGGESTIONS_TABLE": f"{app_name}-chat-suggestions-{environment}",
             "APNS_PLATFORM_APP_ARN": apns_platform_app_arn
             if apns_platform_app_arn
             else "",
@@ -2570,6 +2583,33 @@ chat_post_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# Chat suggestions resource: /api/v1/chat/suggestions
+chat_suggestions_resource = aws.apigateway.Resource(
+    f"{app_name}-chat-suggestions-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=chat_resource.id,
+    path_part="suggestions",
+)
+
+# GET /api/v1/chat/suggestions
+chat_suggestions_get_method = aws.apigateway.Method(
+    f"{app_name}-chat-suggestions-get-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=chat_suggestions_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+chat_suggestions_get_integration = aws.apigateway.Integration(
+    f"{app_name}-chat-suggestions-get-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=chat_suggestions_resource.id,
+    http_method=chat_suggestions_get_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # Chat conversations resource: /api/v1/chat/conversations
 chat_conversations_resource = aws.apigateway.Resource(
     f"{app_name}-chat-conversations-resource-{environment}",
@@ -2800,6 +2840,7 @@ api_deployment = aws.apigateway.Deployment(
             resort_notification_setting_delete_integration.id,
             feedback_post_integration.id,
             chat_post_integration.id,
+            chat_suggestions_get_integration.id,
             chat_conversations_get_integration.id,
             chat_conversation_get_integration.id,
             chat_conversation_delete_integration.id,
@@ -2853,6 +2894,7 @@ api_deployment = aws.apigateway.Deployment(
             resort_notification_setting_delete_integration,
             feedback_post_integration,
             chat_post_integration,
+            chat_suggestions_get_integration,
             chat_conversations_get_integration,
             chat_conversation_get_integration,
             chat_conversation_delete_integration,

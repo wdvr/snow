@@ -7,6 +7,30 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### Feature: Dynamic chat suggestions
+Replaced 16 hardcoded AI chat suggestion queries with a DynamoDB-backed dynamic system. New `snow-tracker-chat-suggestions-{env}` table stores suggestions with interpolation tokens (`{resort_name}`, `{nearby_city}`, `{region}`, `{resort_name_2}`). Backend `GET /api/v1/chat/suggestions` returns active suggestions sorted by priority, with hardcoded fallback on error. iOS interpolates tokens using user's favorites, nearby resorts, and location context. Includes seed script (`scripts/seed_chat_suggestions.py`), Pulumi infrastructure, API Gateway route, 6 backend tests.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | pending | done |
+
+### Fix: Remove duplicate spinner on iOS splash screen
+SplashView had two loading indicators: a rotating snowflake (fancy, on-brand) and a standard `ProgressView` at the bottom. Removed the bottom `ProgressView` since the rotating snowflake already serves as loading indicator. Also updated App Store screenshot tests to include AI chat screenshots (phone + iPad), added iPad Pro devices to Fastlane screenshot config, and updated release notes for v1.1.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Feature: Inclusive map quality filter + Show on Map button
+Web map quality filter rewritten to use full quality scale with inclusive filtering. Previously only showed a few tiers; now supports all levels (Mediocre+ includes everything from mediocre through champagne_powder). Added "Show on Map" button to web resort detail page that navigates to `/map?resort=X&lat=Y&lon=Z&zoom=12` for deep linking. Map page now accepts URL query params to center on a specific resort.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | done | n/a |
+
+### Feature: iOS App Store release preparation
+Created comprehensive `/ios-release` skill at `../.claude/commands/ios-release.md` documenting the complete App Store release workflow: version management, screenshot generation, metadata upload, submission, and 10 lessons learned. Updated release notes with all v1.1 features (AI chat, new map, 1040 resorts, condition reports, etc.). Generated new screenshots including AI chat, map view, resort detail for iPhone + iPad.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
 ### Feature: Android Fresh Snow Chart (A10 — feature parity)
 Added FreshSnowChart composable to Android resort detail screen. Renders a 7-day per-day snowfall bar chart using Compose Canvas (no external chart library). Aggregates hourly timeline points into daily totals, shows cm/in values above bars, date labels on x-axis, distinguishes actual vs forecast data with different opacity bars. Includes "Fresh Powder" header with total snowfall since last thaw. Placed between Snow Details card and Predictions card in resort detail layout. Matches iOS FreshSnowChartView functionality.
 | iOS | Android | Web | API |
