@@ -1,7 +1,7 @@
 # Powder Chaser - Progress
 
 ## Status: LIVE
-**Last Updated**: 2026-02-24
+**Last Updated**: 2026-02-26
 
 ### Endpoints & Website
 - **Staging API**: https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging
@@ -62,9 +62,16 @@
 - [x] CQA-007 FIXED: Web fetch timeout (30s AbortController)
 - [x] API response validation — 17/17 endpoints healthy
 - [x] Backend tests: 1592 passing
-- [ ] BUG-003: Scores too low for fresh snow (Lake Louise 21cm=-7.5C=26)
-- [ ] BUG-006: Breckenridge depth mismatch (static JSON vs live)
-- [ ] BUG-011: Source disagreement not triggering outlier detection
+- [x] QA Round 2: hours_since_last_snowfall=0.0 falsy bug fixed
+- [x] QA Round 2: No-snowfall cap applied to real-time endpoint (was timeline-only)
+- [x] QA Round 2: _validate_resource_id() on all path-parameter endpoints
+- [x] QA Round 2: Float→Decimal chat DynamoDB crash fixed
+- [x] QA Round 2: chat_suggestions_table IAM permission added
+- [x] QA Round 2: DynamoDB scan pagination for get_all_resorts()
+- [x] QA Round 2: Error messages sanitized (no user input echo)
+- [ ] BUG-003: Scores too low for fresh snow (Lake Louise 21cm=-7.5C=26) — data issue
+- [ ] BUG-006: Breckenridge depth mismatch (static JSON vs live) — resolves on Lambda run
+- [ ] BUG-011: Source disagreement not triggering outlier detection — tuning needed
 
 ### TODO: iOS / Backend / Cross-platform
 
