@@ -743,6 +743,7 @@ snowforecast_prefetch_schedule_permission = aws.lambda_.Permission(
 snowforecast_prefetch_schedule_target = aws.cloudwatch.EventTarget(
     f"{app_name}-snowforecast-prefetch-schedule-target-{environment}",
     rule=snowforecast_prefetch_schedule_rule.name,
+    target_id=f"sf-prefetch-{environment}",  # Explicit short target_id (<64 chars)
     arn=snowforecast_prefetch_lambda.arn,
 )
 
