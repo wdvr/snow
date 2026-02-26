@@ -4,21 +4,27 @@
 
 The snow quality score determines how good skiing conditions are at a resort. It's the core metric our app displays — getting this right is critical.
 
-**Model**: Ensemble of 10 neural networks (27 input → varying hidden → 1 output, averaged)
-**Output**: Score 1.0-6.0, mapped to quality levels:
-- **6 = EXCELLENT**: Fresh powder, cold temps, perfect skiing
-- **5 = GOOD**: Nice conditions, some fresh or well-preserved snow
-- **4 = FAIR**: Decent but not great, some ice or aging snow
-- **3 = POOR**: Hard pack, limited quality
-- **2 = BAD**: Icy/slushy, barely skiable
-- **1 = HORRIBLE**: No snow, complete melt, unskiable
+**Model**: Ensemble of 10 neural networks (40 input → varying hidden → 1 output, averaged)
+**Output**: Score 1.0-6.0, mapped to 10 quality levels:
+- **6.0 = CHAMPAGNE POWDER**: Lightest, driest powder -- the holy grail
+- **5.5+ = POWDER DAY**: Deep fresh powder, cold temps, low wind
+- **5.0+ = EXCELLENT**: Abundant recent snow, well-preserved conditions
+- **4.5+ = GREAT**: Fresh snow with good coverage and cold temps
+- **4.0+ = GOOD**: Soft rideable surface, some fresh snow
+- **3.5+ = DECENT**: Acceptable conditions, firm in spots
+- **3.0+ = MEDIOCRE**: Firm base with limited fresh, or mild warming
+- **2.5+ = POOR**: Hard pack, limited quality
+- **1.5+ = BAD**: Icy/slushy, barely skiable
+- **< 1.5 = HORRIBLE**: No snow, complete melt, unskiable
 
 ## Architecture
 
 ```
-Raw Weather Data (Open-Meteo hourly)
+Multi-Source Weather Data (Open-Meteo, OnTheSnow, Snow-Forecast, WeatherKit)
         |
-Feature Engineering (27 features)
+MultiSourceMerger (outlier detection, weighted consensus)
+        |
+Feature Engineering (40 features)
         |
 Normalization (z-score using training stats)
         |
@@ -35,7 +41,7 @@ Normalization (z-score using training stats)
 Each model: Hidden Layer (ReLU) → Output (sigmoid × 5 + 1).
 Ensemble averaging reduces boundary prediction variance.
 
-## Input Features (27 total)
+## Input Features (40 total)
 
 ### Temperature (4 features)
 | Feature | Description |
@@ -54,18 +60,25 @@ Ensemble averaging reduces boundary prediction variance.
 
 A freeze-thaw cycle occurs when temperature rises above 0C for 3+ hours (thaw), then drops below -1C for 2+ hours (hard freeze). This creates an ice layer that degrades snow quality.
 
-### Snowfall (4 features)
+### Snowfall (5 features)
 | Feature | Description |
 |---------|-------------|
 | `snow_since_freeze_cm` | Total snowfall since last freeze-thaw event |
 | `snowfall_24h_cm` | Snowfall in last 24 hours |
 | `snowfall_72h_cm` | Snowfall in last 72 hours |
 | `older_snow_accum` | snowfall_72h - snowfall_24h (older accumulation) |
+| `hours_since_last_snowfall` | Hours since last measurable snowfall (captures snow aging) |
 
 ### Elevation (1 feature)
 | Feature | Description |
 |---------|-------------|
 | `elevation_km` | Measurement elevation in km (elevation_m / 1000) |
+
+### Snow Depth (2 features)
+| Feature | Description |
+|---------|-------------|
+| `snow_depth_m` | Current snow depth in meters |
+| `fresh_to_total_ratio` | Ratio of recent snowfall to total snow depth |
 
 ### Warm Hours Since Freeze-Thaw (3 features)
 Cumulative hours above temperature thresholds since the last freeze-thaw event. More warm hours = more degradation.
@@ -85,12 +98,15 @@ Consecutive hours in the current warm spell (0 if currently below threshold).
 | `cur_hours_above_3C` | Current consecutive hours above 3C |
 | `cur_hours_above_6C` | Current consecutive hours above 6C |
 
-### Wind Features (3 features)
+### Wind & Visibility Features (6 features)
 | Feature | Description |
 |---------|-------------|
 | `avg_wind_24h` | Average wind speed in last 24 hours (km/h) |
 | `max_wind_24h` | Maximum wind speed in last 24 hours (km/h) |
-| `calm_powder_indicator` | snowfall_24h × max(0, 1 - avg_wind/40) - High when fresh snow + calm conditions |
+| `max_wind_gust_norm` | Maximum wind gust normalized (km/h) |
+| `visibility_km` | Current visibility (km) |
+| `min_visibility_24h_km` | Minimum visibility in last 24 hours (km) |
+| `calm_powder_indicator` | snowfall_24h x max(0, 1 - avg_wind/40) - High when fresh snow + calm conditions |
 
 ### Interaction Features (6 features)
 Non-linear combinations that capture key skiing condition patterns:
@@ -107,34 +123,25 @@ Non-linear combinations that capture key skiing condition patterns:
 ## Training Data
 
 ### Real Data
-- **Source**: Open-Meteo hourly weather data for 129 ski resorts worldwide
-- **Period**: 13 days (Feb 8-20, 2026)
-- **Total samples**: 1,677 (resort x day x top elevation)
-- **Scoring**: Deterministic rule-based scorer (`score_historical_batches.py`) applied to weather features for consistent, aligned labels
+- **Source**: Open-Meteo hourly weather data for 134 ski resorts worldwide
+- **Period**: Multiple collection rounds (Feb 2026)
+- **Total samples**: ~12,000 (resort x day x elevation)
+- **Scoring**: 1,885 real-world quality scores from 134+ resorts (`scores/scores_real.json`), plus deterministic rule-based scoring for weather-only labels
 
-### Synthetic Data
-- **Source**: Algorithmically generated edge cases (labeled as `source: "synthetic"`)
-- **Total samples**: 530
-- **Purpose**: Address underrepresented scenarios in real data
-- **Scenarios covered**:
-  - Packed powder (cold, no freeze-thaw in 14+ days, no fresh snow) -> FAIR
-  - Icy conditions (cold, recent freeze-thaw, no fresh snow) -> BAD
-  - Spring corn (warm, recent overnight freeze-thaw) -> POOR
-  - Warm heavy snow / Sierra cement (0-4C, lots of fresh) -> FAIR/GOOD
-  - Not skiable / summer conditions (>10C, no snow) -> HORRIBLE
-  - Cold fresh powder (< -5C, lots of fresh) -> EXCELLENT
-  - Moderate fresh on cold base -> GOOD
-  - Thin cover on icy base (< 3cm fresh on ice) -> BAD/POOR
-  - Thick fresh covers icy base (8+ cm covers ice) -> GOOD
-  - Aging cold snow (old base, mild FT history) -> POOR
-  - Well-preserved base (very cold, stable, no FT) -> FAIR
-  - Light fresh dusting (1-4cm, cold) -> upper FAIR/GOOD
-  - Warm aging snow (above freezing, degrading) -> POOR
-  - Borderline good accumulation (72h snow, cold) -> GOOD
+### Training Pipeline
+```bash
+# Collect features from Open-Meteo
+python3 ml/collect_data.py
 
-### Combined Dataset
-- **Total**: 2,207 samples (1,677 real + 530 synthetic)
-- **Split**: 80% train (1,765), 20% validation (442)
+# Train model (historical_weight=0.0 for best results)
+python3 ml/train_v2.py 0.0
+
+# Evaluate physics constraints (48 edge cases x 8 constraints, must pass 100%)
+python3 ml/eval_physics_checks.py
+
+# Audit scores with physics-based corrections
+python3 ml/ai_score_audit.py
+```
 
 ### Scoring Criteria Used for Labels
 Deterministic rule-based scoring (`score_historical_batches.py`):
@@ -145,39 +152,33 @@ Deterministic rule-based scoring (`score_historical_batches.py`):
 - **Warm/summer**: >10°C for extended period = 1.0 (HORRIBLE)
 - Adjustments for: elevation, 72h snowfall, temperature extremes, thaw hours
 
-## Performance (Validation Set)
+## Performance (v15 Validation Set)
 
 | Metric | Value |
 |--------|-------|
-| MAE | 0.195 |
-| RMSE | 0.274 |
-| R^2 | 0.950 |
-| Exact quality match | 88.2% |
+| MAE | 0.225 |
+| R^2 | 0.937 |
+| Exact quality match | 81.1% |
 | **Within-1 quality level** | **100.0%** |
+| Training samples | ~12,000 |
+| Features | 40 |
+| Physics eval | 100% pass (48 edge cases x 8 constraints) |
 
-### Per-Class Accuracy
-| Quality | Correct | Total | Accuracy |
-|---------|---------|-------|----------|
-| HORRIBLE | 19 | 22 | 86% |
-| BAD | 19 | 23 | 83% |
-| POOR | 66 | 78 | 85% |
-| FAIR | 161 | 172 | 94% |
-| GOOD | 73 | 88 | 83% |
-| EXCELLENT | 44 | 59 | 75% |
-
-The model never misses by more than one quality level (0 out of 442 validation samples).
+The model never misses by more than one quality level on the validation set.
 
 ## Production Integration
 
 ### ML Model Path
-The ML model runs when raw hourly data from Open-Meteo is available (which it is for all weather worker runs). It extracts exact features from the raw API response for accurate scoring.
+The ML model runs when raw hourly data is available from the multi-source weather pipeline. It extracts exact features from the merged weather data for accurate scoring.
 
 When raw data is NOT available (e.g., approximated conditions), the system falls back to a heuristic algorithm that uses hand-tuned rules for temperature, freeze-thaw, and snowfall scoring.
 
-### Post-ML Adjustments
+### Post-ML Floor
 The ML model doesn't see `snow_depth_cm` (from resort scraping). A post-ML floor ensures:
 - 50+ cm confirmed base depth -> never HORRIBLE (skiing is possible)
 - 100+ cm confirmed base depth -> at least POOR
+
+Note: Previous versions (v11-v13) applied snow aging penalties and cold accumulation boosts after the ML prediction. These were removed in v14/v15 because the `hours_since_last_snowfall` feature allows the model to handle snow aging internally.
 
 ### Overall Resort Quality
 
@@ -194,12 +195,12 @@ Per-elevation scores are aggregated with weighted averaging:
 | `ml/collect_historical.py` | Data collection from Open-Meteo archive API |
 | `ml/generate_synthetic.py` | Synthetic edge case data generation |
 | `ml/train_v2.py` | Neural network training script |
+| `ml/eval_physics_checks.py` | Physics evaluation suite (48 edge cases x 8 constraints) |
+| `ml/ai_score_audit.py` | Physics-based score correction audit |
 | `ml/model_weights_v2.json` | Trained model weights + normalization stats |
-| `ml/training_features.json` | Raw collected feature data (Feb 7-20, 2026) |
-| `ml/historical_features.json` | Historical feature data (Jan 2026, 3,683 samples) |
-| `ml/synthetic_features.json` | Synthetic feature data (530 samples) |
+| `ml/scores/scores_real.json` | Real-world quality scores (1,885 entries from 134+ resorts) |
+| `ml/scores/` | All training scores (real, synthetic, historical) |
 | `ml/score_historical_batches.py` | Deterministic scoring rules for training labels |
-| `ml/scores/` | Deterministic + synthetic training scores |
 | `backend/src/services/ml_scorer.py` | ML inference service (forward pass only) |
 | `backend/src/services/snow_quality_service.py` | Production scoring code (ML + heuristic fallback) |
 | `backend/src/ml_model/model_weights_v2.json` | Weights copy for Lambda package |
@@ -217,6 +218,10 @@ Per-elevation scores are aggregated with weighted averaging:
 | v5.1 | 2026-02-20 | Optimized quality thresholds (same model weights) | 0.183 | 92.7% |
 | v6 | 2026-02-20 | 10-model ensemble, 80-config search, 4000 epochs, threshold optimization | 0.182 | 93.6% |
 | v7 | 2026-02-20 | Retrained on corrected elevation data (106 resort elevations fixed) | 0.195 | 88.2% |
+| v11 | 2026-02-22 | Retrained with 2,181 real observations, 29 features | 0.176 | 83.5% |
+| v13 | 2026-02-23 | +wind gust, visibility features (37 features, 11,960 samples) | 0.265 | 74.7% |
+| v14 | 2026-02-24 | +hours_since_last_snowfall, removed manual hacks (aging penalty, cold boost) | -- | -- |
+| v15 | 2026-02-24 | 40 features, ~12,000 samples, physics eval suite (48 cases x 8 constraints) | 0.225 | 81.1% |
 
 ### Key Experiments
 
@@ -270,4 +275,4 @@ Scored by 6 independent subagents in parallel. Training with this data showed:
 5. **Snow depth integration**: When reliable depth data is available, add as feature
 6. **Temporal features**: Day-over-day quality change trends
 7. **On-device inference**: Export to CoreML for iOS offline scoring
-8. **Improve POOR accuracy**: Currently 86%, lowest among categories
+8. **User condition reports as training signal**: Feed structured reports into the training pipeline

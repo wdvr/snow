@@ -11,7 +11,33 @@
 
 ---
 
-## Active Work (Feb 24)
+## Active Work (Feb 25)
+
+### Workstream 6: Weather Data & Grey Resorts Fix
+
+#### Timeline Depth Fix
+- [x] Fix unrealistic snow depth forecast collapse (144cm→11cm in 4 days at sub-zero)
+- [x] Temperature-aware melt rates: 3cm/day sub-zero, 15cm/day above-zero
+- [x] Add 13 new tests for smoothing edge cases
+- [x] Deploy to prod
+
+#### Grey Resorts Fix (576 resorts showing question marks)
+- [x] Root cause analysis: 876 non-NA resorts had empty region in DynamoDB
+- [x] Fix populate_resorts.py to use proper region from resorts.json
+- [x] Add weather processor chunking (max 100 per worker)
+- [x] Re-populate DynamoDB (staging + prod)
+- [x] Trigger weather processor to fetch data for all resorts
+- [x] Verify grey count drops — confirmed: Pamporovo, Ruka, Hakuba, Zermatt all have scores
+
+#### Weather API Research (completed)
+- [x] Evaluate 10 alternative weather data sources
+- [ ] Weather Unlocked: per-elevation forecasts ($220-420/mo) — best fit, needs signup
+- [ ] Synoptic Data/SNOTEL: free US station observations — needs integration
+- [ ] Tomorrow.io: test free tier snow depth quality
+
+---
+
+## Previous Active Work (Feb 24)
 
 ### Workstream 5: Chat UX Improvements
 
@@ -20,8 +46,10 @@
 - [x] Fix conversation history not loading (ISO 8601 date parsing in ChatMessage/ChatConversation)
 - [x] Style intermediate "thinking" messages: italic, muted color, lighter background
 - [x] Deploy to TestFlight
-- [ ] Test chat with: "What's the best resort near Fremont, California? Affordable, 60+ snow score"
-- [ ] Verify conversation history loads after fix
+- [x] Test chat: verified streaming, tool status, and response display on simulator
+- [x] Verify conversation history: backend returns ISO 8601 dates, iOS parser handles them
+- [x] Fix map Region menu accessibility label for UI test
+- [x] Add map region switching UI test (Alps, Japan, Rockies)
 
 #### Completed Earlier (Feb 24)
 - [x] Fix fresh powder chart: axes legend, "Crust formed" label, "since last thaw" subtitle
@@ -254,10 +282,10 @@
 ## Architecture
 
 ### Snow Quality Algorithm
-ML model v13: ensemble of 10 neural networks (37 features incl. visibility, wind gusts → quality score 1-6).
-Val MAE 0.265, R² 0.880, 74.7% exact, 99% within-1. Trained on 11,960 samples from 134 resorts. See `ml/ALGORITHM.md` for details.
+ML model v15: ensemble of 10 neural networks (40 features incl. visibility, wind gusts, hours_since_last_snowfall → quality score 1-6).
+Val MAE 0.225, R² 0.937, 81.1% exact, 100% within-1. Trained on ~12,000 samples from 134 resorts. See `ml/ALGORITHM.md` for details.
 
-Quality levels: EXCELLENT (6) → GOOD (5) → FAIR (4) → POOR (3) → BAD (2) → HORRIBLE (1)
+Quality levels (10): CHAMPAGNE POWDER → POWDER DAY → EXCELLENT → GREAT → GOOD → DECENT → MEDIOCRE → POOR → BAD → HORRIBLE
 
 ### DynamoDB Tables
 - `snow-tracker-resorts-{env}`

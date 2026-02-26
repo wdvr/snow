@@ -16,7 +16,7 @@
 
 ---
 
-Powder Chaser is an iOS app and serverless backend that tracks real-time snow conditions at ski resorts across 8 regions worldwide. A neural network ensemble, trained on 2,000+ real-world observations from 134 resorts, scores snow quality at three elevations per resort -- helping you find fresh powder instead of icy slopes.
+Powder Chaser is an iOS app and serverless backend that tracks real-time snow conditions at 1,040+ ski resorts across 25 countries. A neural network ensemble (v15), trained on ~12,000 real-world observations from 134 resorts, scores snow quality at three elevations per resort -- helping you find fresh powder instead of icy slopes. Weather data is aggregated from 4 independent sources with outlier detection for high-confidence readings.
 
 <p align="center">
   <img src="https://powderchaserapp.com/screenshot-iphone.png" alt="Powder Chaser Screenshot" width="300" />
@@ -26,10 +26,10 @@ Powder Chaser is an iOS app and serverless backend that tracks real-time snow co
 
 ### Core
 
-- **130+ ski resorts across 11 countries** -- US, Canada, France, Japan, New Zealand, Austria, Australia, Chile, Switzerland, Italy, Argentina
-- **Real-time weather at 3 elevations** -- Base, mid, and top conditions per resort via Open-Meteo
+- **1,040+ ski resorts across 25 countries** -- US, Canada, France, Japan, New Zealand, Austria, Australia, Chile, Switzerland, Italy, Argentina, Norway, Sweden, Finland, Germany, Spain, Andorra, Slovenia, and more
+- **Multi-source weather at 3 elevations** -- Base, mid, and top conditions per resort from 4 independent data sources with outlier detection
 - **ML-powered snow quality scoring** -- 0-100 scale with natural language explanations
-- **Quality categories** -- Excellent, Good, Fair, Soft, Icy, Not Skiable, Unknown
+- **Quality categories** -- Champagne Powder, Powder Day, Excellent, Great, Good, Decent, Mediocre, Poor, Bad, Horrible
 - **7-day forecast timeline** -- ML-predicted quality for each day ahead
 - **Snow history & season totals** -- Daily snowfall chart data with cumulative season summaries
 - **Favorites with groups** -- Organize resorts by region, trip, or custom groups
@@ -43,6 +43,8 @@ Powder Chaser is an iOS app and serverless backend that tracks real-time snow co
 
 ### Recent Additions
 
+- **Multi-source weather data** -- Aggregates 4 independent sources (Open-Meteo, OnTheSnow, Snow-Forecast.com, Apple WeatherKit) with outlier detection and confidence levels
+- **Data source transparency** -- Shows which sources contributed to each reading and confidence level (HIGH/MEDIUM/LOW)
 - **AI Chat Assistant** -- "Ask AI" tab for natural language questions about snow conditions, powered by Claude Sonnet 4.6 on AWS Bedrock with tool use
 - **User Condition Reports** -- Submit and browse real-time reports from other skiers (8 condition types, 1-10 scoring)
 - **Elevation profile visualization** -- Visual cross-section showing conditions at each elevation band
@@ -53,21 +55,21 @@ Powder Chaser is an iOS app and serverless backend that tracks real-time snow co
 
 ## Snow Quality Algorithm
 
-The quality scoring system uses a **neural network ensemble** (v11) trained on 2,181 real-world observations from 134 resorts. It produces a raw score (1.0-6.0) that maps to a 0-100 quality scale and a human-readable category.
+The quality scoring system uses a **neural network ensemble** (v15) trained on ~12,000 real-world observations from 134 resorts. It produces a raw score (1.0-6.0) that maps to a 0-100 quality scale and a human-readable category.
 
 ### How It Works
 
 ```
-Open-Meteo hourly data
+Multi-source weather data (Open-Meteo, OnTheSnow, Snow-Forecast, WeatherKit)
         |
         v
-  Feature extraction (29 engineered features)
+  MultiSourceMerger (outlier detection, weighted consensus)
+        |
+        v
+  Feature extraction (40 engineered features)
         |
         v
   Neural network ensemble (10 models, averaged)
-        |
-        v
-  Post-ML adjustments (snow aging, cold accumulation)
         |
         v
   Quality score (1.0-6.0) --> 0-100 scale + category + explanation
@@ -75,16 +77,17 @@ Open-Meteo hourly data
 
 ### Feature Engineering
 
-The model takes raw hourly weather data and computes 29 engineered features across 6 categories:
+The model takes raw hourly weather data and computes 40 engineered features across 7 categories:
 
 | Category | Features | What They Capture |
 |----------|----------|-------------------|
 | **Temperature** | `cur_temp`, `max_temp_24h`, `min_temp_24h`, `temp_trend_48h` | Current conditions and warming/cooling trends |
 | **Freeze-thaw** | `freeze_thaw_days_ago`, `warmest_thaw`, `thaw_intensity_recency` | When snow last refroze and how severe the thaw was |
-| **Snowfall** | `snow_since_freeze_cm`, `snowfall_24h_cm`, `snowfall_72h_cm`, `older_snow_accum` | Fresh snow at multiple time windows |
+| **Snowfall** | `snow_since_freeze_cm`, `snowfall_24h_cm`, `snowfall_72h_cm`, `older_snow_accum`, `hours_since_last_snowfall` | Fresh snow at multiple time windows and recency |
 | **Snow depth** | `snow_depth_m`, `fresh_to_total_ratio` | Base depth and proportion of new snow |
 | **Warm hours** | Hours above 0/3/6 C since freeze-thaw + current warm spell | Cumulative heat exposure that degrades snow |
-| **Wind & interactions** | `avg_wind_24h`, `max_wind_24h`, `calm_powder_indicator`, `fresh_powder_indicator`, `warm_degradation`, `summer_flag` | Wind crust, powder conditions, and non-linear combinations |
+| **Wind & visibility** | `avg_wind_24h`, `max_wind_24h`, `max_wind_gust_norm`, `visibility_km`, `min_visibility_24h_km`, `calm_powder_indicator` | Wind crust, gusts, and visibility conditions |
+| **Interactions** | `fresh_powder_indicator`, `warm_degradation`, `summer_flag`, and more | Non-linear combinations capturing key condition patterns |
 
 ### Model Architecture
 
@@ -105,22 +108,18 @@ The overall resort quality is a weighted average across elevations:
 
 ### Quality Categories
 
-| Category | Display Name | Raw Score | 0-100 Scale | Description |
-|----------|-------------|-----------|-------------|-------------|
-| Excellent | Excellent | >= 5.5 | ~90-100 | Fresh powder, abundant recent snow, cold temps |
-| Good | Good | >= 4.5 | ~70-90 | Soft rideable surface, some fresh snow |
-| Fair | Fair | >= 3.5 | ~50-70 | Firm base with limited fresh, or mild warming |
-| Poor | Soft | >= 2.5 | ~30-50 | Hard packed, minimal snow since last thaw-freeze |
-| Bad | Icy | >= 1.5 | ~10-30 | Refrozen surface, no fresh snow |
-| Horrible | Not Skiable | < 1.5 | ~0-10 | Insufficient cover or actively melting |
-
-### Post-ML Adjustments
-
-Two adjustments are applied after the neural network prediction:
-
-1. **Snow aging penalty**: The model does not directly see hours since last snowfall. When snow is older than 48 hours with no fresh accumulation, a penalty is applied (up to -0.8 on the 1-6 scale), reduced for very cold temperatures that slow densification.
-
-2. **Cold accumulation boost**: The model underestimates quality when there is no recent 24h snowfall but significant snow has accumulated since the last freeze-thaw and temps are well below zero. A boost of up to +1.0 is applied based on accumulation depth and temperature.
+| Category | Raw Score | 0-100 Scale | Description |
+|----------|-----------|-------------|-------------|
+| Champagne Powder | >= 5.9 | ~98-100 | Lightest, driest powder -- the holy grail |
+| Powder Day | >= 5.5 | ~90-98 | Deep fresh powder, cold temps, low wind |
+| Excellent | >= 5.0 | ~80-90 | Abundant recent snow, well-preserved conditions |
+| Great | >= 4.5 | ~70-80 | Fresh snow with good coverage and cold temps |
+| Good | >= 4.0 | ~60-70 | Soft rideable surface, some fresh snow |
+| Decent | >= 3.5 | ~50-60 | Acceptable conditions, firm in spots |
+| Mediocre | >= 3.0 | ~40-50 | Firm base with limited fresh, or mild warming |
+| Poor | >= 2.5 | ~30-40 | Hard packed, minimal snow since last thaw-freeze |
+| Bad | >= 1.5 | ~10-30 | Refrozen surface, no fresh snow |
+| Horrible | < 1.5 | ~0-10 | Insufficient cover or actively melting |
 
 ### Natural Language Explanations
 
@@ -132,11 +131,12 @@ Every quality score comes with a generated explanation that describes surface co
 
 | Metric | Value |
 |--------|-------|
-| MAE | 0.176 (on 1-6 scale) |
-| R-squared | 0.955 |
-| Exact quality match | 83.5% |
+| MAE | 0.225 (on 1-6 scale) |
+| R-squared | 0.937 |
+| Exact quality match | 81.1% |
 | Within 1 quality level | 100% |
-| Training samples | 2,181 real observations |
+| Training samples | ~12,000 real observations |
+| Engineered features | 40 |
 | Resorts covered | 134 |
 
 ---
@@ -152,7 +152,7 @@ Every quality score comes with a generated explanation that describes surface co
 | **ML Training** | NumPy (custom neural network, no framework dependencies) |
 | **ML Inference** | Pure Python (runs in Lambda with no ML library overhead) |
 | **AI Chat** | Claude Sonnet 4.6 via AWS Bedrock Converse API with tool_use |
-| **Weather Data** | [Open-Meteo](https://open-meteo.com/) API |
+| **Weather Data** | [Open-Meteo](https://open-meteo.com/) (primary), [OnTheSnow](https://www.onthesnow.com/), [Snow-Forecast.com](https://www.snow-forecast.com/), [Apple WeatherKit](https://developer.apple.com/weatherkit/) |
 | **Auth** | Sign in with Apple, guest auth |
 | **Push Notifications** | APNs via Amazon SNS |
 | **CI/CD** | GitHub Actions (deploy, TestFlight, weather triggers) |
@@ -186,7 +186,7 @@ Every quality score comes with a generated explanation that describes surface co
                               |                              |
                               |  +--- ML Scorer ------------+|
                               |  |  Neural net ensemble     ||
-                              |  |  29-feature inference    ||
+                              |  |  40-feature inference    ||
                               |  +--------------------------+|
                               +-----------+---+--------------+
                                           |   |
@@ -201,16 +201,18 @@ Every quality score comes with a generated explanation that describes surface co
   | Weather Processor |          | Static JSON Gen   |          | Notification      |
   | (Scheduled Lambda)|          | (Scheduled Lambda) |          | Processor         |
   |                   |          |                   |          | (Scheduled Lambda) |
-  | Fetches Open-Meteo|          | Pre-computes batch|          | Sends powder      |
-  | hourly data,      |          | quality to S3 for |          | alerts via SNS    |
-  | runs ML scoring,  |          | fast API responses|          | to APNs           |
+  | Fetches from 4    |          | Pre-computes batch|          | Sends powder      |
+  | weather sources,  |          | quality to S3 for |          | alerts via SNS    |
+  | merges with       |          | fast API responses|          | to APNs           |
+  | outlier detection,|          |                   |          |                   |
+  | runs ML scoring,  |          |                   |          |                   |
   | stores to DynamoDB|          |                   |          |                   |
   +-------------------+          +-------------------+          +-------------------+
 ```
 
 ### Data Flow
 
-1. **Weather Processor** runs on a schedule, fetching hourly weather data from Open-Meteo for all resorts at 3 elevations. It computes ML-based snow quality scores and stores conditions in DynamoDB.
+1. **Weather Processor** runs on a schedule, fetching hourly weather data from 4 independent sources (Open-Meteo, OnTheSnow, Snow-Forecast.com, Apple WeatherKit) for all resorts at 3 elevations. The MultiSourceMerger applies weighted consensus (Open-Meteo 0.50, OnTheSnow 0.25, Snow-Forecast 0.15, WeatherKit 0.10) with outlier detection (drops values >50% from median). It computes ML-based snow quality scores and stores conditions in DynamoDB with confidence levels (HIGH = 3+ sources, MEDIUM = 2, LOW = 1).
 
 2. **Static JSON Generator** runs after the weather processor and pre-computes batch snow quality data to S3 as static JSON. The batch API endpoint reads from S3 for fast responses, falling back to DynamoDB if S3 is unavailable.
 
@@ -240,7 +242,7 @@ Every quality score comes with a generated explanation that describes surface co
 
 ```
 snow/
-+-- ios/                          # iOS app (SwiftUI)
++-- ios/                          # iOS app (Swift 6, SwiftUI)
 |   +-- SnowTracker/              # Main app target
 |   |   +-- Sources/
 |   |   |   +-- Models/           # Data models (Resort, WeatherCondition, etc.)
@@ -252,6 +254,7 @@ snow/
 |   +-- SnowTrackerWidget/        # Home screen widgets
 |   +-- SnowTrackerTests/         # Unit tests
 |   +-- fastlane/                 # App Store automation
++-- android/                      # Android app (Kotlin, Jetpack Compose)
 +-- backend/                      # Python backend
 |   +-- src/
 |   |   +-- handlers/             # Lambda entry points
@@ -265,11 +268,12 @@ snow/
 |   |   |   +-- snow_quality_service.py    # Quality assessment orchestration
 |   |   |   +-- quality_explanation_service.py  # NL explanation generation
 |   |   |   +-- openmeteo_service.py       # Open-Meteo API client
+|   |   |   +-- multi_source_merger.py    # Multi-source weather aggregation
 |   |   |   +-- chat_service.py            # AI chat via Bedrock
 |   |   |   +-- daily_history_service.py   # Snow history aggregation
 |   |   +-- models/               # Pydantic data models
 |   |   +-- ml_model/             # Model weights (JSON)
-|   +-- tests/                    # pytest test suite (1300+ tests)
+|   +-- tests/                    # pytest test suite (1390+ tests)
 +-- ml/                           # ML training pipeline
 |   +-- train_v2.py               # Neural network training script
 |   +-- collect_data.py           # Feature collection from Open-Meteo
@@ -309,7 +313,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Run tests (1300+ tests)
+# Run tests (1390+ tests)
 PYTHONPATH=src python3 -m pytest tests/ -x -q
 
 # Run locally
@@ -322,7 +326,7 @@ uvicorn src.main:app --reload
 # Collect features from Open-Meteo (requires training_features.json)
 python3 ml/collect_data.py
 
-# Train model (historical_weight=0.0 for best results with 1300+ real samples)
+# Train model (historical_weight=0.0 for best results with 12000+ real samples)
 python3 ml/train_v2.py 0.0
 ```
 
@@ -389,10 +393,10 @@ curl https://api.powderchaserapp.com/api/v1/resorts/whistler-blackcomb/snow-qual
       "snow_score": 92,
       "explanation": "Fresh powder: 18cm in the last 24 hours. Cold (-12\u00b0C) \u2014 good preservation."
     },
-    "mid": { "quality": "good", "snow_score": 74 },
-    "base": { "quality": "fair", "snow_score": 55 }
+    "mid": { "quality": "great", "snow_score": 74 },
+    "base": { "quality": "decent", "snow_score": 55 }
   },
-  "overall_quality": "good",
+  "overall_quality": "great",
   "overall_snow_score": 78,
   "overall_explanation": "Fresh powder at summit (18cm in 24h), but firmer conditions at lower elevations. Cool (-4\u00b0C). Solid 142cm base."
 }
@@ -435,10 +439,10 @@ gh workflow run trigger-weather.yml -f environment=prod
 ## Testing
 
 ```bash
-# Backend (1300+ tests)
+# Backend (1390+ tests)
 cd backend && PYTHONPATH=src python3 -m pytest tests/ -x -q
 
-# iOS (106 tests)
+# iOS (118 tests)
 xcodebuild test -project ios/SnowTracker.xcodeproj -scheme SnowTracker \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   -only-testing:SnowTrackerTests
@@ -472,7 +476,10 @@ This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENS
 
 ## Acknowledgments
 
-- [Open-Meteo](https://open-meteo.com/) for free weather data
+- [Open-Meteo](https://open-meteo.com/) for free weather data (primary source)
+- [OnTheSnow](https://www.onthesnow.com/) for resort conditions data
+- [Snow-Forecast.com](https://www.snow-forecast.com/) for mountain weather forecasts
+- [Apple WeatherKit](https://developer.apple.com/weatherkit/) for supplementary weather data
 - [skiresort.info](https://www.skiresort.info/) for resort information
 - [Anthropic](https://www.anthropic.com/) for Claude (AI chat and development assistance)
 - All the skiers and snowboarders who provided quality scores for ML training

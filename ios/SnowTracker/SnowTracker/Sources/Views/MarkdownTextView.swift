@@ -94,22 +94,33 @@ struct MarkdownTextView: View {
 
     private func tableView(headers: [String], rows: [[String]]) -> some View {
         let colCount = headers.count
-        // Estimate column widths based on content
-        let colWidth = max(80, min(160, Int(300 / max(colCount, 1))))
+
+        // Calculate per-column widths based on content length
+        let colWidths: [CGFloat] = (0..<colCount).map { col in
+            let headerLen = col < headers.count ? headers[col].trimmingCharacters(in: .whitespaces).count : 0
+            let maxCellLen = rows.reduce(0) { maxLen, row in
+                let cellLen = col < row.count ? row[col].trimmingCharacters(in: .whitespaces).count : 0
+                return max(maxLen, cellLen)
+            }
+            let maxLen = max(headerLen, maxCellLen)
+            // Scale: ~7pt per character + 20pt padding, clamped
+            return max(60, min(220, CGFloat(maxLen) * 7 + 20))
+        }
 
         return ScrollView(.horizontal, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 // Header row
                 HStack(spacing: 0) {
-                    ForEach(Array(headers.enumerated()), id: \.offset) { colIndex, header in
+                    ForEach(0..<colCount, id: \.self) { colIndex in
+                        let header = colIndex < headers.count ? headers[colIndex] : ""
                         Text(inlineAttributed(header.trimmingCharacters(in: .whitespaces)))
                             .font(.caption)
                             .fontWeight(.bold)
                             .foregroundStyle(foregroundColor)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
-                            .frame(minWidth: CGFloat(colWidth), alignment: .leading)
-                        if colIndex < headers.count - 1 {
+                            .frame(width: colWidths[colIndex], alignment: .leading)
+                        if colIndex < colCount - 1 {
                             Rectangle()
                                 .fill(Color(.separator).opacity(0.3))
                                 .frame(width: 0.5)
@@ -132,7 +143,7 @@ struct MarkdownTextView: View {
                                 .foregroundStyle(foregroundColor)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 7)
-                                .frame(minWidth: CGFloat(colWidth), alignment: .leading)
+                                .frame(width: colWidths[colIndex], alignment: .leading)
                             if colIndex < colCount - 1 {
                                 Rectangle()
                                     .fill(Color(.separator).opacity(0.2))

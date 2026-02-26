@@ -1,7 +1,7 @@
 # Snow Quality Tracker (Powder Chaser) - Feature Roadmap
 
 **Created**: 2026-02-20
-**Last Updated**: 2026-02-22
+**Last Updated**: 2026-02-25
 
 This document outlines the feature roadmap for Powder Chaser, prioritized by user impact, feasibility, and alignment with what makes the best ski apps indispensable. It is informed by competitive analysis of OpenSnow, Slopes, OnTheSnow, Epic Mix, Ikon Pass, Ski Tracks, and others.
 
@@ -10,23 +10,27 @@ This document outlines the feature roadmap for Powder Chaser, prioritized by use
 ## Current State Summary
 
 The app is live with a strong foundation:
-- 900+ resorts across 23 countries with hourly weather updates
-- ML-powered snow quality ratings (v11 neural network ensemble, 83.5% exact accuracy, 100% within-1)
-- Push notifications (fresh snow, thaw/freeze alerts)
+- 1,040+ resorts across 25 countries with hourly weather updates
+- Multi-source weather data (Open-Meteo, OnTheSnow, Snow-Forecast.com, Apple WeatherKit) with outlier detection and confidence levels
+- ML-powered snow quality ratings (v15 neural network ensemble, ~12,000 samples, 40 features, 81.1% exact accuracy, 100% within-1)
+- 10 quality categories: Champagne Powder, Powder Day, Excellent, Great, Good, Decent, Mediocre, Poor, Bad, Horrible
+- Data source transparency -- shows which sources contributed and confidence level per reading
+- Push notifications (fresh snow, thaw/freeze alerts, custom thresholds)
 - 7-day forecast timeline with ML predictions
 - Map view with quality-colored markers and date selector
 - Best snow recommendations (proximity-based and global)
-- Favorites system with notification customization
+- Favorites system with notification customization and groups
 - iOS widgets, 13-language localization
 - Apple Sign In / Guest auth, trip API endpoints (UI hidden)
 - AI conditions chat (Claude Sonnet 4.6 on Bedrock with tool_use)
-- User condition reports from the mountain
+- User condition reports from the mountain (8 condition types, 1-10 scoring)
 - Snow history charts with season totals
 - Weekly snow digest notifications
 - Styled gradient backgrounds with weather-responsive overlays (snow/sun/wind)
-- Shareable conditions cards, favorite groups, elevation profile visualization
+- Shareable conditions cards, elevation profile visualization
+- Live Activities and Dynamic Island for active storm tracking
 
-Open issues: Trip Planning (#23), Webcam Integration (#24), Apple Watch (#25), Alternative Snow Data Sources (#13).
+Open issues: Trip Planning (#23), Webcam Integration (#24), Apple Watch (#25).
 
 ---
 
@@ -112,7 +116,7 @@ These features have the highest impact-to-effort ratio and address the most comm
 
 ---
 
-### 1.5 Live Activities & Dynamic Island (iOS)
+### 1.5 Live Activities & Dynamic Island (iOS) -- *Done*
 
 **Description**: Use iOS Live Activities to show a persistent, glanceable snow update on the Lock Screen and Dynamic Island during active storm events or on planned trip days. Show: resort name, fresh snow accumulating, current quality, temperature.
 
@@ -272,9 +276,9 @@ These features build on the foundation and move the app toward being a daily-use
 
 ---
 
-### 2.8 Android App (Research Phase)
+### 2.8 Android App (In Progress)
 
-**Description**: Begin planning for an Android version, likely using Kotlin/Jetpack Compose to mirror the iOS experience. Alternatively, evaluate cross-platform options (Kotlin Multiplatform, Flutter) for shared business logic.
+**Description**: Native Android app using Kotlin and Jetpack Compose to mirror the iOS experience.
 
 **User Value**: Roughly 50% of the global smartphone market. Android users currently have no access to the app. Required for any serious growth beyond Apple ecosystem.
 
@@ -283,10 +287,11 @@ These features build on the foundation and move the app toward being a daily-use
 **Dependencies**: Stable API, well-documented backend. All backend features work for any client.
 
 **Implementation Notes**:
-- Research: Evaluate Kotlin Multiplatform (share models/networking with iOS) vs. native Kotlin vs. Flutter
-- Research: Audit API for any iOS-specific assumptions
-- Start with core feature subset: browse resorts, conditions, favorites, notifications
-- Consider hiring/contracting for Android development
+- Native Kotlin + Jetpack Compose, Room, Hilt, Material 3
+- SDK 35, min SDK 26
+- 3 build flavors: dev, staging, prod
+- 55 tests passing
+- Pending: Firebase setup, Google Maps API key, Google Play service account for publishing
 - FCM (Firebase Cloud Messaging) integration for push notifications (SNS already supports it)
 
 ---
@@ -319,7 +324,7 @@ These are ambitious features that would make Powder Chaser best-in-class. They r
 
 ---
 
-### 3.3 Community Condition Reports
+### 3.3 Community Condition Reports -- *Done*
 
 **Description**: Allow users to submit quick condition reports from the mountain: "Powder in the trees," "Icy groomers," "Wind hold on summit." Reports are timestamped, geotagged, and visible to other users on the resort detail page.
 
@@ -425,15 +430,21 @@ These are ambitious features that would make Powder Chaser best-in-class. They r
 
 ---
 
-### 3.10 Multi-Source Data Aggregation (Issue #13)
+### 3.10 Multi-Source Data Aggregation (Issue #13) -- *Done*
 
-**Description**: Integrate additional snow data sources beyond Open-Meteo: snow-forecast.com, Weather Unlocked, resort official APIs. Use multi-source consensus to improve accuracy and provide confidence indicators.
+**Description**: Integrate additional snow data sources beyond Open-Meteo: Snow-Forecast.com, OnTheSnow, Apple WeatherKit. Use multi-source consensus with outlier detection to improve accuracy and provide confidence indicators.
 
 **User Value**: More data sources mean better accuracy. When sources agree, confidence is high. When they disagree, the app can flag uncertainty. This is the technical moat that differentiates from basic weather apps.
 
 **Estimated Complexity**: L
 
 **Dependencies**: Research phase (issue #13). API access agreements. Data normalization layer.
+
+**Implementation (completed)**:
+- 4 sources: Open-Meteo (weight 0.50), OnTheSnow (0.25), Snow-Forecast.com (0.15), Apple WeatherKit (0.10)
+- MultiSourceMerger with outlier detection (drops values >50% from median)
+- Confidence levels: HIGH (3+ sources agree), MEDIUM (2 sources), LOW (1 source)
+- Data source transparency in app UI showing which sources contributed to each reading
 
 ---
 
@@ -511,18 +522,15 @@ These features need investigation before committing to a development plan.
 
 ---
 
-### 4.2 Alternative Snow Data Sources (Issue #13)
+### 4.2 Alternative Snow Data Sources (Issue #13) -- *Completed*
 
 **Research Question**: Which additional data sources meaningfully improve accuracy over Open-Meteo alone? What do they cost? What are their API terms?
 
 **Why It Matters**: Data accuracy is the foundational differentiator. More sources = better predictions = more user trust.
 
-**Next Steps**:
-- Evaluate Weather Unlocked API (free tier: 1000 req/day, 3 elevations, 3000+ resorts)
-- Contact snow-forecast.com about API access
-- Research SNOTEL/NRCS data for US resorts (free, government data)
-- Design a multi-source scoring system (weighted consensus)
-- Estimate cost for Weather Unlocked paid tier at scale
+**Outcome**: Implemented 4-source system with weighted consensus and outlier detection. See Feature 3.10 for details. Remaining considerations:
+- SNOTEL/NRCS data for US resorts (free, government data) -- could be a 5th source
+- Weather Unlocked API (free tier: 1000 req/day) -- evaluated but not integrated
 
 ---
 
@@ -541,33 +549,23 @@ These features need investigation before committing to a development plan.
 
 ---
 
-### 4.4 AI Summary Cost & Quality at Scale
+### 4.4 AI Summary Cost & Quality at Scale -- *Completed*
 
-**Research Question**: What does it cost to generate daily AI condition summaries for 900+ resorts? Can quality be maintained with smaller/cheaper models? What prompt engineering is needed?
+**Research Question**: What does it cost to generate daily AI condition summaries for 1,040+ resorts? Can quality be maintained with smaller/cheaper models? What prompt engineering is needed?
 
 **Why It Matters**: AI summaries (feature 3.4) could be the app's biggest differentiator vs. OpenSnow, but cost at scale could be prohibitive.
 
-**Next Steps**:
-- Generate sample summaries for 10 resorts using Claude Haiku (lowest cost)
-- Evaluate quality vs. Sonnet/Opus for this use case
-- Calculate daily cost at 900 resorts (tokens per summary * price per token)
-- Prototype caching strategy (generate only for active resorts)
-- User test: do AI summaries actually change behavior vs. raw data?
+**Outcome**: Implemented as interactive on-demand AI chat (feature 3.4) rather than batch-generated summaries. Uses Claude Sonnet 4.6 on Bedrock with tool_use for grounded, real-time responses. Cost is per-conversation, not per-resort, making it scalable. Conversation history stored in DynamoDB with 30-day TTL.
 
 ---
 
-### 4.5 Android Development Approach
+### 4.5 Android Development Approach -- *Completed*
 
 **Research Question**: What is the optimal approach for an Android app? Native Kotlin, Kotlin Multiplatform (share logic with iOS), or cross-platform (Flutter/React Native)?
 
 **Why It Matters**: Android represents ~50% of the market. The choice of technology affects development speed, maintenance burden, and feature parity.
 
-**Next Steps**:
-- Audit current iOS codebase for logic that could be shared (networking, models, caching)
-- Evaluate Kotlin Multiplatform for shared business logic with Swift interop
-- Prototype a minimal Android app with resort list + conditions using native Kotlin
-- Estimate development time for each approach to reach feature parity
-- Consider: is it better to hire an Android developer or go cross-platform?
+**Outcome**: Chose native Kotlin + Jetpack Compose. Android app is under active development at `/android/` with 3 flavors (dev/staging/prod), 55 passing tests, Material 3 design, Room database, and Hilt DI. Pending: Firebase Console setup and Google Play publishing.
 
 ---
 
@@ -594,7 +592,7 @@ These features need investigation before committing to a development plan.
 | 1.2 Snow History & Season Totals | High | M | **Done** |
 | 1.3 Webcam Integration | High | M | **Now** |
 | 1.4 Resort Comparison | Medium-High | S-M | **Done** |
-| 1.5 Live Activities | Medium-High | M | **Now** |
+| 1.5 Live Activities | Medium-High | M | **Done** |
 | 2.1 Trip Planning | High | L | **Next** |
 | 2.2 Resort Detail Enrichment | Medium | M | **Next** |
 | 2.3 Snow Depth Map Overlay | Medium-High | M-L | **Next** |
@@ -602,17 +600,17 @@ These features need investigation before committing to a development plan.
 | 2.5 Shareable Conditions Cards | Medium-High | S-M | **Done** |
 | 2.6 Favorite Groups | Medium | S | **Done** |
 | 2.7 Elevation Profile Viz | Medium | S-M | **Done** |
-| 2.8 Android App | High | XL | **Research** |
+| 2.8 Android App | High | XL | **In Progress** |
 | 3.1 Apple Watch | Medium | L | **Later** |
 | 3.2 GPS Tracking | Very High | XL | **Later** |
-| 3.3 Community Reports | High | L | **Later** |
+| 3.3 Community Reports | High | L | **Done** |
 | 3.4 AI Chat | Very High | M-L | **Done** |
 | 3.5 Social/Friends | High | L-XL | **Later** |
 | 3.6 Gamification | Medium | M-L | **Later** |
 | 3.7 Offline Mode | Medium | M | **Done** |
 | 3.8 Storm Tracker | High | L | **Later** |
 | 3.9 Resort Reviews | Medium | M-L | **Later** |
-| 3.10 Multi-Source Data | High | L | **Later** |
+| 3.10 Multi-Source Data | High | L | **Done** |
 | 3.11 Road Conditions | Medium | L | **Later** |
 | 3.12 Backcountry Mode | Medium-High | XL | **Later** |
 | 3.13 Season Pass Tracker | Medium | M | **Later** |
@@ -622,12 +620,12 @@ These features need investigation before committing to a development plan.
 
 ## Competitive Positioning
 
-**Current strength**: Powder Chaser's ML-powered quality ratings across 3 elevation levels for 900+ resorts is a unique differentiator. No competitor provides per-elevation quality scoring at this scale.
+**Current strength**: Powder Chaser's ML-powered quality ratings across 3 elevation levels for 1,040+ resorts with multi-source weather data is a unique differentiator. No competitor provides per-elevation quality scoring at this scale with 4-source weather consensus and confidence levels.
 
 **Key gaps vs. competitors**:
-- vs. OpenSnow: Missing expert/AI daily forecasts, storm tracker, webcams
+- vs. OpenSnow: Missing storm tracker, webcams
 - vs. Slopes: Missing GPS tracking, social features, Apple Watch
-- vs. OnTheSnow: Missing webcams, user-submitted reports, snow history
+- vs. OnTheSnow: Missing webcams
 - vs. Epic/Ikon: Missing lift status, trail maps, season pass integration
 
 **Recommended positioning**: "The smartest snow conditions app." Focus on data quality, ML predictions, and actionable alerts rather than trying to be everything. Win on accuracy and signal-to-noise ratio. Let others do GPS tracking and trail maps -- own the "should I go skiing tomorrow?" decision.

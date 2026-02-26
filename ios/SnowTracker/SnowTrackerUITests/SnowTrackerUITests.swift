@@ -486,9 +486,9 @@ final class SnowTrackerUITests: XCTestCase {
         let emptyStateText = app.staticTexts["Ask about snow conditions"]
         XCTAssertTrue(emptyStateText.waitForExistence(timeout: 3), "Empty state should show 'Ask about snow conditions'")
 
-        // Verify suggestion chips are visible
-        let suggestionChip = app.buttons.matching(NSPredicate(format: "label CONTAINS 'powder'")).firstMatch
-        XCTAssertTrue(suggestionChip.waitForExistence(timeout: 3), "Suggestion chips should be visible")
+        // Verify suggestion chips are visible (randomized, check for sparkles icon text)
+        let suggestionChips = app.buttons.matching(NSPredicate(format: "label CONTAINS 'snow' OR label CONTAINS 'resort' OR label CONTAINS 'powder' OR label CONTAINS 'Best' OR label CONTAINS 'Ikon' OR label CONTAINS 'Epic' OR label CONTAINS 'Alps' OR label CONTAINS 'Japan' OR label CONTAINS 'Cheap' OR label CONTAINS 'hidden' OR label CONTAINS 'forecast' OR label CONTAINS 'trip' OR label CONTAINS 'Compare' OR label CONTAINS 'Warm' OR label CONTAINS 'Deep'"))
+        XCTAssertTrue(suggestionChips.firstMatch.waitForExistence(timeout: 3), "Suggestion chips should be visible")
 
         // Take screenshot
         let screenshot = XCTAttachment(screenshot: app.screenshot())
@@ -559,8 +559,8 @@ final class SnowTrackerUITests: XCTestCase {
         let chatTitle = app.navigationBars["Ask AI"]
         XCTAssertTrue(chatTitle.waitForExistence(timeout: 5))
 
-        // Send a message via suggestion chip (triggers API call)
-        let suggestionChip = app.buttons.matching(NSPredicate(format: "label CONTAINS 'powder'")).firstMatch
+        // Send a message via the first suggestion chip (triggers API call)
+        let suggestionChip = app.buttons.matching(NSPredicate(format: "label CONTAINS 'snow' OR label CONTAINS 'resort' OR label CONTAINS 'powder' OR label CONTAINS 'Best' OR label CONTAINS 'Ikon' OR label CONTAINS 'Compare'")).firstMatch
         if suggestionChip.waitForExistence(timeout: 3) {
             suggestionChip.tap()
 
@@ -651,5 +651,87 @@ final class SnowTrackerUITests: XCTestCase {
         // Verify the empty state is shown (fresh conversation)
         let emptyStateText = app.staticTexts["Ask about snow conditions"]
         XCTAssertTrue(emptyStateText.waitForExistence(timeout: 3), "Empty state should appear for new conversation")
+    }
+
+    func testChatCompareResortsQuery() throws {
+        // This tests table rendering and resort cards
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
+
+        // Open chat
+        let chatButton = app.buttons["Ask AI about snow conditions"]
+        XCTAssertTrue(chatButton.waitForExistence(timeout: 5))
+        chatButton.tap()
+
+        let chatTitle = app.navigationBars["Ask AI"]
+        XCTAssertTrue(chatTitle.waitForExistence(timeout: 5))
+
+        // Type compare query (produces tables + resort cards)
+        let textField = app.textFields["Ask about conditions..."]
+        XCTAssertTrue(textField.waitForExistence(timeout: 3))
+        textField.tap()
+        textField.typeText("Compare Whistler, Big White, and Revelstoke in a table. Include resort cards.")
+
+        let sendButton = app.buttons["Send message"]
+        sendButton.tap()
+
+        // Wait for AI response
+        sleep(35)
+
+        saveScreenshot(name: "chat-compare-top")
+        app.swipeUp()
+        sleep(1)
+        saveScreenshot(name: "chat-compare-scrolled")
+        app.swipeUp()
+        sleep(1)
+        saveScreenshot(name: "chat-compare-bottom")
+    }
+
+    func testChatCheapResortsQuery() throws {
+        // Wait for app to fully load
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
+
+        // Open chat
+        let chatButton = app.buttons["Ask AI about snow conditions"]
+        XCTAssertTrue(chatButton.waitForExistence(timeout: 5))
+        chatButton.tap()
+
+        // Verify chat view appears
+        let chatTitle = app.navigationBars["Ask AI"]
+        XCTAssertTrue(chatTitle.waitForExistence(timeout: 5))
+
+        // Type the question
+        let textField = app.textFields["Ask about conditions..."]
+        XCTAssertTrue(textField.waitForExistence(timeout: 3))
+        textField.tap()
+        textField.typeText("What are the cheapest ski resorts within a 6 hour drive from me with decent snow right now?")
+
+        // Send
+        let sendButton = app.buttons["Send message"]
+        sendButton.tap()
+
+        // Wait for AI response (tool calls + streaming can take a while)
+        sleep(35)
+
+        // Save screenshots to /tmp for easy access
+        saveScreenshot(name: "chat-response-top")
+
+        // Scroll down to see more
+        app.swipeUp()
+        sleep(1)
+        saveScreenshot(name: "chat-response-scrolled")
+
+        // Scroll down more
+        app.swipeUp()
+        sleep(1)
+        saveScreenshot(name: "chat-response-bottom")
+    }
+
+    private func saveScreenshot(name: String) {
+        let screenshot = app.screenshot()
+        let data = screenshot.pngRepresentation
+        let path = "/tmp/snow_\(name).png"
+        FileManager.default.createFile(atPath: path, contents: data)
     }
 }

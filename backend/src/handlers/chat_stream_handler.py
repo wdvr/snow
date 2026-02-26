@@ -70,8 +70,11 @@ def _validate_jwt(token: str) -> str | None:
     jwt_secret = os.environ.get("JWT_SECRET_KEY", "dev-secret-change-in-prod")
     try:
         payload = jose_jwt.decode(token, jwt_secret, algorithms=["HS256"])
-        return payload.get("sub")
-    except Exception:
+        user_id = payload.get("sub")
+        logger.info("JWT validated, user_id=%s", user_id)
+        return user_id
+    except Exception as e:
+        logger.warning("JWT validation failed: %s", e)
         return None
 
 
@@ -110,6 +113,13 @@ async def chat_stream(request: Request):
         user_id = _validate_jwt(auth_header[7:])
     if not user_id:
         user_id = f"anon_{request.client.host if request.client else 'unknown'}"
+        logger.info(
+            "Using anonymous user_id=%s (auth_header present: %s)",
+            user_id,
+            bool(auth_header),
+        )
+    else:
+        logger.info("Authenticated user_id=%s", user_id)
 
     # Use a thread-safe queue for the generator to yield from
     q: queue.Queue[str | object] = queue.Queue()
@@ -892,6 +902,19 @@ def _build_messages(history, user_message):
     return messages
 
 
+def _convert_floats(obj):
+    """Recursively convert float values to Decimal for DynamoDB compatibility."""
+    from decimal import Decimal
+
+    if isinstance(obj, float):
+        return Decimal(str(obj))
+    if isinstance(obj, dict):
+        return {k: _convert_floats(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_convert_floats(v) for v in obj]
+    return obj
+
+
 def _save_message(
     chat_table,
     conversation_id,
@@ -917,7 +940,7 @@ def _save_message(
     if title:
         item["title"] = title
     if tool_calls:
-        item["tool_calls"] = tool_calls
+        item["tool_calls"] = _convert_floats(tool_calls)
     try:
         chat_table.put_item(Item=item)
     except Exception as e:

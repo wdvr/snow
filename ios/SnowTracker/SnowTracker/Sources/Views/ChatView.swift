@@ -7,6 +7,7 @@ struct ChatView: View {
     @State private var messageText = ""
     @State private var sendTrigger = 0
     @State private var selectedResort: Resort?
+    @State private var visibleSuggestions: [ChatSuggestion] = []
     @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
@@ -93,20 +94,18 @@ struct ChatView: View {
                     .padding(.horizontal, 40)
 
                 VStack(spacing: 12) {
-                    SuggestionChip(text: "Best snow within 500 miles") {
-                        sendSuggestion("Where's the best snow within 500 miles of me right now?")
-                    }
-                    SuggestionChip(text: "Cheap resorts within 6h drive") {
-                        sendSuggestion("What are the cheapest ski resorts within a 6 hour drive from me with decent snow right now?")
-                    }
-                    SuggestionChip(text: "Non-Epic resorts under $150/day") {
-                        sendSuggestion("Show me non-Epic pass resorts with good snow conditions where a day pass is under $150")
-                    }
-                    SuggestionChip(text: "Compare Whistler vs Jackson Hole") {
-                        sendSuggestion("Compare current conditions at Whistler and Jackson Hole in a table")
+                    ForEach(visibleSuggestions) { suggestion in
+                        SuggestionChip(text: suggestion.label) {
+                            sendSuggestion(suggestion.prompt)
+                        }
                     }
                 }
                 .padding(.top, 8)
+                .onAppear {
+                    if visibleSuggestions.isEmpty {
+                        visibleSuggestions = Array(Self.allSuggestions.shuffled().prefix(4))
+                    }
+                }
 
                 Spacer()
             }
@@ -267,6 +266,33 @@ struct ChatView: View {
         viewModel.userLatitude = locationManager.userLocation?.coordinate.latitude
         viewModel.userLongitude = locationManager.userLocation?.coordinate.longitude
     }
+
+    // MARK: - Suggestions Data
+
+    private struct ChatSuggestion: Identifiable {
+        let id = UUID()
+        let label: String
+        let prompt: String
+    }
+
+    private static let allSuggestions: [ChatSuggestion] = [
+        ChatSuggestion(label: "Best snow within 500 miles", prompt: "Where's the best snow within 500 miles of me right now?"),
+        ChatSuggestion(label: "Cheap resorts within 6h drive", prompt: "What are the cheapest ski resorts within a 6 hour drive from me with decent snow right now?"),
+        ChatSuggestion(label: "Non-Epic resorts under $150/day", prompt: "Show me non-Epic pass resorts with good snow conditions where a day pass is under $150"),
+        ChatSuggestion(label: "Compare Whistler vs Jackson Hole", prompt: "Compare current conditions at Whistler and Jackson Hole in a table"),
+        ChatSuggestion(label: "Best powder in the Rockies", prompt: "Which resort in the Rockies has the best powder conditions right now?"),
+        ChatSuggestion(label: "Family-friendly with good snow", prompt: "What are some family-friendly resorts with good snow and lots of green runs?"),
+        ChatSuggestion(label: "Top 5 resorts globally right now", prompt: "What are the top 5 resorts with the best snow conditions anywhere in the world right now?"),
+        ChatSuggestion(label: "Ikon Pass best conditions", prompt: "Which Ikon Pass resorts have the best snow conditions right now?"),
+        ChatSuggestion(label: "Snow forecast this week", prompt: "Which resorts near me are getting the most snow this week?"),
+        ChatSuggestion(label: "Hidden gems with fresh powder", prompt: "Show me lesser-known resorts that got fresh snow in the last 24 hours"),
+        ChatSuggestion(label: "Best in the Alps right now", prompt: "What are the best ski resorts in the Alps right now? Compare their conditions."),
+        ChatSuggestion(label: "Deepest snowpack", prompt: "Which resorts have the deepest snowpack right now?"),
+        ChatSuggestion(label: "Weekend trip under $100/day", prompt: "Plan me a weekend ski trip — resorts under $100/day with good snow within driving distance"),
+        ChatSuggestion(label: "Japan snow conditions", prompt: "How are conditions at the Japanese resorts right now? Is it still powder season?"),
+        ChatSuggestion(label: "Warmest resort with good snow", prompt: "Which resort has the warmest temperatures while still having good snow quality?"),
+        ChatSuggestion(label: "Epic vs Ikon conditions", prompt: "Compare the best Epic Pass resort vs the best Ikon Pass resort right now"),
+    ]
 
     private func scrollToBottom(proxy: ScrollViewProxy) {
         withAnimation(.easeOut(duration: 0.3)) {
