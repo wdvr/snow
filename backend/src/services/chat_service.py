@@ -7,6 +7,7 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 import boto3
@@ -1630,7 +1631,8 @@ class ChatService:
             item["title"] = title
 
         if tool_calls:
-            item["tool_calls"] = tool_calls
+            # Serialize to JSON and back to convert floats to Decimal for DynamoDB
+            item["tool_calls"] = json.loads(json.dumps(tool_calls), parse_float=Decimal)
 
         try:
             self.chat_table.put_item(Item=item)

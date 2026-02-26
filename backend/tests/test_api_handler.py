@@ -1630,7 +1630,7 @@ class TestNotificationSettings:
             headers=_auth_header(),
         )
         assert resp.status_code == 200
-        assert "big-white" in resp.json()["message"]
+        assert "successfully" in resp.json()["message"].lower()
 
     @patch("handlers.api_handler.get_user_service")
     def test_delete_resort_notification_settings(

@@ -366,6 +366,7 @@ lambda_policy = aws.iam.RolePolicy(
         condition_reports_table.arn,
         daily_history_table.arn,
         chat_rate_limit_table.arn,
+        chat_suggestions_table.arn,
     ).apply(
         lambda arns: f"""{{
         "Version": "2012-10-17",
@@ -403,6 +404,7 @@ lambda_policy = aws.iam.RolePolicy(
                     "{arns[8]}",
                     "{arns[9]}",
                     "{arns[10]}",
+                    "{arns[11]}",
                     "{arns[0]}/index/*",
                     "{arns[1]}/index/*",
                     "{arns[2]}/index/*",
@@ -413,7 +415,8 @@ lambda_policy = aws.iam.RolePolicy(
                     "{arns[7]}/index/*",
                     "{arns[8]}/index/*",
                     "{arns[9]}/index/*",
-                    "{arns[10]}/index/*"
+                    "{arns[10]}/index/*",
+                    "{arns[11]}/index/*"
                 ]
             }},
             {{

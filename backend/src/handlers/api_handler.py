@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import re
 import time
 from datetime import UTC, datetime, timezone
 from typing import Annotated, Dict, List, Optional
@@ -591,6 +592,32 @@ def _get_remaining_anonymous_messages(ip_address: str) -> int:
         return ANON_CHAT_LIMIT
 
 
+# MARK: - Input Validation Helpers
+
+# Resort IDs are alphanumeric with hyphens, max 100 chars (e.g. "whistler-blackcomb")
+_VALID_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{1,100}$")
+
+
+def _validate_resource_id(value: str, name: str = "resource") -> None:
+    """Validate a path-parameter ID (resort_id, trip_id, event_id, etc.).
+
+    Prevents long or malicious strings from being echoed in error messages
+    or sent to DynamoDB. Raises HTTPException(400) on invalid input.
+    """
+    if not value or not _VALID_ID_RE.match(value):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid {name}",
+        )
+
+
+def _sanitize_id_for_message(value: str, max_len: int = 60) -> str:
+    """Truncate and sanitize an ID for safe inclusion in log/error messages."""
+    if len(value) > max_len:
+        return value[:max_len] + "..."
+    return value
+
+
 # MARK: - Health Check
 
 
@@ -865,12 +892,13 @@ async def get_nearby_resorts(
 @app.get("/api/v1/resorts/{resort_id}", response_model=Resort)
 async def get_resort(resort_id: str, response: Response):
     """Get details for a specific resort."""
+    _validate_resource_id(resort_id, "resort_id")
     try:
         resort = _get_resort_cached(resort_id)
         if not resort:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Resort {resort_id} not found",
+                detail="Resort not found",
             )
 
         # Set cache headers
@@ -978,13 +1006,14 @@ async def get_resort_conditions(
     ),
 ):
     """Get current and recent weather conditions for all elevations at a resort."""
+    _validate_resource_id(resort_id, "resort_id")
     try:
         # Verify resort exists
         resort = _get_resort_cached(resort_id)
         if not resort:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Resort {resort_id} not found",
+                detail="Resort not found",
             )
 
         # Get conditions for the specified time range (cached)
@@ -1023,6 +1052,7 @@ async def get_elevation_condition(
     resort_id: str, elevation_level: str, response: Response
 ):
     """Get current weather conditions for a specific elevation at a resort."""
+    _validate_resource_id(resort_id, "resort_id")
     try:
         # Validate elevation level
         valid_levels = ["base", "mid", "top"]
@@ -1037,7 +1067,7 @@ async def get_elevation_condition(
         if not resort:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Resort {resort_id} not found",
+                detail="Resort not found",
             )
 
         # Get latest condition for the specific elevation (cached)
@@ -1045,7 +1075,7 @@ async def get_elevation_condition(
         if not condition:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No conditions found for {resort_id} at {elevation_level} elevation",
+                detail="No conditions found for this resort at the specified elevation",
             )
 
         # Set cache headers
@@ -1078,13 +1108,14 @@ def _get_latest_condition_cached(resort_id: str, elevation_level: str):
 @app.get("/api/v1/resorts/{resort_id}/snow-quality")
 async def get_snow_quality_summary(resort_id: str, response: Response):
     """Get snow quality summary for all elevations at a resort."""
+    _validate_resource_id(resort_id, "resort_id")
     try:
         # Verify resort exists
         resort = _get_resort_cached(resort_id)
         if not resort:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Resort {resort_id} not found",
+                detail="Resort not found",
             )
 
         # Get latest conditions for all elevations in a single query
@@ -1204,13 +1235,14 @@ async def get_resort_history(
     Returns daily snowfall history records and season summary statistics.
     If season is provided (e.g. "2025-2026"), computes Oct 1 to Apr 30 range.
     """
+    _validate_resource_id(resort_id, "resort_id")
     try:
         # Verify resort exists
         resort = _get_resort_cached(resort_id)
         if not resort:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Resort {resort_id} not found",
+                detail="Resort not found",
             )
 
         # If season is provided, compute date range
@@ -1301,6 +1333,7 @@ async def get_resort_timeline(
     7 days past and 7 days forecast, including temperature, snowfall,
     snow depth, and snow quality assessment.
     """
+    _validate_resource_id(resort_id, "resort_id")
     try:
         # Validate elevation
         valid_levels = ["base", "mid", "top"]
@@ -1315,7 +1348,7 @@ async def get_resort_timeline(
         if not resort:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Resort {resort_id} not found",
+                detail="Resort not found",
             )
 
         # Find the matching elevation point
@@ -1328,7 +1361,7 @@ async def get_resort_timeline(
         if not elevation_point:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Elevation level '{elevation}' not found for resort {resort_id}",
+                detail="Elevation level not found for this resort",
             )
 
         # Check server-side cache first
@@ -1394,26 +1427,9 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
             "predicted_snow_48h_cm": None,
         }
 
-    # Calculate overall quality from weighted raw scores (consistent with detail endpoint)
-    weighted_raw = 0.0
-    total_w = 0.0
-    for c in conditions:
-        if c.quality_score is not None:
-            w = ELEVATION_WEIGHTS.get(c.elevation_level, DEFAULT_ELEVATION_WEIGHT)
-            weighted_raw += c.quality_score * w
-            total_w += w
-
-    if total_w > 0:
-        overall_raw = weighted_raw / total_w
-        snow_score = score_to_100(overall_raw)
-        overall_quality = raw_score_to_quality(overall_raw)
-    else:
-        overall_quality = SnowQualityService.calculate_overall_quality(conditions)
-        snow_score = None
-
-    # Get representative condition for temperature/snowfall fields (prefer mid)
-    # Mid elevation best represents typical skiing conditions and aligns with
-    # the weighted quality rating (50% top + 35% mid + 15% base)
+    # Get representative condition for temperature/snowfall/score fields (prefer mid)
+    # Mid elevation best represents typical skiing conditions and matches
+    # the detail endpoint and static JSON generator (timeline default view).
     representative = None
     for pref in ["mid", "top", "base"]:
         for c in conditions:
@@ -1424,6 +1440,16 @@ def _get_snow_quality_for_resort(resort_id: str) -> dict | None:
             break
     if not representative:
         representative = conditions[0]
+
+    # Use representative elevation's raw score for overall quality
+    # (consistent with detail endpoint and static JSON generator)
+    if representative and representative.quality_score is not None:
+        overall_raw = representative.quality_score
+        snow_score = score_to_100(overall_raw)
+        overall_quality = raw_score_to_quality(overall_raw)
+    else:
+        overall_quality = SnowQualityService.calculate_overall_quality(conditions)
+        snow_score = None
 
     return {
         "resort_id": resort_id,
@@ -1951,6 +1977,7 @@ async def update_resort_notification_settings(
 
     This allows users to customize notification thresholds per resort.
     """
+    _validate_resource_id(resort_id, "resort_id")
     try:
         from models.notification import ResortNotificationSettings
 
@@ -1994,9 +2021,7 @@ async def update_resort_notification_settings(
         prefs.updated_at = datetime.now(UTC).isoformat()
         get_user_service().save_user_preferences(prefs)
 
-        return {
-            "message": f"Notification settings for {resort_id} updated successfully"
-        }
+        return {"message": "Notification settings updated successfully"}
 
     except Exception as e:
         logger.error(
@@ -2018,6 +2043,7 @@ async def delete_resort_notification_settings(
     user_id: str = Depends(get_current_user_id),
 ):
     """Remove resort-specific notification settings (revert to defaults)."""
+    _validate_resource_id(resort_id, "resort_id")
     try:
         prefs = get_user_service().get_user_preferences(user_id)
         if not prefs:
@@ -2032,7 +2058,7 @@ async def delete_resort_notification_settings(
             prefs.updated_at = datetime.now(UTC).isoformat()
             get_user_service().save_user_preferences(prefs)
 
-        return {"message": f"Resort-specific settings for {resort_id} removed"}
+        return {"message": "Resort-specific settings removed"}
 
     except Exception as e:
         logger.error(
@@ -2086,6 +2112,7 @@ async def get_resort_events(
     days_ahead: int = Query(default=30, ge=1, le=90, description="Days to look ahead"),
 ):
     """Get upcoming events for a resort."""
+    _validate_resource_id(resort_id, "resort_id")
     try:
         from datetime import timedelta
 
@@ -2132,6 +2159,7 @@ async def create_resort_event(
     Note: In production, this should be restricted to admin users.
     For now, any authenticated user can create events.
     """
+    _validate_resource_id(resort_id, "resort_id")
     import uuid
 
     from models.notification import ResortEvent
@@ -2181,6 +2209,8 @@ async def delete_resort_event(
 
     Note: In production, this should be restricted to admin users.
     """
+    _validate_resource_id(resort_id, "resort_id")
+    _validate_resource_id(event_id, "event_id")
     try:
         get_resort_events_table().delete_item(
             Key={"resort_id": resort_id, "event_id": event_id}
@@ -2617,12 +2647,13 @@ async def get_trip(
     user_id: str = Depends(get_current_user_id),
 ):
     """Get a specific trip by ID."""
+    _validate_resource_id(trip_id, "trip_id")
     try:
         trip = get_trip_service().get_trip(trip_id, user_id)
         if not trip:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Trip {trip_id} not found",
+                detail="Trip not found",
             )
 
         response.headers["Cache-Control"] = CACHE_CONTROL_PRIVATE
@@ -2646,6 +2677,7 @@ async def update_trip(
     user_id: str = Depends(get_current_user_id),
 ):
     """Update a trip."""
+    _validate_resource_id(trip_id, "trip_id")
     try:
         trip = get_trip_service().update_trip(trip_id, user_id, update_data)
         return trip.model_dump()
@@ -2671,12 +2703,13 @@ async def delete_trip(
     user_id: str = Depends(get_current_user_id),
 ):
     """Delete a trip."""
+    _validate_resource_id(trip_id, "trip_id")
     try:
         deleted = get_trip_service().delete_trip(trip_id, user_id)
         if not deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Trip {trip_id} not found",
+                detail="Trip not found",
             )
         return None
 
@@ -2702,6 +2735,7 @@ async def refresh_trip_conditions(
     Updates the latest conditions snapshot and checks for
     significant changes that warrant alerts.
     """
+    _validate_resource_id(trip_id, "trip_id")
     try:
         trip = get_trip_service().update_trip_conditions(trip_id, user_id)
         return {
@@ -2741,6 +2775,7 @@ async def mark_trip_alerts_read(
 
     If alert_ids is not provided, marks all alerts as read.
     """
+    _validate_resource_id(trip_id, "trip_id")
     try:
         count = get_trip_service().mark_alerts_read(trip_id, user_id, alert_ids)
         return {"marked_read": count}
@@ -2783,13 +2818,14 @@ async def submit_condition_report(
     Authenticated users can submit reports about current snow conditions.
     Rate limited to 5 reports per user per resort per day.
     """
+    _validate_resource_id(resort_id, "resort_id")
     try:
         # Verify resort exists
         resort = _get_resort_cached(resort_id)
         if not resort:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Resort {resort_id} not found",
+                detail="Resort not found",
             )
 
         report = get_condition_report_service().submit_report(
@@ -2835,6 +2871,7 @@ async def get_resort_condition_reports(
     Returns recent user-submitted condition reports along with a summary
     of reports from the last 7 days. This endpoint is public.
     """
+    _validate_resource_id(resort_id, "resort_id")
     try:
         service = get_condition_report_service()
 
@@ -2922,6 +2959,8 @@ async def delete_condition_report(
 
     Only the user who submitted the report can delete it.
     """
+    _validate_resource_id(resort_id, "resort_id")
+    _validate_resource_id(report_id, "report_id")
     try:
         deleted = get_condition_report_service().delete_report(
             resort_id=resort_id,
@@ -3164,19 +3203,16 @@ async def test_push_notification(
 
 
 @app.post("/api/v1/admin/backfill-geohashes")
-async def backfill_geohashes():
+async def backfill_geohashes(
+    user_id: str | None = Depends(get_optional_user_id),
+):
     """
     Backfill geohashes for resorts that don't have them.
-    Only available in staging/dev environments.
+    Only available in staging/dev environments, or for admin users in prod.
     """
     environment = os.environ.get("ENVIRONMENT", "dev")
 
-    # Only allow in staging/dev for admin operations
-    if environment == "prod":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="This endpoint is not available in production",
-        )
+    _check_debug_access(environment, user_id)
 
     try:
         resort_service = get_resort_service()
@@ -3402,6 +3438,7 @@ async def get_conversation(
     user_id: str = Depends(get_current_user_id),
 ):
     """Get all messages in a chat conversation."""
+    _validate_resource_id(conversation_id, "conversation_id")
     try:
         service = get_chat_service()
         messages = service.get_conversation(conversation_id, user_id)
@@ -3429,6 +3466,7 @@ async def delete_conversation(
     user_id: str = Depends(get_current_user_id),
 ):
     """Delete a chat conversation and all its messages."""
+    _validate_resource_id(conversation_id, "conversation_id")
     try:
         service = get_chat_service()
         service.delete_conversation(conversation_id, user_id)
@@ -3453,27 +3491,38 @@ async def delete_conversation(
 
 @app.exception_handler(ClientError)
 async def aws_client_error_handler(request, exc: ClientError):
-    """Handle AWS client errors."""
+    """Handle AWS client errors.
+
+    Logs the full AWS error for debugging but returns a generic message
+    to the client to avoid leaking internal infrastructure details.
+    """
     error_code = exc.response["Error"]["Code"]
     error_message = exc.response["Error"]["Message"]
+    logger.error("AWS ClientError %s: %s", error_code, error_message)
 
     if error_code == "ResourceNotFoundException":
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"detail": f"Resource not found: {error_message}"},
+            content={"detail": "Resource not found"},
         )
     else:
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": f"AWS error: {error_message}"},
+            content={"detail": "Internal server error"},
         )
 
 
 @app.exception_handler(ValueError)
 async def value_error_handler(request, exc: ValueError):
-    """Handle value errors."""
+    """Handle value errors.
+
+    Returns a generic message to avoid leaking internal error details.
+    The full error is logged for debugging.
+    """
+    logger.warning("ValueError in request %s: %s", request.url.path, exc)
     return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST, content={"detail": str(exc)}
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": "Invalid request data"},
     )
 
 

@@ -25,10 +25,21 @@ class ResortService:
         self.table = table
 
     def get_all_resorts(self) -> list[Resort]:
-        """Get all resorts from the database."""
+        """Get all resorts from the database.
+
+        Handles DynamoDB scan pagination to ensure all items are returned
+        even when the total data exceeds the 1MB per-scan limit.
+        """
         try:
             response = self.table.scan()
             items = response.get("Items", [])
+
+            # Handle pagination — DynamoDB returns max 1MB per scan
+            while "LastEvaluatedKey" in response:
+                response = self.table.scan(
+                    ExclusiveStartKey=response["LastEvaluatedKey"]
+                )
+                items.extend(response.get("Items", []))
 
             resorts = []
             for item in items:

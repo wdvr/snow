@@ -7,6 +7,12 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### QA Round 2: Scoring physics, API hardening, chat crash, infrastructure fixes
+Comprehensive QA audit with 6 parallel agents found and fixed: (1) **ML scorer**: `hours_since_last_snowfall=0.0` was treated as falsy via `or 336.0`, defaulting to 14 days without snow — fixed with explicit None check. Also applied `_apply_no_snowfall_cap()` to `predict_quality()` (real-time endpoint), not just timeline. (2) **API hardening**: Added `_validate_resource_id()` regex validation to all path-parameter endpoints, sanitized error messages to not echo user input or AWS internals, added DynamoDB scan pagination to `get_all_resorts()`. (3) **Chat Float→Decimal crash**: Location queries with lat/lon floats crashed DynamoDB PutItem — fixed with `json.loads(json.dumps(tool_calls), parse_float=Decimal)`. (4) **UserPreferences validation**: Old DynamoDB records missing `updated_at` caused Pydantic validation errors — made fields optional with defaults. (5) **IAM fix**: `chat_suggestions_table` ARN added to Lambda policy in Pulumi. (6) **OpenMeteo threshold**: Aligned snowfall threshold to >0.1cm to ignore sensor noise. All 1592 backend tests passing.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ### Fix: Timeline forecasts "champagne powder" with zero snowfall (BUG-008)
 Added physics constraint to ML scorer: high snow quality ratings (powder day, champagne powder) are physically impossible without fresh snowfall. The ML model could hallucinate scores of 5.0-6.0 for forecast time slots when other features (cold temps, deep snow depth) looked favorable but snowfall was zero. New `_apply_no_snowfall_cap()` function in `ml_scorer.py` enforces: (1) No snowfall in 72h -> cap at 4.0 (GREAT max). (2) No snowfall in 24h with < 5cm in 72h -> cap at 4.5 (EXCELLENT max). Applied as post-scoring guard in `predict_quality_at_hour()`. Added 12 unit tests. All 1592 backend tests pass.
 | iOS | Android | Web | API |
