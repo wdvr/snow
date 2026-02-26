@@ -621,7 +621,7 @@ final class SnowTrackerUITests: XCTestCase {
         add(screenshot)
 
         // Close the sheet
-        let closeButton = app.buttons["Close"]
+        let closeButton = app.navigationBars["Conversations"].buttons["Close"]
         XCTAssertTrue(closeButton.exists, "Close button should exist in conversation list")
         closeButton.tap()
 
