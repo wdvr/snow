@@ -379,7 +379,8 @@ class DemoDataService {
             freshSnowCm: snowData.freshSnow,
             dataSource: "demo-service",
             sourceConfidence: .high,
-            rawData: nil
+            rawData: nil,
+            sourceDetails: nil
         )
     }
 

@@ -182,7 +182,7 @@ struct ConditionReportSection: View {
 
             Text(report.formattedTimestamp)
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)

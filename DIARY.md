@@ -5,6 +5,26 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Feb 25, 2026
+
+### Feature: Data source transparency — show which sources contributed to each score
+Users can now see which of the 4 weather sources (Open-Meteo, OnTheSnow, Snow-Forecast, WeatherKit) contributed to each snowfall reading, which were in consensus, and which were dropped as outliers. Backend `merge()` returns `source_details` with per-source snowfall values, status (consensus/outlier), merge method, and source count. iOS shows collapsible "Data Sources" card in resort detail with color-coded status per source. 8 new backend tests.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Fix: Community report TTL 365→90 days
+Reports were kept for a full year; reduced to 90 days to keep community data fresh and relevant.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: Community report timestamp nearly invisible
+Report timestamps used `.tertiary` foreground style (nearly invisible on light backgrounds). Changed to `.secondary` for better readability.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
 ## Feb 26, 2026
 
 ### Fix: Replace weighted-average merge with outlier detection + majority consensus

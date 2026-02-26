@@ -295,6 +295,32 @@ enum ConfidenceLevel: String, CaseIterable, Codable, Sendable {
     }
 }
 
+// MARK: - Source Details (Data Transparency)
+
+struct SourceDetails: Codable, Hashable, Sendable {
+    let sources: [String: SourceInfo]
+    let mergeMethod: String
+    let consensusValueCm: Double?
+    let sourceCount: Int
+
+    struct SourceInfo: Codable, Hashable, Sendable {
+        let snowfall24hCm: Double?
+        let status: String  // "consensus" or "outlier"
+
+        private enum CodingKeys: String, CodingKey {
+            case snowfall24hCm = "snowfall_24h_cm"
+            case status
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case sources
+        case mergeMethod = "merge_method"
+        case consensusValueCm = "consensus_value_cm"
+        case sourceCount = "source_count"
+    }
+}
+
 struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
     let id = UUID()
     let resortId: String
@@ -348,6 +374,7 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
     let dataSource: String
     let sourceConfidence: ConfidenceLevel
     let rawData: RawDataWrapper?
+    let sourceDetails: SourceDetails?
 
     private enum CodingKeys: String, CodingKey {
         case resortId = "resort_id"
@@ -383,6 +410,7 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         case dataSource = "data_source"
         case sourceConfidence = "source_confidence"
         case rawData = "raw_data"
+        case sourceDetails = "source_details"
     }
 
     // MARK: - Computed Properties
@@ -878,7 +906,8 @@ extension WeatherCondition {
             freshSnowCm: 18.5,
             dataSource: "weatherapi",
             sourceConfidence: .high,
-            rawData: nil
+            rawData: nil,
+            sourceDetails: nil
         ),
         WeatherCondition(
             resortId: "big-white",
@@ -913,7 +942,8 @@ extension WeatherCondition {
             freshSnowCm: 8.5,
             dataSource: "weatherapi",
             sourceConfidence: .medium,
-            rawData: nil
+            rawData: nil,
+            sourceDetails: nil
         )
     ]
 }

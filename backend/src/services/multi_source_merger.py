@@ -28,6 +28,14 @@ DEFAULT_WEIGHTS = {
 # Priority order for snow depth (resort-reported overrides model estimates)
 DEPTH_PRIORITY = ["onthesnow", "snowforecast", "open-meteo"]
 
+# Internal source name → public domain name
+SOURCE_DOMAIN_MAP = {
+    "open-meteo": "open-meteo.com",
+    "onthesnow": "onthesnow.com",
+    "snowforecast": "snow-forecast.com",
+    "weatherkit": "weatherkit.apple.com",
+}
+
 
 @dataclass
 class SourceData:
@@ -106,6 +114,7 @@ class MultiSourceMerger:
         }
 
         # Merge snowfall using outlier detection + majority consensus
+        source_details_24h = None
         for snowfall_key in ["snowfall_24h_cm", "snowfall_48h_cm", "snowfall_72h_cm"]:
             values_by_source = {
                 name: getattr(source, snowfall_key)
@@ -114,9 +123,12 @@ class MultiSourceMerger:
             }
 
             if len(values_by_source) > 1:
-                merged[snowfall_key] = MultiSourceMerger._merge_snowfall_values(
+                merged_value, details = MultiSourceMerger._merge_snowfall_values(
                     values_by_source, normalized_weights
                 )
+                merged[snowfall_key] = merged_value
+                if snowfall_key == "snowfall_24h_cm":
+                    source_details_24h = details
 
         # Snow depth: use priority-based override (resort-reported > model)
         for priority_source in DEPTH_PRIORITY:
@@ -161,6 +173,27 @@ class MultiSourceMerger:
             for name in source_names
         )
 
+        # Build source_details from the 24h snowfall merge
+        if source_details_24h is not None:
+            sources_info = {}
+            for name in source_details_24h["source_statuses"]:
+                domain = SOURCE_DOMAIN_MAP.get(name, f"{name}.com")
+                source_obj = available_sources.get(name)
+                val = (
+                    getattr(source_obj, "snowfall_24h_cm", None) if source_obj else None
+                )
+                if val is not None:
+                    sources_info[domain] = {
+                        "snowfall_24h_cm": val,
+                        "status": source_details_24h["source_statuses"][name],
+                    }
+            merged["source_details"] = {
+                "sources": sources_info,
+                "merge_method": source_details_24h["merge_method"],
+                "consensus_value_cm": source_details_24h["consensus_value_cm"],
+                "source_count": len(available_sources),
+            }
+
         # Store raw data from all supplementary sources for debugging
         if "raw_data" not in merged:
             merged["raw_data"] = {}
@@ -194,16 +227,26 @@ class MultiSourceMerger:
     def _merge_snowfall_values(
         values_by_source: dict[str, float],
         normalized_weights: dict[str, float],
-    ) -> float:
+    ) -> tuple[float, dict]:
         """Merge snowfall using outlier detection + majority consensus.
 
         Strategy:
         - 1 source: use its value
         - 2 sources: if they agree (within 30%), average; else weighted avg
         - 3+ sources: detect outliers via median, drop them, average consensus
+
+        Returns:
+            Tuple of (merged_value, details) where details contains
+            source_statuses and merge_method for transparency.
         """
         if len(values_by_source) == 1:
-            return round(next(iter(values_by_source.values())), 1)
+            name = next(iter(values_by_source))
+            val = round(next(iter(values_by_source.values())), 1)
+            return val, {
+                "merge_method": "single_source",
+                "source_statuses": {name: "consensus"},
+                "consensus_value_cm": val,
+            }
 
         all_vals = sorted(values_by_source.values())
 
@@ -212,11 +255,21 @@ class MultiSourceMerger:
             max_val = max(abs(v1), abs(v2))
             # Both near zero or within 30%: simple average
             if max_val < 1.0 or (max_val > 0 and abs(v1 - v2) / max_val <= 0.3):
-                return round((v1 + v2) / 2, 1)
+                avg = round((v1 + v2) / 2, 1)
+                return avg, {
+                    "merge_method": "simple_average",
+                    "source_statuses": {n: "consensus" for n in values_by_source},
+                    "consensus_value_cm": avg,
+                }
             # Can't determine majority with 2 — weighted average tiebreaker
-            return MultiSourceMerger._weighted_average(
+            result = MultiSourceMerger._weighted_average(
                 values_by_source, normalized_weights
             )
+            return result, {
+                "merge_method": "weighted_average",
+                "source_statuses": {n: "included" for n in values_by_source},
+                "consensus_value_cm": result,
+            }
 
         # 3+ sources: outlier detection via median
         median_val = calc_median(all_vals)
@@ -234,7 +287,22 @@ class MultiSourceMerger:
 
         if len(consensus) >= 2:
             # Majority agrees — average the consensus group
-            return round(sum(consensus.values()) / len(consensus), 1)
+            avg = round(sum(consensus.values()) / len(consensus), 1)
+            return avg, {
+                "merge_method": "outlier_detection",
+                "source_statuses": {
+                    n: "consensus" if n in consensus else "outlier"
+                    for n in values_by_source
+                },
+                "consensus_value_cm": avg,
+            }
 
         # No clear consensus — weighted average fallback
-        return MultiSourceMerger._weighted_average(values_by_source, normalized_weights)
+        result = MultiSourceMerger._weighted_average(
+            values_by_source, normalized_weights
+        )
+        return result, {
+            "merge_method": "weighted_average",
+            "source_statuses": {n: "included" for n in values_by_source},
+            "consensus_value_cm": result,
+        }

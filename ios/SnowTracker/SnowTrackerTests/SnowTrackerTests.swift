@@ -267,7 +267,8 @@ final class SnowTrackerTests: XCTestCase {
             freshSnowCm: 0.0,
             dataSource: "test",
             sourceConfidence: .medium,
-            rawData: nil
+            rawData: nil,
+            sourceDetails: nil
         )
         XCTAssertEqual(condition.formattedSnowfall24h, "No new snow")
         XCTAssertEqual(condition.formattedFreshSnow, "No fresh snow")
@@ -330,7 +331,8 @@ final class SnowTrackerTests: XCTestCase {
             freshSnowCm: 8.0,
             dataSource: "test",
             sourceConfidence: .high,
-            rawData: nil
+            rawData: nil,
+            sourceDetails: nil
         )
         let windPrefs = UnitPreferences(temperature: .celsius, distance: .metric, snowDepth: .centimeters)
         XCTAssertEqual(condition.formattedWindSpeedWithPrefs(windPrefs), "No wind data")

@@ -203,6 +203,9 @@ class WeatherCondition(BaseModel):
     raw_data: dict[str, Any] | None = Field(
         None, description="Raw weather API response"
     )
+    source_details: dict[str, Any] | None = Field(
+        None, description="Per-source merge transparency details"
+    )
 
     # TTL for DynamoDB
     ttl: int | None = Field(None, description="Unix timestamp for record expiration")

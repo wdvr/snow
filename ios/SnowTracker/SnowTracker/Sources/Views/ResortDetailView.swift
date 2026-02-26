@@ -9,6 +9,7 @@ struct ResortDetailView: View {
     @State private var showingShareSheet: Bool = false
     @State private var showThawFreezeInfo: Bool = false
     @State private var isRetrying: Bool = false
+    @State private var showDataSources: Bool = false
 
     private var conditions: [WeatherCondition] {
         snowConditionsManager.conditions[resort.id] ?? []
@@ -90,6 +91,7 @@ struct ResortDetailView: View {
                             TimelineCard(resortId: resort.id, elevation: selectedElevation)
                             predictionsCard(condition)
                             weatherDetailsCard(condition)
+                            dataSourcesCard(condition)
                         }
                         .transition(.opacity.combined(with: .move(edge: .trailing)))
                         .id(selectedElevation)
@@ -751,6 +753,131 @@ struct ResortDetailView: View {
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title): \(value)")
+    }
+
+    // MARK: - Data Sources Card
+
+    @ViewBuilder
+    private func dataSourcesCard(_ condition: WeatherCondition) -> some View {
+        if let details = condition.sourceDetails, details.sourceCount > 1 {
+            VStack(alignment: .leading, spacing: 12) {
+                // Expandable header
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showDataSources.toggle()
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: "antenna.radiowaves.left.and.right")
+                            .foregroundStyle(.blue)
+                        Text("Data Sources")
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+
+                        Spacer()
+
+                        // Confidence badge
+                        Text(condition.sourceConfidence.displayName)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(condition.sourceConfidence.color)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(
+                                Capsule()
+                                    .fill(condition.sourceConfidence.color.opacity(0.15))
+                            )
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .rotationEffect(.degrees(showDataSources ? 90 : 0))
+                    }
+                }
+                .buttonStyle(.plain)
+
+                if showDataSources {
+                    VStack(alignment: .leading, spacing: 8) {
+                        // Merge method
+                        HStack(spacing: 6) {
+                            Image(systemName: "gearshape.2")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(formatMergeMethod(details.mergeMethod))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Text("\(details.sourceCount) sources")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 1)
+                                .background(
+                                    Capsule()
+                                        .strokeBorder(Color.secondary.opacity(0.3), lineWidth: 0.5)
+                                )
+                        }
+
+                        Divider()
+
+                        // Per-source details
+                        let prefs = userPreferencesManager.preferredUnits
+                        ForEach(Array(details.sources.keys.sorted()), id: \.self) { sourceName in
+                            if let info = details.sources[sourceName] {
+                                HStack(spacing: 10) {
+                                    // Status icon
+                                    Image(systemName: info.status == "consensus" ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                        .foregroundStyle(info.status == "consensus" ? .green : .orange)
+                                        .font(.subheadline)
+
+                                    // Source name
+                                    Text(sourceName)
+                                        .font(.subheadline)
+                                        .lineLimit(1)
+
+                                    Spacer()
+
+                                    // Reported value
+                                    if let snowfall = info.snowfall24hCm {
+                                        Text(WeatherCondition.formatSnow(snowfall, prefs: prefs))
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundStyle(info.status == "consensus" ? .primary : .secondary)
+                                    }
+
+                                    // Status label
+                                    Text(info.status == "consensus" ? "Consensus" : "Outlier")
+                                        .font(.caption2)
+                                        .fontWeight(.medium)
+                                        .foregroundStyle(info.status == "consensus" ? .green : .orange)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(
+                                            Capsule()
+                                                .fill(info.status == "consensus" ? Color.green.opacity(0.1) : Color.orange.opacity(0.1))
+                                        )
+                                }
+                                .padding(.vertical, 2)
+                            }
+                        }
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+            .cardStyle()
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Data Sources, \(details.sourceCount) sources, confidence \(condition.sourceConfidence.displayName)")
+        }
+    }
+
+    private func formatMergeMethod(_ method: String) -> String {
+        switch method {
+        case "outlier_detection": return "Outlier Detection"
+        case "weighted_average": return "Weighted Average"
+        case "simple_average": return "Simple Average"
+        case "single_source": return "Single Source"
+        default: return method.replacingOccurrences(of: "_", with: " ").capitalized
+        }
     }
 
     // MARK: - Run Difficulty

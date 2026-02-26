@@ -450,3 +450,98 @@ class TestMultiSourceMergerOutlierDetection:
 
         # Open-Meteo=0 disagrees with scrapers → MEDIUM
         assert result["source_confidence"] == ConfidenceLevel.MEDIUM
+
+
+class TestSourceDetails:
+    """Tests for source_details transparency in merged output."""
+
+    def test_no_source_details_without_supplementary_sources(self):
+        """Empty sources list returns no source_details."""
+        base = {"snowfall_24h_cm": 5.0, "snowfall_48h_cm": 10.0}
+        result = MultiSourceMerger.merge(base, [])
+        assert "source_details" not in result
+
+    def test_source_details_present_with_sources(self):
+        """source_details present when supplementary sources exist."""
+        base = {"snowfall_24h_cm": 5.0}
+        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=5.5)
+        result = MultiSourceMerger.merge(base, [ots])
+        assert "source_details" in result
+        assert "sources" in result["source_details"]
+        assert "merge_method" in result["source_details"]
+        assert "consensus_value_cm" in result["source_details"]
+        assert "source_count" in result["source_details"]
+
+    def test_source_details_correct_domain_names(self):
+        """Sources use domain name format (not internal names)."""
+        base = {"snowfall_24h_cm": 5.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=4.0),
+            SourceData(source_name="snowforecast", snowfall_24h_cm=6.0),
+            SourceData(source_name="weatherkit", snowfall_24h_cm=5.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+        sd = result["source_details"]["sources"]
+        assert "open-meteo.com" in sd
+        assert "onthesnow.com" in sd
+        assert "snow-forecast.com" in sd
+        assert "weatherkit.apple.com" in sd
+        # Internal names should NOT appear
+        assert "open-meteo" not in sd
+        assert "onthesnow" not in sd
+        assert "snowforecast" not in sd
+        assert "weatherkit" not in sd
+
+    def test_source_details_outlier_detected(self):
+        """Open-Meteo 0cm with 3 others reporting snow → open-meteo.com is outlier."""
+        base = {"snowfall_24h_cm": 0.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=3.0),
+            SourceData(source_name="snowforecast", snowfall_24h_cm=3.2),
+            SourceData(source_name="weatherkit", snowfall_24h_cm=2.8),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+        sd = result["source_details"]
+        assert sd["merge_method"] == "outlier_detection"
+        assert sd["sources"]["open-meteo.com"]["status"] == "outlier"
+        assert sd["sources"]["onthesnow.com"]["status"] == "consensus"
+        assert sd["sources"]["snow-forecast.com"]["status"] == "consensus"
+        assert sd["sources"]["weatherkit.apple.com"]["status"] == "consensus"
+
+    def test_source_details_all_consensus(self):
+        """All sources agree → all status 'consensus'."""
+        base = {"snowfall_24h_cm": 4.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=5.0),
+            SourceData(source_name="snowforecast", snowfall_24h_cm=4.5),
+            SourceData(source_name="weatherkit", snowfall_24h_cm=4.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+        sd = result["source_details"]
+        for domain_info in sd["sources"].values():
+            assert domain_info["status"] == "consensus"
+
+    def test_source_details_merge_method_weighted_average(self):
+        """2 disagreeing sources → merge_method is 'weighted_average'."""
+        base = {"snowfall_24h_cm": 0.0}
+        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=10.0)
+        result = MultiSourceMerger.merge(base, [ots])
+        assert result["source_details"]["merge_method"] == "weighted_average"
+
+    def test_source_details_merge_method_simple_average(self):
+        """2 agreeing sources → merge_method is 'simple_average'."""
+        base = {"snowfall_24h_cm": 5.0}
+        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=5.5)
+        result = MultiSourceMerger.merge(base, [ots])
+        assert result["source_details"]["merge_method"] == "simple_average"
+
+    def test_source_details_source_count(self):
+        """source_count reflects total available sources."""
+        base = {"snowfall_24h_cm": 5.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=4.0),
+            SourceData(source_name="snowforecast", snowfall_24h_cm=6.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+        # 3 sources total: open-meteo + onthesnow + snowforecast
+        assert result["source_details"]["source_count"] == 3

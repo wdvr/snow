@@ -17,8 +17,8 @@ from utils.dynamodb_utils import parse_from_dynamodb, prepare_for_dynamodb
 
 logger = logging.getLogger(__name__)
 
-# Reports expire after 1 year
-REPORT_TTL_DAYS = 365
+# Reports expire after 90 days
+REPORT_TTL_DAYS = 90
 
 # Rate limit: max reports per user per resort per day
 MAX_REPORTS_PER_DAY = 5
