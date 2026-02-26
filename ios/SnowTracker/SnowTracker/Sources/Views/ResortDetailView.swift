@@ -826,8 +826,8 @@ struct ResortDetailView: View {
                             if let info = details.sources[sourceName] {
                                 HStack(spacing: 10) {
                                     // Status icon
-                                    Image(systemName: info.status == "consensus" ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                        .foregroundStyle(info.status == "consensus" ? .green : .orange)
+                                    Image(systemName: statusIcon(info.status))
+                                        .foregroundStyle(statusColor(info.status))
                                         .font(.subheadline)
 
                                     // Source name
@@ -843,18 +843,22 @@ struct ResortDetailView: View {
                                             .font(.subheadline)
                                             .fontWeight(.medium)
                                             .foregroundStyle(info.status == "consensus" ? .primary : .secondary)
+                                    } else {
+                                        Text("No data")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
                                     }
 
                                     // Status label
-                                    Text(info.status == "consensus" ? "Consensus" : "Outlier")
+                                    Text(statusLabel(info.status))
                                         .font(.caption2)
                                         .fontWeight(.medium)
-                                        .foregroundStyle(info.status == "consensus" ? .green : .orange)
+                                        .foregroundStyle(statusColor(info.status))
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 2)
                                         .background(
                                             Capsule()
-                                                .fill(info.status == "consensus" ? Color.green.opacity(0.1) : Color.orange.opacity(0.1))
+                                                .fill(statusColor(info.status).opacity(0.1))
                                         )
                                 }
                                 .padding(.vertical, 2)
@@ -877,6 +881,33 @@ struct ResortDetailView: View {
         case "simple_average": return "Simple Average"
         case "single_source": return "Single Source"
         default: return method.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
+
+    private func statusIcon(_ status: String) -> String {
+        switch status {
+        case "consensus": return "checkmark.circle.fill"
+        case "outlier": return "xmark.circle.fill"
+        case "included": return "circle.fill"
+        default: return "circle"
+        }
+    }
+
+    private func statusLabel(_ status: String) -> String {
+        switch status {
+        case "consensus": return "Consensus"
+        case "outlier": return "Outlier"
+        case "included": return "Included"
+        default: return status.capitalized
+        }
+    }
+
+    private func statusColor(_ status: String) -> Color {
+        switch status {
+        case "consensus": return .green
+        case "outlier": return .orange
+        case "included": return .blue
+        default: return .secondary
         }
     }
 

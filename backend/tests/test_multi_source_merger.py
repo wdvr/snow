@@ -545,3 +545,19 @@ class TestSourceDetails:
         result = MultiSourceMerger.merge(base, sources)
         # 3 sources total: open-meteo + onthesnow + snowforecast
         assert result["source_details"]["source_count"] == 3
+
+    def test_source_details_when_supplementary_has_no_snowfall(self):
+        """source_details present even when scrapers report only depth, not snowfall."""
+        base = {"snowfall_24h_cm": 0.1, "snow_depth_cm": 50.0}
+        sources = [
+            SourceData(source_name="onthesnow", snow_depth_cm=120.0),
+            SourceData(source_name="snowforecast", snow_depth_cm=110.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+        sd = result["source_details"]
+        assert sd["source_count"] == 3
+        assert sd["merge_method"] == "single_source"
+        # Open-Meteo has snowfall data, others don't
+        assert sd["sources"]["open-meteo.com"]["snowfall_24h_cm"] == 0.1
+        assert sd["sources"]["onthesnow.com"]["snowfall_24h_cm"] is None
+        assert sd["sources"]["snow-forecast.com"]["snowfall_24h_cm"] is None

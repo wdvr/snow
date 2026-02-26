@@ -173,7 +173,9 @@ class MultiSourceMerger:
             for name in source_names
         )
 
-        # Build source_details from the 24h snowfall merge
+        # Build source_details for transparency
+        # Always include when there are supplementary sources, even if only
+        # one source has snowfall data (scrapers may report depth but not snowfall)
         if source_details_24h is not None:
             sources_info = {}
             for name in source_details_24h["source_statuses"]:
@@ -182,15 +184,32 @@ class MultiSourceMerger:
                 val = (
                     getattr(source_obj, "snowfall_24h_cm", None) if source_obj else None
                 )
-                if val is not None:
-                    sources_info[domain] = {
-                        "snowfall_24h_cm": val,
-                        "status": source_details_24h["source_statuses"][name],
-                    }
+                sources_info[domain] = {
+                    "snowfall_24h_cm": val,
+                    "status": source_details_24h["source_statuses"][name],
+                }
             merged["source_details"] = {
                 "sources": sources_info,
                 "merge_method": source_details_24h["merge_method"],
                 "consensus_value_cm": source_details_24h["consensus_value_cm"],
+                "source_count": len(available_sources),
+            }
+        else:
+            # No multi-source snowfall merge happened, but we still have
+            # multiple sources contributing other data (depth, temp, etc.)
+            sources_info = {}
+            for name in available_sources:
+                domain = SOURCE_DOMAIN_MAP.get(name, f"{name}.com")
+                source_obj = available_sources[name]
+                val = getattr(source_obj, "snowfall_24h_cm", None)
+                sources_info[domain] = {
+                    "snowfall_24h_cm": val,
+                    "status": "included",
+                }
+            merged["source_details"] = {
+                "sources": sources_info,
+                "merge_method": "single_source",
+                "consensus_value_cm": merged.get("snowfall_24h_cm"),
                 "source_count": len(available_sources),
             }
 
