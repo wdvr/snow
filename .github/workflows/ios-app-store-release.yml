@@ -54,10 +54,10 @@ jobs:
       build_number: ${{ github.event.inputs.build_number }}
       app_name: Powder Chaser
       app_context: 'A ski resort snow tracking app with real-time conditions, powder alerts, and weather forecasts for resorts worldwide'
-      generate_screenshots: ${{ github.event.inputs.generate_screenshots }}
-      generate_description: ${{ github.event.inputs.generate_description }}
-      generate_release_notes: ${{ github.event.inputs.generate_release_notes }}
-      submit_for_review: ${{ github.event.inputs.submit_for_review }}
+      generate_screenshots: ${{ inputs.generate_screenshots }}
+      generate_description: ${{ inputs.generate_description }}
+      generate_release_notes: ${{ inputs.generate_release_notes }}
+      submit_for_review: ${{ inputs.submit_for_review }}
       use_xcodegen: true
       xcodegen_path: ios
       project_path: ios/SnowTracker.xcodeproj
