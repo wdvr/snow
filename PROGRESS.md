@@ -77,7 +77,7 @@
 | Data | Coverage |
 |------|----------|
 | Trail maps | 957/1019 (93.9%) |
-| Logos | 833/1019 (81.7%) — 354 SVG→PNG converted |
+| Logos | 834/1019 (81.8%) — 354 SVG→PNG converted |
 | Webcams | 1019/1019 (100%) — auto-generated skiresort.info pages |
 | Websites | 884/1019 (86.7%) |
 

@@ -6945,7 +6945,7 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/falls-creek/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/falls-creek/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/falls-creek.png"
+      "logo_url": "https://www.skifalls.com.au/Portals/_default/Skins/FallsCreek/dist/images/FallsCreekLogoHorizontal.svg"
     },
     {
       "resort_id": "mount-baw-baw",
@@ -7005,7 +7005,7 @@
       "expert_terrain": true,
       "webcam_url": "https://www.skiresort.info/ski-resort/mount-hotham/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/mount-hotham/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/mount-hotham.png"
+      "logo_url": "https://www.mthotham.com.au/Portals/_default/skins/hotham2025/dist/images/logo.svg"
     },
     {
       "resort_id": "mount-mawson",
@@ -17086,7 +17086,7 @@
       "city": "Marèo - Enneberg - Marebbe",
       "webcam_url": "https://www.skiresort.info/ski-resort/kronplatz-plan-de-corones/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/kronplatz-plan-de-corones/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/kronplatz-plan-de-corones.png"
+      "logo_url": "https://www.kronplatz.com/Logos/Main.svg"
     },
     {
       "resort_id": "la-clusaz-manigod",
@@ -20506,7 +20506,7 @@
       "city": "Nozawa Onsen",
       "webcam_url": "https://www.skiresort.info/ski-resort/nozawa-onsen/webcams/",
       "trail_map_url": "https://www.snow-forecast.com/pistemaps/Nozawa-Onsen_pistemap.jpg",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/nozawa-onsen.png"
+      "logo_url": "https://en.nozawaski.com/cms/wp-content/themes/nozawa_en_themes/common/img/logo-blk.svg"
     },
     {
       "resort_id": "ontake",
@@ -23033,7 +23033,7 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/cardrona/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/cardrona/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/cardrona.png"
+      "logo_url": "https://images.ctfassets.net/2atbvuhykqrn/3Zm9YPkvyfqAjYKA4nczaV/a84c5233df0dfb76b5157bb9f894e04f/DualBranding-StackedLogo-noline-Red-246px_x_128px.svg"
     },
     {
       "resort_id": "craigieburn",
@@ -23482,7 +23482,7 @@
       "expert_terrain": true,
       "webcam_url": "https://www.skiresort.info/ski-resort/treble-cone/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/treble-cone/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/treble-cone.png"
+      "logo_url": "https://images.ctfassets.net/2atbvuhykqrn/3Zm9YPkvyfqAjYKA4nczaV/a84c5233df0dfb76b5157bb9f894e04f/DualBranding-StackedLogo-noline-Red-246px_x_128px.svg"
     },
     {
       "resort_id": "tukino",
@@ -26415,7 +26415,7 @@
       "city": "Vatra Dornei",
       "webcam_url": "https://www.skiresort.info/ski-resort/vatra-dornei/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/vatra-dornei/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/vatra-dornei.png"
+      "logo_url": "https://www.visitvatradornei.ro/wp-content/uploads/2022/08/logo-visitvd-sticky.svg"
     },
     {
       "resort_id": "vulcan",
@@ -28260,7 +28260,8 @@
       "expert_terrain": false,
       "city": "Mozirje",
       "webcam_url": "https://www.skiresort.info/ski-resort/golte/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/golte/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/golte/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/mitteleuropa/slowenien/golte_ID_407/logo/golte_logo.png"
     },
     {
       "resort_id": "izver-sodra-ica",
@@ -30861,7 +30862,7 @@
       "city": "Žehňa",
       "webcam_url": "https://www.skiresort.info/ski-resort/vratna/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/vratna/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/vratna.png"
+      "logo_url": "https://vratna.sk/wp-content/themes/vratna/assets/img/Logo-Vratna-Footer.svg"
     },
     {
       "resort_id": "zliechov",
