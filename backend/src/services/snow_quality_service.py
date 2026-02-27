@@ -498,7 +498,8 @@ class SnowQualityService:
             else:
                 fresh = snowfall_after_freeze
             # Cap at snow depth (fresh snow can't exceed total depth on ground)
-            if snow_depth and snow_depth > 0:
+            # BUT only if the depth is reliable — Open-Meteo often underestimates
+            if snow_depth and snow_depth > 0 and snow_depth >= snowfall_after_freeze:
                 fresh = min(fresh, snow_depth)
             return round(fresh, 1)
         return round(max(0.0, weather.snowfall_24h_cm or 0.0), 1)
@@ -531,7 +532,8 @@ class SnowQualityService:
                 fresh_snow = fresh_snow * (1.0 - degradation)
 
             # Cap at snow depth (fresh snow can't exceed total depth on ground)
-            if snow_depth and snow_depth > 0:
+            # BUT only if the depth is reliable — Open-Meteo often underestimates
+            if snow_depth and snow_depth > 0 and snow_depth >= snowfall_after_freeze:
                 fresh_snow = min(fresh_snow, snow_depth)
 
             return round(max(0.0, fresh_snow), 1)

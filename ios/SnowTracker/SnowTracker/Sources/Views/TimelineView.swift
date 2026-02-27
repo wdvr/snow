@@ -45,10 +45,7 @@ struct TimelineCard: View {
                 .padding(.vertical, 8)
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(radius: 2)
+        .cardStyle()
         .task(id: "\(resortId)-\(elevation.rawValue)") {
             await loadTimeline()
         }

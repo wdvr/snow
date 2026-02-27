@@ -438,9 +438,42 @@ class OpenMeteoService:
             weather_code = current.get("weather_code", 0)
             weather_description = self._weather_code_to_description(weather_code)
 
-            # Skip ERA5 for now to reduce Lambda execution time
-            # TODO: Add ERA5 snow depth fetching as a separate background job
+            # Use ERA5 archive as a floor when Open-Meteo's modeled snow_depth
+            # looks suspiciously low (common for mountain resorts — the forecast
+            # model's ~9km grid can't resolve terrain-driven accumulation).
+            modeled_depth = snowfall_data.get("current_snow_depth", 0.0)
             era5_snow_depth = None
+            if modeled_depth < 30 and elevation_meters > 1000:
+                try:
+                    era5_snow_depth = self._get_era5_snow_depth(latitude, longitude)
+                except Exception:
+                    era5_snow_depth = None
+
+            # Apply accumulated-snowfall floor: if we've measured significant
+            # snowfall in 14 days, the depth can't be less than that minus melt
+            snowfall_14d = snowfall_data.get("snowfall_14d", 0.0)
+            snowfall_floor = snowfall_14d * 0.6  # settling/compaction ratio
+
+            # Final snow_depth = max(modeled, era5, snowfall_floor)
+            final_depth = modeled_depth
+            if era5_snow_depth is not None and era5_snow_depth > final_depth:
+                final_depth = era5_snow_depth
+                logger.info(
+                    "ERA5 snow depth %.1fcm > modeled %.1fcm at [%.2f,%.2f]",
+                    era5_snow_depth,
+                    modeled_depth,
+                    latitude,
+                    longitude,
+                )
+            if snowfall_floor > final_depth:
+                final_depth = snowfall_floor
+                logger.info(
+                    "Snowfall floor %.1fcm > depth %.1fcm (14d snowfall=%.1fcm)",
+                    snowfall_floor,
+                    modeled_depth,
+                    snowfall_14d,
+                )
+            snowfall_data["current_snow_depth"] = final_depth
 
             weather_data = {
                 "current_temp_celsius": current.get("temperature_2m", 0.0),
@@ -996,6 +1029,14 @@ class OpenMeteoService:
                         else float(MAX_HISTORICAL_HOURS)
                     )
                     result["freeze_event_detected"] = False
+
+            # Compute total 14-day snowfall for snow_depth floor calculation
+            total_14d_snow = sum(
+                s
+                for s in hourly_snowfall[start_historical : current_index + 1]
+                if s is not None
+            )
+            result["snowfall_14d"] = total_14d_snow
 
             # Also track if we're currently in a warming period (ice forming now)
             # Use lowest threshold (1°C) - any temp >= 1°C can form ice given enough time

@@ -76,7 +76,10 @@ struct ResortAnnotation: Identifiable, Hashable {
 
 enum MapFilterOption: String, CaseIterable, Identifiable {
     case all = "All"
+    case excellent = "Excellent+"
     case good = "Good+"
+    case decent = "Decent+"
+    case mediocre = "Mediocre+"
     case poor = "Below Good"
 
     var id: String { rawValue }
@@ -85,8 +88,14 @@ enum MapFilterOption: String, CaseIterable, Identifiable {
         switch self {
         case .all:
             return SnowQuality.allCases
+        case .excellent:
+            return [.champagnePowder, .powderDay, .excellent]
         case .good:
             return [.champagnePowder, .powderDay, .excellent, .great, .good]
+        case .decent:
+            return [.champagnePowder, .powderDay, .excellent, .great, .good, .decent]
+        case .mediocre:
+            return [.champagnePowder, .powderDay, .excellent, .great, .good, .decent, .mediocre]
         case .poor:
             return [.decent, .mediocre, .poor, .bad, .horrible]
         }
@@ -95,7 +104,10 @@ enum MapFilterOption: String, CaseIterable, Identifiable {
     var color: Color {
         switch self {
         case .all: return .blue
+        case .excellent: return .purple
         case .good: return .green
+        case .decent: return .teal
+        case .mediocre: return .yellow
         case .poor: return .orange
         }
     }
