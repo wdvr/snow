@@ -280,7 +280,7 @@ struct ResortMapView: View {
         // Check zoom level — only load vector pistes when zoomed in
         // (at wider zoom, the raster tiles are sufficient)
         guard let region = mapViewModel.currentVisibleRegion,
-              region.span.latitudeDelta < 0.15 else {
+              region.span.latitudeDelta < 0.3 else {
             // Zoomed out too far — clear vector overlays
             if pisteOverlayResult != nil {
                 pisteOverlayResult = nil
@@ -440,15 +440,17 @@ struct ResortMapView: View {
                 .font(.caption2)
                 .foregroundStyle(.blue)
 
-            Text("Ski trails: OpenSnowMap.org / OpenStreetMap")
+            Text("Ski trails: © OpenStreetMap contributors")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
             Spacer()
 
-            Text("Zoom in to see trails")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+            if pisteOverlayResult == nil || pisteOverlayResult?.isEmpty == true {
+                Text("Zoom in to see trails")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
