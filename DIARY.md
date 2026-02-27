@@ -7,6 +7,12 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 26, 2026
 
+### Bugfix: Trail map viewer showed 218x180 DZI thumbnails instead of interactive maps
+Trail map URLs from skiresort.info were DZI level-8 tile URLs (`trailmap_XXXXX_files/8/0_0.jpg`) — only 218x180px thumbnails. Full-screen TrailMapView (AsyncImage) tried to show these tiny images on a phone screen, making trail maps essentially useless. Fix: converted 699 DZI tile URLs to skiresort.info trail map page URLs (interactive DeepZoom viewer). iOS code now detects URL type: direct image URLs (.jpg/.png from snow-forecast) open in native TrailMapView with pinch-to-zoom; page URLs open in SFSafariViewController with skiresort.info's interactive deep zoom viewer. Logo coverage also bumped to 818/1019 (80.3%).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | pending | done |
+
 ### Feature: Massive trail map + logo enrichment via parallel subagents
 Enriched resorts.json with trail maps and high-quality logos for 1019 resorts using parallel AI subagent approach. Trail maps: 29 subagents (10 resorts each) searched web for missing trail maps — coverage went from 72.2% to 93.9% (957/1019). Sources: skiresort.info DZI tiles, snow-forecast.com pistemaps, resort websites, skimap.org. Also fixed DZI zoom level bug (level 0 = 1px blue square → level 8 = usable thumbnails). Logos: 10 subagents (100 resorts each) searched for SVG/PNG logos on official resort websites. Added logo_url field to backend model, iOS Resort.swift, Android Models.kt, web types.ts. All platforms prefer server logo_url over Google Favicon fallback. Final: 813/1019 logos (79.8%), 379 SVG + 379 PNG + 55 other. Smart merge script only upgrades, never downgrades existing good logos.
 | iOS | Android | Web | API |
