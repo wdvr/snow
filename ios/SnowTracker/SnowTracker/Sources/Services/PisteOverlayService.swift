@@ -1,6 +1,23 @@
 import Foundation
 import MapKit
 
+// MARK: - Piste Color Scheme
+
+/// Regional color conventions for piste difficulty markings.
+/// NA uses green circle / blue square / black diamond.
+/// EU uses green / blue / red / black.
+enum PisteColorScheme {
+    case northAmerican  // US, CA
+    case european       // Default for all other countries
+
+    init(country: String) {
+        switch country.uppercased() {
+        case "US", "CA": self = .northAmerican
+        default: self = .european
+        }
+    }
+}
+
 // MARK: - Piste Difficulty
 
 /// OSM piste difficulty levels mapped to display colors and line widths.
@@ -25,14 +42,25 @@ enum PisteDifficulty: String, CaseIterable {
         }
     }
 
-    var color: UIColor {
-        switch self {
-        case .novice: UIColor.systemGreen
-        case .easy: UIColor.systemBlue
-        case .intermediate: UIColor.systemRed
-        case .advanced, .expert: UIColor.black
-        case .freeride: UIColor.systemOrange
-        case .unknown: UIColor.systemGray
+    func color(scheme: PisteColorScheme) -> UIColor {
+        switch scheme {
+        case .northAmerican:
+            switch self {
+            case .novice, .easy: UIColor.systemGreen
+            case .intermediate: UIColor.systemBlue
+            case .advanced, .expert: UIColor.black
+            case .freeride: UIColor.systemOrange
+            case .unknown: UIColor.systemGray
+            }
+        case .european:
+            switch self {
+            case .novice: UIColor.systemGreen
+            case .easy: UIColor.systemBlue
+            case .intermediate: UIColor.systemRed
+            case .advanced, .expert: UIColor.black
+            case .freeride: UIColor.systemOrange
+            case .unknown: UIColor.systemGray
+            }
         }
     }
 
@@ -47,14 +75,25 @@ enum PisteDifficulty: String, CaseIterable {
     }
 
     /// High-contrast color for text labels on white/light backgrounds.
-    var labelColor: UIColor {
-        switch self {
-        case .novice: UIColor(red: 0, green: 0.55, blue: 0, alpha: 1)
-        case .easy: UIColor(red: 0, green: 0.25, blue: 0.75, alpha: 1)
-        case .intermediate: UIColor(red: 0.75, green: 0, blue: 0, alpha: 1)
-        case .advanced, .expert: UIColor.black
-        case .freeride: UIColor(red: 0.7, green: 0.4, blue: 0, alpha: 1)
-        case .unknown: UIColor.darkGray
+    func labelColor(scheme: PisteColorScheme) -> UIColor {
+        switch scheme {
+        case .northAmerican:
+            switch self {
+            case .novice, .easy: UIColor(red: 0, green: 0.55, blue: 0, alpha: 1)
+            case .intermediate: UIColor(red: 0, green: 0.25, blue: 0.75, alpha: 1)
+            case .advanced, .expert: UIColor.black
+            case .freeride: UIColor(red: 0.7, green: 0.4, blue: 0, alpha: 1)
+            case .unknown: UIColor.darkGray
+            }
+        case .european:
+            switch self {
+            case .novice: UIColor(red: 0, green: 0.55, blue: 0, alpha: 1)
+            case .easy: UIColor(red: 0, green: 0.25, blue: 0.75, alpha: 1)
+            case .intermediate: UIColor(red: 0.75, green: 0, blue: 0, alpha: 1)
+            case .advanced, .expert: UIColor.black
+            case .freeride: UIColor(red: 0.7, green: 0.4, blue: 0, alpha: 1)
+            case .unknown: UIColor.darkGray
+            }
         }
     }
 
@@ -77,17 +116,20 @@ enum PisteDifficulty: String, CaseIterable {
 final class PistePolyline: MKPolyline {
     private(set) var difficulty: PisteDifficulty = .unknown
     private(set) var pisteName: String?
+    private(set) var colorScheme: PisteColorScheme = .european
 
     /// Create a PistePolyline from coordinates, difficulty, and optional name.
     static func create(
         coordinates: [CLLocationCoordinate2D],
         difficulty: PisteDifficulty,
-        name: String?
+        name: String?,
+        colorScheme: PisteColorScheme = .european
     ) -> PistePolyline {
         var coords = coordinates
         let polyline = PistePolyline(coordinates: &coords, count: coords.count)
         polyline.difficulty = difficulty
         polyline.pisteName = name
+        polyline.colorScheme = colorScheme
         return polyline
     }
 }
@@ -199,6 +241,7 @@ actor PisteOverlayService {
     func overlays(
         for resortSlug: String,
         coordinate: CLLocationCoordinate2D,
+        colorScheme: PisteColorScheme = .european,
         boundingBoxPadding: Double? = nil
     ) async throws -> PisteOverlayResult {
         // Check memory cache
@@ -214,7 +257,7 @@ actor PisteOverlayService {
 
         let task = Task<PisteOverlayResult, Error> {
             // Try S3 pre-cache first
-            if let s3Result = try? await fetchFromS3(resortSlug: resortSlug), !s3Result.isEmpty {
+            if let s3Result = try? await fetchFromS3(resortSlug: resortSlug, colorScheme: colorScheme), !s3Result.isEmpty {
                 return s3Result
             }
 
@@ -222,7 +265,8 @@ actor PisteOverlayService {
             let padding = boundingBoxPadding ?? Self.bboxPadding
             return try await fetchFromOverpass(
                 coordinate: coordinate,
-                padding: padding
+                padding: padding,
+                colorScheme: colorScheme
             )
         }
 
@@ -252,7 +296,7 @@ actor PisteOverlayService {
 
     // MARK: - S3 Pre-Cache Fetch
 
-    private func fetchFromS3(resortSlug: String) async throws -> PisteOverlayResult {
+    private func fetchFromS3(resortSlug: String, colorScheme: PisteColorScheme) async throws -> PisteOverlayResult {
         let urlString = String(format: Self.s3URLTemplate, resortSlug)
         guard let url = URL(string: urlString) else { throw PisteOverlayError.parseError }
 
@@ -266,10 +310,10 @@ actor PisteOverlayService {
             throw PisteOverlayError.networkError
         }
 
-        return try parseS3Response(data)
+        return try parseS3Response(data, colorScheme: colorScheme)
     }
 
-    private func parseS3Response(_ data: Data) throws -> PisteOverlayResult {
+    private func parseS3Response(_ data: Data, colorScheme: PisteColorScheme) throws -> PisteOverlayResult {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw PisteOverlayError.parseError
         }
@@ -287,7 +331,7 @@ actor PisteOverlayService {
                 let difficulty = PisteDifficulty(osmValue: diffStr)
                 let name = item["name"] as? String
                 pistes.append(PistePolyline.create(
-                    coordinates: coordinates, difficulty: difficulty, name: name
+                    coordinates: coordinates, difficulty: difficulty, name: name, colorScheme: colorScheme
                 ))
             }
         }
@@ -314,7 +358,8 @@ actor PisteOverlayService {
 
     private func fetchFromOverpass(
         coordinate: CLLocationCoordinate2D,
-        padding: Double
+        padding: Double,
+        colorScheme: PisteColorScheme
     ) async throws -> PisteOverlayResult {
         let south = coordinate.latitude - padding
         let north = coordinate.latitude + padding
@@ -344,10 +389,10 @@ actor PisteOverlayService {
             throw PisteOverlayError.networkError
         }
 
-        return try parseOverpassResponse(data)
+        return try parseOverpassResponse(data, colorScheme: colorScheme)
     }
 
-    private func parseOverpassResponse(_ data: Data) throws -> PisteOverlayResult {
+    private func parseOverpassResponse(_ data: Data, colorScheme: PisteColorScheme) throws -> PisteOverlayResult {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let elements = json["elements"] as? [[String: Any]] else {
             throw PisteOverlayError.parseError
@@ -388,7 +433,8 @@ actor PisteOverlayService {
                 pistes.append(PistePolyline.create(
                     coordinates: coordinates,
                     difficulty: difficulty,
-                    name: name
+                    name: name,
+                    colorScheme: colorScheme
                 ))
             }
         }

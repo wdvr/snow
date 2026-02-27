@@ -278,7 +278,6 @@ struct ResortMapView: View {
         }
 
         // Check zoom level — only load vector pistes when zoomed in
-        // (at wider zoom, the raster tiles are sufficient)
         guard let region = mapViewModel.currentVisibleRegion,
               region.span.latitudeDelta < 0.3 else {
             // Zoomed out too far — clear vector overlays
@@ -318,7 +317,8 @@ struct ResortMapView: View {
                 do {
                     let result = try await PisteOverlayService.shared.overlays(
                         for: resort.id,
-                        coordinate: resort.primaryCoordinate
+                        coordinate: resort.primaryCoordinate,
+                        colorScheme: PisteColorScheme(country: resort.country)
                     )
                     allPistes.append(contentsOf: result.pistes)
                     allLifts.append(contentsOf: result.lifts)

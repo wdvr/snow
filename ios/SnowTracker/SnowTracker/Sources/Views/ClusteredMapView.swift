@@ -158,6 +158,7 @@ struct ClusteredMapView: UIViewRepresentable {
                 pisteId: "\(name)-\(midCoord.latitude)-\(midCoord.longitude)",
                 name: name,
                 difficulty: piste.difficulty,
+                colorScheme: piste.colorScheme,
                 coordinate: midCoord
             )
             annotations.append(annotation)
@@ -322,7 +323,7 @@ struct ClusteredMapView: UIViewRepresentable {
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let pistePolyline = overlay as? PistePolyline {
                 let renderer = MKPolylineRenderer(polyline: pistePolyline)
-                renderer.strokeColor = pistePolyline.difficulty.color
+                renderer.strokeColor = pistePolyline.difficulty.color(scheme: pistePolyline.colorScheme)
                 renderer.lineWidth = pistePolyline.difficulty.lineWidth
                 renderer.alpha = 0.9
                 renderer.lineCap = .round
@@ -352,12 +353,14 @@ final class PisteNameAnnotation: NSObject, MKAnnotation {
     let pisteId: String
     let name: String
     let difficulty: PisteDifficulty?
+    let colorScheme: PisteColorScheme
     let coordinate: CLLocationCoordinate2D
 
-    init(pisteId: String, name: String, difficulty: PisteDifficulty?, coordinate: CLLocationCoordinate2D) {
+    init(pisteId: String, name: String, difficulty: PisteDifficulty?, colorScheme: PisteColorScheme = .european, coordinate: CLLocationCoordinate2D) {
         self.pisteId = pisteId
         self.name = name
         self.difficulty = difficulty
+        self.colorScheme = colorScheme
         self.coordinate = coordinate
         super.init()
     }
@@ -397,7 +400,7 @@ final class PisteNameAnnotationView: MKAnnotationView {
         nameLabel.text = annotation.name
 
         if let difficulty = annotation.difficulty {
-            nameLabel.textColor = difficulty.labelColor
+            nameLabel.textColor = difficulty.labelColor(scheme: annotation.colorScheme)
         } else {
             // Lift
             nameLabel.textColor = .darkGray
