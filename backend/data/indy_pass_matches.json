@@ -1,0 +1,284 @@
+{
+  "_metadata": {
+    "season": "2025-26",
+    "generated_at": "2026-02-26",
+    "total_indy_resorts_in_list": 248,
+    "total_matched": 41,
+    "total_unmatched": 177,
+    "total_skipped_xc_indoor": 19,
+    "confidence_breakdown": {
+      "high": 41,
+      "medium": 0,
+      "low": 0
+    },
+    "notes": [
+      "Portes du Soleil (12 sub-resorts) maps to single combined entry in our DB",
+      "XC-only and indoor snow centres are excluded from matching",
+      "Many Indy Pass resorts are small/independent and not in our 1019-resort database",
+      "Unmatched resorts are mostly small US/CA ski areas not covered by our DB"
+    ]
+  },
+  "matches": {
+    "mt-hood-meadows": {
+      "indy_name": "Mt. Hood Meadows",
+      "our_name": "Mt. Hood Meadows",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "snow-king-mountain-jackson": {
+      "indy_name": "Snow King Mountain",
+      "our_name": "Snow King Mountain – Jackson",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "bolton-valley": {
+      "indy_name": "Bolton Valley Resort",
+      "our_name": "Bolton Valley",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "jay-peak": {
+      "indy_name": "Jay Peak",
+      "our_name": "Jay Peak Resort",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "apex-mountain-resort": {
+      "indy_name": "Apex Mountain Resort",
+      "our_name": "Apex Mountain Resort",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "baldy-mountain-resort": {
+      "indy_name": "Baldy Mountain Resort",
+      "our_name": "Baldy Mountain Resort",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "big-white": {
+      "indy_name": "Big White Ski Resort",
+      "our_name": "Big White Ski Resort",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "castle-mountain": {
+      "indy_name": "Castle Mountain Resort",
+      "our_name": "Castle Mountain",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "mont-edouard-lanse-saint-jean": {
+      "indy_name": "Mont Edouard",
+      "our_name": "Mont Edouard – L'Anse-Saint-Jean",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "mont-sutton": {
+      "indy_name": "Mont Sutton",
+      "our_name": "Mont Sutton",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "owls-head": {
+      "indy_name": "Owl's Head",
+      "our_name": "Owl's Head",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "marble-mountain-steady-brook-humber-valley": {
+      "indy_name": "Marble Mountain",
+      "our_name": "Marble Mountain – Steady Brook (Humber Valley)",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "aomori-spring": {
+      "indy_name": "Aomori Spring Ski Resort",
+      "our_name": "Aomori Spring",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "dynaland": {
+      "indy_name": "Dynaland",
+      "our_name": "Dynaland",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "geto-kogen": {
+      "indy_name": "Geto Kogen",
+      "our_name": "Geto Kogen",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "kamui-ski-links": {
+      "indy_name": "Kamui Ski Links",
+      "our_name": "Kamui Ski Links",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "kiroro": {
+      "indy_name": "Kiroro Snow World",
+      "our_name": "Kiroro",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "madarao-tangram": {
+      "indy_name": "Madarao",
+      "our_name": "Madarao/Tangram",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "maiko-snow-resort": {
+      "indy_name": "Maiko Snow Resort",
+      "our_name": "Maiko Snow Resort",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "nozawa-onsen": {
+      "indy_name": "Nozawa Onsen",
+      "our_name": "Nozawa Onsen",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "palcall-tsumagoi": {
+      "indy_name": "Palcall Tsumagoi",
+      "our_name": "Palcall Tsumagoi",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "takasu-snow-park": {
+      "indy_name": "Takasu Snow Park",
+      "our_name": "Takasu Snow Park",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "akitaken-tazawako": {
+      "indy_name": "Tazawako Ski Resort",
+      "our_name": "Akitaken – Tazawako",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "togakushi": {
+      "indy_name": "Togakushi",
+      "our_name": "Togakushi",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "washigatake-white-pia": {
+      "indy_name": "Washigatake",
+      "our_name": "Washigatake/White Pia",
+      "match_confidence": "high",
+      "indy_pass_level": "full",
+      "indy_aliases": [
+        "WhitePIA Takasu"
+      ]
+    },
+    "yubari-resort-mount-racey": {
+      "indy_name": "Yubari Resort Mount Racey",
+      "our_name": "Yubari Resort – Mount Racey",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "axamer-lizum": {
+      "indy_name": "Axamer Lizum",
+      "our_name": "Axamer Lizum",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "hochzeiger-jerzens": {
+      "indy_name": "Hochzeiger Pitztal",
+      "our_name": "Hochzeiger – Jerzens",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "pitztal-glacier-pitztaler-gletscher": {
+      "indy_name": "Pitztaler Gletscher",
+      "our_name": "Pitztal Glacier (Pitztaler Gletscher)",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "steinplatte-winklmoosalm-waidring-reit-im-winkl": {
+      "indy_name": "Steinplatte Waidring",
+      "our_name": "Steinplatte Winklmoosalm – Waidring/Reit im Winkl",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "skiwelt-wilder-kaiser-brixental": {
+      "indy_name": "Brixen im Thale SkiWelt",
+      "our_name": "SkiWelt Wilder Kaiser-Brixental",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "hohsaas-saas-grund": {
+      "indy_name": "Bergbahnen Hohsaas",
+      "our_name": "Hohsaas – Saas-Grund",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "les-portes-du-soleil-morzine-avoriaz-les-gets-chatel-morgins-champery": {
+      "indy_name": "Champery",
+      "our_name": "Les Portes du Soleil – Morzine/Avoriaz/Les Gets/Châtel/Morgins/Champéry",
+      "match_confidence": "high",
+      "indy_pass_level": "full",
+      "indy_aliases": [
+        "Abondance",
+        "Chatel",
+        "Avoriaz",
+        "Les Gets",
+        "Morzine",
+        "Morgins",
+        "Les Crosets",
+        "Torgon",
+        "Saint-Jean-d'Aulps",
+        "La Chapelle-d'Abondance"
+      ]
+    },
+    "pila": {
+      "indy_name": "Pila",
+      "our_name": "Pila",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "baqueira-beret": {
+      "indy_name": "Baqueira Beret",
+      "our_name": "Baqueira/Beret",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "fjallby-bjorkliden": {
+      "indy_name": "Bjorkliden",
+      "our_name": "Fjällby – Björkliden",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "riksgransen": {
+      "indy_name": "Riksgransen",
+      "our_name": "Riksgränsen",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "norefjell": {
+      "indy_name": "Norefjell Ski and Spa",
+      "our_name": "Norefjell",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "krvavec": {
+      "indy_name": "Krvavec",
+      "our_name": "Krvavec",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "mala-upa": {
+      "indy_name": "Mala Upa",
+      "our_name": "Malá Úpa",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    },
+    "corralco": {
+      "indy_name": "Corralco Mountain Resort",
+      "our_name": "Corralco",
+      "match_confidence": "high",
+      "indy_pass_level": "full"
+    }
+  }
+}

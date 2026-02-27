@@ -160,3 +160,9 @@ ml/validation_report.txt
 ml/scores_historical_deterministic.json.bak
 ml/scores/scores_historical.json
 ios/screenshots/
+
+# Claude Code
+.claude/worktrees/
+
+# Large data files (regenerate locally)
+backend/data/resorts_merged.json
