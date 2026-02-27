@@ -171,6 +171,8 @@ platform :ios do
       submit_for_review: true,
       automatic_release: true,
       force: true,
+      precheck_include_in_app_purchases: false,
+      run_precheck_before_submit: false,
       submission_information: {
         add_id_info_uses_idfa: false
       }
