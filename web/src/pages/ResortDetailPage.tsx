@@ -41,6 +41,7 @@ import { useUnits } from '../hooks/useUnits'
 import { ConditionReportForm } from '../components/resort/ConditionReportForm'
 import { SuggestEditModal } from '../components/resort/SuggestEditModal'
 import { ResortLogo } from '../components/resort/ResortLogo'
+import { TrailMapCard } from '../components/resort/TrailMapCard'
 import type { SnowQuality, ConditionType } from '../api/types'
 
 type Tab = 'conditions' | 'forecast' | 'history' | 'reports'
@@ -305,6 +306,11 @@ export function ResortDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Trail Map */}
+      {resort.trail_map_url && (
+        <TrailMapCard trailMapUrl={resort.trail_map_url} resortName={resort.name} />
+      )}
 
       {/* Tabs */}
       <div className="flex items-center gap-1 mb-6 overflow-x-auto">
