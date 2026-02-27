@@ -8,6 +8,7 @@ import pytest
 
 from models.weather import SnowQuality
 from services.ml_scorer import (
+    _apply_fresh_snow_floor,
     _apply_no_snowfall_cap,
     _compute_wind_chill,
     _extract_features_at_hour,
@@ -733,3 +734,143 @@ class TestPredictQualityAtHour:
         quality, score = predict_quality_at_hour([], [], [], [], 0, 2000.0)
         assert quality == SnowQuality.UNKNOWN
         assert score == 3.5
+
+
+# ── Fresh-snow floor ────────────────────────────────────────────────────────
+
+
+class TestFreshSnowFloor:
+    """Tests for _apply_fresh_snow_floor which enforces minimum scores.
+
+    When there is significant fresh snowfall at cold temps, the ML model
+    should not produce unreasonably low scores. This floor is the symmetric
+    counterpart to _apply_no_snowfall_cap.
+    """
+
+    def test_heavy_snow_cold_temps_floor_4_5(self):
+        """21cm fresh snow at -7.5C should score at least 4.5."""
+        features = {
+            "snowfall_24h_cm": 21.0,
+            "cur_temp": -7.5,
+            "hours_since_last_snowfall": 1.0,
+        }
+        result = _apply_fresh_snow_floor(2.6, features)
+        assert result >= 4.5
+
+    def test_moderate_snow_cold_temps_floor_3_5(self):
+        """10cm fresh snow at -4C should score at least 3.5."""
+        features = {
+            "snowfall_24h_cm": 10.0,
+            "cur_temp": -4.0,
+            "hours_since_last_snowfall": 2.0,
+        }
+        result = _apply_fresh_snow_floor(2.0, features)
+        assert result >= 3.5
+
+    def test_light_snow_cold_temps_floor_2_5(self):
+        """5cm fresh snow at -1C should score at least 2.5."""
+        features = {
+            "snowfall_24h_cm": 5.0,
+            "cur_temp": -1.0,
+            "hours_since_last_snowfall": 3.0,
+        }
+        result = _apply_fresh_snow_floor(1.5, features)
+        assert result >= 2.5
+
+    def test_no_floor_warm_temps(self):
+        """Snow at +3C should NOT be floored (melting conditions)."""
+        features = {
+            "snowfall_24h_cm": 20.0,
+            "cur_temp": 3.0,
+            "hours_since_last_snowfall": 1.0,
+        }
+        result = _apply_fresh_snow_floor(2.0, features)
+        assert result == 2.0
+
+    def test_no_floor_stale_snow(self):
+        """Snow that fell >12 hours ago should NOT be floored."""
+        features = {
+            "snowfall_24h_cm": 20.0,
+            "cur_temp": -10.0,
+            "hours_since_last_snowfall": 18.0,
+        }
+        result = _apply_fresh_snow_floor(2.0, features)
+        assert result == 2.0
+
+    def test_no_floor_when_score_already_above(self):
+        """Score already above the floor should not be modified."""
+        features = {
+            "snowfall_24h_cm": 21.0,
+            "cur_temp": -7.5,
+            "hours_since_last_snowfall": 1.0,
+        }
+        result = _apply_fresh_snow_floor(5.5, features)
+        assert result == 5.5
+
+    def test_no_floor_insufficient_snow(self):
+        """< 3cm snow should not trigger any floor."""
+        features = {
+            "snowfall_24h_cm": 2.0,
+            "cur_temp": -10.0,
+            "hours_since_last_snowfall": 1.0,
+        }
+        result = _apply_fresh_snow_floor(1.5, features)
+        assert result == 1.5
+
+    def test_boundary_heavy_snow_15cm(self):
+        """Exactly 15cm at exactly -5C should trigger the 4.5 floor."""
+        features = {
+            "snowfall_24h_cm": 15.0,
+            "cur_temp": -5.0,
+            "hours_since_last_snowfall": 0.0,
+        }
+        result = _apply_fresh_snow_floor(2.0, features)
+        assert result == 4.5
+
+    def test_boundary_moderate_snow_8cm(self):
+        """Exactly 8cm at exactly -3C should trigger the 3.5 floor."""
+        features = {
+            "snowfall_24h_cm": 8.0,
+            "cur_temp": -3.0,
+            "hours_since_last_snowfall": 0.0,
+        }
+        result = _apply_fresh_snow_floor(2.0, features)
+        assert result == 3.5
+
+    def test_boundary_light_snow_3cm(self):
+        """Exactly 3cm at exactly 0C should trigger the 2.5 floor."""
+        features = {
+            "snowfall_24h_cm": 3.0,
+            "cur_temp": 0.0,
+            "hours_since_last_snowfall": 0.0,
+        }
+        result = _apply_fresh_snow_floor(1.5, features)
+        assert result == 2.5
+
+    def test_boundary_hours_since_exactly_12(self):
+        """Exactly 12 hours since snowfall should still apply floor."""
+        features = {
+            "snowfall_24h_cm": 20.0,
+            "cur_temp": -8.0,
+            "hours_since_last_snowfall": 12.0,
+        }
+        result = _apply_fresh_snow_floor(2.0, features)
+        assert result == 4.5
+
+    def test_missing_hours_since_defaults_no_floor(self):
+        """Missing hours_since_last_snowfall defaults to 336 (no floor)."""
+        features = {
+            "snowfall_24h_cm": 20.0,
+            "cur_temp": -8.0,
+        }
+        result = _apply_fresh_snow_floor(2.0, features)
+        assert result == 2.0
+
+    def test_missing_snowfall_defaults_no_floor(self):
+        """Missing snowfall keys default to 0 (no floor)."""
+        features = {
+            "cur_temp": -8.0,
+            "hours_since_last_snowfall": 1.0,
+        }
+        result = _apply_fresh_snow_floor(2.0, features)
+        assert result == 2.0

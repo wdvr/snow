@@ -759,10 +759,9 @@ def predict_quality(
         score = _forward_single(normalized, model["weights"])
     score = max(1.0, min(6.0, score))
 
-    # Apply physics constraint: no powder without fresh snow
-    # (same cap as predict_quality_at_hour — ensures real-time conditions
-    # endpoint is also protected from hallucinated powder scores)
+    # Apply physics constraints
     score = _apply_no_snowfall_cap(score, raw_features)
+    score = _apply_fresh_snow_floor(score, raw_features)
 
     quality = raw_score_to_quality(score)
 
@@ -821,6 +820,55 @@ def _apply_no_snowfall_cap(
             )
             return cap
 
+    return score
+
+
+def _apply_fresh_snow_floor(
+    score: float,
+    raw_features: dict[str, float],
+) -> float:
+    """Enforce minimum score when significant fresh snow is present.
+
+    The ML model can underestimate quality when freeze-thaw detection
+    incorrectly ages truly fresh snowfall. This floor ensures that
+    heavy fresh snow at cold temps produces at least a reasonable score.
+
+    Rules (symmetric to _apply_no_snowfall_cap):
+    - Heavy fresh snow (>=15cm/24h) at very cold temps (<=-5C): floor at 4.5
+    - Moderate fresh snow (>=8cm/24h) at cold temps (<=-3C): floor at 3.5
+    - Light fresh snow (>=3cm/24h) at sub-zero temps (<=0C): floor at 2.5
+
+    Args:
+        score: Raw ML score (1.0-6.0)
+        raw_features: Dict of raw features from _extract_features_at_hour
+
+    Returns:
+        Floored score (1.0-6.0)
+    """
+    snow_24h = raw_features.get("snowfall_24h_cm", 0.0)
+    cur_temp = raw_features.get("cur_temp", 0.0)
+    hours_since = raw_features.get("hours_since_last_snowfall", 336.0)
+
+    # Only apply if snow is truly recent (within last 12 hours)
+    if hours_since > 12:
+        return score
+
+    if snow_24h >= 15.0 and cur_temp <= -5.0:
+        floor = 4.5  # Heavy powder at very cold temps
+    elif snow_24h >= 8.0 and cur_temp <= -3.0:
+        floor = 3.5  # Moderate fresh snow at cold temps
+    elif snow_24h >= 3.0 and cur_temp <= 0.0:
+        floor = 2.5  # Light fresh snow at freezing temps
+    else:
+        return score
+
+    if score < floor:
+        logger.debug(
+            f"Fresh-snow floor: score {score:.2f} -> {floor:.1f} "
+            f"(snow_24h={snow_24h:.1f}, temp={cur_temp:.1f}, "
+            f"hours_since={hours_since:.0f})"
+        )
+        return floor
     return score
 
 
@@ -890,8 +938,9 @@ def predict_quality_at_hour(
         score = _forward_single(normalized, model["weights"])
     score = max(1.0, min(6.0, score))
 
-    # Apply physics constraint: no powder without fresh snow
+    # Apply physics constraints
     score = _apply_no_snowfall_cap(score, raw_features)
+    score = _apply_fresh_snow_floor(score, raw_features)
 
     quality = raw_score_to_quality(score)
 

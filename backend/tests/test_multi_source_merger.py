@@ -60,7 +60,7 @@ class TestMultiSourceMergerSingleSource:
     """Tests with one supplementary source."""
 
     def test_openmeteo_plus_onthesnow_snowfall_blend(self):
-        """Two sources should produce weighted average of snowfall."""
+        """Two sources with >50% disagreement → outlier detection picks higher value."""
         base = {
             "snowfall_24h_cm": 0.0,
             "snowfall_48h_cm": 2.0,
@@ -77,10 +77,8 @@ class TestMultiSourceMergerSingleSource:
         )
         result = MultiSourceMerger.merge(base, [onthesnow])
 
-        # Two sources disagree (0 vs 3, >30% diff) → weighted average fallback
-        # Normalized: open-meteo=0.50/0.75=0.667, onthesnow=0.25/0.75=0.333
-        expected_24h = round(0.0 * (0.50 / 0.75) + 3.0 * (0.25 / 0.75), 1)
-        assert result["snowfall_24h_cm"] == expected_24h
+        # Two sources disagree (0 vs 3, >50% diff) → outlier detection, higher value trusted
+        assert result["snowfall_24h_cm"] == 3.0
 
         # Snow depth: onthesnow has priority over open-meteo
         assert result["snow_depth_cm"] == 120.0
@@ -208,7 +206,7 @@ class TestMultiSourceMergerConfidence:
         base = {"snowfall_24h_cm": 0.0}
         ots = SourceData(source_name="onthesnow", snowfall_24h_cm=10.0)
         result = MultiSourceMerger.merge(base, [ots])
-        # 0 vs 10 → disagreement → MEDIUM (or less)
+        # 0 vs 10 → outlier detection (>50% diff) → MEDIUM
         assert result["source_confidence"] in [
             ConfidenceLevel.MEDIUM,
             ConfidenceLevel.HIGH,
@@ -292,22 +290,22 @@ class TestMultiSourceMergerEdgeCases:
         assert result["snowfall_72h_cm"] == 15.0
 
     def test_zero_snowfall_treated_as_data(self):
-        """Zero snowfall is valid data, not missing."""
+        """Zero snowfall is valid data, not missing. With >50% diff, outlier detection picks higher."""
         base = {"snowfall_24h_cm": 0.0}
         ots = SourceData(source_name="onthesnow", snowfall_24h_cm=5.0)
         result = MultiSourceMerger.merge(base, [ots])
-        # Two sources disagree → weighted average fallback (not just 5.0)
-        assert 0 < result["snowfall_24h_cm"] < 5.0
+        # Two sources disagree by 100% → outlier detection, higher value trusted
+        assert result["snowfall_24h_cm"] == 5.0
 
     def test_custom_weights(self):
-        """Custom weights used in weighted average fallback for disagreeing sources."""
+        """Custom weights used in weighted average for moderate disagreement (30-50%)."""
         base = {"snowfall_24h_cm": 10.0}
-        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=0.0)
+        # 10 vs 6 = 40% difference → falls in 30-50% weighted average zone
+        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=6.0)
         custom_weights = {"open-meteo": 0.50, "onthesnow": 0.50}
         result = MultiSourceMerger.merge(base, [ots], weights=custom_weights)
-        assert (
-            result["snowfall_24h_cm"] == 5.0
-        )  # Disagree → weighted avg: 50/50 of 10 and 0
+        # Disagree by 40% → weighted avg: 50/50 of 10 and 6 = 8.0
+        assert result["snowfall_24h_cm"] == 8.0
 
     def test_raw_data_preserved(self):
         """Raw data from sources stored for debugging."""
@@ -339,15 +337,15 @@ class TestMultiSourceMergerEdgeCases:
 class TestMultiSourceMergerTwoSourceFallback:
     """Test behavior when only 2 sources disagree (weighted average fallback)."""
 
-    def test_two_disagreeing_sources_weighted_average(self):
-        """With only Open-Meteo + OnTheSnow disagreeing, falls back to weighted average."""
+    def test_two_disagreeing_sources_outlier_detection(self):
+        """With only Open-Meteo + OnTheSnow disagreeing by >50%, outlier detection picks higher."""
         base = {"snowfall_24h_cm": 0.0}
         ots = SourceData(source_name="onthesnow", snowfall_24h_cm=7.62)
 
         result = MultiSourceMerger.merge(base, [ots])
 
-        new_value = result["snowfall_24h_cm"]
-        assert 2.0 < new_value < 3.0  # Weighted avg: 0.333 * 7.62
+        # 0 vs 7.62 = 100% diff → outlier detection, higher value trusted
+        assert result["snowfall_24h_cm"] == 7.6  # rounded to 1 decimal
 
     def test_two_agreeing_sources_simple_average(self):
         """Two sources within 30% → simple average (no weighted fallback)."""
@@ -358,6 +356,105 @@ class TestMultiSourceMergerTwoSourceFallback:
 
         # Within 30% → simple average
         assert result["snowfall_24h_cm"] == round((5.0 + 5.5) / 2, 1)
+
+    def test_two_sources_moderate_disagreement_weighted_average(self):
+        """Two sources with 30-50% disagreement → weighted average (gray zone)."""
+        base = {"snowfall_24h_cm": 10.0}
+        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=6.0)
+
+        result = MultiSourceMerger.merge(base, [ots])
+
+        # 40% difference → weighted average zone
+        assert result["source_details"]["merge_method"] == "weighted_average"
+        # Both sources should be "included" (not outlier, not consensus)
+        for src_info in result["source_details"]["sources"].values():
+            if src_info.get("snowfall_24h_cm") is not None:
+                assert src_info["status"] == "included"
+
+
+class TestTwoSourceOutlierDetection:
+    """BUG-011: Tests for outlier detection in the 2-source case."""
+
+    def test_extreme_disagreement_outlier_detection(self):
+        """Two sources with >50% disagreement → outlier detection, lower value marked outlier."""
+        base = {"snowfall_24h_cm": 0.0}
+        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=10.0)
+
+        result = MultiSourceMerger.merge(base, [ots])
+
+        # 100% difference → outlier detection, higher value (10.0) trusted
+        assert result["snowfall_24h_cm"] == 10.0
+        sd = result["source_details"]
+        assert sd["merge_method"] == "outlier_detection"
+        assert sd["sources"]["open-meteo.com"]["status"] == "outlier"
+        assert sd["sources"]["onthesnow.com"]["status"] == "consensus"
+
+    def test_moderate_disagreement_weighted_average(self):
+        """Two sources with 30-50% disagreement → weighted average, not outlier detection."""
+        base = {"snowfall_24h_cm": 10.0}
+        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=6.5)
+
+        result = MultiSourceMerger.merge(base, [ots])
+
+        # 35% difference → weighted average (gray zone)
+        sd = result["source_details"]
+        assert sd["merge_method"] == "weighted_average"
+        # Both sources should be "included"
+        assert sd["sources"]["open-meteo.com"]["status"] == "included"
+        assert sd["sources"]["onthesnow.com"]["status"] == "included"
+
+    def test_within_threshold_consensus(self):
+        """Two sources within 30% → consensus (simple average), unchanged behavior."""
+        base = {"snowfall_24h_cm": 10.0}
+        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=8.0)
+
+        result = MultiSourceMerger.merge(base, [ots])
+
+        # 20% difference → simple average
+        assert result["snowfall_24h_cm"] == round((10.0 + 8.0) / 2, 1)
+        sd = result["source_details"]
+        assert sd["merge_method"] == "simple_average"
+        assert sd["sources"]["open-meteo.com"]["status"] == "consensus"
+        assert sd["sources"]["onthesnow.com"]["status"] == "consensus"
+
+    def test_both_near_zero_consensus(self):
+        """Both sources near zero (<1.0) → consensus regardless of percentage difference."""
+        base = {"snowfall_24h_cm": 0.1}
+        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=0.8)
+
+        result = MultiSourceMerger.merge(base, [ots])
+
+        # Both < 1.0 → near zero, simple average
+        assert result["snowfall_24h_cm"] == round((0.1 + 0.8) / 2, 1)
+        sd = result["source_details"]
+        assert sd["merge_method"] == "simple_average"
+
+    def test_97_percent_disagreement_triggers_outlier(self):
+        """97% disagreement should trigger outlier detection, not weighted average."""
+        base = {"snowfall_24h_cm": 0.5}
+        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=15.0)
+
+        result = MultiSourceMerger.merge(base, [ots])
+
+        # 97% difference → outlier detection, higher value trusted
+        assert result["snowfall_24h_cm"] == 15.0
+        sd = result["source_details"]
+        assert sd["merge_method"] == "outlier_detection"
+        assert sd["sources"]["open-meteo.com"]["status"] == "outlier"
+        assert sd["sources"]["onthesnow.com"]["status"] == "consensus"
+
+    def test_higher_value_always_trusted_for_snowfall(self):
+        """Higher source is trusted because stations under-report snow more often."""
+        base = {"snowfall_24h_cm": 2.0}
+        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=20.0)
+
+        result = MultiSourceMerger.merge(base, [ots])
+
+        # open-meteo=2 is outlier (90% diff), onthesnow=20 is trusted
+        assert result["snowfall_24h_cm"] == 20.0
+        sd = result["source_details"]
+        assert sd["sources"]["open-meteo.com"]["status"] == "outlier"
+        assert sd["sources"]["onthesnow.com"]["status"] == "consensus"
 
 
 class TestMultiSourceMergerOutlierDetection:
@@ -521,10 +618,17 @@ class TestSourceDetails:
         for domain_info in sd["sources"].values():
             assert domain_info["status"] == "consensus"
 
-    def test_source_details_merge_method_weighted_average(self):
-        """2 disagreeing sources → merge_method is 'weighted_average'."""
+    def test_source_details_merge_method_outlier_detection_two_sources(self):
+        """2 sources disagreeing >50% → merge_method is 'outlier_detection'."""
         base = {"snowfall_24h_cm": 0.0}
         ots = SourceData(source_name="onthesnow", snowfall_24h_cm=10.0)
+        result = MultiSourceMerger.merge(base, [ots])
+        assert result["source_details"]["merge_method"] == "outlier_detection"
+
+    def test_source_details_merge_method_weighted_average(self):
+        """2 sources disagreeing 30-50% → merge_method is 'weighted_average'."""
+        base = {"snowfall_24h_cm": 10.0}
+        ots = SourceData(source_name="onthesnow", snowfall_24h_cm=6.0)
         result = MultiSourceMerger.merge(base, [ots])
         assert result["source_details"]["merge_method"] == "weighted_average"
 

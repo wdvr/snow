@@ -306,8 +306,37 @@ class MultiSourceMerger:
                     ),
                     "consensus_value_cm": avg,
                 }
-            # Can't determine majority with 2 — weighted average tiebreaker
+
             diff_pct = round(abs(v1 - v2) / max_val * 100) if max_val > 0 else 0
+
+            # Extreme disagreement (>50%): treat lower value as likely outlier
+            # With only 2 sources and >50% difference, the higher value is more likely
+            # correct for snowfall (weather stations can miss snow, but rarely hallucinate it)
+            if diff_pct > 50:
+                # Determine which source has the lower (outlier) and higher (trusted) value
+                source_names = list(values_by_source.keys())
+                source_vals = list(values_by_source.values())
+                if source_vals[0] < source_vals[1]:
+                    outlier_src, trusted_src = source_names[0], source_names[1]
+                    outlier_val, trusted_val = source_vals[0], source_vals[1]
+                else:
+                    outlier_src, trusted_src = source_names[1], source_names[0]
+                    outlier_val, trusted_val = source_vals[1], source_vals[0]
+
+                return round(trusted_val, 1), {
+                    "merge_method": "outlier_detection",
+                    "source_statuses": {
+                        outlier_src: "outlier",
+                        trusted_src: "consensus",
+                    },
+                    "source_reasons": {
+                        outlier_src: f"Reported {outlier_val:.1f}cm, {diff_pct}% from other source — excluded as outlier (>50%)",
+                        trusted_src: f"Reported {trusted_val:.1f}cm, used as consensus value",
+                    },
+                    "consensus_value_cm": round(trusted_val, 1),
+                }
+
+            # Moderate disagreement (30-50%): weighted average (gray zone)
             result = MultiSourceMerger._weighted_average(
                 values_by_source, normalized_weights
             )
@@ -316,7 +345,7 @@ class MultiSourceMerger:
                 "source_statuses": dict.fromkeys(values_by_source, "included"),
                 "source_reasons": dict.fromkeys(
                     values_by_source,
-                    f"Sources disagree by {diff_pct}% (>30%), using weighted average",
+                    f"Sources disagree by {diff_pct}% (30-50%), using weighted average",
                 ),
                 "consensus_value_cm": result,
             }
