@@ -44,6 +44,41 @@ final class AppStoreScreenshotTests: XCTestCase {
         return tabBar
     }
 
+    /// Wait for app content to load (works on both iPhone and iPad).
+    /// On iPad (iOS 18+), TabView renders as a top bar that may not
+    /// appear in app.tabBars, so we check for known tab buttons instead.
+    private func ensureAppLoaded() {
+        let tabBar = app.tabBars.firstMatch
+        if tabBar.waitForExistence(timeout: 15) { return }
+
+        // iPad fallback: look for tab buttons directly
+        let resortsButton = app.buttons["Resorts"]
+        if resortsButton.waitForExistence(timeout: 10) { return }
+
+        // Last resort: try to tap through auth
+        let continueButton = app.buttons["Continue without signing in"]
+        if continueButton.exists {
+            continueButton.tap()
+            sleep(3)
+        }
+    }
+
+    /// Navigate to a tab by name (works on both iPhone and iPad)
+    private func selectTab(_ name: String) {
+        // Try tab bar first (iPhone)
+        let tabBar = app.tabBars.firstMatch
+        if tabBar.exists {
+            tabBar.buttons[name].tap()
+            return
+        }
+        // iPad (iOS 18+): tab items are in a tabBar-like container
+        // Use the first matching button to avoid ambiguity with other UI elements
+        let buttons = app.buttons.matching(identifier: name)
+        if buttons.count > 0 {
+            buttons.element(boundBy: 0).tap()
+        }
+    }
+
     // MARK: - iPhone Screenshots (Required sizes: 6.9", 6.7", 6.5")
 
     func testScreenshot01_SplashScreen() throws {
@@ -132,9 +167,7 @@ final class AppStoreScreenshotTests: XCTestCase {
             throw XCTSkip("iPad-only test")
         }
 
-        let tabBar = ensureTabBar()
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
-
+        ensureAppLoaded()
         sleep(5)
 
         takeScreenshot(name: "07-ipad-resorts-list")
@@ -145,10 +178,8 @@ final class AppStoreScreenshotTests: XCTestCase {
             throw XCTSkip("iPad-only test")
         }
 
-        let tabBar = ensureTabBar()
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
-
-        tabBar.buttons["Map"].tap()
+        ensureAppLoaded()
+        selectTab("Map")
         sleep(5)
 
         takeScreenshot(name: "08-ipad-map-view")
@@ -159,10 +190,8 @@ final class AppStoreScreenshotTests: XCTestCase {
             throw XCTSkip("iPad-only test")
         }
 
-        let tabBar = ensureTabBar()
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
-
-        tabBar.buttons["Resorts"].tap()
+        ensureAppLoaded()
+        selectTab("Resorts")
         sleep(3)
 
         let cells = app.cells
@@ -204,8 +233,7 @@ final class AppStoreScreenshotTests: XCTestCase {
             throw XCTSkip("iPad-only test")
         }
 
-        let tabBar = ensureTabBar()
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
+        ensureAppLoaded()
 
         let chatFAB = app.buttons["tab_chatFAB"]
         if chatFAB.waitForExistence(timeout: 5) {

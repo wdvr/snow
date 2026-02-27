@@ -448,7 +448,8 @@ lambda_policy = aws.iam.RolePolicy(
                     "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2/scraper-results/*",
                     "arn:aws:s3:::snow-tracker-pulumi-state-us-west-2/resort-versions/*",
                     "arn:aws:s3:::{website_bucket_name}",
-                    "arn:aws:s3:::{website_bucket_name}/data/*"
+                    "arn:aws:s3:::{website_bucket_name}/data/*",
+                    "arn:aws:s3:::{website_bucket_name}/raw-data/*"
                 ]
             }},
             {{

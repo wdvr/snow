@@ -10,6 +10,7 @@ Tests cover:
   empty inputs, statistics tracking
 """
 
+import gzip
 import json
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -1677,3 +1678,296 @@ class TestWeatherWorkerHandler:
 
         body = json.loads(result["body"])
         assert "Processed 1 resorts" in body["message"]
+
+
+# ---------------------------------------------------------------------------
+# Tests for _archive_raw_data_to_s3
+# ---------------------------------------------------------------------------
+
+
+class TestArchiveRawDataToS3:
+    """Tests for the _archive_raw_data_to_s3 function."""
+
+    def test_archives_at_archival_hour(self):
+        """Should upload gzipped JSON to S3 when current hour is 6, 14, or 22."""
+        from handlers.weather_worker import _archive_raw_data_to_s3
+
+        items = [
+            {
+                "resort_id": "whistler",
+                "elevation_level": "top",
+                "raw_data": {"temp": -5},
+            },
+            {
+                "resort_id": "whistler",
+                "elevation_level": "mid",
+                "raw_data": {"temp": -3},
+            },
+        ]
+
+        for hour in (6, 14, 22):
+            with (
+                patch(f"{MODULE}.datetime") as mock_dt,
+                patch(f"{MODULE}.s3_client") as mock_s3,
+            ):
+                fake_now = datetime(2026, 2, 26, hour, 30, 0, tzinfo=UTC)
+                mock_dt.now.return_value = fake_now
+                mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+
+                _archive_raw_data_to_s3(items, "na_west", "prod")
+
+                mock_s3.put_object.assert_called_once()
+                call_kwargs = mock_s3.put_object.call_args[1]
+                assert call_kwargs["StorageClass"] == "STANDARD_IA"
+                assert call_kwargs["ContentType"] == "application/gzip"
+                assert "raw-data/2026/02/26/" in call_kwargs["Key"]
+                assert call_kwargs["Key"].endswith("/na_west.json.gz")
+
+                # Verify payload is valid gzipped JSON
+                decompressed = json.loads(gzip.decompress(call_kwargs["Body"]))
+                assert decompressed["region"] == "na_west"
+                assert decompressed["environment"] == "prod"
+                assert decompressed["resort_count"] == 1  # both items same resort
+                assert len(decompressed["conditions"]) == 2
+
+    def test_skips_non_archival_hours(self):
+        """Should not upload when current hour is not 6, 14, or 22."""
+        from handlers.weather_worker import _archive_raw_data_to_s3
+
+        items = [
+            {"resort_id": "vail", "elevation_level": "mid", "raw_data": {"temp": -2}}
+        ]
+
+        for hour in (0, 3, 7, 12, 13, 15, 21, 23):
+            with (
+                patch(f"{MODULE}.datetime") as mock_dt,
+                patch(f"{MODULE}.s3_client") as mock_s3,
+            ):
+                mock_dt.now.return_value = datetime(2026, 2, 26, hour, 0, 0, tzinfo=UTC)
+                _archive_raw_data_to_s3(items, "na_rockies", "prod")
+                mock_s3.put_object.assert_not_called()
+
+    def test_skips_empty_items(self):
+        """Should not upload when raw_data_items is empty."""
+        from handlers.weather_worker import _archive_raw_data_to_s3
+
+        with (
+            patch(f"{MODULE}.datetime") as mock_dt,
+            patch(f"{MODULE}.s3_client") as mock_s3,
+        ):
+            mock_dt.now.return_value = datetime(2026, 2, 26, 6, 0, 0, tzinfo=UTC)
+            _archive_raw_data_to_s3([], "na_west", "prod")
+            mock_s3.put_object.assert_not_called()
+
+    def test_resort_count_deduplicates(self):
+        """resort_count should be unique resort count, not total items."""
+        from handlers.weather_worker import _archive_raw_data_to_s3
+
+        items = [
+            {"resort_id": "whistler", "elevation_level": "base", "raw_data": {}},
+            {"resort_id": "whistler", "elevation_level": "mid", "raw_data": {}},
+            {"resort_id": "whistler", "elevation_level": "top", "raw_data": {}},
+            {"resort_id": "big-white", "elevation_level": "mid", "raw_data": {}},
+        ]
+
+        with (
+            patch(f"{MODULE}.datetime") as mock_dt,
+            patch(f"{MODULE}.s3_client") as mock_s3,
+        ):
+            mock_dt.now.return_value = datetime(2026, 2, 26, 14, 0, 0, tzinfo=UTC)
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+            _archive_raw_data_to_s3(items, "na_west", "prod")
+
+            payload = json.loads(
+                gzip.decompress(mock_s3.put_object.call_args[1]["Body"])
+            )
+            assert payload["resort_count"] == 2
+            assert len(payload["conditions"]) == 4
+
+    def test_s3_key_format(self):
+        """S3 key should follow raw-data/YYYY/MM/DD/HH/region.json.gz pattern."""
+        from handlers.weather_worker import _archive_raw_data_to_s3
+
+        items = [{"resort_id": "vail", "elevation_level": "mid", "raw_data": {"x": 1}}]
+
+        with (
+            patch(f"{MODULE}.datetime") as mock_dt,
+            patch(f"{MODULE}.s3_client") as mock_s3,
+        ):
+            mock_dt.now.return_value = datetime(2026, 1, 5, 6, 15, 0, tzinfo=UTC)
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+            _archive_raw_data_to_s3(items, "na_rockies", "staging")
+
+            key = mock_s3.put_object.call_args[1]["Key"]
+            assert key == "raw-data/2026/01/05/06/na_rockies.json.gz"
+
+
+# ---------------------------------------------------------------------------
+# Tests for raw_data collection in weather_worker_handler
+# ---------------------------------------------------------------------------
+
+
+class TestWorkerRawDataCollection:
+    """Tests that weather_worker_handler collects raw_data and calls archival."""
+
+    def test_handler_calls_archive_on_success(self):
+        """Handler should call _archive_raw_data_to_s3 with collected items."""
+        from handlers.weather_worker import weather_worker_handler
+
+        resort = _make_resort_data(
+            "whistler",
+            elevation_points=[_make_elevation_point_dict("mid")],
+        )
+
+        with (
+            patch(f"{MODULE}.dynamodb") as mock_ddb,
+            patch(f"{MODULE}.OpenMeteoService"),
+            patch(f"{MODULE}.SnowQualityService"),
+            patch(f"{MODULE}.SnowSummaryService"),
+            patch(f"{MODULE}.OnTheSnowScraper"),
+            patch(f"{MODULE}.ENABLE_SCRAPING", False),
+            patch(f"{MODULE}.INTER_RESORT_DELAY", 0.0),
+            patch(f"{MODULE}.RESORTS_TABLE", TABLE_NAME),
+            patch(f"{MODULE}.WEBSITE_BUCKET", "test-bucket"),
+            patch(f"{MODULE}.ENVIRONMENT", "prod"),
+            patch(f"{MODULE}.process_elevation_point") as mock_pep,
+            patch(f"{MODULE}._archive_raw_data_to_s3") as mock_archive,
+        ):
+            mock_ddb.meta.client.batch_get_item.return_value = {
+                "Responses": {TABLE_NAME: [resort]}
+            }
+            mock_pep.return_value = {
+                "success": True,
+                "error": None,
+                "level": "mid",
+                "resort_id": "whistler",
+                "raw_data": {"api_response": {"hourly": {}}},
+            }
+
+            event = {"resort_ids": ["whistler"], "region": "na_west"}
+            weather_worker_handler(event, _make_lambda_context())
+
+            mock_archive.assert_called_once()
+            items = mock_archive.call_args[0][0]
+            assert len(items) == 1
+            assert items[0]["resort_id"] == "whistler"
+            assert items[0]["elevation_level"] == "mid"
+            assert items[0]["raw_data"] == {"api_response": {"hourly": {}}}
+
+    def test_handler_skips_archive_when_no_bucket(self):
+        """Handler should not call archive when WEBSITE_BUCKET is empty."""
+        from handlers.weather_worker import weather_worker_handler
+
+        resort = _make_resort_data(
+            "whistler",
+            elevation_points=[_make_elevation_point_dict("mid")],
+        )
+
+        with (
+            patch(f"{MODULE}.dynamodb") as mock_ddb,
+            patch(f"{MODULE}.OpenMeteoService"),
+            patch(f"{MODULE}.SnowQualityService"),
+            patch(f"{MODULE}.SnowSummaryService"),
+            patch(f"{MODULE}.OnTheSnowScraper"),
+            patch(f"{MODULE}.ENABLE_SCRAPING", False),
+            patch(f"{MODULE}.INTER_RESORT_DELAY", 0.0),
+            patch(f"{MODULE}.RESORTS_TABLE", TABLE_NAME),
+            patch(f"{MODULE}.WEBSITE_BUCKET", ""),
+            patch(f"{MODULE}.process_elevation_point") as mock_pep,
+            patch(f"{MODULE}._archive_raw_data_to_s3") as mock_archive,
+        ):
+            mock_ddb.meta.client.batch_get_item.return_value = {
+                "Responses": {TABLE_NAME: [resort]}
+            }
+            mock_pep.return_value = {
+                "success": True,
+                "error": None,
+                "level": "mid",
+                "resort_id": "whistler",
+                "raw_data": {"data": 1},
+            }
+
+            event = {"resort_ids": ["whistler"], "region": "na_west"}
+            weather_worker_handler(event, _make_lambda_context())
+
+            mock_archive.assert_not_called()
+
+    def test_handler_skips_none_raw_data(self):
+        """Items with raw_data=None should not be collected."""
+        from handlers.weather_worker import weather_worker_handler
+
+        resort = _make_resort_data(
+            "whistler",
+            elevation_points=[_make_elevation_point_dict("mid")],
+        )
+
+        with (
+            patch(f"{MODULE}.dynamodb") as mock_ddb,
+            patch(f"{MODULE}.OpenMeteoService"),
+            patch(f"{MODULE}.SnowQualityService"),
+            patch(f"{MODULE}.SnowSummaryService"),
+            patch(f"{MODULE}.OnTheSnowScraper"),
+            patch(f"{MODULE}.ENABLE_SCRAPING", False),
+            patch(f"{MODULE}.INTER_RESORT_DELAY", 0.0),
+            patch(f"{MODULE}.RESORTS_TABLE", TABLE_NAME),
+            patch(f"{MODULE}.WEBSITE_BUCKET", "test-bucket"),
+            patch(f"{MODULE}.process_elevation_point") as mock_pep,
+            patch(f"{MODULE}._archive_raw_data_to_s3") as mock_archive,
+        ):
+            mock_ddb.meta.client.batch_get_item.return_value = {
+                "Responses": {TABLE_NAME: [resort]}
+            }
+            mock_pep.return_value = {
+                "success": True,
+                "error": None,
+                "level": "mid",
+                "resort_id": "whistler",
+                "raw_data": None,
+            }
+
+            event = {"resort_ids": ["whistler"], "region": "na_west"}
+            weather_worker_handler(event, _make_lambda_context())
+
+            # Archive still called but with empty list
+            mock_archive.assert_called_once()
+            assert mock_archive.call_args[0][0] == []
+
+    def test_handler_survives_archive_failure(self):
+        """Handler should not fail if archival raises an exception."""
+        from handlers.weather_worker import weather_worker_handler
+
+        resort = _make_resort_data(
+            "whistler",
+            elevation_points=[_make_elevation_point_dict("mid")],
+        )
+
+        with (
+            patch(f"{MODULE}.dynamodb") as mock_ddb,
+            patch(f"{MODULE}.OpenMeteoService"),
+            patch(f"{MODULE}.SnowQualityService"),
+            patch(f"{MODULE}.SnowSummaryService"),
+            patch(f"{MODULE}.OnTheSnowScraper"),
+            patch(f"{MODULE}.ENABLE_SCRAPING", False),
+            patch(f"{MODULE}.INTER_RESORT_DELAY", 0.0),
+            patch(f"{MODULE}.RESORTS_TABLE", TABLE_NAME),
+            patch(f"{MODULE}.WEBSITE_BUCKET", "test-bucket"),
+            patch(f"{MODULE}.process_elevation_point") as mock_pep,
+            patch(f"{MODULE}._archive_raw_data_to_s3") as mock_archive,
+        ):
+            mock_ddb.meta.client.batch_get_item.return_value = {
+                "Responses": {TABLE_NAME: [resort]}
+            }
+            mock_pep.return_value = {
+                "success": True,
+                "error": None,
+                "level": "mid",
+                "resort_id": "whistler",
+                "raw_data": {"data": 1},
+            }
+            mock_archive.side_effect = Exception("S3 upload failed")
+
+            event = {"resort_ids": ["whistler"], "region": "na_west"}
+            result = weather_worker_handler(event, _make_lambda_context())
+
+            # Handler should still return 200
+            assert result["statusCode"] == 200

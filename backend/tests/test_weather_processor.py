@@ -1,5 +1,6 @@
 """Tests for the weather processor Lambda handler."""
 
+import gzip
 import json
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -1183,3 +1184,140 @@ class TestScheduledWeatherUpdateHandler:
         result = scheduled_weather_update_handler(event, _make_lambda_context())
 
         assert result["statusCode"] == 400
+
+
+# ---------------------------------------------------------------------------
+# Tests for _archive_raw_data_to_s3 (processor copy)
+# ---------------------------------------------------------------------------
+
+MODULE = "handlers.weather_processor"
+
+
+class TestProcessorArchiveRawDataToS3:
+    """Tests for the _archive_raw_data_to_s3 function in weather_processor."""
+
+    def test_archives_at_archival_hour(self):
+        from handlers.weather_processor import _archive_raw_data_to_s3
+
+        items = [
+            {
+                "resort_id": "whistler",
+                "elevation_level": "top",
+                "raw_data": {"temp": -5},
+            },
+        ]
+
+        with (
+            patch(f"{MODULE}.datetime") as mock_dt,
+            patch(f"{MODULE}.s3_client") as mock_s3,
+        ):
+            fake_now = datetime(2026, 2, 26, 14, 30, 0, tzinfo=UTC)
+            mock_dt.now.return_value = fake_now
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+
+            _archive_raw_data_to_s3(items, "sequential", "prod")
+
+            mock_s3.put_object.assert_called_once()
+            call_kwargs = mock_s3.put_object.call_args[1]
+            assert call_kwargs["StorageClass"] == "STANDARD_IA"
+            assert call_kwargs["Key"].endswith("/sequential.json.gz")
+
+            payload = json.loads(gzip.decompress(call_kwargs["Body"]))
+            assert payload["region"] == "sequential"
+            assert payload["resort_count"] == 1
+
+    def test_skips_non_archival_hours(self):
+        from handlers.weather_processor import _archive_raw_data_to_s3
+
+        items = [{"resort_id": "vail", "elevation_level": "mid", "raw_data": {"x": 1}}]
+
+        with (
+            patch(f"{MODULE}.datetime") as mock_dt,
+            patch(f"{MODULE}.s3_client") as mock_s3,
+        ):
+            mock_dt.now.return_value = datetime(2026, 2, 26, 10, 0, 0, tzinfo=UTC)
+            _archive_raw_data_to_s3(items, "sequential", "prod")
+            mock_s3.put_object.assert_not_called()
+
+
+class TestProcessorRawDataCollection:
+    """Tests that weather_processor_handler collects raw_data and calls archival."""
+
+    def test_handler_calls_archive(self):
+        from handlers.weather_processor import weather_processor_handler
+
+        resort = _make_resort(
+            "whistler",
+            elevation_points=[_make_elevation_point("mid")],
+        )
+
+        with (
+            patch(f"{MODULE}.ResortService") as mock_rs,
+            patch(f"{MODULE}.OpenMeteoService"),
+            patch(f"{MODULE}.SnowQualityService"),
+            patch(f"{MODULE}.SnowSummaryService"),
+            patch(f"{MODULE}.DailyHistoryService"),
+            patch(f"{MODULE}.dynamodb"),
+            patch(f"{MODULE}.OnTheSnowScraper"),
+            patch(f"{MODULE}.ENABLE_SCRAPING", False),
+            patch(f"{MODULE}.PARALLEL_PROCESSING", False),
+            patch(f"{MODULE}.ENABLE_STATIC_JSON", False),
+            patch(f"{MODULE}.WEBSITE_BUCKET", "test-bucket"),
+            patch(f"{MODULE}.ENVIRONMENT", "prod"),
+            patch(f"{MODULE}.process_elevation_point") as mock_pep,
+            patch(f"{MODULE}._archive_raw_data_to_s3") as mock_archive,
+        ):
+            mock_rs.return_value.get_all_resorts.return_value = [resort]
+            mock_pep.return_value = {
+                "success": True,
+                "error": None,
+                "level": "mid",
+                "weather_condition": None,
+                "resort_id": "whistler",
+                "raw_data": {"api_response": {"hourly": {}}},
+            }
+
+            result = weather_processor_handler({}, _make_lambda_context())
+
+            assert result["statusCode"] == 200
+            mock_archive.assert_called_once()
+            items = mock_archive.call_args[0][0]
+            assert len(items) == 1
+            assert items[0]["resort_id"] == "whistler"
+
+    def test_handler_survives_archive_failure(self):
+        from handlers.weather_processor import weather_processor_handler
+
+        resort = _make_resort(
+            "whistler",
+            elevation_points=[_make_elevation_point("mid")],
+        )
+
+        with (
+            patch(f"{MODULE}.ResortService") as mock_rs,
+            patch(f"{MODULE}.OpenMeteoService"),
+            patch(f"{MODULE}.SnowQualityService"),
+            patch(f"{MODULE}.SnowSummaryService"),
+            patch(f"{MODULE}.DailyHistoryService"),
+            patch(f"{MODULE}.dynamodb"),
+            patch(f"{MODULE}.OnTheSnowScraper"),
+            patch(f"{MODULE}.ENABLE_SCRAPING", False),
+            patch(f"{MODULE}.PARALLEL_PROCESSING", False),
+            patch(f"{MODULE}.ENABLE_STATIC_JSON", False),
+            patch(f"{MODULE}.WEBSITE_BUCKET", "test-bucket"),
+            patch(f"{MODULE}.process_elevation_point") as mock_pep,
+            patch(f"{MODULE}._archive_raw_data_to_s3") as mock_archive,
+        ):
+            mock_rs.return_value.get_all_resorts.return_value = [resort]
+            mock_pep.return_value = {
+                "success": True,
+                "error": None,
+                "level": "mid",
+                "weather_condition": None,
+                "resort_id": "whistler",
+                "raw_data": {"data": 1},
+            }
+            mock_archive.side_effect = Exception("S3 boom")
+
+            result = weather_processor_handler({}, _make_lambda_context())
+            assert result["statusCode"] == 200

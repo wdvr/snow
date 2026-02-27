@@ -4,6 +4,7 @@ This worker Lambda is invoked by the orchestrator (weather_processor) to process
 a batch of resorts in parallel. Each worker handles one region's resorts.
 """
 
+import gzip
 import json
 import logging
 import os
@@ -65,6 +66,42 @@ def save_weather_condition(table, weather_condition: WeatherCondition) -> None:
     except ClientError as e:
         logger.error(f"Error saving weather condition to DynamoDB: {str(e)}")
         raise
+
+
+def _archive_raw_data_to_s3(
+    raw_data_items: list[dict], region: str, environment: str
+) -> None:
+    """Archive raw weather data to S3 if current hour is an archival hour (6, 14, 22 UTC)."""
+    archival_hours = {6, 14, 22}
+    current_hour = datetime.now(UTC).hour
+    if current_hour not in archival_hours:
+        return
+    if not raw_data_items:
+        return
+
+    now = datetime.now(UTC)
+    key = f"raw-data/{now.strftime('%Y/%m/%d/%H')}/{region}.json.gz"
+
+    payload = {
+        "archived_at": now.isoformat(),
+        "environment": environment,
+        "region": region,
+        "resort_count": len({item["resort_id"] for item in raw_data_items}),
+        "conditions": raw_data_items,
+    }
+
+    compressed = gzip.compress(json.dumps(payload, default=str).encode())
+    s3_client.put_object(
+        Bucket=WEBSITE_BUCKET,
+        Key=key,
+        Body=compressed,
+        ContentType="application/gzip",
+        StorageClass="STANDARD_IA",
+    )
+    logger.info(
+        f"Archived {len(raw_data_items)} raw data items to s3://{WEBSITE_BUCKET}/{key} "
+        f"({len(compressed)} bytes compressed)"
+    )
 
 
 def _load_snowforecast_cache() -> dict[str, Any]:
@@ -399,6 +436,8 @@ def process_elevation_point(
                 )
 
         result["success"] = True
+        result["raw_data"] = getattr(weather_condition, "raw_data", None)
+        result["resort_id"] = resort_id
         logger.debug(
             f"Processed {resort_id} {level}: Quality="
             f"{snow_quality.value if hasattr(snow_quality, 'value') else snow_quality}"
@@ -508,6 +547,9 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
 
         logger.info(f"Fetched {len(resorts)} resorts from DynamoDB")
 
+        # Collect raw data for archival
+        raw_data_items = []
+
         # Process each resort
         for resort_data in resorts:
             resort_id = resort_data.get("resort_id")
@@ -565,6 +607,14 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
                         if result["success"]:
                             stats["elevation_points_processed"] += 1
                             stats["conditions_saved"] += 1
+                            if result.get("raw_data"):
+                                raw_data_items.append(
+                                    {
+                                        "resort_id": result["resort_id"],
+                                        "elevation_level": result["level"],
+                                        "raw_data": result["raw_data"],
+                                    }
+                                )
                         else:
                             stats["errors"] += 1
 
@@ -577,6 +627,13 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
             except Exception as e:
                 logger.error(f"Error processing resort {resort_id}: {str(e)}")
                 stats["errors"] += 1
+
+        # Archive raw weather data to S3 (only at archival hours)
+        if WEBSITE_BUCKET:
+            try:
+                _archive_raw_data_to_s3(raw_data_items, region, ENVIRONMENT)
+            except Exception as e:
+                logger.error(f"Failed to archive raw data to S3: {e}")
 
         stats["end_time"] = datetime.now(UTC).isoformat()
         stats["duration_seconds"] = (

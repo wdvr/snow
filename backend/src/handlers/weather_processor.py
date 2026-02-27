@@ -7,6 +7,7 @@ Supports two modes:
 Set PARALLEL_PROCESSING=true to enable parallel mode.
 """
 
+import gzip
 import json
 import logging
 import os
@@ -35,6 +36,7 @@ logger.setLevel(logging.INFO)
 # Initialize AWS clients
 dynamodb = boto3.resource("dynamodb")
 lambda_client = boto3.client("lambda")
+s3_client = boto3.client("s3")
 
 # Environment variables
 RESORTS_TABLE = os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
@@ -70,6 +72,42 @@ def get_remaining_time_ms(context) -> int:
     if context and hasattr(context, "get_remaining_time_in_millis"):
         return context.get_remaining_time_in_millis()
     return 600000  # Default 10 minutes if no context
+
+
+def _archive_raw_data_to_s3(
+    raw_data_items: list[dict], region: str, environment: str
+) -> None:
+    """Archive raw weather data to S3 if current hour is an archival hour (6, 14, 22 UTC)."""
+    archival_hours = {6, 14, 22}
+    current_hour = datetime.now(UTC).hour
+    if current_hour not in archival_hours:
+        return
+    if not raw_data_items:
+        return
+
+    now = datetime.now(UTC)
+    key = f"raw-data/{now.strftime('%Y/%m/%d/%H')}/{region}.json.gz"
+
+    payload = {
+        "archived_at": now.isoformat(),
+        "environment": environment,
+        "region": region,
+        "resort_count": len({item["resort_id"] for item in raw_data_items}),
+        "conditions": raw_data_items,
+    }
+
+    compressed = gzip.compress(json.dumps(payload, default=str).encode())
+    s3_client.put_object(
+        Bucket=WEBSITE_BUCKET,
+        Key=key,
+        Body=compressed,
+        ContentType="application/gzip",
+        StorageClass="STANDARD_IA",
+    )
+    logger.info(
+        f"Archived {len(raw_data_items)} raw data items to s3://{WEBSITE_BUCKET}/{key} "
+        f"({len(compressed)} bytes compressed)"
+    )
 
 
 def _load_snowforecast_cache_processor() -> dict[str, Any]:
@@ -397,6 +435,8 @@ def process_elevation_point(
 
         result["success"] = True
         result["weather_condition"] = weather_condition
+        result["raw_data"] = getattr(weather_condition, "raw_data", None)
+        result["resort_id"] = resort_id
 
     except Exception as e:
         result["error"] = str(e)
@@ -622,6 +662,9 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
 
         weather_conditions_table = dynamodb.Table(WEATHER_CONDITIONS_TABLE)
 
+        # Collect raw data for archival
+        raw_data_items = []
+
         for resort in resorts:
             # Check remaining time before processing each resort
             remaining_ms = get_remaining_time_ms(context)
@@ -680,6 +723,14 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
                         if result["success"]:
                             stats["elevation_points_processed"] += 1
                             stats["conditions_saved"] += 1
+                            if result.get("raw_data"):
+                                raw_data_items.append(
+                                    {
+                                        "resort_id": result["resort_id"],
+                                        "elevation_level": result["level"],
+                                        "raw_data": result["raw_data"],
+                                    }
+                                )
 
                             # Log success
                             weather_condition = result["weather_condition"]
@@ -710,6 +761,13 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
             except Exception as e:
                 logger.error(f"Error processing resort {resort.resort_id}: {str(e)}")
                 stats["errors"] += 1
+
+        # Archive raw weather data to S3 (only at archival hours)
+        if WEBSITE_BUCKET:
+            try:
+                _archive_raw_data_to_s3(raw_data_items, "sequential", ENVIRONMENT)
+            except Exception as e:
+                logger.error(f"Failed to archive raw data to S3: {e}")
 
         stats["end_time"] = datetime.now(UTC).isoformat()
         stats["duration_seconds"] = (
