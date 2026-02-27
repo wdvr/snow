@@ -248,3 +248,26 @@
 "Close" = "Close";
 "Resorts" = "Resorts";
 "No results" = "No results";
+
+/* Buttons & Actions (newly extracted) */
+"Clear" = "Clear";
+"Remove" = "Remove";
+"Plan a Trip" = "Plan a Trip";
+"Mark all read" = "Mark all read";
+"Change" = "Change";
+"Create" = "Create";
+"Enable Location" = "Enable Location";
+"Show All Regions" = "Show All Regions";
+"Show Northern Hemisphere Only" = "Show Northern Hemisphere Only";
+"Reset to Defaults" = "Reset to Defaults";
+"Reset to Default" = "Reset to Default";
+"Sign out and re-authenticate" = "Sign out and re-authenticate";
+
+/* Alert Titles (newly extracted) */
+"Reset API URL?" = "Reset API URL?";
+"Sign Out?" = "Sign Out?";
+"Clear Cache?" = "Clear Cache?";
+"Remove Favorite?" = "Remove Favorite?";
+"Delete Trip" = "Delete Trip";
+"Suggestion Sent!" = "Suggestion Sent!";
+"View Live Webcams" = "View Live Webcams";

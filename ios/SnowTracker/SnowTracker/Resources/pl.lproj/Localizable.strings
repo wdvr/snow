@@ -248,3 +248,26 @@
 "Close" = "Zamknij";
 "Resorts" = "Ośrodki";
 "No results" = "Brak wyników";
+
+/* Buttons & Actions (newly extracted) */
+"Clear" = "Wyczyść";
+"Remove" = "Usuń";
+"Plan a Trip" = "Zaplanuj wyjazd";
+"Mark all read" = "Oznacz wszystkie jako przeczytane";
+"Change" = "Zmień";
+"Create" = "Utwórz";
+"Enable Location" = "Włącz lokalizację";
+"Show All Regions" = "Pokaż wszystkie regiony";
+"Show Northern Hemisphere Only" = "Tylko półkula północna";
+"Reset to Defaults" = "Przywróć domyślne";
+"Reset to Default" = "Przywróć domyślne";
+"Sign out and re-authenticate" = "Wyloguj się i zaloguj ponownie";
+
+/* Alert Titles (newly extracted) */
+"Reset API URL?" = "Zresetować URL API?";
+"Sign Out?" = "Wylogować się?";
+"Clear Cache?" = "Wyczyścić pamięć podręczną?";
+"Remove Favorite?" = "Usunąć z ulubionych?";
+"Delete Trip" = "Usuń wyjazd";
+"Suggestion Sent!" = "Sugestia wysłana!";
+"View Live Webcams" = "Zobacz kamery na żywo";

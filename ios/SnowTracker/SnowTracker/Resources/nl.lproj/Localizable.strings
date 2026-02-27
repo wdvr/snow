@@ -248,3 +248,26 @@
 "Close" = "Sluiten";
 "Resorts" = "Skigebieden";
 "No results" = "Geen resultaten";
+
+/* Buttons & Actions (newly extracted) */
+"Clear" = "Wissen";
+"Remove" = "Verwijderen";
+"Plan a Trip" = "Plan een reis";
+"Mark all read" = "Alles als gelezen markeren";
+"Change" = "Wijzigen";
+"Create" = "Aanmaken";
+"Enable Location" = "Locatie inschakelen";
+"Show All Regions" = "Alle regio's tonen";
+"Show Northern Hemisphere Only" = "Alleen noordelijk halfrond";
+"Reset to Defaults" = "Standaardinstellingen herstellen";
+"Reset to Default" = "Standaard herstellen";
+"Sign out and re-authenticate" = "Uitloggen en opnieuw inloggen";
+
+/* Alert Titles (newly extracted) */
+"Reset API URL?" = "API-URL resetten?";
+"Sign Out?" = "Uitloggen?";
+"Clear Cache?" = "Cache wissen?";
+"Remove Favorite?" = "Favoriet verwijderen?";
+"Delete Trip" = "Reis verwijderen";
+"Suggestion Sent!" = "Suggestie verzonden!";
+"View Live Webcams" = "Live webcams bekijken";

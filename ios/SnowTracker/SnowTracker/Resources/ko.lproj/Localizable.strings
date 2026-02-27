@@ -248,3 +248,26 @@
 "Close" = "닫기";
 "Resorts" = "리조트";
 "No results" = "검색 결과 없음";
+
+/* Buttons & Actions (newly extracted) */
+"Clear" = "삭제";
+"Remove" = "제거";
+"Plan a Trip" = "여행 계획하기";
+"Mark all read" = "모두 읽음으로 표시";
+"Change" = "변경";
+"Create" = "만들기";
+"Enable Location" = "위치 활성화";
+"Show All Regions" = "모든 지역 표시";
+"Show Northern Hemisphere Only" = "북반구만 표시";
+"Reset to Defaults" = "기본값으로 재설정";
+"Reset to Default" = "기본값으로 재설정";
+"Sign out and re-authenticate" = "로그아웃 후 재인증";
+
+/* Alert Titles (newly extracted) */
+"Reset API URL?" = "API URL을 재설정하시겠습니까?";
+"Sign Out?" = "로그아웃하시겠습니까?";
+"Clear Cache?" = "캐시를 삭제하시겠습니까?";
+"Remove Favorite?" = "즐겨찾기를 제거하시겠습니까?";
+"Delete Trip" = "여행 삭제";
+"Suggestion Sent!" = "제안이 전송되었습니다!";
+"View Live Webcams" = "실시간 웹캠 보기";

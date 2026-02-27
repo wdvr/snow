@@ -248,3 +248,26 @@
 "Close" = "Schließen";
 "Resorts" = "Skigebiete";
 "No results" = "Keine Ergebnisse";
+
+/* Buttons & Actions (newly extracted) */
+"Clear" = "Löschen";
+"Remove" = "Entfernen";
+"Plan a Trip" = "Reise planen";
+"Mark all read" = "Alle als gelesen markieren";
+"Change" = "Ändern";
+"Create" = "Erstellen";
+"Enable Location" = "Standort aktivieren";
+"Show All Regions" = "Alle Regionen anzeigen";
+"Show Northern Hemisphere Only" = "Nur Nordhalbkugel anzeigen";
+"Reset to Defaults" = "Auf Standard zurücksetzen";
+"Reset to Default" = "Auf Standard zurücksetzen";
+"Sign out and re-authenticate" = "Abmelden und erneut anmelden";
+
+/* Alert Titles (newly extracted) */
+"Reset API URL?" = "API-URL zurücksetzen?";
+"Sign Out?" = "Abmelden?";
+"Clear Cache?" = "Cache leeren?";
+"Remove Favorite?" = "Favorit entfernen?";
+"Delete Trip" = "Reise löschen";
+"Suggestion Sent!" = "Vorschlag gesendet!";
+"View Live Webcams" = "Live-Webcams ansehen";

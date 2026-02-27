@@ -248,3 +248,26 @@
 "Close" = "Fechar";
 "Resorts" = "Estâncias";
 "No results" = "Sem resultados";
+
+/* Buttons & Actions (newly extracted) */
+"Clear" = "Limpar";
+"Remove" = "Remover";
+"Plan a Trip" = "Planear uma viagem";
+"Mark all read" = "Marcar tudo como lido";
+"Change" = "Alterar";
+"Create" = "Criar";
+"Enable Location" = "Ativar localização";
+"Show All Regions" = "Mostrar todas as regiões";
+"Show Northern Hemisphere Only" = "Apenas hemisfério norte";
+"Reset to Defaults" = "Repor predefinições";
+"Reset to Default" = "Repor predefinição";
+"Sign out and re-authenticate" = "Terminar sessão e reautenticar";
+
+/* Alert Titles (newly extracted) */
+"Reset API URL?" = "Repor URL da API?";
+"Sign Out?" = "Terminar sessão?";
+"Clear Cache?" = "Limpar cache?";
+"Remove Favorite?" = "Remover favorito?";
+"Delete Trip" = "Eliminar viagem";
+"Suggestion Sent!" = "Sugestão enviada!";
+"View Live Webcams" = "Ver webcams ao vivo";

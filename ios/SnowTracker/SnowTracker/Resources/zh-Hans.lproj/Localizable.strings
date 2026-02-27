@@ -248,3 +248,26 @@
 "Close" = "关闭";
 "Resorts" = "滑雪场";
 "No results" = "无结果";
+
+/* Buttons & Actions (newly extracted) */
+"Clear" = "清除";
+"Remove" = "移除";
+"Plan a Trip" = "计划行程";
+"Mark all read" = "全部标为已读";
+"Change" = "更改";
+"Create" = "创建";
+"Enable Location" = "启用定位";
+"Show All Regions" = "显示所有地区";
+"Show Northern Hemisphere Only" = "仅显示北半球";
+"Reset to Defaults" = "恢复默认设置";
+"Reset to Default" = "恢复默认";
+"Sign out and re-authenticate" = "退出登录并重新验证";
+
+/* Alert Titles (newly extracted) */
+"Reset API URL?" = "重置API地址？";
+"Sign Out?" = "退出登录？";
+"Clear Cache?" = "清除缓存？";
+"Remove Favorite?" = "移除收藏？";
+"Delete Trip" = "删除行程";
+"Suggestion Sent!" = "建议已发送！";
+"View Live Webcams" = "查看实时摄像头";

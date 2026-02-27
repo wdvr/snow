@@ -248,3 +248,26 @@
 "Close" = "閉じる";
 "Resorts" = "スキー場";
 "No results" = "結果なし";
+
+/* Buttons & Actions (newly extracted) */
+"Clear" = "クリア";
+"Remove" = "削除";
+"Plan a Trip" = "旅行を計画";
+"Mark all read" = "すべて既読にする";
+"Change" = "変更";
+"Create" = "作成";
+"Enable Location" = "位置情報を有効にする";
+"Show All Regions" = "すべての地域を表示";
+"Show Northern Hemisphere Only" = "北半球のみ表示";
+"Reset to Defaults" = "デフォルトに戻す";
+"Reset to Default" = "デフォルトに戻す";
+"Sign out and re-authenticate" = "サインアウトして再認証";
+
+/* Alert Titles (newly extracted) */
+"Reset API URL?" = "API URLをリセットしますか？";
+"Sign Out?" = "サインアウトしますか？";
+"Clear Cache?" = "キャッシュをクリアしますか？";
+"Remove Favorite?" = "お気に入りを削除しますか？";
+"Delete Trip" = "旅行を削除";
+"Suggestion Sent!" = "提案が送信されました！";
+"View Live Webcams" = "ライブウェブカメラを見る";

@@ -417,7 +417,8 @@
       "family_friendly": false,
       "expert_terrain": true,
       "webcam_url": "https://www.skiresort.info/ski-resort/beaver-creek/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/beaver-creek/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/beaver-creek/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/usa/beaver_creek_ID_289/logo/beaver_creek_logo.png"
     },
     {
       "resort_id": "big-bear",
@@ -610,7 +611,8 @@
       "expert_terrain": true,
       "city": "Breckenridge",
       "webcam_url": "https://www.skiresort.info/ski-resort/breckenridge/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/breckenridge/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/breckenridge/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/usa/breckenridge_ID_290/logo/breckenridge_colorado_logo.png"
     },
     {
       "resort_id": "bretton-woods",
@@ -901,7 +903,8 @@
       "expert_terrain": false,
       "city": "Cortina d'Ampezzo",
       "webcam_url": "https://www.skiresort.info/ski-resort/cortina/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/cortina-dampezzo/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/cortina-dampezzo/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/_processed_/ef/fc/c2/27/82cc97eea2.png"
     },
     {
       "resort_id": "courchevel",
@@ -967,7 +970,8 @@
       "expert_terrain": false,
       "city": "Crested Butte",
       "webcam_url": "https://www.skiresort.info/ski-resort/crested-butte/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/crested-butte/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/crested-butte/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/_processed_/96/6e/e4/45/07308c017f.png"
     },
     {
       "resort_id": "crystal-mountain-wa",
@@ -998,7 +1002,8 @@
       "family_friendly": false,
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/crystal-mountain-wa/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/crystal-mountain-wa/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/crystal-mountain-wa/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/usa/crystal_mountain_ID_555/logo/crystal_mountain_resort_logo.png"
     },
     {
       "resort_id": "cypress-mountain",
@@ -1129,7 +1134,8 @@
       "family_friendly": false,
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/fortress-mountain/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/fortress-mountain/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/fortress-mountain/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/canada/fortress_mountain_ID_324/logo/Fortress_Mountain.gif"
     },
     {
       "resort_id": "furano",
@@ -1322,7 +1328,8 @@
       "expert_terrain": true,
       "city": "South Lake Tahoe",
       "webcam_url": "https://www.skiresort.info/ski-resort/heavenly/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/heavenly/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/heavenly/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/feUserUpload/295_Heavenly/Heavenly.png"
     },
     {
       "resort_id": "hemsedal",
@@ -1579,7 +1586,8 @@
       "expert_terrain": false,
       "city": "Keystone",
       "webcam_url": "https://www.skiresort.info/ski-resort/keystone/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/keystone/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/keystone/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/usa/keystone_ID_298/logo/keystone_logo.png"
     },
     {
       "resort_id": "kicking-horse-golden",
@@ -1707,7 +1715,8 @@
       "family_friendly": false,
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/kirkwood/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/kirkwood/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/kirkwood/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/usa/kirkwood_ID_300/logo/kirkwood_logo.png"
     },
     {
       "resort_id": "kitzbuehel",
@@ -1840,7 +1849,8 @@
       "expert_terrain": false,
       "city": "Las Lenas",
       "webcam_url": "https://www.skiresort.info/ski-resort/las-lenas/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/las-lenas/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/las-lenas/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/suedamerika_/argentinien/las_lenas_ID_395/logo/las_lenas_logo.png"
     },
     {
       "resort_id": "le-massif-de-charlevoix",
@@ -5081,7 +5091,8 @@
       "expert_terrain": true,
       "city": "Distrito Las Cuevas",
       "webcam_url": "https://www.skiresort.info/ski-resort/los-penitentes/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/los-penitentes/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/los-penitentes/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/suedamerika_/argentinien/los_penitentes_ID_1476/logo/los_penitentes_logo.png"
     },
     {
       "resort_id": "los-puquios",
@@ -6313,7 +6324,8 @@
       "vertical_drop_m": 1534,
       "city": "See",
       "webcam_url": "https://www.skiresort.info/ski-resort/see/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/see/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/see/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/_processed_/85/59/96/68/0ba8f8b188.png"
     },
     {
       "resort_id": "serfaus-fiss-ladis",
@@ -7023,7 +7035,8 @@
       "vertical_drop_m": 72,
       "city": "Derwent Valley",
       "webcam_url": "https://www.skiresort.info/ski-resort/mount-mawson/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/mount-mawson/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/mount-mawson/trail-map/",
+      "logo_url": "http://mtmawson.info/wp-content/uploads/2014/04/logo.png"
     },
     {
       "resort_id": "mt-buller",
@@ -7114,7 +7127,8 @@
       "expert_terrain": true,
       "vertical_drop_m": 1540,
       "webcam_url": "https://www.skiresort.info/ski-resort/bansko/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/bansko/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/bansko/trail-map/",
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/osteuropa/bulgaria/bansko_ID_553/logo/logo-bansko.png"
     },
     {
       "resort_id": "berkovitsa",
@@ -7728,7 +7742,8 @@
       "expert_terrain": false,
       "vertical_drop_m": 740,
       "webcam_url": "https://www.skiresort.info/ski-resort/vitosha-aleko-sofia/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/vitosha-aleko-sofia/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/vitosha-aleko-sofia/trail-map/",
+      "logo_url": "https://www.skivitosha.com/assets/images/vitoshaski-outline.png"
     },
     {
       "resort_id": "alpine-ski-club-collingwood",

@@ -55,10 +55,19 @@
 - [x] Translations: 79 new strings across 13 languages (113→192 per file)
 - [x] Backend deployed to prod + TestFlight triggered
 
-### In Progress
-- [ ] Generate iPad screenshots (iPad Pro 13" + 11")
-- [ ] Upload metadata + screenshots to App Store Connect
-- [ ] Submit for App Store review
+### Just Completed (Feb 27 — v2.0 release)
+- [x] Map zoom refresh: fetch conditions on zoom using visibleResortIds() viewport filter
+- [x] Webcam card: prominent card in map detail sheet (replaces small "Cams" button)
+- [x] Version bump to 2.0.0 (project.yml + project.pbxproj + App Store metadata)
+- [x] App Store release notes + description updated (1040+ resorts, 25 countries)
+- [x] Fixed App Store release workflow (boolean input passing, fastlane precheck)
+- [x] TestFlight build 758 (v2.0.0)
+- [x] v2.0.0 submitted to App Store review via fastlane deliver
+
+### In Progress (v2.1 prep)
+- [ ] Extract 18 hardcoded English strings → Localizable.strings + translate to all 13 languages
+- [ ] Add new languages: Russian (ru), Finnish (fi), Czech (cs), Traditional Chinese (zh-Hant)
+- [ ] Merge logo results from background agents (batches 00-01, 020-029)
 - [ ] Piste overlay styling: thinner lines, brighter colors (OpenSnowMap raster tiles — limited customization, may need vector source)
 
 ### Data Coverage (current)
@@ -120,8 +129,8 @@
 
 ## Backlog — iOS
 
-- [ ] Map forecast refresh on zoom (fetches on pan but not zoom change)
-- [ ] Webcam preview image in map popup (AsyncImage)
+- [x] Map forecast refresh on zoom (fetches on pan but not zoom change) — **v2.0**
+- [x] Webcam card in map detail sheet — **v2.0**
 
 ## Backlog — Android (not blocking release)
 

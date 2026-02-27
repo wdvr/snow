@@ -1,0 +1,273 @@
+/*
+  Localizable.strings
+  SnowTracker
+
+  Russian
+*/
+
+/* Common */
+"Done" = "Готово";
+"Cancel" = "Отмена";
+"Delete" = "Удалить";
+"Save" = "Сохранить";
+"OK" = "ОК";
+"Error" = "Ошибка";
+"Loading" = "Загрузка";
+"Refresh" = "Обновить";
+"Settings" = "Настройки";
+"Search" = "Поиск";
+
+/* Tabs */
+"Favorites" = "Избранное";
+"Map" = "Карта";
+"Best Snow" = "Лучший снег";
+"Nearby" = "Поблизости";
+
+/* FavoritesView */
+"No Favorites Yet" = "Пока нет избранного";
+"Tap the heart icon on any resort to add it to your favorites." = "Нажмите на значок сердца у любого курорта, чтобы добавить его в избранное.";
+"Browse Resorts" = "Обзор курортов";
+
+/* SplashView */
+"Snow Tracker" = "Powder Chaser";
+"Fresh powder awaits" = "Свежий снег ждёт";
+"Loading conditions..." = "Загрузка условий...";
+
+/* ConditionsView */
+"Snow Conditions" = "Состояние снега";
+"Offline mode - showing cached data" = "Офлайн-режим — показаны сохранённые данные";
+"Last updated: %@" = "Обновлено: %@";
+"Snow Quality Guide" = "Гид по качеству снега";
+"Quality Levels" = "Уровни качества";
+"Warming" = "Потепление";
+"since last thaw" = "с последней оттепели";
+
+/* Quality Ratings */
+"Excellent" = "Отлично";
+"Good" = "Хорошо";
+"Fair" = "Нормально";
+"Poor" = "Плохо";
+"Icy" = "Лёд";
+
+/* ResortDetailView */
+"Select Elevation" = "Выбрать высоту";
+"Loading Conditions..." = "Загрузка условий...";
+"No Data Available" = "Нет данных";
+"All Elevations" = "Все высоты";
+"Visit Website" = "Перейти на сайт";
+"Recent Snowfall" = "Недавний снегопад";
+"Snow Forecast" = "Прогноз снега";
+"Weather Details" = "Погодные данные";
+"Min Temp" = "Мин. темп.";
+"Max Temp" = "Макс. темп.";
+"Humidity" = "Влажность";
+"Wind" = "Ветер";
+"24h" = "24ч";
+"48h" = "48ч";
+"72h" = "72ч";
+"Next 24h" = "Следующие 24ч";
+"Next 48h" = "Следующие 48ч";
+"Next 72h" = "Следующие 72ч";
+"Heavy snowfall expected!" = "Ожидается сильный снегопад!";
+"Light snow expected" = "Ожидается небольшой снег";
+"Fresh" = "Свежий";
+"Temp" = "Темп.";
+
+/* FeedbackView */
+"Send Feedback" = "Отправить отзыв";
+"Subject" = "Тема";
+"Your Feedback" = "Ваш отзыв";
+"Submit Feedback" = "Отправить отзыв";
+"Feedback Sent!" = "Отзыв отправлен!";
+"Thank you for your feedback!" = "Спасибо за ваш отзыв!";
+"Email (optional)" = "Email (необязательно)";
+
+/* NotificationSettingsView */
+"Notifications" = "Уведомления";
+"All Notifications" = "Все уведомления";
+"Fresh Snow Alerts" = "Оповещения о свежем снеге";
+"Snow Threshold" = "Порог снега";
+"Event Alerts" = "Оповещения о событиях";
+"Thaw/Freeze Alerts" = "Оповещения об оттепели/заморозках";
+"Enable" = "Включить";
+"%d cm" = "%d см";
+
+/* SettingsView */
+"Account" = "Аккаунт";
+"Sign In" = "Войти";
+"Sign Out" = "Выйти";
+"Preferences" = "Предпочтения";
+"Units" = "Единицы";
+"Celsius" = "Цельсий";
+"Fahrenheit" = "Фаренгейт";
+"Metric (km)" = "Метрическая (км)";
+"Imperial (mi)" = "Имперская (мили)";
+"Centimeters" = "Сантиметры";
+"Inches" = "Дюймы";
+"Data & Storage" = "Данные и хранилище";
+"Clear Offline Cache" = "Очистить офлайн-кеш";
+"Support" = "Поддержка";
+"Privacy Policy" = "Политика конфиденциальности";
+"Terms of Service" = "Условия использования";
+"About" = "О приложении";
+"App Version" = "Версия приложения";
+
+/* AuthenticationViews */
+"Sign in with Google" = "Войти через Google";
+"Continue without signing in" = "Продолжить без входа";
+"Profile" = "Профиль";
+
+/* RecommendationsView */
+"Near You" = "Рядом с вами";
+"Best Globally" = "Лучшие в мире";
+"Search Radius" = "Радиус поиска";
+"Location Access" = "Доступ к геолокации";
+"Enable location to see nearby recommendations" = "Включите геолокацию, чтобы видеть рекомендации поблизости";
+"Open Settings" = "Открыть настройки";
+"No Recommendations" = "Нет рекомендаций";
+
+/* ResortMapView */
+"Snow Quality Legend" = "Легенда качества снега";
+"Standard" = "Стандарт";
+"Satellite" = "Спутник";
+"Hybrid" = "Гибрид";
+"Show All Resorts" = "Показать все курорты";
+"View Full Details" = "Подробнее";
+"Forecast" = "Прогноз";
+"%d Resorts" = "%d курортов";
+
+/* ResortListView */
+"Snow Resorts" = "Горнолыжные курорты";
+"All Regions" = "Все регионы";
+"Search resorts..." = "Поиск курортов...";
+"Loading resorts..." = "Загрузка курортов...";
+"No Resorts Found" = "Курорты не найдены";
+"Pull to refresh" = "Потяните для обновления";
+"Try Again" = "Попробовать снова";
+
+/* MapView Date Selector */
+"Today" = "Сегодня";
+
+/* Quality Ratings (10-level scale) */
+"Champagne Powder" = "Шампанское пухляк";
+"Powder Day" = "Пухляк";
+"Great" = "Отличный";
+"Decent" = "Неплохо";
+"Mediocre" = "Посредственно";
+"Bad" = "Плохо";
+"Horrible" = "Ужасно";
+
+/* FavoritesView (card redesign) */
+"Avg score" = "Средн. оценка";
+"Best conditions" = "Лучшие условия";
+"Create Group" = "Создать группу";
+"Manage Groups" = "Управление группами";
+"Move to Group" = "Переместить в группу";
+"Your Groups" = "Ваши группы";
+"Remove Favorite" = "Удалить из избранного";
+"Groups" = "Группы";
+"Compare" = "Сравнить";
+"Rename" = "Переименовать";
+"Rename Group" = "Переименовать группу";
+"No Group" = "Без группы";
+
+/* ResortListView */
+"Pass:" = "Абонемент:";
+"Sort:" = "Сортировка:";
+"Unable to Load Resorts" = "Не удалось загрузить курорты";
+"Add to Favorites" = "Добавить в избранное";
+"Regions" = "Регионы";
+
+/* SettingsView / AboutView / UnitsSettingsView */
+"App Info" = "О приложении";
+"Appearance" = "Внешний вид";
+"App Icon" = "Значок приложения";
+"Temperature" = "Температура";
+"Distance" = "Расстояние";
+"Snow Depth" = "Глубина снега";
+"Not signed in" = "Вы не вошли";
+"Powder Chaser" = "Powder Chaser";
+"Supported Resorts" = "Поддерживаемые курорты";
+"Version" = "Версия";
+"Website" = "Сайт";
+
+/* RecommendationsView */
+"Finding best snow near you..." = "Поиск лучшего снега рядом с вами...";
+"Could not load best conditions. Pull to refresh." = "Не удалось загрузить лучшие условия. Потяните для обновления.";
+"Location Disabled" = "Геолокация отключена";
+"See All" = "Смотреть все";
+"score" = "оценка";
+
+/* ResortMapView */
+"Ski trails: OpenSnowMap.org / OpenStreetMap" = "Лыжные трассы: OpenSnowMap.org / OpenStreetMap";
+"Zoom in to see trails" = "Приблизьте, чтобы увидеть трассы";
+"Current Conditions" = "Текущие условия";
+"Conditions Summary" = "Сводка условий";
+"Cams" = "Камеры";
+"No conditions data available" = "Данные об условиях недоступны";
+
+/* ResortDetailView */
+"Live" = "Live";
+"Snow Report" = "Снежный отчёт";
+"Trail Map" = "Карта трасс";
+"Webcam" = "Веб-камера";
+"Community Reports" = "Отчёты сообщества";
+"Data Sources" = "Источники данных";
+"Suggest an Edit" = "Предложить правку";
+"Season Totals" = "Итоги сезона";
+"Snow History" = "История снегопадов";
+
+/* ChatView */
+"Ask AI" = "Спросить ИИ";
+"Ask about snow conditions" = "Спросите о состоянии снега";
+"Get personalized recommendations, condition updates, and ski trip advice." = "Получайте персональные рекомендации, актуальные условия и советы для лыжных поездок.";
+"Ask about conditions..." = "Спросите об условиях...";
+"Conversation history" = "История разговоров";
+"New conversation" = "Новый разговор";
+
+/* Chat Suggestions */
+"Best snow within 500 miles" = "Лучший снег в радиусе 800 км";
+"Compare Whistler vs Jackson Hole" = "Сравнить Whistler и Jackson Hole";
+"Best powder in the Rockies" = "Лучший пухляк в Скалистых горах";
+"Family-friendly with good snow" = "Для семей с хорошим снегом";
+"Top 5 resorts globally right now" = "Топ-5 курортов в мире сейчас";
+"Ikon Pass best conditions" = "Лучшие условия по Ikon Pass";
+"Snow forecast this week" = "Прогноз снега на неделю";
+"Hidden gems with fresh powder" = "Скрытые жемчужины со свежим снегом";
+"Best in the Alps right now" = "Лучшие в Альпах сейчас";
+"Deepest snowpack" = "Самый глубокий снежный покров";
+"Japan snow conditions" = "Снежные условия в Японии";
+
+/* Map Filters */
+"All" = "Все";
+"Good+" = "Хорошо+";
+"Below Good" = "Ниже хорошего";
+
+/* Misc */
+"Share" = "Поделиться";
+"Close" = "Закрыть";
+"Resorts" = "Курорты";
+"No results" = "Нет результатов";
+
+/* Buttons & Actions (newly extracted) */
+"Clear" = "Очистить";
+"Remove" = "Удалить";
+"Plan a Trip" = "Спланировать поездку";
+"Mark all read" = "Отметить все прочитанными";
+"Change" = "Изменить";
+"Create" = "Создать";
+"Enable Location" = "Включить геолокацию";
+"Show All Regions" = "Показать все регионы";
+"Show Northern Hemisphere Only" = "Только Северное полушарие";
+"Reset to Defaults" = "Сбросить по умолчанию";
+"Reset to Default" = "Сбросить по умолчанию";
+"Sign out and re-authenticate" = "Выйти и войти заново";
+
+/* Alert Titles (newly extracted) */
+"Reset API URL?" = "Сбросить URL API?";
+"Sign Out?" = "Выйти?";
+"Clear Cache?" = "Очистить кеш?";
+"Remove Favorite?" = "Удалить из избранного?";
+"Delete Trip" = "Удалить поездку";
+"Suggestion Sent!" = "Предложение отправлено!";
+"View Live Webcams" = "Смотреть веб-камеры";

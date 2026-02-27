@@ -248,3 +248,26 @@
 "Close" = "Stäng";
 "Resorts" = "Skidorter";
 "No results" = "Inga resultat";
+
+/* Buttons & Actions (newly extracted) */
+"Clear" = "Rensa";
+"Remove" = "Ta bort";
+"Plan a Trip" = "Planera en resa";
+"Mark all read" = "Markera alla som lästa";
+"Change" = "Ändra";
+"Create" = "Skapa";
+"Enable Location" = "Aktivera plats";
+"Show All Regions" = "Visa alla regioner";
+"Show Northern Hemisphere Only" = "Bara norra halvklotet";
+"Reset to Defaults" = "Återställ till standard";
+"Reset to Default" = "Återställ till standard";
+"Sign out and re-authenticate" = "Logga ut och logga in igen";
+
+/* Alert Titles (newly extracted) */
+"Reset API URL?" = "Återställa API-URL?";
+"Sign Out?" = "Logga ut?";
+"Clear Cache?" = "Rensa cache?";
+"Remove Favorite?" = "Ta bort favorit?";
+"Delete Trip" = "Ta bort resa";
+"Suggestion Sent!" = "Förslag skickat!";
+"View Live Webcams" = "Se livewebbkameror";

@@ -248,3 +248,26 @@
 "Close" = "Lukk";
 "Resorts" = "Skisteder";
 "No results" = "Ingen resultater";
+
+/* Buttons & Actions (newly extracted) */
+"Clear" = "Slett";
+"Remove" = "Fjern";
+"Plan a Trip" = "Planlegg en tur";
+"Mark all read" = "Merk alle som lest";
+"Change" = "Endre";
+"Create" = "Opprett";
+"Enable Location" = "Aktiver posisjon";
+"Show All Regions" = "Vis alle regioner";
+"Show Northern Hemisphere Only" = "Kun nordlige halvkule";
+"Reset to Defaults" = "Tilbakestill til standard";
+"Reset to Default" = "Tilbakestill til standard";
+"Sign out and re-authenticate" = "Logg ut og autentiser på nytt";
+
+/* Alert Titles (newly extracted) */
+"Reset API URL?" = "Tilbakestille API-URL?";
+"Sign Out?" = "Logge ut?";
+"Clear Cache?" = "Tømme hurtigbuffer?";
+"Remove Favorite?" = "Fjerne favoritt?";
+"Delete Trip" = "Slett tur";
+"Suggestion Sent!" = "Forslag sendt!";
+"View Live Webcams" = "Se direktesendte webkameraer";
