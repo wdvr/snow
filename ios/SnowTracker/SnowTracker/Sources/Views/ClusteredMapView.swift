@@ -36,6 +36,7 @@ struct ClusteredMapView: UIViewRepresentable {
     let mapStyle: MapDisplayStyle
     let showUserLocation: Bool
     let showPisteOverlay: Bool
+    let pisteOverlayResult: PisteOverlayResult?
     var onAnnotationTap: ((Resort) -> Void)?
     var onClusterTap: (([Resort]) -> Void)?
     var onRegionChange: ((MKCoordinateRegion) -> Void)?
@@ -90,6 +91,9 @@ struct ClusteredMapView: UIViewRepresentable {
         // Update piste overlay visibility
         updatePisteOverlay(mapView, coordinator: context.coordinator)
 
+        // Update vector piste polylines
+        updatePistePolylines(mapView, coordinator: context.coordinator)
+
         // Apply pending region change (from preset selection, fitAll, etc.)
         if let region = pendingRegion {
             context.coordinator.isProgrammaticRegionChange = true
@@ -134,6 +138,27 @@ struct ClusteredMapView: UIViewRepresentable {
         }
     }
 
+    private func updatePistePolylines(_ mapView: MKMapView, coordinator: Coordinator) {
+        let newOverlays = pisteOverlayResult?.allOverlays ?? []
+        let currentIds = Set(coordinator.vectorOverlays.map { ObjectIdentifier($0) })
+        let newIds = Set(newOverlays.map { ObjectIdentifier($0) })
+
+        // Skip if identical reference set
+        guard currentIds != newIds else { return }
+
+        // Remove old overlays
+        if !coordinator.vectorOverlays.isEmpty {
+            mapView.removeOverlays(coordinator.vectorOverlays)
+        }
+
+        // Add new overlays (above roads)
+        if !newOverlays.isEmpty {
+            mapView.addOverlays(newOverlays, level: .aboveRoads)
+        }
+
+        coordinator.vectorOverlays = newOverlays
+    }
+
     private func updateAnnotations(_ mapView: MKMapView) {
         let currentAnnotations = mapView.annotations.compactMap { $0 as? ResortPointAnnotation }
         let currentById = Dictionary(currentAnnotations.map { ($0.resort.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -173,6 +198,7 @@ struct ClusteredMapView: UIViewRepresentable {
         var isProgrammaticRegionChange = false
         var hasInitialized = false
         var pisteOverlay: MKTileOverlay?
+        var vectorOverlays: [MKOverlay] = []
 
         init(_ parent: ClusteredMapView) {
             self.parent = parent
@@ -260,6 +286,27 @@ struct ClusteredMapView: UIViewRepresentable {
                 renderer.alpha = 0.85
                 return renderer
             }
+
+            if let pistePolyline = overlay as? PistePolyline {
+                let renderer = MKPolylineRenderer(polyline: pistePolyline)
+                renderer.strokeColor = pistePolyline.difficulty.color
+                renderer.lineWidth = pistePolyline.difficulty.lineWidth
+                renderer.alpha = 0.9
+                renderer.lineCap = .round
+                renderer.lineJoin = .round
+                return renderer
+            }
+
+            if let liftPolyline = overlay as? LiftPolyline {
+                let renderer = MKPolylineRenderer(polyline: liftPolyline)
+                renderer.strokeColor = liftPolyline.liftType.color
+                renderer.lineWidth = liftPolyline.liftType.lineWidth
+                renderer.alpha = 0.6
+                renderer.lineDashPattern = [8, 4]  // Dashed line for lifts
+                renderer.lineCap = .butt
+                return renderer
+            }
+
             return MKOverlayRenderer(overlay: overlay)
         }
     }

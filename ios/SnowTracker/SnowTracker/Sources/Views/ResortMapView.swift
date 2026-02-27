@@ -16,6 +16,9 @@ struct ResortMapView: View {
     @State private var regionChangeTask: Task<Void, Never>?
     @State private var isFetchingVisibleConditions: Bool = false
     @State private var nearbyCollapsed: Bool = false
+    @State private var pisteOverlayResult: PisteOverlayResult?
+    @State private var pisteLoadedForResorts: Set<String> = []
+    @State private var pisteLoadTask: Task<Void, Never>?
 
     var body: some View {
         NavigationStack {
@@ -60,6 +63,9 @@ struct ResortMapView: View {
             }
             .onChange(of: mapViewModel.selectedForecastDate) { _, _ in
                 updateAnnotations()
+            }
+            .onChange(of: showPisteOverlay) { _, _ in
+                fetchPisteOverlaysForVisibleResorts()
             }
     }
 
@@ -198,6 +204,9 @@ struct ResortMapView: View {
             if mapViewModel.selectedForecastDate != nil {
                 await mapViewModel.fetchTimelinesForVisible(resortIds: mapViewModel.visibleResortIds())
             }
+
+            // Fetch vector piste data when zoomed in
+            fetchPisteOverlaysForVisibleResorts()
         }
     }
 
@@ -253,7 +262,77 @@ struct ResortMapView: View {
     private func handleDisappear() {
         regionChangeTask?.cancel()
         regionChangeTask = nil
+        pisteLoadTask?.cancel()
+        pisteLoadTask = nil
         AnalyticsService.shared.trackScreenExit("Map")
+    }
+
+    /// Fetch vector piste overlays for resorts visible at high zoom levels.
+    /// Only fetches when piste overlay is enabled and zoom is sufficient.
+    private func fetchPisteOverlaysForVisibleResorts() {
+        guard showPisteOverlay else {
+            if pisteOverlayResult != nil {
+                pisteOverlayResult = nil
+            }
+            return
+        }
+
+        // Check zoom level — only load vector pistes when zoomed in
+        // (at wider zoom, the raster tiles are sufficient)
+        guard let region = mapViewModel.currentVisibleRegion,
+              region.span.latitudeDelta < 0.15 else {
+            // Zoomed out too far — clear vector overlays
+            if pisteOverlayResult != nil {
+                pisteOverlayResult = nil
+                pisteLoadedForResorts = []
+            }
+            return
+        }
+
+        // Find resorts in the viewport
+        let visibleResorts = snowConditionsManager.resorts.filter { resort in
+            let coord = resort.primaryCoordinate
+            let center = region.center
+            let span = region.span
+            return abs(coord.latitude - center.latitude) < span.latitudeDelta / 2
+                && abs(coord.longitude - center.longitude) < span.longitudeDelta / 2
+        }
+
+        // Only fetch for resorts not yet loaded
+        let newResorts = visibleResorts.filter { !pisteLoadedForResorts.contains($0.id) }
+        guard !newResorts.isEmpty else { return }
+
+        pisteLoadTask?.cancel()
+        pisteLoadTask = Task {
+            var allPistes: [PistePolyline] = []
+            var allLifts: [LiftPolyline] = []
+
+            // Keep existing data
+            if let existing = pisteOverlayResult {
+                allPistes = existing.pistes
+                allLifts = existing.lifts
+            }
+
+            for resort in newResorts {
+                guard !Task.isCancelled else { return }
+                do {
+                    let result = try await PisteOverlayService.shared.overlays(
+                        for: resort.id,
+                        coordinate: resort.primaryCoordinate
+                    )
+                    allPistes.append(contentsOf: result.pistes)
+                    allLifts.append(contentsOf: result.lifts)
+                    pisteLoadedForResorts.insert(resort.id)
+                } catch {
+                    // Silently skip — resort may not have OSM piste data
+                    pisteLoadedForResorts.insert(resort.id) // don't retry
+                }
+            }
+
+            guard !Task.isCancelled else { return }
+
+            pisteOverlayResult = PisteOverlayResult(pistes: allPistes, lifts: allLifts)
+        }
     }
 
     private func handleFilterChange(_ newValue: MapFilterOption) {
@@ -276,6 +355,7 @@ struct ResortMapView: View {
             mapStyle: mapStyle,
             showUserLocation: true,
             showPisteOverlay: showPisteOverlay,
+            pisteOverlayResult: pisteOverlayResult,
             onAnnotationTap: { resort in
                 selectedResort = resort
                 AnalyticsService.shared.trackResortClicked(
