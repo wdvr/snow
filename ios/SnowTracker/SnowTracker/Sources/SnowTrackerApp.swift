@@ -101,8 +101,9 @@ struct SnowTrackerApp: App {
             }
             .onChange(of: authService.isAuthenticated) { _, isAuthenticated in
                 if isAuthenticated {
-                    // Skip onboarding in screenshot/demo mode
-                    let isTestMode = ProcessInfo.processInfo.arguments.contains("SCREENSHOT_MODE") ||
+                    // Skip onboarding in UI testing/screenshot/demo mode
+                    let isTestMode = ProcessInfo.processInfo.arguments.contains("UI_TESTING") ||
+                                     ProcessInfo.processInfo.arguments.contains("SCREENSHOT_MODE") ||
                                      ProcessInfo.processInfo.arguments.contains("DEMO_DATA")
                     showOnboarding = isTestMode ? false : !userPreferencesManager.hasCompletedOnboarding
 
