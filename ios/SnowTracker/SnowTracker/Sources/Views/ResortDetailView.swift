@@ -48,7 +48,7 @@ struct ResortDetailView: View {
             }
 
             text += "Temperature: \(condition.formattedTemperature(prefs))\n"
-            text += "Fresh Snow: \(WeatherCondition.formatSnow(condition.freshSnowCm, prefs: prefs))\n"
+            text += "\(condition.freshSnowLabel) Snow: \(WeatherCondition.formatSnow(condition.displayFreshSnowCm, prefs: prefs))\n"
 
             if let depth = condition.snowDepthCm, depth > 0 {
                 text += "Snow Depth: \(WeatherCondition.formatSnow(depth, prefs: prefs))\n"
@@ -246,7 +246,7 @@ struct ResortDetailView: View {
                 resortId: resort.id,
                 resortName: resort.name,
                 resortLocation: resort.displayLocation,
-                freshSnowCm: condition.freshSnowCm,
+                freshSnowCm: condition.displayFreshSnowCm,
                 temperatureCelsius: condition.currentTempCelsius,
                 snowQuality: quality,
                 snowScore: score
@@ -260,7 +260,7 @@ struct ResortDetailView: View {
         let quality = snowConditionsManager.getSnowQuality(for: resort.id).rawValue
         let score = snowConditionsManager.getSnowScore(for: resort.id)
         liveActivityService.update(
-            freshSnowCm: condition.freshSnowCm,
+            freshSnowCm: condition.displayFreshSnowCm,
             temperatureCelsius: condition.currentTempCelsius,
             snowQuality: quality,
             snowScore: score
@@ -457,15 +457,15 @@ struct ResortDetailView: View {
                 }
                 .frame(maxWidth: .infinity)
 
-                // Fresh Snow
+                // Fresh Snow (prefer 24h snowfall when available)
                 VStack {
                     Image(systemName: "snowflake")
                         .font(.title2)
                         .foregroundStyle(.cyan)
-                    Text(WeatherCondition.formatSnowShort(condition.freshSnowCm, prefs: userPreferencesManager.preferredUnits))
+                    Text(WeatherCondition.formatSnowShort(condition.displayFreshSnowCm, prefs: userPreferencesManager.preferredUnits))
                         .font(.title2)
                         .fontWeight(.bold)
-                    Text("Fresh")
+                    Text(condition.freshSnowLabel)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1114,11 +1114,11 @@ struct ResortDetailView: View {
 
                             HStack(spacing: 8) {
                                 Text(condition.formattedTemperature(userPreferencesManager.preferredUnits))
-                                if condition.freshSnowCm > 0 {
+                                if condition.displayFreshSnowCm > 0 {
                                     HStack(spacing: 2) {
-                                        Image(systemName: "snowflake")
+                                        Image(systemName: condition.snowfall24hCm >= 0.5 ? "cloud.snow" : "snowflake")
                                             .font(.caption2)
-                                        Text(WeatherCondition.formatSnowShort(condition.freshSnowCm, prefs: userPreferencesManager.preferredUnits))
+                                        Text(WeatherCondition.formatSnowShort(condition.displayFreshSnowCm, prefs: userPreferencesManager.preferredUnits))
                                     }
                                     .foregroundStyle(.cyan)
                                 }

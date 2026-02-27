@@ -64,17 +64,20 @@
 - [x] TestFlight build 758 (v2.0.0)
 - [x] v2.0.0 submitted to App Store review via fastlane deliver
 
-### In Progress (v2.1 prep)
-- [ ] Extract 18 hardcoded English strings → Localizable.strings + translate to all 13 languages
-- [ ] Add new languages: Russian (ru), Finnish (fi), Czech (cs), Traditional Chinese (zh-Hant)
-- [ ] Merge logo results from background agents (batches 00-01, 020-029)
-- [ ] Piste overlay styling: thinner lines, brighter colors (OpenSnowMap raster tiles — limited customization, may need vector source)
+### Just Completed (Feb 27 — v2.1 polish)
+- [x] Extract 19 hardcoded English strings → Localizable.strings + translate to all 17 languages (211 strings per file)
+- [x] Add 4 new languages: Russian (ru), Finnish (fi), Czech (cs), Traditional Chinese (zh-Hant)
+- [x] Merge 15 logo results from background agents (818→833 logos, 81.7%)
+- [x] Piste overlay: boosted alpha (0.7→0.85), lowered min zoom (13→12), CIFilter saturation/contrast enhancement
+- [x] BUG-194 fix: fresh snow display now shows 24h snowfall preferentially instead of misleading accumulated-since-thaw
+- [x] Closed GitHub issues: #193 (map zoom), #194 (fresh snow display), #195 (outlier detection), #24 (webcam)
+- [x] DynamoDB updated with 15 new resort logos (Populate workflow)
 
 ### Data Coverage (current)
 | Data | Coverage |
 |------|----------|
 | Trail maps | 957/1019 (93.9%) |
-| Logos | 818/1019 (80.3%) — 354 SVG→PNG converted |
+| Logos | 833/1019 (81.7%) — 354 SVG→PNG converted |
 | Webcams | 1019/1019 (100%) — auto-generated skiresort.info pages |
 | Websites | 884/1019 (86.7%) |
 

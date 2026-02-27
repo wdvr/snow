@@ -1,6 +1,8 @@
 import SwiftUI
 import MapKit
 import UIKit
+import CoreImage
+import CoreImage.CIFilterBuiltins
 
 // MARK: - Resort Point Annotation
 
@@ -46,7 +48,7 @@ struct ClusteredMapView: UIViewRepresentable {
 
     /// Minimum zoom level (MKMapView) at which piste overlays become visible.
     /// MKMapView zoom ~12 corresponds roughly to tile zoom 12, which shows individual runs.
-    private static let pisteMinimumZoomLevel: Int = 13
+    private static let pisteMinimumZoomLevel: Int = 12
 
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView()
@@ -111,7 +113,7 @@ struct ClusteredMapView: UIViewRepresentable {
     }
 
     private func addPisteOverlay(to mapView: MKMapView, coordinator: Coordinator) {
-        let overlay = MKTileOverlay(urlTemplate: Self.pisteOverlayURLTemplate)
+        let overlay = SaturatedPisteTileOverlay(urlTemplate: Self.pisteOverlayURLTemplate)
         overlay.canReplaceMapContent = false
         overlay.minimumZ = Self.pisteMinimumZoomLevel
         overlay.maximumZ = 18
@@ -255,10 +257,48 @@ struct ClusteredMapView: UIViewRepresentable {
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let tileOverlay = overlay as? MKTileOverlay {
                 let renderer = MKTileOverlayRenderer(overlay: tileOverlay)
-                renderer.alpha = 0.7  // Lighter overlay for cleaner appearance
+                renderer.alpha = 0.85
                 return renderer
             }
             return MKOverlayRenderer(overlay: overlay)
+        }
+    }
+}
+
+// MARK: - Saturated Piste Tile Overlay
+
+/// Custom tile overlay that boosts saturation and contrast of OpenSnowMap piste tiles
+/// using CoreImage filters, making colored ski trail lines pop against the map background.
+final class SaturatedPisteTileOverlay: MKTileOverlay {
+    private static let ciContext = CIContext(options: [.useSoftwareRenderer: false])
+
+    override func loadTile(at path: MKTileOverlayPath, result: @escaping (Data?, Error?) -> Void) {
+        super.loadTile(at: path) { data, error in
+            guard let data = data, error == nil else {
+                result(data, error)
+                return
+            }
+
+            guard let inputImage = UIImage(data: data),
+                  let ciImage = CIImage(image: inputImage) else {
+                result(data, nil)
+                return
+            }
+
+            let filter = CIFilter.colorControls()
+            filter.inputImage = ciImage
+            filter.saturation = 1.6
+            filter.contrast = 1.2
+
+            guard let outputCIImage = filter.outputImage,
+                  let cgImage = Self.ciContext.createCGImage(outputCIImage, from: ciImage.extent) else {
+                result(data, nil)
+                return
+            }
+
+            let enhancedImage = UIImage(cgImage: cgImage, scale: inputImage.scale, orientation: inputImage.imageOrientation)
+            let enhancedData = enhancedImage.pngData() ?? data
+            result(enhancedData, nil)
         }
     }
 }

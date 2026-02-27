@@ -1313,14 +1313,15 @@ struct SnowQualitySummaryLight: Codable {
         return String(format: "%.0f°C", temp)
     }
 
-    /// Formatted fresh snow depth respecting unit preferences
+    /// Formatted fresh snow depth respecting unit preferences.
+    /// Prefers 24h snowfall when available (most relevant to users), falls back to accumulated since thaw.
     func formattedFreshSnow(_ prefs: UnitPreferences) -> String? {
-        guard let snow = snowfallFreshCm else { return nil }
-        if prefs.snowDepth == .inches {
-            let inches = snow / 2.54
-            return String(format: "%.1f\"", inches)
+        // Prefer 24h snowfall when meaningful
+        if let snow24 = snowfall24hCm, snow24 >= 0.5 {
+            return "\(WeatherCondition.formatSnow(snow24, prefs: prefs))/24h"
         }
-        return String(format: "%.1fcm", snow)
+        guard let snow = snowfallFreshCm, snow >= 0.1 else { return nil }
+        return "\(WeatherCondition.formatSnow(snow, prefs: prefs)) fresh"
     }
 
     private static let isoFractionalFormatter: ISO8601DateFormatter = {

@@ -5,6 +5,34 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Feb 27, 2026
+
+### Feature: Piste overlay enhancement — brighter colors, lower min zoom, CIFilter processing
+Alpha increased from 0.7 to 0.85 for more visible trails. Min zoom lowered from 13 to 12 for earlier trail visibility. Custom `SaturatedPisteTileOverlay` subclass applies CIColorControls filter (saturation 1.6, contrast 1.2) to OpenSnowMap raster tiles via `loadTile` override with static GPU-backed CIContext. Graceful fallback to unprocessed tiles if filter fails.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Bugfix: BUG-194 — Fresh snow display showed accumulated-since-thaw, not recent snowfall
+Users saw "21cm fresh" with a POOR score — misleading because `freshSnowCm` = accumulated snow since last thaw-freeze event (up to 14+ days). Now all views (resort list, detail quick stats, favorites, chat, elevation profile) prefer `snowfall24hCm` when >= 0.5cm. Shows "Xcm/24h" with cloud.snow icon for recent snow, falls back to "Xcm fresh" with snowflake icon for accumulated. Labels switch dynamically ("24h" vs "Fresh").
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | pending | n/a |
+
+### Feature: Translation expansion — 19 new strings + 4 new languages (17 total)
+Extracted 19 hardcoded English strings (buttons, alerts, actions). All 17 language files now have 211 strings. Added Russian (ru), Finnish (fi), Czech (cs), Traditional Chinese (zh-Hant) with complete coverage.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Data: Logo merge — 15 new logos (833/1019, 81.7%)
+Merged logo search results from background agents. Smart quality scoring (SVG > PNG > WebP > JPG). DynamoDB updated via Populate Resorts workflow.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | done | done | done |
+
+---
+
 ## Feb 26, 2026
 
 ### Feature: v2.0 — Map zoom refresh + webcam card + version bump

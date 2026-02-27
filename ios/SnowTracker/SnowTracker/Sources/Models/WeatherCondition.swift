@@ -705,12 +705,26 @@ extension WeatherCondition {
         }
     }
 
-    /// Format fresh snow according to user preferences
+    /// Format fresh snow according to user preferences.
+    /// Prefers 24h snowfall when available (most relevant to users), falls back to accumulated since thaw.
     func formattedFreshSnowWithPrefs(_ prefs: UnitPreferences) -> String {
+        if snowfall24hCm >= 0.5 {
+            return "\(Self.formatSnow(snowfall24hCm, prefs: prefs))/24h"
+        }
         if freshSnowCm < 0.1 {
-            return "No fresh snow"
+            return "No new snow"
         }
         return "\(Self.formatSnow(freshSnowCm, prefs: prefs)) fresh"
+    }
+
+    /// The most relevant snow label for stat displays: "24h" or "Fresh"
+    var freshSnowLabel: String {
+        snowfall24hCm >= 0.5 ? "24h" : "Fresh"
+    }
+
+    /// The most relevant fresh snow value in cm for stat displays
+    var displayFreshSnowCm: Double {
+        snowfall24hCm >= 0.5 ? snowfall24hCm : freshSnowCm
     }
 
     /// Format snow since freeze according to user preferences

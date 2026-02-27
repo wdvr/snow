@@ -705,16 +705,12 @@ private struct ChatResortCard: View {
     private var weatherStatsRow: some View {
         HStack(spacing: 10) {
             if let condition {
-                if condition.freshSnowCm > 0 {
+                if condition.displayFreshSnowCm > 0 {
                     statItem(
-                        icon: "snowflake",
-                        value: String(format: "%.0f cm", condition.freshSnowCm),
-                        color: .blue
-                    )
-                } else if condition.snowfall24hCm > 0 {
-                    statItem(
-                        icon: "cloud.snow",
-                        value: String(format: "%.0f cm/24h", condition.snowfall24hCm),
+                        icon: condition.snowfall24hCm >= 0.5 ? "cloud.snow" : "snowflake",
+                        value: condition.snowfall24hCm >= 0.5
+                            ? String(format: "%.0f cm/24h", condition.snowfall24hCm)
+                            : String(format: "%.0f cm", condition.freshSnowCm),
                         color: .blue
                     )
                 }
