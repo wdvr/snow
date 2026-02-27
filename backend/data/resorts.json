@@ -11015,7 +11015,8 @@
       "vertical_drop_m": 200,
       "city": "三江镇",
       "webcam_url": "https://www.skiresort.info/ski-resort/xiling-snow-mountain/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/xiling-snow-mountain/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/xiling-snow-mountain/trail-map/",
+      "logo_url": "http://www.xiling.cn/website/en/img/E_logo.png"
     },
     {
       "resort_id": "yabuli",
@@ -11774,7 +11775,7 @@
       "city": "Lipno",
       "webcam_url": "https://www.skiresort.info/ski-resort/lipno/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/lipno/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/lipno.png"
+      "logo_url": "https://www.lipno.info/templates/lipno/images/layout/logo-modre.svg"
     },
     {
       "resort_id": "mala-upa",
@@ -14181,7 +14182,7 @@
       "city": "la Vall de Boí",
       "webcam_url": "https://www.skiresort.info/ski-resort/boi-taull/webcams/",
       "trail_map_url": "https://www.snow-forecast.com/pistemaps/Boi-Taull_pistemap.jpg",
-      "logo_url": "https://pirineu365.cat/wp-content/uploads/2025/06/Boi-Taull-e1754446380442.png"
+      "logo_url": "https://content.boitaullresort.com/boitaull/img/web/brand/logo_boi.svg"
     },
     {
       "resort_id": "candanchu",
@@ -14887,7 +14888,7 @@
       "city": "Rascafría",
       "webcam_url": "https://www.skiresort.info/ski-resort/valdesqui/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/valdesqui/trail-map/",
-      "logo_url": "https://valdesqui.es/wp-content/themes/understrap-child-invierno/media/logo-codedrone.png"
+      "logo_url": "https://valdesqui.es/wp-content/themes/understrap-child-invierno/img/valdesqui-bg.svg"
     },
     {
       "resort_id": "valdezcaray",
@@ -15129,7 +15130,8 @@
       "vertical_drop_m": 151,
       "city": "Jämsä",
       "webcam_url": "https://www.skiresort.info/ski-resort/himos/webcams/",
-      "trail_map_url": "https://www.skiresort.info/ski-resort/himos/trail-map/"
+      "trail_map_url": "https://www.skiresort.info/ski-resort/himos/trail-map/",
+      "logo_url": "https://ski.fi/media/himos_logo.png"
     },
     {
       "resort_id": "hakarinteet",
@@ -16476,7 +16478,7 @@
       "city": "Sotkamo",
       "webcam_url": "https://www.skiresort.info/ski-resort/vuokatti/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/vuokatti/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/vuokatti.png"
+      "logo_url": "https://vuokatti.fi/wp-content/uploads/2022/07/vuokatti-logo-white.svg"
     },
     {
       "resort_id": "yllas",
