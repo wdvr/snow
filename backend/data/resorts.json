@@ -133,7 +133,8 @@
       "expert_terrain": true,
       "city": "Girdwood",
       "webcam_url": "https://www.alyeskaresort.com/mountain/webcams",
-      "trail_map_url": "https://www.snow-forecast.com/pistemaps/Alyeska-Resort_pistemap.jpg"
+      "trail_map_url": "https://www.snow-forecast.com/pistemaps/Alyeska-Resort_pistemap.jpg",
+      "logo_url": "https://www.alyeskaresort.com/wp-content/uploads/2024/04/alyeska-logo.png"
     },
     {
       "resort_id": "alta",
@@ -167,7 +168,7 @@
       "city": "Alta",
       "webcam_url": "https://www.skiresort.info/ski-resort/alta/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_159_files/8/0_0.jpg",
-      "logo_url": "https://www.alta.com/icons/apple-touch-icon.png"
+      "logo_url": "https://www.pngkey.com/png/detail/301-3019581_alta-ski-resort-alta-ski-area-logo.png"
     },
     {
       "resort_id": "angel-fire",
@@ -510,7 +511,8 @@
       "city": "Kelowna",
       "webcam_url": "https://www.skiresort.info/ski-resort/big-white/webcams/",
       "indy_pass": "full",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_19234_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_19234_files/8/0_0.jpg",
+      "logo_url": "https://www.bigwhite.com/themes/custom/ht_bigwhite/images/icons/logo/bw-logo-xl@2x.png"
     },
     {
       "resort_id": "blue-mountain-resort-collingwood",
@@ -798,7 +800,7 @@
       "city": "Chamonix",
       "webcam_url": "https://www.skiresort.info/ski-resort/chamonix/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_20521_files/8/0_0.jpg",
-      "logo_url": "https://www.chamonix.com/sites/default/files/styles/partenaires/public/partenaires/NewLogo_KIA_vertical_baseline_asterisque.png?itok=_K6fwkvH"
+      "logo_url": "https://cdn.worldvectorlogo.com/logos/logo-chamonix-mont-blanc.svg"
     },
     {
       "resort_id": "copper-mountain",
@@ -830,7 +832,7 @@
       "city": "Copper Mountain",
       "webcam_url": "https://www.skiresort.info/ski-resort/copper-mountain/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_712_files/8/0_0.jpg",
-      "logo_url": "https://www.coppercolorado.com/icons/icon-48x48.png?v=af20e7df4ec9d6aad6f2bd3f23355ce2"
+      "logo_url": "https://cdn.worldvectorlogo.com/logos/copper-mountain-resort.svg"
     },
     {
       "resort_id": "coronet-peak",
@@ -866,7 +868,7 @@
       "city": "Queenstown",
       "webcam_url": "https://www.skiresort.info/ski-resort/coronet-peak/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_585_files/8/0_0.jpg",
-      "logo_url": "https://www.coronetpeak.co.nz/resources/img/ui/coronet-peak/apple-touch-icon.png"
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/australien_ozeanien/neuseeland/coronet_peak_ID_449/logo/coronet_peak_logo.png"
     },
     {
       "resort_id": "cortina",
@@ -2154,7 +2156,7 @@
       "city": "Municipality of Jasper",
       "webcam_url": "https://www.skiresort.info/ski-resort/marmot-basin-jasper/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2809_files/8/0_0.jpg",
-      "logo_url": "https://www.skimarmot.com/static/favicon/apple-touch-icon.49a025f9ac47.png"
+      "logo_url": "https://www.skimarmot.com/static/images/brand-marmot--base.fef9b945717b.svg"
     },
     {
       "resort_id": "meribel",
@@ -2280,7 +2282,7 @@
       "city": "Orford",
       "webcam_url": "https://www.skiresort.info/ski-resort/mont-orford/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_4398_files/8/0_0.jpg",
-      "logo_url": "https://montorford.com/assets/favicons/apple-touch-icon.png"
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/canada/mont_orford_ID_3476/logo/mont_orford_ski_logo.png"
     },
     {
       "resort_id": "mont-orignal-lac-etchemin",
@@ -2535,7 +2537,7 @@
       "city": "Bend",
       "webcam_url": "https://www.skiresort.info/ski-resort/mt-bachelor/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_153_files/8/0_0.jpg",
-      "logo_url": "https://www.mtbachelor.com/icons/icon-48x48.png?v=c9b438db36d2ed08dd0aca23e6f36de1"
+      "logo_url": "https://cdn.worldvectorlogo.com/logos/mt-bachelor.svg"
     },
     {
       "resort_id": "mt-baker",
@@ -2868,7 +2870,8 @@
       "expert_terrain": true,
       "city": "Park City",
       "webcam_url": "https://www.skiresort.info/ski-resort/park-city/webcams/",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_16343_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_16343_files/8/0_0.jpg",
+      "logo_url": "https://cdn.worldvectorlogo.com/logos/park-city.svg"
     },
     {
       "resort_id": "perisher",
@@ -3224,7 +3227,7 @@
       "city": "Vernon",
       "webcam_url": "https://www.skiresort.info/ski-resort/silver-star/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_16399_files/8/0_0.jpg",
-      "logo_url": "https://www.skisilverstar.com/icons/icon-48x48.png?v=6bd5e9afe43c9662128a12c95b5a2885"
+      "logo_url": "https://cdn.worldvectorlogo.com/logos/silverstar.svg"
     },
     {
       "resort_id": "snoqualmie-pass",
@@ -3320,7 +3323,7 @@
       "city": "Huntsville",
       "webcam_url": "https://www.skiresort.info/ski-resort/snowbasin/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_189_files/8/0_0.jpg",
-      "logo_url": "https://www.snowbasin.com/azure/snowbasin/media/siteassets/images/scott%20goggles/scott-logo-small.png"
+      "logo_url": "https://cdn.worldvectorlogo.com/logos/snowbasin.svg"
     },
     {
       "resort_id": "snowbird",
@@ -11267,7 +11270,7 @@
       "city": "Bílá",
       "webcam_url": "https://www.skiresort.info/ski-resort/bila/webcams/",
       "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_2860_files/8/0_0.jpg",
-      "logo_url": "https://www.skibila.cz/wp-content/themes/custom/favicon/apple-touch-icon.png"
+      "logo_url": "https://www.skibila.cz/wp-content/uploads/2019/10/logo.svg"
     },
     {
       "resort_id": "de-tne",
@@ -11449,7 +11452,7 @@
       "vertical_drop_m": 420,
       "city": "Javorník",
       "webcam_url": "https://www.skiresort.info/ski-resort/javornik-je-manice/webcams/",
-      "logo_url": "https://ski-javornik.si/wp-content/uploads/2019/02/smucar-logo.png",
+      "logo_url": "https://areal-obrisud.cz/_templates/project_frontend/images/logo.svg",
       "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/a2/2d/d0/0e/8dca256754.jpeg"
     },
     {
@@ -11787,7 +11790,8 @@
       "city": "Malá Úpa",
       "webcam_url": "https://www.skiresort.info/ski-resort/mala-upa/webcams/",
       "indy_pass": "full",
-      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_23067_files/8/0_0.jpg"
+      "trail_map_url": "https://www.skiresort.info/uploads/tx_mgskiresort/trailmapsV2/trailmap_23067_files/8/0_0.jpg",
+      "logo_url": "https://www.skimu.cz/assets/images/skimu-logo.svg"
     },
     {
       "resort_id": "moninec-sedlec-pr-ice",
@@ -11936,7 +11940,7 @@
       "vertical_drop_m": 248,
       "city": "Staré Město",
       "webcam_url": "https://www.skiresort.info/ski-resort/paprsek-velke-vrbno/webcams/",
-      "logo_url": "https://www.paprsek.cz/wp-content/uploads/2022/11/cropped-horskyarealpaprsek-logo-symbol-180x180.png"
+      "logo_url": "https://www.paprsek.cz/wp-content/uploads/2024/12/horskyarealpaprsek-logo-blue-425x100-1.png"
     },
     {
       "resort_id": "paseky-nad-jizerou",
@@ -11996,7 +12000,8 @@
       "expert_terrain": false,
       "city": "Pec pod Sněžkou",
       "webcam_url": "https://www.skiresort.info/ski-resort/pec-pod-sn-kou/webcams/",
-      "trail_map_url": "https://www.snow-forecast.com/pistemaps/PecpodSnezkou_pistemap.jpg"
+      "trail_map_url": "https://www.snow-forecast.com/pistemaps/PecpodSnezkou_pistemap.jpg",
+      "logo_url": "https://www.pecpodsnezkou.cz/images/logopec.png"
     },
     {
       "resort_id": "ple-ivec-abertamy",
