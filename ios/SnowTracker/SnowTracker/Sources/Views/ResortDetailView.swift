@@ -364,9 +364,13 @@ struct ResortDetailView: View {
                     }
                 }
 
-                if let mapUrlStr = resort.trailMapUrl, URL(string: mapUrlStr) != nil {
+                if let mapUrlStr = resort.trailMapUrl, let mapUrl = URL(string: mapUrlStr) {
                     Button {
-                        showingTrailMap = true
+                        if mapUrlStr.hasSuffix(".jpg") || mapUrlStr.hasSuffix(".jpeg") || mapUrlStr.hasSuffix(".png") {
+                            showingTrailMap = true
+                        } else {
+                            safariURL = IdentifiableURL(url: mapUrl)
+                        }
                     } label: {
                         Label("Trail Map", systemImage: "map")
                             .font(.caption)
