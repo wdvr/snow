@@ -1,8 +1,6 @@
 import SwiftUI
 import MapKit
 import UIKit
-import CoreImage
-import CoreImage.CIFilterBuiltins
 
 // MARK: - Resort Point Annotation
 
@@ -44,13 +42,6 @@ struct ClusteredMapView: UIViewRepresentable {
     // Cluster identifier
     private static let clusterIdentifier = "resortCluster"
 
-    // OpenSnowMap piste tile overlay URL template
-    private static let pisteOverlayURLTemplate = "https://tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png"
-
-    /// Minimum zoom level (MKMapView) at which piste overlays become visible.
-    /// MKMapView zoom ~12 corresponds roughly to tile zoom 12, which shows individual runs.
-    private static let pisteMinimumZoomLevel: Int = 12
-
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView()
         mapView.delegate = context.coordinator
@@ -76,10 +67,11 @@ struct ClusteredMapView: UIViewRepresentable {
             mapView.setRegion(MapRegionPreset.naRockies.region, animated: false)
         }
 
-        // Add piste overlay if enabled
-        if showPisteOverlay {
-            addPisteOverlay(to: mapView, coordinator: context.coordinator)
-        }
+        // Register piste name annotation view
+        mapView.register(
+            PisteNameAnnotationView.self,
+            forAnnotationViewWithReuseIdentifier: "pisteNameAnnotation"
+        )
 
         return mapView
     }
@@ -88,10 +80,7 @@ struct ClusteredMapView: UIViewRepresentable {
         // Update map type
         updateMapType(mapView)
 
-        // Update piste overlay visibility
-        updatePisteOverlay(mapView, coordinator: context.coordinator)
-
-        // Update vector piste polylines
+        // Update vector piste polylines + name labels
         updatePistePolylines(mapView, coordinator: context.coordinator)
 
         // Apply pending region change (from preset selection, fitAll, etc.)
@@ -116,47 +105,81 @@ struct ClusteredMapView: UIViewRepresentable {
         mapView.mapType = mapStyle.mapType
     }
 
-    private func addPisteOverlay(to mapView: MKMapView, coordinator: Coordinator) {
-        let overlay = SaturatedPisteTileOverlay(urlTemplate: Self.pisteOverlayURLTemplate)
-        overlay.canReplaceMapContent = false
-        overlay.minimumZ = Self.pisteMinimumZoomLevel
-        overlay.maximumZ = 18
-        mapView.addOverlay(overlay, level: .aboveRoads)
-        coordinator.pisteOverlay = overlay
-    }
-
-    private func updatePisteOverlay(_ mapView: MKMapView, coordinator: Coordinator) {
-        let hasPisteOverlay = coordinator.pisteOverlay != nil
-
-        if showPisteOverlay && !hasPisteOverlay {
-            addPisteOverlay(to: mapView, coordinator: coordinator)
-        } else if !showPisteOverlay && hasPisteOverlay {
-            if let overlay = coordinator.pisteOverlay {
-                mapView.removeOverlay(overlay)
-                coordinator.pisteOverlay = nil
-            }
-        }
-    }
-
     private func updatePistePolylines(_ mapView: MKMapView, coordinator: Coordinator) {
-        let newOverlays = pisteOverlayResult?.allOverlays ?? []
+        let newOverlays: [MKOverlay] = showPisteOverlay ? (pisteOverlayResult?.allOverlays ?? []) : []
         let currentIds = Set(coordinator.vectorOverlays.map { ObjectIdentifier($0) })
         let newIds = Set(newOverlays.map { ObjectIdentifier($0) })
 
-        // Skip if identical reference set
-        guard currentIds != newIds else { return }
-
-        // Remove old overlays
-        if !coordinator.vectorOverlays.isEmpty {
-            mapView.removeOverlays(coordinator.vectorOverlays)
+        // Update polyline overlays if changed
+        if currentIds != newIds {
+            if !coordinator.vectorOverlays.isEmpty {
+                mapView.removeOverlays(coordinator.vectorOverlays)
+            }
+            if !newOverlays.isEmpty {
+                mapView.addOverlays(newOverlays, level: .aboveRoads)
+            }
+            coordinator.vectorOverlays = newOverlays
         }
 
-        // Add new overlays (above roads)
-        if !newOverlays.isEmpty {
-            mapView.addOverlays(newOverlays, level: .aboveRoads)
+        // Update piste name annotations
+        let isZoomedIn = mapView.region.span.latitudeDelta < 0.04 // ~z14+
+        let newNames: [PisteNameAnnotation] = (showPisteOverlay && isZoomedIn)
+            ? buildPisteNameAnnotations()
+            : []
+
+        let currentNameIds = Set(coordinator.pisteNameAnnotations.map { $0.pisteId })
+        let newNameIds = Set(newNames.map { $0.pisteId })
+
+        if currentNameIds != newNameIds {
+            if !coordinator.pisteNameAnnotations.isEmpty {
+                mapView.removeAnnotations(coordinator.pisteNameAnnotations)
+            }
+            if !newNames.isEmpty {
+                mapView.addAnnotations(newNames)
+            }
+            coordinator.pisteNameAnnotations = newNames
+        }
+    }
+
+    private func buildPisteNameAnnotations() -> [PisteNameAnnotation] {
+        guard let result = pisteOverlayResult else { return [] }
+
+        var annotations: [PisteNameAnnotation] = []
+
+        for piste in result.pistes {
+            guard let name = piste.pisteName, !name.isEmpty else { continue }
+            // Place label at midpoint of the piste
+            let midIndex = piste.pointCount / 2
+            guard midIndex < piste.pointCount else { continue }
+            let points = piste.points()
+            let midCoord = points[midIndex].coordinate
+
+            let annotation = PisteNameAnnotation(
+                pisteId: "\(name)-\(midCoord.latitude)-\(midCoord.longitude)",
+                name: name,
+                difficulty: piste.difficulty,
+                coordinate: midCoord
+            )
+            annotations.append(annotation)
         }
 
-        coordinator.vectorOverlays = newOverlays
+        for lift in result.lifts {
+            guard let name = lift.liftName, !name.isEmpty else { continue }
+            let midIndex = lift.pointCount / 2
+            guard midIndex < lift.pointCount else { continue }
+            let points = lift.points()
+            let midCoord = points[midIndex].coordinate
+
+            let annotation = PisteNameAnnotation(
+                pisteId: "lift-\(name)-\(midCoord.latitude)-\(midCoord.longitude)",
+                name: name,
+                difficulty: nil,
+                coordinate: midCoord
+            )
+            annotations.append(annotation)
+        }
+
+        return annotations
     }
 
     private func updateAnnotations(_ mapView: MKMapView) {
@@ -197,8 +220,8 @@ struct ClusteredMapView: UIViewRepresentable {
         var parent: ClusteredMapView
         var isProgrammaticRegionChange = false
         var hasInitialized = false
-        var pisteOverlay: MKTileOverlay?
         var vectorOverlays: [MKOverlay] = []
+        var pisteNameAnnotations: [PisteNameAnnotation] = []
 
         init(_ parent: ClusteredMapView) {
             self.parent = parent
@@ -223,6 +246,19 @@ struct ClusteredMapView: UIViewRepresentable {
                 return view
             }
 
+            // Handle piste name annotations
+            if let pisteAnnotation = annotation as? PisteNameAnnotation {
+                let view = mapView.dequeueReusableAnnotationView(
+                    withIdentifier: "pisteNameAnnotation",
+                    for: annotation
+                ) as? PisteNameAnnotationView ?? PisteNameAnnotationView(
+                    annotation: annotation,
+                    reuseIdentifier: "pisteNameAnnotation"
+                )
+                view.configure(with: pisteAnnotation)
+                return view
+            }
+
             // Handle resort annotations
             if let resortAnnotation = annotation as? ResortPointAnnotation {
                 let view = mapView.dequeueReusableAnnotationView(
@@ -241,6 +277,9 @@ struct ClusteredMapView: UIViewRepresentable {
 
         func mapView(_ mapView: MKMapView, didSelect annotation: MKAnnotation) {
             mapView.deselectAnnotation(annotation, animated: false)
+
+            // Ignore piste name labels
+            if annotation is PisteNameAnnotation { return }
 
             if let cluster = annotation as? MKClusterAnnotation {
                 // Get all resorts in the cluster
@@ -281,12 +320,6 @@ struct ClusteredMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-            if let tileOverlay = overlay as? MKTileOverlay {
-                let renderer = MKTileOverlayRenderer(overlay: tileOverlay)
-                renderer.alpha = 0.85
-                return renderer
-            }
-
             if let pistePolyline = overlay as? PistePolyline {
                 let renderer = MKPolylineRenderer(polyline: pistePolyline)
                 renderer.strokeColor = pistePolyline.difficulty.color
@@ -312,41 +345,80 @@ struct ClusteredMapView: UIViewRepresentable {
     }
 }
 
-// MARK: - Saturated Piste Tile Overlay
+// MARK: - Piste Name Annotation
 
-/// Custom tile overlay that boosts saturation and contrast of OpenSnowMap piste tiles
-/// using CoreImage filters, making colored ski trail lines pop against the map background.
-final class SaturatedPisteTileOverlay: MKTileOverlay {
-    private static let ciContext = CIContext(options: [.useSoftwareRenderer: false])
+/// Lightweight annotation placed at the midpoint of a piste/lift for labeling.
+final class PisteNameAnnotation: NSObject, MKAnnotation {
+    let pisteId: String
+    let name: String
+    let difficulty: PisteDifficulty?
+    let coordinate: CLLocationCoordinate2D
 
-    override func loadTile(at path: MKTileOverlayPath, result: @escaping (Data?, Error?) -> Void) {
-        super.loadTile(at: path) { data, error in
-            guard let data = data, error == nil else {
-                result(data, error)
-                return
-            }
+    init(pisteId: String, name: String, difficulty: PisteDifficulty?, coordinate: CLLocationCoordinate2D) {
+        self.pisteId = pisteId
+        self.name = name
+        self.difficulty = difficulty
+        self.coordinate = coordinate
+        super.init()
+    }
 
-            guard let inputImage = UIImage(data: data),
-                  let ciImage = CIImage(image: inputImage) else {
-                result(data, nil)
-                return
-            }
+    var title: String? { name }
+}
 
-            let filter = CIFilter.colorControls()
-            filter.inputImage = ciImage
-            filter.saturation = 1.6
-            filter.contrast = 1.2
+// MARK: - Piste Name Annotation View
 
-            guard let outputCIImage = filter.outputImage,
-                  let cgImage = Self.ciContext.createCGImage(outputCIImage, from: ciImage.extent) else {
-                result(data, nil)
-                return
-            }
+final class PisteNameAnnotationView: MKAnnotationView {
+    private let nameLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 10, weight: .semibold)
+        label.textAlignment = .center
+        label.numberOfLines = 1
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.7
+        return label
+    }()
 
-            let enhancedImage = UIImage(cgImage: cgImage, scale: inputImage.scale, orientation: inputImage.imageOrientation)
-            let enhancedData = enhancedImage.pngData() ?? data
-            result(enhancedData, nil)
+    override init(annotation: MKAnnotation?, reuseIdentifier: String?) {
+        super.init(annotation: annotation, reuseIdentifier: reuseIdentifier)
+        // Don't cluster piste names with resort pins
+        clusteringIdentifier = nil
+        collisionMode = .rectangle
+        canShowCallout = false
+        addSubview(nameLabel)
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func configure(with annotation: PisteNameAnnotation) {
+        self.annotation = annotation
+        clusteringIdentifier = nil
+        nameLabel.text = annotation.name
+
+        if let difficulty = annotation.difficulty {
+            nameLabel.textColor = difficulty.labelColor
+        } else {
+            // Lift
+            nameLabel.textColor = .darkGray
         }
+
+        // Size to fit the text
+        nameLabel.sizeToFit()
+        let padding: CGFloat = 6
+        let width = min(nameLabel.frame.width + padding * 2, 120)
+        let height = nameLabel.frame.height + 4
+        frame = CGRect(x: 0, y: 0, width: width, height: height)
+        nameLabel.frame = CGRect(x: padding, y: 2, width: width - padding * 2, height: height - 4)
+        centerOffset = CGPoint(x: 0, y: -height / 2)
+
+        // Semi-transparent background pill
+        backgroundColor = UIColor.systemBackground.withAlphaComponent(0.8)
+        layer.cornerRadius = height / 2
+        layer.masksToBounds = true
+
+        displayPriority = .defaultLow
+        isAccessibilityElement = false
     }
 }
 
