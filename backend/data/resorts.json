@@ -1227,7 +1227,7 @@
       "city": "Alta",
       "webcam_url": "https://www.skiresort.info/ski-resort/grand-targhee/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/grand-targhee/trail-map/",
-      "logo_url": "https://www.grandtarghee.com/themes/custom/origin/images/favicon/apple-touch-icon.png"
+      "logo_url": "https://www.grandtarghee.com/themes/custom/origin/logo.svg"
     },
     {
       "resort_id": "grouse-mountain",
@@ -5411,7 +5411,7 @@
       "vertical_drop_m": 1340,
       "city": "Damüls",
       "webcam_url": "https://www.skiresort.info/ski-resort/damuls-mellau/webcams/",
-      "logo_url": "https://www.damuels-mellau.at/pwa/apple-icon-180.png",
+      "logo_url": "https://www.damuels-mellau.at/img/logo.svg",
       "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/52/20/07/7c/b4338111dd.jpg"
     },
     {
@@ -8159,7 +8159,7 @@
       "city": "Bellwald",
       "webcam_url": "https://www.skiresort.info/ski-resort/bellwald/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/bellwald/trail-map/",
-      "logo_url": "https://www.bellwald.ch/favicon/bellwald/apple-touch-icon.png"
+      "logo_url": "https://www.bellwald.ch/dist/svg/ui/logo-bellwald-tourismus.svg"
     },
     {
       "resort_id": "brigels-waltensburg-andiast",
@@ -12824,7 +12824,7 @@
       "city": "Breitenberg",
       "webcam_url": "https://www.skiresort.info/ski-resort/breitenberg-hochalpe-pfronten/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/breitenberg-hochalpe-pfronten/trail-map/",
-      "logo_url": "https://www.breitenbergbahn.de/_favicon/apple-icon-57x57.png"
+      "logo_url": "https://www.breitenbergbahn.de/_images/logo.png"
     },
     {
       "resort_id": "eckbauer-garmisch-partenkirchen",
@@ -15300,7 +15300,7 @@
       "city": "Vaala",
       "webcam_url": "https://www.skiresort.info/ski-resort/kokonniemi-porvoo/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/kokonniemi-porvoo/trail-map/",
-      "logo_url": "https://static.parastorage.com/client/pfavico.ico"
+      "logo_url": "https://static.wixstatic.com/media/3d48e0_c11db1cb5fa94abdbcf46266b19f12c7~mv2.png/v1/fill/w_500,h_464,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Porvoo%20Ski%20-%20Tedi%20Tiikeri%20-%20Oikea.png"
     },
     {
       "resort_id": "laajis-laajavuori",
@@ -18799,7 +18799,7 @@
       "city": "Hafling - Avelengo",
       "webcam_url": "https://www.skiresort.info/ski-resort/meran-2000/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/meran-2000/trail-map/",
-      "logo_url": "https://cms.meran2000.com/fileadmin/templates/images/favicon/apple-touch-icon.png"
+      "logo_url": "https://cms.meran2000.com/fileadmin/templates/images/favicon/favicon.svg"
     },
     {
       "resort_id": "mondole-ski-artesina-frabosa-soprana-prato-nevoso",
@@ -18952,7 +18952,7 @@
       "city": "Peio",
       "webcam_url": "https://www.skiresort.info/ski-resort/pejo-3000/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/pejo-3000/trail-map/",
-      "logo_url": "https://www.skipejo.it/wp-content/themes/skipejo/assets/favicons/apple-icon-57x57.png"
+      "logo_url": "https://www.skipejo.it/wp-content/themes/skipejo/assets/images/logo-funivie-ski-pejo.png"
     },
     {
       "resort_id": "pfelders-moos-in-passeier",
@@ -19654,7 +19654,7 @@
       "webcam_url": "https://www.skiresort.info/ski-resort/geto-kogen/webcams/",
       "indy_pass": "full",
       "trail_map_url": "https://www.skiresort.info/ski-resort/geto-kogen/trail-map/",
-      "logo_url": "https://www.getokogen.com/winter/assets/images/favicons/apple-icon-57x57.png"
+      "logo_url": "https://www.getokogen.com/winter/assets/images/getokogen_logo.png"
     },
     {
       "resort_id": "hachikogen-hachi-kita-kogen",
@@ -21076,7 +21076,7 @@
       "city": "서면",
       "webcam_url": "https://www.skiresort.info/ski-resort/daemyung-vivaldi-park/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/daemyung-vivaldi-park/trail-map/",
-      "logo_url": "https://www.sonohotelsresorts.com/favicon114x114.png"
+      "logo_url": "https://www.sonohotelsresorts.com/assets/img/brand/page_logo.svg"
     },
     {
       "resort_id": "eagle-valley",
@@ -22835,7 +22835,7 @@
       "city": "Melhus",
       "webcam_url": "https://www.skiresort.info/ski-resort/vassfjellet-kl-bu-trondheim/webcams/",
       "trail_map_url": "https://www.snow-forecast.com/pistemaps/Vassfjellet_pistemap.jpg",
-      "logo_url": "https://vassfjellet.no/wp-content/themes/vassfjellet/assets/images/favicons/apple-touch-icon.png"
+      "logo_url": "https://vassfjellet.no/wp-content/uploads/2022/10/vassfjelletvp-logo-sort.png"
     },
     {
       "resort_id": "vradal",
@@ -24933,7 +24933,7 @@
       "vertical_drop_m": null,
       "city": "Tylka",
       "webcam_url": "https://www.skiresort.info/ski-resort/zagro/webcams/",
-      "logo_url": "https://www.istebna.org/favicon/apple-touch-icon-57x57.png",
+      "logo_url": "https://www.istebna.org/thumb?file=zagron-istebna%2Fuser%2Flogo%2F20istebna.svg",
       "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/e9/97/78/83/d02a46c3c2.jpg"
     },
     {
@@ -26308,7 +26308,7 @@
       "city": "Baia Sprie",
       "webcam_url": "https://www.skiresort.info/ski-resort/suior/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/suior/trail-map/",
-      "logo_url": "https://suior.ro/wp-content/uploads/2022/10/cropped-Favicon-Turist-Suior-180x180.png"
+      "logo_url": "https://suior.ro/wp-content/uploads/2021/07/logo_suior2019-300X192.png"
     },
     {
       "resort_id": "topli-a",
@@ -26950,7 +26950,7 @@
       "vertical_drop_m": 317,
       "city": "Älvdalens kommun",
       "webcam_url": "https://www.skiresort.info/ski-resort/fjatervalen/webcams/",
-      "logo_url": "https://fjatervalen.se/wp-content/uploads/2025/12/cropped-favicon@100x-180x180.png",
+      "logo_url": "https://fjatervalen.se/wp-content/uploads/2025/12/fjatervalen-vit-staende.svg",
       "trail_map_url": "https://www.skiresort.info/fileadmin/_processed_/8c/c7/72/2e/1da09f893f.jpg"
     },
     {
@@ -29040,7 +29040,7 @@
       "city": "Zreče",
       "webcam_url": "https://www.skiresort.info/ski-resort/rogla/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/rogla/trail-map/",
-      "logo_url": "https://www.rogla.eu/assets/apple-touch-icon-BoyGS2dw.png"
+      "logo_url": "https://cms.unitur.eu/media/fhoahyeb/logotiprogla.png"
     },
     {
       "resort_id": "rudno-elezniki",
