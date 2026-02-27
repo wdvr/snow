@@ -374,6 +374,24 @@ final class ChatViewModel: ObservableObject {
             try await ensureAuthenticated()
             conversations = try await apiClient.getConversations()
             chatLog.debug("Loaded \(self.conversations.count) conversations")
+        } catch APIError.unauthorized {
+            // Try refreshing the token once
+            chatLog.info("Conversations got 401, attempting token refresh")
+            let keychain = KeychainSwift()
+            if let refreshToken = keychain.get("com.snowtracker.refreshToken") {
+                do {
+                    let authResponse = try await apiClient.refreshAuthTokens(refreshToken: refreshToken)
+                    keychain.set(authResponse.accessToken, forKey: "com.snowtracker.authToken")
+                    keychain.set(authResponse.refreshToken, forKey: "com.snowtracker.refreshToken")
+                    conversations = try await apiClient.getConversations()
+                    chatLog.debug("Loaded \(self.conversations.count) conversations after token refresh")
+                } catch {
+                    chatLog.error("Token refresh failed for conversations: \(error)")
+                    errorMessage = "Please sign in again to view chat history."
+                }
+            } else {
+                errorMessage = "Please sign in to view chat history."
+            }
         } catch {
             chatLog.error("Failed to load conversations: \(error)")
             errorMessage = error.localizedDescription

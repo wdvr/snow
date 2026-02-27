@@ -180,6 +180,7 @@ struct ChatView: View {
                 .padding(.horizontal)
                 .padding(.vertical, 12)
             }
+            .scrollDismissesKeyboard(.interactively)
             .onChange(of: viewModel.messages.count) { _, _ in
                 scrollToBottom(proxy: proxy)
             }
@@ -255,6 +256,7 @@ struct ChatView: View {
     private func sendCurrentMessage() {
         let text = messageText
         messageText = ""
+        isTextFieldFocused = false
         sendTrigger += 1
         Task {
             await viewModel.sendMessage(text)
