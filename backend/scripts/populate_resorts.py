@@ -353,6 +353,7 @@ class ResortPopulator:
             elevation_points=elevation_points,
             timezone=data.get("timezone", "UTC"),
             official_website=data.get("website"),
+            logo_url=data.get("logo_url"),
             trail_map_url=data.get("trail_map_url"),
             webcam_url=data.get("webcam_url"),
             green_runs_pct=data.get("green_runs_pct"),
