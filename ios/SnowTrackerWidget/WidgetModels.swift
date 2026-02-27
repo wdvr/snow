@@ -136,6 +136,96 @@ enum WidgetSnowQuality: String, Sendable {
     }
 }
 
+// MARK: - Region Display Helper
+
+/// Maps raw region strings (e.g. "na_rockies_Alberta") to display-friendly location strings.
+enum RegionDisplayHelper {
+    private static let internalKeys: Set<String> = [
+        "na_west", "na_rockies", "na_east", "alps", "scandinavia",
+        "japan", "oceania", "south_america", "europe_east", "asia"
+    ]
+
+    private static let usStates: [String: String] = [
+        "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
+        "CA": "California", "CO": "Colorado", "CT": "Connecticut", "ID": "Idaho",
+        "ME": "Maine", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota",
+        "MT": "Montana", "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey",
+        "NM": "New Mexico", "NY": "New York", "NC": "North Carolina", "OR": "Oregon",
+        "PA": "Pennsylvania", "UT": "Utah", "VT": "Vermont", "WA": "Washington",
+        "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming"
+    ]
+
+    private static let caProvinces: [String: String] = [
+        "AB": "Alberta", "BC": "British Columbia", "MB": "Manitoba",
+        "NB": "New Brunswick", "NL": "Newfoundland", "NS": "Nova Scotia",
+        "ON": "Ontario", "QC": "Quebec", "SK": "Saskatchewan", "YT": "Yukon"
+    ]
+
+    private static let countryNames: [String: String] = [
+        "US": "USA", "CA": "Canada", "FR": "France", "CH": "Switzerland",
+        "AT": "Austria", "IT": "Italy", "DE": "Germany", "NO": "Norway",
+        "SE": "Sweden", "FI": "Finland", "JP": "Japan", "AU": "Australia",
+        "NZ": "New Zealand", "CL": "Chile", "AR": "Argentina", "ES": "Spain",
+        "AD": "Andorra", "SI": "Slovenia", "PL": "Poland", "CZ": "Czech Republic",
+        "SK": "Slovakia", "RO": "Romania", "BG": "Bulgaria", "KR": "South Korea",
+        "CN": "China"
+    ]
+
+    /// Format location from raw region and country code into "State/Province, Country" or just "Country".
+    static func formatLocation(region: String, country: String) -> String {
+        let countryDisplay = countryNames[country] ?? country
+        let lowered = region.lowercased()
+
+        // Exact internal key (e.g. "alps") -> just country
+        if internalKeys.contains(lowered) {
+            return countryDisplay
+        }
+
+        // Compound key like "na_rockies_AB" or "alps_FR"
+        for key in internalKeys {
+            let prefix = key + "_"
+            if lowered.hasPrefix(prefix) {
+                let suffix = String(region.dropFirst(prefix.count))
+                let suffixUpper = suffix.uppercased()
+
+                if let state = usStates[suffixUpper] {
+                    return "\(state), \(countryDisplay)"
+                }
+                if let province = caProvinces[suffixUpper] {
+                    return "\(province), \(countryDisplay)"
+                }
+
+                // Non-NA compound key (alps_FR) -> just country
+                if !key.hasPrefix("na_") {
+                    return countryDisplay
+                }
+
+                // Full name suffix (e.g. "na_west_British Columbia")
+                if suffix.count > 2 {
+                    return "\(suffix), \(countryDisplay)"
+                }
+
+                return countryDisplay
+            }
+        }
+
+        // Bare 2-letter code
+        if country.uppercased() == "US", let state = usStates[region.uppercased()] {
+            return "\(state), \(countryDisplay)"
+        }
+        if country.uppercased() == "CA", let province = caProvinces[region.uppercased()] {
+            return "\(province), \(countryDisplay)"
+        }
+
+        // Already readable (e.g. "Hokkaido", "Valais")
+        if region.count > 2 {
+            return "\(region), \(countryDisplay)"
+        }
+
+        return countryDisplay
+    }
+}
+
 // MARK: - Sample Data
 
 extension ResortConditionData {

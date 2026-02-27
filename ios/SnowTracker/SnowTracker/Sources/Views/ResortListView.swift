@@ -275,42 +275,45 @@ struct ResortListView: View {
                 .padding(.vertical, 8)
 
                 // Resort list
-                List {
-                    ForEach(filteredResorts) { resort in
-                        NavigationLink(value: resort) {
-                            ResortRowView(
-                                resort: resort,
-                                showDistance: sortOption == .distance,
-                                userLocation: locationManager.userLocation,
-                                useMetric: useMetricDistance
-                            )
-                        }
-                        .onAppear {
-                            visibleResortIds.insert(resort.id)
-                            snowConditionsManager.onResortAppeared(resort.id)
-                        }
-                        .onDisappear {
-                            visibleResortIds.remove(resort.id)
-                        }
-                        .contextMenu {
-                            Button {
-                                userPreferencesManager.toggleFavorite(resortId: resort.id)
-                            } label: {
-                                Label(
-                                    userPreferencesManager.isFavorite(resortId: resort.id) ? "Remove Favorite" : "Add to Favorites",
-                                    systemImage: userPreferencesManager.isFavorite(resortId: resort.id) ? "heart.slash" : "heart"
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(filteredResorts) { resort in
+                            NavigationLink(value: resort) {
+                                ResortRowView(
+                                    resort: resort,
+                                    showDistance: sortOption == .distance,
+                                    userLocation: locationManager.userLocation,
+                                    useMetric: useMetricDistance
                                 )
                             }
+                            .buttonStyle(PlainButtonStyle())
+                            .onAppear {
+                                visibleResortIds.insert(resort.id)
+                                snowConditionsManager.onResortAppeared(resort.id)
+                            }
+                            .onDisappear {
+                                visibleResortIds.remove(resort.id)
+                            }
+                            .contextMenu {
+                                Button {
+                                    userPreferencesManager.toggleFavorite(resortId: resort.id)
+                                } label: {
+                                    Label(
+                                        userPreferencesManager.isFavorite(resortId: resort.id) ? "Remove Favorite" : "Add to Favorites",
+                                        systemImage: userPreferencesManager.isFavorite(resortId: resort.id) ? "heart.slash" : "heart"
+                                    )
+                                }
 
-                            if let website = resort.officialWebsite, let url = URL(string: website) {
-                                Link(destination: url) {
-                                    Label("Visit Website", systemImage: "safari")
+                                if let website = resort.officialWebsite, let url = URL(string: website) {
+                                    Link(destination: url) {
+                                        Label("Visit Website", systemImage: "safari")
+                                    }
                                 }
                             }
                         }
                     }
+                    .padding(.horizontal)
                 }
-                .listStyle(PlainListStyle())
                 .searchable(text: $searchText, prompt: "Search resorts...")
                 .refreshable {
                     NSLog("[Refresh] .refreshable closure START")
@@ -463,28 +466,27 @@ struct ResortRowView: View {
         }
     }
 
+    private var displayQuality: SnowQuality {
+        snowConditionsManager.getSnowQuality(for: resort.id)
+    }
+
+    private var snowScore: Int? {
+        snowConditionsManager.getSnowScore(for: resort.id)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading) {
-                    HStack {
+        VStack(alignment: .leading, spacing: 10) {
+            // Header row: Logo + name + pass badges + quality badge
+            HStack(alignment: .top, spacing: 10) {
+                ResortLogoView(resort: resort, size: 40)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
                         Text(resort.name)
                             .font(.headline)
                             .foregroundStyle(.primary)
+                            .lineLimit(1)
 
-                        // Distance badge when sorting by distance
-                        if let distance = formattedDistance {
-                            Text(distance)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.blue.opacity(0.15))
-                                .foregroundStyle(.blue)
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-                        }
-
-                        // Pass affiliation badges
                         if resort.epicPass != nil {
                             PassBadge(passName: "Epic", color: .indigo)
                         }
@@ -497,136 +499,86 @@ struct ResortRowView: View {
                     }
 
                     Text(resort.displayLocation)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    Text(resort.elevationRange(prefs: userPreferencesManager.preferredUnits))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
 
                 Spacer()
 
-                // Snow quality indicator - always use summary/overall quality for consistency
-                // (latestCondition is a single elevation which may differ from overall)
-                let displayQuality = snowConditionsManager.getSnowQuality(for: resort.id)
+                // Quality badge
                 if displayQuality != .unknown {
-                    VStack(spacing: 2) {
-                        if let score = snowConditionsManager.getSnowScore(for: resort.id) {
-                            Text("\(score)")
-                                .font(.callout.weight(.bold))
-                                .fontDesign(.rounded)
-                                .foregroundStyle(displayQuality.color)
-                        }
-                        Image(systemName: displayQuality.icon)
-                            .foregroundStyle(displayQuality.color)
-                            .font(.title3)
-
-                        Text(displayQuality.displayName)
-                            .font(.caption2)
-                            .foregroundStyle(displayQuality.color)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Snow quality: \(displayQuality.displayName)\(snowConditionsManager.getSnowScore(for: resort.id).map { ", score \($0)" } ?? "")")
+                    QualityBadge(quality: displayQuality, snowScore: snowScore)
                 } else if snowConditionsManager.isLoadingSnowQuality {
-                    VStack {
-                        ProgressView()
-                            .scaleEffect(0.8)
-
-                        Text("Loading")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                } else {
-                    VStack {
-                        Image(systemName: "questionmark.circle")
-                            .foregroundStyle(.gray)
-                            .font(.title2)
-
-                        Text("No data")
-                            .font(.caption)
-                            .foregroundStyle(.gray)
-                    }
+                    ProgressView()
+                        .scaleEffect(0.8)
                 }
             }
 
-            // Quick stats - prefer full condition, fall back to summary
-            if let condition = latestCondition {
-                HStack {
-                    Label(condition.formattedTemperature(userPreferencesManager.preferredUnits), systemImage: "thermometer")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Spacer()
-
-                    // Use fresh snow (snowfall_after_freeze) which is more meaningful than 24h
-                    Label(condition.formattedFreshSnowWithPrefs(userPreferencesManager.preferredUnits), systemImage: "snowflake")
-                        .font(.caption)
-                        .foregroundStyle(.blue)
-
-                    Spacer()
-
-                    // Forecast badge or timestamp
-                    if let predicted = condition.predictedSnow48hCm, predicted >= 5 {
-                        ForecastBadge(hours: 48, cm: predicted, prefs: userPreferencesManager.preferredUnits)
-                    } else {
-                        Label(condition.formattedTimestamp, systemImage: "clock")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+            // Stats row using StatItem components
+            HStack(spacing: 12) {
+                // Temperature
+                if let condition = latestCondition {
+                    StatItem(
+                        icon: "thermometer.medium",
+                        value: condition.formattedTemperature(userPreferencesManager.preferredUnits),
+                        color: tempColor(condition.currentTempCelsius)
+                    )
+                } else if let summary = snowQualitySummary,
+                          let temp = summary.formattedTemperature(userPreferencesManager.preferredUnits) {
+                    StatItem(
+                        icon: "thermometer.medium",
+                        value: temp,
+                        color: summary.temperatureC.map { tempColor($0) } ?? .secondary
+                    )
                 }
-            } else if let summary = snowQualitySummary,
-                      summary.temperatureC != nil || summary.snowfallFreshCm != nil {
-                HStack {
-                    if let temp = summary.formattedTemperature(userPreferencesManager.preferredUnits) {
-                        Label(temp, systemImage: "thermometer")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
 
-                    Spacer()
-
-                    if let snow = summary.formattedFreshSnow(userPreferencesManager.preferredUnits) {
-                        Label(snow, systemImage: "snowflake")
-                            .font(.caption)
-                            .foregroundStyle(.blue)
-                    }
-
-                    Spacer()
-
-                    if let predicted = summary.predictedSnow48hCm, predicted >= 5 {
-                        ForecastBadge(hours: 48, cm: predicted, prefs: userPreferencesManager.preferredUnits)
-                    } else if let timestamp = summary.formattedTimestamp {
-                        Label(timestamp, systemImage: "clock")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                // Fresh snow
+                if let condition = latestCondition {
+                    StatItem(
+                        icon: "snowflake",
+                        value: condition.formattedFreshSnowWithPrefs(userPreferencesManager.preferredUnits),
+                        color: .cyan
+                    )
+                } else if let summary = snowQualitySummary,
+                          let snow = summary.formattedFreshSnow(userPreferencesManager.preferredUnits) {
+                    StatItem(
+                        icon: "snowflake",
+                        value: snow,
+                        color: .cyan
+                    )
                 }
-            } else {
-                // Loading skeleton while weather data is being fetched
-                HStack {
-                    let tempUnit = userPreferencesManager.preferredUnits.temperature == .celsius ? "C" : "F"
-                    Label("--\u{00B0}\(tempUnit)", systemImage: "thermometer")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
 
-                    Spacer()
-
-                    let snowUnit = userPreferencesManager.preferredUnits.snowDepth == .centimeters ? "cm" : "\""
-                    Label("-- \(snowUnit)", systemImage: "snowflake")
-                        .font(.caption)
-                        .foregroundStyle(.blue)
-
-                    Spacer()
-
-                    Label("--:--", systemImage: "clock")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                // Forecast (predicted snow)
+                if let condition = latestCondition,
+                   let predicted = condition.predictedSnow48hCm, predicted >= 5 {
+                    StatItem(
+                        icon: "cloud.snow.fill",
+                        value: "+\(WeatherCondition.formatSnowShort(predicted, prefs: userPreferencesManager.preferredUnits))",
+                        color: .purple
+                    )
+                } else if let summary = snowQualitySummary,
+                          let predicted = summary.predictedSnow48hCm, predicted >= 5 {
+                    StatItem(
+                        icon: "cloud.snow.fill",
+                        value: "+\(WeatherCondition.formatSnowShort(predicted, prefs: userPreferencesManager.preferredUnits))",
+                        color: .purple
+                    )
                 }
-                .redacted(reason: .placeholder)
+
+                // Distance
+                if let distance = formattedDistance {
+                    StatItem(
+                        icon: "location.fill",
+                        value: distance,
+                        color: .blue
+                    )
+                }
+
+                Spacer()
             }
 
-            // Quality explanation (one-liner)
+            // Quality explanation
             if let explanation = snowConditionsManager.getExplanation(for: resort.id) {
                 Text(explanation)
                     .font(.caption)
@@ -635,7 +587,19 @@ struct ResortRowView: View {
                     .truncationMode(.tail)
             }
         }
-        .padding(.vertical, 4)
+        .cardStyle()
+    }
+
+    private func tempColor(_ celsius: Double) -> Color {
+        if celsius < -10 {
+            return .blue
+        } else if celsius < 0 {
+            return .cyan
+        } else if celsius < 5 {
+            return .yellow
+        } else {
+            return .orange
+        }
     }
 }
 

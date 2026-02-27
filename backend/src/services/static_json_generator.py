@@ -245,10 +245,18 @@ class StaticJsonGenerator:
         if not representative and conditions:
             representative = conditions[0]
 
-        # Use representative elevation's raw score for overall quality
-        # (matches timeline default view and explanation text)
-        if representative and representative.quality_score is not None:
-            overall_raw = representative.quality_score
+        # Use weighted average across all elevations for overall quality
+        # Weights: top 50%, mid 35%, base 15% (matches recommendation service)
+        weighted_raw = 0.0
+        total_w = 0.0
+        for c in conditions:
+            if c.quality_score is not None:
+                w = ELEVATION_WEIGHTS.get(c.elevation_level, DEFAULT_ELEVATION_WEIGHT)
+                weighted_raw += c.quality_score * w
+                total_w += w
+
+        if total_w > 0:
+            overall_raw = weighted_raw / total_w
             snow_score = score_to_100(overall_raw)
             overall_quality = raw_score_to_quality(overall_raw)
         else:

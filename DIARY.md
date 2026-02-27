@@ -5,6 +5,40 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Feb 27, 2026
+
+### Feature: Resort list card redesign (iOS)
+Transformed the main Resorts tab from flat `List`+`PlainListStyle` rows to `ScrollView`+`LazyVStack` with card-styled rows matching the `RecommendationCard` from the Best Snow tab. Each card now shows: ResortLogoView (40px), resort name + pass badges + QualityBadge, location, StatItem row (temp/fresh snow/forecast/distance), and quality explanation. Reuses existing shared components (ResortLogoView, PassBadge, QualityBadge, StatItem, .cardStyle()). All existing functionality preserved: search, filters, sort, pull-to-refresh, context menu, deep links, analytics, lazy loading.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Bugfix: Chat forecast tool returned "Not available" instead of real forecasts
+The `get_resort_forecast` tool in `chat_stream_handler.py` tried to read a per-resort JSON from S3 (`static-json/{env}/resort-{id}.json`) that doesn't exist, so AI chat could never give next-week predictions. Replaced with a working Open-Meteo API call: looks up resort from DynamoDB for coordinates, calls `OpenMeteoService.get_timeline_data()`, summarizes hourly data into 7-day daily forecasts (min/max temp + total snowfall). 8 new tests added.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Feature: Alternate app icons (iOS)
+Added 9 app icon variants selectable from Settings > Appearance > App Icon. Icons generated with Pillow: Classic (default), Mountain, Minimal, Gradient, Dark, Neon, Warm, Forest, Bold ("PC"). Each has 1024x1024 PNG in its own .appiconset + preview imageset. AppIconPickerView shows a grid with selection highlight and haptic feedback. Build settings: ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES + INCLUDE_ALL_APPICON_ASSETS.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Bugfix: Quality score mismatch between app (60s) and widget (97)
+Batch endpoint (`_get_snow_quality_for_resort`) used a single representative elevation's quality score, while the recommendations endpoint used weighted average (50% top + 35% mid + 15% base). Per design rules, `overall_quality` should always use weighted average. Fixed both `api_handler.py` and `static_json_generator.py` to compute weighted average across all elevation levels. Now app and widget show consistent scores.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Bugfix: Widget showed raw region IDs (e.g. "na_rockies_Alberta")
+Both FavoriteResortsWidget and BestResortsWidget displayed raw `region` strings from the API instead of human-readable names. Added `RegionDisplayHelper` to widget extension that parses compound region keys (e.g. "na_rockies_AB" → "Alberta, Canada") with US state, Canadian province, and country name mappings. Applied to both recommendations and batch fetch paths in WidgetDataService.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+---
+
 ## Feb 26, 2026
 
 ### Bugfix: Trail map viewer showed 218x180 DZI thumbnails instead of interactive maps

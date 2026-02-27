@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		006044A1947385DE91B47537 /* AppBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = A910453D35DA662E1C068172 /* AppBackground.swift */; };
+		A1B2C3D4E5F60718192A3B4C /* AppIconPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E6F7A8B9C0D1E2F3041526 /* AppIconPickerView.swift */; };
 		07EDF4C27080A6ADCBD45DEE /* APIIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90D609E1A932D206877E2D88 /* APIIntegrationTests.swift */; };
 		0AAE22343FF726A2537D8CEB /* AnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E584D4547756C9B47E811A69 /* AnalyticsService.swift */; };
 		0F8DF1AA27C7C2ED4E07D388 /* KeychainSwift in Frameworks */ = {isa = PBXBuildFile; productRef = E4B5A37AEF93111CFF3FF51E /* KeychainSwift */; };
@@ -135,6 +136,7 @@
 		00C42DA351EFF0BEC9BA422F /* SnowTrackerWidgetExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = SnowTrackerWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		013D4AF3053E04925F84FC09 /* CardStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardStyle.swift; sourceTree = "<group>"; };
 		02AB28D2400C161669AD5B88 /* ElevationProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElevationProfileView.swift; sourceTree = "<group>"; };
+		D5E6F7A8B9C0D1E2F3041526 /* AppIconPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconPickerView.swift; sourceTree = "<group>"; };
 		04113168D514491AA588BD9E /* SnowTrackerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowTrackerUITests.swift; sourceTree = "<group>"; };
 		071051238274C7A6A1632776 /* WeatherCondition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherCondition.swift; sourceTree = "<group>"; };
 		0B3B591AC2743684FF45B6A5 /* SnowHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowHistoryView.swift; sourceTree = "<group>"; };
@@ -294,6 +296,7 @@
 			children = (
 				5CD0DE6146E0D9119D0C061A /* Components */,
 				A910453D35DA662E1C068172 /* AppBackground.swift */,
+				D5E6F7A8B9C0D1E2F3041526 /* AppIconPickerView.swift */,
 				1C3612902D14F964CD974A7E /* AuthenticationViews.swift */,
 				013D4AF3053E04925F84FC09 /* CardStyle.swift */,
 				EF33CA8F73FA5BD6D0F6BD2D /* ChatView.swift */,
@@ -608,6 +611,7 @@
 				DEE333AC4B8B72D6B65D1F55 /* AccessibilityIdentifiers.swift in Sources */,
 				0AAE22343FF726A2537D8CEB /* AnalyticsService.swift in Sources */,
 				006044A1947385DE91B47537 /* AppBackground.swift in Sources */,
+				A1B2C3D4E5F60718192A3B4C /* AppIconPickerView.swift in Sources */,
 				38D5CCC28385D7DC0208CB70 /* AuthenticationService.swift in Sources */,
 				24A3BDA567803E68B65547C7 /* AuthenticationViews.swift in Sources */,
 				7AB63FA94855BFFC3BC3D96D /* CacheService.swift in Sources */,
@@ -804,8 +808,10 @@
 		3A1900D56028E5319F02B92B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Mountain AppIcon-Minimal AppIcon-Gradient AppIcon-Dark AppIcon-Neon AppIcon-Warm AppIcon-Forest AppIcon-Bold";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = SnowTracker/SnowTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
@@ -980,8 +986,10 @@
 		CE7C09FB42014D6963C178FF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Mountain AppIcon-Minimal AppIcon-Gradient AppIcon-Dark AppIcon-Neon AppIcon-Warm AppIcon-Forest AppIcon-Bold";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = SnowTracker/SnowTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;

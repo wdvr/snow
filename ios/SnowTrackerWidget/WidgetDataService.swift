@@ -61,7 +61,7 @@ final class WidgetDataService: @unchecked Sendable {
                 ResortConditionData(
                     resortId: rec.resort.resortId,
                     resortName: rec.resort.name,
-                    location: "\(rec.resort.region), \(rec.resort.country)",
+                    location: RegionDisplayHelper.formatLocation(region: rec.resort.region, country: rec.resort.country),
                     snowQuality: WidgetSnowQuality(fromString: rec.snowQuality),
                     snowScore: rec.snowScore,
                     temperature: rec.currentTempCelsius,
@@ -172,7 +172,7 @@ final class WidgetDataService: @unchecked Sendable {
         let idSet = Set(resortIds)
         var nameMap: [String: ResortNameInfo] = [:]
         for resort in resortsResponse.resorts where idSet.contains(resort.resortId) {
-            nameMap[resort.resortId] = ResortNameInfo(name: resort.name, location: "\(resort.region), \(resort.country)")
+            nameMap[resort.resortId] = ResortNameInfo(name: resort.name, location: RegionDisplayHelper.formatLocation(region: resort.region, country: resort.country))
         }
         return nameMap
     }

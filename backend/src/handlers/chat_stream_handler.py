@@ -642,17 +642,69 @@ def _execute_tool(tool_name: str, tool_input: dict, dynamodb) -> dict:
         resort_id = tool_input.get("resort_id", "")
         if not resort_id:
             return {"error": "Missing resort_id"}
+        # Look up resort to get coordinates
+        resorts_table = dynamodb.Table(f"snow-tracker-resorts-{env}")
+        resp = resorts_table.get_item(Key={"resort_id": resort_id})
+        resort = resp.get("Item")
+        if not resort:
+            return {"error": f"Resort '{resort_id}' not found"}
+        # Get elevation point (prefer mid > top > base)
+        eps = resort.get("elevation_points", [])
+        ep = None
+        for pref in ["mid", "top", "base"]:
+            for p in eps:
+                if p.get("level") == pref:
+                    ep = p
+                    break
+            if ep:
+                break
+        if not ep and eps:
+            ep = eps[0]
+        if not ep:
+            return {"error": f"No elevation data for '{resort_id}'"}
+        # Call Open-Meteo API for 7-day forecast
         try:
-            s3 = boto3.client("s3", region_name="us-west-2")
-            bucket = os.environ.get(
-                "RESULTS_BUCKET", "snow-tracker-pulumi-state-us-west-2"
+            from services.openmeteo_service import OpenMeteoService
+
+            service = OpenMeteoService()
+            timeline = service.get_timeline_data(
+                latitude=float(ep["latitude"]),
+                longitude=float(ep["longitude"]),
+                elevation_meters=int(float(ep.get("elevation_meters", 0))),
+                elevation_level=ep.get("level", "mid"),
             )
-            key = f"static-json/{env}/resort-{resort_id}.json"
-            resp = s3.get_object(Bucket=bucket, Key=key)
-            data = json.loads(resp["Body"].read())
-            return {"resort_id": resort_id, "forecast": data.get("forecast", data)}
-        except Exception:
-            return {"resort_id": resort_id, "forecast": "Not available"}
+            # Summarize by day
+            data_points = timeline.get("data", [])
+            daily = {}
+            for dp in data_points:
+                date = dp.get("date", "")
+                if date not in daily:
+                    daily[date] = []
+                daily[date].append(dp)
+            days = []
+            for date, points in sorted(daily.items())[:7]:
+                temps = [
+                    p.get("temperature_c", 0)
+                    for p in points
+                    if p.get("temperature_c") is not None
+                ]
+                snowfall = sum(p.get("snowfall_cm", 0) for p in points)
+                days.append(
+                    {
+                        "date": date,
+                        "min_temp_c": min(temps) if temps else None,
+                        "max_temp_c": max(temps) if temps else None,
+                        "total_snowfall_cm": round(snowfall, 1),
+                    }
+                )
+            return {
+                "resort_id": resort_id,
+                "resort_name": resort.get("name", resort_id),
+                "elevation_level": ep.get("level", "mid"),
+                "days": days,
+            }
+        except Exception as e:
+            return {"error": f"Failed to fetch forecast: {str(e)}"}
 
     elif tool_name == "get_snow_history":
         resort_id = tool_input.get("resort_id", "")

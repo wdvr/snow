@@ -125,6 +125,17 @@ struct SettingsView: View {
                     Text("Preferences")
                 }
 
+                // Appearance Section
+                Section {
+                    NavigationLink {
+                        AppIconPickerView()
+                    } label: {
+                        Label("App Icon", systemImage: "app.badge")
+                    }
+                } header: {
+                    Text("Appearance")
+                }
+
                 // Data & Storage Section
                 Section {
                     Button {
