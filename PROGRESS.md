@@ -46,8 +46,16 @@
 - [x] Backend deployed to prod + static JSON regenerated
 - [x] Resorts database updated (PNG logo URLs pushed to DynamoDB)
 
+### Just Completed (Feb 28)
+- [x] Snow depth fix: ERA5 re-enable + 14d snowfall floor (Kimberly 1cm→100cm, 529 resorts)
+- [x] Fresh snow cap fix: don't cap at unreliable snow_depth values
+- [x] Timeline card background: .cardStyle() for consistency
+- [x] Map filters: 3→6 options (Excellent+/Good+/Decent+/Mediocre+/Below Good)
+- [x] Chat keyboard dismiss + conversation history auth (token refresh on 401)
+- [x] Translations: 79 new strings across 13 languages (113→192 per file)
+- [x] Backend deployed to prod + TestFlight triggered
+
 ### In Progress
-- [ ] Add missing translations (~80 new strings across 13 languages)
 - [ ] Generate iPad screenshots (iPad Pro 13" + 11")
 - [ ] Upload metadata + screenshots to App Store Connect
 - [ ] Submit for App Store review

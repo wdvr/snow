@@ -5,7 +5,45 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Feb 26, 2026
+
+### Feature: v2.0 — Map zoom refresh + webcam card + version bump
+Map now fetches conditions on zoom (not just pan) using `visibleResortIds()` viewport filter. Webcam button in map detail sheet replaced with prominent card opening in-app SFSafariViewController. Version bumped to 2.0.0 with updated App Store release notes and description (1040+ resorts, 25 countries).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
 ## Feb 28, 2026
+
+### Bugfix: Snow depth systematic underestimation (Kimberly 1cm→100cm, 529 resorts affected)
+Open-Meteo's `snow_depth` forecast model (~9km grid) wildly underestimates mountain snow depth: Kimberly showed 1cm (should be 100cm), Fernie 0cm, Sun Peaks 0cm. 529/1019 resorts (52%) affected — those without resort-reported data from onthesnow.com. Three fixes: (1) Re-enabled ERA5 historical archive conditionally when modeled depth < 30cm at elevation > 1000m, (2) Added accumulated 14-day snowfall × 0.6 settling ratio as floor, (3) Fixed fresh_snow_cm cap to not cap at unreliable snow_depth values.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Bugfix: Timeline card background color mismatch
+Conditions timeline card had `.systemBackground` instead of `.secondarySystemBackground`. Replaced manual styling with `.cardStyle()` modifier for consistency.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Feature: Expanded map quality filter chips (3→6 options)
+Map filter chips expanded from 3 (All/Good+/Below Good) to 6 granular options: All, Excellent+, Good+, Decent+, Mediocre+, Below Good. Each with appropriate quality arrays and color.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | pending | n/a |
+
+### Bugfix: Chat keyboard dismiss + conversation history auth
+Added `.scrollDismissesKeyboard(.interactively)` to chat message list. Added token refresh on 401 in `loadConversations()` (matching `sendWithAutoRefresh` pattern).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Feature: Translations — 79 new strings across 13 languages
+Added missing translations for all new UI (quality ratings, favorites, resort list, settings, recommendations, map, detail view, chat, chat suggestions, map filters). Now 192 strings per language.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
 
 ### Data: SVG→PNG logo conversion for iOS compatibility
 iOS AsyncImage can't render SVG files. Identified 395 resorts with SVG logo_urls (39% of all logos). Built CairoSVG batch conversion script: downloads SVG, converts to 256x256 PNG, uploads to S3 webapp bucket. Successfully converted 354/395 (41 failed: 404s, SSL errors, HTML responses). Updated resorts.json with new S3 PNG URLs. DynamoDB updated via Populate workflow.

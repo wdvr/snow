@@ -206,7 +206,7 @@ struct ResortMapView: View {
     /// Only fetches for resorts not already present in the conditions cache.
     @discardableResult
     private func fetchConditionsForVisibleResorts() async -> Bool {
-        let visibleIds = mapViewModel.annotations.map(\.resort.id)
+        let visibleIds = mapViewModel.visibleResortIds()
         guard !visibleIds.isEmpty else { return false }
 
         // Only fetch for resorts whose conditions are not yet cached
@@ -224,6 +224,9 @@ struct ResortMapView: View {
             let batchIds = Array(uncachedIds[batch..<end])
             await snowConditionsManager.fetchConditionsForResorts(resortIds: batchIds)
         }
+
+        // Refresh annotations so pins update their quality display
+        updateAnnotations()
         return true
     }
 
@@ -959,8 +962,48 @@ struct ResortMapDetailSheet: View {
         }
     }
 
+    @ViewBuilder
+    private var webcamSection: some View {
+        if let webcamUrlStr = resort.webcamUrl, let webcamUrl = URL(string: webcamUrlStr) {
+            Button {
+                safariURL = IdentifiableURL(url: webcamUrl)
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "web.camera.fill")
+                        .font(.title3)
+                        .foregroundStyle(.white)
+                        .frame(width: 40, height: 40)
+                        .background(.blue.gradient, in: RoundedRectangle(cornerRadius: 10))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("View Live Webcams")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.primary)
+                        Text(resort.name)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(12)
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
     private var actionsSection: some View {
         VStack(spacing: 12) {
+            // Webcam card
+            webcamSection
+
             NavigationLink {
                 ResortDetailView(resort: resort)
                     .environmentObject(snowConditionsManager)
@@ -1001,21 +1044,7 @@ struct ResortMapDetailSheet: View {
                             safariURL = IdentifiableURL(url: mapUrl)
                         }
                     } label: {
-                        Label("Map", systemImage: "map")
-                            .font(.subheadline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(Color(.secondarySystemBackground))
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                if let webcamUrlStr = resort.webcamUrl, let webcamUrl = URL(string: webcamUrlStr) {
-                    Button {
-                        safariURL = IdentifiableURL(url: webcamUrl)
-                    } label: {
-                        Label("Cams", systemImage: "web.camera")
+                        Label("Trail Map", systemImage: "map")
                             .font(.subheadline)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)

@@ -1,25 +1,17 @@
-Version 1.1 — AI Chat, New Map & 1000+ Resorts
+Version 2.0 — 1040+ Resorts, Webcam Previews & Smarter Maps
 
 NEW:
-- AI Snow Assistant: ask about powder conditions, comparisons, and forecasts
-- Completely redesigned map with clustering, region presets, and forecast mode
-- 1040 ski resorts across 25 countries (was ~130)
-- Community condition reports: share what you see on the mountain
-- Wind gust and visibility data with color-coded severity
-- 7-day fresh powder chart with per-elevation breakdown
-- Live Activities & Dynamic Island for real-time conditions
-- Push notifications for powder alerts
+- 1040+ ski resorts across 25 countries — the largest coverage of any snow quality app
+- Live webcam previews right from the map detail sheet — no more leaving the app
+- Map now refreshes conditions on zoom, not just pan — see fresh data as you explore
 
 IMPROVEMENTS:
-- 10-level snow quality scale for more nuanced ratings
-- Data source transparency: see which weather sources contribute to each score
-- Unit preferences: switch between °C/°F and cm/inches
-- Enriched resort data: city names, webcams, trail maps, ticket prices
-- Improved ML model (v15): 40 features, 81% exact accuracy, 100% within 1 level
-- Faster resort list loading with S3-backed batch endpoint
+- AI Snow Assistant with smarter, context-aware responses
+- Redesigned map with clustering, forecast mode, and piste overlays
+- Community condition reports from fellow skiers
+- 10-level snow quality scale powered by ML model v15
+- Live Activities & Dynamic Island for real-time conditions
+- Push notifications for powder alerts
+- 7-day fresh powder chart with per-elevation breakdown
 
-BUG FIXES:
-- Fixed chat conversation history not loading
-- Fixed map showing empty data on first tap
-- Fixed snow depth forecast showing unrealistic drops
-- Fixed push notifications not reaching production devices
+We'd love your feedback — tap Settings > Send Feedback to share your thoughts.
