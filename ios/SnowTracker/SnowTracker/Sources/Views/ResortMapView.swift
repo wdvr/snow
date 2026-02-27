@@ -15,6 +15,7 @@ struct ResortMapView: View {
     @State private var showClusterList: Bool = false
     @State private var regionChangeTask: Task<Void, Never>?
     @State private var isFetchingVisibleConditions: Bool = false
+    @State private var nearbyCollapsed: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -374,28 +375,44 @@ struct ResortMapView: View {
     // MARK: - Nearby Resorts Carousel
 
     private var nearbyResortsCarousel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "location.fill")
-                    .foregroundStyle(.blue)
-                Text("Nearby")
-                    .font(.headline)
+        VStack(alignment: .leading, spacing: nearbyCollapsed ? 0 : 8) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    nearbyCollapsed.toggle()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "location.fill")
+                        .foregroundStyle(.blue)
+                    Text("Nearby")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
 
-                Spacer()
+                    Spacer()
+
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(nearbyCollapsed ? -90 : 0))
+                }
+                .padding(.horizontal, 4)
             }
-            .padding(.horizontal, 4)
+            .buttonStyle(.plain)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(mapViewModel.nearbyResorts(limit: 5)) { annotation in
-                        NearbyResortCard(
-                            annotation: annotation,
-                            distance: mapViewModel.formattedDistance(to: annotation.resort, prefs: userPreferencesManager.preferredUnits)
-                        ) {
-                            selectedResort = annotation.resort
+            if !nearbyCollapsed {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(mapViewModel.nearbyResorts(limit: 5)) { annotation in
+                            NearbyResortCard(
+                                annotation: annotation,
+                                distance: mapViewModel.formattedDistance(to: annotation.resort, prefs: userPreferencesManager.preferredUnits)
+                            ) {
+                                selectedResort = annotation.resort
+                            }
                         }
                     }
                 }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .padding()

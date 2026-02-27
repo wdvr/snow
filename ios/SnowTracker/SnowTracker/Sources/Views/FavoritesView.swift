@@ -1,5 +1,22 @@
 import SwiftUI
 
+// MARK: - Daily Forecast Summary
+
+/// Summarizes timeline data for a single day from hourly TimelinePoints
+struct DailyForecastSummary: Identifiable {
+    let id: String // date string yyyy-MM-dd
+    let date: Date
+    let dayLabel: String // "Now", "Thu", "Fri", etc.
+    let minTempC: Double
+    let maxTempC: Double
+    let totalSnowfallCm: Double
+    let weatherDescription: String?
+    let snowQuality: SnowQuality?
+    let snowScore: Int?
+    let explanation: String?
+    let isToday: Bool
+}
+
 struct FavoritesView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
@@ -7,6 +24,9 @@ struct FavoritesView: View {
     @State private var showingGroupManager = false
     @State private var showingMoveSheet = false
     @State private var resortToMove: Resort?
+    @State private var selectedDayIndex: Int = 0
+    @State private var timelineData: [String: [DailyForecastSummary]] = [:]
+    @State private var isLoadingTimelines = false
 
     private var favoriteResorts: [Resort] {
         snowConditionsManager.resorts
@@ -17,6 +37,20 @@ struct FavoritesView: View {
                 if q1 != q2 { return q1 < q2 }
                 return resort1.name < resort2.name
             }
+    }
+
+    /// Generate the next 10 days for the date selector
+    private var forecastDays: [ForecastDayOption] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let dayFormatter = DateFormatter()
+        dayFormatter.dateFormat = "EEE"
+
+        return (0..<10).map { offset in
+            let date = calendar.date(byAdding: .day, value: offset, to: today)!
+            let label = offset == 0 ? "Now" : dayFormatter.string(from: date)
+            return ForecastDayOption(index: offset, date: date, label: label)
+        }
     }
 
     var body: some View {
@@ -60,9 +94,11 @@ struct FavoritesView: View {
             .refreshable {
                 AnalyticsService.shared.trackPullToRefresh(screen: "Favorites")
                 await snowConditionsManager.fetchConditionsForFavorites()
+                await fetchTimelines()
             }
             .task {
                 await snowConditionsManager.fetchConditionsForFavorites()
+                await fetchTimelines()
             }
             .navigationDestination(for: Resort.self) { resort in
                 ResortDetailView(resort: resort)
@@ -108,47 +144,46 @@ struct FavoritesView: View {
     }
 
     private var favoritesList: some View {
-        List {
-            // Conditions summary card
-            if favoriteResorts.count >= 2 {
-                Section {
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                // Conditions summary card
+                if favoriteResorts.count >= 2 {
                     FavoritesSummaryCard(
                         resorts: favoriteResorts,
                         snowConditionsManager: snowConditionsManager,
                         userPreferencesManager: userPreferencesManager
                     )
                 }
-                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-            }
 
-            // Show grouped sections if any groups exist
-            if !userPreferencesManager.favoriteGroups.isEmpty {
-                // Grouped resorts
-                ForEach(userPreferencesManager.favoriteGroups) { group in
-                    let groupResorts = favoriteResorts.filter { group.resortIds.contains($0.id) }
-                    if !groupResorts.isEmpty {
-                        Section(group.name) {
-                            resortRows(groupResorts)
+                // Date selector
+                dateSelector
+
+                // Show grouped sections if any groups exist
+                if !userPreferencesManager.favoriteGroups.isEmpty {
+                    // Grouped resorts
+                    ForEach(userPreferencesManager.favoriteGroups) { group in
+                        let groupResorts = favoriteResorts.filter { group.resortIds.contains($0.id) }
+                        if !groupResorts.isEmpty {
+                            sectionHeader(group.name)
+                            resortCards(groupResorts)
                         }
                     }
-                }
 
-                // Ungrouped resorts
-                let ungroupedIds = userPreferencesManager.ungroupedFavoriteResortIds()
-                let ungrouped = favoriteResorts.filter { ungroupedIds.contains($0.id) }
-                if !ungrouped.isEmpty {
-                    Section("Other") {
-                        resortRows(ungrouped)
+                    // Ungrouped resorts
+                    let ungroupedIds = userPreferencesManager.ungroupedFavoriteResortIds()
+                    let ungrouped = favoriteResorts.filter { ungroupedIds.contains($0.id) }
+                    if !ungrouped.isEmpty {
+                        sectionHeader("Other")
+                        resortCards(ungrouped)
                     }
+                } else {
+                    // No groups - flat list
+                    resortCards(favoriteResorts)
                 }
-            } else {
-                // No groups - flat list
-                resortRows(favoriteResorts)
             }
+            .padding(.horizontal)
+            .padding(.bottom, 16)
         }
-        .listStyle(PlainListStyle())
         .alert("Remove Favorite?", isPresented: Binding(
             get: { resortToRemove != nil },
             set: { if !$0 { resortToRemove = nil } }
@@ -167,30 +202,433 @@ struct FavoritesView: View {
         }
     }
 
-    private func resortRows(_ resorts: [Resort]) -> some View {
+    // MARK: - Date Selector
+
+    private var dateSelector: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(forecastDays) { day in
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedDayIndex = day.index
+                        }
+                    } label: {
+                        VStack(spacing: 4) {
+                            Text(day.label)
+                                .font(.caption.weight(selectedDayIndex == day.index ? .bold : .medium))
+
+                            if day.index > 0 {
+                                Text(day.shortDate)
+                                    .font(.caption2)
+                            }
+                        }
+                        .frame(minWidth: 44, minHeight: 40)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule()
+                                .fill(selectedDayIndex == day.index ? Color.accentColor : Color.gray.opacity(0.15))
+                        )
+                        .foregroundStyle(selectedDayIndex == day.index ? .white : .primary)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .sensoryFeedback(.selection, trigger: selectedDayIndex)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    // MARK: - Section Header
+
+    private func sectionHeader(_ title: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+            Spacer()
+        }
+        .padding(.top, 8)
+    }
+
+    // MARK: - Resort Cards
+
+    private func resortCards(_ resorts: [Resort]) -> some View {
         ForEach(resorts) { resort in
             NavigationLink(value: resort) {
-                FavoriteResortRow(resort: resort)
+                FavoriteResortCard(
+                    resort: resort,
+                    selectedDayIndex: selectedDayIndex,
+                    dailyForecast: forecastForResort(resort.id)
+                )
             }
+            .buttonStyle(PlainButtonStyle())
             .accessibilityLabel("\(resort.name), \(snowConditionsManager.getSnowQuality(for: resort.id).displayName)")
-            .swipeActions(edge: .leading) {
+            .contextMenu {
                 if !userPreferencesManager.favoriteGroups.isEmpty {
                     Button {
                         resortToMove = resort
                         showingMoveSheet = true
                     } label: {
-                        Label("Move", systemImage: "folder")
+                        Label("Move to Group", systemImage: "folder")
                     }
-                    .tint(.blue)
                 }
-            }
-            .swipeActions(edge: .trailing) {
+
                 Button(role: .destructive) {
                     resortToRemove = resort
                 } label: {
-                    Label("Remove", systemImage: "heart.slash")
+                    Label("Remove Favorite", systemImage: "heart.slash")
                 }
             }
+        }
+    }
+
+    // MARK: - Timeline Fetching
+
+    private func forecastForResort(_ resortId: String) -> DailyForecastSummary? {
+        guard selectedDayIndex > 0,
+              let days = timelineData[resortId],
+              selectedDayIndex < days.count else {
+            return nil
+        }
+        return days[selectedDayIndex]
+    }
+
+    private func fetchTimelines() async {
+        let favoriteIds = favoriteResorts.map { $0.id }
+        guard !favoriteIds.isEmpty else { return }
+
+        isLoadingTimelines = true
+        defer { isLoadingTimelines = false }
+
+        let apiClient = APIClient.shared
+        let cacheService = CacheService.shared
+
+        // Check cache on the main actor first, then only fetch stale/missing ones
+        var cachedResponses: [String: TimelineResponse] = [:]
+        var idsToFetch: [String] = []
+        for resortId in favoriteIds {
+            if let cached = cacheService.getCachedTimeline(for: resortId), !cached.isStale {
+                cachedResponses[resortId] = cached.data
+            } else {
+                idsToFetch.append(resortId)
+            }
+        }
+
+        // Fetch missing/stale timelines in parallel
+        let fetched: [(String, TimelineResponse?)] = await withTaskGroup(
+            of: (String, TimelineResponse?).self,
+            returning: [(String, TimelineResponse?)].self
+        ) { group in
+            for resortId in idsToFetch {
+                group.addTask {
+                    do {
+                        let timeline = try await apiClient.getTimeline(for: resortId)
+                        return (resortId, timeline)
+                    } catch {
+                        return (resortId, nil)
+                    }
+                }
+            }
+            var results: [(String, TimelineResponse?)] = []
+            for await result in group {
+                results.append(result)
+            }
+            return results
+        }
+
+        // Cache fetched results on main actor and build summaries
+        var results: [String: [DailyForecastSummary]] = [:]
+        for (resortId, response) in cachedResponses {
+            results[resortId] = summarizeTimeline(response)
+        }
+        for (resortId, response) in fetched {
+            if let response {
+                cacheService.cacheTimeline(response, for: resortId)
+                results[resortId] = summarizeTimeline(response)
+            }
+        }
+
+        timelineData = results
+    }
+
+    /// Summarize hourly timeline points into daily summaries
+    private func summarizeTimeline(_ response: TimelineResponse) -> [DailyForecastSummary] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let dateParser = DateFormatter()
+        dateParser.dateFormat = "yyyy-MM-dd"
+        let dayFormatter = DateFormatter()
+        dayFormatter.dateFormat = "EEE"
+
+        // Group timeline points by date
+        var pointsByDate: [String: [TimelinePoint]] = [:]
+        for point in response.timeline {
+            pointsByDate[point.date, default: []].append(point)
+        }
+
+        // Build daily summaries for the next 10 days
+        return (0..<10).compactMap { offset -> DailyForecastSummary? in
+            let targetDate = calendar.date(byAdding: .day, value: offset, to: today)!
+            let dateStr = dateParser.string(from: targetDate)
+            guard let points = pointsByDate[dateStr], !points.isEmpty else { return nil }
+
+            let label = offset == 0 ? "Now" : dayFormatter.string(from: targetDate)
+            let minTemp = points.map(\.temperatureC).min() ?? 0
+            let maxTemp = points.map(\.temperatureC).max() ?? 0
+            let totalSnow = points.map(\.snowfallCm).reduce(0, +)
+
+            // Most common weather description
+            let descriptions = points.compactMap(\.weatherDescription)
+            let descCounts = Dictionary(grouping: descriptions, by: { $0 }).mapValues(\.count)
+            let topDescription = descCounts.max(by: { $0.value < $1.value })?.key
+
+            // Use the midday point for quality if available, else the latest
+            let representativePoint = points.first { $0.hour >= 10 && $0.hour <= 14 } ?? points.last
+            let quality = representativePoint?.snowQuality
+            let score = representativePoint?.snowScore
+            let explanation = representativePoint?.explanation
+
+            return DailyForecastSummary(
+                id: dateStr,
+                date: targetDate,
+                dayLabel: label,
+                minTempC: minTemp,
+                maxTempC: maxTemp,
+                totalSnowfallCm: totalSnow,
+                weatherDescription: topDescription,
+                snowQuality: quality,
+                snowScore: score,
+                explanation: explanation,
+                isToday: offset == 0
+            )
+        }
+    }
+}
+
+// MARK: - Forecast Day Option
+
+private struct ForecastDayOption: Identifiable {
+    let index: Int
+    let date: Date
+    let label: String
+
+    var id: Int { index }
+
+    private static let shortDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM"
+        return f
+    }()
+
+    var shortDate: String {
+        Self.shortDateFormatter.string(from: date)
+    }
+}
+
+// MARK: - Favorite Resort Card
+
+struct FavoriteResortCard: View {
+    let resort: Resort
+    let selectedDayIndex: Int
+    let dailyForecast: DailyForecastSummary?
+    @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+
+    private var latestCondition: WeatherCondition? {
+        snowConditionsManager.getLatestCondition(for: resort.id)
+    }
+
+    private var snowQualitySummary: SnowQualitySummaryLight? {
+        snowConditionsManager.snowQualitySummaries[resort.id]
+    }
+
+    private var displayQuality: SnowQuality {
+        if selectedDayIndex > 0, let forecast = dailyForecast, let quality = forecast.snowQuality {
+            return quality
+        }
+        return snowConditionsManager.getSnowQuality(for: resort.id)
+    }
+
+    private var snowScore: Int? {
+        if selectedDayIndex > 0, let forecast = dailyForecast {
+            return forecast.snowScore
+        }
+        return snowConditionsManager.getSnowScore(for: resort.id)
+    }
+
+    /// Whether showing forecast data vs. current conditions
+    private var isShowingForecast: Bool {
+        selectedDayIndex > 0 && dailyForecast != nil
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Header row: Logo + name + pass badges + quality badge
+            HStack(alignment: .top, spacing: 10) {
+                ResortLogoView(resort: resort, size: 40)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(resort.name)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+
+                        if resort.epicPass != nil {
+                            PassBadge(passName: "Epic", color: .indigo)
+                        }
+                        if resort.ikonPass != nil {
+                            PassBadge(passName: "Ikon", color: .orange)
+                        }
+                        if resort.indyPass != nil {
+                            PassBadge(passName: "Indy", color: .green)
+                        }
+                    }
+
+                    Text(resort.displayLocation)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                // Quality badge
+                if displayQuality != .unknown {
+                    QualityBadge(quality: displayQuality, snowScore: snowScore)
+                } else if snowConditionsManager.isLoadingSnowQuality {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                }
+            }
+
+            // Stats row
+            HStack(spacing: 12) {
+                if isShowingForecast, let forecast = dailyForecast {
+                    // Forecast: show min/max temperature range
+                    StatItem(
+                        icon: "thermometer.medium",
+                        value: forecastTempRange(min: forecast.minTempC, max: forecast.maxTempC),
+                        color: tempColor((forecast.minTempC + forecast.maxTempC) / 2)
+                    )
+
+                    // Forecast: total snowfall for the day
+                    StatItem(
+                        icon: "snowflake",
+                        value: formatSnow(forecast.totalSnowfallCm),
+                        color: .cyan
+                    )
+
+                    // Forecast: weather description
+                    if let weather = forecast.weatherDescription {
+                        StatItem(
+                            icon: "cloud",
+                            value: weather,
+                            color: .secondary
+                        )
+                    }
+                } else {
+                    // Current conditions
+                    if let condition = latestCondition {
+                        StatItem(
+                            icon: "thermometer.medium",
+                            value: condition.formattedTemperature(userPreferencesManager.preferredUnits),
+                            color: tempColor(condition.currentTempCelsius)
+                        )
+                    } else if let summary = snowQualitySummary,
+                              let temp = summary.formattedTemperature(userPreferencesManager.preferredUnits) {
+                        StatItem(
+                            icon: "thermometer.medium",
+                            value: temp,
+                            color: summary.temperatureC.map { tempColor($0) } ?? .secondary
+                        )
+                    }
+
+                    if let condition = latestCondition {
+                        StatItem(
+                            icon: "snowflake",
+                            value: condition.formattedFreshSnowWithPrefs(userPreferencesManager.preferredUnits),
+                            color: .cyan
+                        )
+                    } else if let summary = snowQualitySummary,
+                              let snow = summary.formattedFreshSnow(userPreferencesManager.preferredUnits) {
+                        StatItem(
+                            icon: "snowflake",
+                            value: snow,
+                            color: .cyan
+                        )
+                    }
+
+                    // Predicted snow (only for current/today view)
+                    if let condition = latestCondition,
+                       let predicted = condition.predictedSnow48hCm, predicted >= 5 {
+                        StatItem(
+                            icon: "cloud.snow.fill",
+                            value: "+\(WeatherCondition.formatSnowShort(predicted, prefs: userPreferencesManager.preferredUnits))",
+                            color: .purple
+                        )
+                    } else if let summary = snowQualitySummary,
+                              let predicted = summary.predictedSnow48hCm, predicted >= 5 {
+                        StatItem(
+                            icon: "cloud.snow.fill",
+                            value: "+\(WeatherCondition.formatSnowShort(predicted, prefs: userPreferencesManager.preferredUnits))",
+                            color: .purple
+                        )
+                    }
+                }
+
+                Spacer()
+            }
+
+            // Quality explanation
+            if isShowingForecast, let forecast = dailyForecast, let explanation = forecast.explanation {
+                Text(explanation)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+            } else if let explanation = snowConditionsManager.getExplanation(for: resort.id) {
+                Text(explanation)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+            }
+        }
+        .cardStyle()
+    }
+
+    // MARK: - Helpers
+
+    private func forecastTempRange(min: Double, max: Double) -> String {
+        switch userPreferencesManager.preferredUnits.temperature {
+        case .celsius:
+            return "\(Int(min))°/\(Int(max))°C"
+        case .fahrenheit:
+            let minF = min * 9.0 / 5.0 + 32.0
+            let maxF = max * 9.0 / 5.0 + 32.0
+            return "\(Int(minF))°/\(Int(maxF))°F"
+        }
+    }
+
+    private func formatSnow(_ cm: Double) -> String {
+        if cm < 0.1 {
+            return "No snow"
+        }
+        return WeatherCondition.formatSnowShort(cm, prefs: userPreferencesManager.preferredUnits)
+    }
+
+    private func tempColor(_ celsius: Double) -> Color {
+        if celsius < -10 {
+            return .blue
+        } else if celsius < 0 {
+            return .cyan
+        } else if celsius < 5 {
+            return .yellow
+        } else {
+            return .orange
         }
     }
 }
@@ -352,110 +790,6 @@ struct MoveToGroupSheet: View {
             }
         }
         .presentationDetents([.medium])
-    }
-}
-
-// MARK: - Favorite Resort Row
-
-struct FavoriteResortRow: View {
-    let resort: Resort
-    @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
-    @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
-
-    private var topCondition: WeatherCondition? {
-        snowConditionsManager.conditions[resort.id]?.first { $0.elevationLevel == "top" }
-    }
-
-    var body: some View {
-        HStack(spacing: 12) {
-            // Snow quality indicator - use overall quality for consistency
-            let displayQuality = snowConditionsManager.getSnowQuality(for: resort.id)
-            if displayQuality != .unknown {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [displayQuality.color.opacity(0.25), displayQuality.color.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 50, height: 50)
-
-                    VStack(spacing: 0) {
-                        if let score = snowConditionsManager.getSnowScore(for: resort.id) {
-                            Text("\(score)")
-                                .font(.caption.weight(.bold))
-                                .fontDesign(.rounded)
-                                .foregroundStyle(displayQuality.color)
-                        } else {
-                            Image(systemName: displayQuality.icon)
-                                .font(.title3)
-                                .foregroundStyle(displayQuality.color)
-                        }
-                    }
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Snow quality: \(displayQuality.displayName)\(snowConditionsManager.getSnowScore(for: resort.id).map { ", score \($0) out of 100" } ?? "")")
-            } else {
-                ZStack {
-                    Circle()
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(width: 50, height: 50)
-
-                    Image(systemName: "questionmark")
-                        .font(.title2)
-                        .foregroundStyle(.gray)
-                }
-                .accessibilityLabel("Snow quality: Unknown")
-            }
-
-            // Resort info
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(resort.name)
-                        .font(.headline)
-
-                    if resort.epicPass != nil {
-                        PassBadge(passName: "Epic", color: .indigo)
-                    }
-                    if resort.ikonPass != nil {
-                        PassBadge(passName: "Ikon", color: .orange)
-                    }
-                    if resort.indyPass != nil {
-                        PassBadge(passName: "Indy", color: .green)
-                    }
-                }
-
-                Text(resort.displayLocation)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if let condition = topCondition {
-                    HStack(spacing: 8) {
-                        Label(condition.formattedTemperature(userPreferencesManager.preferredUnits), systemImage: "thermometer")
-                        Label(condition.formattedFreshSnowWithPrefs(userPreferencesManager.preferredUnits), systemImage: "snowflake")
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer()
-
-            // Forecast badge when significant snow is expected
-            if let condition = topCondition,
-               let predicted48h = condition.predictedSnow48hCm,
-               predicted48h >= 5 {
-                ForecastBadge(hours: 48, cm: predicted48h, prefs: userPreferencesManager.preferredUnits)
-            }
-
-            // Arrow indicator
-            Image(systemName: "chevron.right")
-                .foregroundStyle(.secondary)
-                .font(.caption)
-        }
-        .padding(.vertical, 8)
     }
 }
 

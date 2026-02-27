@@ -588,16 +588,24 @@ final class SnowTrackerTests: XCTestCase {
         XCTAssertEqual(allFilter.qualities.count, SnowQuality.allCases.count)
     }
 
-    func testMapFilterOptionExcellent() {
-        let excellentFilter = MapFilterOption.excellent
-        XCTAssertEqual(excellentFilter.qualities, [.champagnePowder, .powderDay, .excellent])
+    func testMapFilterOptionGood() {
+        let goodFilter = MapFilterOption.good
+        XCTAssertTrue(goodFilter.qualities.contains(.champagnePowder))
+        XCTAssertTrue(goodFilter.qualities.contains(.powderDay))
+        XCTAssertTrue(goodFilter.qualities.contains(.excellent))
+        XCTAssertTrue(goodFilter.qualities.contains(.great))
+        XCTAssertTrue(goodFilter.qualities.contains(.good))
+        XCTAssertEqual(goodFilter.qualities.count, 5)
     }
 
     func testMapFilterOptionPoor() {
         let poorFilter = MapFilterOption.poor
+        XCTAssertTrue(poorFilter.qualities.contains(.decent))
+        XCTAssertTrue(poorFilter.qualities.contains(.mediocre))
         XCTAssertTrue(poorFilter.qualities.contains(.poor))
         XCTAssertTrue(poorFilter.qualities.contains(.bad))
         XCTAssertTrue(poorFilter.qualities.contains(.horrible))
+        XCTAssertEqual(poorFilter.qualities.count, 5)
     }
 
     // MARK: - MapRegionPreset Tests
@@ -658,13 +666,14 @@ final class SnowTrackerTests: XCTestCase {
             "big-white": [WeatherCondition.sampleConditions.first!]
         ]
 
-        // Set filter to excellent
-        viewModel.selectedFilter = .excellent
+        // Set filter to good+ (champagne powder, powder day, excellent, great, good)
+        viewModel.selectedFilter = .good
         viewModel.updateAnnotations(resorts: resorts, conditions: conditions)
 
-        // Only resorts with excellent conditions should be shown
-        let excellentCount = viewModel.annotations.filter { $0.snowQuality == .excellent }.count
-        XCTAssertEqual(viewModel.annotations.count, excellentCount)
+        // Only resorts with good+ conditions should be shown
+        let goodQualities = MapFilterOption.good.qualities
+        let goodCount = viewModel.annotations.filter { goodQualities.contains($0.snowQuality) }.count
+        XCTAssertEqual(viewModel.annotations.count, goodCount)
     }
 
     @MainActor

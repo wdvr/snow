@@ -46,7 +46,7 @@ struct ClusteredMapView: UIViewRepresentable {
 
     /// Minimum zoom level (MKMapView) at which piste overlays become visible.
     /// MKMapView zoom ~12 corresponds roughly to tile zoom 12, which shows individual runs.
-    private static let pisteMinimumZoomLevel: Int = 12
+    private static let pisteMinimumZoomLevel: Int = 13
 
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView()
@@ -254,7 +254,9 @@ struct ClusteredMapView: UIViewRepresentable {
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let tileOverlay = overlay as? MKTileOverlay {
-                return MKTileOverlayRenderer(overlay: tileOverlay)
+                let renderer = MKTileOverlayRenderer(overlay: tileOverlay)
+                renderer.alpha = 0.7  // Lighter overlay for cleaner appearance
+                return renderer
             }
             return MKOverlayRenderer(overlay: overlay)
         }

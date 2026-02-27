@@ -36,6 +36,12 @@
 - [ ] Upload metadata + screenshots to App Store Connect
 - [ ] Submit for App Store review
 
+### Queued (Map View UX)
+- [ ] Map view filters too granular — simplify filter chips
+- [ ] Piste overlay: only load tiles when zoomed in (save memory even if setting is on)
+- [ ] Nearby resorts section: make collapsible/pushable down
+- [ ] Piste overlay styling: lighter/thinner lines, brighter colors, readable font (OpenSnowMap tiles are raster — may need vector source or opacity adjustment)
+
 ### Known Bugs
 - [ ] Banff Sunshine icon missing (logo URLs valid — likely app-side SVG rendering issue)
 - [ ] Investigate BUG-003: Scores too low for fresh snow (Lake Louise 21cm=−7.5°C=26)
