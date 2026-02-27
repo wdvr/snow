@@ -11,25 +11,35 @@
 
 ---
 
-## Active Work (Feb 26) — Pre-Release QA Round 3
+## Active Work (Feb 27) — Polish & Launch
 
-### App Store Release
-- [x] Remove duplicate splash screen spinner (iOS)
-- [x] Update App Store screenshot tests (add AI chat, iPad)
-- [x] Update release notes for v1.1
-- [x] TestFlight build uploaded (build 717, v1.1.0)
-- [x] Generate final screenshots (iPhone 17 Pro Max + iPhone 17)
+### Just Completed (Feb 27)
+- [x] Resort list card redesign (iOS) — ScrollView+LazyVStack matching Best Snow tab
+- [x] Chat forecast fix — replaced broken S3 with Open-Meteo API (8 new tests)
+- [x] Alternate app icons — 9 variants + picker in Settings > Appearance
+- [x] Quality score consistency — batch endpoint now uses weighted avg (50/35/15)
+- [x] Widget region display — human-readable names instead of raw IDs
+- [x] Card background fix — secondarySystemBackground for visible cards
+- [x] App display name → "Powder Chaser" (was "Snow Tracker" in icon change dialog)
+- [x] Backend tests: 1599 passing
+- [x] iOS tests: 119 passing
+- [x] TestFlight build 745 uploaded
+
+### In Progress
+- [ ] Favorites view: card layout matching main list + quality explanation text
+- [ ] Favorites view: 10-day date selector (forecast weather per day)
+- [ ] Marketing website: update screenshot (show map view, not wrong app)
+- [ ] Marketing website: link to real App Store entry
+- [ ] Marketing website: update quality levels (old 6-level → new 10-level scale)
+- [ ] Web app: iOS Smart App Banner (`<meta name="apple-itunes-app">`)
 - [ ] Generate iPad screenshots (iPad Pro 13" + 11")
 - [ ] Upload metadata + screenshots to App Store Connect
 - [ ] Submit for App Store review
 
-### QA Round 3 (Pre-Release)
-- [ ] Backend tests: verify all passing (1591 tests)
-- [ ] iOS unit tests: verify all passing
-- [ ] API endpoint health check (19 endpoints)
+### Known Bugs
+- [ ] Banff Sunshine icon missing (logo URLs valid — likely app-side SVG rendering issue)
 - [ ] Investigate BUG-003: Scores too low for fresh snow (Lake Louise 21cm=−7.5°C=26)
 - [ ] Investigate BUG-011: Source disagreement not triggering outlier detection
-- [ ] BUG-006: Breckenridge depth mismatch (static JSON vs live) — self-resolves on Lambda run
 
 ### Data Coverage (current)
 | Data | Coverage |

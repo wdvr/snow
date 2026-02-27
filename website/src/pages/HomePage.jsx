@@ -74,7 +74,7 @@ function HomePage() {
               </p>
               <div className="hero-buttons">
                 <a
-                  href="https://apps.apple.com/app/powder-chaser"
+                  href="https://apps.apple.com/app/powder-chaser/id6758333173"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-primary"
@@ -195,28 +195,44 @@ function HomePage() {
 
           <div className="quality-explainer">
             <div className="quality-item">
+              <div className="quality-badge champagne-powder">Champagne Powder</div>
+              <p>Ultra-light, dry powder. Dream conditions — deep, untracked freshies everywhere.</p>
+            </div>
+            <div className="quality-item">
+              <div className="quality-badge powder-day">Powder Day</div>
+              <p>Significant fresh snowfall. Excellent coverage and soft snow on and off-piste.</p>
+            </div>
+            <div className="quality-item">
               <div className="quality-badge excellent">Excellent</div>
-              <p>3+ inches of fresh powder since last ice event. Cold temps preserving quality. Perfect conditions for all skiing.</p>
+              <p>Recent snowfall with cold temps preserving quality. Great skiing across the mountain.</p>
+            </div>
+            <div className="quality-item">
+              <div className="quality-badge great">Great</div>
+              <p>Good snow coverage with some fresh. Mostly soft conditions, great on groomers.</p>
             </div>
             <div className="quality-item">
               <div className="quality-badge good">Good</div>
-              <p>2+ inches of non-refrozen snow. Surface hasn't iced over. Great for on and off-piste skiing.</p>
+              <p>Decent base with some recent snow. Enjoyable skiing, especially on prepared runs.</p>
             </div>
             <div className="quality-item">
-              <div className="quality-badge fair">Fair</div>
-              <p>~1 inch fresh on older base. May have thin crust in places. Groomed runs in good shape.</p>
+              <div className="quality-badge decent">Decent</div>
+              <p>Adequate conditions. Some firm spots but overall rideable. Stick to groomers.</p>
+            </div>
+            <div className="quality-item">
+              <div className="quality-badge mediocre">Mediocre</div>
+              <p>Limited fresh snow, aging base. Variable surface quality across the mountain.</p>
             </div>
             <div className="quality-item">
               <div className="quality-badge poor">Poor</div>
-              <p>Less than 1 inch since last ice event. Harder surface with some soft spots. Stick to groomers.</p>
+              <p>Hard pack or thin cover. Icy patches likely. Only groomed runs advisable.</p>
             </div>
             <div className="quality-item">
-              <div className="quality-badge bad">Icy</div>
-              <p>No fresh snow since last thaw-freeze cycle. Hard, refrozen surface. Challenging conditions.</p>
+              <div className="quality-badge bad">Bad</div>
+              <p>Mostly icy or very thin coverage. Challenging conditions for any ability level.</p>
             </div>
             <div className="quality-item">
               <div className="quality-badge horrible">Not Skiable</div>
-              <p>Dangerous conditions: no snow cover, actively melting, or exposed terrain. Resort may be closed.</p>
+              <p>Dangerous: no snow cover, actively melting, or closed terrain.</p>
             </div>
           </div>
         </div>
@@ -230,7 +246,7 @@ function HomePage() {
             <p>Download Powder Chaser for free and never miss a powder day again.</p>
             <div className="cta-buttons">
               <a
-                href="https://apps.apple.com/app/powder-chaser"
+                href="https://apps.apple.com/app/powder-chaser/id6758333173"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-white"

@@ -142,23 +142,43 @@
   font-weight: 600;
 }
 
+.quality-badge.champagne-powder {
+  background: rgba(26, 51, 153, 0.25);
+  color: #6699ff;
+}
+
+.quality-badge.powder-day {
+  background: rgba(51, 102, 230, 0.2);
+  color: #5599ee;
+}
+
 .quality-badge.excellent {
-  background: rgba(34, 197, 94, 0.2);
+  background: rgba(0, 166, 90, 0.2);
   color: var(--color-excellent);
 }
 
+.quality-badge.great {
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--color-great);
+}
+
 .quality-badge.good {
-  background: rgba(132, 204, 22, 0.2);
+  background: rgba(102, 191, 77, 0.2);
   color: var(--color-good);
 }
 
-.quality-badge.fair {
+.quality-badge.decent {
   background: rgba(234, 179, 8, 0.2);
-  color: var(--color-fair);
+  color: var(--color-decent);
+}
+
+.quality-badge.mediocre {
+  background: rgba(249, 115, 22, 0.2);
+  color: var(--color-mediocre);
 }
 
 .quality-badge.poor {
-  background: rgba(249, 115, 22, 0.2);
+  background: rgba(204, 77, 26, 0.2);
   color: var(--color-poor);
 }
 
@@ -169,7 +189,7 @@
 
 .quality-badge.horrible {
   background: rgba(0, 0, 0, 0.3);
-  color: #666;
+  color: var(--color-horrible);
 }
 
 .snow-card-stats {
@@ -380,8 +400,9 @@
 }
 
 .quality-item .quality-badge {
-  min-width: 100px;
+  min-width: 150px;
   text-align: center;
+  white-space: nowrap;
 }
 
 .quality-item p {
