@@ -7,6 +7,12 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 27, 2026
 
+### Feature: Vector piste overlay POC — Overpass API + native MKPolyline
+Queries OpenStreetMap via Overpass API for downhill piste ways (`piste:type=downhill`) and aerial lifts (`aerialway`) within a bounding box around visible resorts. Renders pistes as colored MKPolyline overlays (green=novice, blue=easy, red=intermediate, black=advanced) and lifts as dashed gray lines. PisteOverlayService is an actor with LRU cache (50 entries), deduped in-flight requests. Auto-fetches when piste toggle is enabled and map is zoomed in (latDelta < 0.15°). Coexists with existing OpenSnowMap raster tiles. Coverage: good for NA/Europe (Vail: 211, Zermatt: 131, Chamonix: 105), sparse for Japan (Niseko: ~8 ways in broad area).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
 ### Feature: Piste overlay enhancement — brighter colors, lower min zoom, CIFilter processing
 Alpha increased from 0.7 to 0.85 for more visible trails. Min zoom lowered from 13 to 12 for earlier trail visibility. Custom `SaturatedPisteTileOverlay` subclass applies CIColorControls filter (saturation 1.6, contrast 1.2) to OpenSnowMap raster tiles via `loadTile` override with static GPU-backed CIContext. Graceful fallback to unprocessed tiles if filter fails.
 | iOS | Android | Web | API |
