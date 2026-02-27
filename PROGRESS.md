@@ -73,6 +73,16 @@
 - [x] Closed GitHub issues: #193 (map zoom), #194 (fresh snow display), #195 (outlier detection), #24 (webcam)
 - [x] DynamoDB updated with 15 new resort logos (Populate workflow)
 
+### Just Completed (Feb 27 — vector piste overlay)
+- [x] Vector piste overlay replacing OpenSnowMap raster tiles (fully native MKPolyline)
+- [x] Piste lines colored by difficulty (green/blue/red/black), lifts as dashed gray lines
+- [x] Piste + lift name labels at high zoom (latDelta < 0.04°) with difficulty-colored text
+- [x] S3 pre-cache: fetch from powderchaserapp.com/data/pistes/{id}.json, fallback to Overpass
+- [x] precache_pistes.py: batch script uploading all 1019 resorts to S3 (running)
+- [x] PisteOverlayService: actor with LRU cache, S3-first with Overpass fallback
+- [x] Verified: Big Sky 589 runs, Vail 211, Zermatt 181, Whistler 65
+- [x] iOS tests: 119 passing, TestFlight triggered (v2.1.0)
+
 ### Data Coverage (current)
 | Data | Coverage |
 |------|----------|
