@@ -37,6 +37,36 @@ Both FavoriteResortsWidget and BestResortsWidget displayed raw `region` strings 
 |-----|---------|-----|-----|
 | done | pending | n/a | n/a |
 
+### Feature: Favorites view card redesign + 10-day date selector
+Completely redesigned FavoritesView: replaced flat list with card layout matching the main Resorts tab (ResortLogoView, pass badges, QualityBadge, StatItem row, quality explanation text). Added 10-day date selector that fetches timeline data for all favorite resorts and shows predicted quality/weather for each future day. Cards switch between current conditions and forecast data based on selected day.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Feature: Map view UX polish
+Simplified map filter chips from 5 options (All, Excellent+, Good+, Below Good, Poor) to 3 clearer options (All, Good+, Below Good). Made nearby resorts section collapsible with chevron toggle animation. Piste overlay improvements: increased minimum zoom from 12→13 (saves memory), added 0.7 alpha for lighter/less obtrusive appearance. OpenSnowMap raster tiles can't be further customized (line thickness, colors are baked into tiles).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Feature: Marketing website updates
+Updated quality levels from old 6-level to new 10-level scale (Champagne Powder through Horrible). Replaced screenshot with map view (was showing wrong app). Updated all App Store links to include ID (id6758333173). Added iOS Smart App Banner to both marketing site and web app.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | done | n/a |
+
+### Bugfix: Card background invisible (white on white)
+CardStyleModifier used `Color(.systemBackground)` which matched the scroll view background, making cards invisible. Changed to `Color(.secondarySystemBackground)` for visible card distinction.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Bugfix: App name "Snow Tracker" in icon change dialog
+iOS icon change confirmation dialog showed "Snow Tracker" instead of "Powder Chaser". Fixed by setting `CFBundleDisplayName` and `CFBundleName` to "Powder Chaser" in Info.plist.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
 ---
 
 ## Feb 26, 2026

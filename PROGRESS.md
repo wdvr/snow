@@ -25,22 +25,26 @@
 - [x] iOS tests: 119 passing
 - [x] TestFlight build 745 uploaded
 
+### Just Completed (Feb 27 — continued)
+- [x] Favorites view: card layout with logo, pass badges, quality badge, stats, explanation
+- [x] Favorites view: 10-day date selector with timeline forecast per resort
+- [x] Marketing website: update screenshot (map view)
+- [x] Marketing website: link to real App Store entry (id6758333173)
+- [x] Marketing website: update quality levels (old 6-level → new 10-level scale)
+- [x] Web app: iOS Smart App Banner (`<meta name="apple-itunes-app">`)
+- [x] Map view: simplify filter chips (5 → 3: All, Good+, Below Good)
+- [x] Piste overlay: min zoom 13, alpha 0.7 for lighter appearance
+- [x] Nearby resorts section: collapsible with chevron toggle
+- [x] iOS tests: 119 passing
+- [x] TestFlight build triggered
+
 ### In Progress
-- [ ] Favorites view: card layout matching main list + quality explanation text
-- [ ] Favorites view: 10-day date selector (forecast weather per day)
-- [ ] Marketing website: update screenshot (show map view, not wrong app)
-- [ ] Marketing website: link to real App Store entry
-- [ ] Marketing website: update quality levels (old 6-level → new 10-level scale)
-- [ ] Web app: iOS Smart App Banner (`<meta name="apple-itunes-app">`)
 - [ ] Generate iPad screenshots (iPad Pro 13" + 11")
 - [ ] Upload metadata + screenshots to App Store Connect
 - [ ] Submit for App Store review
 
-### Queued (Map View UX)
-- [ ] Map view filters too granular — simplify filter chips
-- [ ] Piste overlay: only load tiles when zoomed in (save memory even if setting is on)
-- [ ] Nearby resorts section: make collapsible/pushable down
-- [ ] Piste overlay styling: lighter/thinner lines, brighter colors, readable font (OpenSnowMap tiles are raster — may need vector source or opacity adjustment)
+### Queued
+- [ ] Piste overlay styling: thinner lines, brighter colors (OpenSnowMap raster tiles — limited customization, may need vector source)
 
 ### Known Bugs
 - [ ] Banff Sunshine icon missing (logo URLs valid — likely app-side SVG rendering issue)
