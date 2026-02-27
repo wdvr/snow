@@ -147,3 +147,104 @@
 
 /* MapView Date Selector */
 "Today" = "Today";
+
+/* Quality Ratings (10-level scale) */
+"Champagne Powder" = "Champagne Powder";
+"Powder Day" = "Powder Day";
+"Great" = "Great";
+"Decent" = "Decent";
+"Mediocre" = "Mediocre";
+"Bad" = "Bad";
+"Horrible" = "Horrible";
+
+/* FavoritesView (card redesign) */
+"Avg score" = "Avg score";
+"Best conditions" = "Best conditions";
+"Create Group" = "Create Group";
+"Manage Groups" = "Manage Groups";
+"Move to Group" = "Move to Group";
+"Your Groups" = "Your Groups";
+"Remove Favorite" = "Remove Favorite";
+"Groups" = "Groups";
+"Compare" = "Compare";
+"Rename" = "Rename";
+"Rename Group" = "Rename Group";
+"No Group" = "No Group";
+
+/* ResortListView */
+"Pass:" = "Pass:";
+"Sort:" = "Sort:";
+"Unable to Load Resorts" = "Unable to Load Resorts";
+"Add to Favorites" = "Add to Favorites";
+"Regions" = "Regions";
+
+/* SettingsView / AboutView / UnitsSettingsView */
+"App Info" = "App Info";
+"Appearance" = "Appearance";
+"App Icon" = "App Icon";
+"Temperature" = "Temperature";
+"Distance" = "Distance";
+"Snow Depth" = "Snow Depth";
+"Not signed in" = "Not signed in";
+"Powder Chaser" = "Powder Chaser";
+"Supported Resorts" = "Supported Resorts";
+"Version" = "Version";
+"Website" = "Website";
+
+/* RecommendationsView */
+"Finding best snow near you..." = "Finding best snow near you...";
+"Could not load best conditions. Pull to refresh." = "Could not load best conditions. Pull to refresh.";
+"Location Disabled" = "Location Disabled";
+"See All" = "See All";
+"score" = "score";
+
+/* ResortMapView */
+"Ski trails: OpenSnowMap.org / OpenStreetMap" = "Ski trails: OpenSnowMap.org / OpenStreetMap";
+"Zoom in to see trails" = "Zoom in to see trails";
+"Current Conditions" = "Current Conditions";
+"Conditions Summary" = "Conditions Summary";
+"Cams" = "Cams";
+"No conditions data available" = "No conditions data available";
+
+/* ResortDetailView */
+"Live" = "Live";
+"Snow Report" = "Snow Report";
+"Trail Map" = "Trail Map";
+"Webcam" = "Webcam";
+"Community Reports" = "Community Reports";
+"Data Sources" = "Data Sources";
+"Suggest an Edit" = "Suggest an Edit";
+"Season Totals" = "Season Totals";
+"Snow History" = "Snow History";
+
+/* ChatView */
+"Ask AI" = "Ask AI";
+"Ask about snow conditions" = "Ask about snow conditions";
+"Get personalized recommendations, condition updates, and ski trip advice." = "Get personalized recommendations, condition updates, and ski trip advice.";
+"Ask about conditions..." = "Ask about conditions...";
+"Conversation history" = "Conversation history";
+"New conversation" = "New conversation";
+
+/* Chat Suggestions */
+"Best snow within 500 miles" = "Best snow within 500 miles";
+"Compare Whistler vs Jackson Hole" = "Compare Whistler vs Jackson Hole";
+"Best powder in the Rockies" = "Best powder in the Rockies";
+"Family-friendly with good snow" = "Family-friendly with good snow";
+"Top 5 resorts globally right now" = "Top 5 resorts globally right now";
+"Ikon Pass best conditions" = "Ikon Pass best conditions";
+"Snow forecast this week" = "Snow forecast this week";
+"Hidden gems with fresh powder" = "Hidden gems with fresh powder";
+"Best in the Alps right now" = "Best in the Alps right now";
+"Deepest snowpack" = "Deepest snowpack";
+"Japan snow conditions" = "Japan snow conditions";
+
+/* Map Filters */
+"All" = "All";
+"Good+" = "Good+";
+"Below Good" = "Below Good";
+
+/* Misc */
+"Share" = "Share";
+"Close" = "Close";
+"Resorts" = "Resorts";
+"No results" = "No results";

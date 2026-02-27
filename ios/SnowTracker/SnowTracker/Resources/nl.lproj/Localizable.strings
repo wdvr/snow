@@ -147,3 +147,104 @@
 
 /* MapView Date Selector */
 "Today" = "Vandaag";
+
+/* Quality Ratings (10-level scale) */
+"Champagne Powder" = "Champagnepoeder";
+"Powder Day" = "Poederdag";
+"Great" = "Heel goed";
+"Decent" = "Redelijk goed";
+"Mediocre" = "Matig";
+"Bad" = "Slecht";
+"Horrible" = "Verschrikkelijk";
+
+/* FavoritesView (card redesign) */
+"Avg score" = "Gem. score";
+"Best conditions" = "Beste condities";
+"Create Group" = "Groep aanmaken";
+"Manage Groups" = "Groepen beheren";
+"Move to Group" = "Verplaatsen naar groep";
+"Your Groups" = "Jouw groepen";
+"Remove Favorite" = "Favoriet verwijderen";
+"Groups" = "Groepen";
+"Compare" = "Vergelijken";
+"Rename" = "Hernoemen";
+"Rename Group" = "Groep hernoemen";
+"No Group" = "Geen groep";
+
+/* ResortListView */
+"Pass:" = "Skipas:";
+"Sort:" = "Sorteer:";
+"Unable to Load Resorts" = "Kan skigebieden niet laden";
+"Add to Favorites" = "Toevoegen aan favorieten";
+"Regions" = "Regio's";
+
+/* SettingsView / AboutView / UnitsSettingsView */
+"App Info" = "App-informatie";
+"Appearance" = "Weergave";
+"App Icon" = "App-icoon";
+"Temperature" = "Temperatuur";
+"Distance" = "Afstand";
+"Snow Depth" = "Sneeuwdiepte";
+"Not signed in" = "Niet ingelogd";
+"Powder Chaser" = "Powder Chaser";
+"Supported Resorts" = "Ondersteunde skigebieden";
+"Version" = "Versie";
+"Website" = "Website";
+
+/* RecommendationsView */
+"Finding best snow near you..." = "De beste sneeuw bij jou in de buurt zoeken...";
+"Could not load best conditions. Pull to refresh." = "Kon beste condities niet laden. Trek om te vernieuwen.";
+"Location Disabled" = "Locatie uitgeschakeld";
+"See All" = "Alles bekijken";
+"score" = "score";
+
+/* ResortMapView */
+"Ski trails: OpenSnowMap.org / OpenStreetMap" = "Skipistes: OpenSnowMap.org / OpenStreetMap";
+"Zoom in to see trails" = "Zoom in om pistes te zien";
+"Current Conditions" = "Huidige condities";
+"Conditions Summary" = "Overzicht condities";
+"Cams" = "Webcams";
+"No conditions data available" = "Geen conditiegegevens beschikbaar";
+
+/* ResortDetailView */
+"Live" = "Live";
+"Snow Report" = "Sneeuwrapport";
+"Trail Map" = "Pistekaart";
+"Webcam" = "Webcam";
+"Community Reports" = "Community-meldingen";
+"Data Sources" = "Gegevensbronnen";
+"Suggest an Edit" = "Wijziging voorstellen";
+"Season Totals" = "Seizoenstotalen";
+"Snow History" = "Sneeuwhistorie";
+
+/* ChatView */
+"Ask AI" = "Vraag AI";
+"Ask about snow conditions" = "Stel een vraag over sneeuwcondities";
+"Get personalized recommendations, condition updates, and ski trip advice." = "Krijg persoonlijke aanbevelingen, actuele condities en tips voor je skivakantie.";
+"Ask about conditions..." = "Vraag over condities...";
+"Conversation history" = "Gespreksgeschiedenis";
+"New conversation" = "Nieuw gesprek";
+
+/* Chat Suggestions */
+"Best snow within 500 miles" = "Beste sneeuw binnen 800 km";
+"Compare Whistler vs Jackson Hole" = "Vergelijk Whistler vs Jackson Hole";
+"Best powder in the Rockies" = "Beste poedersneeuw in de Rockies";
+"Family-friendly with good snow" = "Gezinsvriendelijk met goede sneeuw";
+"Top 5 resorts globally right now" = "Top 5 skigebieden wereldwijd nu";
+"Ikon Pass best conditions" = "Ikon Pass beste condities";
+"Snow forecast this week" = "Sneeuwverwachting deze week";
+"Hidden gems with fresh powder" = "Verborgen pareltjes met verse poedersneeuw";
+"Best in the Alps right now" = "Beste in de Alps op dit moment";
+"Deepest snowpack" = "Diepste sneeuwdek";
+"Japan snow conditions" = "Sneeuwcondities in Japan";
+
+/* Map Filters */
+"All" = "Alle";
+"Good+" = "Goed+";
+"Below Good" = "Onder Goed";
+
+/* Misc */
+"Share" = "Delen";
+"Close" = "Sluiten";
+"Resorts" = "Skigebieden";
+"No results" = "Geen resultaten";

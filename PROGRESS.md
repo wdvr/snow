@@ -38,24 +38,26 @@
 - [x] iOS tests: 119 passing
 - [x] TestFlight build triggered
 
+### Just Completed (Feb 27 — bug fixes & data)
+- [x] BUG-003 fixed: fresh snow floor constraint in ml_scorer (21cm@-7.5°C now scores EXCELLENT, not 26/100)
+- [x] BUG-011 fixed: 2-source outlier detection (>50% disagreement → outlier, not weighted avg)
+- [x] SVG→PNG logo conversion: 354 SVG logos converted to PNG via CairoSVG, uploaded to S3
+- [x] Backend tests: 1620 passing
+- [x] Backend deployed to prod + static JSON regenerated
+- [x] Resorts database updated (PNG logo URLs pushed to DynamoDB)
+
 ### In Progress
+- [ ] Add missing translations (~80 new strings across 13 languages)
 - [ ] Generate iPad screenshots (iPad Pro 13" + 11")
 - [ ] Upload metadata + screenshots to App Store Connect
 - [ ] Submit for App Store review
-
-### Queued
 - [ ] Piste overlay styling: thinner lines, brighter colors (OpenSnowMap raster tiles — limited customization, may need vector source)
-
-### Known Bugs
-- [ ] Banff Sunshine icon missing (logo URLs valid — likely app-side SVG rendering issue)
-- [ ] Investigate BUG-003: Scores too low for fresh snow (Lake Louise 21cm=−7.5°C=26)
-- [ ] Investigate BUG-011: Source disagreement not triggering outlier detection
 
 ### Data Coverage (current)
 | Data | Coverage |
 |------|----------|
 | Trail maps | 957/1019 (93.9%) |
-| Logos | 818/1019 (80.3%) |
+| Logos | 818/1019 (80.3%) — 354 SVG→PNG converted |
 | Webcams | 1019/1019 (100%) — auto-generated skiresort.info pages |
 | Websites | 884/1019 (86.7%) |
 
@@ -102,9 +104,9 @@
 
 | Bug | Description | Status |
 |-----|-------------|--------|
-| BUG-003 | Scores too low for fresh snow (Lake Louise 21cm=−7.5°C scored 26) | Investigating |
+| BUG-003 | Scores too low for fresh snow (Lake Louise 21cm=−7.5°C scored 26) | **Fixed** — fresh snow floor constraint |
 | BUG-006 | Breckenridge depth mismatch (static JSON vs live) | Self-resolves on Lambda run |
-| BUG-011 | Source disagreement not triggering outlier detection | Investigating |
+| BUG-011 | Source disagreement not triggering outlier detection | **Fixed** — 2-source outlier detection |
 
 ---
 

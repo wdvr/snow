@@ -147,3 +147,104 @@
 
 /* MapView Date Selector */
 "Today" = "I dag";
+
+/* Quality Ratings (10-level scale) */
+"Champagne Powder" = "Champagnepudder";
+"Powder Day" = "Pudderdag";
+"Great" = "Flott";
+"Decent" = "Grei";
+"Mediocre" = "Middelmådig";
+"Bad" = "Dårlig";
+"Horrible" = "Forferdelig";
+
+/* FavoritesView (card redesign) */
+"Avg score" = "Gj.snitt";
+"Best conditions" = "Beste forhold";
+"Create Group" = "Opprett gruppe";
+"Manage Groups" = "Administrer grupper";
+"Move to Group" = "Flytt til gruppe";
+"Your Groups" = "Dine grupper";
+"Remove Favorite" = "Fjern favoritt";
+"Groups" = "Grupper";
+"Compare" = "Sammenlign";
+"Rename" = "Gi nytt navn";
+"Rename Group" = "Gi gruppen nytt navn";
+"No Group" = "Ingen gruppe";
+
+/* ResortListView */
+"Pass:" = "Kort:";
+"Sort:" = "Sortering:";
+"Unable to Load Resorts" = "Kunne ikke laste skisteder";
+"Add to Favorites" = "Legg til i favoritter";
+"Regions" = "Regioner";
+
+/* SettingsView / AboutView / UnitsSettingsView */
+"App Info" = "Appinformasjon";
+"Appearance" = "Utseende";
+"App Icon" = "Appikon";
+"Temperature" = "Temperatur";
+"Distance" = "Avstand";
+"Snow Depth" = "Snødybde";
+"Not signed in" = "Ikke logget inn";
+"Powder Chaser" = "Powder Chaser";
+"Supported Resorts" = "Støttede skisteder";
+"Version" = "Versjon";
+"Website" = "Nettsted";
+
+/* RecommendationsView */
+"Finding best snow near you..." = "Leter etter den beste snøen nær deg...";
+"Could not load best conditions. Pull to refresh." = "Kunne ikke laste beste forhold. Dra ned for å oppdatere.";
+"Location Disabled" = "Posisjon deaktivert";
+"See All" = "Se alle";
+"score" = "poeng";
+
+/* ResortMapView */
+"Ski trails: OpenSnowMap.org / OpenStreetMap" = "Skiløyper: OpenSnowMap.org / OpenStreetMap";
+"Zoom in to see trails" = "Zoom inn for å se løyper";
+"Current Conditions" = "Nåværende forhold";
+"Conditions Summary" = "Oppsummering av forholdene";
+"Cams" = "Webkameraer";
+"No conditions data available" = "Ingen data om forholdene tilgjengelig";
+
+/* ResortDetailView */
+"Live" = "Direkte";
+"Snow Report" = "Snørapport";
+"Trail Map" = "Løypekart";
+"Webcam" = "Webkamera";
+"Community Reports" = "Brukerrapporter";
+"Data Sources" = "Datakilder";
+"Suggest an Edit" = "Foreslå en endring";
+"Season Totals" = "Sesongtotaler";
+"Snow History" = "Snøhistorikk";
+
+/* ChatView */
+"Ask AI" = "Spør KI";
+"Ask about snow conditions" = "Spør om snøforhold";
+"Get personalized recommendations, condition updates, and ski trip advice." = "Få personlige anbefalinger, oppdaterte forhold og tips til skituren.";
+"Ask about conditions..." = "Spør om forholdene...";
+"Conversation history" = "Samtalehistorikk";
+"New conversation" = "Ny samtale";
+
+/* Chat Suggestions */
+"Best snow within 500 miles" = "Beste snø innen 800 km";
+"Compare Whistler vs Jackson Hole" = "Sammenlign Whistler vs Jackson Hole";
+"Best powder in the Rockies" = "Beste pudder i Rockies";
+"Family-friendly with good snow" = "Familievennlig med god snø";
+"Top 5 resorts globally right now" = "Topp 5 skisteder globalt nå";
+"Ikon Pass best conditions" = "Ikon Pass beste forhold";
+"Snow forecast this week" = "Snøvarsel denne uken";
+"Hidden gems with fresh powder" = "Skjulte perler med fersk pudder";
+"Best in the Alps right now" = "Beste i Alps akkurat nå";
+"Deepest snowpack" = "Dypeste snødekke";
+"Japan snow conditions" = "Snøforhold i Japan";
+
+/* Map Filters */
+"All" = "Alle";
+"Good+" = "Bra+";
+"Below Good" = "Under Bra";
+
+/* Misc */
+"Share" = "Del";
+"Close" = "Lukk";
+"Resorts" = "Skisteder";
+"No results" = "Ingen resultater";

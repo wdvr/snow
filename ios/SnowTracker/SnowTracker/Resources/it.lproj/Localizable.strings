@@ -147,3 +147,104 @@
 
 /* MapView Date Selector */
 "Today" = "Oggi";
+
+/* Quality Ratings (10-level scale) */
+"Champagne Powder" = "Neve Champagne";
+"Powder Day" = "Giornata di polvere";
+"Great" = "Ottima";
+"Decent" = "Discreta";
+"Mediocre" = "Mediocre";
+"Bad" = "Cattiva";
+"Horrible" = "Orribile";
+
+/* FavoritesView (card redesign) */
+"Avg score" = "Punteggio medio";
+"Best conditions" = "Migliori condizioni";
+"Create Group" = "Crea gruppo";
+"Manage Groups" = "Gestisci gruppi";
+"Move to Group" = "Sposta nel gruppo";
+"Your Groups" = "I tuoi gruppi";
+"Remove Favorite" = "Rimuovi dai preferiti";
+"Groups" = "Gruppi";
+"Compare" = "Confronta";
+"Rename" = "Rinomina";
+"Rename Group" = "Rinomina gruppo";
+"No Group" = "Nessun gruppo";
+
+/* ResortListView */
+"Pass:" = "Skipass:";
+"Sort:" = "Ordina:";
+"Unable to Load Resorts" = "Impossibile caricare le stazioni";
+"Add to Favorites" = "Aggiungi ai preferiti";
+"Regions" = "Regioni";
+
+/* SettingsView / AboutView / UnitsSettingsView */
+"App Info" = "Info sull'app";
+"Appearance" = "Aspetto";
+"App Icon" = "Icona dell'app";
+"Temperature" = "Temperatura";
+"Distance" = "Distanza";
+"Snow Depth" = "Spessore neve";
+"Not signed in" = "Non hai effettuato l'accesso";
+"Powder Chaser" = "Powder Chaser";
+"Supported Resorts" = "Stazioni supportate";
+"Version" = "Versione";
+"Website" = "Sito web";
+
+/* RecommendationsView */
+"Finding best snow near you..." = "Cerco la neve migliore vicino a te...";
+"Could not load best conditions. Pull to refresh." = "Impossibile caricare le condizioni migliori. Trascina per aggiornare.";
+"Location Disabled" = "Posizione disattivata";
+"See All" = "Vedi tutto";
+"score" = "punteggio";
+
+/* ResortMapView */
+"Ski trails: OpenSnowMap.org / OpenStreetMap" = "Piste da sci: OpenSnowMap.org / OpenStreetMap";
+"Zoom in to see trails" = "Ingrandisci per vedere le piste";
+"Current Conditions" = "Condizioni attuali";
+"Conditions Summary" = "Riepilogo condizioni";
+"Cams" = "Webcam";
+"No conditions data available" = "Nessun dato sulle condizioni disponibile";
+
+/* ResortDetailView */
+"Live" = "In diretta";
+"Snow Report" = "Bollettino neve";
+"Trail Map" = "Mappa delle piste";
+"Webcam" = "Webcam";
+"Community Reports" = "Segnalazioni della comunità";
+"Data Sources" = "Fonti dati";
+"Suggest an Edit" = "Suggerisci una modifica";
+"Season Totals" = "Totali stagionali";
+"Snow History" = "Storico neve";
+
+/* ChatView */
+"Ask AI" = "Chiedi all'IA";
+"Ask about snow conditions" = "Chiedi delle condizioni neve";
+"Get personalized recommendations, condition updates, and ski trip advice." = "Ottieni consigli personalizzati, aggiornamenti sulle condizioni e suggerimenti per la tua vacanza sulla neve.";
+"Ask about conditions..." = "Chiedi delle condizioni...";
+"Conversation history" = "Cronologia conversazioni";
+"New conversation" = "Nuova conversazione";
+
+/* Chat Suggestions */
+"Best snow within 500 miles" = "Neve migliore entro 800 km";
+"Compare Whistler vs Jackson Hole" = "Confronta Whistler vs Jackson Hole";
+"Best powder in the Rockies" = "Miglior neve polverosa nelle Rockies";
+"Family-friendly with good snow" = "Adatte alle famiglie con buona neve";
+"Top 5 resorts globally right now" = "Top 5 stazioni nel mondo ora";
+"Ikon Pass best conditions" = "Migliori condizioni Ikon Pass";
+"Snow forecast this week" = "Previsioni neve questa settimana";
+"Hidden gems with fresh powder" = "Perle nascoste con neve fresca";
+"Best in the Alps right now" = "Migliori nelle Alps in questo momento";
+"Deepest snowpack" = "Manto nevoso più profondo";
+"Japan snow conditions" = "Condizioni neve in Japan";
+
+/* Map Filters */
+"All" = "Tutte";
+"Good+" = "Buona+";
+"Below Good" = "Sotto Buona";
+
+/* Misc */
+"Share" = "Condividi";
+"Close" = "Chiudi";
+"Resorts" = "Stazioni";
+"No results" = "Nessun risultato";

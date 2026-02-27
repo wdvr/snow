@@ -5,6 +5,28 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Feb 28, 2026
+
+### Data: SVG→PNG logo conversion for iOS compatibility
+iOS AsyncImage can't render SVG files. Identified 395 resorts with SVG logo_urls (39% of all logos). Built CairoSVG batch conversion script: downloads SVG, converts to 256x256 PNG, uploads to S3 webapp bucket. Successfully converted 354/395 (41 failed: 404s, SSL errors, HTML responses). Updated resorts.json with new S3 PNG URLs. DynamoDB updated via Populate workflow.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | done | done | done |
+
+### Bugfix: BUG-003 — Fresh snow scored too low (Lake Louise 21cm@-7.5°C scored 26/100)
+ML model freeze-thaw detection reset `snow_since_freeze_cm` even with genuinely fresh snow. Added `_apply_fresh_snow_floor` physics constraint (symmetric counterpart to `_apply_no_snowfall_cap`): heavy snow ≥15cm@≤-5°C floors at 4.5 (EXCELLENT), moderate ≥8cm@≤-3°C at 3.5 (DECENT), light ≥3cm@≤0°C at 2.5 (MEDIOCRE). Only applies with hours_since_last_snowfall ≤ 12. 14 new tests.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Bugfix: BUG-011 — Source disagreement not triggering outlier detection in 2-source case
+When only 2 sources disagreed by >30%, the multi-source merger fell back to weighted averaging and marked both as "included" — even with 97% disagreement. Now: >50% disagreement triggers outlier detection (lower value marked as outlier, higher trusted — weather stations under-report snow more often than they hallucinate it). 30-50% disagreement still uses weighted average. <30% uses simple average (consensus). Both-near-zero (<1cm) always uses consensus. Added 7 new tests, updated 6 existing tests. All 1620 backend tests pass.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
 ## Feb 27, 2026
 
 ### Feature: Resort list card redesign (iOS)
