@@ -5,6 +5,26 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Feb 28, 2026
+
+### Fix: Nearby resort card tap crash
+Race condition when tapping nearby resort card on map — setting pendingRegion and selectedResort simultaneously caused SwiftUI to fight between map animation and sheet presentation. Fixed by delaying selectedResort by 0.5s.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Feature: "Show on Map" navigation
+Added cross-tab navigation via NavigationCoordinator. "Show on Map" button in resort detail toolbar (map.fill icon) + context menus on Resorts, Favorites, and Best Snow tabs. Switches to Map tab, zooms to resort, shows detail sheet.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Fix: Spotlight app name
+Set PRODUCT_NAME to "Powder Chaser" (was defaulting to "SnowTracker" from TARGET_NAME). Added PRODUCT_MODULE_NAME override to keep Swift module name as SnowTracker. Updated TEST_HOST for test targets.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
 ## Feb 27, 2026
 
 ### Feature: Map search — search for locations from bottom bar
