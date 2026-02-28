@@ -83,6 +83,13 @@
 - [x] Verified: Big Sky 589 runs, Vail 211, Zermatt 181, Whistler 65
 - [x] iOS tests: 119 passing, TestFlight triggered (v2.1.0)
 
+### Completed: Piste Overlay Polish (Feb 28)
+- [x] Remove piste name labels entirely (black background looks bad)
+- [x] Fix trails not disappearing on zoom-out — added zoom check in renderer (0.5° max span)
+- [x] Show trails at wider zoom level (fetch threshold 0.3→0.5)
+- [x] Toggle button verified removed in code (commit 51d1ee9)
+- [x] Pre-cache: 809/1019 done, rest have no OSM data or encoding issues
+
 ### Data Coverage (current)
 | Data | Coverage |
 |------|----------|

@@ -281,7 +281,7 @@ struct ResortMapView: View {
 
         // Check zoom level — only load vector pistes when zoomed in
         guard let region = mapViewModel.currentVisibleRegion,
-              region.span.latitudeDelta < 0.3 else {
+              region.span.latitudeDelta < 0.5 else {
             // Zoomed out too far — clear vector overlays
             if pisteOverlayResult != nil {
                 pisteOverlayResult = nil

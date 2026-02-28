@@ -74,29 +74,6 @@ enum PisteDifficulty: String, CaseIterable {
         }
     }
 
-    /// High-contrast color for text labels on white/light backgrounds.
-    func labelColor(scheme: PisteColorScheme) -> UIColor {
-        switch scheme {
-        case .northAmerican:
-            switch self {
-            case .novice, .easy: UIColor(red: 0, green: 0.55, blue: 0, alpha: 1)
-            case .intermediate: UIColor(red: 0, green: 0.25, blue: 0.75, alpha: 1)
-            case .advanced, .expert: UIColor.black
-            case .freeride: UIColor(red: 0.7, green: 0.4, blue: 0, alpha: 1)
-            case .unknown: UIColor.darkGray
-            }
-        case .european:
-            switch self {
-            case .novice: UIColor(red: 0, green: 0.55, blue: 0, alpha: 1)
-            case .easy: UIColor(red: 0, green: 0.25, blue: 0.75, alpha: 1)
-            case .intermediate: UIColor(red: 0.75, green: 0, blue: 0, alpha: 1)
-            case .advanced, .expert: UIColor.black
-            case .freeride: UIColor(red: 0.7, green: 0.4, blue: 0, alpha: 1)
-            case .unknown: UIColor.darkGray
-            }
-        }
-    }
-
     var sortOrder: Int {
         switch self {
         case .novice: 0

@@ -67,12 +67,6 @@ struct ClusteredMapView: UIViewRepresentable {
             mapView.setRegion(MapRegionPreset.naRockies.region, animated: false)
         }
 
-        // Register piste name annotation view
-        mapView.register(
-            PisteNameAnnotationView.self,
-            forAnnotationViewWithReuseIdentifier: "pisteNameAnnotation"
-        )
-
         return mapView
     }
 
@@ -105,8 +99,12 @@ struct ClusteredMapView: UIViewRepresentable {
         mapView.mapType = mapStyle.mapType
     }
 
+    /// Maximum zoom span to show piste overlays. At wider zoom, hide trails to reduce clutter.
+    private static let pisteMaxSpan: Double = 0.5
+
     private func updatePistePolylines(_ mapView: MKMapView, coordinator: Coordinator) {
-        let newOverlays: [MKOverlay] = showPisteOverlay ? (pisteOverlayResult?.allOverlays ?? []) : []
+        let isZoomedEnough = mapView.region.span.latitudeDelta < Self.pisteMaxSpan
+        let newOverlays: [MKOverlay] = (showPisteOverlay && isZoomedEnough) ? (pisteOverlayResult?.allOverlays ?? []) : []
         let currentIds = Set(coordinator.vectorOverlays.map { ObjectIdentifier($0) })
         let newIds = Set(newOverlays.map { ObjectIdentifier($0) })
 
@@ -121,66 +119,6 @@ struct ClusteredMapView: UIViewRepresentable {
             coordinator.vectorOverlays = newOverlays
         }
 
-        // Update piste name annotations
-        let isZoomedIn = mapView.region.span.latitudeDelta < 0.04 // ~z14+
-        let newNames: [PisteNameAnnotation] = (showPisteOverlay && isZoomedIn)
-            ? buildPisteNameAnnotations()
-            : []
-
-        let currentNameIds = Set(coordinator.pisteNameAnnotations.map { $0.pisteId })
-        let newNameIds = Set(newNames.map { $0.pisteId })
-
-        if currentNameIds != newNameIds {
-            if !coordinator.pisteNameAnnotations.isEmpty {
-                mapView.removeAnnotations(coordinator.pisteNameAnnotations)
-            }
-            if !newNames.isEmpty {
-                mapView.addAnnotations(newNames)
-            }
-            coordinator.pisteNameAnnotations = newNames
-        }
-    }
-
-    private func buildPisteNameAnnotations() -> [PisteNameAnnotation] {
-        guard let result = pisteOverlayResult else { return [] }
-
-        var annotations: [PisteNameAnnotation] = []
-
-        for piste in result.pistes {
-            guard let name = piste.pisteName, !name.isEmpty else { continue }
-            // Place label at midpoint of the piste
-            let midIndex = piste.pointCount / 2
-            guard midIndex < piste.pointCount else { continue }
-            let points = piste.points()
-            let midCoord = points[midIndex].coordinate
-
-            let annotation = PisteNameAnnotation(
-                pisteId: "\(name)-\(midCoord.latitude)-\(midCoord.longitude)",
-                name: name,
-                difficulty: piste.difficulty,
-                colorScheme: piste.colorScheme,
-                coordinate: midCoord
-            )
-            annotations.append(annotation)
-        }
-
-        for lift in result.lifts {
-            guard let name = lift.liftName, !name.isEmpty else { continue }
-            let midIndex = lift.pointCount / 2
-            guard midIndex < lift.pointCount else { continue }
-            let points = lift.points()
-            let midCoord = points[midIndex].coordinate
-
-            let annotation = PisteNameAnnotation(
-                pisteId: "lift-\(name)-\(midCoord.latitude)-\(midCoord.longitude)",
-                name: name,
-                difficulty: nil,
-                coordinate: midCoord
-            )
-            annotations.append(annotation)
-        }
-
-        return annotations
     }
 
     private func updateAnnotations(_ mapView: MKMapView) {
@@ -222,7 +160,6 @@ struct ClusteredMapView: UIViewRepresentable {
         var isProgrammaticRegionChange = false
         var hasInitialized = false
         var vectorOverlays: [MKOverlay] = []
-        var pisteNameAnnotations: [PisteNameAnnotation] = []
 
         init(_ parent: ClusteredMapView) {
             self.parent = parent
@@ -247,19 +184,6 @@ struct ClusteredMapView: UIViewRepresentable {
                 return view
             }
 
-            // Handle piste name annotations
-            if let pisteAnnotation = annotation as? PisteNameAnnotation {
-                let view = mapView.dequeueReusableAnnotationView(
-                    withIdentifier: "pisteNameAnnotation",
-                    for: annotation
-                ) as? PisteNameAnnotationView ?? PisteNameAnnotationView(
-                    annotation: annotation,
-                    reuseIdentifier: "pisteNameAnnotation"
-                )
-                view.configure(with: pisteAnnotation)
-                return view
-            }
-
             // Handle resort annotations
             if let resortAnnotation = annotation as? ResortPointAnnotation {
                 let view = mapView.dequeueReusableAnnotationView(
@@ -278,9 +202,6 @@ struct ClusteredMapView: UIViewRepresentable {
 
         func mapView(_ mapView: MKMapView, didSelect annotation: MKAnnotation) {
             mapView.deselectAnnotation(annotation, animated: false)
-
-            // Ignore piste name labels
-            if annotation is PisteNameAnnotation { return }
 
             if let cluster = annotation as? MKClusterAnnotation {
                 // Get all resorts in the cluster
@@ -343,85 +264,6 @@ struct ClusteredMapView: UIViewRepresentable {
 
             return MKOverlayRenderer(overlay: overlay)
         }
-    }
-}
-
-// MARK: - Piste Name Annotation
-
-/// Lightweight annotation placed at the midpoint of a piste/lift for labeling.
-final class PisteNameAnnotation: NSObject, MKAnnotation {
-    let pisteId: String
-    let name: String
-    let difficulty: PisteDifficulty?
-    let colorScheme: PisteColorScheme
-    let coordinate: CLLocationCoordinate2D
-
-    init(pisteId: String, name: String, difficulty: PisteDifficulty?, colorScheme: PisteColorScheme = .european, coordinate: CLLocationCoordinate2D) {
-        self.pisteId = pisteId
-        self.name = name
-        self.difficulty = difficulty
-        self.colorScheme = colorScheme
-        self.coordinate = coordinate
-        super.init()
-    }
-
-    var title: String? { name }
-}
-
-// MARK: - Piste Name Annotation View
-
-final class PisteNameAnnotationView: MKAnnotationView {
-    private let nameLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 10, weight: .semibold)
-        label.textAlignment = .center
-        label.numberOfLines = 1
-        label.adjustsFontSizeToFitWidth = true
-        label.minimumScaleFactor = 0.7
-        return label
-    }()
-
-    override init(annotation: MKAnnotation?, reuseIdentifier: String?) {
-        super.init(annotation: annotation, reuseIdentifier: reuseIdentifier)
-        // Don't cluster piste names with resort pins
-        clusteringIdentifier = nil
-        collisionMode = .rectangle
-        canShowCallout = false
-        addSubview(nameLabel)
-    }
-
-    required init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    func configure(with annotation: PisteNameAnnotation) {
-        self.annotation = annotation
-        clusteringIdentifier = nil
-        nameLabel.text = annotation.name
-
-        if let difficulty = annotation.difficulty {
-            nameLabel.textColor = difficulty.labelColor(scheme: annotation.colorScheme)
-        } else {
-            // Lift
-            nameLabel.textColor = .darkGray
-        }
-
-        // Size to fit the text
-        nameLabel.sizeToFit()
-        let padding: CGFloat = 6
-        let width = min(nameLabel.frame.width + padding * 2, 120)
-        let height = nameLabel.frame.height + 4
-        frame = CGRect(x: 0, y: 0, width: width, height: height)
-        nameLabel.frame = CGRect(x: padding, y: 2, width: width - padding * 2, height: height - 4)
-        centerOffset = CGPoint(x: 0, y: -height / 2)
-
-        // Semi-transparent background pill
-        backgroundColor = UIColor.systemBackground.withAlphaComponent(0.8)
-        layer.cornerRadius = height / 2
-        layer.masksToBounds = true
-
-        displayPriority = .defaultLow
-        isAccessibilityElement = false
     }
 }
 
