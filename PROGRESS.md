@@ -11,7 +11,25 @@
 
 ---
 
-## Active Work (Feb 27) — Polish & Launch
+## Active Work (Feb 28) — Map UX + Backend Fixes
+
+### In Progress
+- [ ] Fix "Show on Map" zoom (only pans, doesn't zoom from list view)
+- [ ] Fix nearby card tap offset (resort should appear in upper half above sheet)
+- [ ] Add "Zoom to Resort" button in map detail sheet
+- [ ] Search location context: "Near {place}" label + distance-sorted nearby
+- [ ] Search location: cancel/clear to return to user location
+- [ ] All map features work without location permissions
+
+### Queued
+- [ ] Fix API `/resorts` limit param bug (returns all 1040 regardless of limit)
+- [ ] App Store screenshots for v2.1 (Powder Chaser branding, new features)
+- [ ] Trip Planning Mode (#23) — multi-component feature
+- [ ] Web: Trail map viewer fix (page URLs instead of DZI thumbnails) (#191)
+- [ ] Web: Timeline/hourly forecast cards (#192)
+- [ ] Annual snowfall data for 594 missing resorts
+
+## Completed (Feb 27-28) — Polish & Launch
 
 ### Just Completed (Feb 27)
 - [x] Resort list card redesign (iOS) — ScrollView+LazyVStack matching Best Snow tab
@@ -47,6 +65,10 @@
 - [x] Resorts database updated (PNG logo URLs pushed to DynamoDB)
 
 ### Just Completed (Feb 28)
+- [x] Nearby resort tap crash fix (race condition, 0.5s delay)
+- [x] "Show on Map" navigation (NavigationCoordinator, cross-tab zoom)
+- [x] Full rename SnowTracker → PowderChaser (dirs, targets, module, workflows, docs)
+- [x] Debug "Send Test Notification" for admin users in production
 - [x] Snow depth fix: ERA5 re-enable + 14d snowfall floor (Kimberly 1cm→100cm, 529 resorts)
 - [x] Fresh snow cap fix: don't cap at unreliable snow_depth values
 - [x] Timeline card background: .cardStyle() for consistency

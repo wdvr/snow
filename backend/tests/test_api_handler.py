@@ -2142,11 +2142,10 @@ class TestDebugEndpoints:
             resp = client.post("/api/v1/debug/trigger-notifications")
             assert resp.status_code == 403
 
-    def test_debug_test_push_blocked_in_prod_for_non_admin(self, client):
-        """Debug test-push-notification should return 403 in prod for non-admin users."""
-        with patch.dict("os.environ", {"ENVIRONMENT": "prod"}):
-            resp = client.post("/api/v1/debug/test-push-notification")
-            assert resp.status_code == 403
+    def test_debug_test_push_requires_auth(self, client):
+        """Debug test-push-notification requires authentication (any user can test their own device)."""
+        resp = client.post("/api/v1/debug/test-push-notification")
+        assert resp.status_code == 401
 
     @patch("handlers.api_handler._is_admin_user", return_value=True)
     @patch("boto3.client")

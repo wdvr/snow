@@ -34,7 +34,9 @@ struct ResortMapView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { mapToolbarItems }
             .sheet(item: $selectedResort) { resort in
-                ResortMapDetailSheet(resort: resort)
+                ResortMapDetailSheet(resort: resort) {
+                    mapViewModel.pendingRegion = sheetAdjustedRegion(for: resort.primaryCoordinate)
+                }
                     .environmentObject(snowConditionsManager)
                     .environmentObject(userPreferencesManager)
                     .environmentObject(navigationCoordinator)
@@ -73,10 +75,8 @@ struct ResortMapView: View {
             .onChange(of: navigationCoordinator.mapTargetResort) { _, resort in
                 guard let resort else { return }
                 navigationCoordinator.mapTargetResort = nil
-                mapViewModel.pendingRegion = MKCoordinateRegion(
-                    center: resort.primaryCoordinate,
-                    span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
-                )
+                // Offset center south so resort appears in upper half above the detail sheet
+                mapViewModel.pendingRegion = sheetAdjustedRegion(for: resort.primaryCoordinate)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     selectedResort = resort
                 }
@@ -474,22 +474,46 @@ struct ResortMapView: View {
 
     // MARK: - Nearby + Search Bar
 
+    /// Offset center southward so the resort appears in the upper half of the map,
+    /// above the detail sheet which covers the bottom ~40%.
+    private func sheetAdjustedRegion(for coordinate: CLLocationCoordinate2D, span: MKCoordinateSpan = MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)) -> MKCoordinateRegion {
+        MKCoordinateRegion(
+            center: CLLocationCoordinate2D(
+                latitude: coordinate.latitude - span.latitudeDelta * 0.22,
+                longitude: coordinate.longitude
+            ),
+            span: span
+        )
+    }
+
+    private var hasNearbyResorts: Bool {
+        mapViewModel.nearbyReferenceLocation != nil && !mapViewModel.nearbyResorts().isEmpty
+    }
+
     private var nearbyAndSearchBar: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Header row with Nearby + Search
+            // Header row with Nearby/Near {place} + Search
             HStack {
-                if locationManager.isLocationAvailable && !mapViewModel.nearbyResorts().isEmpty {
+                if hasNearbyResorts {
                     Button {
                         withAnimation(.easeInOut(duration: 0.25)) {
                             nearbyCollapsed.toggle()
                         }
                     } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "location.fill")
+                            Image(systemName: mapViewModel.searchLocation != nil ? "mappin.and.ellipse" : "location.fill")
                                 .foregroundStyle(.blue)
-                            Text("Nearby")
-                                .font(.headline)
-                                .foregroundStyle(.primary)
+
+                            if let searchLoc = mapViewModel.searchLocation {
+                                Text("Near \(searchLoc.name)")
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(1)
+                            } else {
+                                Text("Nearby")
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
+                            }
 
                             Image(systemName: "chevron.down")
                                 .font(.caption)
@@ -498,6 +522,20 @@ struct ResortMapView: View {
                         }
                     }
                     .buttonStyle(.plain)
+
+                    // Clear search location button
+                    if mapViewModel.searchLocation != nil {
+                        Button {
+                            withAnimation {
+                                mapViewModel.searchLocation = nil
+                            }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
 
                 Spacer()
@@ -517,9 +555,7 @@ struct ResortMapView: View {
             .padding(.horizontal, 4)
 
             // Nearby cards
-            if locationManager.isLocationAvailable
-                && !mapViewModel.nearbyResorts().isEmpty
-                && !nearbyCollapsed {
+            if hasNearbyResorts && !nearbyCollapsed {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(mapViewModel.nearbyResorts(limit: 5)) { annotation in
@@ -527,11 +563,8 @@ struct ResortMapView: View {
                                 annotation: annotation,
                                 distance: mapViewModel.formattedDistance(to: annotation.resort, prefs: userPreferencesManager.preferredUnits)
                             ) {
-                                // Zoom to resort first, then show detail after delay to avoid race condition
-                                mapViewModel.pendingRegion = MKCoordinateRegion(
-                                    center: annotation.resort.primaryCoordinate,
-                                    span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
-                                )
+                                // Zoom to resort, offset for sheet, then show detail after delay
+                                mapViewModel.pendingRegion = sheetAdjustedRegion(for: annotation.resort.primaryCoordinate)
                                 let resort = annotation.resort
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                     selectedResort = resort
@@ -546,7 +579,18 @@ struct ResortMapView: View {
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
         .sheet(isPresented: $showMapSearch) {
-            MapSearchSheet { region in
+            MapSearchSheet(
+                hasUserLocation: locationManager.isLocationAvailable
+            ) { region, locationName in
+                if let locationName {
+                    mapViewModel.searchLocation = MapSearchLocation(
+                        name: locationName,
+                        coordinate: region.center
+                    )
+                } else {
+                    // "Near current location" selected — clear search
+                    mapViewModel.searchLocation = nil
+                }
                 mapViewModel.pendingRegion = region
             }
             .presentationDetents([.medium])
@@ -770,11 +814,31 @@ struct MapSearchSheet: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var searchCompleter = MapSearchCompleter()
     @State private var searchText = ""
-    let onSelect: (MKCoordinateRegion) -> Void
+    let hasUserLocation: Bool
+    /// Called with (region, locationName). locationName is nil when "Near current location" is selected.
+    let onSelect: (MKCoordinateRegion, String?) -> Void
 
     var body: some View {
         NavigationStack {
             List {
+                // "Near current location" option — only when user has location
+                if hasUserLocation && searchText.isEmpty {
+                    Button {
+                        let locationManager = LocationManager.shared
+                        if let userLoc = locationManager.userLocation {
+                            let region = MKCoordinateRegion(
+                                center: userLoc.coordinate,
+                                span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+                            )
+                            onSelect(region, nil)
+                        }
+                        dismiss()
+                    } label: {
+                        Label("Near current location", systemImage: "location.fill")
+                            .foregroundStyle(.blue)
+                    }
+                }
+
                 if searchCompleter.results.isEmpty && !searchText.isEmpty {
                     ContentUnavailableView.search(text: searchText)
                 } else {
@@ -819,7 +883,7 @@ struct MapSearchSheet: View {
                 center: mapItem.placemark.coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
             )
-            onSelect(region)
+            onSelect(region, completion.title)
             dismiss()
         }
     }
@@ -904,6 +968,7 @@ struct NearbyResortCard: View {
 
 struct ResortMapDetailSheet: View {
     let resort: Resort
+    var onZoomToResort: (() -> Void)?
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
@@ -1211,6 +1276,41 @@ struct ResortMapDetailSheet: View {
 
     private var actionsSection: some View {
         VStack(spacing: 12) {
+            // Zoom to resort on map
+            if let onZoomToResort {
+                Button {
+                    onZoomToResort()
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "scope")
+                            .font(.title3)
+                            .foregroundStyle(.white)
+                            .frame(width: 40, height: 40)
+                            .background(.green.gradient, in: RoundedRectangle(cornerRadius: 10))
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Zoom to Resort")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                            Text("Center map on \(resort.name)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "location.magnifyingglass")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+            }
+
             // Webcam card
             webcamSection
 

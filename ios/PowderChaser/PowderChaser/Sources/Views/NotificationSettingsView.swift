@@ -569,15 +569,8 @@ class NotificationSettingsViewModel: ObservableObject {
     func sendTestNotification() {
         guard !isSendingTest else { return }
 
-        // Check authentication first
-        let authService = AuthenticationService.shared
-        guard authService.isAuthenticated else {
+        guard AuthenticationService.shared.isAuthenticated else {
             testResult = TestResult(success: false, message: "Please sign in first")
-            return
-        }
-
-        if authService.currentUser?.provider == .guest {
-            testResult = TestResult(success: false, message: "Debug features require signing in with Apple or Google")
             return
         }
 

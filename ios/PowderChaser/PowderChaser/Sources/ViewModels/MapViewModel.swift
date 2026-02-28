@@ -187,6 +187,23 @@ enum MapRegionPreset: String, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - Map Search Location
+
+struct MapSearchLocation: Equatable {
+    let name: String
+    let coordinate: CLLocationCoordinate2D
+
+    var clLocation: CLLocation {
+        CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+    }
+
+    static func == (lhs: MapSearchLocation, rhs: MapSearchLocation) -> Bool {
+        lhs.name == rhs.name
+            && lhs.coordinate.latitude == rhs.coordinate.latitude
+            && lhs.coordinate.longitude == rhs.coordinate.longitude
+    }
+}
+
 // MARK: - Map View Model
 
 @MainActor
@@ -201,6 +218,7 @@ class MapViewModel: ObservableObject {
     @Published var selectedForecastDate: Date? = nil
     @Published var isFetchingTimelines = false
     @Published var timelineBatchCount = 0
+    @Published var searchLocation: MapSearchLocation?
     var currentVisibleRegion: MKCoordinateRegion?
 
     private let locationManager = LocationManager.shared
@@ -353,8 +371,15 @@ class MapViewModel: ObservableObject {
     // MARK: - Distance Helpers
 
     func formattedDistance(to resort: Resort, prefs: UnitPreferences? = nil) -> String? {
-        guard let userLocation = locationManager.userLocation else { return nil }
-        let distance = resort.distance(from: userLocation)
+        let location: CLLocation
+        if let searchLoc = searchLocation {
+            location = searchLoc.clLocation
+        } else if let userLoc = locationManager.userLocation {
+            location = userLoc
+        } else {
+            return nil
+        }
+        let distance = resort.distance(from: location)
         if let prefs = prefs, prefs.distance == .imperial {
             let miles = distance / 1609.344
             return String(format: "%.0f mi", miles)
@@ -458,17 +483,22 @@ class MapViewModel: ObservableObject {
         return items.sorted { (distances[$0.id] ?? .infinity) < (distances[$1.id] ?? .infinity) }
     }
 
+    /// The reference location for nearby: search location if set, otherwise user location.
+    var nearbyReferenceLocation: CLLocation? {
+        searchLocation?.clLocation ?? locationManager.userLocation
+    }
+
     private func nearbyResortIds(limit: Int = 5) -> [String] {
-        guard let userLocation = locationManager.userLocation else { return [] }
-        return Array(sortedByDistance(annotations, from: userLocation).prefix(limit).map { $0.id })
+        guard let refLocation = nearbyReferenceLocation else { return [] }
+        return Array(sortedByDistance(annotations, from: refLocation).prefix(limit).map { $0.id })
     }
 
     // MARK: - Nearby Resorts
 
     func nearbyResorts(limit: Int = 5) -> [ResortAnnotation] {
-        guard let userLocation = locationManager.userLocation else { return [] }
+        guard let refLocation = nearbyReferenceLocation else { return [] }
 
-        let sorted = Array(sortedByDistance(annotations, from: userLocation).prefix(limit))
+        let sorted = Array(sortedByDistance(annotations, from: refLocation).prefix(limit))
 
         guard let forecastDate = selectedForecastDate else {
             return sorted

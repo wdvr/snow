@@ -3215,20 +3215,17 @@ async def trigger_notifications(
 
 @app.post("/api/v1/debug/test-push-notification")
 async def test_push_notification(
-    user_id: str | None = Depends(get_optional_user_id),
+    user_id: str = Depends(get_current_user_id),
     title: str = "Test Notification",
     body: str = "This is a test push notification from Powder Chaser",
 ):
     """
-    Send a test push notification to devices.
-    If authenticated, sends to user's devices. Otherwise, sends to all devices.
-    Available in staging/dev, or for admin users in production.
+    Send a test push notification to the authenticated user's devices.
+    Any authenticated user can test notifications on their own devices.
     """
     import boto3
 
     environment = os.environ.get("ENVIRONMENT", "dev")
-
-    _check_debug_access(environment, user_id)
 
     try:
         # Get device tokens
@@ -3238,22 +3235,17 @@ async def test_push_notification(
             )
         )
 
-        if user_id:
-            # Query for specific user's tokens
-            result = device_tokens_table.query(
-                KeyConditionExpression="user_id = :uid",
-                ExpressionAttributeValues={":uid": user_id},
-            )
-            tokens = result.get("Items", [])
-        else:
-            # Scan for all tokens (for testing without auth)
-            result = device_tokens_table.scan(Limit=10)  # Limit to 10 for safety
-            tokens = result.get("Items", [])
+        # Query for authenticated user's tokens
+        result = device_tokens_table.query(
+            KeyConditionExpression="user_id = :uid",
+            ExpressionAttributeValues={":uid": user_id},
+        )
+        tokens = result.get("Items", [])
 
         if not tokens:
             return {
-                "message": "No device tokens found",
-                "user_id": user_id or "anonymous",
+                "message": "No device tokens found for your account. Make sure you've enabled notifications in the app.",
+                "user_id": user_id,
                 "tokens_found": 0,
             }
 

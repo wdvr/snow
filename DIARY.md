@@ -25,6 +25,36 @@ Set PRODUCT_NAME to "Powder Chaser" (was defaulting to "PowderChaser" from TARGE
 |-----|---------|-----|-----|
 | done | n/a | n/a | n/a |
 
+### Chore: Full rename SnowTracker → PowderChaser
+Renamed all directories, targets, scheme, tests, widget, module name from SnowTracker to PowderChaser. Updated all source files, workflows, docs, backend user-agent strings, Grafana dashboards. Bundle IDs unchanged (com.wouterdevriendt.snowtracker) to preserve App Store identity.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Fix: Debug "Send Test Notification" visible for admin in production
+Debug section in NotificationSettingsView was gated by `isDebugOrTestFlight` only. Now also shows for admin users (via `AppConfiguration.shared.showDeveloperSettings`) in production builds, matching the staging API button pattern.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Fix: Test push notification works for any authenticated user
+Backend `test-push-notification` endpoint was admin-only in production (403 for regular users). Changed to require any authenticated user — it only sends to the requesting user's own devices, so there's no security concern. Trigger-notifications endpoint remains admin-only.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### Fix: Map UX improvements
+- "Show on Map" from resort list now properly zooms (not just pans) + offsets resort to upper half above detail sheet
+- Nearby card taps offset resort to upper half above detail sheet
+- Map detail sheet has "Zoom to Resort" button
+- Search for location updates "Nearby" label to "Near {place}" with distance-sorted resorts
+- X button to clear search location and return to user's current location
+- "Near current location" option in search sheet
+- All features work without location permissions when search location is set
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
 ## Feb 27, 2026
 
 ### Feature: Map search — search for locations from bottom bar
