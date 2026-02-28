@@ -2198,3 +2198,81 @@ class TestDebugEndpoints:
         with pytest.raises(HTTPException) as exc_info:
             _check_debug_access("prod", "some-user-id")
         assert exc_info.value.status_code == 403
+
+
+# ===========================================================================
+# App Config Endpoint
+# ===========================================================================
+
+
+class TestAppConfig:
+    """Tests for GET /api/v1/app-config."""
+
+    def test_app_config_returns_200(self, client):
+        """Endpoint should return 200 even without DynamoDB table."""
+        resp = client.get("/api/v1/app-config")
+        assert resp.status_code == 200
+
+    def test_app_config_response_fields(self, client):
+        """Response should contain all expected fields with correct types."""
+        data = client.get("/api/v1/app-config").json()
+        assert isinstance(data["minimum_ios_version"], str)
+        assert isinstance(data["latest_ios_version"], str)
+        assert isinstance(data["update_message"], str)
+        assert isinstance(data["update_url"], str)
+        assert isinstance(data["force_update"], bool)
+
+    def test_app_config_default_values(self, client):
+        """Without DynamoDB, should return hardcoded defaults."""
+        data = client.get("/api/v1/app-config").json()
+        assert data["minimum_ios_version"] == "2.1.0"
+        assert data["latest_ios_version"] == "2.1.0"
+        assert data["update_url"] == "https://apps.apple.com/app/id6758333173"
+        assert data["force_update"] is False
+
+    @patch("handlers.api_handler.get_dynamodb")
+    def test_app_config_reads_from_dynamodb(self, mock_dynamodb, client):
+        """Should merge DynamoDB values over defaults."""
+        mock_table = MagicMock()
+        mock_table.get_item.return_value = {
+            "Item": {
+                "config_id": "ios",
+                "minimum_ios_version": "3.0.0",
+                "force_update": True,
+            }
+        }
+        mock_dynamodb.return_value.Table.return_value = mock_table
+
+        data = client.get("/api/v1/app-config").json()
+        assert data["minimum_ios_version"] == "3.0.0"
+        assert data["force_update"] is True
+        # Non-overridden fields keep defaults
+        assert data["latest_ios_version"] == "2.1.0"
+        assert data["update_url"] == "https://apps.apple.com/app/id6758333173"
+
+    @patch("handlers.api_handler.get_dynamodb")
+    def test_app_config_dynamodb_missing_item(self, mock_dynamodb, client):
+        """Should return defaults when DynamoDB item is missing."""
+        mock_table = MagicMock()
+        mock_table.get_item.return_value = {}
+        mock_dynamodb.return_value.Table.return_value = mock_table
+
+        data = client.get("/api/v1/app-config").json()
+        assert data["minimum_ios_version"] == "2.1.0"
+        assert data["force_update"] is False
+
+    @patch("handlers.api_handler.get_dynamodb")
+    def test_app_config_dynamodb_error_falls_back(self, mock_dynamodb, client):
+        """Should return defaults when DynamoDB raises ClientError."""
+        from botocore.exceptions import ClientError
+
+        mock_table = MagicMock()
+        mock_table.get_item.side_effect = ClientError(
+            {"Error": {"Code": "ResourceNotFoundException", "Message": "Not found"}},
+            "GetItem",
+        )
+        mock_dynamodb.return_value.Table.return_value = mock_table
+
+        data = client.get("/api/v1/app-config").json()
+        assert data["minimum_ios_version"] == "2.1.0"
+        assert data["force_update"] is False

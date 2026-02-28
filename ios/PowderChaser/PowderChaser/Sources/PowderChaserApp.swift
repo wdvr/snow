@@ -39,8 +39,10 @@ struct PowderChaserApp: App {
     @ObservedObject private var authService = AuthenticationService.shared
     @ObservedObject private var userPreferencesManager = UserPreferencesManager.shared
     @StateObject private var navigationCoordinator = NavigationCoordinator()
+    @StateObject private var updateService = AppUpdateService()
     @State private var showSplash = true
     @State private var showOnboarding = false
+    @State private var showForceUpdate = false
 
     init() {
         // Initialize Firebase Analytics & Crashlytics
@@ -94,6 +96,21 @@ struct PowderChaserApp: App {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                     withAnimation(.easeOut(duration: 0.5)) {
                         showSplash = false
+                    }
+                }
+            }
+            .task {
+                // Check for required app updates once per launch
+                await updateService.checkForUpdate()
+            }
+            .onChange(of: updateService.updateRequired) { _, required in
+                showForceUpdate = required
+            }
+            .fullScreenCover(isPresented: $showForceUpdate) {
+                if let info = updateService.updateInfo {
+                    ForceUpdateView(updateInfo: info) {
+                        // "Not Now" was tapped — dismiss the cover
+                        showForceUpdate = false
                     }
                 }
             }

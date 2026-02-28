@@ -631,6 +631,43 @@ async def health_check():
     }
 
 
+@app.get("/api/v1/app-config")
+async def get_app_config():
+    """Return app configuration including minimum supported version.
+
+    iOS app checks this on launch to determine if a forced update is needed.
+    Reads from DynamoDB table snow-tracker-app-config-{env} with fallback
+    to hardcoded defaults if the table doesn't exist or the read fails.
+    """
+    defaults = {
+        "minimum_ios_version": "2.1.0",
+        "latest_ios_version": "2.1.0",
+        "update_message": "A new version of Powder Chaser is available with important improvements. Please update to continue.",
+        "update_url": "https://apps.apple.com/app/id6758333173",
+        "force_update": False,
+    }
+
+    try:
+        environment = os.environ.get("ENVIRONMENT", "dev")
+        table = get_dynamodb().Table(f"snow-tracker-app-config-{environment}")
+        response = table.get_item(Key={"config_id": "ios"})
+        item = response.get("Item")
+        if item:
+            # Merge DynamoDB values over defaults (only known keys)
+            for key in defaults:
+                if key in item:
+                    defaults[key] = item[key]
+    except ClientError:
+        logger.warning("Failed to read app config from DynamoDB, using defaults")
+    except Exception:
+        logger.warning(
+            "Unexpected error reading app config from DynamoDB, using defaults",
+            exc_info=True,
+        )
+
+    return defaults
+
+
 # MARK: - Resort Endpoints
 
 

@@ -22,7 +22,7 @@
 - [ ] All map features work without location permissions
 
 ### Queued
-- [ ] Fix API `/resorts` limit param bug (returns all 1040 regardless of limit)
+- [x] ~~Fix API `/resorts` limit param bug~~ — was a false positive, limit works correctly
 - [ ] App Store screenshots for v2.1 (Powder Chaser branding, new features)
 - [ ] Trip Planning Mode (#23) — multi-component feature
 - [ ] Web: Trail map viewer fix (page URLs instead of DZI thumbnails) (#191)
