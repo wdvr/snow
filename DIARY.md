@@ -7,6 +7,36 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 27, 2026
 
+### Feature: Map search — search for locations from bottom bar
+Added magnifying glass + "Search" button in the bottom nearby bar. Opens sheet with MKLocalSearchCompleter autocomplete. Selecting a result pans map to that location. Works independently of location services.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Fix: Piste overlay colors for NA resorts
+Colors used EU convention (green/blue/red/black) everywhere. NA resorts (US/CA) use green/blue/black. Added PisteColorScheme enum derived from resort country. Novice+easy→green, intermediate→blue for NA. EU stays green/blue/red/black.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Feature: Nearby resort card → zoom to resort
+Tapping a nearby resort card now zooms the map to that resort (0.08° span) before showing the detail sheet, instead of just opening the sheet at the current zoom level.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Change: Piste overlay always enabled, toggle removed
+Ski trail overlay now enabled by default and the toolbar toggle was removed. Trails only render when zoomed in (latDelta < 0.3) so no clutter at wide zoom. Fetches trigger on appear and region change.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Change: App display name — "Snow Tracker" → "Powder Chaser"
+Updated CFBundleDisplayName and CFBundleName in project.yml and Info.plist. Home screen and Spotlight now show "Powder Chaser". Widget renamed too.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
 ### Feature: Vector piste overlay POC — Overpass API + native MKPolyline
 Queries OpenStreetMap via Overpass API for downhill piste ways (`piste:type=downhill`) and aerial lifts (`aerialway`) within a bounding box around visible resorts. Renders pistes as colored MKPolyline overlays (green=novice, blue=easy, red=intermediate, black=advanced) and lifts as dashed gray lines. PisteOverlayService is an actor with LRU cache (50 entries), deduped in-flight requests. Auto-fetches when piste toggle is enabled and map is zoomed in (latDelta < 0.15°). Coexists with existing OpenSnowMap raster tiles. Coverage: good for NA/Europe (Vail: 211, Zermatt: 131, Chamonix: 105), sparse for Japan (Niseko: ~8 ways in broad area).
 | iOS | Android | Web | API |
