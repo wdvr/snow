@@ -200,7 +200,18 @@ def upload_to_s3(s3_client, resort_id: str, data: dict) -> bool:
         return False
 
 
-def process_resort(resort: dict, s3_client, dry_run: bool) -> dict:
+def s3_key_exists(s3_client, resort_id: str) -> bool:
+    """Check if a piste file already exists in S3."""
+    try:
+        s3_client.head_object(Bucket=S3_BUCKET, Key=f"{S3_PREFIX}/{resort_id}.json")
+        return True
+    except Exception:
+        return False
+
+
+def process_resort(
+    resort: dict, s3_client, dry_run: bool, skip_existing: bool = False
+) -> dict:
     """Process a single resort. Returns a result dict with status info."""
     resort_id = resort["resort_id"]
     name = resort.get("name", resort_id)
@@ -216,6 +227,12 @@ def process_resort(resort: dict, s3_client, dry_run: bool) -> dict:
         "skipped": False,
         "error": None,
     }
+
+    # Skip if already cached
+    if skip_existing and s3_client and s3_key_exists(s3_client, resort_id):
+        result["skipped"] = True
+        logger.info(f"  {resort_id} ({name}): already cached, skipping")
+        return result
 
     # Query Overpass
     raw = query_overpass(lat, lon)
@@ -274,6 +291,11 @@ def main():
         default=None,
         help="Process a single resort by resort_id (for testing)",
     )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip resorts that already have a file in S3",
+    )
     args = parser.parse_args()
 
     # Load resorts
@@ -304,7 +326,7 @@ def main():
         )
 
         for resort in batch:
-            result = process_resort(resort, s3_client, args.dry_run)
+            result = process_resort(resort, s3_client, args.dry_run, args.skip_existing)
             results.append(result)
 
         # Delay between batches (skip after last batch)

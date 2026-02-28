@@ -10,7 +10,7 @@ struct ResortMapView: View {
     @State private var selectedResort: Resort?
     @State private var showLegend: Bool = false
     @State private var mapStyle: MapDisplayStyle = .standard
-    @State private var showPisteOverlay: Bool = false
+    @State private var showPisteOverlay: Bool = true
     @State private var clusterResorts: [Resort] = []
     @State private var showClusterList: Bool = false
     @State private var regionChangeTask: Task<Void, Never>?
@@ -19,6 +19,7 @@ struct ResortMapView: View {
     @State private var pisteOverlayResult: PisteOverlayResult?
     @State private var pisteLoadedForResorts: Set<String> = []
     @State private var pisteLoadTask: Task<Void, Never>?
+    @State private var showMapSearch: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -124,9 +125,7 @@ struct ResortMapView: View {
                 .padding(8)
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
 
-            if locationManager.isLocationAvailable && !mapViewModel.nearbyResorts().isEmpty {
-                nearbyResortsCarousel
-            }
+            nearbyAndSearchBar
         }
         .padding(.horizontal)
         .padding(.bottom, 8)
@@ -189,6 +188,9 @@ struct ResortMapView: View {
         // Proactively fetch conditions for all visible resorts in the background
         // so map icons show fresh quality data without needing to tap each one
         Task { await fetchConditionsForVisibleResorts() }
+
+        // Fetch vector piste data for visible resorts
+        fetchPisteOverlaysForVisibleResorts()
     }
 
     /// Debounce region-change fetches: cancel any pending fetch and start a new one
@@ -457,34 +459,54 @@ struct ResortMapView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
     }
 
-    // MARK: - Nearby Resorts Carousel
+    // MARK: - Nearby + Search Bar
 
-    private var nearbyResortsCarousel: some View {
-        VStack(alignment: .leading, spacing: nearbyCollapsed ? 0 : 8) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    nearbyCollapsed.toggle()
+    private var nearbyAndSearchBar: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Header row with Nearby + Search
+            HStack {
+                if locationManager.isLocationAvailable && !mapViewModel.nearbyResorts().isEmpty {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            nearbyCollapsed.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "location.fill")
+                                .foregroundStyle(.blue)
+                            Text("Nearby")
+                                .font(.headline)
+                                .foregroundStyle(.primary)
+
+                            Image(systemName: "chevron.down")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .rotationEffect(.degrees(nearbyCollapsed ? -90 : 0))
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
-            } label: {
-                HStack {
-                    Image(systemName: "location.fill")
-                        .foregroundStyle(.blue)
-                    Text("Nearby")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
 
-                    Spacer()
+                Spacer()
 
-                    Image(systemName: "chevron.down")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(nearbyCollapsed ? -90 : 0))
+                Button {
+                    showMapSearch = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "magnifyingglass")
+                        Text("Search")
+                            .font(.subheadline)
+                    }
+                    .foregroundStyle(.blue)
                 }
-                .padding(.horizontal, 4)
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+            .padding(.horizontal, 4)
 
-            if !nearbyCollapsed {
+            // Nearby cards
+            if locationManager.isLocationAvailable
+                && !mapViewModel.nearbyResorts().isEmpty
+                && !nearbyCollapsed {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(mapViewModel.nearbyResorts(limit: 5)) { annotation in
@@ -492,6 +514,11 @@ struct ResortMapView: View {
                                 annotation: annotation,
                                 distance: mapViewModel.formattedDistance(to: annotation.resort, prefs: userPreferencesManager.preferredUnits)
                             ) {
+                                // Zoom to resort then show detail
+                                mapViewModel.pendingRegion = MKCoordinateRegion(
+                                    center: annotation.resort.primaryCoordinate,
+                                    span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
+                                )
                                 selectedResort = annotation.resort
                             }
                         }
@@ -502,6 +529,13 @@ struct ResortMapView: View {
         }
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .sheet(isPresented: $showMapSearch) {
+            MapSearchSheet { region in
+                mapViewModel.pendingRegion = region
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
     }
 
     private var dateSelector: some View {
@@ -574,18 +608,6 @@ struct ResortMapView: View {
             }
             .disabled(isFetchingVisibleConditions)
             .accessibilityLabel("Refresh conditions")
-
-            Button {
-                withAnimation {
-                    showPisteOverlay.toggle()
-                }
-            } label: {
-                Image(systemName: showPisteOverlay ? "figure.skiing.downhill" : "figure.skiing.downhill")
-                    .foregroundStyle(showPisteOverlay ? .blue : .primary)
-            }
-            .accessibilityIdentifier(AccessibilityID.Map.pisteToggle)
-            .accessibilityLabel(showPisteOverlay ? "Hide ski trails" : "Show ski trails")
-            .sensoryFeedback(.selection, trigger: showPisteOverlay)
 
             Button {
                 withAnimation {
@@ -723,6 +745,95 @@ struct Triangle: Shape {
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
         path.closeSubpath()
         return path
+    }
+}
+
+// MARK: - Map Search Sheet
+
+struct MapSearchSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var searchCompleter = MapSearchCompleter()
+    @State private var searchText = ""
+    let onSelect: (MKCoordinateRegion) -> Void
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if searchCompleter.results.isEmpty && !searchText.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
+                } else {
+                    ForEach(searchCompleter.results, id: \.self) { completion in
+                        Button {
+                            selectCompletion(completion)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(completion.title)
+                                    .font(.body)
+                                    .foregroundStyle(.primary)
+                                if !completion.subtitle.isEmpty {
+                                    Text(completion.subtitle)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search for a place")
+            .onChange(of: searchText) { _, newValue in
+                searchCompleter.search(query: newValue)
+            }
+            .navigationTitle("Search Map")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func selectCompletion(_ completion: MKLocalSearchCompletion) {
+        let request = MKLocalSearch.Request(completion: completion)
+        let search = MKLocalSearch(request: request)
+        search.start { response, _ in
+            guard let mapItem = response?.mapItems.first else { return }
+            let region = MKCoordinateRegion(
+                center: mapItem.placemark.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+            )
+            onSelect(region)
+            dismiss()
+        }
+    }
+}
+
+/// Search completer that provides autocomplete suggestions.
+final class MapSearchCompleter: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
+    @Published var results: [MKLocalSearchCompletion] = []
+    private let completer = MKLocalSearchCompleter()
+
+    override init() {
+        super.init()
+        completer.delegate = self
+        completer.resultTypes = [.address, .pointOfInterest]
+    }
+
+    func search(query: String) {
+        guard !query.isEmpty else {
+            results = []
+            return
+        }
+        completer.queryFragment = query
+    }
+
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        results = completer.results
+    }
+
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        // Silently handle — user keeps typing
     }
 }
 

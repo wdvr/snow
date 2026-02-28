@@ -68,8 +68,8 @@ targets:
     info:
       path: SnowTracker/Info.plist
       properties:
-        CFBundleName: Snow Tracker
-        CFBundleDisplayName: Snow Tracker
+        CFBundleName: Powder Chaser
+        CFBundleDisplayName: Powder Chaser
         CFBundleShortVersionString: "2.1.0"
         CFBundleVersion: "1"
         UILaunchScreen:
@@ -84,7 +84,7 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         # Privacy - Location Usage
-        NSLocationWhenInUseUsageDescription: "Snow Tracker uses your location to show nearby ski resorts and calculate distances to resorts."
+        NSLocationWhenInUseUsageDescription: "Powder Chaser uses your location to show nearby ski resorts and calculate distances to resorts."
         # Live Activities support
         NSSupportsLiveActivities: true
         # App Store compliance
@@ -118,8 +118,8 @@ targets:
     info:
       path: SnowTrackerWidget/Info.plist
       properties:
-        CFBundleName: Snow Tracker Widget
-        CFBundleDisplayName: Snow Tracker Widget
+        CFBundleName: Powder Chaser Widget
+        CFBundleDisplayName: Powder Chaser Widget
         CFBundleShortVersionString: "2.1.0"
         CFBundleVersion: "1"
         NSExtension:
