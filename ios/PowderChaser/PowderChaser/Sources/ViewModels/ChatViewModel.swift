@@ -52,7 +52,7 @@ final class ChatViewModel: ObservableObject {
     /// lazily on first chat use to get a proper JWT token.
     private func ensureAuthenticated() async throws {
         let keychain = KeychainSwift()
-        if keychain.get("com.snowtracker.authToken") != nil {
+        if keychain.get(AuthenticationService.Keys.authToken) != nil {
             return // Already have a token
         }
 
@@ -63,8 +63,8 @@ final class ChatViewModel: ObservableObject {
             chatLog.info("Guest user has no token, authenticating with backend")
             let deviceId = keychain.get("com.snowtracker.userIdentifier") ?? UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
             let response = try await apiClient.authenticateAsGuest(deviceId: deviceId)
-            keychain.set(response.accessToken, forKey: "com.snowtracker.authToken")
-            keychain.set(response.refreshToken, forKey: "com.snowtracker.refreshToken")
+            keychain.set(response.accessToken, forKey: AuthenticationService.Keys.authToken)
+            keychain.set(response.refreshToken, forKey: AuthenticationService.Keys.refreshToken)
             chatLog.info("Guest backend auth successful, tokens stored")
         }
     }
@@ -294,13 +294,13 @@ final class ChatViewModel: ObservableObject {
         } catch APIError.unauthorized {
             chatLog.info("Chat got 401, attempting token refresh")
             let keychain = KeychainSwift()
-            guard let refreshToken = keychain.get("com.snowtracker.refreshToken") else {
+            guard let refreshToken = keychain.get(AuthenticationService.Keys.refreshToken) else {
                 throw APIError.unauthorized
             }
             do {
                 let authResponse = try await apiClient.refreshAuthTokens(refreshToken: refreshToken)
-                keychain.set(authResponse.accessToken, forKey: "com.snowtracker.authToken")
-                keychain.set(authResponse.refreshToken, forKey: "com.snowtracker.refreshToken")
+                keychain.set(authResponse.accessToken, forKey: AuthenticationService.Keys.authToken)
+                keychain.set(authResponse.refreshToken, forKey: AuthenticationService.Keys.refreshToken)
                 chatLog.info("Token refreshed successfully, retrying chat")
                 return try await apiClient.sendChatMessage(text, conversationId: currentConversationId, latitude: userLatitude, longitude: userLongitude)
             } catch {
@@ -378,11 +378,11 @@ final class ChatViewModel: ObservableObject {
             // Try refreshing the token once
             chatLog.info("Conversations got 401, attempting token refresh")
             let keychain = KeychainSwift()
-            if let refreshToken = keychain.get("com.snowtracker.refreshToken") {
+            if let refreshToken = keychain.get(AuthenticationService.Keys.refreshToken) {
                 do {
                     let authResponse = try await apiClient.refreshAuthTokens(refreshToken: refreshToken)
-                    keychain.set(authResponse.accessToken, forKey: "com.snowtracker.authToken")
-                    keychain.set(authResponse.refreshToken, forKey: "com.snowtracker.refreshToken")
+                    keychain.set(authResponse.accessToken, forKey: AuthenticationService.Keys.authToken)
+                    keychain.set(authResponse.refreshToken, forKey: AuthenticationService.Keys.refreshToken)
                     conversations = try await apiClient.getConversations()
                     chatLog.debug("Loaded \(self.conversations.count) conversations after token refresh")
                 } catch {

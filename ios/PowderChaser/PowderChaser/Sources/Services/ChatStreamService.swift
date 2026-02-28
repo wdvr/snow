@@ -89,7 +89,7 @@ final class ChatStreamService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         // Add auth token
-        let token = KeychainSwift().get("com.snowtracker.authToken")
+        let token = KeychainSwift().get(AuthenticationService.Keys.authToken)
         if let token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }

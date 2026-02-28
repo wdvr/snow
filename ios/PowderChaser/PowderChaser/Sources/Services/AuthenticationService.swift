@@ -31,7 +31,7 @@ class AuthenticationService: NSObject, ObservableObject {
     // Google Sign-In Client ID from Google Cloud Console
     static let googleClientID = "269334695221-p2i31pdp3n7ms7o7rpf6cb3vsdmc4ohs.apps.googleusercontent.com"
 
-    private enum Keys {
+    enum Keys {
         static let userIdentifier = "com.snowtracker.userIdentifier"
         static let authToken = "com.snowtracker.authToken"
         static let refreshToken = "com.snowtracker.refreshToken"

@@ -1085,7 +1085,7 @@ final class APIClient {
         ])
 
         // Get token from keychain directly (nonisolated)
-        if let token = KeychainSwift().get("com.snowtracker.authToken") {
+        if let token = KeychainSwift().get(AuthenticationService.Keys.authToken) {
             headers.add(.authorization(bearerToken: token))
         }
 

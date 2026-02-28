@@ -591,13 +591,6 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         return f
     }()
 
-    private static let posixDateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(secondsFromGMT: 0)
-        return f
-    }()
-
     /// Parse timestamp handling multiple ISO8601 formats
     private var parsedTimestamp: Date? {
         // Guard against empty timestamp
@@ -619,7 +612,10 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         }
 
         // Try DateFormatter for more flexible parsing (handles "Z" suffix, various formats)
-        let dateFormatter = Self.posixDateFormatter
+        // Create a new formatter per call to avoid thread-safety issues with shared DateFormatter
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
 
         // Try common API date formats
         let formats = [

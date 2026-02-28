@@ -520,8 +520,7 @@ def _check_anonymous_chat_limit(ip_address: str) -> bool:
         return True
 
     try:
-        dynamodb = boto3.resource("dynamodb", region_name="us-west-2")
-        table = dynamodb.Table(table_name)
+        table = get_dynamodb().Table(table_name)
 
         now = int(time.time())
         window_start = now - (ANON_CHAT_WINDOW_HOURS * 3600)
@@ -574,8 +573,7 @@ def _get_remaining_anonymous_messages(ip_address: str) -> int:
         return ANON_CHAT_LIMIT
 
     try:
-        dynamodb = boto3.resource("dynamodb", region_name="us-west-2")
-        table = dynamodb.Table(table_name)
+        table = get_dynamodb().Table(table_name)
 
         now = int(time.time())
         window_start = now - (ANON_CHAT_WINDOW_HOURS * 3600)
