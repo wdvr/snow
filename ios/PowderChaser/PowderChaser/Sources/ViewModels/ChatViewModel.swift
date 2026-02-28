@@ -1,6 +1,4 @@
 import Foundation
-import KeychainSwift
-import UIKit
 import os.log
 
 private let chatLog = Logger(subsystem: "com.snowtracker.app", category: "Chat")
@@ -45,30 +43,6 @@ final class ChatViewModel: ObservableObject {
     var userLatitude: Double?
     var userLongitude: Double?
 
-    // MARK: - Guest Auth
-
-    /// Ensure we have a valid auth token before making chat API calls.
-    /// Guest users skip backend auth during sign-in, so we authenticate them
-    /// lazily on first chat use to get a proper JWT token.
-    private func ensureAuthenticated() async throws {
-        let keychain = KeychainSwift()
-        if keychain.get(AuthenticationService.Keys.authToken) != nil {
-            return // Already have a token
-        }
-
-        // No token — check if this is a guest user and authenticate with backend
-        let authService = AuthenticationService.shared
-        if authService.isAuthenticated,
-           authService.currentUser?.provider == .guest {
-            chatLog.info("Guest user has no token, authenticating with backend")
-            let deviceId = keychain.get("com.snowtracker.userIdentifier") ?? UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
-            let response = try await apiClient.authenticateAsGuest(deviceId: deviceId)
-            keychain.set(response.accessToken, forKey: AuthenticationService.Keys.authToken)
-            keychain.set(response.refreshToken, forKey: AuthenticationService.Keys.refreshToken)
-            chatLog.info("Guest backend auth successful, tokens stored")
-        }
-    }
-
     // MARK: - Send Message
 
     func sendMessage(_ text: String) async {
@@ -79,16 +53,6 @@ final class ChatViewModel: ObservableObject {
         errorMessage = nil
         statusMessage = nil
         activeTools = []
-
-        // Ensure guest users have valid auth tokens before making API calls
-        do {
-            try await ensureAuthenticated()
-        } catch {
-            chatLog.error("Failed to authenticate for chat: \(error)")
-            errorMessage = "Please sign in to use chat."
-            isSending = false
-            return
-        }
 
         // Add the user message optimistically
         let userMessage = ChatMessage(
@@ -112,7 +76,7 @@ final class ChatViewModel: ObservableObject {
 
         // Fallback: non-streaming REST call
         do {
-            let response = try await sendWithAutoRefresh(trimmed)
+            let response = try await apiClient.sendChatMessage(trimmed, conversationId: currentConversationId, latitude: userLatitude, longitude: userLongitude)
             currentConversationId = response.conversationId
 
             let assistantMessage = ChatMessage(
@@ -285,31 +249,6 @@ final class ChatViewModel: ObservableObject {
         chatLog.debug("Stream complete for conversation \(finalConversationId)")
     }
 
-    // MARK: - Auto Token Refresh
-
-    /// Try sending a chat message; on 401, refresh the token and retry once.
-    private func sendWithAutoRefresh(_ text: String) async throws -> ChatResponse {
-        do {
-            return try await apiClient.sendChatMessage(text, conversationId: currentConversationId, latitude: userLatitude, longitude: userLongitude)
-        } catch APIError.unauthorized {
-            chatLog.info("Chat got 401, attempting token refresh")
-            let keychain = KeychainSwift()
-            guard let refreshToken = keychain.get(AuthenticationService.Keys.refreshToken) else {
-                throw APIError.unauthorized
-            }
-            do {
-                let authResponse = try await apiClient.refreshAuthTokens(refreshToken: refreshToken)
-                keychain.set(authResponse.accessToken, forKey: AuthenticationService.Keys.authToken)
-                keychain.set(authResponse.refreshToken, forKey: AuthenticationService.Keys.refreshToken)
-                chatLog.info("Token refreshed successfully, retrying chat")
-                return try await apiClient.sendChatMessage(text, conversationId: currentConversationId, latitude: userLatitude, longitude: userLongitude)
-            } catch {
-                chatLog.error("Token refresh failed: \(error)")
-                throw APIError.unauthorized
-            }
-        }
-    }
-
     // MARK: - Local Streaming (Progressive Text Reveal for REST)
 
     /// Start progressive text reveal for a message (~30 words/second)
@@ -371,27 +310,8 @@ final class ChatViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            try await ensureAuthenticated()
             conversations = try await apiClient.getConversations()
             chatLog.debug("Loaded \(self.conversations.count) conversations")
-        } catch APIError.unauthorized {
-            // Try refreshing the token once
-            chatLog.info("Conversations got 401, attempting token refresh")
-            let keychain = KeychainSwift()
-            if let refreshToken = keychain.get(AuthenticationService.Keys.refreshToken) {
-                do {
-                    let authResponse = try await apiClient.refreshAuthTokens(refreshToken: refreshToken)
-                    keychain.set(authResponse.accessToken, forKey: AuthenticationService.Keys.authToken)
-                    keychain.set(authResponse.refreshToken, forKey: AuthenticationService.Keys.refreshToken)
-                    conversations = try await apiClient.getConversations()
-                    chatLog.debug("Loaded \(self.conversations.count) conversations after token refresh")
-                } catch {
-                    chatLog.error("Token refresh failed for conversations: \(error)")
-                    errorMessage = "Please sign in again to view chat history."
-                }
-            } else {
-                errorMessage = "Please sign in to view chat history."
-            }
         } catch {
             chatLog.error("Failed to load conversations: \(error)")
             errorMessage = error.localizedDescription
@@ -408,7 +328,6 @@ final class ChatViewModel: ObservableObject {
         currentConversationId = conversationId
 
         do {
-            try await ensureAuthenticated()
             messages = try await apiClient.getConversation(conversationId)
             chatLog.debug("Loaded \(self.messages.count) messages for conversation \(conversationId)")
         } catch {

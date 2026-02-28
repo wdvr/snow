@@ -21,6 +21,7 @@ struct ResortMapView: View {
     @State private var pisteLoadedForResorts: Set<String> = []
     @State private var pisteLoadTask: Task<Void, Never>?
     @State private var showMapSearch: Bool = false
+    @State private var showOnMapTask: Task<Void, Never>?
 
     var body: some View {
         NavigationStack {
@@ -75,9 +76,15 @@ struct ResortMapView: View {
             .onChange(of: navigationCoordinator.mapTargetResort) { _, resort in
                 guard let resort else { return }
                 navigationCoordinator.mapTargetResort = nil
+                // Dismiss any open sheets first
+                selectedResort = nil
+                showClusterList = false
                 // Offset center south so resort appears in upper half above the detail sheet
                 mapViewModel.pendingRegion = sheetAdjustedRegion(for: resort.primaryCoordinate)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                showOnMapTask?.cancel()
+                showOnMapTask = Task {
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    guard !Task.isCancelled else { return }
                     selectedResort = resort
                 }
             }
@@ -178,7 +185,10 @@ struct ResortMapView: View {
             onResortSelected: { resort in
                 showClusterList = false
                 // Delay to let the cluster sheet dismiss before showing detail
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                showOnMapTask?.cancel()
+                showOnMapTask = Task {
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    guard !Task.isCancelled else { return }
                     selectedResort = resort
                 }
             }
@@ -566,7 +576,10 @@ struct ResortMapView: View {
                                 // Zoom to resort, offset for sheet, then show detail after delay
                                 mapViewModel.pendingRegion = sheetAdjustedRegion(for: annotation.resort.primaryCoordinate)
                                 let resort = annotation.resort
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                showOnMapTask?.cancel()
+                                showOnMapTask = Task {
+                                    try? await Task.sleep(nanoseconds: 500_000_000)
+                                    guard !Task.isCancelled else { return }
                                     selectedResort = resort
                                 }
                             }

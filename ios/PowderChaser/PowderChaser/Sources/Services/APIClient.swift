@@ -3,6 +3,177 @@ import Alamofire
 import KeychainSwift
 import os.log
 
+// MARK: - Auth Interceptor
+
+/// Global interceptor that handles 401 errors by refreshing the auth token
+/// (or lazily authenticating guest users) and retrying the failed request.
+/// Queues concurrent 401s so only one refresh happens at a time.
+final class AuthInterceptor: RequestInterceptor {
+    private let log = Logger(subsystem: "com.snowtracker.app", category: "AuthInterceptor")
+    private let lock = NSLock()
+    private var isRefreshing = false
+    private var pendingCompletions: [(RetryResult) -> Void] = []
+    private let baseURL: URL
+
+    init(baseURL: URL) {
+        self.baseURL = baseURL
+    }
+
+    /// Injects the current auth token into every request (including retries).
+    /// This ensures retried requests use the fresh token after a refresh.
+    func adapt(
+        _ urlRequest: URLRequest,
+        for session: Session,
+        completion: @escaping (Result<URLRequest, Error>) -> Void
+    ) {
+        var request = urlRequest
+        if let token = KeychainSwift().get(AuthenticationService.Keys.authToken) {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        completion(.success(request))
+    }
+
+    func retry(
+        _ request: Request,
+        for session: Session,
+        dueTo error: Error,
+        completion: @escaping (RetryResult) -> Void
+    ) {
+        guard let response = request.task?.response as? HTTPURLResponse,
+              response.statusCode == 401,
+              request.retryCount == 0 else {
+            completion(.doNotRetry)
+            return
+        }
+
+        // Don't retry auth endpoints themselves (avoid infinite loop)
+        if let url = request.request?.url?.absoluteString,
+           url.contains("/api/v1/auth/") {
+            completion(.doNotRetry)
+            return
+        }
+
+        lock.lock()
+        pendingCompletions.append(completion)
+
+        if isRefreshing {
+            lock.unlock()
+            return
+        }
+
+        isRefreshing = true
+        lock.unlock()
+
+        log.info("401 received, attempting token refresh")
+
+        refreshOrAuthenticate { [weak self] success in
+            guard let self else { return }
+            self.lock.lock()
+            let pending = self.pendingCompletions
+            self.pendingCompletions.removeAll()
+            self.isRefreshing = false
+            self.lock.unlock()
+
+            self.log.info("Token refresh \(success ? "succeeded" : "failed"), \(pending.count) request(s) waiting")
+            pending.forEach { $0(success ? .retry : .doNotRetry) }
+        }
+    }
+
+    /// Try to refresh existing tokens, or lazily authenticate guest users.
+    private func refreshOrAuthenticate(completion: @escaping (Bool) -> Void) {
+        let keychain = KeychainSwift()
+
+        // Path 1: We have a refresh token — try refreshing
+        if let refreshToken = keychain.get(AuthenticationService.Keys.refreshToken) {
+            refreshAccessToken(refreshToken: refreshToken, keychain: keychain, completion: completion)
+            return
+        }
+
+        // Path 2: Guest user with no tokens — try guest authentication
+        let provider = keychain.get(AuthenticationService.Keys.authProvider)
+        if provider == AuthProvider.guest.rawValue {
+            authenticateGuest(keychain: keychain, completion: completion)
+            return
+        }
+
+        // No refresh token and not a guest — can't recover
+        completion(false)
+    }
+
+    private func refreshAccessToken(refreshToken: String, keychain: KeychainSwift, completion: @escaping (Bool) -> Void) {
+        // Use URLSession directly to avoid going through the intercepted Alamofire session
+        let url = baseURL.appendingPathComponent("api/v1/auth/refresh")
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: String] = ["refresh_token": refreshToken]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            guard let data,
+                  let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                self?.log.warning("Token refresh failed: \(error?.localizedDescription ?? "HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")")
+                completion(false)
+                return
+            }
+
+            do {
+                let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
+                keychain.set(authResponse.accessToken, forKey: AuthenticationService.Keys.authToken)
+                keychain.set(authResponse.refreshToken, forKey: AuthenticationService.Keys.refreshToken)
+                self?.log.info("Token refreshed successfully")
+                completion(true)
+            } catch {
+                self?.log.error("Failed to decode refresh response: \(error)")
+                completion(false)
+            }
+        }.resume()
+    }
+
+    private func authenticateGuest(keychain: KeychainSwift, completion: @escaping (Bool) -> Void) {
+        let deviceId: String
+        if let stored = keychain.get(AuthenticationService.Keys.userIdentifier) {
+            deviceId = stored
+        } else {
+            deviceId = UUID().uuidString
+            keychain.set(deviceId, forKey: AuthenticationService.Keys.userIdentifier)
+        }
+
+        let url = baseURL.appendingPathComponent("api/v1/auth/guest")
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: String] = ["device_id": deviceId]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            guard let data,
+                  let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                self?.log.warning("Guest auth failed: \(error?.localizedDescription ?? "HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")")
+                completion(false)
+                return
+            }
+
+            do {
+                let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
+                keychain.set(authResponse.accessToken, forKey: AuthenticationService.Keys.authToken)
+                keychain.set(authResponse.refreshToken, forKey: AuthenticationService.Keys.refreshToken)
+                self?.log.info("Guest authenticated successfully")
+                completion(true)
+            } catch {
+                self?.log.error("Failed to decode guest auth response: \(error)")
+                completion(false)
+            }
+        }.resume()
+    }
+}
+
 // MARK: - API Client
 
 @MainActor
@@ -29,10 +200,13 @@ final class APIClient {
             retryableHTTPStatusCodes: Set([408, 500, 502, 503, 504])
         )
 
+        // Auth interceptor handles 401 → refresh token → retry
+        let authInterceptor = AuthInterceptor(baseURL: AppConfiguration.shared.apiBaseURL)
+
         self.session = Session(
             configuration: configuration,
             serializationQueue: DispatchQueue(label: "com.snowtracker.api.serial", qos: .userInitiated),
-            interceptor: retryPolicy
+            interceptor: Interceptor(interceptors: [authInterceptor, retryPolicy])
         )
     }
 
