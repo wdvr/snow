@@ -216,9 +216,11 @@ class MapViewModel: ObservableObject {
     @Published var pendingRegion: MKCoordinateRegion?
     @Published var sortByDistance: Bool = false
     @Published var selectedForecastDate: Date? = nil
-    @Published var isFetchingTimelines = false
+    @Published private(set) var timelineFetchCount = 0
+    var isFetchingTimelines: Bool { timelineFetchCount > 0 }
     @Published var timelineBatchCount = 0
     @Published var searchLocation: MapSearchLocation?
+    @Published var cachedNearbyResorts: [ResortAnnotation] = []
     var currentVisibleRegion: MKCoordinateRegion?
 
     private let locationManager = LocationManager.shared
@@ -248,6 +250,14 @@ class MapViewModel: ObservableObject {
                 if self.selectedRegionPreset == .userLocation {
                     self.centerOnUserLocation(location)
                 }
+                self.updateNearbyResorts()
+            }
+            .store(in: &cancellables)
+
+        $searchLocation
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateNearbyResorts()
             }
             .store(in: &cancellables)
     }
@@ -295,6 +305,7 @@ class MapViewModel: ObservableObject {
         }
 
         annotations = result
+        updateNearbyResorts()
     }
 
     func selectAnnotation(_ annotation: ResortAnnotation?) {
@@ -426,7 +437,8 @@ class MapViewModel: ObservableObject {
         let uncached = nearby.filter { timelineCache[$0] == nil }
         guard !uncached.isEmpty else { return }
 
-        isFetchingTimelines = true
+        timelineFetchCount += 1
+        defer { timelineFetchCount -= 1 }
         await withTaskGroup(of: (String, TimelineResponse?).self) { group in
             for resortId in uncached {
                 group.addTask {
@@ -438,14 +450,14 @@ class MapViewModel: ObservableObject {
                 if let response { timelineCache[resortId] = response }
             }
         }
-        isFetchingTimelines = false
     }
 
     func fetchTimelinesForVisible(resortIds: [String]) async {
         let uncached = resortIds.filter { timelineCache[$0] == nil }
         guard !uncached.isEmpty else { return }
 
-        isFetchingTimelines = true
+        timelineFetchCount += 1
+        defer { timelineFetchCount -= 1 }
         let batchSize = 30
         for batch in stride(from: 0, to: uncached.count, by: batchSize) {
             let end = min(batch + batchSize, uncached.count)
@@ -464,7 +476,6 @@ class MapViewModel: ObservableObject {
             // Increment counter after each batch so map pins update progressively
             timelineBatchCount += 1
         }
-        isFetchingTimelines = false
     }
 
     func predictedQuality(for resortId: String, on date: Date) -> SnowQuality? {
@@ -514,6 +525,11 @@ class MapViewModel: ObservableObject {
             }
             return annotation
         }
+    }
+
+    /// Recompute and cache nearbyResorts. Call when annotations, location, or searchLocation change.
+    func updateNearbyResorts() {
+        cachedNearbyResorts = nearbyResorts(limit: 5)
     }
 
     // MARK: - Quality Statistics

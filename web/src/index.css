@@ -61,6 +61,15 @@ body {
   box-shadow: none !important;
 }
 
+/* Hidden scrollbar for horizontal scroll containers */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Scrollbar styling */
 .chat-scroll::-webkit-scrollbar { width: 6px; }
 .chat-scroll::-webkit-scrollbar-track { background: transparent; }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Clock,
   Thermometer,
@@ -11,8 +11,7 @@ import {
 import type { TimelinePoint } from '../../api/types'
 import { useUnits } from '../../hooks/useUnits'
 import { getQualityColor } from '../../utils/colors'
-import { formatQuality, formatVisibility } from '../../utils/format'
-import type { SnowQuality } from '../../api/types'
+import { formatQuality, formatVisibility, formatWind } from '../../utils/format'
 
 interface HourlyTimelineProps {
   timeline: TimelinePoint[]
@@ -58,6 +57,12 @@ export function HourlyTimeline({ timeline }: HourlyTimelineProps) {
   const dayGroups = useMemo(() => groupByDate(timeline), [timeline])
   const dates = useMemo(() => Array.from(dayGroups.keys()), [dayGroups])
 
+  useEffect(() => {
+    if (selectedDayIndex >= dates.length && dates.length > 0) {
+      setSelectedDayIndex(dates.length - 1)
+    }
+  }, [dates.length, selectedDayIndex])
+
   if (dates.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -68,7 +73,8 @@ export function HourlyTimeline({ timeline }: HourlyTimelineProps) {
 
   const currentDate = dates[selectedDayIndex]
   const points = dayGroups.get(currentDate) ?? []
-  const dateLabel = new Date(currentDate).toLocaleDateString('en-US', {
+  const [cy, cm, cd] = currentDate.split('-').map(Number)
+  const dateLabel = new Date(cy, cm - 1, cd).toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'short',
     day: 'numeric',
@@ -76,8 +82,8 @@ export function HourlyTimeline({ timeline }: HourlyTimelineProps) {
 
   // Day summary
   const totalSnow = points.reduce((sum, p) => sum + p.snowfall_cm, 0)
-  const minTemp = Math.min(...points.map((p) => p.temperature_c))
-  const maxTemp = Math.max(...points.map((p) => p.temperature_c))
+  const minTemp = points.length > 0 ? Math.min(...points.map((p) => p.temperature_c)) : 0
+  const maxTemp = points.length > 0 ? Math.max(...points.map((p) => p.temperature_c)) : 0
 
   return (
     <div className="w-full">
@@ -91,6 +97,7 @@ export function HourlyTimeline({ timeline }: HourlyTimelineProps) {
         <button
           onClick={() => setSelectedDayIndex(Math.max(0, selectedDayIndex - 1))}
           disabled={selectedDayIndex === 0}
+          aria-label="Previous day"
           className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronLeft className="w-5 h-5 text-gray-600" />
@@ -115,6 +122,7 @@ export function HourlyTimeline({ timeline }: HourlyTimelineProps) {
         <button
           onClick={() => setSelectedDayIndex(Math.min(dates.length - 1, selectedDayIndex + 1))}
           disabled={selectedDayIndex === dates.length - 1}
+          aria-label="Next day"
           className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronRight className="w-5 h-5 text-gray-600" />
@@ -126,7 +134,8 @@ export function HourlyTimeline({ timeline }: HourlyTimelineProps) {
         {dates.map((date, i) => {
           const dayPoints = dayGroups.get(date) ?? []
           const daySnow = dayPoints.reduce((s, p) => s + p.snowfall_cm, 0)
-          const dayLabel = new Date(date).toLocaleDateString('en-US', {
+          const [dy, dm, dd] = date.split('-').map(Number)
+          const dayLabel = new Date(dy, dm - 1, dd).toLocaleDateString('en-US', {
             weekday: 'short',
             day: 'numeric',
           })
@@ -134,6 +143,7 @@ export function HourlyTimeline({ timeline }: HourlyTimelineProps) {
             <button
               key={date}
               onClick={() => setSelectedDayIndex(i)}
+              aria-label={dayLabel}
               className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 i === selectedDayIndex
                   ? 'bg-blue-500 text-white'
@@ -154,7 +164,7 @@ export function HourlyTimeline({ timeline }: HourlyTimelineProps) {
       {/* Hourly cards */}
       <div className="space-y-2">
         {points.map((point, i) => {
-          const qualityColors = getQualityColor(point.snow_quality as SnowQuality)
+          const qualityColors = getQualityColor(point.snow_quality)
           return (
             <div
               key={`${point.date}-${point.hour}-${i}`}
@@ -208,7 +218,7 @@ export function HourlyTimeline({ timeline }: HourlyTimelineProps) {
               {point.wind_speed_kmh != null && (
                 <div className="hidden sm:flex items-center gap-1 text-xs text-gray-500 w-16 flex-shrink-0">
                   <Wind className="w-3 h-3" />
-                  {Math.round(point.wind_speed_kmh)} km/h
+                  {formatWind(point.wind_speed_kmh)}
                 </div>
               )}
 

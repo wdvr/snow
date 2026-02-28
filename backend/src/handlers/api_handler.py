@@ -655,7 +655,7 @@ async def get_app_config():
         if item:
             # Merge DynamoDB values over defaults (only known keys)
             for key in defaults:
-                if key in item:
+                if key in item and isinstance(item[key], type(defaults[key])):
                     defaults[key] = item[key]
     except ClientError:
         logger.warning("Failed to read app config from DynamoDB, using defaults")

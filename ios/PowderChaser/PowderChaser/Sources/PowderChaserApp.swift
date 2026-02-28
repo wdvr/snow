@@ -42,7 +42,6 @@ struct PowderChaserApp: App {
     @StateObject private var updateService = AppUpdateService()
     @State private var showSplash = true
     @State private var showOnboarding = false
-    @State private var showForceUpdate = false
 
     init() {
         // Initialize Firebase Analytics & Crashlytics
@@ -103,15 +102,9 @@ struct PowderChaserApp: App {
                 // Check for required app updates once per launch
                 await updateService.checkForUpdate()
             }
-            .onChange(of: updateService.updateRequired) { _, required in
-                showForceUpdate = required
-            }
-            .fullScreenCover(isPresented: $showForceUpdate) {
-                if let info = updateService.updateInfo {
-                    ForceUpdateView(updateInfo: info) {
-                        // "Not Now" was tapped — dismiss the cover
-                        showForceUpdate = false
-                    }
+            .fullScreenCover(item: $updateService.updateInfo) { info in
+                ForceUpdateView(updateInfo: info) {
+                    updateService.updateInfo = nil
                 }
             }
             .onOpenURL { url in

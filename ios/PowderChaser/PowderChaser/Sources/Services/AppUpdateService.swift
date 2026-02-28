@@ -2,12 +2,21 @@ import Foundation
 import os.log
 
 /// Information about an available app update.
-struct AppUpdateInfo {
+struct AppUpdateInfo: Identifiable, Equatable {
+    let id = UUID()
     let minimumVersion: String
     let latestVersion: String
     let updateMessage: String
     let updateURL: URL
     let forceUpdate: Bool
+
+    static func == (lhs: AppUpdateInfo, rhs: AppUpdateInfo) -> Bool {
+        lhs.minimumVersion == rhs.minimumVersion &&
+        lhs.latestVersion == rhs.latestVersion &&
+        lhs.updateMessage == rhs.updateMessage &&
+        lhs.updateURL == rhs.updateURL &&
+        lhs.forceUpdate == rhs.forceUpdate
+    }
 }
 
 /// Checks for required app updates on launch by calling the `/api/v1/app-config` endpoint.

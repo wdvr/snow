@@ -1,5 +1,5 @@
 import SwiftUI
-import MapKit
+@preconcurrency import MapKit
 
 struct ResortMapView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
@@ -55,8 +55,8 @@ struct ResortMapView: View {
                 onAnnotationsUpdate: updateAnnotations,
                 onFilterChange: handleFilterChange
             ))
-            .onChange(of: mapViewModel.isFetchingTimelines) { _, newValue in
-                if !newValue && mapViewModel.selectedForecastDate != nil {
+            .onChange(of: mapViewModel.timelineFetchCount) { _, newValue in
+                if newValue == 0 && mapViewModel.selectedForecastDate != nil {
                     updateAnnotations()
                 }
             }
@@ -487,7 +487,7 @@ struct ResortMapView: View {
     }
 
     private var hasNearbyResorts: Bool {
-        mapViewModel.nearbyReferenceLocation != nil && !mapViewModel.nearbyResorts().isEmpty
+        mapViewModel.nearbyReferenceLocation != nil && !mapViewModel.cachedNearbyResorts.isEmpty
     }
 
     private var nearbyAndSearchBar: some View {
@@ -558,7 +558,7 @@ struct ResortMapView: View {
             if hasNearbyResorts && !nearbyCollapsed {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
-                        ForEach(mapViewModel.nearbyResorts(limit: 5)) { annotation in
+                        ForEach(mapViewModel.cachedNearbyResorts) { annotation in
                             NearbyResortCard(
                                 annotation: annotation,
                                 distance: mapViewModel.formattedDistance(to: annotation.resort, prefs: userPreferencesManager.preferredUnits)
@@ -875,21 +875,28 @@ struct MapSearchSheet: View {
     }
 
     private func selectCompletion(_ completion: MKLocalSearchCompletion) {
-        let request = MKLocalSearch.Request(completion: completion)
-        let search = MKLocalSearch(request: request)
-        search.start { response, _ in
-            guard let mapItem = response?.mapItems.first else { return }
-            let region = MKCoordinateRegion(
-                center: mapItem.placemark.coordinate,
-                span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
-            )
-            onSelect(region, completion.title)
+        Task { @MainActor in
+            let request = MKLocalSearch.Request(completion: completion)
+            let search = MKLocalSearch(request: request)
+            do {
+                let response = try await search.start()
+                if let mapItem = response.mapItems.first {
+                    let region = MKCoordinateRegion(
+                        center: mapItem.placemark.coordinate,
+                        span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+                    )
+                    onSelect(region, completion.title)
+                }
+            } catch {
+                // Search failed — silently handle
+            }
             dismiss()
         }
     }
 }
 
 /// Search completer that provides autocomplete suggestions.
+@MainActor
 final class MapSearchCompleter: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
     @Published var results: [MKLocalSearchCompletion] = []
     private let completer = MKLocalSearchCompleter()
@@ -908,11 +915,14 @@ final class MapSearchCompleter: NSObject, ObservableObject, MKLocalSearchComplet
         completer.queryFragment = query
     }
 
-    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
-        results = completer.results
+    nonisolated func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        let updatedResults = completer.results
+        DispatchQueue.main.async {
+            self.results = updatedResults
+        }
     }
 
-    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+    nonisolated func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
         // Silently handle — user keeps typing
     }
 }

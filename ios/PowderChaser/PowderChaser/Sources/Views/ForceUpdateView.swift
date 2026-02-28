@@ -94,7 +94,6 @@ struct ForceUpdateView: View {
                 .padding(.bottom, 60)
             }
         }
-        .interactiveDismissDisabled(updateInfo.forceUpdate)
     }
 }
 
