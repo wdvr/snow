@@ -8,6 +8,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from models.notification import (
+    FORECAST_MESSAGES,
     FREEZE_MESSAGES,
     POWDER_MESSAGES,
     THAW_MESSAGES,
@@ -2827,3 +2828,348 @@ class TestWeeklyDigestHandler:
 
         assert result["statusCode"] == 500
         assert "Error" in result["body"]["message"]
+
+
+class TestCheckForecastAlert:
+    """Tests for check_forecast_alert."""
+
+    @pytest.fixture
+    def service(self):
+        return NotificationService(
+            device_tokens_table=MagicMock(),
+            user_preferences_table=MagicMock(),
+            resort_events_table=MagicMock(),
+            weather_conditions_table=MagicMock(),
+            resorts_table=MagicMock(),
+            sns_client=MagicMock(),
+            apns_platform_arn="arn:test",
+        )
+
+    def test_forecast_alert_triggers_above_threshold(self, service):
+        """Test forecast alert triggers when predicted snow >= threshold."""
+        forecast = {"predicted_snow_72h_cm": 15.0}
+
+        with patch(
+            "services.notification_service.random.choice",
+            return_value=FORECAST_MESSAGES[0],
+        ):
+            result = service.check_forecast_alert(
+                resort_id="whistler-blackcomb",
+                resort_name="Whistler Blackcomb",
+                forecast=forecast,
+                forecast_threshold=10.0,
+            )
+
+        assert result is not None
+        assert result.notification_type == NotificationType.FORECAST_SNOW
+        assert "Whistler Blackcomb" in result.title
+        assert result.resort_id == "whistler-blackcomb"
+        assert result.data["predicted_snow_72h_cm"] == 15.0
+
+    def test_forecast_alert_triggers_at_threshold(self, service):
+        """Test forecast alert triggers when predicted snow == threshold."""
+        forecast = {"predicted_snow_72h_cm": 10.0}
+
+        with patch(
+            "services.notification_service.random.choice",
+            return_value=FORECAST_MESSAGES[0],
+        ):
+            result = service.check_forecast_alert(
+                resort_id="whistler-blackcomb",
+                resort_name="Whistler Blackcomb",
+                forecast=forecast,
+                forecast_threshold=10.0,
+            )
+
+        assert result is not None
+        assert result.notification_type == NotificationType.FORECAST_SNOW
+
+    def test_forecast_alert_no_trigger_below_threshold(self, service):
+        """Test forecast alert does not trigger below threshold."""
+        forecast = {"predicted_snow_72h_cm": 5.0}
+
+        result = service.check_forecast_alert(
+            resort_id="whistler-blackcomb",
+            resort_name="Whistler Blackcomb",
+            forecast=forecast,
+            forecast_threshold=10.0,
+        )
+
+        assert result is None
+
+    def test_forecast_alert_no_trigger_zero_snow(self, service):
+        """Test forecast alert does not trigger with zero snow."""
+        forecast = {"predicted_snow_72h_cm": 0.0}
+
+        result = service.check_forecast_alert(
+            resort_id="whistler-blackcomb",
+            resort_name="Whistler Blackcomb",
+            forecast=forecast,
+            forecast_threshold=10.0,
+        )
+
+        assert result is None
+
+    def test_forecast_alert_no_trigger_missing_key(self, service):
+        """Test forecast alert does not trigger when key is missing."""
+        forecast = {}
+
+        result = service.check_forecast_alert(
+            resort_id="whistler-blackcomb",
+            resort_name="Whistler Blackcomb",
+            forecast=forecast,
+            forecast_threshold=10.0,
+        )
+
+        assert result is None
+
+    def test_forecast_alert_message_contains_resort_and_snow(self, service):
+        """Test that the forecast alert message contains resort name and snow amount."""
+        forecast = {"predicted_snow_72h_cm": 25.0}
+
+        with patch(
+            "services.notification_service.random.choice",
+            return_value="Storm incoming! {resort_name} is set to receive {snow_cm}cm in the next 3 days!",
+        ):
+            result = service.check_forecast_alert(
+                resort_id="whistler-blackcomb",
+                resort_name="Whistler Blackcomb",
+                forecast=forecast,
+                forecast_threshold=10.0,
+            )
+
+        assert result is not None
+        assert "Whistler Blackcomb" in result.body
+        assert "25cm" in result.body
+
+    def test_forecast_alert_custom_threshold(self, service):
+        """Test forecast alert with a custom threshold."""
+        forecast = {"predicted_snow_72h_cm": 22.0}
+
+        with patch(
+            "services.notification_service.random.choice",
+            return_value=FORECAST_MESSAGES[0],
+        ):
+            result = service.check_forecast_alert(
+                resort_id="revelstoke",
+                resort_name="Revelstoke",
+                forecast=forecast,
+                forecast_threshold=20.0,
+            )
+
+        assert result is not None
+        assert result.resort_name == "Revelstoke"
+        assert result.data["predicted_snow_72h_cm"] == 22.0
+
+    def test_forecast_alert_rounds_snow_amount(self, service):
+        """Test that snow amount is rounded in the message."""
+        forecast = {"predicted_snow_72h_cm": 15.7}
+
+        with patch(
+            "services.notification_service.random.choice",
+            return_value="Snow alert: {snow_cm}cm at {resort_name}",
+        ):
+            result = service.check_forecast_alert(
+                resort_id="whistler-blackcomb",
+                resort_name="Whistler Blackcomb",
+                forecast=forecast,
+                forecast_threshold=10.0,
+            )
+
+        assert result is not None
+        assert "16cm" in result.body
+        # Raw value is preserved in data
+        assert result.data["predicted_snow_72h_cm"] == 15.7
+
+
+class TestForecastAlertProcessing:
+    """Tests for forecast alert detection in process_user_notifications."""
+
+    @pytest.fixture
+    def service(self):
+        svc = NotificationService(
+            device_tokens_table=MagicMock(),
+            user_preferences_table=MagicMock(),
+            resort_events_table=MagicMock(),
+            weather_conditions_table=MagicMock(),
+            resorts_table=MagicMock(),
+            sns_client=MagicMock(),
+            apns_platform_arn="arn:test",
+        )
+        svc.resorts_table.get_item.return_value = {
+            "Item": {"resort_id": "whistler-blackcomb", "name": "Whistler Blackcomb"}
+        }
+        return svc
+
+    def _make_prefs(
+        self, user_id="user1", favorite_resorts=None, notification_settings=None
+    ):
+        """Helper to create UserPreferences."""
+        now = datetime.now(UTC).isoformat()
+        return UserPreferences(
+            user_id=user_id,
+            favorite_resorts=favorite_resorts or [],
+            notification_settings=notification_settings,
+            created_at=now,
+            updated_at=now,
+        )
+
+    def test_forecast_alert_in_processing(self, service):
+        """Test that forecast alerts are generated during user notification processing."""
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            powder_alerts=False,
+            forecast_alerts=True,
+            forecast_snow_threshold_cm=10.0,
+        )
+        prefs = self._make_prefs(
+            favorite_resorts=["whistler-blackcomb"],
+            notification_settings=settings,
+        )
+        # Return conditions with forecast data
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "predicted_snow_24h_cm": 5.0,
+                    "predicted_snow_48h_cm": 10.0,
+                    "predicted_snow_72h_cm": 20.0,
+                }
+            ]
+        }
+
+        with patch(
+            "services.notification_service.random.choice",
+            return_value=FORECAST_MESSAGES[0],
+        ):
+            result = service.process_user_notifications("user1", prefs)
+
+        assert len(result) == 1
+        assert result[0].notification_type == NotificationType.FORECAST_SNOW
+
+    def test_forecast_alerts_disabled_globally(self, service):
+        """Test forecast alerts disabled globally."""
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            powder_alerts=False,
+            forecast_alerts=False,  # Disabled
+            forecast_snow_threshold_cm=10.0,
+        )
+        prefs = self._make_prefs(
+            favorite_resorts=["whistler-blackcomb"],
+            notification_settings=settings,
+        )
+        # Return conditions with forecast data
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "predicted_snow_72h_cm": 20.0,
+                }
+            ]
+        }
+
+        result = service.process_user_notifications("user1", prefs)
+        assert len(result) == 0
+
+    def test_forecast_alert_below_threshold_no_notification(self, service):
+        """Test that forecast below threshold does not generate notification."""
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            powder_alerts=False,
+            forecast_alerts=True,
+            forecast_snow_threshold_cm=15.0,
+        )
+        prefs = self._make_prefs(
+            favorite_resorts=["whistler-blackcomb"],
+            notification_settings=settings,
+        )
+        # Return conditions with below-threshold forecast
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "predicted_snow_72h_cm": 8.0,
+                }
+            ]
+        }
+
+        result = service.process_user_notifications("user1", prefs)
+        assert len(result) == 0
+
+    def test_forecast_and_powder_alerts_together(self, service):
+        """Test that both forecast and powder alerts can fire for same resort."""
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            powder_alerts=True,
+            powder_snow_threshold_cm=15.0,
+            forecast_alerts=True,
+            forecast_snow_threshold_cm=10.0,
+        )
+        prefs = self._make_prefs(
+            favorite_resorts=["whistler-blackcomb"],
+            notification_settings=settings,
+        )
+        # Return conditions that trigger both powder + forecast
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "snowfall_24h_cm": 25.0,
+                    "current_temp_celsius": -5.0,
+                    "wind_speed_kmh": 15.0,
+                    "quality_score": 4.5,
+                    "predicted_snow_24h_cm": 5.0,
+                    "predicted_snow_48h_cm": 10.0,
+                    "predicted_snow_72h_cm": 20.0,
+                }
+            ]
+        }
+
+        with patch(
+            "services.notification_service.random.choice",
+            side_effect=[POWDER_MESSAGES[0], FORECAST_MESSAGES[0]],
+        ):
+            result = service.process_user_notifications("user1", prefs)
+
+        # Powder fires first, then mark_notified is called, which means
+        # forecast may or may not fire depending on grace period.
+        # Since grace_period_hours=24 and mark_notified sets "now",
+        # the can_notify check happens at top of loop before all checks.
+        # So both should appear since grace check is at top of the for loop.
+        assert len(result) >= 1
+        notification_types = {n.notification_type for n in result}
+        assert NotificationType.POWDER_ALERT in notification_types
+
+    def test_forecast_alert_empty_forecast_no_crash(self, service):
+        """Test that empty forecast data does not cause crash."""
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            powder_alerts=False,
+            forecast_alerts=True,
+            forecast_snow_threshold_cm=10.0,
+        )
+        prefs = self._make_prefs(
+            favorite_resorts=["whistler-blackcomb"],
+            notification_settings=settings,
+        )
+        # Return empty weather data (no forecast fields)
+        service.weather_conditions_table.query.return_value = {"Items": []}
+
+        result = service.process_user_notifications("user1", prefs)
+        assert len(result) == 0

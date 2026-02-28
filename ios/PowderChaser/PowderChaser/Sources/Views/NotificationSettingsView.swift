@@ -1,4 +1,6 @@
 import SwiftUI
+import UIKit
+import KeychainSwift
 import os.log
 
 private let notifSettingsLog = Logger(subsystem: "com.snowtracker.app", category: "NotificationSettings")
@@ -50,6 +52,7 @@ struct NotificationSettingsView: View {
 
             // Notification Types Section
             if viewModel.notificationsEnabled {
+                // NOW Alerts Section
                 Section {
                     Toggle("Fresh Snow Alerts", isOn: $viewModel.freshSnowAlerts)
                         .onChange(of: viewModel.freshSnowAlerts) { _, newValue in
@@ -123,14 +126,46 @@ struct NotificationSettingsView: View {
                         .padding(.vertical, 4)
                     }
                 } header: {
-                    Text("Alert Types")
+                    Label("Now", systemImage: "bolt.fill")
                 } footer: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Fresh Snow Alerts: Get notified when fresh snow falls at your favorite resorts.")
-                        Text("Resort Events: Get notified about special events and offers at your favorite resorts.")
-                        Text("Thaw/Freeze Alerts: Get notified when temperatures rise above 0\u{00B0}C for 4+ hours (thawing) or drop below 0\u{00B0}C (freezing) - indicates icy conditions ahead.")
-                        Text("Powder Day Alerts: Get notified when conditions align for an epic powder day - heavy snowfall, cold temps, low wind, and great snow quality.")
+                    Text("Get notified about current conditions at your favorite resorts.")
+                }
+
+                // SOON Alerts Section
+                Section {
+                    Toggle("Snowfall Forecast", isOn: $viewModel.forecastAlerts)
+                        .onChange(of: viewModel.forecastAlerts) { _, newValue in
+                            viewModel.saveSettings()
+                            AnalyticsService.shared.trackNotificationSettingChanged(setting: "forecast_alerts", enabled: newValue)
+                        }
+
+                    if viewModel.forecastAlerts {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Minimum Predicted Snowfall (3 days)")
+                                .font(.subheadline)
+
+                            HStack {
+                                Slider(
+                                    value: $viewModel.forecastThreshold,
+                                    in: 5...50,
+                                    step: 5
+                                )
+                                .onChange(of: viewModel.forecastThreshold) { _, _ in
+                                    viewModel.saveSettings()
+                                }
+
+                                Text(formatThreshold(viewModel.forecastThreshold))
+                                    .frame(width: 55, alignment: .trailing)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
                     }
+                } header: {
+                    Label("Soon", systemImage: "clock.fill")
+                } footer: {
+                    Text("Get notified about predicted conditions over the next 3 days.")
                 }
 
                 // Notification Frequency Section
@@ -431,9 +466,11 @@ class NotificationSettingsViewModel: ObservableObject {
     @Published var eventAlerts = true
     @Published var thawFreezeAlerts = true
     @Published var powderAlerts = true
+    @Published var forecastAlerts = true
     @Published var weeklySummary = false
     @Published var snowThresholdCm: Double = 1.0
     @Published var powderThreshold: Double = 15.0
+    @Published var forecastThreshold: Double = 10.0
     @Published var gracePeriodHours = 24
     @Published var isLoading = false
     @Published var isSendingTest = false
@@ -442,6 +479,52 @@ class NotificationSettingsViewModel: ObservableObject {
     private var resortSettings: [String: ResortNotificationSettings] = [:]
     private let apiClient = APIClient.shared
     private let pushService = PushNotificationService.shared
+
+    /// Ensure we have a valid auth token before making API calls.
+    /// Guest users skip backend auth during sign-in, so we authenticate them
+    /// lazily on first API use to get a proper JWT token.
+    private func ensureAuthenticated() async throws {
+        let keychain = KeychainSwift()
+        if keychain.get(AuthenticationService.Keys.authToken) != nil {
+            return // Already have a token
+        }
+
+        // No token -- check if this is a guest user and authenticate with backend
+        let authService = AuthenticationService.shared
+        if authService.isAuthenticated,
+           authService.currentUser?.provider == .guest {
+            notifSettingsLog.info("Guest user has no token, authenticating with backend")
+            let deviceId = keychain.get(AuthenticationService.Keys.userIdentifier) ?? UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
+            let response = try await apiClient.authenticateAsGuest(deviceId: deviceId)
+            keychain.set(response.accessToken, forKey: AuthenticationService.Keys.authToken)
+            keychain.set(response.refreshToken, forKey: AuthenticationService.Keys.refreshToken)
+            notifSettingsLog.info("Guest backend auth successful, tokens stored")
+        }
+    }
+
+    /// Try an API call; on 401, refresh the token and retry once.
+    private func withAutoRefresh<T>(_ operation: () async throws -> T) async throws -> T {
+        do {
+            try await ensureAuthenticated()
+            return try await operation()
+        } catch APIError.unauthorized {
+            notifSettingsLog.info("Got 401, attempting token refresh")
+            let keychain = KeychainSwift()
+            guard let refreshToken = keychain.get(AuthenticationService.Keys.refreshToken) else {
+                throw APIError.unauthorized
+            }
+            do {
+                let authResponse = try await apiClient.refreshAuthTokens(refreshToken: refreshToken)
+                keychain.set(authResponse.accessToken, forKey: AuthenticationService.Keys.authToken)
+                keychain.set(authResponse.refreshToken, forKey: AuthenticationService.Keys.refreshToken)
+                notifSettingsLog.info("Token refreshed successfully, retrying")
+                return try await operation()
+            } catch {
+                notifSettingsLog.error("Token refresh failed: \(error)")
+                throw APIError.unauthorized
+            }
+        }
+    }
 
     init() {
         Task {
@@ -467,15 +550,19 @@ class NotificationSettingsViewModel: ObservableObject {
         await checkAuthorization()
 
         do {
-            let settings = try await apiClient.getNotificationSettings()
+            let settings = try await withAutoRefresh {
+                try await apiClient.getNotificationSettings()
+            }
             notificationsEnabled = settings.notificationsEnabled
             freshSnowAlerts = settings.freshSnowAlerts
             eventAlerts = settings.eventAlerts
             thawFreezeAlerts = settings.thawFreezeAlerts
             powderAlerts = settings.powderAlerts
+            forecastAlerts = settings.forecastAlerts
             weeklySummary = settings.weeklySummary
             snowThresholdCm = settings.defaultSnowThresholdCm
             powderThreshold = settings.powderSnowThresholdCm
+            forecastThreshold = settings.forecastSnowThresholdCm
             gracePeriodHours = settings.gracePeriodHours
             resortSettings = settings.resortSettings
         } catch {
@@ -487,18 +574,22 @@ class NotificationSettingsViewModel: ObservableObject {
     func saveSettings() {
         Task {
             do {
-                let update = NotificationSettingsUpdate(
-                    notificationsEnabled: notificationsEnabled,
-                    freshSnowAlerts: freshSnowAlerts,
-                    eventAlerts: eventAlerts,
-                    thawFreezeAlerts: thawFreezeAlerts,
-                    powderAlerts: powderAlerts,
-                    weeklySummary: weeklySummary,
-                    defaultSnowThresholdCm: snowThresholdCm,
-                    powderSnowThresholdCm: powderThreshold,
-                    gracePeriodHours: gracePeriodHours
-                )
-                try await apiClient.updateNotificationSettings(update)
+                try await withAutoRefresh {
+                    let update = NotificationSettingsUpdate(
+                        notificationsEnabled: notificationsEnabled,
+                        freshSnowAlerts: freshSnowAlerts,
+                        eventAlerts: eventAlerts,
+                        thawFreezeAlerts: thawFreezeAlerts,
+                        powderAlerts: powderAlerts,
+                        forecastAlerts: forecastAlerts,
+                        weeklySummary: weeklySummary,
+                        defaultSnowThresholdCm: snowThresholdCm,
+                        powderSnowThresholdCm: powderThreshold,
+                        forecastSnowThresholdCm: forecastThreshold,
+                        gracePeriodHours: gracePeriodHours
+                    )
+                    try await apiClient.updateNotificationSettings(update)
+                }
             } catch {
                 notifSettingsLog.error("Failed to save notification settings: \(error)")
             }
@@ -547,17 +638,19 @@ class NotificationSettingsViewModel: ObservableObject {
         // Save to backend
         Task {
             do {
-                let update = ResortNotificationSettingsUpdate(
-                    freshSnowEnabled: settings.freshSnowEnabled,
-                    freshSnowThresholdCm: settings.freshSnowThresholdCm,
-                    eventNotificationsEnabled: settings.eventNotificationsEnabled,
-                    powderAlertsEnabled: settings.powderAlertsEnabled,
-                    powderThresholdCm: settings.powderThresholdCm
-                )
-                try await apiClient.updateResortNotificationSettings(
-                    resortId: resortId,
-                    settings: update
-                )
+                try await withAutoRefresh {
+                    let update = ResortNotificationSettingsUpdate(
+                        freshSnowEnabled: settings.freshSnowEnabled,
+                        freshSnowThresholdCm: settings.freshSnowThresholdCm,
+                        eventNotificationsEnabled: settings.eventNotificationsEnabled,
+                        powderAlertsEnabled: settings.powderAlertsEnabled,
+                        powderThresholdCm: settings.powderThresholdCm
+                    )
+                    try await apiClient.updateResortNotificationSettings(
+                        resortId: resortId,
+                        settings: update
+                    )
+                }
             } catch {
                 notifSettingsLog.error("Failed to save resort notification settings: \(error)")
             }
@@ -579,7 +672,9 @@ class NotificationSettingsViewModel: ObservableObject {
 
         Task {
             do {
-                let result = try await apiClient.sendTestPushNotification()
+                let result = try await withAutoRefresh {
+                    try await apiClient.sendTestPushNotification()
+                }
                 testResult = TestResult(success: true, message: result.message)
             } catch let error as APIError {
                 testResult = TestResult(success: false, message: formatAuthError(error))
@@ -610,7 +705,9 @@ class NotificationSettingsViewModel: ObservableObject {
 
         Task {
             do {
-                let result = try await apiClient.triggerNotificationProcessor()
+                let result = try await withAutoRefresh {
+                    try await apiClient.triggerNotificationProcessor()
+                }
                 testResult = TestResult(success: true, message: result.message)
             } catch let error as APIError {
                 testResult = TestResult(success: false, message: formatAuthError(error))

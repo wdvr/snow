@@ -1935,9 +1935,11 @@ struct NotificationSettingsUpdate: Codable {
     var eventAlerts: Bool?
     var thawFreezeAlerts: Bool?
     var powderAlerts: Bool?
+    var forecastAlerts: Bool?
     var weeklySummary: Bool?
     var defaultSnowThresholdCm: Double?
     var powderSnowThresholdCm: Double?
+    var forecastSnowThresholdCm: Double?
     var gracePeriodHours: Int?
 
     private enum CodingKeys: String, CodingKey {
@@ -1946,9 +1948,11 @@ struct NotificationSettingsUpdate: Codable {
         case eventAlerts = "event_alerts"
         case thawFreezeAlerts = "thaw_freeze_alerts"
         case powderAlerts = "powder_alerts"
+        case forecastAlerts = "forecast_alerts"
         case weeklySummary = "weekly_summary"
         case defaultSnowThresholdCm = "default_snow_threshold_cm"
         case powderSnowThresholdCm = "powder_snow_threshold_cm"
+        case forecastSnowThresholdCm = "forecast_snow_threshold_cm"
         case gracePeriodHours = "grace_period_hours"
     }
 }

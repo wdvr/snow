@@ -11,6 +11,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 from models.notification import (
+    FORECAST_MESSAGES,
     FREEZE_MESSAGES,
     POWDER_MESSAGES,
     THAW_MESSAGES,
@@ -432,6 +433,47 @@ class NotificationService:
             },
         )
 
+    def check_forecast_alert(
+        self,
+        resort_id: str,
+        resort_name: str,
+        forecast: dict,
+        forecast_threshold: float,
+    ) -> NotificationPayload | None:
+        """Check if forecast warrants a notification.
+
+        Triggers when predicted snowfall over 3 days >= threshold.
+
+        Args:
+            resort_id: Resort ID
+            resort_name: Resort name for display
+            forecast: Dict with predicted_snow_72h_cm
+            forecast_threshold: Minimum predicted snow to alert
+
+        Returns:
+            NotificationPayload if forecast alert should be sent, None otherwise
+        """
+        predicted_snow = forecast.get("predicted_snow_72h_cm", 0.0)
+
+        if predicted_snow < forecast_threshold:
+            return None
+
+        snow_cm = round(predicted_snow, 0)
+        message = random.choice(FORECAST_MESSAGES).format(
+            resort_name=resort_name, snow_cm=int(snow_cm)
+        )
+
+        return NotificationPayload(
+            notification_type=NotificationType.FORECAST_SNOW,
+            title=f"Snow Forecast for {resort_name}",
+            body=message,
+            resort_id=resort_id,
+            resort_name=resort_name,
+            data={
+                "predicted_snow_72h_cm": predicted_snow,
+            },
+        )
+
     def check_thaw_freeze_cycle(
         self,
         resort_id: str,
@@ -672,6 +714,23 @@ class NotificationService:
                     )
                     if powder_notification:
                         notifications.append(powder_notification)
+                        notification_settings.mark_notified(resort_id)
+
+            # Check for forecast snow (SOON alerts)
+            if notification_settings.forecast_alerts:
+                forecast = self.get_resort_forecast_next_3_days(resort_id)
+                if forecast:
+                    forecast_threshold = (
+                        notification_settings.forecast_snow_threshold_cm
+                    )
+                    forecast_notification = self.check_forecast_alert(
+                        resort_id=resort_id,
+                        resort_name=resort_name,
+                        forecast=forecast,
+                        forecast_threshold=forecast_threshold,
+                    )
+                    if forecast_notification:
+                        notifications.append(forecast_notification)
                         notification_settings.mark_notified(resort_id)
 
         # Save updated notification settings (with last_notified times and temp state)

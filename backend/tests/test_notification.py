@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from models.notification import (
+    FORECAST_MESSAGES,
     POWDER_MESSAGES,
     DeviceToken,
     NotificationPayload,
@@ -242,3 +243,50 @@ class TestPowderAlertModelFields:
         for msg in POWDER_MESSAGES:
             assert "{resort_name}" in msg
             assert "{snow_cm}" in msg
+
+
+class TestForecastAlertModelFields:
+    """Tests for forecast alert fields on notification models."""
+
+    def test_user_notification_preferences_forecast_defaults(self):
+        """Test that forecast alert fields have correct defaults."""
+        prefs = UserNotificationPreferences()
+
+        assert prefs.forecast_alerts is True
+        assert prefs.forecast_snow_threshold_cm == 10.0
+
+    def test_user_notification_preferences_forecast_custom(self):
+        """Test setting custom forecast alert values."""
+        prefs = UserNotificationPreferences(
+            forecast_alerts=False,
+            forecast_snow_threshold_cm=20.0,
+        )
+
+        assert prefs.forecast_alerts is False
+        assert prefs.forecast_snow_threshold_cm == 20.0
+
+    def test_forecast_fields_serialize_deserialize(self):
+        """Test that forecast fields survive serialization round-trip."""
+        prefs = UserNotificationPreferences(
+            forecast_alerts=False,
+            forecast_snow_threshold_cm=25.0,
+        )
+
+        data = prefs.model_dump()
+        restored = UserNotificationPreferences(**data)
+
+        assert restored.forecast_alerts is False
+        assert restored.forecast_snow_threshold_cm == 25.0
+
+    def test_forecast_messages_list_exists(self):
+        """Test that FORECAST_MESSAGES list is populated."""
+        assert len(FORECAST_MESSAGES) >= 5
+        # All messages should contain format placeholders
+        for msg in FORECAST_MESSAGES:
+            assert "{resort_name}" in msg
+            assert "{snow_cm}" in msg
+
+    def test_forecast_snow_notification_type_exists(self):
+        """Test that FORECAST_SNOW notification type exists."""
+        assert NotificationType.FORECAST_SNOW == "forecast_snow"
+        assert NotificationType.FORECAST_SNOW.value == "forecast_snow"

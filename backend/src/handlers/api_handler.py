@@ -2004,12 +2004,21 @@ class NotificationSettingsRequest(BaseModel):
     powder_alerts: bool | None = Field(
         None, description="Enable powder day notifications"
     )
+    forecast_alerts: bool | None = Field(
+        None, description="Enable forecast/prediction notifications"
+    )
+    thaw_freeze_alerts: bool | None = Field(
+        None, description="Enable thaw/freeze cycle notifications"
+    )
     weekly_summary: bool | None = Field(None, description="Enable weekly summary")
     default_snow_threshold_cm: float | None = Field(
         None, description="Default minimum snow in cm to trigger notification"
     )
     powder_snow_threshold_cm: float | None = Field(
         None, description="Fresh snow threshold for powder day alert (cm)"
+    )
+    forecast_snow_threshold_cm: float | None = Field(
+        None, description="Minimum predicted snowfall in cm to trigger forecast alert"
     )
     grace_period_hours: int | None = Field(
         None, description="Minimum hours between notifications for same resort"
@@ -2096,12 +2105,18 @@ async def update_notification_settings(
             settings.event_alerts = request.event_alerts
         if request.powder_alerts is not None:
             settings.powder_alerts = request.powder_alerts
+        if request.forecast_alerts is not None:
+            settings.forecast_alerts = request.forecast_alerts
+        if request.thaw_freeze_alerts is not None:
+            settings.thaw_freeze_alerts = request.thaw_freeze_alerts
         if request.weekly_summary is not None:
             settings.weekly_summary = request.weekly_summary
         if request.default_snow_threshold_cm is not None:
             settings.default_snow_threshold_cm = request.default_snow_threshold_cm
         if request.powder_snow_threshold_cm is not None:
             settings.powder_snow_threshold_cm = request.powder_snow_threshold_cm
+        if request.forecast_snow_threshold_cm is not None:
+            settings.forecast_snow_threshold_cm = request.forecast_snow_threshold_cm
         if request.grace_period_hours is not None:
             settings.grace_period_hours = request.grace_period_hours
 

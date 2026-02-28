@@ -7,6 +7,12 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 28, 2026
 
+### Fix: Notification "Session Expired" bug + NOW/SOON alert categories
+Guest users had `isAuthenticated = true` but no JWT token in keychain, causing 401s on notification API calls and showing "Session expired" error. Added `ensureAuthenticated()` to lazily authenticate guest users with the backend on first API use, and `withAutoRefresh()` to auto-refresh expired tokens with a single retry. All notification API calls (load, save, resort settings, test notification, trigger processor) now use this pattern. Also restructured the Alert Types UI into "Now" (fresh snow, events, thaw/freeze, powder day) and "Soon" (snowfall forecast with 3-day threshold) sections. Added `forecastAlerts` and `forecastSnowThresholdCm` fields to NotificationSettings, NotificationSettingsUpdate, and the ViewModel.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | pending |
+
 ### Fix: Nearby resort card tap crash
 Race condition when tapping nearby resort card on map — setting pendingRegion and selectedResort simultaneously caused SwiftUI to fight between map animation and sheet presentation. Fixed by delaying selectedResort by 0.5s.
 | iOS | Android | Web | API |

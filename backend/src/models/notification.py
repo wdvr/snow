@@ -17,6 +17,7 @@ class NotificationType(str, Enum):
     THAW_ALERT = "thaw_alert"  # Temperature went from minus to plus for 4+ hours
     FREEZE_ALERT = "freeze_alert"  # Temperature went from plus to minus
     WEEKLY_SUMMARY = "weekly_summary"  # Weekly snow digest
+    FORECAST_SNOW = "forecast_snow"  # Predicted snowfall in next 3 days
 
 
 # Funny messages for thaw alerts (rotate through these)
@@ -59,6 +60,20 @@ POWDER_MESSAGES = [
     "Winter wonderland at {resort_name}! {snow_cm}cm of champagne powder has arrived!",
     "Alert: {resort_name} is having a powder party! {snow_cm}cm and the trees are fully loaded!",
     "Best day of the season? {resort_name} just got {snow_cm}cm of epic fresh snow!",
+]
+
+# Forecast snow alert messages (rotate through these)
+FORECAST_MESSAGES = [
+    "Storm incoming! {resort_name} is set to receive {snow_cm}cm in the next 3 days! \u2744\ufe0f",
+    "Get ready! {resort_name} expecting {snow_cm}cm of snow in the coming days!",
+    "Snow alert! Models predict {snow_cm}cm heading for {resort_name} \u2014 plan your trip!",
+    "Powder forecast! {resort_name} could see {snow_cm}cm over the next 3 days!",
+    "Mark your calendar! {resort_name} is in the crosshairs of a {snow_cm}cm storm!",
+    "Epic incoming! Weather models show {snow_cm}cm of snow heading to {resort_name}!",
+    "Storm watch! {resort_name} is expecting {snow_cm}cm \u2014 time to book those lifts!",
+    "Fresh pow loading... {resort_name} forecasted for {snow_cm}cm in 3 days!",
+    "Future powder alert! {snow_cm}cm predicted at {resort_name} \u2014 the hype is real!",
+    "Snow is coming! {resort_name} forecast: {snow_cm}cm in the next 72 hours!",
 ]
 
 
@@ -142,6 +157,9 @@ class UserNotificationPreferences(BaseModel):
     powder_alerts: bool = Field(
         default=True, description="Enable powder day notifications"
     )
+    forecast_alerts: bool = Field(
+        default=True, description="Enable forecast/prediction notifications"
+    )
     weekly_summary: bool = Field(
         default=False, description="Enable weekly snow summary"
     )
@@ -153,6 +171,10 @@ class UserNotificationPreferences(BaseModel):
     powder_snow_threshold_cm: float = Field(
         default=15.0,
         description="Fresh snow threshold for powder day alert (cm)",
+    )
+    forecast_snow_threshold_cm: float = Field(
+        default=10.0,
+        description="Minimum predicted snowfall in cm over 3 days to trigger forecast alert",
     )
 
     # Per-resort overrides (resort_id -> settings)

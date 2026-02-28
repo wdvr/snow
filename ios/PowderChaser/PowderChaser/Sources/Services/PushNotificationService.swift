@@ -186,9 +186,11 @@ struct NotificationSettings: Codable {
     var eventAlerts: Bool
     var thawFreezeAlerts: Bool
     var powderAlerts: Bool
+    var forecastAlerts: Bool
     var weeklySummary: Bool
     var defaultSnowThresholdCm: Double
     var powderSnowThresholdCm: Double
+    var forecastSnowThresholdCm: Double
     var gracePeriodHours: Int
     var resortSettings: [String: ResortNotificationSettings]
     var lastNotified: [String: String]
@@ -199,9 +201,11 @@ struct NotificationSettings: Codable {
         case eventAlerts = "event_alerts"
         case thawFreezeAlerts = "thaw_freeze_alerts"
         case powderAlerts = "powder_alerts"
+        case forecastAlerts = "forecast_alerts"
         case weeklySummary = "weekly_summary"
         case defaultSnowThresholdCm = "default_snow_threshold_cm"
         case powderSnowThresholdCm = "powder_snow_threshold_cm"
+        case forecastSnowThresholdCm = "forecast_snow_threshold_cm"
         case gracePeriodHours = "grace_period_hours"
         case resortSettings = "resort_settings"
         case lastNotified = "last_notified"
@@ -213,12 +217,31 @@ struct NotificationSettings: Codable {
         eventAlerts = true
         thawFreezeAlerts = true
         powderAlerts = true
+        forecastAlerts = true
         weeklySummary = false
         defaultSnowThresholdCm = 1.0
         powderSnowThresholdCm = 15.0
+        forecastSnowThresholdCm = 10.0
         gracePeriodHours = 24
         resortSettings = [:]
         lastNotified = [:]
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        notificationsEnabled = try container.decode(Bool.self, forKey: .notificationsEnabled)
+        freshSnowAlerts = try container.decode(Bool.self, forKey: .freshSnowAlerts)
+        eventAlerts = try container.decode(Bool.self, forKey: .eventAlerts)
+        thawFreezeAlerts = try container.decode(Bool.self, forKey: .thawFreezeAlerts)
+        powderAlerts = try container.decode(Bool.self, forKey: .powderAlerts)
+        forecastAlerts = try container.decodeIfPresent(Bool.self, forKey: .forecastAlerts) ?? true
+        weeklySummary = try container.decode(Bool.self, forKey: .weeklySummary)
+        defaultSnowThresholdCm = try container.decode(Double.self, forKey: .defaultSnowThresholdCm)
+        powderSnowThresholdCm = try container.decode(Double.self, forKey: .powderSnowThresholdCm)
+        forecastSnowThresholdCm = try container.decodeIfPresent(Double.self, forKey: .forecastSnowThresholdCm) ?? 10.0
+        gracePeriodHours = try container.decode(Int.self, forKey: .gracePeriodHours)
+        resortSettings = try container.decode([String: ResortNotificationSettings].self, forKey: .resortSettings)
+        lastNotified = try container.decode([String: String].self, forKey: .lastNotified)
     }
 }
 
