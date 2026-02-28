@@ -19,8 +19,8 @@
 |---|----------|--------|-------|
 | 1 | `GET /health` | OK | `healthy`, env=`prod` |
 | 2 | `GET /api/v1/regions` | OK | 8 regions returned (na_west, na_rockies, na_east, alps, scandinavia, japan, oceania, south_america) |
-| 3 | `GET /api/v1/resorts?limit=5` | **BUG** | `limit` param ignored -- returns ALL 1040 resorts regardless of limit value |
-| 4 | `GET /api/v1/resorts?region=alps&limit=5` | **BUG** | `limit` param ignored with region filter too -- returns all 633 alps resorts |
+| 3 | `GET /api/v1/resorts?limit=5` | OK | Returns 5 resorts (verified Feb 28, was false positive in audit) |
+| 4 | `GET /api/v1/resorts?region=alps&limit=5` | OK | Returns 5 alps resorts (verified Feb 28) |
 | 5 | `GET /api/v1/resorts/nearby` | OK | 4 resorts returned for lat=46.8, lon=6.9, radius=100 |
 | 6 | `GET /api/v1/resorts/:id` | OK | Returns full resort detail (Whistler Blackcomb) |
 | 7 | `GET /api/v1/resorts/:id/conditions` | OK | Returns list of 3 elevation conditions (mid, top, base) |

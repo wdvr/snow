@@ -28,6 +28,7 @@ import {
 import { QualityBadge } from '../components/resort/QualityBadge'
 import { ConditionsTable } from '../components/resort/ConditionsTable'
 import { ForecastChart, HistoryChart } from '../components/resort/ForecastChart'
+import { HourlyTimeline } from '../components/resort/HourlyTimeline'
 import { FreshSnowChart } from '../components/resort/FreshSnowChart'
 import { TrailDistribution } from '../components/resort/TrailDistribution'
 import { ElevationPicker } from '../components/resort/ElevationPicker'
@@ -415,6 +416,9 @@ export function ResortDetailPage() {
                 <ForecastChart timeline={timeline.timeline} />
                 <div className="border-t border-gray-100 pt-6">
                   <FreshSnowChart timeline={timeline.timeline} />
+                </div>
+                <div className="border-t border-gray-100 pt-6">
+                  <HourlyTimeline timeline={timeline.timeline} />
                 </div>
               </>
             ) : (
