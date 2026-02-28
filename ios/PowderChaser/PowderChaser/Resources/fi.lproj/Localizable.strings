@@ -1,0 +1,273 @@
+/*
+  Localizable.strings
+  Powder Chaser
+
+  Finnish
+*/
+
+/* Common */
+"Done" = "Valmis";
+"Cancel" = "Peruuta";
+"Delete" = "Poista";
+"Save" = "Tallenna";
+"OK" = "OK";
+"Error" = "Virhe";
+"Loading" = "Ladataan";
+"Refresh" = "Päivitä";
+"Settings" = "Asetukset";
+"Search" = "Haku";
+
+/* Tabs */
+"Favorites" = "Suosikit";
+"Map" = "Kartta";
+"Best Snow" = "Paras lumi";
+"Nearby" = "Lähellä";
+
+/* FavoritesView */
+"No Favorites Yet" = "Ei suosikkeja vielä";
+"Tap the heart icon on any resort to add it to your favorites." = "Napauta sydänkuvaketta missä tahansa hiihtokeskuksessa lisätäksesi sen suosikkeihin.";
+"Browse Resorts" = "Selaa hiihtokeskuksia";
+
+/* SplashView */
+"Snow Tracker" = "Powder Chaser";
+"Fresh powder awaits" = "Tuore pakkalumi odottaa";
+"Loading conditions..." = "Ladataan olosuhteita...";
+
+/* ConditionsView */
+"Snow Conditions" = "Lumiolosuhteet";
+"Offline mode - showing cached data" = "Offline-tila – näytetään tallennetut tiedot";
+"Last updated: %@" = "Viimeksi päivitetty: %@";
+"Snow Quality Guide" = "Lumen laatuopas";
+"Quality Levels" = "Laatutasot";
+"Warming" = "Lämmennyt";
+"since last thaw" = "viimeisen sulamisen jälkeen";
+
+/* Quality Ratings */
+"Excellent" = "Erinomainen";
+"Good" = "Hyvä";
+"Fair" = "Kohtalainen";
+"Poor" = "Heikko";
+"Icy" = "Jäinen";
+
+/* ResortDetailView */
+"Select Elevation" = "Valitse korkeus";
+"Loading Conditions..." = "Ladataan olosuhteita...";
+"No Data Available" = "Ei tietoja saatavilla";
+"All Elevations" = "Kaikki korkeudet";
+"Visit Website" = "Vieraile sivustolla";
+"Recent Snowfall" = "Viimeaikainen lumisade";
+"Snow Forecast" = "Lumiennuste";
+"Weather Details" = "Säätiedot";
+"Min Temp" = "Min. lämpötila";
+"Max Temp" = "Maks. lämpötila";
+"Humidity" = "Kosteus";
+"Wind" = "Tuuli";
+"24h" = "24h";
+"48h" = "48h";
+"72h" = "72h";
+"Next 24h" = "Seuraavat 24h";
+"Next 48h" = "Seuraavat 48h";
+"Next 72h" = "Seuraavat 72h";
+"Heavy snowfall expected!" = "Runsasta lumisadetta odotettavissa!";
+"Light snow expected" = "Kevyttä lumisadetta odotettavissa";
+"Fresh" = "Tuore";
+"Temp" = "Lämpötila";
+
+/* FeedbackView */
+"Send Feedback" = "Lähetä palautetta";
+"Subject" = "Aihe";
+"Your Feedback" = "Palautteesi";
+"Submit Feedback" = "Lähetä palaute";
+"Feedback Sent!" = "Palaute lähetetty!";
+"Thank you for your feedback!" = "Kiitos palautteestasi!";
+"Email (optional)" = "Sähköposti (valinnainen)";
+
+/* NotificationSettingsView */
+"Notifications" = "Ilmoitukset";
+"All Notifications" = "Kaikki ilmoitukset";
+"Fresh Snow Alerts" = "Tuoreen lumen hälytykset";
+"Snow Threshold" = "Lumiraja";
+"Event Alerts" = "Tapahtumahälytykset";
+"Thaw/Freeze Alerts" = "Sula-/pakkasilmoitukset";
+"Enable" = "Ota käyttöön";
+"%d cm" = "%d cm";
+
+/* SettingsView */
+"Account" = "Tili";
+"Sign In" = "Kirjaudu sisään";
+"Sign Out" = "Kirjaudu ulos";
+"Preferences" = "Asetukset";
+"Units" = "Yksiköt";
+"Celsius" = "Celsius";
+"Fahrenheit" = "Fahrenheit";
+"Metric (km)" = "Metrinen (km)";
+"Imperial (mi)" = "Brittiläinen (mi)";
+"Centimeters" = "Senttimetrit";
+"Inches" = "Tuumat";
+"Data & Storage" = "Tiedot ja tallennus";
+"Clear Offline Cache" = "Tyhjennä offline-välimuisti";
+"Support" = "Tuki";
+"Privacy Policy" = "Tietosuojakäytäntö";
+"Terms of Service" = "Käyttöehdot";
+"About" = "Tietoja";
+"App Version" = "Sovellusversio";
+
+/* AuthenticationViews */
+"Sign in with Google" = "Kirjaudu Google-tilillä";
+"Continue without signing in" = "Jatka kirjautumatta";
+"Profile" = "Profiili";
+
+/* RecommendationsView */
+"Near You" = "Lähelläsi";
+"Best Globally" = "Parhaat maailmassa";
+"Search Radius" = "Hakusäde";
+"Location Access" = "Sijainnin käyttö";
+"Enable location to see nearby recommendations" = "Ota sijainti käyttöön nähdäksesi suosituksia lähelläsi";
+"Open Settings" = "Avaa asetukset";
+"No Recommendations" = "Ei suosituksia";
+
+/* ResortMapView */
+"Snow Quality Legend" = "Lumen laadun selite";
+"Standard" = "Perus";
+"Satellite" = "Satelliitti";
+"Hybrid" = "Yhdistelmä";
+"Show All Resorts" = "Näytä kaikki keskukset";
+"View Full Details" = "Näytä kaikki tiedot";
+"Forecast" = "Ennuste";
+"%d Resorts" = "%d hiihtokeskusta";
+
+/* ResortListView */
+"Snow Resorts" = "Hiihtokeskukset";
+"All Regions" = "Kaikki alueet";
+"Search resorts..." = "Hae hiihtokeskuksia...";
+"Loading resorts..." = "Ladataan hiihtokeskuksia...";
+"No Resorts Found" = "Hiihtokeskuksia ei löytynyt";
+"Pull to refresh" = "Vedä päivittääksesi";
+"Try Again" = "Yritä uudelleen";
+
+/* MapView Date Selector */
+"Today" = "Tänään";
+
+/* Quality Ratings (10-level scale) */
+"Champagne Powder" = "Samppanjapuuteri";
+"Powder Day" = "Puuterilumipäivä";
+"Great" = "Loistava";
+"Decent" = "Kelvollinen";
+"Mediocre" = "Keskinkertainen";
+"Bad" = "Huono";
+"Horrible" = "Kauhea";
+
+/* FavoritesView (card redesign) */
+"Avg score" = "Keskim. arvosana";
+"Best conditions" = "Parhaat olosuhteet";
+"Create Group" = "Luo ryhmä";
+"Manage Groups" = "Hallitse ryhmiä";
+"Move to Group" = "Siirrä ryhmään";
+"Your Groups" = "Ryhmäsi";
+"Remove Favorite" = "Poista suosikki";
+"Groups" = "Ryhmät";
+"Compare" = "Vertaa";
+"Rename" = "Nimeä uudelleen";
+"Rename Group" = "Nimeä ryhmä uudelleen";
+"No Group" = "Ei ryhmää";
+
+/* ResortListView */
+"Pass:" = "Hissilippu:";
+"Sort:" = "Järjestys:";
+"Unable to Load Resorts" = "Hiihtokeskuksia ei voitu ladata";
+"Add to Favorites" = "Lisää suosikkeihin";
+"Regions" = "Alueet";
+
+/* SettingsView / AboutView / UnitsSettingsView */
+"App Info" = "Sovelluksen tiedot";
+"Appearance" = "Ulkoasu";
+"App Icon" = "Sovelluskuvake";
+"Temperature" = "Lämpötila";
+"Distance" = "Etäisyys";
+"Snow Depth" = "Lumensyvyys";
+"Not signed in" = "Ei kirjautunut";
+"Powder Chaser" = "Powder Chaser";
+"Supported Resorts" = "Tuetut hiihtokeskukset";
+"Version" = "Versio";
+"Website" = "Verkkosivu";
+
+/* RecommendationsView */
+"Finding best snow near you..." = "Etsitään parasta lunta läheltäsi...";
+"Could not load best conditions. Pull to refresh." = "Parhaita olosuhteita ei voitu ladata. Vedä päivittääksesi.";
+"Location Disabled" = "Sijainti poistettu käytöstä";
+"See All" = "Näytä kaikki";
+"score" = "arvosana";
+
+/* ResortMapView */
+"Ski trails: OpenSnowMap.org / OpenStreetMap" = "Hiihtoladut: OpenSnowMap.org / OpenStreetMap";
+"Zoom in to see trails" = "Lähennä nähdäksesi ladut";
+"Current Conditions" = "Nykyiset olosuhteet";
+"Conditions Summary" = "Olosuhdeyhteenveto";
+"Cams" = "Kamerat";
+"No conditions data available" = "Olosuhdetietoja ei saatavilla";
+
+/* ResortDetailView */
+"Live" = "Live";
+"Snow Report" = "Lumiraportti";
+"Trail Map" = "Rinnekartta";
+"Webcam" = "Webkamera";
+"Community Reports" = "Käyttäjien raportit";
+"Data Sources" = "Tietolähteet";
+"Suggest an Edit" = "Ehdota muokkausta";
+"Season Totals" = "Kauden yhteensä";
+"Snow History" = "Lumihistoria";
+
+/* ChatView */
+"Ask AI" = "Kysy tekoälyltä";
+"Ask about snow conditions" = "Kysy lumiolosuhteista";
+"Get personalized recommendations, condition updates, and ski trip advice." = "Saat henkilökohtaisia suosituksia, olosuhdepäivityksiä ja vinkkejä hiihtoreissuille.";
+"Ask about conditions..." = "Kysy olosuhteista...";
+"Conversation history" = "Keskusteluhistoria";
+"New conversation" = "Uusi keskustelu";
+
+/* Chat Suggestions */
+"Best snow within 500 miles" = "Paras lumi 800 km säteellä";
+"Compare Whistler vs Jackson Hole" = "Vertaa Whistler vs Jackson Hole";
+"Best powder in the Rockies" = "Paras puuterilumi Kalliovuorilla";
+"Family-friendly with good snow" = "Perheystävällinen ja hyvä lumi";
+"Top 5 resorts globally right now" = "Top 5 keskusta maailmassa nyt";
+"Ikon Pass best conditions" = "Ikon Pass parhaat olosuhteet";
+"Snow forecast this week" = "Lumiennuste tälle viikolle";
+"Hidden gems with fresh powder" = "Piilohelmet tuoreella puuterilla";
+"Best in the Alps right now" = "Parhaat Alpeilla juuri nyt";
+"Deepest snowpack" = "Syvin lumipeite";
+"Japan snow conditions" = "Japanin lumiolosuhteet";
+
+/* Map Filters */
+"All" = "Kaikki";
+"Good+" = "Hyvä+";
+"Below Good" = "Alle hyvän";
+
+/* Misc */
+"Share" = "Jaa";
+"Close" = "Sulje";
+"Resorts" = "Keskukset";
+"No results" = "Ei tuloksia";
+
+/* Buttons & Actions (newly extracted) */
+"Clear" = "Tyhjennä";
+"Remove" = "Poista";
+"Plan a Trip" = "Suunnittele matka";
+"Mark all read" = "Merkitse kaikki luetuiksi";
+"Change" = "Muuta";
+"Create" = "Luo";
+"Enable Location" = "Ota sijainti käyttöön";
+"Show All Regions" = "Näytä kaikki alueet";
+"Show Northern Hemisphere Only" = "Näytä vain pohjoinen pallonpuolisko";
+"Reset to Defaults" = "Palauta oletukset";
+"Reset to Default" = "Palauta oletus";
+"Sign out and re-authenticate" = "Kirjaudu ulos ja tunnistaudu uudelleen";
+
+/* Alert Titles (newly extracted) */
+"Reset API URL?" = "Nollaa API-osoite?";
+"Sign Out?" = "Kirjaudu ulos?";
+"Clear Cache?" = "Tyhjennä välimuisti?";
+"Remove Favorite?" = "Poista suosikki?";
+"Delete Trip" = "Poista matka";
+"Suggestion Sent!" = "Ehdotus lähetetty!";
+"View Live Webcams" = "Katso live-webkamerat";

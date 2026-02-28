@@ -1,4 +1,4 @@
-name: SnowTracker
+name: PowderChaser
 options:
   bundleIdPrefix: com.wouterdevriendt
   deploymentTarget:
@@ -25,18 +25,18 @@ packages:
     from: 20.0.0
 
 targets:
-  SnowTracker:
+  PowderChaser:
     type: application
     platform: iOS
     sources:
-      - path: SnowTracker/SnowTracker/Sources
-      - path: SnowTracker/SnowTracker/Resources
-      - path: SnowTrackerWidget/LiveActivity/SnowActivityAttributes.swift
+      - path: PowderChaser/PowderChaser/Sources
+      - path: PowderChaser/PowderChaser/Resources
+      - path: PowderChaserWidget/LiveActivity/SnowActivityAttributes.swift
     settings:
       base:
-        INFOPLIST_FILE: SnowTracker/Info.plist
+        INFOPLIST_FILE: PowderChaser/Info.plist
         PRODUCT_NAME: Powder Chaser
-        PRODUCT_MODULE_NAME: SnowTracker
+        PRODUCT_MODULE_NAME: PowderChaser
         PRODUCT_BUNDLE_IDENTIFIER: com.wouterdevriendt.snowtracker
         MARKETING_VERSION: "2.1.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -50,7 +50,7 @@ targets:
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     entitlements:
-      path: SnowTracker/SnowTracker.entitlements
+      path: PowderChaser/PowderChaser.entitlements
       properties:
         aps-environment: development
         com.apple.security.application-groups:
@@ -66,9 +66,9 @@ targets:
       - package: Get
       - package: Nuke
       - package: KeychainSwift
-      - target: SnowTrackerWidgetExtension
+      - target: PowderChaserWidgetExtension
     info:
-      path: SnowTracker/Info.plist
+      path: PowderChaser/Info.plist
       properties:
         CFBundleName: Powder Chaser
         CFBundleDisplayName: Powder Chaser
@@ -97,14 +97,14 @@ targets:
           - CFBundleURLSchemes:
               - com.googleusercontent.apps.269334695221-p2i31pdp3n7ms7o7rpf6cb3vsdmc4ohs
 
-  SnowTrackerWidgetExtension:
+  PowderChaserWidgetExtension:
     type: app-extension
     platform: iOS
     sources:
-      - path: SnowTrackerWidget
+      - path: PowderChaserWidget
     settings:
       base:
-        INFOPLIST_FILE: SnowTrackerWidget/Info.plist
+        INFOPLIST_FILE: PowderChaserWidget/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.wouterdevriendt.snowtracker.widget
         MARKETING_VERSION: "2.1.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -113,12 +113,12 @@ targets:
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1,2"
     entitlements:
-      path: SnowTrackerWidget/SnowTrackerWidget.entitlements
+      path: PowderChaserWidget/PowderChaserWidget.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.wouterdevriendt.snowtracker
     info:
-      path: SnowTrackerWidget/Info.plist
+      path: PowderChaserWidget/Info.plist
       properties:
         CFBundleName: Powder Chaser Widget
         CFBundleDisplayName: Powder Chaser Widget
@@ -127,44 +127,44 @@ targets:
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 
-  SnowTrackerTests:
+  PowderChaserTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - path: SnowTracker/SnowTrackerTests
+      - path: PowderChaser/PowderChaserTests
         optional: true
     dependencies:
-      - target: SnowTracker
+      - target: PowderChaser
     settings:
       base:
-        INFOPLIST_FILE: SnowTracker/SnowTrackerTests/Info.plist
+        INFOPLIST_FILE: PowderChaser/PowderChaserTests/Info.plist
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Powder Chaser.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Powder Chaser"
 
-  SnowTrackerUITests:
+  PowderChaserUITests:
     type: bundle.ui-testing
     platform: iOS
     sources:
-      - path: SnowTracker/SnowTrackerUITests
+      - path: PowderChaser/PowderChaserUITests
         optional: true
     dependencies:
-      - target: SnowTracker
+      - target: PowderChaser
     settings:
       base:
-        INFOPLIST_FILE: SnowTracker/SnowTrackerUITests/Info.plist
-        TEST_TARGET_NAME: SnowTracker
+        INFOPLIST_FILE: PowderChaser/PowderChaserUITests/Info.plist
+        TEST_TARGET_NAME: PowderChaser
 
 schemes:
-  SnowTracker:
+  PowderChaser:
     build:
       targets:
-        SnowTracker: all
+        PowderChaser: all
     run:
       config: Debug
     test:
       config: Debug
       targets:
-        - SnowTrackerTests
-        - SnowTrackerUITests
+        - PowderChaserTests
+        - PowderChaserUITests
     profile:
       config: Release
     analyze:

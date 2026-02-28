@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 # Constants
 USER_AGENT = (
-    "Mozilla/5.0 (compatible; SnowTrackerBot/1.0; +https://github.com/snowtracker)"
+    "Mozilla/5.0 (compatible; PowderChaserBot/1.0; +https://github.com/snowtracker)"
 )
 REQUEST_DELAY = 1.5  # Seconds between requests to be respectful
 MAX_RETRIES = 3

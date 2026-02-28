@@ -17,7 +17,7 @@
         "targets": [
           {
             "refId": "A",
-            "namespace": "SnowTracker/Scraping",
+            "namespace": "PowderChaser/Scraping",
             "metricName": "ScraperSuccessRate",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Average",
@@ -51,7 +51,7 @@
         "targets": [
           {
             "refId": "A",
-            "namespace": "SnowTracker/Scraping",
+            "namespace": "PowderChaser/Scraping",
             "metricName": "ResortsProcessed",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",
@@ -80,7 +80,7 @@
         "targets": [
           {
             "refId": "A",
-            "namespace": "SnowTracker/Scraping",
+            "namespace": "PowderChaser/Scraping",
             "metricName": "ProcessingErrors",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",
@@ -110,7 +110,7 @@
         "targets": [
           {
             "refId": "A",
-            "namespace": "SnowTracker/Scraping",
+            "namespace": "PowderChaser/Scraping",
             "metricName": "ProcessingDuration",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Average",
@@ -141,7 +141,7 @@
         "targets": [
           {
             "refId": "A",
-            "namespace": "SnowTracker/Scraping",
+            "namespace": "PowderChaser/Scraping",
             "metricName": "ConditionsSaved",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",
@@ -169,7 +169,7 @@
         "targets": [
           {
             "refId": "A",
-            "namespace": "SnowTracker/Scraping",
+            "namespace": "PowderChaser/Scraping",
             "metricName": "ScraperHits",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",
@@ -178,7 +178,7 @@
           },
           {
             "refId": "B",
-            "namespace": "SnowTracker/Scraping",
+            "namespace": "PowderChaser/Scraping",
             "metricName": "ScraperMisses",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",
@@ -209,7 +209,7 @@
         "targets": [
           {
             "refId": "A",
-            "namespace": "SnowTracker/Scraping",
+            "namespace": "PowderChaser/Scraping",
             "metricName": "ProcessingErrors",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",
@@ -237,7 +237,7 @@
         "targets": [
           {
             "refId": "A",
-            "namespace": "SnowTracker/Scraping",
+            "namespace": "PowderChaser/Scraping",
             "metricName": "ElevationPointsProcessed",
             "dimensions": { "Environment": ["staging", "prod"] },
             "statistic": "Sum",

@@ -31,7 +31,7 @@ OPEN_METEO_GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search"
 
 # Nominatim fallback (1 req/sec, needs User-Agent)
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
-NOMINATIM_USER_AGENT = "SnowTracker/1.0 (ski resort geocoding)"
+NOMINATIM_USER_AGENT = "PowderChaser/1.0 (ski resort geocoding)"
 
 # Concurrency settings
 OPEN_METEO_CONCURRENCY = 10

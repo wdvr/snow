@@ -7,19 +7,19 @@
 cd ios && xcodegen generate
 
 # Build
-xcodebuild -project SnowTracker.xcodeproj -scheme SnowTracker \
+xcodebuild -project PowderChaser.xcodeproj -scheme PowderChaser \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 
 # Unit tests
-xcodebuild test -project SnowTracker.xcodeproj -scheme SnowTracker \
+xcodebuild test -project PowderChaser.xcodeproj -scheme PowderChaser \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  -only-testing:SnowTrackerTests -quiet
+  -only-testing:PowderChaserTests -quiet
 
 # Deploy to physical device
-xcodebuild -project SnowTracker.xcodeproj -scheme SnowTracker \
+xcodebuild -project PowderChaser.xcodeproj -scheme PowderChaser \
   -destination 'id=00008150-001625E20AE2401C' -configuration Debug build
 xcrun devicectl device install app --device 00008150-001625E20AE2401C \
-  ~/Library/Developer/Xcode/DerivedData/SnowTracker-*/Build/Products/Debug-iphoneos/SnowTracker.app
+  ~/Library/Developer/Xcode/DerivedData/PowderChaser-*/Build/Products/Debug-iphoneos/PowderChaser.app
 ```
 
 ## Backend

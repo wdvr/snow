@@ -74,14 +74,14 @@ jobs:
     - name: Resolve Swift Package Dependencies
       run: |
         xcodebuild -resolvePackageDependencies \
-          -project ios/SnowTracker.xcodeproj \
-          -scheme SnowTracker
+          -project ios/PowderChaser.xcodeproj \
+          -scheme PowderChaser
 
     - name: Calculate build number
       id: version
       run: |
         BUILD=$(git rev-list --count HEAD)
-        PLIST="ios/SnowTracker/Info.plist"
+        PLIST="ios/PowderChaser/Info.plist"
         VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST" 2>/dev/null || echo "1.0.0")
 
         # Update build number in main Info.plist
@@ -89,7 +89,7 @@ jobs:
         /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $BUILD" "$PLIST"
 
         # Update widget Info.plist
-        WIDGET_PLIST="ios/SnowTrackerWidget/Info.plist"
+        WIDGET_PLIST="ios/PowderChaserWidget/Info.plist"
         if [ -f "$WIDGET_PLIST" ]; then
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$WIDGET_PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$WIDGET_PLIST" 2>/dev/null || true
@@ -144,8 +144,8 @@ jobs:
       if: github.event_name == 'pull_request'
       run: |
         xcodebuild build \
-          -project ios/SnowTracker.xcodeproj \
-          -scheme SnowTracker \
+          -project ios/PowderChaser.xcodeproj \
+          -scheme PowderChaser \
           -configuration Release \
           -destination 'generic/platform=iOS' \
           CODE_SIGNING_ALLOWED=NO
@@ -227,8 +227,8 @@ jobs:
       if: github.event_name != 'pull_request'
       run: |
         xcodebuild archive \
-          -project ios/SnowTracker.xcodeproj \
-          -scheme SnowTracker \
+          -project ios/PowderChaser.xcodeproj \
+          -scheme PowderChaser \
           -configuration Release \
           -archivePath $RUNNER_TEMP/Export/App.xcarchive \
           -destination 'generic/platform=iOS' \
@@ -286,7 +286,7 @@ jobs:
     - name: Summary
       run: |
         echo "## Build Successful" >> $GITHUB_STEP_SUMMARY
-        echo "- **Scheme**: SnowTracker" >> $GITHUB_STEP_SUMMARY
+        echo "- **Scheme**: PowderChaser" >> $GITHUB_STEP_SUMMARY
         echo "- **Bundle ID**: com.wouterdevriendt.snowtracker" >> $GITHUB_STEP_SUMMARY
         echo "- **Version**: ${{ steps.version.outputs.version }} (${{ steps.version.outputs.build }})" >> $GITHUB_STEP_SUMMARY
         echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

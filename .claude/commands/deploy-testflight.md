@@ -12,15 +12,15 @@ gh run list --repo wdvr/snow --limit 5
 
 ## Via xcodebuild (manual)
 
-1. Bump build number in `ios/SnowTracker/Info.plist` (CFBundleVersion)
+1. Bump build number in `ios/PowderChaser/Info.plist` (CFBundleVersion)
 2. Regenerate project:
 ```bash
 cd ios && xcodegen generate
 ```
 3. Archive:
 ```bash
-xcodebuild archive -project ios/SnowTracker.xcodeproj -scheme SnowTracker \
-  -archivePath /tmp/SnowTracker.xcarchive -destination 'generic/platform=iOS' -quiet
+xcodebuild archive -project ios/PowderChaser.xcodeproj -scheme PowderChaser \
+  -archivePath /tmp/PowderChaser.xcarchive -destination 'generic/platform=iOS' -quiet
 ```
 4. Export and upload:
 ```bash
@@ -36,14 +36,14 @@ cat > /tmp/ExportOptions.plist << 'PLIST'
 </plist>
 PLIST
 
-xcodebuild -exportArchive -archivePath /tmp/SnowTracker.xcarchive \
-  -exportOptionsPlist /tmp/ExportOptions.plist -exportPath /tmp/SnowTracker-export \
+xcodebuild -exportArchive -archivePath /tmp/PowderChaser.xcarchive \
+  -exportOptionsPlist /tmp/ExportOptions.plist -exportPath /tmp/PowderChaser-export \
   -allowProvisioningUpdates \
   -authenticationKeyPath ~/.private_keys/AuthKey_GA9T4G84AU.p8 \
   -authenticationKeyID GA9T4G84AU \
   -authenticationKeyIssuerID 39f22957-9a03-421a-ada6-86471b32ee9f
 ```
-5. Clean up: `rm -rf /tmp/SnowTracker.xcarchive /tmp/SnowTracker-export /tmp/ExportOptions.plist`
+5. Clean up: `rm -rf /tmp/PowderChaser.xcarchive /tmp/PowderChaser-export /tmp/ExportOptions.plist`
 
 ## Notes
 - Team ID: `N324UX8D9M`

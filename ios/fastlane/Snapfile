@@ -12,7 +12,7 @@ languages([
 ])
 
 # Xcode scheme to use
-scheme("SnowTracker")
+scheme("PowderChaser")
 
 # Output directory
 output_directory("./screenshots")
@@ -33,7 +33,7 @@ skip_open_summary(true)
 concurrent_simulators(false)
 
 # Project file (relative to ios directory)
-project("SnowTracker.xcodeproj")
+project("PowderChaser.xcodeproj")
 
 # Test plan (optional - uses default if not specified)
 # testplan("ScreenshotTestPlan")

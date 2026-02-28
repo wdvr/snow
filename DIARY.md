@@ -20,7 +20,7 @@ Added cross-tab navigation via NavigationCoordinator. "Show on Map" button in re
 | done | pending | n/a | n/a |
 
 ### Fix: Spotlight app name
-Set PRODUCT_NAME to "Powder Chaser" (was defaulting to "SnowTracker" from TARGET_NAME). Added PRODUCT_MODULE_NAME override to keep Swift module name as SnowTracker. Updated TEST_HOST for test targets.
+Set PRODUCT_NAME to "Powder Chaser" (was defaulting to "PowderChaser" from TARGET_NAME). Added PRODUCT_MODULE_NAME override to keep Swift module name as PowderChaser. Updated TEST_HOST for test targets.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
 | done | n/a | n/a | n/a |

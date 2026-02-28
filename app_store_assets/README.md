@@ -6,9 +6,9 @@ Complete App Store submission package for Powder Chaser, a professional ski reso
 
 ### 🛠️ Automation System
 - **`/ios/generate_screenshots.sh`** - Automated screenshot generation script for all required device sizes
-- **`/ios/SnowTracker/ScreenshotTestPlan.xctestplan`** - Test plan configuration for screenshot automation
-- **`/ios/SnowTracker/SnowTrackerUITests/AppStoreScreenshotTests.swift`** - UI tests specifically for taking App Store screenshots
-- **`/ios/SnowTracker/SnowTracker/Sources/Services/DemoDataService.swift`** - Beautiful demo data service for consistent screenshots
+- **`/ios/PowderChaser/ScreenshotTestPlan.xctestplan`** - Test plan configuration for screenshot automation
+- **`/ios/PowderChaser/PowderChaserUITests/AppStoreScreenshotTests.swift`** - UI tests specifically for taking App Store screenshots
+- **`/ios/PowderChaser/PowderChaser/Sources/Services/DemoDataService.swift`** - Beautiful demo data service for consistent screenshots
 
 ### 📝 App Store Metadata
 - **`app_store_metadata.md`** - Complete App Store listing copy including:

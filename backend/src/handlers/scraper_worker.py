@@ -36,7 +36,7 @@ NEW_RESORTS_TOPIC_ARN = os.environ.get("NEW_RESORTS_TOPIC_ARN", "")
 
 # Scraper constants
 USER_AGENT = (
-    "Mozilla/5.0 (compatible; SnowTrackerBot/1.0; +https://github.com/snowtracker)"
+    "Mozilla/5.0 (compatible; PowderChaserBot/1.0; +https://github.com/snowtracker)"
 )
 REQUEST_DELAY = 1.0  # Seconds between requests
 MAX_RETRIES = 3

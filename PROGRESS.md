@@ -219,7 +219,7 @@ curl https://api.powderchaserapp.com/api/v1/resorts/big-white/conditions
 
 # Run tests
 cd backend && python3 -m pytest tests/ -x -q
-xcodebuild test -project ios/SnowTracker.xcodeproj -scheme SnowTracker -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -only-testing:SnowTrackerTests
+xcodebuild test -project ios/PowderChaser.xcodeproj -scheme PowderChaser -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -only-testing:PowderChaserTests
 
 # Deploy (auto on push to main)
 git push origin main

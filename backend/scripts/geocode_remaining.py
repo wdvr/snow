@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 RESORTS_FILE = Path(__file__).parent.parent / "data" / "resorts.json"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
-NOMINATIM_USER_AGENT = "SnowTracker/1.0 (ski resort geocoding)"
+NOMINATIM_USER_AGENT = "PowderChaser/1.0 (ski resort geocoding)"
 OPEN_METEO_GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search"
 
 tf = TimezoneFinder()

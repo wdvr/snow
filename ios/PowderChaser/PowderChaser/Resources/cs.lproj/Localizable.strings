@@ -1,0 +1,273 @@
+/*
+  Localizable.strings
+  Powder Chaser
+
+  Czech
+*/
+
+/* Common */
+"Done" = "Hotovo";
+"Cancel" = "Zrušit";
+"Delete" = "Smazat";
+"Save" = "Uložit";
+"OK" = "OK";
+"Error" = "Chyba";
+"Loading" = "Načítání";
+"Refresh" = "Obnovit";
+"Settings" = "Nastavení";
+"Search" = "Hledat";
+
+/* Tabs */
+"Favorites" = "Oblíbené";
+"Map" = "Mapa";
+"Best Snow" = "Nejlepší sníh";
+"Nearby" = "V blízkosti";
+
+/* FavoritesView */
+"No Favorites Yet" = "Zatím žádné oblíbené";
+"Tap the heart icon on any resort to add it to your favorites." = "Klepněte na ikonu srdce u libovolného střediska a přidejte si jej do oblíbených.";
+"Browse Resorts" = "Procházet střediska";
+
+/* SplashView */
+"Snow Tracker" = "Powder Chaser";
+"Fresh powder awaits" = "Čerstvý prašan čeká";
+"Loading conditions..." = "Načítání podmínek...";
+
+/* ConditionsView */
+"Snow Conditions" = "Sněhové podmínky";
+"Offline mode - showing cached data" = "Offline režim – zobrazuji uložená data";
+"Last updated: %@" = "Naposledy aktualizováno: %@";
+"Snow Quality Guide" = "Průvodce kvalitou sněhu";
+"Quality Levels" = "Úrovně kvality";
+"Warming" = "Oteplování";
+"since last thaw" = "od posledního oblevení";
+
+/* Quality Ratings */
+"Excellent" = "Výborné";
+"Good" = "Dobré";
+"Fair" = "Přijatelné";
+"Poor" = "Špatné";
+"Icy" = "Ledové";
+
+/* ResortDetailView */
+"Select Elevation" = "Vyberte nadmořskou výšku";
+"Loading Conditions..." = "Načítání podmínek...";
+"No Data Available" = "Žádná data k dispozici";
+"All Elevations" = "Všechny nadmořské výšky";
+"Visit Website" = "Navštívit webové stránky";
+"Recent Snowfall" = "Nedávné sněžení";
+"Snow Forecast" = "Předpověď sněžení";
+"Weather Details" = "Podrobnosti počasí";
+"Min Temp" = "Min. teplota";
+"Max Temp" = "Max. teplota";
+"Humidity" = "Vlhkost";
+"Wind" = "Vítr";
+"24h" = "24h";
+"48h" = "48h";
+"72h" = "72h";
+"Next 24h" = "Příštích 24h";
+"Next 48h" = "Příštích 48h";
+"Next 72h" = "Příštích 72h";
+"Heavy snowfall expected!" = "Očekává se silné sněžení!";
+"Light snow expected" = "Očekává se mírné sněžení";
+"Fresh" = "Čerstvý";
+"Temp" = "Teplota";
+
+/* FeedbackView */
+"Send Feedback" = "Odeslat zpětnou vazbu";
+"Subject" = "Předmět";
+"Your Feedback" = "Vaše zpětná vazba";
+"Submit Feedback" = "Odeslat zpětnou vazbu";
+"Feedback Sent!" = "Zpětná vazba odeslána!";
+"Thank you for your feedback!" = "Děkujeme za Vaši zpětnou vazbu!";
+"Email (optional)" = "E-mail (nepovinné)";
+
+/* NotificationSettingsView */
+"Notifications" = "Oznámení";
+"All Notifications" = "Všechna oznámení";
+"Fresh Snow Alerts" = "Upozornění na čerstvý sníh";
+"Snow Threshold" = "Práh sněžení";
+"Event Alerts" = "Upozornění na události";
+"Thaw/Freeze Alerts" = "Upozornění na oblevení/mráz";
+"Enable" = "Zapnout";
+"%d cm" = "%d cm";
+
+/* SettingsView */
+"Account" = "Účet";
+"Sign In" = "Přihlásit se";
+"Sign Out" = "Odhlásit se";
+"Preferences" = "Předvolby";
+"Units" = "Jednotky";
+"Celsius" = "Celsius";
+"Fahrenheit" = "Fahrenheit";
+"Metric (km)" = "Metrické (km)";
+"Imperial (mi)" = "Imperiální (mi)";
+"Centimeters" = "Centimetry";
+"Inches" = "Palce";
+"Data & Storage" = "Data a úložiště";
+"Clear Offline Cache" = "Vymazat offline cache";
+"Support" = "Podpora";
+"Privacy Policy" = "Zásady ochrany soukromí";
+"Terms of Service" = "Podmínky služby";
+"About" = "O aplikaci";
+"App Version" = "Verze aplikace";
+
+/* AuthenticationViews */
+"Sign in with Google" = "Přihlásit se přes Google";
+"Continue without signing in" = "Pokračovat bez přihlášení";
+"Profile" = "Profil";
+
+/* RecommendationsView */
+"Near You" = "Ve Vaší blízkosti";
+"Best Globally" = "Nejlepší na světě";
+"Search Radius" = "Poloměr vyhledávání";
+"Location Access" = "Přístup k poloze";
+"Enable location to see nearby recommendations" = "Povolte polohu pro zobrazení doporučení v blízkosti";
+"Open Settings" = "Otevřít nastavení";
+"No Recommendations" = "Žádná doporučení";
+
+/* ResortMapView */
+"Snow Quality Legend" = "Legenda kvality sněhu";
+"Standard" = "Standardní";
+"Satellite" = "Satelitní";
+"Hybrid" = "Hybridní";
+"Show All Resorts" = "Zobrazit všechna střediska";
+"View Full Details" = "Zobrazit všechny podrobnosti";
+"Forecast" = "Předpověď";
+"%d Resorts" = "%d středisek";
+
+/* ResortListView */
+"Snow Resorts" = "Lyžařská střediska";
+"All Regions" = "Všechny regiony";
+"Search resorts..." = "Hledat střediska...";
+"Loading resorts..." = "Načítání středisek...";
+"No Resorts Found" = "Žádná střediska nenalezena";
+"Pull to refresh" = "Potáhněte pro obnovení";
+"Try Again" = "Zkusit znovu";
+
+/* MapView Date Selector */
+"Today" = "Dnes";
+
+/* Quality Ratings (10-level scale) */
+"Champagne Powder" = "Šampaňský prašan";
+"Powder Day" = "Den prašanu";
+"Great" = "Skvělé";
+"Decent" = "Slušné";
+"Mediocre" = "Průměrné";
+"Bad" = "Špatné";
+"Horrible" = "Hrozné";
+
+/* FavoritesView (card redesign) */
+"Avg score" = "Prům. skóre";
+"Best conditions" = "Nejlepší podmínky";
+"Create Group" = "Vytvořit skupinu";
+"Manage Groups" = "Spravovat skupiny";
+"Move to Group" = "Přesunout do skupiny";
+"Your Groups" = "Vaše skupiny";
+"Remove Favorite" = "Odebrat z oblíbených";
+"Groups" = "Skupiny";
+"Compare" = "Porovnat";
+"Rename" = "Přejmenovat";
+"Rename Group" = "Přejmenovat skupinu";
+"No Group" = "Bez skupiny";
+
+/* ResortListView */
+"Pass:" = "Permanentka:";
+"Sort:" = "Řazení:";
+"Unable to Load Resorts" = "Nelze načíst střediska";
+"Add to Favorites" = "Přidat do oblíbených";
+"Regions" = "Regiony";
+
+/* SettingsView / AboutView / UnitsSettingsView */
+"App Info" = "Informace o aplikaci";
+"Appearance" = "Vzhled";
+"App Icon" = "Ikona aplikace";
+"Temperature" = "Teplota";
+"Distance" = "Vzdálenost";
+"Snow Depth" = "Hloubka sněhu";
+"Not signed in" = "Nepřihlášený";
+"Powder Chaser" = "Powder Chaser";
+"Supported Resorts" = "Podporovaná střediska";
+"Version" = "Verze";
+"Website" = "Webové stránky";
+
+/* RecommendationsView */
+"Finding best snow near you..." = "Hledáme nejlepší sníh ve Vaší blízkosti...";
+"Could not load best conditions. Pull to refresh." = "Nepodařilo se načíst nejlepší podmínky. Potáhněte pro obnovení.";
+"Location Disabled" = "Poloha je vypnuta";
+"See All" = "Zobrazit vše";
+"score" = "skóre";
+
+/* ResortMapView */
+"Ski trails: OpenSnowMap.org / OpenStreetMap" = "Lyžařské trasy: OpenSnowMap.org / OpenStreetMap";
+"Zoom in to see trails" = "Přibližte pro zobrazení tras";
+"Current Conditions" = "Aktuální podmínky";
+"Conditions Summary" = "Shrnutí podmínek";
+"Cams" = "Kamery";
+"No conditions data available" = "Data o podmínkách nejsou k dispozici";
+
+/* ResortDetailView */
+"Live" = "Živě";
+"Snow Report" = "Sněhová zpráva";
+"Trail Map" = "Mapa tras";
+"Webcam" = "Webkamera";
+"Community Reports" = "Hlášení komunity";
+"Data Sources" = "Zdroje dat";
+"Suggest an Edit" = "Navrhnout úpravu";
+"Season Totals" = "Celkem za sezónu";
+"Snow History" = "Historie sněžení";
+
+/* ChatView */
+"Ask AI" = "Zeptat se AI";
+"Ask about snow conditions" = "Zeptejte se na sněhové podmínky";
+"Get personalized recommendations, condition updates, and ski trip advice." = "Získejte personalizovaná doporučení, aktuální podmínky a rady pro lyžařský výlet.";
+"Ask about conditions..." = "Zeptejte se na podmínky...";
+"Conversation history" = "Historie konverzací";
+"New conversation" = "Nová konverzace";
+
+/* Chat Suggestions */
+"Best snow within 500 miles" = "Nejlepší sníh do 800 km";
+"Compare Whistler vs Jackson Hole" = "Porovnat Whistler a Jackson Hole";
+"Best powder in the Rockies" = "Nejlepší prašan ve Skalistých horách";
+"Family-friendly with good snow" = "Pro rodiny s dobrým sněhem";
+"Top 5 resorts globally right now" = "Top 5 středisek na světě právě teď";
+"Ikon Pass best conditions" = "Nejlepší podmínky s Ikon Pass";
+"Snow forecast this week" = "Předpověď sněžení na tento týden";
+"Hidden gems with fresh powder" = "Skryté klenoty s čerstvým prašanem";
+"Best in the Alps right now" = "Nejlepší v Alpách právě teď";
+"Deepest snowpack" = "Nejhlubší sněhová pokrývka";
+"Japan snow conditions" = "Sněhové podmínky v Japonsku";
+
+/* Map Filters */
+"All" = "Vše";
+"Good+" = "Dobré+";
+"Below Good" = "Pod dobré";
+
+/* Misc */
+"Share" = "Sdílet";
+"Close" = "Zavřít";
+"Resorts" = "Střediska";
+"No results" = "Žádné výsledky";
+
+/* Buttons & Actions (newly extracted) */
+"Clear" = "Vymazat";
+"Remove" = "Odebrat";
+"Plan a Trip" = "Naplánovat výlet";
+"Mark all read" = "Označit vše jako přečtené";
+"Change" = "Změnit";
+"Create" = "Vytvořit";
+"Enable Location" = "Povolit polohu";
+"Show All Regions" = "Zobrazit všechny regiony";
+"Show Northern Hemisphere Only" = "Zobrazit pouze severní polokouli";
+"Reset to Defaults" = "Obnovit výchozí nastavení";
+"Reset to Default" = "Obnovit výchozí";
+"Sign out and re-authenticate" = "Odhlásit se a znovu se přihlásit";
+
+/* Alert Titles (newly extracted) */
+"Reset API URL?" = "Resetovat API adresu?";
+"Sign Out?" = "Odhlásit se?";
+"Clear Cache?" = "Vymazat cache?";
+"Remove Favorite?" = "Odebrat z oblíbených?";
+"Delete Trip" = "Smazat výlet";
+"Suggestion Sent!" = "Návrh odeslán!";
+"View Live Webcams" = "Zobrazit živé webkamery";

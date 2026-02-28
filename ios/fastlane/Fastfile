@@ -13,17 +13,17 @@ platform :ios do
 
     # Increment build number
     increment_build_number(
-      xcodeproj: "SnowTracker.xcodeproj"
+      xcodeproj: "PowderChaser.xcodeproj"
     )
 
     # Build the app
     build_app(
-      project: "SnowTracker.xcodeproj",
-      scheme: "SnowTracker",
+      project: "PowderChaser.xcodeproj",
+      scheme: "PowderChaser",
       export_method: "app-store",
       clean: true,
       output_directory: "./build",
-      output_name: "SnowTracker.ipa"
+      output_name: "PowderChaser.ipa"
     )
 
     # Upload to TestFlight
@@ -35,7 +35,7 @@ platform :ios do
 
     # Commit the version bump
     commit_version_bump(
-      xcodeproj: "SnowTracker.xcodeproj",
+      xcodeproj: "PowderChaser.xcodeproj",
       message: "Bump build number for TestFlight",
       force: true
     )
@@ -53,24 +53,24 @@ platform :ios do
   desc "Full release: build, upload to TestFlight, upload metadata, submit for review"
   lane :release do |options|
     api_key = get_api_key
-    version = get_version_number(xcodeproj: "SnowTracker.xcodeproj", target: "SnowTracker")
+    version = get_version_number(xcodeproj: "PowderChaser.xcodeproj", target: "PowderChaser")
 
     UI.message("Releasing version #{version}")
 
     # 1. Increment build number
-    increment_build_number(xcodeproj: "SnowTracker.xcodeproj")
-    build_number = get_build_number(xcodeproj: "SnowTracker.xcodeproj")
+    increment_build_number(xcodeproj: "PowderChaser.xcodeproj")
+    build_number = get_build_number(xcodeproj: "PowderChaser.xcodeproj")
     UI.message("Build number: #{build_number}")
 
     # 2. Build the app
     UI.message("Building app...")
     build_app(
-      project: "SnowTracker.xcodeproj",
-      scheme: "SnowTracker",
+      project: "PowderChaser.xcodeproj",
+      scheme: "PowderChaser",
       export_method: "app-store",
       clean: true,
       output_directory: "./build",
-      output_name: "SnowTracker.ipa"
+      output_name: "PowderChaser.ipa"
     )
 
     # 3. Upload to TestFlight (App Store Connect)
@@ -127,7 +127,7 @@ platform :ios do
 
     # 7. Commit version bump
     commit_version_bump(
-      xcodeproj: "SnowTracker.xcodeproj",
+      xcodeproj: "PowderChaser.xcodeproj",
       message: "Release version #{version} (#{build_number})",
       force: true
     )
@@ -146,7 +146,7 @@ platform :ios do
   desc "Submit existing build for review (metadata only)"
   lane :submit_for_review do |options|
     api_key = get_api_key
-    version = options[:version] || get_version_number(xcodeproj: "SnowTracker.xcodeproj", target: "SnowTracker")
+    version = options[:version] || get_version_number(xcodeproj: "PowderChaser.xcodeproj", target: "PowderChaser")
 
     # Upload metadata first
     deliver(
@@ -188,8 +188,8 @@ platform :ios do
   desc "Generate App Store screenshots on all required device sizes"
   lane :screenshots do
     capture_screenshots(
-      project: "SnowTracker.xcodeproj",
-      scheme: "SnowTracker",
+      project: "PowderChaser.xcodeproj",
+      scheme: "PowderChaser",
       devices: [
         "iPhone 17 Pro Max",      # 6.9" display (required)
         "iPhone 17 Pro",          # 6.3" display
@@ -209,8 +209,8 @@ platform :ios do
   desc "Generate screenshots for iPhone only (faster)"
   lane :screenshots_iphone do
     capture_screenshots(
-      project: "SnowTracker.xcodeproj",
-      scheme: "SnowTracker",
+      project: "PowderChaser.xcodeproj",
+      scheme: "PowderChaser",
       devices: ["iPhone 17 Pro Max"],
       languages: ["en-US"],
       output_directory: "./screenshots",
@@ -229,7 +229,7 @@ platform :ios do
     api_key = get_api_key
 
     # Get version from options or project
-    version = options[:app_version] || get_version_number(xcodeproj: "SnowTracker.xcodeproj", target: "SnowTracker")
+    version = options[:app_version] || get_version_number(xcodeproj: "PowderChaser.xcodeproj", target: "PowderChaser")
 
     deliver(
       api_key: api_key,
@@ -285,7 +285,7 @@ platform :ios do
   lane :upload_metadata_only do |options|
     api_key = get_api_key
 
-    version = options[:app_version] || get_version_number(xcodeproj: "SnowTracker.xcodeproj", target: "SnowTracker")
+    version = options[:app_version] || get_version_number(xcodeproj: "PowderChaser.xcodeproj", target: "PowderChaser")
 
     deliver(
       api_key: api_key,
@@ -324,11 +324,11 @@ platform :ios do
     bump_type = options[:type] || "patch"
 
     increment_version_number(
-      xcodeproj: "SnowTracker.xcodeproj",
+      xcodeproj: "PowderChaser.xcodeproj",
       bump_type: bump_type
     )
 
-    version = get_version_number(xcodeproj: "SnowTracker.xcodeproj", target: "SnowTracker")
+    version = get_version_number(xcodeproj: "PowderChaser.xcodeproj", target: "PowderChaser")
     UI.success("Bumped version to #{version}")
   end
 
@@ -340,7 +340,7 @@ platform :ios do
     end
 
     increment_version_number(
-      xcodeproj: "SnowTracker.xcodeproj",
+      xcodeproj: "PowderChaser.xcodeproj",
       version_number: version
     )
 

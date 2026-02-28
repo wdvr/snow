@@ -4,15 +4,15 @@
 import PackageDescription
 
 let package = Package(
-    name: "SnowTracker",
+    name: "PowderChaser",
     platforms: [
         .iOS(.v17),
         .macOS(.v14)
     ],
     products: [
         .library(
-            name: "SnowTracker",
-            targets: ["SnowTracker"]
+            name: "PowderChaser",
+            targets: ["PowderChaser"]
         )
     ],
     dependencies: [
@@ -36,7 +36,7 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "SnowTracker",
+            name: "PowderChaser",
             dependencies: [
                 "Alamofire",
                 .product(name: "GoogleSignIn", package: "GoogleSignIn-iOS"),
@@ -47,9 +47,9 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "SnowTrackerTests",
+            name: "PowderChaserTests",
             dependencies: [
-                "SnowTracker",
+                "PowderChaser",
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing")
             ]
         )

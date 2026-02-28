@@ -36,8 +36,8 @@ declare -a IPAD_DEVICES=(
 )
 
 # Test scheme and target
-SCHEME="SnowTracker"
-TEST_TARGET="SnowTrackerUITests"
+SCHEME="PowderChaser"
+TEST_TARGET="PowderChaserUITests"
 
 # Function to check if simulator exists
 check_simulator() {
@@ -106,7 +106,7 @@ run_screenshot_tests() {
     fi
 
     # Set derived data path to avoid conflicts
-    local derived_data_path="/tmp/SnowTracker_Screenshots_$(date +%s)"
+    local derived_data_path="/tmp/PowderChaser_Screenshots_$(date +%s)"
 
     # Run the UI tests with screenshot generation
     echo "🧪 Running screenshot tests..."
@@ -115,7 +115,7 @@ run_screenshot_tests() {
 
     # Clean build directory first
     xcodebuild clean \
-        -project SnowTracker.xcodeproj \
+        -project PowderChaser.xcodeproj \
         -scheme "$SCHEME" \
         -destination "platform=iOS Simulator,name=$device_name" \
         -derivedDataPath "$derived_data_path"
@@ -123,7 +123,7 @@ run_screenshot_tests() {
     # Build the app
     echo "🔨 Building app..."
     xcodebuild build-for-testing \
-        -project SnowTracker.xcodeproj \
+        -project PowderChaser.xcodeproj \
         -scheme "$SCHEME" \
         -destination "platform=iOS Simulator,name=$device_name" \
         -derivedDataPath "$derived_data_path"
@@ -131,11 +131,11 @@ run_screenshot_tests() {
     # Run screenshot tests
     echo "📸 Taking screenshots..."
     xcodebuild test-without-building \
-        -project SnowTracker.xcodeproj \
+        -project PowderChaser.xcodeproj \
         -scheme "$SCHEME" \
         -destination "platform=iOS Simulator,name=$device_name" \
         -testPlan "ScreenshotTestPlan" \
-        -only-testing:"SnowTrackerUITests/AppStoreScreenshotTests" \
+        -only-testing:"PowderChaserUITests/AppStoreScreenshotTests" \
         -derivedDataPath "$derived_data_path" \
         -resultBundlePath "$output_dir/TestResults.xcresult"
 
@@ -214,8 +214,8 @@ main() {
     cd "$IOS_DIR"
 
     # Verify project exists
-    if [ ! -f "SnowTracker.xcodeproj/project.pbxproj" ]; then
-        echo "❌ SnowTracker.xcodeproj not found in $IOS_DIR"
+    if [ ! -f "PowderChaser.xcodeproj/project.pbxproj" ]; then
+        echo "❌ PowderChaser.xcodeproj not found in $IOS_DIR"
         exit 1
     fi
 

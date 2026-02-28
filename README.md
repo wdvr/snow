@@ -243,16 +243,16 @@ Every quality score comes with a generated explanation that describes surface co
 ```
 snow/
 +-- ios/                          # iOS app (Swift 6, SwiftUI)
-|   +-- SnowTracker/              # Main app target
+|   +-- PowderChaser/              # Main app target
 |   |   +-- Sources/
 |   |   |   +-- Models/           # Data models (Resort, WeatherCondition, etc.)
 |   |   |   +-- Views/            # SwiftUI views
 |   |   |   +-- ViewModels/       # View models (MVVM)
 |   |   |   +-- Services/         # API client, auth, cache, push notifications
-|   |   |   +-- SnowTrackerApp.swift
+|   |   |   +-- PowderChaserApp.swift
 |   |   +-- Resources/            # Assets, localization
-|   +-- SnowTrackerWidget/        # Home screen widgets
-|   +-- SnowTrackerTests/         # Unit tests
+|   +-- PowderChaserWidget/        # Home screen widgets
+|   +-- PowderChaserTests/         # Unit tests
 |   +-- fastlane/                 # App Store automation
 +-- android/                      # Android app (Kotlin, Jetpack Compose)
 +-- backend/                      # Python backend
@@ -300,7 +300,7 @@ snow/
 
 ```bash
 cd ios
-open SnowTracker.xcodeproj
+open PowderChaser.xcodeproj
 ```
 
 The app requires `GoogleService-Info.plist` for Firebase Analytics (not included in the repo). See [Firebase setup](#firebase-configuration) below. Build and run on simulator or device -- the app connects to the production API by default.
@@ -341,7 +341,7 @@ The app uses Firebase Analytics. The `GoogleService-Info.plist` file is not incl
 **Option A: Create your own Firebase project**
 1. Go to [Firebase Console](https://console.firebase.google.com/)
 2. Create a new project and add an iOS app with bundle ID `com.wouterdevriendt.snowtracker`
-3. Download `GoogleService-Info.plist` and place it in `ios/SnowTracker/SnowTracker/Resources/`
+3. Download `GoogleService-Info.plist` and place it in `ios/PowderChaser/PowderChaser/Resources/`
 
 **Option B: Use environment variables**
 ```bash
@@ -443,9 +443,9 @@ gh workflow run trigger-weather.yml -f environment=prod
 cd backend && PYTHONPATH=src python3 -m pytest tests/ -x -q
 
 # iOS (119 tests)
-xcodebuild test -project ios/SnowTracker.xcodeproj -scheme SnowTracker \
+xcodebuild test -project ios/PowderChaser.xcodeproj -scheme PowderChaser \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  -only-testing:SnowTrackerTests
+  -only-testing:PowderChaserTests
 ```
 
 ---

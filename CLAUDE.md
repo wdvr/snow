@@ -49,7 +49,7 @@ Use this for independent tasks that can run concurrently (e.g., investigating di
 
 Spawn subagents to handle parallel fixes if needed:
 ```bash
-claude -p --dangerously-skip-permissions "Fix the failing tests in SnowTrackerTests.swift" &
+claude -p --dangerously-skip-permissions "Fix the failing tests in PowderChaserTests.swift" &
 ```
 
 A clean codebase is everyone's responsibility. Leave things better than you found them.
@@ -269,14 +269,14 @@ python -m pytest tests/ -v --cov=src --cov-report=html
 cd ios
 
 # Unit tests
-xcodebuild test -project SnowTracker.xcodeproj -scheme SnowTracker \
+xcodebuild test -project PowderChaser.xcodeproj -scheme PowderChaser \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  -only-testing:SnowTrackerTests
+  -only-testing:PowderChaserTests
 
 # UI tests
-xcodebuild test -project SnowTracker.xcodeproj -scheme SnowTracker \
+xcodebuild test -project PowderChaser.xcodeproj -scheme PowderChaser \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  -only-testing:SnowTrackerUITests
+  -only-testing:PowderChaserUITests
 ```
 
 ### Infrastructure
@@ -328,10 +328,10 @@ pulumi preview --diff
 ```bash
 # Build, install, and launch on iPhone 17 Pro Max (i17pw)
 cd ios
-xcodebuild -project SnowTracker.xcodeproj -scheme SnowTracker \
+xcodebuild -project PowderChaser.xcodeproj -scheme PowderChaser \
   -destination 'id=00008150-001625E20AE2401C' -configuration Debug build
 xcrun devicectl device install app --device 00008150-001625E20AE2401C \
-  ~/Library/Developer/Xcode/DerivedData/SnowTracker-*/Build/Products/Debug-iphoneos/SnowTracker.app
+  ~/Library/Developer/Xcode/DerivedData/PowderChaser-*/Build/Products/Debug-iphoneos/Powder\ Chaser.app
 xcrun devicectl device process launch --device 00008150-001625E20AE2401C com.snowtracker.app
 ```
 

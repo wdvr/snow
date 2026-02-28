@@ -619,7 +619,7 @@ The `na_midwest` region is defined in the regions config but contains **zero res
 
 #### CQA-001: iOS SSE stream service corrupts multi-byte UTF-8 characters
 - **Platform:** iOS
-- **File:** `ios/SnowTracker/SnowTracker/Sources/Services/ChatStreamService.swift` (line 124-126)
+- **File:** `ios/PowderChaser/PowderChaser/Sources/Services/ChatStreamService.swift` (line 124-126)
 - **Issue:** The SSE byte stream is read one byte at a time and each byte is immediately cast to a `Character` via `Character(UnicodeScalar(byte))`. This is fundamentally broken for multi-byte UTF-8 characters (accents, emoji, non-ASCII resort names like "Kitzbuhel", CJK characters). A multi-byte character will be split into multiple invalid characters, corrupting the chat response text.
 - **Code:**
   ```swift
@@ -662,12 +662,12 @@ The `na_midwest` region is defined in the regions config but contains **zero res
 #### CQA-004: iOS `@ObservedObject` used with inline/shared initialization (should be `@StateObject`)
 - **Platform:** iOS
 - **Files:** Multiple files (11 occurrences across 7 files)
-  - `ios/SnowTracker/SnowTracker/Sources/SnowTrackerApp.swift` (lines 39, 40, 130-132, 136)
-  - `ios/SnowTracker/SnowTracker/Sources/Views/AuthenticationViews.swift` (line 6)
-  - `ios/SnowTracker/SnowTracker/Sources/Views/ResortMapView.swift` (line 8)
-  - `ios/SnowTracker/SnowTracker/Sources/Views/ResortListView.swift` (line 51)
-  - `ios/SnowTracker/SnowTracker/Sources/Views/ChatView.swift` (line 6)
-  - `ios/SnowTracker/SnowTracker/Sources/Views/SettingsView.swift` (line 4)
+  - `ios/PowderChaser/PowderChaser/Sources/PowderChaserApp.swift` (lines 39, 40, 130-132, 136)
+  - `ios/PowderChaser/PowderChaser/Sources/Views/AuthenticationViews.swift` (line 6)
+  - `ios/PowderChaser/PowderChaser/Sources/Views/ResortMapView.swift` (line 8)
+  - `ios/PowderChaser/PowderChaser/Sources/Views/ResortListView.swift` (line 51)
+  - `ios/PowderChaser/PowderChaser/Sources/Views/ChatView.swift` (line 6)
+  - `ios/PowderChaser/PowderChaser/Sources/Views/SettingsView.swift` (line 4)
 - **Issue:** `@ObservedObject` is used with inline initialization (`= SomeClass.shared`) in views that own the lifecycle of the observed object. `@ObservedObject` does not own the object and SwiftUI may re-create the wrapper on each view update. For singleton `.shared` instances this means SwiftUI could create a new subscription each re-render, causing performance degradation and potentially missed state updates.
 - **Impact:** In practice, since these are all singletons (`.shared`), the object itself is not recreated, but the `@ObservedObject` wrapper is. This can lead to missed observation updates during rapid view refreshes and subtle UI state bugs (e.g., network banner not appearing/disappearing reliably).
 - **Fix:** Use `@StateObject` for the first view that introduces the object, or better yet, pass singletons via `.environmentObject()` from the root and use `@EnvironmentObject` in child views.
@@ -743,7 +743,7 @@ The `na_midwest` region is defined in the regions config but contains **zero res
 
 #### CQA-011: iOS `ChatStreamService` creates new KeychainSwift instance per call
 - **Platform:** iOS
-- **File:** `ios/SnowTracker/SnowTracker/Sources/Services/ChatStreamService.swift` (line 92)
+- **File:** `ios/PowderChaser/PowderChaser/Sources/Services/ChatStreamService.swift` (line 92)
 - **Issue:** `KeychainSwift()` is instantiated inline every time `performStream()` is called. While not a bug per se, this creates a new keychain access group wrapper each time, which is unnecessary overhead.
 - **Code:**
   ```swift
@@ -769,7 +769,7 @@ The `na_midwest` region is defined in the regions config but contains **zero res
 
 #### CQA-013: iOS `DispatchQueue.main.asyncAfter` for UI transitions in ResortMapView
 - **Platform:** iOS
-- **File:** `ios/SnowTracker/SnowTracker/Sources/Views/ResortMapView.swift` (around line 155)
+- **File:** `ios/PowderChaser/PowderChaser/Sources/Views/ResortMapView.swift` (around line 155)
 - **Issue:** Uses `DispatchQueue.main.asyncAfter` with hardcoded delays to sequence sheet dismiss/present transitions. This is fragile and can fail on slower devices or during heavy load.
 - **Impact:** On slower devices, the delay may not be sufficient and sheets could fail to present, or on fast devices, there may be an unnecessary visual delay. This pattern is a common source of intermittent UI bugs.
 - **Fix:** Use SwiftUI's `onChange` or `task` modifiers to react to state changes rather than relying on timed delays.
@@ -795,14 +795,14 @@ The `na_midwest` region is defined in the regions config but contains **zero res
 
 #### CQA-016: iOS hardcoded Google Client ID
 - **Platform:** iOS
-- **File:** `ios/SnowTracker/SnowTracker/Sources/Services/AuthenticationService.swift` (line 32)
+- **File:** `ios/PowderChaser/PowderChaser/Sources/Services/AuthenticationService.swift` (line 32)
 - **Issue:** The Google Sign-In client ID is hardcoded as a string literal. While not a security vulnerability (client IDs are public), it should be in a configuration file for consistency with other environment-specific values.
 - **Impact:** Requires code change to update the client ID. Minor maintainability concern.
 - **Fix:** Move to `Info.plist` or `AppConfiguration`.
 
 #### CQA-017: iOS force-unwrapped URLs in Configuration
 - **Platform:** iOS
-- **File:** `ios/SnowTracker/SnowTracker/Sources/Services/Configuration.swift` (lines 37-38, 53-55)
+- **File:** `ios/PowderChaser/PowderChaser/Sources/Services/Configuration.swift` (lines 37-38, 53-55)
 - **Issue:** `URL(string: "...")!` force-unwraps are used for constant URL strings. While these are safe (the strings are valid URLs), force unwraps are generally discouraged.
 - **Impact:** No runtime impact since the strings are valid. Purely a code style concern.
 - **Fix:** Use `guard let` with a `fatalError("Invalid URL constant")` for clearer intent, or keep as-is with a comment.
@@ -832,9 +832,9 @@ The `na_midwest` region is defined in the regions config but contains **zero res
 - **Impact:** Minor UX issue. Users may briefly see "No conversations yet" before their conversations load.
 - **Fix:** Add a loading skeleton or spinner while `conversations` is loading.
 
-#### CQA-021: iOS `SnowTrackerApp` uses `DispatchQueue.main.asyncAfter` for splash screen timing
+#### CQA-021: iOS `PowderChaserApp` uses `DispatchQueue.main.asyncAfter` for splash screen timing
 - **Platform:** iOS
-- **File:** `ios/SnowTracker/SnowTracker/Sources/SnowTrackerApp.swift` (line 92)
+- **File:** `ios/PowderChaser/PowderChaser/Sources/PowderChaserApp.swift` (line 92)
 - **Issue:** The splash screen is shown for a fixed 2.5 seconds regardless of whether data has loaded. If data loads in 500ms, the user still waits 2.5 seconds. If data takes 5 seconds, the splash disappears before content is ready.
 - **Code:**
   ```swift

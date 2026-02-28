@@ -19,7 +19,7 @@ PROD_URL = "https://z1f5zrp4l0.execute-api.us-west-2.amazonaws.com/prod"
 def fetch_json(url: str, timeout: int = 10) -> dict[str, Any]:
     """Fetch JSON from URL."""
     req = urllib.request.Request(
-        url, headers={"User-Agent": "SnowTracker-HealthCheck/1.0"}
+        url, headers={"User-Agent": "PowderChaser-HealthCheck/1.0"}
     )
     with urllib.request.urlopen(req, timeout=timeout) as response:
         return json.loads(response.read().decode())

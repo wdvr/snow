@@ -49,7 +49,7 @@ jobs:
     uses: wdvr/ios-infra/.github/workflows/ios-app-store-release.yml@main
     with:
       bundle_id: com.wouterdevriendt.snowtracker
-      scheme: SnowTracker
+      scheme: PowderChaser
       app_version: ${{ github.event.inputs.app_version }}
       build_number: ${{ github.event.inputs.build_number }}
       app_name: Powder Chaser
@@ -60,5 +60,5 @@ jobs:
       submit_for_review: ${{ inputs.submit_for_review }}
       use_xcodegen: true
       xcodegen_path: ios
-      project_path: ios/SnowTracker.xcodeproj
+      project_path: ios/PowderChaser.xcodeproj
     secrets: inherit

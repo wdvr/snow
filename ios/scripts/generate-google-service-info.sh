@@ -5,8 +5,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEMPLATE_PATH="$SCRIPT_DIR/../SnowTracker/SnowTracker/Resources/GoogleService-Info.plist.template"
-OUTPUT_PATH="$SCRIPT_DIR/../SnowTracker/SnowTracker/Resources/GoogleService-Info.plist"
+TEMPLATE_PATH="$SCRIPT_DIR/../PowderChaser/PowderChaser/Resources/GoogleService-Info.plist.template"
+OUTPUT_PATH="$SCRIPT_DIR/../PowderChaser/PowderChaser/Resources/GoogleService-Info.plist"
 
 # Check required environment variables
 if [ -z "$FIREBASE_API_KEY" ]; then

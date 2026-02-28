@@ -55,7 +55,7 @@ def get_existing_keys(token: str) -> list:
     return []
 
 
-def create_apns_key(token: str, key_name: str = "SnowTracker-APNs") -> dict:
+def create_apns_key(token: str, key_name: str = "PowderChaser-APNs") -> dict:
     """Create a new APNs key.
 
     Note: APNs keys are created via the Developer Portal, not App Store Connect API.
@@ -67,7 +67,7 @@ def create_apns_key(token: str, key_name: str = "SnowTracker-APNs") -> dict:
     # or using Apple's internal provisioning APIs
 
     # For now, we'll check if there's an existing key we can use
-    print(f"Checking for existing keys...")
+    print("Checking for existing keys...")
 
     # Get bundle IDs to verify we have the right access
     url = "https://api.appstoreconnect.apple.com/v1/bundleIds"
@@ -105,7 +105,7 @@ def create_apns_key(token: str, key_name: str = "SnowTracker-APNs") -> dict:
 
 def enable_push_notifications(token: str, bundle_id: str) -> bool:
     """Enable push notifications capability for a bundle ID."""
-    url = f"https://api.appstoreconnect.apple.com/v1/bundleIdCapabilities"
+    url = "https://api.appstoreconnect.apple.com/v1/bundleIdCapabilities"
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
@@ -114,18 +114,10 @@ def enable_push_notifications(token: str, bundle_id: str) -> bool:
     payload = {
         "data": {
             "type": "bundleIdCapabilities",
-            "attributes": {
-                "capabilityType": "PUSH_NOTIFICATIONS",
-                "settings": []
-            },
+            "attributes": {"capabilityType": "PUSH_NOTIFICATIONS", "settings": []},
             "relationships": {
-                "bundleId": {
-                    "data": {
-                        "type": "bundleIds",
-                        "id": bundle_id
-                    }
-                }
-            }
+                "bundleId": {"data": {"type": "bundleIds", "id": bundle_id}}
+            },
         }
     }
 
@@ -147,7 +139,9 @@ def main():
 
     if not all([key_id, issuer_id, private_key]):
         print("Error: Missing required environment variables")
-        print("Required: APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_PRIVATE_KEY")
+        print(
+            "Required: APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_PRIVATE_KEY"
+        )
         sys.exit(1)
 
     print(f"Using Key ID: {key_id}")

@@ -46,7 +46,7 @@ Monitors database performance:
 4. Authentication should be automatic via IAM role
 
 ### Custom Metrics
-The scraping dashboard requires custom CloudWatch metrics published by the weather processor Lambda. These metrics are in the `SnowTracker/Scraping` namespace:
+The scraping dashboard requires custom CloudWatch metrics published by the weather processor Lambda. These metrics are in the `PowderChaser/Scraping` namespace:
 - `ResortsProcessed`
 - `ElevationPointsProcessed`
 - `ConditionsSaved`

@@ -131,7 +131,7 @@ Screenshots are captured through the `ScreenshotTestPlan` test plan. The UI test
 6. Settings
 
 To add new screenshots:
-1. Create UI test in `SnowTrackerUITests`
+1. Create UI test in `PowderChaserUITests`
 2. Navigate to the desired screen state
 3. Call `snapshot("ScreenName")` to capture
 
@@ -195,7 +195,7 @@ bundle exec fastlane upload_metadata_only
 
 **Problem:** Fastlane can't determine which target to use.
 
-**Solution:** Ensure all `get_version_number` calls include `target: "SnowTracker"` parameter.
+**Solution:** Ensure all `get_version_number` calls include `target: "PowderChaser"` parameter.
 
 ### 4. "xcodebuild -showBuildSettings timed out"
 

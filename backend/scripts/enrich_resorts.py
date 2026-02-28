@@ -376,7 +376,7 @@ class ResortEnricher:
     """Enriches resort data from multiple sources."""
 
     BASE_URL = "https://www.skiresort.info"
-    USER_AGENT = "Mozilla/5.0 (compatible; SnowTrackerBot/1.0)"
+    USER_AGENT = "Mozilla/5.0 (compatible; PowderChaserBot/1.0)"
     REQUEST_DELAY = 1.5
 
     def __init__(

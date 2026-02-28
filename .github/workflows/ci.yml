@@ -392,10 +392,10 @@ jobs:
         cd ios
         set -o pipefail
         xcodebuild test \
-          -project SnowTracker.xcodeproj \
-          -scheme SnowTracker \
+          -project PowderChaser.xcodeproj \
+          -scheme PowderChaser \
           -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.simulator }}" \
-          -only-testing:SnowTrackerTests \
+          -only-testing:PowderChaserTests \
           -resultBundlePath TestResults/UnitTests.xcresult \
           CODE_SIGNING_ALLOWED=NO \
           2>&1 | tee build.log | head -500
@@ -405,10 +405,10 @@ jobs:
       run: |
         cd ios
         xcodebuild test \
-          -project SnowTracker.xcodeproj \
-          -scheme SnowTracker \
+          -project PowderChaser.xcodeproj \
+          -scheme PowderChaser \
           -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.simulator }}" \
-          -only-testing:SnowTrackerUITests \
+          -only-testing:PowderChaserUITests \
           -resultBundlePath TestResults/UITests.xcresult \
           CODE_SIGNING_ALLOWED=NO \
           2>&1 | tee -a build.log | head -500

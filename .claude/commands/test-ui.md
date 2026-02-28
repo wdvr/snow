@@ -19,7 +19,7 @@ cd /Users/wouter/dev/snow/ios && xcodegen generate 2>&1 | tail -1
 - `all` — Full UI test suite including screenshots (~10 min)
 - `screenshots` — App Store screenshot generation
 - `verification` — Bug verification tests
-- Specific test: `SnowTrackerUITests/testMethodName`
+- Specific test: `PowderChaserUITests/testMethodName`
 
 Default (no argument): run `SmokeTests`
 
@@ -28,10 +28,10 @@ cd /Users/wouter/dev/snow/ios
 
 # Build the UI test target
 xcodebuild test \
-  -project SnowTracker.xcodeproj \
-  -scheme SnowTracker \
+  -project PowderChaser.xcodeproj \
+  -scheme PowderChaser \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  -only-testing:SnowTrackerUITests/<TEST_CLASS> \
+  -only-testing:PowderChaserUITests/<TEST_CLASS> \
   -resultBundlePath /tmp/uitest-results \
   2>&1 | tail -50
 ```
@@ -41,7 +41,7 @@ Where `<TEST_CLASS>` is:
 - `all` → omit `-only-testing` to run everything
 - `screenshots` → `AppStoreScreenshotTests`
 - `verification` → `VerificationTests`
-- Other → use as-is (e.g., `SnowTrackerUITests/testChatOpensAndSendsMessage`)
+- Other → use as-is (e.g., `PowderChaserUITests/testChatOpensAndSendsMessage`)
 
 ### 3. Report results
 
@@ -63,8 +63,8 @@ To test against staging, the app needs to be configured to use staging API befor
 ### Test infrastructure
 
 - **AccessibilityIdentifiers**: `Sources/AccessibilityIdentifiers.swift` — centralized IDs shared between app and tests
-- **UITestHelpers**: `SnowTrackerUITests/UITestHelpers.swift` — `TestID` constants, `XCUIApplication` extensions
+- **UITestHelpers**: `PowderChaserUITests/UITestHelpers.swift` — `TestID` constants, `XCUIApplication` extensions
 - **SmokeTests**: Quick validation (~8 tests covering list, detail, tabs, map, chat, settings)
-- **SnowTrackerUITests**: Full test suite (30+ tests)
+- **PowderChaserUITests**: Full test suite (30+ tests)
 - **VerificationTests**: Bug regression tests with screenshots
 - **AppStoreScreenshotTests**: Fastlane snapshot integration

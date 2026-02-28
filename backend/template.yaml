@@ -25,7 +25,7 @@ Globals:
 
 Resources:
   # Main API Gateway and Lambda function
-  SnowTrackerApi:
+  PowderChaserApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Environment
@@ -46,13 +46,13 @@ Resources:
         ApiGatewayAny:
           Type: Api
           Properties:
-            RestApiId: !Ref SnowTrackerApi
+            RestApiId: !Ref PowderChaserApi
             Path: /{proxy+}
             Method: ANY
         ApiGatewayRoot:
           Type: Api
           Properties:
-            RestApiId: !Ref SnowTrackerApi
+            RestApiId: !Ref PowderChaserApi
             Path: /
             Method: ANY
       Policies:
@@ -94,7 +94,7 @@ Resources:
         ApiGatewayWeatherTrigger:
           Type: Api
           Properties:
-            RestApiId: !Ref SnowTrackerApi
+            RestApiId: !Ref PowderChaserApi
             Path: /admin/process-weather
             Method: POST
       Policies:
@@ -174,9 +174,9 @@ Resources:
         StreamViewType: NEW_AND_OLD_IMAGES
 
 Outputs:
-  SnowTrackerApiUrl:
+  PowderChaserApiUrl:
     Description: "API Gateway endpoint URL for Snow Tracker API"
-    Value: !Sub "https://${SnowTrackerApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
+    Value: !Sub "https://${PowderChaserApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
     Export:
       Name: !Sub "${AWS::StackName}-ApiUrl"
 

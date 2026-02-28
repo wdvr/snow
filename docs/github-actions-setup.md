@@ -80,13 +80,13 @@ Attach the policy:
 
 ```bash
 aws iam create-policy \
-    --policy-name GitHubActionsSnowTracker \
+    --policy-name GitHubActionsPowderChaser \
     --policy-document file://github-actions-policy.json \
     --profile personal
 
 aws iam attach-user-policy \
     --user-name github-actions-snow-tracker \
-    --policy-arn arn:aws:iam::YOUR_ACCOUNT_ID:policy/GitHubActionsSnowTracker \
+    --policy-arn arn:aws:iam::YOUR_ACCOUNT_ID:policy/GitHubActionsPowderChaser \
     --profile personal
 ```
 

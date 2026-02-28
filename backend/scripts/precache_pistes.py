@@ -115,7 +115,7 @@ def query_overpass(lat: float, lon: float) -> dict | None:
             OVERPASS_URL,
             data={"data": query},
             timeout=60,
-            headers={"User-Agent": "SnowTracker-PisteCacher/1.0"},
+            headers={"User-Agent": "PowderChaser-PisteCacher/1.0"},
         )
         resp.raise_for_status()
         return resp.json()
