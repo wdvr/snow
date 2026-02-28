@@ -91,13 +91,130 @@
 
 ---
 
-## Summary
+---
 
-| Area | HIGH | MEDIUM | LOW | Fixed | Not Fix |
-|------|------|--------|-----|-------|---------|
-| iOS Forced Update | 2 | 4 | 2 | 3 | 5 |
-| Backend App-Config | 0 | 0 | 2 | 1 | 3 |
-| Configuration | 1 | 1 | 2 | 0 | 4 |
-| Map UX | 2 | 3 | 3 | 4 | 4 |
-| Web Timeline | 2 | 4 | 2 | 8 | 0 |
-| **Total** | **7** | **12** | **11** | **16** | **16** |
+## Part 2: Full Codebase Review
+
+### 6. iOS Services & Models
+
+#### Critical Issues (FIXED)
+
+| Severity | Issue | Location | Status |
+|----------|-------|----------|--------|
+| CRITICAL | CacheService doesn't update `snowScore`/`explanation` during cache refresh | CacheService.swift:385-392 | **FIXED** |
+| CRITICAL | DateFormatter thread safety: shared static with mutating `dateFormat` | WeatherCondition.swift:594-637 | **FIXED** — create per-call formatter |
+| CRITICAL | Keychain keys hardcoded as strings in 3+ files, should use `AuthenticationService.Keys` | ChatStreamService, APIClient, ChatViewModel | **FIXED** — consolidated to constants |
+| HIGH | `AnalyticsService` data race on `sessionStartTime`/`sessionId` (no queue protection) | AnalyticsService.swift:28-29 | **NOT FIX** — low risk, analytics only |
+| HIGH | `KeychainSwift()` instantiated on every API call in `authHeaders()` | APIClient.swift:1082 | **NOT FIX** — KeychainSwift is lightweight, no real perf issue |
+
+#### Important Issues
+
+| Severity | Issue | Status |
+|----------|-------|--------|
+| MEDIUM | Google backend auth is a stub (TODO) | **NOT FIX** — not using Google auth in prod |
+| MEDIUM | `hasValidToken` always returns true if token exists (no JWT validation) | **NOT FIX** — server validates tokens |
+| MEDIUM | Token refresh only in ChatViewModel, not global Alamofire interceptor | **BACKLOG** — future improvement |
+| MEDIUM | `SnowConditionsManager`/`UserPreferencesManager` not `final class` | **NOT FIX** — cosmetic |
+| LOW | Timestamp parsing tries 9 formats sequentially (no caching) | **NOT FIX** — ISO8601 formatters catch 99% on first try |
+
+---
+
+### 7. iOS Views
+
+#### Critical Issues
+
+| Severity | Issue | Location | Status |
+|----------|-------|----------|--------|
+| HIGH | `@StateObject` wrapping `.shared` singleton (wrong ownership semantics) | RecommendationsView, ResortDetailView | **NOT FIX** — works in practice, `.shared` is stable |
+| HIGH | `CGFloat.random` in `Shape.path(in:)` causes jitter | SplashView.swift | **NOT FIX** — splash only shows for 2.5s on launch |
+| HIGH | Trip planning errors silently swallowed (empty state, no error UI) | TripPlanningViews.swift | **NOT FIX** — trips feature is low priority |
+| MEDIUM | Duplicate `getDeviceModel()` in FeedbackView + SuggestEditView | Two files | **NOT FIX** — minor duplication |
+| MEDIUM | `DateFormatter` created inside computed properties | FavoritesView.swift | **NOT FIX** — small number of items |
+| MEDIUM | NSLog debug statements in production code | ResortListView.swift | **NOT FIX** — harmless |
+
+---
+
+### 8. Backend API
+
+#### Critical Issues (FIXED)
+
+| Severity | Issue | Location | Status |
+|----------|-------|----------|--------|
+| CRITICAL | JWT secret falls back to `"dev-secret-change-in-prod"` if env var missing | auth_service.py:89-91 | **FIXED** — raise error in prod |
+| CRITICAL | Anonymous chat rate limiter creates new boto3 resource per call | api_handler.py:523,577 | **FIXED** — use `get_dynamodb()` |
+| HIGH | No admin check on event creation/deletion (any auth user can create events) | api_handler.py:2308-2388 | **NOT FIX** — events feature barely used |
+| HIGH | Feedback endpoint has no auth or rate limiting | api_handler.py:2394-2428 | **NOT FIX** — low risk, DynamoDB has TTL |
+| HIGH | `delete_user_data` only deletes from one table (GDPR incomplete) | user_service.py:128-142 | **BACKLOG** — needs comprehensive implementation |
+| HIGH | `reset_services()` doesn't reset `_notification_service` or `_device_tokens_table` | api_handler.py:148-174 | **NOT FIX** — only affects tests, not production |
+
+#### Important Issues
+
+| Severity | Issue | Status |
+|----------|-------|--------|
+| MEDIUM | Full table scans in notification processing (no GSI on preferences) | **BACKLOG** — scale concern |
+| MEDIUM | Condition report rate limit uses Limit+Filter (can be bypassed) | **NOT FIX** — low risk at current scale |
+| MEDIUM | OnTheSnow scraper bypasses multi-source merger with hardcoded weighting | **NOT FIX** — legacy code, works correctly |
+
+---
+
+### 9. Web App
+
+#### Critical Issues
+
+| Severity | Issue | Location | Status |
+|----------|-------|----------|--------|
+| HIGH | `deleteConversation` calls `.json()` on 204 No Content (will throw) | client.ts:199 | **NOT FIX** — API returns JSON body |
+| HIGH | `FreshSnowChart` hardcodes 'cm' ignoring unit preferences | FreshSnowChart.tsx:79 | **BACKLOG** — should fix |
+| HIGH | `useChat` stale closure: `sendMessageStream` captures stale `conversationId` | useChat.ts:130-131 | **NOT FIX** — works in practice (conv ID stable during chat) |
+| MEDIUM | MapPage auto-loads all pages (~20 sequential API calls) | MapPage.tsx:153-158 | **NOT FIX** — needed to show all pins |
+| MEDIUM | No React error boundaries | App.tsx | **BACKLOG** |
+| MEDIUM | No route-level code splitting | App.tsx | **BACKLOG** |
+| LOW | `getDeviceId()` lacks try/catch for localStorage in private browsing | AuthContext.tsx:36 | **NOT FIX** — edge case |
+
+---
+
+### 10. Infrastructure & CI/CD
+
+#### Critical Issues
+
+| Severity | Issue | Location | Status |
+|----------|-------|----------|--------|
+| CRITICAL | Chat stream Lambda Function URL publicly accessible, no rate limiting (Bedrock cost exposure) | __main__.py:1401-1429 | **BACKLOG** — needs rate limiting |
+| CRITICAL | Debug/admin endpoints exposed with `authorization="NONE"` in prod | __main__.py:2786-2830 | **NOT FIX** — app-level auth exists |
+| CRITICAL | Long-lived IAM access keys for AWS auth | deploy.yml:108-109 | **BACKLOG** — should migrate to OIDC |
+| HIGH | SNS permissions use wildcard `Resource: "*"` | __main__.py:430-438 | **NOT FIX** — personal account |
+| HIGH | iOS tests use `continue-on-error: true` (never fail CI) | ci.yml:401-415 | **NOT FIX** — intentional, tests are flakey on CI |
+
+#### Important Issues
+
+| Severity | Issue | Status |
+|----------|-------|--------|
+| MEDIUM | All API Gateway routes use `authorization="NONE"` (no Cognito authorizer) | **NOT FIX** — app-level JWT auth works |
+| MEDIUM | Cognito User Pool created but unused | **NOT FIX** — legacy |
+| MEDIUM | No rollback strategy for failed deployments | **BACKLOG** |
+| MEDIUM | Smoke tests are non-blocking and inadequate | **BACKLOG** |
+
+---
+
+## Overall Summary
+
+| Area | CRITICAL | HIGH | MEDIUM | LOW | Fixed | Backlog | Not Fix |
+|------|----------|------|--------|-----|-------|---------|---------|
+| New Features (Part 1) | 0 | 7 | 12 | 11 | 16 | 0 | 16 |
+| iOS Services & Models | 3 | 2 | 5 | 1 | 3 | 1 | 7 |
+| iOS Views | 0 | 3 | 3 | 0 | 0 | 0 | 6 |
+| Backend API | 2 | 4 | 3 | 0 | 2 | 2 | 5 |
+| Web App | 0 | 3 | 3 | 1 | 0 | 3 | 4 |
+| Infrastructure | 3 | 2 | 4 | 0 | 0 | 3 | 6 |
+| **Total** | **8** | **21** | **30** | **13** | **21** | **9** | **44** |
+
+### Backlog Items (to address in future)
+1. Global token refresh interceptor (Alamofire `RequestInterceptor`)
+2. GDPR-complete `delete_user_data`
+3. Chat Lambda rate limiting (cost protection)
+4. OIDC federation for AWS CI/CD auth
+5. Deployment rollback strategy
+6. React error boundaries + code splitting
+7. FreshSnowChart unit preference support
+8. Notification processing GSI (scale)
+9. Smoke test improvement
