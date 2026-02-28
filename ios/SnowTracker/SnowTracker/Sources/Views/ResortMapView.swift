@@ -4,6 +4,7 @@ import MapKit
 struct ResortMapView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @StateObject private var mapViewModel = MapViewModel()
     @ObservedObject private var locationManager = LocationManager.shared
 
@@ -36,6 +37,7 @@ struct ResortMapView: View {
                 ResortMapDetailSheet(resort: resort)
                     .environmentObject(snowConditionsManager)
                     .environmentObject(userPreferencesManager)
+                    .environmentObject(navigationCoordinator)
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
             }
@@ -67,6 +69,17 @@ struct ResortMapView: View {
             }
             .onChange(of: showPisteOverlay) { _, _ in
                 fetchPisteOverlaysForVisibleResorts()
+            }
+            .onChange(of: navigationCoordinator.mapTargetResort) { _, resort in
+                guard let resort else { return }
+                navigationCoordinator.mapTargetResort = nil
+                mapViewModel.pendingRegion = MKCoordinateRegion(
+                    center: resort.primaryCoordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
+                )
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    selectedResort = resort
+                }
             }
     }
 
@@ -514,12 +527,15 @@ struct ResortMapView: View {
                                 annotation: annotation,
                                 distance: mapViewModel.formattedDistance(to: annotation.resort, prefs: userPreferencesManager.preferredUnits)
                             ) {
-                                // Zoom to resort then show detail
+                                // Zoom to resort first, then show detail after delay to avoid race condition
                                 mapViewModel.pendingRegion = MKCoordinateRegion(
                                     center: annotation.resort.primaryCoordinate,
                                     span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
                                 )
-                                selectedResort = annotation.resort
+                                let resort = annotation.resort
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    selectedResort = resort
+                                }
                             }
                         }
                     }
@@ -890,6 +906,7 @@ struct ResortMapDetailSheet: View {
     let resort: Resort
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @Environment(\.dismiss) private var dismiss
     @State private var isLoadingConditions = true
     @State private var safariURL: IdentifiableURL?
@@ -1201,6 +1218,7 @@ struct ResortMapDetailSheet: View {
                 ResortDetailView(resort: resort)
                     .environmentObject(snowConditionsManager)
                     .environmentObject(userPreferencesManager)
+                    .environmentObject(navigationCoordinator)
             } label: {
                 HStack {
                     Text("View Full Details")
@@ -1500,4 +1518,5 @@ private struct MapChangeHandlers: ViewModifier {
     ResortMapView()
         .environmentObject(SnowConditionsManager())
         .environmentObject(UserPreferencesManager.shared)
+        .environmentObject(NavigationCoordinator())
 }

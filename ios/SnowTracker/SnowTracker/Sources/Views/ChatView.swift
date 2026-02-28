@@ -3,6 +3,7 @@ import SwiftUI
 struct ChatView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @ObservedObject private var locationManager = LocationManager.shared
     @StateObject private var viewModel = ChatViewModel()
     @State private var messageText = ""
@@ -55,6 +56,8 @@ struct ChatView: View {
                 NavigationStack {
                     ResortDetailView(resort: resort)
                         .environmentObject(snowConditionsManager)
+                        .environmentObject(userPreferencesManager)
+                        .environmentObject(navigationCoordinator)
                 }
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)

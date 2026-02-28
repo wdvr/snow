@@ -5,6 +5,7 @@ struct ResortDetailView: View {
     let resort: Resort
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @StateObject private var liveActivityService = LiveActivityService.shared
     @State private var selectedElevation: ElevationLevel = .top
     @State private var showingShareSheet: Bool = false
@@ -157,6 +158,14 @@ struct ResortDetailView: View {
                         .accessibilityLabel(liveActivityService.isActive(for: resort.id) ? "Stop Live Activity tracking" : "Start Live Activity tracking for \(resort.name)")
                         .accessibilityHint(liveActivityService.isActive(for: resort.id) ? "Removes the live conditions widget from your Lock Screen" : "Shows live snow conditions on your Lock Screen and Dynamic Island")
                     }
+
+                    Button {
+                        navigationCoordinator.showOnMap(resort)
+                    } label: {
+                        Image(systemName: "map.fill")
+                            .foregroundStyle(.blue)
+                    }
+                    .accessibilityLabel("Show \(resort.name) on map")
 
                     Button {
                         AnalyticsService.shared.trackResortShared(resortId: resort.id, resortName: resort.name)
@@ -1247,5 +1256,6 @@ struct ShareSheet: UIViewControllerRepresentable {
         ResortDetailView(resort: Resort.sampleResorts[0])
             .environmentObject(SnowConditionsManager())
             .environmentObject(UserPreferencesManager.shared)
+            .environmentObject(NavigationCoordinator())
     }
 }

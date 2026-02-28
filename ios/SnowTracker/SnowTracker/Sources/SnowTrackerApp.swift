@@ -38,6 +38,7 @@ struct SnowTrackerApp: App {
     @StateObject private var pushNotificationService = PushNotificationService.shared
     @ObservedObject private var authService = AuthenticationService.shared
     @ObservedObject private var userPreferencesManager = UserPreferencesManager.shared
+    @StateObject private var navigationCoordinator = NavigationCoordinator()
     @State private var showSplash = true
     @State private var showOnboarding = false
 
@@ -65,6 +66,7 @@ struct SnowTrackerApp: App {
                             .environmentObject(snowConditionsManager)
                             .environmentObject(userPreferencesManager)
                             .environmentObject(pushNotificationService)
+                            .environmentObject(navigationCoordinator)
                     }
                 } else {
                     WelcomeView()
@@ -130,10 +132,10 @@ struct SnowTrackerApp: App {
 
 struct MainTabView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @ObservedObject private var authService = AuthenticationService.shared
     @ObservedObject private var pushService = PushNotificationService.shared
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
-    @State private var selectedTab = 0
     @State private var deepLinkResort: Resort?
     @State private var showingChat = false
     @ObservedObject private var userPrefs = UserPreferencesManager.shared
@@ -156,7 +158,7 @@ struct MainTabView: View {
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
-                TabView(selection: $selectedTab) {
+                TabView(selection: $navigationCoordinator.selectedTab) {
                     ResortListView(deepLinkResort: $deepLinkResort)
                         .tabItem {
                             Image(systemName: "mountain.2")
@@ -236,6 +238,7 @@ struct MainTabView: View {
             }
             .environmentObject(snowConditionsManager)
             .environmentObject(UserPreferencesManager.shared)
+            .environmentObject(navigationCoordinator)
         }
         .animation(.easeInOut(duration: 0.3), value: networkMonitor.isConnected)
         .onAppear {
@@ -245,7 +248,7 @@ struct MainTabView: View {
             guard let resortId else { return }
             // Find the resort and navigate to it
             if let resort = snowConditionsManager.resorts.first(where: { $0.id == resortId }) {
-                selectedTab = 0
+                navigationCoordinator.selectedTab = 0
                 deepLinkResort = resort
             }
             pushService.pendingResortId = nil
@@ -265,4 +268,5 @@ struct MainTabView: View {
     MainTabView()
         .environmentObject(SnowConditionsManager())
         .environmentObject(UserPreferencesManager.shared)
+        .environmentObject(NavigationCoordinator())
 }

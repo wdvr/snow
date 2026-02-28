@@ -23,6 +23,7 @@
 		2893B3FE0ED2A4CA70943CF3 /* ChatStreamService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F2757D08B81B5039D42E6A /* ChatStreamService.swift */; };
 		28C91E5DC315AE071CA75619 /* SnowActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBB345FFD1FF45422315F20B /* SnowActivityAttributes.swift */; };
 		29CB1CC93326CC0862BD53D7 /* TimelineData.swift in Sources */ = {isa = PBXBuildFile; fileRef = F791186240D2E89D57EBE5B3 /* TimelineData.swift */; };
+		331358FD5E1C4321413258CF /* NavigationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20F896498AEDB65155F0EB0D /* NavigationCoordinator.swift */; };
 		3398ED7C55853367132D601E /* SnowHistoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42920F412CE2073134F33C72 /* SnowHistoryModels.swift */; };
 		37D6E0983C8E5F337C6DC017 /* OfflineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C414DD19A9F500EDC1B7243 /* OfflineBanner.swift */; };
 		38D5CCC28385D7DC0208CB70 /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23B988BBFF873484906C493 /* AuthenticationService.swift */; };
@@ -146,6 +147,7 @@
 		18C040FB3169E04F140636D1 /* Region.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Region.swift; sourceTree = "<group>"; };
 		1C3612902D14F964CD974A7E /* AuthenticationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationViews.swift; sourceTree = "<group>"; };
 		1E48E349AAA6C4BEDDCD317E /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
+		20F896498AEDB65155F0EB0D /* NavigationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationCoordinator.swift; sourceTree = "<group>"; };
 		22ECDCF89993D8220437C43C /* ResortDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResortDetailView.swift; sourceTree = "<group>"; };
 		279D40CEA622F25142C8FD65 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
 		2F124D7DEDADF02A943DE751 /* SnowLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowLiveActivityView.swift; sourceTree = "<group>"; };
@@ -291,6 +293,7 @@
 				6C1BA087DD0B345FC02441ED /* DemoDataService.swift */,
 				B48EC86DA1144402981A655C /* LiveActivityService.swift */,
 				F6DA2B806F38369F0414AA36 /* LocationManager.swift */,
+				20F896498AEDB65155F0EB0D /* NavigationCoordinator.swift */,
 				E79FF0C0BD7247085E14C267 /* NetworkMonitor.swift */,
 				E0F68CE62384CCC6198DADF4 /* PisteOverlayService.swift */,
 				7EA770DE28FAAFB7C82C04D9 /* PushNotificationService.swift */,
@@ -649,6 +652,7 @@
 				8720BD7F787971D36BBEE343 /* Managers.swift in Sources */,
 				CB46CD3F06EA5CAB49652FC8 /* MapViewModel.swift in Sources */,
 				23634E16039127E287DA8579 /* MarkdownTextView.swift in Sources */,
+				331358FD5E1C4321413258CF /* NavigationCoordinator.swift in Sources */,
 				F9020C24571C7C3A61EC859C /* NetworkMonitor.swift in Sources */,
 				7465FD24767C08DB0591F919 /* NotificationSettingsView.swift in Sources */,
 				37D6E0983C8E5F337C6DC017 /* OfflineBanner.swift in Sources */,
@@ -840,6 +844,8 @@
 				);
 				MARKETING_VERSION = 2.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wouterdevriendt.snowtracker;
+				PRODUCT_MODULE_NAME = SnowTracker;
+				PRODUCT_NAME = "Powder Chaser";
 				SDKROOT = iphoneos;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_VERSION = 5.9;
@@ -957,7 +963,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.wouterdevriendt.SnowTrackerTests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SnowTracker.app/SnowTracker";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Powder Chaser.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Powder Chaser";
 			};
 			name = Debug;
 		};
@@ -974,7 +980,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.wouterdevriendt.SnowTrackerTests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SnowTracker.app/SnowTracker";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Powder Chaser.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Powder Chaser";
 			};
 			name = Release;
 		};
@@ -1018,6 +1024,8 @@
 				);
 				MARKETING_VERSION = 2.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wouterdevriendt.snowtracker;
+				PRODUCT_MODULE_NAME = SnowTracker;
+				PRODUCT_NAME = "Powder Chaser";
 				SDKROOT = iphoneos;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SWIFT_VERSION = 5.9;

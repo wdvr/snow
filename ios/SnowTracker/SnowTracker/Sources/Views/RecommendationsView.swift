@@ -60,6 +60,7 @@ struct BestSnowNearYouView: View {
     @StateObject private var recommendationsManager = RecommendationsManager()
     @StateObject private var locationManager = LocationManager.shared
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
 
     @State private var selectedTab = 0
     @State private var searchRadius: Double = 1000
@@ -282,6 +283,13 @@ struct BestSnowNearYouView: View {
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .contextMenu {
+                        Button {
+                            navigationCoordinator.showOnMap(recommendation.resort)
+                        } label: {
+                            Label("Show on Map", systemImage: "map.fill")
+                        }
+                    }
                 }
             }
             .padding()
@@ -606,4 +614,5 @@ struct BestSnowNearYouCard: View {
 #Preview {
     BestSnowNearYouView()
         .environmentObject(UserPreferencesManager.shared)
+        .environmentObject(NavigationCoordinator())
 }

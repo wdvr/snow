@@ -35,6 +35,8 @@ targets:
     settings:
       base:
         INFOPLIST_FILE: SnowTracker/Info.plist
+        PRODUCT_NAME: Powder Chaser
+        PRODUCT_MODULE_NAME: SnowTracker
         PRODUCT_BUNDLE_IDENTIFIER: com.wouterdevriendt.snowtracker
         MARKETING_VERSION: "2.1.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -136,6 +138,7 @@ targets:
     settings:
       base:
         INFOPLIST_FILE: SnowTracker/SnowTrackerTests/Info.plist
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Powder Chaser.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Powder Chaser"
 
   SnowTrackerUITests:
     type: bundle.ui-testing
@@ -148,6 +151,7 @@ targets:
     settings:
       base:
         INFOPLIST_FILE: SnowTracker/SnowTrackerUITests/Info.plist
+        TEST_TARGET_NAME: SnowTracker
 
 schemes:
   SnowTracker:

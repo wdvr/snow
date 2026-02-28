@@ -20,6 +20,7 @@ struct DailyForecastSummary: Identifiable {
 struct FavoritesView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @State private var resortToRemove: Resort?
     @State private var showingGroupManager = false
     @State private var showingMoveSheet = false
@@ -266,6 +267,12 @@ struct FavoritesView: View {
             .buttonStyle(PlainButtonStyle())
             .accessibilityLabel("\(resort.name), \(snowConditionsManager.getSnowQuality(for: resort.id).displayName)")
             .contextMenu {
+                Button {
+                    navigationCoordinator.showOnMap(resort)
+                } label: {
+                    Label("Show on Map", systemImage: "map.fill")
+                }
+
                 if !userPreferencesManager.favoriteGroups.isEmpty {
                     Button {
                         resortToMove = resort
@@ -951,4 +958,5 @@ struct FavoritesSummaryCard: View {
     FavoritesView()
         .environmentObject(SnowConditionsManager())
         .environmentObject(UserPreferencesManager.shared)
+        .environmentObject(NavigationCoordinator())
 }

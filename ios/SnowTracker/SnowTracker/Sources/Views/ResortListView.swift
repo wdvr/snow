@@ -51,6 +51,7 @@ enum PassFilter: String, CaseIterable {
 struct ResortListView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @ObservedObject private var locationManager = LocationManager.shared
     @Binding var deepLinkResort: Resort?
 
@@ -295,6 +296,12 @@ struct ResortListView: View {
                                 visibleResortIds.remove(resort.id)
                             }
                             .contextMenu {
+                                Button {
+                                    navigationCoordinator.showOnMap(resort)
+                                } label: {
+                                    Label("Show on Map", systemImage: "map.fill")
+                                }
+
                                 Button {
                                     userPreferencesManager.toggleFavorite(resortId: resort.id)
                                 } label: {
@@ -643,4 +650,5 @@ struct FilterChip: View {
     ResortListView(deepLinkResort: .constant(nil))
         .environmentObject(SnowConditionsManager())
         .environmentObject(UserPreferencesManager.shared)
+        .environmentObject(NavigationCoordinator())
 }
