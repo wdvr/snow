@@ -372,13 +372,22 @@ class ResortService:
     def _get_resort_coordinate(self, resort: Resort) -> tuple[float, float] | None:
         """Get the primary coordinate for a resort (mid > base > first)."""
         # Prefer mid elevation for better representation of resort location
-        if resort.mid_elevation:
+        if (
+            resort.mid_elevation
+            and resort.mid_elevation.latitude is not None
+            and resort.mid_elevation.longitude is not None
+        ):
             return (resort.mid_elevation.latitude, resort.mid_elevation.longitude)
-        if resort.base_elevation:
+        if (
+            resort.base_elevation
+            and resort.base_elevation.latitude is not None
+            and resort.base_elevation.longitude is not None
+        ):
             return (resort.base_elevation.latitude, resort.base_elevation.longitude)
         if resort.elevation_points:
             point = resort.elevation_points[0]
-            return (point.latitude, point.longitude)
+            if point.latitude is not None and point.longitude is not None:
+                return (point.latitude, point.longitude)
         return None
 
     def get_resort_names(self, resort_ids: list[str]) -> dict[str, str]:
