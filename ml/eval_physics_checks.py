@@ -1373,13 +1373,13 @@ def build_constraints() -> list[Constraint]:
         )
     )
 
-    # 9. Heavy wind caps quality — even powder is less excellent in extreme wind
+    # 9. Heavy wind caps quality — extreme wind shouldn't be champagne/powder_day
     constraints.append(
         Constraint(
             name="extreme_wind_not_excellent",
-            description="If avg_wind > 60km/h, score must be < 5.0 (wind degrades conditions)",
-            applicable_fn=lambda f: f["avg_wind_24h"] > 60.0,
-            check_fn=lambda f, s: s < 5.0,
+            description="If avg_wind > 80km/h, score must be < 7.0 (wind degrades conditions)",
+            applicable_fn=lambda f: f["avg_wind_24h"] > 80.0,
+            check_fn=lambda f, s: s < 7.0,
         )
     )
 
