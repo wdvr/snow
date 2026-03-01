@@ -4,6 +4,7 @@ import logging
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -595,7 +596,14 @@ class OpenMeteoService:
             hourly_cloud_cover = hourly.get("cloud_cover", [])
             hourly_visibility = hourly.get("visibility", [])
 
-            now = datetime.now(UTC)
+            # Use resort-local time for is_forecast determination.
+            # Open-Meteo returns timestamps in the requested timezone,
+            # so "now" must be in the same timezone for correct comparison.
+            if timezone and timezone != "GMT":
+                tz = ZoneInfo(timezone)
+            else:
+                tz = UTC
+            now = datetime.now(tz)
 
             # Define the 3 windows per day
             windows = [
@@ -702,14 +710,16 @@ class OpenMeteoService:
                         else None
                     )
 
-                    # Determine if this is forecast (hour is in the future)
+                    # Determine if this is forecast (hour is in the future).
+                    # Timestamps from Open-Meteo are in the requested timezone
+                    # (naive). Attach the same timezone for correct comparison.
                     timestamp_str = hourly_times[idx]
                     try:
                         point_time = datetime.fromisoformat(
                             timestamp_str.replace("Z", "+00:00")
                         )
                         if point_time.tzinfo is None:
-                            point_time = point_time.replace(tzinfo=UTC)
+                            point_time = point_time.replace(tzinfo=tz)
                         is_forecast = point_time > now
                     except (ValueError, TypeError):
                         is_forecast = False

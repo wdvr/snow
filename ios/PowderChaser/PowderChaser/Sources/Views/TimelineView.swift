@@ -25,7 +25,7 @@ struct TimelineCard: View {
             }
 
             if let response = timelineResponse {
-                TimelineView(points: response.timeline, prefs: userPreferencesManager.preferredUnits)
+                TimelineView(points: response.timeline, prefs: userPreferencesManager.preferredUnits, resortTimezone: response.timezone)
             } else if isLoading {
                 timelineLoadingSkeleton
             } else if error != nil {
@@ -80,6 +80,23 @@ struct TimelineCard: View {
 struct TimelineView: View {
     let points: [TimelinePoint]
     let prefs: UnitPreferences
+    let resortTimezone: String?
+
+    /// The resort's TimeZone (falls back to device timezone)
+    private var tz: TimeZone {
+        if let tzId = resortTimezone, let tz = TimeZone(identifier: tzId) {
+            return tz
+        }
+        return .current
+    }
+
+    /// "Today" date string in the resort's local timezone
+    private var todayStr: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = tz
+        return formatter.string(from: Date())
+    }
 
     /// Group points by date for day headers
     private var groupedPoints: [(date: String, dayLabel: String, points: [TimelinePoint])] {
@@ -107,7 +124,7 @@ struct TimelineView: View {
     }
 
     private func dayLabel(for date: String, points: [TimelinePoint]) -> String {
-        if points.first?.isToday == true {
+        if date == todayStr {
             return "Today"
         }
         return points.first?.dayOfWeek ?? ""
@@ -119,14 +136,14 @@ struct TimelineView: View {
         return f
     }()
 
-    /// Find the current time slot index for "Now" indicator
+    /// Find the current time slot index for "Now" indicator (using resort-local time)
     private var currentPointIndex: Int? {
         let now = Date()
-        let calendar = Calendar.current
+        var calendar = Calendar.current
+        calendar.timeZone = tz
         let currentHour = calendar.component(.hour, from: now)
-        let todayStr = Self.dateFormatter.string(from: now)
 
-        // Find the closest time slot to now
+        // Find the closest time slot to now in the resort's timezone
         for (index, point) in points.enumerated() {
             if point.date == todayStr {
                 if currentHour < 10 && point.timeLabel == "morning" { return index }
@@ -147,7 +164,7 @@ struct TimelineView: View {
                             Text(group.dayLabel)
                                 .font(.caption2)
                                 .fontWeight(.semibold)
-                                .foregroundStyle(group.points.first?.isToday == true ? .blue : .secondary)
+                                .foregroundStyle(group.date == todayStr ? .blue : .secondary)
                                 .padding(.leading, 4)
 
                             HStack(spacing: 6) {

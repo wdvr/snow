@@ -1474,6 +1474,7 @@ def _overlay_conditions_on_timeline(
     timeline_data: dict,
     resort_id: str,
     elevation: str,
+    timezone_str: str = "GMT",
 ) -> None:
     """Overlay actual conditions/history data onto the Open-Meteo timeline.
 
@@ -1487,6 +1488,8 @@ def _overlay_conditions_on_timeline(
     consistent with the snow-quality and conditions endpoints.
     """
     try:
+        from zoneinfo import ZoneInfo
+
         # Get current conditions from DynamoDB (merged multi-source data)
         conditions = get_weather_service().get_latest_conditions_all_elevations(
             resort_id
@@ -1499,7 +1502,12 @@ def _overlay_conditions_on_timeline(
         history = get_daily_history_service().get_history(resort_id)
         history_by_date = {h["date"]: h for h in history}
 
-        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        # Use resort-local "today" to correctly match timeline dates
+        if timezone_str and timezone_str != "GMT":
+            tz = ZoneInfo(timezone_str)
+        else:
+            tz = UTC
+        today = datetime.now(tz).strftime("%Y-%m-%d")
         timeline = timeline_data.get("timeline", [])
 
         for point in timeline:
@@ -1629,23 +1637,26 @@ async def get_resort_timeline(
             response.headers["X-Cache"] = "HIT"
             return timeline_cache[cache_key]
 
-        # Fetch timeline data from Open-Meteo
+        # Fetch timeline data from Open-Meteo in the resort's local timezone
         service = OpenMeteoService()
+        resort_tz = getattr(resort, "timezone", "GMT") or "GMT"
         timeline_data = service.get_timeline_data(
             latitude=elevation_point.latitude,
             longitude=elevation_point.longitude,
             elevation_meters=elevation_point.elevation_meters,
             elevation_level=elevation,
+            timezone=resort_tz,
         )
 
         # Overlay actual conditions/history data from DynamoDB onto the
         # Open-Meteo timeline. Without this, the timeline uses raw Open-Meteo
         # data which can wildly disagree with the multi-source merged
         # conditions (e.g., showing score 22 when snow-quality shows 94).
-        _overlay_conditions_on_timeline(timeline_data, resort_id, elevation)
+        _overlay_conditions_on_timeline(timeline_data, resort_id, elevation, resort_tz)
 
-        # Add resort_id to the response
+        # Add resort_id and timezone to the response
         timeline_data["resort_id"] = resort_id
+        timeline_data["timezone"] = resort_tz
 
         # Cache the result (30-min TTL)
         timeline_cache[cache_key] = timeline_data
@@ -2765,24 +2776,38 @@ async def get_recommendations(
                     detail=f"Invalid quality filter. Must be one of: {[q.value for q in SnowQuality]}",
                 )
 
-        # Get recommendations
-        recommendations = get_recommendation_service().get_recommendations(
-            latitude=lat,
-            longitude=longitude,
+        # Try fast path: build from S3 static JSON (< 1s vs 20s+ for DynamoDB)
+        result = _build_recommendations_from_static(
+            lat=lat,
+            lon=longitude,
             radius_km=radius,
             limit=limit,
-            min_quality=quality_filter,
+            quality_filter=quality_filter,
         )
+
+        if result is None:
+            # Fall back to live DynamoDB queries (slow, may timeout on cold start)
+            logger.info(
+                "Static JSON unavailable for recommendations, falling back to DynamoDB"
+            )
+            recommendations = get_recommendation_service().get_recommendations(
+                latitude=lat,
+                longitude=longitude,
+                radius_km=radius,
+                limit=limit,
+                min_quality=quality_filter,
+            )
+            result = {
+                "recommendations": [r.to_dict() for r in recommendations],
+                "count": len(recommendations),
+                "search_center": {"latitude": lat, "longitude": longitude},
+                "search_radius_km": radius,
+                "generated_at": datetime.now(UTC).isoformat(),
+            }
 
         response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
 
-        return {
-            "recommendations": [r.to_dict() for r in recommendations],
-            "count": len(recommendations),
-            "search_center": {"latitude": lat, "longitude": longitude},
-            "search_radius_km": radius,
-            "generated_at": datetime.now(UTC).isoformat(),
-        }
+        return result
 
     except HTTPException:
         raise
@@ -2798,6 +2823,174 @@ async def get_recommendations(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate recommendations",
         )
+
+
+def _build_recommendations_from_static(
+    lat: float,
+    lon: float,
+    radius_km: float,
+    limit: int,
+    quality_filter: SnowQuality | None,
+) -> dict | None:
+    """Build recommendations from S3 static JSON files with distance scoring.
+
+    Uses pre-computed snow-quality.json and resorts.json from S3 to avoid
+    slow DynamoDB queries that can exceed API Gateway's 29s timeout on cold start.
+
+    Returns None if static data is unavailable (caller should fall back).
+    """
+    import math
+
+    static_quality = _get_static_snow_quality_from_s3()
+    if static_quality is None:
+        return None
+
+    static_resorts = _get_static_resorts_from_s3()
+    if static_resorts is None:
+        return None
+
+    # Haversine distance calculation
+    def haversine_km(lat1, lon1, lat2, lon2):
+        R = 6371.0
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = (
+            math.sin(dlat / 2) ** 2
+            + math.cos(math.radians(lat1))
+            * math.cos(math.radians(lat2))
+            * math.sin(dlon / 2) ** 2
+        )
+        return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    quality_ranks = {
+        "champagne_powder": 10,
+        "powder_day": 9,
+        "excellent": 8,
+        "great": 7,
+        "good": 6,
+        "decent": 5,
+        "mediocre": 4,
+        "poor": 3,
+        "bad": 2,
+        "horrible": 1,
+        "unknown": 0,
+    }
+    quality_score_map = {
+        "champagne_powder": 1.0,
+        "powder_day": 0.95,
+        "excellent": 0.9,
+        "great": 0.8,
+        "good": 0.7,
+        "decent": 0.6,
+        "mediocre": 0.5,
+        "poor": 0.4,
+        "bad": 0.2,
+        "horrible": 0.0,
+        "unknown": 0.3,
+    }
+    min_rank = quality_ranks.get(quality_filter.value, 0) if quality_filter else 0
+
+    scored_items = []
+    for resort in static_resorts:
+        resort_id = resort.get("resort_id", "")
+        resort_lat = resort.get("latitude")
+        resort_lon = resort.get("longitude")
+        if resort_lat is None or resort_lon is None:
+            continue
+
+        dist = haversine_km(lat, lon, resort_lat, resort_lon)
+        if dist > radius_km:
+            continue
+
+        quality_data = static_quality.get(resort_id, {})
+        overall_quality = quality_data.get("overall_quality", "unknown")
+
+        rank = quality_ranks.get(overall_quality, 0)
+        if rank < min_rank:
+            continue
+
+        snow_score = quality_data.get("snow_score")
+        fresh_snow_cm = quality_data.get("snowfall_fresh_cm", 0) or 0
+        temp_c = quality_data.get("temperature_c", 0) or 0
+        predicted_48h = quality_data.get("predicted_snow_48h_cm", 0) or 0
+        explanation = quality_data.get("explanation", "")
+
+        q_score = quality_score_map.get(overall_quality, 0.3)
+
+        # Distance score (inverse, with diminishing returns)
+        distance_score = max(0.0, 1.0 - (dist / radius_km) ** 0.5)
+
+        # Fresh snow score (log scale)
+        combined_cm = fresh_snow_cm + (predicted_48h * 0.5)
+        if combined_cm <= 0:
+            fresh_snow_score = 0.0
+        else:
+            max_reference = 150.0
+            fresh_snow_score = min(
+                1.0,
+                math.log(1 + combined_cm / 5) / math.log(1 + max_reference / 5),
+            )
+
+        combined_score = round(
+            0.5 * q_score + 0.3 * distance_score + 0.2 * fresh_snow_score, 3
+        )
+
+        # Build reason text
+        if overall_quality in ("champagne_powder", "powder_day"):
+            reason_parts = ["Epic powder conditions"]
+        elif overall_quality == "excellent":
+            reason_parts = ["Top-rated powder conditions"]
+        elif overall_quality in ("great", "good"):
+            reason_parts = ["Good snow conditions"]
+        elif overall_quality == "decent":
+            reason_parts = ["Decent conditions"]
+        else:
+            reason_parts = [f"{overall_quality.replace('_', ' ').title()} conditions"]
+
+        if fresh_snow_cm >= 15:
+            reason_parts.append(f"{fresh_snow_cm:.0f}cm of fresh snow")
+        elif fresh_snow_cm >= 5:
+            reason_parts.append(f"{fresh_snow_cm:.0f}cm fresh snow")
+
+        if dist < 100:
+            reason_parts.append(f"Only {dist:.0f}km away")
+        elif dist < 300:
+            reason_parts.append(f"{dist:.0f}km away")
+
+        reason = ". ".join(reason_parts) + "."
+
+        dist_miles = dist * 0.621371
+
+        rec = {
+            "resort": resort,
+            "distance_km": round(dist, 1),
+            "distance_miles": round(dist_miles, 1),
+            "snow_quality": overall_quality,
+            "snow_score": snow_score,
+            "quality_score": round(q_score, 3),
+            "distance_score": round(distance_score, 3),
+            "combined_score": combined_score,
+            "fresh_snow_cm": round(fresh_snow_cm, 1),
+            "predicted_snow_72h_cm": round(predicted_48h, 1),
+            "current_temp_celsius": round(temp_c, 1),
+            "confidence_level": "medium",
+            "reason": reason,
+            "elevation_conditions": {},
+        }
+        scored_items.append((combined_score, rec))
+
+    # Sort by combined score descending
+    scored_items.sort(key=lambda x: x[0], reverse=True)
+
+    recommendations = [item[1] for item in scored_items[:limit]]
+
+    return {
+        "recommendations": recommendations,
+        "count": len(recommendations),
+        "search_center": {"latitude": lat, "longitude": lon},
+        "search_radius_km": radius_km,
+        "generated_at": datetime.now(UTC).isoformat(),
+    }
 
 
 def _build_best_conditions_from_static(

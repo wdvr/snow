@@ -95,11 +95,13 @@ struct TimelineResponse: Codable, Sendable {
     let elevationLevel: String
     let elevationMeters: Int
     let resortId: String
+    let timezone: String?
 
     private enum CodingKeys: String, CodingKey {
         case timeline
         case elevationLevel = "elevation_level"
         case elevationMeters = "elevation_meters"
         case resortId = "resort_id"
+        case timezone
     }
 }
