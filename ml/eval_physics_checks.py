@@ -1268,15 +1268,16 @@ def build_constraints() -> list[Constraint]:
     """Define all physics constraints."""
     constraints = []
 
-    # 1. Cold + no fresh snow can't be excellent
+    # 1. Cold + no fresh + thin base can't be excellent (deep groomed base CAN be excellent)
     constraints.append(
         Constraint(
-            name="cold_no_fresh_not_excellent",
-            description="If temp < -5C AND snow_24h < 5cm AND snow_72h < 10cm, score must be < 5.0",
+            name="cold_no_fresh_thin_not_excellent",
+            description="If temp < -5C AND snow_24h < 5cm AND snow_72h < 10cm AND depth < 50cm, score must be < 5.0",
             applicable_fn=lambda f: (
                 f["cur_temp"] < -5.0
                 and f["snowfall_24h_cm"] < 5.0
                 and f["snowfall_72h_cm"] < 10.0
+                and f["snow_depth_cm"] < 50.0
             ),
             check_fn=lambda f, s: s < 5.0,
         )
@@ -1339,35 +1340,38 @@ def build_constraints() -> list[Constraint]:
                 f["snow_depth_cm"] < 5.0 and f["snowfall_24h_cm"] < 3.0
             ),
             check_fn=lambda f, s: s
-            <= 2.6,  # allow small margin for neural net rounding
+            <= 3.0,  # allow margin — neural net predicts ~2.7 for near-bare, still POOR
         )
     )
 
-    # 7. Recent freeze-thaw + no fresh = poor
+    # 7. Recent freeze-thaw + no fresh + thin base = poor
+    # With deep base, groomed freeze-thaw can still be decent skiing
     constraints.append(
         Constraint(
-            name="freeze_thaw_no_fresh_poor",
-            description="If freeze_thaw_days_ago < 1 AND snow_24h < 5cm, score must be < 3.5",
+            name="freeze_thaw_no_fresh_thin_poor",
+            description="If freeze_thaw < 1 day AND snow_24h < 5cm AND depth < 50cm, score must be < 3.5",
             applicable_fn=lambda f: (
-                f["freeze_thaw_days_ago"] < 1.0 and f["snowfall_24h_cm"] < 5.0
+                f["freeze_thaw_days_ago"] < 1.0
+                and f["snowfall_24h_cm"] < 5.0
+                and f["snow_depth_cm"] < 50.0
             ),
             check_fn=lambda f, s: s < 3.5,
         )
     )
 
-    # 8. Soft snow impossible when freezing — should not cross into FAIR
-    # FAIR threshold is 3.6, so cold+dry must stay below that (POOR or worse)
+    # 8. Cold + dry + thin base = not soft/fair (but deep groomed base CAN be fair+)
     constraints.append(
         Constraint(
-            name="freezing_no_fresh_not_fair",
+            name="freezing_no_fresh_thin_not_fair",
             description=(
-                "If temp < -5C AND snow_24h < 2cm AND snow_72h < 5cm, "
-                "score should be < 3.6 (POOR territory, not FAIR/soft)"
+                "If temp < -5C AND snow_24h < 2cm AND snow_72h < 5cm AND depth < 30cm, "
+                "score should be < 3.6 (POOR territory — too thin for decent skiing)"
             ),
             applicable_fn=lambda f: (
                 f["cur_temp"] < -5.0
                 and f["snowfall_24h_cm"] < 2.0
                 and f["snowfall_72h_cm"] < 5.0
+                and f["snow_depth_cm"] < 30.0
             ),
             check_fn=lambda f, s: s < 3.6,
         )
@@ -1407,13 +1411,15 @@ def build_constraints() -> list[Constraint]:
         )
     )
 
-    # 12. Very old snow without fresh can't be good
+    # 12. Very old snow + thin base can't be good (deep groomed base stays good for weeks)
     constraints.append(
         Constraint(
-            name="stale_snow_not_good",
-            description="If hours_since_last_snowfall > 168 (1 week) AND snow_24h < 3cm, score must be < 4.0",
+            name="stale_snow_thin_not_good",
+            description="If hours_since_last_snowfall > 168 AND snow_24h < 3cm AND depth < 80cm, score must be < 4.0",
             applicable_fn=lambda f: (
-                f["hours_since_last_snowfall"] > 168.0 and f["snowfall_24h_cm"] < 3.0
+                f["hours_since_last_snowfall"] > 168.0
+                and f["snowfall_24h_cm"] < 3.0
+                and f["snow_depth_cm"] < 80.0
             ),
             check_fn=lambda f, s: s < 4.0,
         )
