@@ -1,7 +1,7 @@
 # Powder Chaser - Progress
 
 ## Status: LIVE
-**Last Updated**: 2026-02-26
+**Last Updated**: 2026-03-01
 
 ### Endpoints & Website
 - **Staging API**: https://mhserjdtp1.execute-api.us-west-2.amazonaws.com/staging
@@ -11,16 +11,35 @@
 
 ---
 
-## Active Work (Mar 1) — Weather Data Pipeline Overhaul
+## Active Work (Week of Mar 1) — Data Quality & Cross-Platform Consistency
 
 ### In Progress
-- [ ] Rewrite OnTheSnow scraper: JSON extraction from `<script id="__NEXT_DATA__">` instead of fragile regex
-- [ ] Expand OnTheSnow resort mapping: 16 → 100+ resorts (NA + Europe)
-- [ ] Enable Snow-Forecast as secondary data source (currently disabled)
-- [ ] Simulation: compare current scores vs. scores with OnTheSnow supplementary data for 20 resorts
+- [ ] Fix BUG-009: Finnish resorts with bogus elevation dominating "Best Conditions" — needs elevation sanity check
+- [ ] Fix BUG-008: Timeline phantom champagne powder — rare after overlay fix, investigate remaining cases
+- [ ] Fix review.md HIGH items: `MKLocalSearch` not on main thread, `isFetchingTimelines` race condition
+- [ ] Fix review.md Web items: scrollbar CSS, UTC date parsing, stale selectedDayIndex, empty array Math
 - [ ] Operational status proposal: how to surface lifts/runs/surface data without polluting ML score
 
-### Completed (Feb 28-Mar 1)
+### Completed (Mar 1)
+- [x] Fix `snowfall_after_freeze_cm` stuck at 0 when Open-Meteo underreports (BUG-014)
+- [x] Fix cross-view elevation inconsistency — standardize mid > top > base (BUG-015)
+- [x] Raise ML fresh-snow floors: 8cm+/≤0°C → 3.5, 8cm+/≤-3°C → 4.0 (BUG-016)
+- [x] Fix explanation text: "Limited fresh snow" → "Fresh snow (Xcm/24h) on a warming base"
+- [x] Fix map popup "New Snow" showing 0 (use `formattedFreshSnowWithPrefs`)
+- [x] Fix chart header "0cm accumulated" when there was recent snow
+- [x] Fix forecast arrow text on wrong side of dashed line
+- [x] Weather worker: reconcile `snowfall_after_freeze_cm` with merged multi-source data
+- [x] ML scorer: override `snow_since_freeze_cm` feature from conditions
+- [x] Timeline uses resort-local timezone instead of UTC
+- [x] Recommendations endpoint S3 fast path (cold start <1s)
+- [x] Best conditions endpoint S3 fast path (19s → 0.15s)
+- [x] Compact map overlays — merge filter + day selector into single row
+- [x] OnTheSnow scraper rewrite — JSON extraction from `__NEXT_DATA__` (16 → 95 resorts)
+- [x] Enable Snow-Forecast as secondary data source
+- [x] 10-resort validation: Whistler, Jackson Hole, Mammoth, Revelstoke, Mt. Baker, Chamonix, St. Anton, Niseko, Vail, Kicking Horse — all PASS
+- [x] Backend tests: 1693 passing, iOS tests: 119 passing
+
+### Completed (Feb 28)
 - [x] Remove Live Activity / Dynamic Island feature (doesn't change fast enough)
 - [x] Fix list view → map zoom (NavigationCoordinator 100ms delay)
 - [x] Rethink fresh snow metric: settling factor + "New Snow" terminology (15+ iOS files)
@@ -33,9 +52,22 @@
 ### Queued
 - [ ] App Store screenshots for v2.1 (Powder Chaser branding, new features)
 - [ ] Trip Planning Mode (#23) — multi-component feature
-- [ ] Web: Trail map viewer fix (page URLs instead of DZI thumbnails) (#191)
-- [ ] Web: Timeline/hourly forecast cards (#192)
+- [ ] Web: Trail map viewer fix (page URLs instead of DZI thumbnails) (#187)
+- [ ] Web: Timeline/hourly forecast cards
 - [ ] Annual snowfall data for 594 missing resorts
+- [ ] Apple Watch companion app (#25)
+- [ ] Android: Google Sign-In (#190), piste overlay (#188), trail maps (#187), suggest edit (#189)
+
+### GitHub Issues (Open — 5 remaining)
+| # | Title | Labels |
+|---|-------|--------|
+| 25 | Apple Watch App | enhancement, ios, needs-user-input |
+| 187 | Android: Trail map viewer (DZI thumbnails) | enhancement, android |
+| 188 | Android: Piste overlay on map | enhancement, android |
+| 189 | Android: Suggest an Edit button | enhancement, android |
+| 190 | Android: Google Sign-In placeholder | bug, android |
+
+*Issue #13 (multi-source data research) closed Mar 1 — completed.*
 
 ## Completed (Feb 27-28) — Polish & Launch
 
@@ -47,7 +79,7 @@
 - [x] Widget region display — human-readable names instead of raw IDs
 - [x] Card background fix — secondarySystemBackground for visible cards
 - [x] App display name → "Powder Chaser" (was "Snow Tracker" in icon change dialog)
-- [x] Backend tests: 1599 passing
+- [x] Backend tests: 1693 passing
 - [x] iOS tests: 119 passing
 - [x] TestFlight build 745 uploaded
 
@@ -169,11 +201,13 @@
 
 ## Known Bugs
 
-| Bug | Description | Status |
-|-----|-------------|--------|
-| BUG-003 | Scores too low for fresh snow (Lake Louise 21cm=−7.5°C scored 26) | **Fixed** — fresh snow floor constraint |
-| BUG-006 | Breckenridge depth mismatch (static JSON vs live) | Self-resolves on Lambda run |
-| BUG-011 | Source disagreement not triggering outlier detection | **Fixed** — 2-source outlier detection |
+See `BUGS.md` for full details. Summary:
+
+| Status | Count | Bugs |
+|--------|-------|------|
+| **Fixed** | 8 | BUG-003, 007, 011, 012, 013, 014, 015, 016 |
+| **Backlog** | 5 | BUG-008 (timeline phantom), 009 (Finnish elevation), 017 (chat test flaky), 018 (label-score boundary), 019 (explanation edge case) |
+| **Stale** | 2 | BUG-004, 005 — need re-verification |
 
 ---
 

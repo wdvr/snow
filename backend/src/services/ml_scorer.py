@@ -843,10 +843,20 @@ def _apply_no_snowfall_cap(
     snow_24h = raw_features.get("snowfall_24h_cm", 0.0)
     snow_72h = raw_features.get("snowfall_72h_cm", 0.0)
 
-    if snow_72h < 0.5:
-        # No meaningful snowfall in 72h — impossible to have powder
-        # Cap at GREAT (4.0); conditions can still be good with cold temps
-        # and existing snow depth, but not "powder day" or "champagne powder"
+    if snow_72h < 0.1:
+        # Trace or zero snowfall in 72h — impossible to have powder.
+        # 0.1cm threshold filters out Open-Meteo forecast noise that
+        # sometimes reports 0.1-0.4cm spuriously (BUG-008 fix).
+        cap = 3.5
+        if score > cap:
+            logger.debug(
+                f"No-snowfall cap: score {score:.2f} -> {cap:.1f} "
+                f"(snow_24h={snow_24h:.1f}, snow_72h={snow_72h:.1f})"
+            )
+            return cap
+    elif snow_72h < 1.0:
+        # Negligible snowfall in 72h — trace amounts only
+        # Cap at GREAT (4.0); can't be better than groomed with dusting
         cap = 4.0
         if score > cap:
             logger.debug(

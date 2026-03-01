@@ -176,10 +176,13 @@ def _describe_surface(
         return "Firm surface with limited fresh snow. Stick to groomed runs."
 
     if quality == SnowQuality.POOR:
+        # BUG-019 fix: check fresh snow FIRST, before freeze-thaw message
+        if fresh_cm >= 2.5:
+            if freeze_thaw_ago and freeze_thaw_ago < 72:
+                return f"Hard packed base with {fresh_cm:.0f}cm of fresh snow on top. Last thaw-freeze {_format_hours(freeze_thaw_ago)} ago."
+            return f"Hard packed surface with {fresh_cm:.0f}cm of aged snow."
         if freeze_thaw_ago and freeze_thaw_ago < 72:
             return f"Thin cover over refrozen base. Last thaw-freeze {_format_hours(freeze_thaw_ago)} ago."
-        if fresh_cm >= 2.5:
-            return f"Hard packed surface with {fresh_cm:.0f}cm of aged snow."
         return "Hard packed surface. No significant fresh snow."
 
     if quality == SnowQuality.BAD:
@@ -196,7 +199,13 @@ def _describe_surface(
         elif temp > 5 and depth is not None and depth >= 30:
             return f"Very poor conditions: warm ({temp:.0f}°C) and degrading fast despite {depth:.0f}cm base."
         elif depth is not None and depth >= 30:
+            # BUG-005 fix: 81cm base is skiable but in horrible condition
             return f"Very poor conditions: icy, degraded surface despite {depth:.0f}cm base."
+        elif depth is None:
+            # BUG-005 fix: unknown depth — don't claim "insufficient cover"
+            if temp <= 0:
+                return "Very poor conditions: icy, degraded surface."
+            return "Not skiable: conditions extremely poor."
         return "Not skiable: insufficient snow cover."
 
     return ""

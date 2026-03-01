@@ -1,39 +1,43 @@
 ============================================================
 Model Evaluation Report (v2 - Neural Network)
 ============================================================
-Samples: 428
-MAE: 0.225
-RMSE: 0.298
-R²: 0.937
-Exact quality match: 81.1%
-Within-1 quality level: 100.0%
+Samples: 259
+MAE: 0.241
+RMSE: 0.337
+R²: 0.913
+Exact quality match: 59.5%
+Within-1 quality level: 93.8%
 
 Score distribution:
-  True  - mean: 3.18, std: 1.19
-  Pred  - mean: 3.16, std: 1.16
+  True  - mean: 3.34, std: 1.15
+  Pred  - mean: 3.33, std: 1.15
 
 Quality confusion (true → predicted):
-    horrible ( 14): horrible=12, bad=2
-         bad ( 92): bad=72, horrible=13, poor=7
-        poor (181): poor=146, bad=23, fair=12
-        fair ( 69): fair=55, poor=10, good=4
-        good ( 51): good=44, fair=7
-   excellent ( 21): excellent=18, good=3
+    horrible ( 10): horrible=9, bad=1
+         bad ( 33): bad=28, poor=4, horrible=1
+        poor ( 44): poor=30, mediocre=7, bad=5, good=1, decent=1
+    mediocre ( 56): mediocre=27, poor=14, decent=10, good=5
+      decent ( 14): mediocre=9, decent=5
+        good ( 27): good=13, great=9, mediocre=3, decent=2
+       great ( 22): good=9, great=7, excellent=3, decent=1, poor=1, mediocre=1
+   excellent ( 34): excellent=21, powder_day=7, great=4, champagne_powder=2
+  powder_day ( 10): powder_day=5, excellent=4, great=1
+  champagne_powder (  9): champagne_powder=9
 
 Worst 15 predictions:
   Resort                              Date          True  Pred Error
-  marble-mountain-steady-brook-humber-valley 2026-02-14     4.0   2.9  1.08
-  mont-sutton                         2026-02-21     3.2   4.2  1.04
-  marble-mountain-steady-brook-humber-valley 2026-02-13     4.0   3.0  0.97
-  stevens-pass                        2026-02-14     3.3   4.2  0.94
-  synth-warm-aging-13                 2026-02-18     3.3   2.4  0.83
-  synth-light-dusting-6               2026-02-07     4.9   4.1  0.81
-  furano                              2026-02-13     5.1   4.3  0.81
-  synth-fresh-covers-ice-5            2026-02-06     5.4   4.6  0.79
-  bretton-woods                       2026-02-21     3.0   3.7  0.72
-  grouse-mountain                     2026-02-16     2.7   2.0  0.71
-  arapahoe-basin                      2026-02-13     2.7   2.0  0.69
-  nakiska                             2026-02-17     2.6   3.3  0.68
-  synth-cold-fresh-170                2026-02-15     4.7   4.0  0.68
-  niseko                              2026-02-22     2.7   3.4  0.66
-  jackson-hole                        2026-02-18     5.4   4.7  0.66
+  wolf-creek                          2026-02-19     4.2   2.4  1.81
+  sugar-bowl                          2026-02-17     4.5   5.9  1.38
+  blue-mountain-resort-collingwood    2026-02-21     2.8   1.4  1.37
+  sugar-bowl                          2026-02-18     4.9   6.0  1.06
+  buttermilk-mountain                 2026-02-18     1.5   2.4  0.89
+  sunday-river                        2026-02-21     3.0   3.9  0.87
+  cortina                             2026-02-21     4.1   3.3  0.83
+  grouse-mountain                     2026-02-17     2.8   3.6  0.80
+  synth-warm-aging-13                 2026-02-18     3.3   2.5  0.74
+  synth-good-12                       2026-02-13     5.3   4.5  0.71
+  snoqualmie-pass                     2026-02-17     1.8   2.5  0.68
+  stowe                               2026-02-21     5.1   4.4  0.67
+  synth-thin-on-ice-10                2026-02-15     2.9   2.2  0.63
+  synth-good-17                       2026-02-18     5.3   4.7  0.62
+  sun-peaks                           2026-02-21     2.0   2.6  0.61

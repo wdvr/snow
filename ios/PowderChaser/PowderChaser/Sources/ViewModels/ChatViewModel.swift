@@ -2,6 +2,7 @@ import Foundation
 import os.log
 
 private let chatLog = Logger(subsystem: "com.snowtracker.app", category: "Chat")
+private let analytics = AnalyticsService.shared
 
 @MainActor
 final class ChatViewModel: ObservableObject {
@@ -54,6 +55,14 @@ final class ChatViewModel: ObservableObject {
         statusMessage = nil
         activeTools = []
 
+        // Track message sent
+        let messageIndex = messages.filter { $0.role == .user }.count
+        analytics.trackChatMessageSent(
+            conversationId: currentConversationId,
+            messageIndex: messageIndex,
+            isAnonymous: currentConversationId == nil
+        )
+
         // Add the user message optimistically
         let userMessage = ChatMessage(
             id: UUID().uuidString,
@@ -88,11 +97,18 @@ final class ChatViewModel: ObservableObject {
             messages.append(assistantMessage)
             isSending = false
 
+            analytics.trackChatResponseReceived(
+                conversationId: response.conversationId,
+                responseTimeMs: 0, // REST doesn't track timing
+                streaming: false
+            )
+
             // Start progressive text reveal for REST responses
             await startLocalStreaming(messageId: response.messageId, fullText: response.response)
             chatLog.debug("Chat response received for conversation \(response.conversationId)")
         } catch APIError.unauthorized {
             chatLog.error("Chat unauthorized after refresh attempt")
+            analytics.trackChatError(errorType: "unauthorized", stage: "send")
             errorMessage = "Please sign in again to use chat."
             let errorResponse = ChatMessage(
                 id: UUID().uuidString,
@@ -104,6 +120,7 @@ final class ChatViewModel: ObservableObject {
             isSending = false
         } catch {
             chatLog.error("Failed to send chat message: \(error)")
+            analytics.trackChatError(errorType: "send_failed", stage: "send")
             errorMessage = "Failed to send message. Check your connection and try again."
             let errorResponse = ChatMessage(
                 id: UUID().uuidString,
@@ -246,6 +263,14 @@ final class ChatViewModel: ObservableObject {
         activeTools = []
         streamingMessageId = nil
         displayedText = ""
+
+        if !finalConversationId.isEmpty {
+            analytics.trackChatResponseReceived(
+                conversationId: finalConversationId,
+                responseTimeMs: 0,
+                streaming: true
+            )
+        }
         chatLog.debug("Stream complete for conversation \(finalConversationId)")
     }
 
@@ -329,6 +354,7 @@ final class ChatViewModel: ObservableObject {
 
         do {
             messages = try await apiClient.getConversation(conversationId)
+            analytics.trackChatConversationLoaded(conversationId: conversationId, messageCount: messages.count)
             chatLog.debug("Loaded \(self.messages.count) messages for conversation \(conversationId)")
         } catch {
             chatLog.error("Failed to load conversation \(conversationId): \(error)")
@@ -344,6 +370,7 @@ final class ChatViewModel: ObservableObject {
         do {
             try await apiClient.deleteConversation(conversationId)
             conversations.removeAll { $0.id == conversationId }
+            analytics.trackChatConversationDeleted()
             if currentConversationId == conversationId {
                 startNewConversation()
             }
@@ -362,6 +389,7 @@ final class ChatViewModel: ObservableObject {
         currentConversationId = nil
         messages = []
         errorMessage = nil
+        analytics.trackChatSessionStarted(type: "new")
     }
 }
 

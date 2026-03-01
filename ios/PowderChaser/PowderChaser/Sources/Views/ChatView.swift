@@ -100,8 +100,9 @@ struct ChatView: View {
                     .padding(.horizontal, 40)
 
                 VStack(spacing: 12) {
-                    ForEach(visibleSuggestions) { suggestion in
+                    ForEach(Array(visibleSuggestions.enumerated()), id: \.element.id) { index, suggestion in
                         SuggestionChip(text: suggestion.label) {
+                            AnalyticsService.shared.trackChatSuggestionClicked(index: index, text: suggestion.prompt)
                             sendSuggestion(suggestion.prompt)
                         }
                     }

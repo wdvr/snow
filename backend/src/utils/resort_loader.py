@@ -99,9 +99,28 @@ class ResortLoader:
 
     def _transform_resort(self, raw: dict[str, Any], now: str) -> Resort:
         """Transform raw JSON resort data to Resort model."""
-        base_elev_m = raw.get("elevation_base_m", 0)
-        top_elev_m = raw.get("elevation_top_m", 0)
-        mid_elev_m = (base_elev_m + top_elev_m) // 2
+        resort_id = raw.get("resort_id", "unknown")
+        base_elev_m = raw.get("elevation_base_m") or 0
+        top_elev_m = raw.get("elevation_top_m") or 0
+
+        # Sanity check: if top elevation is missing or zero, estimate from base
+        if not top_elev_m:
+            top_elev_m = base_elev_m + 100
+            logger.warning(
+                f"Resort {resort_id}: elevation_top_m is null/0, "
+                f"falling back to base+100 = {top_elev_m}m"
+            )
+
+        # Sanity check: if top < base, swap them
+        if top_elev_m < base_elev_m:
+            logger.warning(
+                f"Resort {resort_id}: elevation_top_m ({top_elev_m}m) < "
+                f"elevation_base_m ({base_elev_m}m), swapping"
+            )
+            base_elev_m, top_elev_m = top_elev_m, base_elev_m
+
+        # Use mid from JSON if available, otherwise calculate
+        mid_elev_m = raw.get("elevation_mid_m") or (base_elev_m + top_elev_m) // 2
 
         lat = raw.get("latitude", 0.0)
         lon = raw.get("longitude", 0.0)

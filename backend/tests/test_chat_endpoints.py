@@ -443,15 +443,17 @@ class TestAnonymousChatRateLimit:
         data = resp.json()
         assert data["remaining_messages"] == 3
 
+    @patch("handlers.api_handler._check_authenticated_chat_limit")
     @patch("handlers.api_handler.get_auth_service")
     @patch("handlers.api_handler.get_chat_service")
-    def test_authenticated_chat_no_remaining_messages(
-        self, mock_chat_svc, mock_auth, client
+    def test_authenticated_chat_includes_remaining_messages(
+        self, mock_chat_svc, mock_auth, mock_auth_limit, client
     ):
-        """Authenticated response should not include remaining_messages."""
+        """Authenticated response should include remaining_messages (Feature 2.11)."""
         auth = MagicMock()
         auth.verify_access_token.return_value = "test_user"
         mock_auth.return_value = auth
+        mock_auth_limit.return_value = (True, 95)
 
         svc = MagicMock()
         svc.chat.return_value = ChatResponse(
@@ -468,7 +470,7 @@ class TestAnonymousChatRateLimit:
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert data.get("remaining_messages") is None
+        assert data["remaining_messages"] == 95
 
     @patch("handlers.api_handler.get_auth_service")
     @patch("handlers.api_handler._check_anonymous_chat_limit")
@@ -490,7 +492,22 @@ class TestAnonymousChatRateLimit:
 
 
 class TestCheckAnonymousChatLimit:
-    """Tests for the _check_anonymous_chat_limit helper."""
+    """Tests for the _check_anonymous_chat_limit helper.
+
+    BUG-017 fix: autouse fixture resets _dynamodb between tests to prevent
+    stale mock from previous tests causing fail-open (returns True instead
+    of False). Without this, test_at_limit_rejected fails in full suite
+    because _dynamodb is still set from a previous test's mock context.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _reset_dynamodb_cache(self):
+        """Reset api_handler's lazy-init cache before each test."""
+        from handlers.api_handler import reset_services
+
+        reset_services()
+        yield
+        reset_services()
 
     @patch.dict("os.environ", {"CHAT_RATE_LIMIT_TABLE_NAME": ""}, clear=False)
     def test_no_table_configured_allows_request(self):
@@ -610,6 +627,173 @@ class TestCheckAnonymousChatLimit:
         mock_boto3.resource.return_value.Table.return_value = table
 
         assert _check_anonymous_chat_limit("1.2.3.4") is True
+
+
+# ---------------------------------------------------------------------------
+# Authenticated chat rate limit helper unit tests
+# ---------------------------------------------------------------------------
+
+
+class TestCheckAuthenticatedChatLimit:
+    """Tests for _check_authenticated_chat_limit helper (Feature 2.11)."""
+
+    @pytest.fixture(autouse=True)
+    def _reset_dynamodb_cache(self):
+        """Reset api_handler's lazy-init cache before each test."""
+        from handlers.api_handler import reset_services
+
+        reset_services()
+        yield
+        reset_services()
+
+    @patch.dict("os.environ", {"CHAT_RATE_LIMIT_TABLE_NAME": ""}, clear=False)
+    def test_no_table_configured_allows_request(self):
+        """Should allow request when table not configured."""
+        from handlers.api_handler import _check_authenticated_chat_limit
+
+        allowed, remaining = _check_authenticated_chat_limit("user-123")
+        assert allowed is True
+        assert remaining == 100
+
+    @patch("handlers.api_handler.boto3")
+    @patch.dict(
+        "os.environ",
+        {"CHAT_RATE_LIMIT_TABLE_NAME": "test-rate-limit"},
+        clear=False,
+    )
+    def test_first_message_allowed(self, mock_boto3):
+        """Should allow first message from a new user."""
+        from handlers.api_handler import _check_authenticated_chat_limit
+
+        table = MagicMock()
+        table.get_item.return_value = {}  # No existing item
+        mock_boto3.resource.return_value.Table.return_value = table
+
+        allowed, remaining = _check_authenticated_chat_limit("user-123")
+        assert allowed is True
+        assert remaining == 99
+        table.put_item.assert_called_once()
+        item = table.put_item.call_args[1]["Item"]
+        assert item["ip_address"] == "user_user-123"
+        assert item["message_count"] == 1
+
+    @patch("handlers.api_handler.boto3")
+    @patch.dict(
+        "os.environ",
+        {"CHAT_RATE_LIMIT_TABLE_NAME": "test-rate-limit"},
+        clear=False,
+    )
+    def test_under_limit_allowed(self, mock_boto3):
+        """Should allow when under the 100/day limit."""
+        import time
+
+        from handlers.api_handler import _check_authenticated_chat_limit
+
+        now = int(time.time())
+        table = MagicMock()
+        table.get_item.return_value = {
+            "Item": {
+                "ip_address": "user_user-456",
+                "timestamps": [now - 100, now - 50],
+                "message_count": 2,
+            }
+        }
+        mock_boto3.resource.return_value.Table.return_value = table
+
+        allowed, remaining = _check_authenticated_chat_limit("user-456")
+        assert allowed is True
+        assert remaining == 97  # 100 - 3 (2 existing + 1 new)
+
+    @patch("handlers.api_handler.boto3")
+    @patch.dict(
+        "os.environ",
+        {"CHAT_RATE_LIMIT_TABLE_NAME": "test-rate-limit"},
+        clear=False,
+    )
+    def test_at_limit_rejected(self, mock_boto3):
+        """Should reject when at the 100/day limit."""
+        import time
+
+        from handlers.api_handler import _check_authenticated_chat_limit
+
+        now = int(time.time())
+        timestamps = [now - i * 60 for i in range(100)]
+        table = MagicMock()
+        table.get_item.return_value = {
+            "Item": {
+                "ip_address": "user_user-789",
+                "timestamps": timestamps,
+                "message_count": 100,
+            }
+        }
+        mock_boto3.resource.return_value.Table.return_value = table
+
+        allowed, remaining = _check_authenticated_chat_limit("user-789")
+        assert allowed is False
+        assert remaining == 0
+
+    @patch("handlers.api_handler.boto3")
+    @patch.dict(
+        "os.environ",
+        {"CHAT_RATE_LIMIT_TABLE_NAME": "test-rate-limit"},
+        clear=False,
+    )
+    def test_expired_timestamps_not_counted(self, mock_boto3):
+        """Should not count timestamps outside the 24h window."""
+        import time
+
+        from handlers.api_handler import _check_authenticated_chat_limit
+
+        now = int(time.time())
+        old = now - (25 * 3600)  # 25 hours ago (outside 24h window)
+        table = MagicMock()
+        table.get_item.return_value = {
+            "Item": {
+                "ip_address": "user_user-expired",
+                "timestamps": [old] * 100,
+                "message_count": 100,
+            }
+        }
+        mock_boto3.resource.return_value.Table.return_value = table
+
+        allowed, remaining = _check_authenticated_chat_limit("user-expired")
+        assert allowed is True
+        assert remaining == 99  # All old timestamps expired, only 1 new
+
+    @patch("handlers.api_handler.boto3")
+    @patch.dict(
+        "os.environ",
+        {"CHAT_RATE_LIMIT_TABLE_NAME": "test-rate-limit"},
+        clear=False,
+    )
+    def test_dynamo_error_fails_open(self, mock_boto3):
+        """Should allow request if DynamoDB errors (fail open)."""
+        from handlers.api_handler import _check_authenticated_chat_limit
+
+        table = MagicMock()
+        table.get_item.side_effect = Exception("DynamoDB timeout")
+        mock_boto3.resource.return_value.Table.return_value = table
+
+        allowed, remaining = _check_authenticated_chat_limit("user-error")
+        assert allowed is True
+        assert remaining == 100
+
+    @patch("handlers.api_handler.boto3")
+    @patch.dict(
+        "os.environ",
+        {"CHAT_RATE_LIMIT_TABLE_NAME": "test-rate-limit"},
+        clear=False,
+    )
+    def test_uses_user_prefixed_key(self, mock_boto3):
+        """Should use 'user_' prefix for DynamoDB key to avoid IP collision."""
+        from handlers.api_handler import _check_authenticated_chat_limit
+
+        table = MagicMock()
+        table.get_item.return_value = {}
+        mock_boto3.resource.return_value.Table.return_value = table
+
+        _check_authenticated_chat_limit("abc-123")
+        table.get_item.assert_called_once_with(Key={"ip_address": "user_abc-123"})
 
 
 # ---------------------------------------------------------------------------

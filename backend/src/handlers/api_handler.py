@@ -504,6 +504,7 @@ async def get_optional_user_id(
 
 ANON_CHAT_LIMIT = 5
 ANON_CHAT_WINDOW_HOURS = 6
+AUTH_CHAT_DAILY_LIMIT = 100  # Authenticated users: 100 messages per day
 
 
 def _get_client_ip(request: Request) -> str:
@@ -566,6 +567,59 @@ def _check_anonymous_chat_limit(ip_address: str) -> bool:
         logger.error("Rate limit check failed for IP %s: %s", ip_address, e)
         # Fail open - allow the request if rate limit check fails
         return True
+
+
+def _check_authenticated_chat_limit(user_id: str) -> tuple[bool, int]:
+    """Check if authenticated user is within daily chat limit.
+
+    Returns (allowed, remaining_messages).
+    """
+    table_name = os.environ.get("CHAT_RATE_LIMIT_TABLE_NAME")
+    if not table_name:
+        return True, AUTH_CHAT_DAILY_LIMIT
+
+    try:
+        table = get_dynamodb().Table(table_name)
+
+        now = int(time.time())
+        # 24-hour sliding window
+        window_start = now - (24 * 3600)
+        expires_at = now + (24 * 3600)
+
+        key = f"user_{user_id}"
+        response = table.get_item(Key={"ip_address": key})
+        item = response.get("Item")
+
+        if item:
+            timestamps = item.get("timestamps", [])
+            recent = [t for t in timestamps if t > window_start]
+
+            if len(recent) >= AUTH_CHAT_DAILY_LIMIT:
+                return False, 0
+
+            recent.append(now)
+            table.put_item(
+                Item={
+                    "ip_address": key,
+                    "timestamps": recent,
+                    "message_count": len(recent),
+                    "expires_at": expires_at,
+                }
+            )
+            return True, max(0, AUTH_CHAT_DAILY_LIMIT - len(recent))
+        else:
+            table.put_item(
+                Item={
+                    "ip_address": key,
+                    "timestamps": [now],
+                    "message_count": 1,
+                    "expires_at": expires_at,
+                }
+            )
+            return True, AUTH_CHAT_DAILY_LIMIT - 1
+    except Exception as e:
+        logger.error("Auth rate limit check failed for %s: %s", user_id, e)
+        return True, AUTH_CHAT_DAILY_LIMIT
 
 
 def _get_remaining_anonymous_messages(ip_address: str) -> int:
@@ -3908,23 +3962,31 @@ async def send_chat_message(
 ):
     """Send a message to the AI ski conditions assistant.
 
-    Authenticated users have unlimited chat. Anonymous users are limited
-    to 5 messages per IP address per 6 hours.
+    Authenticated users: 100 messages per 24 hours.
+    Anonymous users: 5 messages per IP per 6 hours.
     """
     try:
         remaining_messages = None
 
-        # For anonymous users, enforce IP-based rate limit
         if not user_id:
+            # Anonymous: IP-based rate limit
             client_ip = _get_client_ip(fastapi_request)
             if not _check_anonymous_chat_limit(client_ip):
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail="Chat limit reached. Sign in for unlimited access, or try again later.",
                 )
-            # Use IP-based identifier for anonymous conversations
             user_id = f"anon_{client_ip}"
             remaining_messages = _get_remaining_anonymous_messages(client_ip)
+        else:
+            # Authenticated: per-user daily limit
+            allowed, remaining = _check_authenticated_chat_limit(user_id)
+            if not allowed:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Daily chat limit reached. Try again tomorrow.",
+                )
+            remaining_messages = remaining
 
         service = get_chat_service()
         result = service.chat(

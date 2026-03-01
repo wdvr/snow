@@ -116,7 +116,8 @@ class TestFairExplanation:
 
 
 class TestPoorExplanation:
-    def test_freeze_thaw(self):
+    def test_freeze_thaw_no_fresh(self):
+        """Freeze-thaw with minimal fresh snow should say 'thin cover'."""
         cond = _make_condition(
             snow_quality=SnowQuality.POOR,
             last_freeze_thaw_hours_ago=48.0,
@@ -124,7 +125,34 @@ class TestPoorExplanation:
             current_temp_celsius=-5.0,
         )
         explanation = generate_quality_explanation(cond)
-        assert "thaw" in explanation.lower() or "packed" in explanation.lower()
+        assert "thin cover" in explanation.lower() or "thaw" in explanation.lower()
+
+    def test_freeze_thaw_with_fresh_snow(self):
+        """BUG-019: Recent freeze-thaw + measurable fresh should NOT say 'thin cover'."""
+        cond = _make_condition(
+            snow_quality=SnowQuality.POOR,
+            last_freeze_thaw_hours_ago=48.0,
+            snowfall_after_freeze_cm=8.0,
+            fresh_snow_cm=8.0,
+            current_temp_celsius=-5.0,
+        )
+        explanation = generate_quality_explanation(cond)
+        assert "thin cover" not in explanation.lower()
+        assert "8cm" in explanation
+        assert "fresh" in explanation.lower() or "hard packed" in explanation.lower()
+
+    def test_freeze_thaw_with_small_fresh_snow(self):
+        """BUG-019: 3cm fresh snow on refrozen base should mention the fresh snow."""
+        cond = _make_condition(
+            snow_quality=SnowQuality.POOR,
+            last_freeze_thaw_hours_ago=36.0,
+            snowfall_after_freeze_cm=3.0,
+            fresh_snow_cm=3.0,
+            current_temp_celsius=-3.0,
+        )
+        explanation = generate_quality_explanation(cond)
+        assert "thin cover" not in explanation.lower()
+        assert "3cm" in explanation
 
     def test_aged_cover(self):
         cond = _make_condition(
@@ -157,13 +185,16 @@ class TestHorribleExplanation:
         assert "not skiable" in explanation.lower()
         assert "8°C" in explanation
 
-    def test_no_snow(self):
+    def test_no_snow_no_depth(self):
+        """BUG-005 regression: None depth + cold should NOT say 'insufficient cover'."""
         cond = _make_condition(
             snow_quality=SnowQuality.HORRIBLE,
             current_temp_celsius=-2.0,
         )
         explanation = generate_quality_explanation(cond)
-        assert "not skiable" in explanation.lower()
+        # With None depth and cold temps, should say "icy/degraded" not "insufficient"
+        assert "insufficient" not in explanation.lower()
+        assert "poor" in explanation.lower() or "icy" in explanation.lower()
 
     def test_good_base_depth_not_insufficient(self):
         """BUG-005: 81cm base should NOT say 'insufficient snow cover'."""

@@ -273,7 +273,7 @@ snow/
 |   |   |   +-- daily_history_service.py   # Snow history aggregation
 |   |   +-- models/               # Pydantic data models
 |   |   +-- ml_model/             # Model weights (JSON)
-|   +-- tests/                    # pytest test suite (1550+ tests)
+|   +-- tests/                    # pytest test suite (1693 tests)
 +-- ml/                           # ML training pipeline
 |   +-- train_v2.py               # Neural network training script
 |   +-- collect_data.py           # Feature collection from Open-Meteo
@@ -439,7 +439,7 @@ gh workflow run trigger-weather.yml -f environment=prod
 ## Testing
 
 ```bash
-# Backend (1550+ tests)
+# Backend (1693 tests)
 cd backend && PYTHONPATH=src python3 -m pytest tests/ -x -q
 
 # iOS (119 tests)
@@ -447,6 +447,32 @@ xcodebuild test -project ios/PowderChaser.xcodeproj -scheme PowderChaser \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   -only-testing:PowderChaserTests
 ```
+
+---
+
+## Documentation Files
+
+| File | Purpose | Update Frequency |
+|------|---------|------------------|
+| `README.md` | Project overview, architecture, getting started | On major changes |
+| `CLAUDE.md` | Agent working instructions, API reference, coding guidelines | On workflow changes |
+| `DIARY.md` | Dev diary — bugs/fixes/features with cross-platform status table | Every session |
+| `PROGRESS.md` | Active task tracking, weekly plan, GitHub issue sync | Weekly |
+| `BUGS.md` | Known bugs with severity, status, and audit results | On bug discovery/fix |
+| `FEATURES.md` | Feature roadmap with competitive analysis | On feature completion |
+| `review.md` | Code review findings with fix/not-fix decisions | On code review |
+| `ml/ALGORITHM.md` | ML scoring algorithm — features, training, physics constraints | On model changes |
+| `ml/VALIDATION.md` | ML score validation log — external source comparison | On validation runs |
+| `ios/RELEASE.md` | iOS release process and App Store submission notes | On release |
+
+### How to use these files
+
+- **Starting a session**: Read `PROGRESS.md` for current priorities, `BUGS.md` for open issues
+- **During work**: Update `PROGRESS.md` to track what's in progress
+- **Ending a session**: Update `DIARY.md` with all fixes/features (mandatory), mark items done in `PROGRESS.md`
+- **After fixing bugs**: Update status in `BUGS.md` summary table
+- **After completing features**: Mark as "Done" in `FEATURES.md` priority matrix
+- **GitHub sync**: Keep `PROGRESS.md` "GitHub Issues" table in sync with `gh issue list`
 
 ---
 

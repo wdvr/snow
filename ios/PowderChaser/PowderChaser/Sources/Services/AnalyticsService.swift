@@ -442,6 +442,55 @@ final class AnalyticsService: @unchecked Sendable {
         ])
     }
 
+    // MARK: - Chat Events
+
+    func trackChatMessageSent(conversationId: String?, messageIndex: Int, isAnonymous: Bool) {
+        logEvent("chat_message_sent", parameters: [
+            "conversation_id": conversationId ?? "new",
+            "message_index": messageIndex,
+            "is_anonymous": isAnonymous,
+        ])
+    }
+
+    func trackChatResponseReceived(conversationId: String, responseTimeMs: Int, streaming: Bool) {
+        logEvent("chat_response_received", parameters: [
+            "conversation_id": conversationId,
+            "response_time_ms": responseTimeMs,
+            "streaming": streaming,
+        ])
+    }
+
+    func trackChatSessionStarted(type: String) {
+        logEvent("chat_session_started", parameters: [
+            "type": type,
+        ])
+    }
+
+    func trackChatSuggestionClicked(index: Int, text: String) {
+        logEvent("chat_suggestion_clicked", parameters: [
+            "suggestion_index": index,
+            "suggestion_text": String(text.prefix(50)),
+        ])
+    }
+
+    func trackChatError(errorType: String, stage: String) {
+        logEvent("chat_error", parameters: [
+            "error_type": errorType,
+            "stage": stage,
+        ])
+    }
+
+    func trackChatConversationLoaded(conversationId: String, messageCount: Int) {
+        logEvent("chat_conversation_loaded", parameters: [
+            "conversation_id": conversationId,
+            "message_count": messageCount,
+        ])
+    }
+
+    func trackChatConversationDeleted() {
+        logEvent("chat_conversation_deleted")
+    }
+
     // MARK: - Error Events
 
     /// Track error encountered

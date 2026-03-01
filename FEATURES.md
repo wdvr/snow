@@ -1,7 +1,7 @@
 # Snow Quality Tracker (Powder Chaser) - Feature Roadmap
 
 **Created**: 2026-02-20
-**Last Updated**: 2026-02-25
+**Last Updated**: 2026-03-01
 
 This document outlines the feature roadmap for Powder Chaser, prioritized by user impact, feasibility, and alignment with what makes the best ski apps indispensable. It is informed by competitive analysis of OpenSnow, Slopes, OnTheSnow, Epic Mix, Ikon Pass, Ski Tracks, and others.
 
@@ -28,9 +28,9 @@ The app is live with a strong foundation:
 - Weekly snow digest notifications
 - Styled gradient backgrounds with weather-responsive overlays (snow/sun/wind)
 - Shareable conditions cards, elevation profile visualization
-- Live Activities and Dynamic Island for active storm tracking
+- ~~Live Activities and Dynamic Island~~ (removed — data doesn't change fast enough)
 
-Open issues: Trip Planning (#23), Webcam Integration (#24), Apple Watch (#25).
+Open issues: Trip Planning (#23), Apple Watch (#25). Webcam integration (#24) done via skiresort.info pages.
 
 ---
 
@@ -77,23 +77,13 @@ These features have the highest impact-to-effort ratio and address the most comm
 
 ---
 
-### 1.3 Webcam Integration (Issue #24)
+### 1.3 Webcam Integration (Issue #24) — *Done (v1)*
 
 **Description**: Show live or recent webcam snapshots for resorts that have publicly available feeds. Start with a curated set of major resorts where webcams are freely embeddable, then expand.
 
-**User Value**: "Show me what it looks like right now" is the fastest way to build trust in conditions data. Webcams are one of the top features in both OpenSnow and OnTheSnow. A single webcam image often tells a skier more than any data table. This feature directly increases time-in-app and visit frequency.
+**User Value**: "Show me what it looks like right now" is the fastest way to build trust in conditions data.
 
-**Estimated Complexity**: M
-
-**Dependencies**: Research needed on terms of use for webcam feeds per resort. Some resorts publish embed-friendly feeds, others require licensing. Issue #24 already captures this.
-
-**Implementation Notes**:
-- Backend: Add `webcam_urls` array field to resort schema (curated, not scraped)
-- Backend: Optional image proxy Lambda to handle CORS and caching (CloudFront + S3)
-- iOS: Webcam section in resort detail with horizontal scroll for multiple cameras
-- iOS: Full-screen tap-to-expand with pinch-to-zoom
-- Start with 20-30 major resorts (Whistler, Vail, Chamonix, etc.), expand from there
-- Consider windy.com webcam API as aggregated source
+**Implementation**: All 1,019 resorts have webcam links via auto-generated skiresort.info pages (`/ski-resort/{slug}/webcams/`). Webcam card in map detail sheet and resort detail view opens SFSafariViewController. Future improvement: embed individual webcam images directly instead of linking to external pages.
 
 ---
 
@@ -116,7 +106,7 @@ These features have the highest impact-to-effort ratio and address the most comm
 
 ---
 
-### 1.5 Live Activities & Dynamic Island (iOS) -- *Done*
+### 1.5 Live Activities & Dynamic Island (iOS) -- *Removed*
 
 **Description**: Use iOS Live Activities to show a persistent, glanceable snow update on the Lock Screen and Dynamic Island during active storm events or on planned trip days. Show: resort name, fresh snow accumulating, current quality, temperature.
 
@@ -293,6 +283,45 @@ These features build on the foundation and move the app toward being a daily-use
 - 55 tests passing
 - Pending: Firebase setup, Google Maps API key, Google Play service account for publishing
 - FCM (Firebase Cloud Messaging) integration for push notifications (SNS already supports it)
+
+---
+
+### 2.9 Operational Status (Lifts, Runs, Surface)
+
+**Description**: Surface real-time operational data: number of lifts/runs open, grooming status, and reported surface conditions (groomed/moguls/powder). Source from resort APIs, OnTheSnow scraper data (`open_flag`), and user condition reports.
+
+**User Value**: "Is it actually open?" is a critical question, especially mid-week or early/late season. Showing 12/15 lifts open builds confidence. Surface conditions help skiers choose the right wax and gear.
+
+**Estimated Complexity**: M
+
+**Dependencies**: OnTheSnow scraper already has `open_flag`. Need more granular lift/run data from resort websites or APIs.
+
+**Implementation Notes**:
+- Backend: Extend conditions response with `operational_status` (lifts_open, runs_open, grooming_status)
+- iOS: "Resort Status" card in detail view with live lift/run counts
+- Important: Do NOT fold operational data into ML quality score — keep it separate as informational
+
+---
+
+### 2.10 GDPR Data Deletion
+
+**Description**: Implement user data deletion endpoint (`DELETE /api/v1/user`) that removes all user data: preferences, chat history, condition reports, device tokens, feedback. Required for GDPR compliance and Apple's Account Deletion requirement.
+
+**User Value**: Legal requirement for EU users. Apple requires account deletion capability for apps with sign-in.
+
+**Estimated Complexity**: S
+
+**Dependencies**: User authentication. TODOs already exist in `user_service.py`.
+
+---
+
+### 2.11 Chat Rate Limiting
+
+**Description**: Implement proper rate limiting for the AI chat endpoint to control Bedrock costs. Current implementation has a basic limit but the test for it is flaky (BUG-017). Add per-user daily limits, cooldown periods, and clear error messages.
+
+**User Value**: Prevents abuse and keeps API costs sustainable. Good error messages help users understand when they've hit limits.
+
+**Estimated Complexity**: S
 
 ---
 
@@ -590,9 +619,9 @@ These features need investigation before committing to a development plan.
 |---------|--------|--------|----------|
 | 1.1 Enhanced Powder Alerts | High | S-M | **Done** |
 | 1.2 Snow History & Season Totals | High | M | **Done** |
-| 1.3 Webcam Integration | High | M | **Now** |
+| 1.3 Webcam Integration | High | M | **Done (v1)** — skiresort.info pages |
 | 1.4 Resort Comparison | Medium-High | S-M | **Done** |
-| 1.5 Live Activities | Medium-High | M | **Done** |
+| 1.5 Live Activities | Medium-High | M | **Removed** — data too infrequent |
 | 2.1 Trip Planning | High | L | **Next** |
 | 2.2 Resort Detail Enrichment | Medium | M | **Next** |
 | 2.3 Snow Depth Map Overlay | Medium-High | M-L | **Next** |
@@ -601,6 +630,9 @@ These features need investigation before committing to a development plan.
 | 2.6 Favorite Groups | Medium | S | **Done** |
 | 2.7 Elevation Profile Viz | Medium | S-M | **Done** |
 | 2.8 Android App | High | XL | **In Progress** |
+| 2.9 Operational Status | Medium-High | M | **Next** |
+| 2.10 GDPR Data Deletion | Medium | S | **Next** |
+| 2.11 Chat Rate Limiting | Medium | S | **Next** |
 | 3.1 Apple Watch | Medium | L | **Later** |
 | 3.2 GPS Tracking | Very High | XL | **Later** |
 | 3.3 Community Reports | High | L | **Done** |
@@ -623,12 +655,12 @@ These features need investigation before committing to a development plan.
 **Current strength**: Powder Chaser's ML-powered quality ratings across 3 elevation levels for 1,040+ resorts with multi-source weather data is a unique differentiator. No competitor provides per-elevation quality scoring at this scale with 4-source weather consensus and confidence levels.
 
 **Key gaps vs. competitors**:
-- vs. OpenSnow: Missing storm tracker, webcams
+- vs. OpenSnow: Missing storm tracker (webcams partially done via skiresort.info)
 - vs. Slopes: Missing GPS tracking, social features, Apple Watch
-- vs. OnTheSnow: Missing webcams
-- vs. Epic/Ikon: Missing lift status, trail maps, season pass integration
+- vs. OnTheSnow: Webcams done, missing operational status (lifts/runs open)
+- vs. Epic/Ikon: Missing lift status, season pass integration (trail maps done)
 
-**Recommended positioning**: "The smartest snow conditions app." Focus on data quality, ML predictions, and actionable alerts rather than trying to be everything. Win on accuracy and signal-to-noise ratio. Let others do GPS tracking and trail maps -- own the "should I go skiing tomorrow?" decision.
+**Recommended positioning**: "The smartest snow conditions app." Focus on data quality, ML predictions, and actionable alerts rather than trying to be everything. Win on accuracy and signal-to-noise ratio. Let others do GPS tracking -- own the "should I go skiing tomorrow?" decision.
 
 ---
 
