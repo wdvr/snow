@@ -58,8 +58,60 @@ Tracks validation runs comparing our API scores against external sources and mod
 - Colorado Sun — season analysis articles
 - Buckrail — Jackson Hole local reporting
 
-### Post-Retrain Scores
-*(to be filled after retraining completes)*
+### Post-Retrain Scores (v16)
+
+v16: 10,530 data points, Val MAE=0.241, R²=0.913, 59.5% exact, 93.8% within-1
+
+| Resort | v15 Quality | v15 Score | v16 Quality | v16 Score | External | Change |
+|--------|------------|-----------|-------------|-----------|----------|--------|
+| whistler-blackcomb | good | 65 | good | 66 | good | +1, still aligned |
+| mammoth-mountain | bad | 7 | bad | 9 | decent | +2, still too low |
+| palisades-tahoe | bad | 13 | bad | 13 | decent | =, still too low |
+| big-white | good | 66 | mediocre | 55 | good | -11, WORSE — was aligned, now too low |
+| vail | poor | 27 | poor | 38 | decent | +11, closer but still low |
+| park-city | bad | 10 | bad | 16 | decent | +6, still too low |
+| jackson-hole | great | 75 | good | 74 | decent | -1, still too high |
+| breckenridge | bad | 15 | bad | 19 | decent | +4, still too low |
+| steamboat | poor | 20 | bad | 15 | decent-low | -5, WORSE |
+| aspen-snowmass | poor | 22 | bad | 15 | mediocre | -7, WORSE |
+| telluride | bad | 7 | bad | 8 | mediocre | +1, still too low |
+| lake-louise | great | 77 | powder_day | 92 | excellent | +15, BETTER — now matches external |
+| revelstoke | great | 80 | excellent | 87 | great | +7, slightly high now |
+| chamonix | decent | 59 | decent | 59 | good | =, slightly low |
+| zermatt | mediocre | 50 | mediocre | 41 | decent | -9, WORSE |
+| st-anton | poor | 28 | poor | 28 | good | =, still too low |
+| verbier | poor | 33 | poor | 33 | good | =, still too low |
+| val-disere | mediocre | 55 | mediocre | 55 | good | =, still low |
+| niseko | mediocre | 54 | mediocre | 50 | good | -4, slightly worse |
+| hakuba-valley | bad | 9 | bad | 9 | mediocre | =, still too low |
+
+**v16 distribution**: 1 powder_day, 1 excellent, 2 good, 1 decent, 4 mediocre, 3 poor, 8 bad
 
 ### Comparison & Analysis
-*(to be filled after both validations complete)*
+
+**v16 vs v15 changes:**
+- **Improved (3)**: Lake Louise (+15, now powder_day — matches external "excellent"), Revelstoke (+7), Vail (+11)
+- **Unchanged (9)**: Most stayed the same — the fundamental issues persist
+- **Worse (5)**: Big White (-11, was good→mediocre), Steamboat (-5), Aspen (-7), Zermatt (-9), Niseko (-4)
+- **Slightly better (3)**: Mammoth (+2), Park City (+6), Breckenridge (+4)
+
+**v16 match rate vs external: ~4/20 (20%) — NO IMPROVEMENT**
+
+### Root Cause: The Problem Is NOT Model Weights
+
+The retrain didn't fix the core issues because the problem is **upstream of the model**:
+
+1. **Thaw-freeze detection is too aggressive**: Most "bad" scores come from "Icy: recent thaw-freeze cycle X hours ago" in the explanation. This pre-model penalty dominates the score, overriding what the ML model predicts. Resorts with deep bases and cold upper elevations get hammered because the BASE elevation had a thaw-freeze cycle.
+
+2. **Temperature input uses wrong elevation**: Our API shows 0°C for Aspen and Breckenridge, but external sources show -11 to -21°C at mountain level. The scorer may be using base elevation temperature for the overall score, not mid/top.
+
+3. **Base depth not weighted enough in scorer**: The ML model never sees "operational status" or "% terrain open." A resort with 300cm base and 0cm fresh gets the same treatment as one with 5cm base and 0cm fresh.
+
+4. **Fresh snow dominance**: The quality explanation service and scorer heavily weight recent snowfall. Resorts in dry spells with excellent groomed conditions get scored as if they're nearly unskiable.
+
+### Recommended Next Steps (NOT model retraining)
+
+1. **Fix thaw-freeze to be elevation-aware**: Only apply thaw-freeze penalty if mid or top elevation experienced it, not just base
+2. **Use mid-elevation temperature as representative**: Already documented as a consistency rule in MEMORY.md but may not be applied everywhere
+3. **Add base depth floor**: If snow_depth > 100cm, score should never be "bad" regardless of fresh snow
+4. **Reduce fresh-snow dominance**: A resort with 0cm fresh but 200cm base and -10°C should score "decent" minimum, not "bad"
