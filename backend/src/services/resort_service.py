@@ -84,6 +84,11 @@ class ResortService:
                 if "level" in point and hasattr(point["level"], "value"):
                     point["level"] = point["level"].value
 
+            # Auto-compute geo_hash from coordinates
+            geohash = self._compute_geohash(resort)
+            if geohash:
+                item["geo_hash"] = geohash
+
             # Convert Python types to DynamoDB Decimal types
             item = prepare_for_dynamodb(item)
 
@@ -111,6 +116,11 @@ class ResortService:
             for point in item.get("elevation_points", []):
                 if "level" in point and hasattr(point["level"], "value"):
                     point["level"] = point["level"].value
+
+            # Auto-compute geo_hash from coordinates
+            geohash = self._compute_geohash(resort)
+            if geohash:
+                item["geo_hash"] = geohash
 
             # Convert Python types to DynamoDB Decimal types
             item = prepare_for_dynamodb(item)
@@ -389,6 +399,14 @@ class ResortService:
             if point.latitude is not None and point.longitude is not None:
                 return (point.latitude, point.longitude)
         return None
+
+    def _compute_geohash(self, resort: Resort, precision: int = 4) -> str | None:
+        """Compute geohash for a resort from its coordinates."""
+        coord = self._get_resort_coordinate(resort)
+        if not coord:
+            return None
+        latitude, longitude = coord
+        return encode_geohash(latitude, longitude, precision)
 
     def get_resort_names(self, resort_ids: list[str]) -> dict[str, str]:
         """
