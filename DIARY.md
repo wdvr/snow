@@ -5,6 +5,46 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Mar 1, 2026
+
+### Fix: 500 error on nearby recommendations — null coordinates in resort_service
+22 Nordic resorts in staging DB had null lat/lon in elevation points. `_get_resort_coordinate()` returned `(None, None)` which is truthy, causing `TypeError` on coordinate comparison. Fixed by explicitly checking lat/lon are not None.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Feature: ML validation framework — e2e eval, physics constraints, external comparison
+Created 3-tier validation framework: (1) `ml/eval_physics_checks.py` — 86 physics edge cases, relaxed constraints to be ski-quality oriented rather than meteorological (deep base exemptions for cold/dry, wind threshold 80km/h, stale snow depth-aware). (2) `ml/eval_e2e.py` — 8 skier-oriented rules testing full API output (0-100 scale): icy≤50, week-old≤75, thin base≤30, powder≥70, warm/dry≤60, deep cold base≥40, quality label consistency. 22/22 pass. (3) `ml/validate_api.py` — 20-resort comparison script. Validated against external sources (OnTheSnow, Snow-Forecast, OpenSnow): 4/20 match rate revealing upstream scorer issues (thaw-freeze too aggressive, wrong elevation temps, base depth underweighted). Documented in `ml/VALIDATION.md`.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Feature: ML model retrain v16 — 10,530 data points, 1,019 resorts
+Retrained neural network ensemble with expanded data from OnTheSnow + Snow-Forecast pipeline. Val MAE=0.241, R²=0.913, 59.5% exact, 93.8% within-1. Confirmed root cause of score accuracy issues is upstream of model (thaw-freeze detection, temperature elevation selection, base depth weighting) — not model weights.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Feature: Compact map overlays — merge filter + day selector into single row
+Removed filter chips row from top of map, piste attribution banner, and forecast banner from bottom. Replaced with compact control bar combining a filter dropdown menu (Menu) and day selector pills in a single row. Frees ~70px of vertical map space for more map visibility.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Feature: Weather data pipeline overhaul — OnTheSnow JSON extraction + expanded coverage
+Rewrote OnTheSnow scraper to extract structured JSON from `__NEXT_DATA__` script tags (Next.js pattern) instead of fragile regex parsing. Expanded resort mapping from 16 to 95 active resorts across NA West (25), NA Rockies (33), NA East (12), Alps (20), Scandinavia (5). Fixed 3 broken URL slugs (mammoth, revelstoke, sun-peaks). Added `mid_depth_inches` and `open_flag` fields. 30 new tests (56 total). Simulation showed 14/20 resorts underrated by avg +11.8 points due to Open-Meteo's 9km grid missing terrain-driven snow.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Feature: Enable Snow-Forecast as secondary data source
+Changed ENABLE_SNOWFORECAST from "false" to "true" in infrastructure config for weather processor, weather worker, and snowforecast prefetch Lambda. Prefetch runs every 6 hours, writes cache to S3. Weather processor now reads cache and merges Snow-Forecast data with Open-Meteo + OnTheSnow.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
 ## Feb 28, 2026
 
 ### Feature: Rethink fresh snow metric — settling factor + honest terminology
