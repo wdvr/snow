@@ -7,6 +7,48 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Mar 1, 2026
 
+### Feature: Authenticated chat rate limiting (Feature 2.11)
+Added per-user daily rate limiting for authenticated chat users (100 msgs/day, 24h sliding window). Uses same DynamoDB table as anonymous limits with `user_` prefix. Returns `remaining_messages` in response for both anonymous and authenticated users. Fails open on DynamoDB errors.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Feature: Firebase chat analytics tracking
+Added 7 chat analytics events to AnalyticsService.swift and wired them up in ChatViewModel: trackChatMessageSent, trackChatResponseReceived (REST + SSE), trackChatSessionStarted, trackChatSuggestionClicked, trackChatError, trackChatConversationLoaded, trackChatConversationDeleted. Enables tracking prompts per session, prompts per user, error rates.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Fix: BUG-008 — Timeline phantom champagne powder with zero snowfall
+No-snowfall cap thresholds were too loose (0.5cm/72h), allowing Open-Meteo forecast noise (0.1-0.4cm) to bypass the cap. Tightened: <0.1cm/72h → cap at 3.5 (DECENT), <1.0cm/72h → cap at 4.0 (GREAT), <5.0cm/72h with <0.5cm/24h → cap at 4.5 (EXCELLENT).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: BUG-009 — 22 Nordic resorts with NULL elevation data
+22 Finnish, Norwegian, and Swedish resorts had NULL elevation_top_m, causing Open-Meteo to use 0m elevation and return wrong weather. Fixed all 22 resorts in resorts.json with correct elevations from skiresort.info. Added runtime sanity checks in resort_loader.py: null/zero top falls back to base+100, swapped base/top gets corrected, warns on anomalies.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: BUG-005 — "Not skiable" explanation with None depth
+HORRIBLE quality explanation crashed or showed "insufficient snow cover" when depth was None (no sensor data) even when conditions were icy (below 0). Added explicit None handling: temp<=0 → "icy, degraded surface", temp>0 → "conditions extremely poor".
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: BUG-019 — "Thin cover" explanation despite measurable fresh snow
+POOR quality logic checked freeze-thaw before fresh snow amount, so "Thin cover over refrozen base" appeared even with 8cm of fresh. Reordered to check fresh_cm >= 2.5 first → "Hard packed base with Xcm of fresh snow on top".
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: BUG-017 — Chat test flaky in full suite
+`test_at_limit_rejected` failed intermittently because module-level `_dynamodb` cache persisted between test classes. Added autouse fixture to `TestCheckAnonymousChatLimit` that calls `reset_services()` before/after each test.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ### Fix: snowfall_after_freeze_cm stuck at 0 when Open-Meteo underreports
 Open-Meteo reports 0cm snowfall for Mt. Baker (and other Pacific NW resorts) while resort stations report 10+ cm/24h. Multi-source merger correctly overrides `snowfall_24h_cm` but not `snowfall_after_freeze_cm` (computed from Open-Meteo hourly data only). This cascaded: "Icy" surface, "Snow since then: 0cm", mediocre scores despite heavy snowfall. Fixed weather_worker to reconcile `snowfall_after_freeze_cm` with merged data when Open-Meteo is clearly wrong (diff >= 5cm). Fixed ML scorer to override `snow_since_freeze_cm` feature. Raised ML fresh-snow floors: 8cm+/≤0°C → 3.5 DECENT (was 3.0), 8cm+/≤-3°C → 4.0 GOOD (was 3.5). Fixed explanation text: "Limited fresh snow" → "Fresh snow (Xcm/24h) on a warming base" for MEDIOCRE with 8cm+. Mt. Baker top went from 65/MEDIOCRE to 74/GREAT. Validated across 10 resorts.
 | iOS | Android | Web | API |

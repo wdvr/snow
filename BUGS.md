@@ -7,7 +7,7 @@
 
 ### Backend Tests
 
-**Result: 1693 TESTS PASSING** (1 flaky)
+**Result: 1705 TESTS PASSING** (0 flaky)
 - Platform: Python 3.14.2, pytest 9.0.2
 - Test files: 42 test modules
 - Flaky: `test_at_limit_rejected` in `test_chat_endpoints.py` — passes in isolation, fails in full suite due to `_dynamodb` cache getting stale between tests (test isolation bug)
@@ -262,12 +262,12 @@ Every resort checked (Whistler, Vail, Jackson Hole, Revelstoke, Chamonix, Big Wh
 | Bug ID | Severity | Description | Status |
 |--------|----------|-------------|--------|
 | BUG-003 | HIGH | Scores too low for fresh snow + cold conditions (Lake Louise 21cm at -7.5C = score 26) | **Fixed** (Feb 27) |
-| BUG-004 | MEDIUM | Jackson Hole mid scores "great" with 0.1cm fresh snow | Stale — re-verify |
-| BUG-005 | MEDIUM | Aspen explanation says "not skiable" with 81cm base | Stale — re-verify |
+| BUG-004 | MEDIUM | Jackson Hole mid scores "great" with 0.1cm fresh snow | **Fixed** (Mar 1) — now scores 2.99 mediocre |
+| BUG-005 | MEDIUM | Aspen explanation says "not skiable" with 81cm base | **Fixed** (Mar 1) — None depth handling |
 | BUG-006 | HIGH | Breckenridge depth: 9cm in static JSON vs 64cm in live conditions | Self-resolves on Lambda run |
 | BUG-007 | HIGH | Sun Peaks shows 0cm depth (should be 200+ cm) | Fixed (ERA5 re-enable) |
-| BUG-008 | CRITICAL | Timeline forecasts "champagne powder" with zero snowfall (Whistler, Niseko) | **Backlog** — rare with overlay fix |
-| BUG-009 | CRITICAL | Best recommendations dominated by resorts with impossible elevation data | **Backlog** — needs elevation sanity check |
+| BUG-008 | CRITICAL | Timeline forecasts "champagne powder" with zero snowfall (Whistler, Niseko) | **Fixed** (Mar 1) — tightened cap thresholds |
+| BUG-009 | CRITICAL | Best recommendations dominated by resorts with impossible elevation data | **Fixed** (Mar 1) — 22 Nordic elevations + sanity checks |
 | BUG-010 | LOW | Recommendations response missing nested conditions data | Won't fix |
 | BUG-011 | MEDIUM | 97%+ source disagreement not triggering outlier detection | **Fixed** (Feb 27) |
 | BUG-012 | LOW | hours_since_last_snowfall is None for Lake Louise | Fixed (multi-source merger clamp) |
@@ -275,13 +275,13 @@ Every resort checked (Whistler, Vail, Jackson Hole, Revelstoke, Chamonix, Big Wh
 | BUG-014 | HIGH | `snowfall_after_freeze_cm` stuck at 0 when Open-Meteo underreports | **Fixed** (Mar 1) |
 | BUG-015 | HIGH | Cross-view elevation inconsistency (map/popup/list show different scores) | **Fixed** (Mar 1) |
 | BUG-016 | MEDIUM | ML fresh-snow floors too low (8cm+ at ≤0°C scored MEDIOCRE) | **Fixed** (Mar 1) |
-| BUG-017 | LOW | Chat `test_at_limit_rejected` flaky in full test suite | **Backlog** — test isolation |
+| BUG-017 | LOW | Chat `test_at_limit_rejected` flaky in full test suite | **Fixed** (Mar 1) — autouse fixture |
 | BUG-018 | LOW | Label-score boundary mismatch at ~2.3 threshold (3 resorts) | **Backlog** — cosmetic |
-| BUG-019 | LOW | "Thin cover over refrozen base" explanation despite measurable fresh snow | **Backlog** — edge case |
+| BUG-019 | LOW | "Thin cover over refrozen base" explanation despite measurable fresh snow | **Fixed** (Mar 1) — reordered logic |
 
-**Fixed (8):** BUG-003, 007, 011, 012, 013, 014, 015, 016
-**Backlog (5):** BUG-008, 009, 017, 018, 019
-**Stale (2):** BUG-004, 005 — need re-verification after recent fixes
+**Fixed (14):** BUG-003, 004, 005, 007, 008, 009, 011, 012, 013, 014, 015, 016, 017, 019
+**Backlog (1):** BUG-018
+**Won't fix (1):** BUG-010
 
 ---
 
