@@ -7,6 +7,12 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Mar 1, 2026
 
+### Fix: Best conditions endpoint 504 timeouts — S3 static JSON fast path
+`GET /api/v1/recommendations/best` was timing out (504) because `get_best_conditions_globally()` queried all resorts + all latest conditions from DynamoDB, taking 19+ seconds (exceeding API Gateway's 29s hard limit on cold starts). iOS showed "Server error: 504". Fix: Added `_build_best_conditions_from_static()` that reads pre-computed S3 static JSON files (snow-quality.json + resorts.json) instead of DynamoDB. Response time dropped from 19s to 0.15s. Falls back to DynamoDB if S3 data unavailable. The API integration test was already coded to skip 5xx responses, masking the problem.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ### Fix: 500 error on nearby recommendations — null coordinates in resort_service
 22 Nordic resorts in staging DB had null lat/lon in elevation points. `_get_resort_coordinate()` returned `(None, None)` which is truthy, causing `TypeError` on coordinate comparison. Fixed by explicitly checking lat/lon are not None.
 | iOS | Android | Web | API |
