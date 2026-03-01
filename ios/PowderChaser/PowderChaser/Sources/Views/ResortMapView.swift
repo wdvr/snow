@@ -113,9 +113,6 @@ struct ResortMapView: View {
     @ViewBuilder
     private var mapOverlays: some View {
         VStack {
-            filterBar
-                .padding(.horizontal)
-                .padding(.top, 8)
             Spacer()
             bottomOverlays
         }
@@ -129,21 +126,7 @@ struct ResortMapView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
-            // Piste overlay attribution
-            if showPisteOverlay {
-                pisteAttribution
-                    .transition(.opacity)
-            }
-
-            // Forecast indicator when showing predicted quality
-            if let forecastDate = mapViewModel.selectedForecastDate {
-                forecastBanner(for: forecastDate)
-            }
-
-            // Date selector — always visible (controls all map pins)
-            dateSelector
-                .padding(8)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            compactControlBar
 
             nearbyAndSearchBar
         }
@@ -427,6 +410,55 @@ struct ResortMapView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
+    // MARK: - Compact Control Bar
+
+    private var compactControlBar: some View {
+        HStack(spacing: 6) {
+            filterMenu
+
+            Rectangle()
+                .fill(Color.secondary.opacity(0.3))
+                .frame(width: 1, height: 20)
+
+            dateSelector
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var filterMenu: some View {
+        Menu {
+            ForEach(MapFilterOption.allCases) { filter in
+                Button {
+                    withAnimation { mapViewModel.selectedFilter = filter }
+                } label: {
+                    Label {
+                        Text("\(filter.rawValue) (\(countForFilter(filter)))")
+                    } icon: {
+                        Image(systemName: mapViewModel.selectedFilter == filter ? "checkmark.circle.fill" : "circle")
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(mapViewModel.selectedFilter.color)
+                    .frame(width: 8, height: 8)
+                Text(mapViewModel.selectedFilter.rawValue)
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                Text("\(countForFilter(mapViewModel.selectedFilter))")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: - Quality Legend
 
     private var qualityLegend: some View {
@@ -626,8 +658,8 @@ struct ResortMapView: View {
                         Text(isToday ? "Today" : dayAbbreviation(date))
                             .font(.caption)
                             .fontWeight(isSelected ? .semibold : .regular)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
                             .background(isSelected ? Color.blue : Color.clear)
                             .foregroundStyle(isSelected ? .white : .primary)
                             .clipShape(Capsule())
