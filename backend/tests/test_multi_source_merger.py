@@ -777,3 +777,51 @@ class TestResortPrioritySnowfall:
         # SF=15 is outlier (>50% from median 5)
         assert result["snowfall_24h_cm"] == 5.0
         assert result["source_details"]["merge_method"] == "outlier_detection"
+
+
+class TestHoursSinceLastSnowfallEstimation:
+    """Tests for hours_since_last_snowfall estimation when resort data shows snow
+    but Open-Meteo's hourly data missed the event."""
+
+    def test_estimate_when_resort_shows_snow_but_model_missed(self):
+        """When merged snowfall ≥5cm but hours_since_last_snowfall is null, estimate 12h."""
+        base = {
+            "snowfall_24h_cm": 0.0,
+            "hours_since_last_snowfall": None,
+        }
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=14.0),
+            SourceData(source_name="weatherkit", snowfall_24h_cm=0.6),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        assert result["snowfall_24h_cm"] == 14.0
+        assert result["hours_since_last_snowfall"] == 12.0
+
+    def test_no_estimate_when_model_already_has_value(self):
+        """When hours_since_last_snowfall already has a value, don't override."""
+        base = {
+            "snowfall_24h_cm": 3.0,
+            "hours_since_last_snowfall": 6.0,
+        }
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=10.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        # Model already computed hours_since → keep it
+        assert result["hours_since_last_snowfall"] == 6.0
+
+    def test_no_estimate_for_small_snowfall(self):
+        """When merged snowfall < 5cm, don't estimate hours_since_last_snowfall."""
+        base = {
+            "snowfall_24h_cm": 0.0,
+            "hours_since_last_snowfall": None,
+        }
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=3.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        # 3cm < 5cm threshold → no estimation
+        assert result["hours_since_last_snowfall"] is None
