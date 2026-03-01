@@ -2684,6 +2684,158 @@ async def get_recommendations(
         )
 
 
+def _build_best_conditions_from_static(
+    limit: int, quality_filter: SnowQuality | None
+) -> dict | None:
+    """Build best conditions response from S3 static JSON files.
+
+    Uses pre-computed snow-quality.json and resorts.json from S3 to avoid
+    slow DynamoDB queries that can exceed API Gateway's 29s timeout.
+
+    Returns None if static data is unavailable (caller should fall back).
+    """
+    static_quality = _get_static_snow_quality_from_s3()
+    if static_quality is None:
+        return None
+
+    static_resorts = _get_static_resorts_from_s3()
+    if static_resorts is None:
+        return None
+
+    # Build resort lookup by ID
+    resort_by_id = {r["resort_id"]: r for r in static_resorts}
+
+    # Quality rank for filtering
+    quality_ranks = {
+        "champagne_powder": 10,
+        "powder_day": 9,
+        "excellent": 8,
+        "great": 7,
+        "good": 6,
+        "decent": 5,
+        "mediocre": 4,
+        "poor": 3,
+        "bad": 2,
+        "horrible": 1,
+        "unknown": 0,
+    }
+    min_rank = quality_ranks.get(quality_filter.value, 0) if quality_filter else 0
+
+    # Quality score mapping (same as RecommendationService.QUALITY_SCORES)
+    quality_score_map = {
+        "champagne_powder": 1.0,
+        "powder_day": 0.95,
+        "excellent": 0.9,
+        "great": 0.8,
+        "good": 0.7,
+        "decent": 0.6,
+        "mediocre": 0.5,
+        "poor": 0.4,
+        "bad": 0.2,
+        "horrible": 0.0,
+        "unknown": 0.3,
+    }
+
+    # Sort by snow_score descending, then fresh snow
+    scored_items = []
+    for resort_id, quality_data in static_quality.items():
+        overall_quality = quality_data.get("overall_quality", "unknown")
+        snow_score = quality_data.get("snow_score")
+
+        # Apply quality filter
+        rank = quality_ranks.get(overall_quality, 0)
+        if rank < min_rank:
+            continue
+
+        resort = resort_by_id.get(resort_id)
+        if not resort:
+            continue
+
+        fresh_snow = quality_data.get("snowfall_fresh_cm", 0) or 0
+        scored_items.append(
+            (snow_score or 0, fresh_snow, resort_id, quality_data, resort)
+        )
+
+    # Sort by snow_score desc, then fresh snow desc
+    scored_items.sort(key=lambda x: (x[0], x[1]), reverse=True)
+
+    # Build recommendation objects
+    import math
+
+    recommendations = []
+    for _, _, _resort_id, quality_data, resort in scored_items[:limit]:
+        overall_quality = quality_data.get("overall_quality", "unknown")
+        snow_score = quality_data.get("snow_score")
+        fresh_snow_cm = quality_data.get("snowfall_fresh_cm", 0) or 0
+        temp_c = quality_data.get("temperature_c", 0) or 0
+        predicted_48h = quality_data.get("predicted_snow_48h_cm", 0) or 0
+        explanation = quality_data.get("explanation", "")
+
+        q_score = quality_score_map.get(overall_quality, 0.3)
+
+        # Fresh snow score (log scale, same as RecommendationService)
+        combined_cm = fresh_snow_cm + (predicted_48h * 0.5)
+        if combined_cm <= 0:
+            fresh_snow_score = 0.0
+        else:
+            max_reference = 150.0
+            fresh_snow_score = min(
+                1.0,
+                math.log(1 + combined_cm / 5) / math.log(1 + max_reference / 5),
+            )
+
+        combined_score = round(0.7 * q_score + 0.3 * fresh_snow_score, 3)
+
+        # Build reason text
+        if overall_quality in ("champagne_powder", "powder_day"):
+            reason_parts = ["Epic powder conditions"]
+        elif overall_quality == "excellent":
+            reason_parts = ["Top-rated powder conditions"]
+        elif overall_quality in ("great", "good"):
+            reason_parts = ["Good snow conditions"]
+        elif overall_quality == "decent":
+            reason_parts = ["Decent conditions"]
+        else:
+            reason_parts = [f"{overall_quality.replace('_', ' ').title()} conditions"]
+
+        if fresh_snow_cm >= 15:
+            reason_parts.append(f"{fresh_snow_cm:.0f}cm of fresh snow")
+        elif fresh_snow_cm >= 5:
+            reason_parts.append(f"{fresh_snow_cm:.0f}cm fresh snow")
+
+        if predicted_48h >= 15:
+            reason_parts.append(f"More snow expected ({predicted_48h:.0f}cm)")
+
+        country = resort.get("country", "")
+        name = resort.get("name", "")
+        location = f"at {name}, {country}"
+        reason = ". ".join(reason_parts) + f" {location}."
+
+        rec = {
+            "resort": resort,
+            "distance_km": 0,
+            "distance_miles": 0,
+            "snow_quality": overall_quality,
+            "snow_score": snow_score,
+            "quality_score": round(q_score, 3),
+            "distance_score": 1.0,
+            "combined_score": combined_score,
+            "fresh_snow_cm": round(fresh_snow_cm, 1),
+            "predicted_snow_72h_cm": round(predicted_48h, 1),
+            "current_temp_celsius": round(temp_c, 1),
+            "confidence_level": "medium",
+            "reason": reason,
+            "elevation_conditions": {},
+        }
+        recommendations.append(rec)
+
+    return {
+        "recommendations": recommendations,
+        "count": len(recommendations),
+        "generated_at": datetime.now(UTC).isoformat(),
+    }
+
+
 @app.get("/api/v1/recommendations/best")
 async def get_best_conditions(
     response: Response,
@@ -2696,7 +2848,11 @@ async def get_best_conditions(
     regardless of user location. Useful for planning trips
     to wherever the snow is best.
 
-    Results are cached for 1 hour since snow quality doesn't change frequently.
+    Uses pre-computed static JSON from S3 for fast response (avoids
+    DynamoDB cold-start timeouts that caused 504 errors via API Gateway).
+    Falls back to live DynamoDB queries if static data is unavailable.
+
+    Results are cached in-memory for 1 hour.
     """
     try:
         quality_filter = None
@@ -2718,17 +2874,25 @@ async def get_best_conditions(
             response.headers["X-Cache"] = "HIT"
             return cached_result
 
-        # Cache miss - compute recommendations
-        recommendations = get_recommendation_service().get_best_conditions_globally(
-            limit=limit,
-            min_quality=quality_filter,
+        # Try fast path: build from S3 static JSON (< 1s vs 20s+ for DynamoDB)
+        result = _build_best_conditions_from_static(
+            limit=limit, quality_filter=quality_filter
         )
 
-        result = {
-            "recommendations": [r.to_dict() for r in recommendations],
-            "count": len(recommendations),
-            "generated_at": datetime.now(UTC).isoformat(),
-        }
+        if result is None:
+            # Fall back to live DynamoDB queries (slow, may timeout on cold start)
+            logger.info(
+                "Static JSON unavailable for best conditions, falling back to DynamoDB"
+            )
+            recommendations = get_recommendation_service().get_best_conditions_globally(
+                limit=limit,
+                min_quality=quality_filter,
+            )
+            result = {
+                "recommendations": [r.to_dict() for r in recommendations],
+                "count": len(recommendations),
+                "generated_at": datetime.now(UTC).isoformat(),
+            }
 
         # Cache the result
         cache[cache_key] = result
