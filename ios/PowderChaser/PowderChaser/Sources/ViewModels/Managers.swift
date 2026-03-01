@@ -453,22 +453,11 @@ class SnowConditionsManager: ObservableObject {
 
         guard let cond = representative else { return nil }
 
-        // Compute overall quality as weighted average (matches backend logic)
-        let top = conditions.first { $0.elevationLevel == "top" }
-        let mid = conditions.first { $0.elevationLevel == "mid" }
-        let base = conditions.first { $0.elevationLevel == "base" }
-
-        let overallQuality: String
-        let overallScore: Int?
-
-        if let topScore = top?.snowScore, let midScore = mid?.snowScore, let baseScore = base?.snowScore {
-            let weighted = Double(topScore) * 0.50 + Double(midScore) * 0.35 + Double(baseScore) * 0.15
-            overallScore = Int(weighted.rounded())
-            overallQuality = qualityFromScore(overallScore!)
-        } else {
-            overallScore = cond.snowScore
-            overallQuality = cond.snowQuality.rawValue
-        }
+        // Use representative elevation's score directly (matches backend snow-quality endpoint).
+        // The backend picks representative (mid > top > base) and uses its raw score,
+        // NOT a weighted average, so we do the same for consistency.
+        let overallScore = cond.snowScore
+        let overallQuality = cond.snowQuality.rawValue
 
         // Preserve existing explanation if available (conditions don't carry explanation text)
         let existingExplanation = snowQualitySummaries[resortId]?.explanation

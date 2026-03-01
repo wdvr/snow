@@ -243,16 +243,17 @@ class MultiSourceMerger:
 
         # Fix hours_since_last_snowfall when resort data shows recent snow
         # but Open-Meteo's hourly data missed the snowfall event entirely.
-        # Without this, the ML model penalizes resorts where models underreport.
+        # Without this, the ML model penalizes resorts where models underreport,
+        # and the iOS app shows "Old Powder" instead of "Fresh Powder".
         merged_24h = merged.get("snowfall_24h_cm", 0)
         hours_since = merged.get("hours_since_last_snowfall")
-        if merged_24h >= 5.0 and hours_since is None:
+        if merged_24h >= 5.0 and (hours_since is None or hours_since > 24):
             # Resort reports significant snow in last 24h but Open-Meteo
-            # saw nothing → estimate 12h (middle of 24h window)
+            # saw nothing or disagrees → estimate 12h (middle of 24h window)
             merged["hours_since_last_snowfall"] = 12.0
             logger.info(
                 f"Estimated hours_since_last_snowfall=12.0 "
-                f"(resort reports {merged_24h}cm/24h but model saw none)"
+                f"(resort reports {merged_24h}cm/24h but model had {hours_since}h)"
             )
 
         # Store raw data from all supplementary sources for debugging

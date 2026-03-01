@@ -421,10 +421,29 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
         ElevationLevel(rawValue: elevationLevel)
     }
 
-    /// Snow score on 0-100 scale (derived from ML model's 1.0-6.0 raw score)
+    /// Snow score on 0-100 scale (derived from ML model's 1.0-6.0 raw score).
+    /// Uses piecewise-linear calibration matching backend score_to_100().
     var snowScore: Int? {
         guard let score = qualityScore else { return nil }
-        return max(0, min(100, Int(((score - 1.0) / 5.0 * 100).rounded())))
+        return Self.scoreToHundred(score)
+    }
+
+    /// Piecewise-linear calibration from raw ML score (1.0-6.0) to 0-100.
+    /// Must match backend quality_explanation_service.score_to_100().
+    static func scoreToHundred(_ rawScore: Double) -> Int {
+        let breakpoints: [(Double, Double)] = [
+            (1.0, 0), (2.5, 22), (3.5, 65), (4.5, 83), (5.5, 95), (6.0, 100),
+        ]
+        let clamped = max(1.0, min(6.0, rawScore))
+        for i in 0..<(breakpoints.count - 1) {
+            let (r1, t1) = breakpoints[i]
+            let (r2, t2) = breakpoints[i + 1]
+            if clamped <= r2 {
+                let frac = (clamped - r1) / (r2 - r1)
+                return max(0, min(100, Int((t1 + frac * (t2 - t1)).rounded())))
+            }
+        }
+        return 100
     }
 
     private static let relativeFormatter: RelativeDateTimeFormatter = {
@@ -536,8 +555,12 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
 
         // If no thaw-freeze event in 72h and has snow, it's fresh or old powder
         if hoursSinceFreeze >= 72 || snowCm >= 2.54 {  // 1 inch = 2.54cm
-            // Fresh powder: snow in last 24-48h
-            if let hoursSinceSnow = hoursSinceLastSnowfall, hoursSinceSnow < 48 {
+            // Fresh powder: significant snowfall in last 24h (from merged multi-source data)
+            // OR hours_since_last_snowfall < 48h. The snowfall_24h check handles cases where
+            // Open-Meteo misses snowfall events that other sources (OnTheSnow) report.
+            if snowfall24hCm >= 5 {
+                return .freshPowder
+            } else if let hoursSinceSnow = hoursSinceLastSnowfall, hoursSinceSnow < 48 {
                 return .freshPowder
             } else if snowCm >= 2.54 {
                 return .oldPowder  // Has coverage but not recent
