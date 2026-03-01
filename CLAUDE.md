@@ -1,5 +1,27 @@
 # Claude Working Instructions - Snow Quality Tracker
 
+## Documentation Files
+
+| File | Purpose |
+|------|---------|
+| `CLAUDE.md` | Agent working instructions, project setup, API reference, coding guidelines |
+| `DIARY.md` | Dev diary — bugs/fixes/features with cross-platform status table (iOS/Android/Web/API) |
+| `PROGRESS.md` | Active task tracking for multi-step efforts |
+| `BUGS.md` | Known bugs and issues tracker |
+| `FEATURES.md` | Feature ideas and roadmap |
+| `README.md` | Project overview for humans |
+| `LOGO_RESEARCH.md` | Resort logo enrichment tracking |
+| `review.md` | App Store review notes |
+| `ml/ALGORITHM.md` | ML scoring algorithm documentation — features, training, physics constraints |
+| `ml/VALIDATION.md` | ML score validation log — comparison against external sources + retrain results |
+| `ios/RELEASE.md` | iOS release process and App Store submission notes |
+| `app_store_assets/app_store_metadata.md` | App Store listing text, keywords, screenshots |
+| `app_store_assets/privacy_policy.md` | Privacy policy (hosted version) |
+| `app_store_assets/terms_of_service.md` | Terms of service |
+| `docs/github-actions-setup.md` | CI/CD setup guide |
+| `docs/testing-workflow.md` | Testing workflow documentation |
+| `.claude/commands/*.md` | Slash command skills (build-test, deploy-testflight, deploy-backend, test-ui) |
+
 ## Quick Start for Agents
 
 ### Environment Setup Check
