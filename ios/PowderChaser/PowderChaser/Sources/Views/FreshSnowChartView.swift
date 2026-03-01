@@ -41,7 +41,12 @@ struct FreshSnowChartView: View {
     }
 
     private var freshSnowTotal: Double {
-        condition.snowfallAfterFreezeCm ?? condition.freshSnowCm
+        let freezeAdjusted = condition.snowfallAfterFreezeCm ?? 0
+        if freezeAdjusted >= 0.1 {
+            return freezeAdjusted
+        }
+        // Fall back to 24h snowfall when freeze-adjusted is 0 but there IS recent snow
+        return condition.displayFreshSnowCm
     }
 
     private var prefs: UnitPreferences { userPreferencesManager.preferredUnits }
@@ -97,7 +102,7 @@ struct FreshSnowChartView: View {
                         RuleMark(x: .value("Today", todayDateVal, unit: .day))
                             .foregroundStyle(.white.opacity(0.5))
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                            .annotation(position: .top, alignment: .trailing) {
+                            .annotation(position: .top, alignment: .leading) {
                                 Text("Forecast →")
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)

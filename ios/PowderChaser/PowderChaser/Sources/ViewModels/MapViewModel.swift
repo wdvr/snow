@@ -280,8 +280,8 @@ class MapViewModel: ObservableObject {
             guard !hiddenRegions.contains(resort.inferredRegion.rawValue) else { continue }
 
             let resortConditions = conditions[resort.id] ?? []
-            let condition = resortConditions.first { $0.elevationLevel == "top" }
-                ?? resortConditions.first { $0.elevationLevel == "mid" }
+            let condition = resortConditions.first { $0.elevationLevel == "mid" }
+                ?? resortConditions.first { $0.elevationLevel == "top" }
                 ?? resortConditions.first
             let fallbackQuality = snowQualitySummaries[resort.id]?.overallSnowQuality
             var annotation = ResortAnnotation(resort: resort, condition: condition, fallbackQuality: fallbackQuality)

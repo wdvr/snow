@@ -228,8 +228,8 @@ class SnowConditionsManager: ObservableObject {
             return summary.snowScore
         }
         if let resortConditions = conditions[resortId], !resortConditions.isEmpty {
-            // Prefer top elevation
-            for level in ["top", "mid", "base"] {
+            // Prefer mid elevation (matches backend)
+            for level in ["mid", "top", "base"] {
                 if let cond = resortConditions.first(where: { $0.elevationLevel == level }),
                    let score = cond.snowScore {
                     return score
@@ -604,7 +604,10 @@ class SnowConditionsManager: ObservableObject {
     }
 
     func getLatestCondition(for resortId: String) -> WeatherCondition? {
-        conditions[resortId]?.first
+        guard let resortConditions = conditions[resortId] else { return nil }
+        return resortConditions.first { $0.elevationLevel == "mid" }
+            ?? resortConditions.first { $0.elevationLevel == "top" }
+            ?? resortConditions.first
     }
 
     func getConditions(for resortId: String, at elevation: ElevationLevel) -> WeatherCondition? {

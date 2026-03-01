@@ -1173,7 +1173,7 @@ struct ResortMapDetailSheet: View {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 ConditionCard(
                     title: "New Snow",
-                    value: condition.formattedSnowSinceFreezeWithPrefs(userPreferencesManager.preferredUnits),
+                    value: condition.formattedFreshSnowWithPrefs(userPreferencesManager.preferredUnits),
                     icon: "snowflake",
                     color: .cyan
                 )
