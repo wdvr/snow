@@ -14,13 +14,20 @@
 ## Active Work (Week of Mar 1) — Data Quality & Cross-Platform Consistency
 
 ### In Progress
-- [ ] Fix BUG-009: Finnish resorts with bogus elevation dominating "Best Conditions" — needs elevation sanity check
-- [ ] Fix BUG-008: Timeline phantom champagne powder — rare after overlay fix, investigate remaining cases
 - [ ] Fix review.md HIGH items: `MKLocalSearch` not on main thread, `isFetchingTimelines` race condition
 - [ ] Fix review.md Web items: scrollbar CSS, UTC date parsing, stale selectedDayIndex, empty array Math
 - [ ] Operational status proposal: how to surface lifts/runs/surface data without polluting ML score
 
 ### Completed (Mar 1)
+- [x] Fix BUG-004: Jackson Hole mid scores "great" with 0.1cm fresh — now scores 2.99 mediocre
+- [x] Fix BUG-005: "Not skiable" explanation with None depth — added icy/degraded handling
+- [x] Fix BUG-008: Timeline phantom champagne powder — tightened cap thresholds (<0.1/72h→3.5, <1.0/72h→4.0)
+- [x] Fix BUG-009: 22 Nordic resorts with NULL elevation — fixed resorts.json + runtime sanity checks
+- [x] Fix BUG-017: Chat test flaky in full suite — autouse fixture resets DynamoDB cache
+- [x] Fix BUG-019: "Thin cover" explanation despite measurable fresh snow — reordered POOR logic
+- [x] Feature 2.11: Authenticated chat rate limiting (100 msgs/day per user)
+- [x] Firebase chat analytics: 7 events in AnalyticsService + wired in ChatViewModel
+- [x] Code cleanup: duplicate haversine → geo_utils import, unused type imports removed
 - [x] Fix `snowfall_after_freeze_cm` stuck at 0 when Open-Meteo underreports (BUG-014)
 - [x] Fix cross-view elevation inconsistency — standardize mid > top > base (BUG-015)
 - [x] Raise ML fresh-snow floors: 8cm+/≤0°C → 3.5, 8cm+/≤-3°C → 4.0 (BUG-016)
@@ -37,7 +44,7 @@
 - [x] OnTheSnow scraper rewrite — JSON extraction from `__NEXT_DATA__` (16 → 95 resorts)
 - [x] Enable Snow-Forecast as secondary data source
 - [x] 10-resort validation: Whistler, Jackson Hole, Mammoth, Revelstoke, Mt. Baker, Chamonix, St. Anton, Niseko, Vail, Kicking Horse — all PASS
-- [x] Backend tests: 1693 passing, iOS tests: 119 passing
+- [x] Backend tests: 1705 passing (0 flaky), iOS tests: 119 passing
 
 ### Completed (Feb 28)
 - [x] Remove Live Activity / Dynamic Island feature (doesn't change fast enough)
