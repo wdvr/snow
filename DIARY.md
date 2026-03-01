@@ -7,6 +7,30 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 28, 2026
 
+### Feature: Rethink fresh snow metric — settling factor + honest terminology
+Backend: Added time-based settling/compaction factor to `fresh_snow_cm` (0.85 at 12-48h, 0.70 at 48-96h, 0.55 at 96h+). Raw `snowfall_after_freeze_cm` unchanged. Explanation text updated to use "settled snow" for older accumulations. iOS: Renamed "Fresh Snow" to "New Snow" across all views (22 files). Marketing description updated. Added 4 Breckenridge/Tahoe physics eval test cases (126/126 pass).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
+
+### Fix: Remove Live Activity / Dynamic Island
+Removed LiveActivityService, SnowActivityAttributes, SnowLiveActivityView, and the "Live" toolbar button. Data doesn't change frequently enough for persistent Lock Screen/Dynamic Island presence. Home screen widgets (Favorites, Best) unaffected.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Fix: Run difficulty + ticket price moved to header card
+Run difficulty bar and day ticket price now appear in the top card of resort detail view, before the links row, for immediate visibility.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | n/a |
+
+### Fix: List view → map zoom timing
+NavigationCoordinator.showOnMap() now delays setting mapTargetResort by 100ms after tab switch to ensure the map view is rendered before receiving the zoom target.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
 ### Fix: Global AuthInterceptor — auto token refresh on ALL API calls
 Replaced per-ViewModel `ensureAuthenticated()` / `withAutoRefresh()` with a global Alamofire `RequestInterceptor` on APIClient. The interceptor: (1) `adapt()` injects the current auth token from keychain on every request including retries (fixes critical bug where retried requests sent stale tokens), (2) `retry()` handles 401 by refreshing the token or lazily authenticating guests, queuing concurrent 401s with NSLock so only one refresh happens at a time, (3) uses URLSession.shared directly for refresh calls to avoid circular interceptor loops. Removed all manual auth handling from ChatViewModel and NotificationSettingsViewModel. Also fixed guest device ID persistence (generated UUIDs are now saved to keychain).
 | iOS | Android | Web | API |
