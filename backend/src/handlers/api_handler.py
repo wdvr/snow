@@ -44,6 +44,8 @@ from services.openmeteo_service import OpenMeteoService
 from services.quality_explanation_service import (
     generate_overall_explanation,
     generate_quality_explanation,
+    generate_score_change_reason,
+    generate_timeline_explanation,
     score_to_100,
 )
 from services.recommendation_service import RecommendationService
@@ -1468,6 +1470,110 @@ async def get_resort_history(
         )
 
 
+def _overlay_conditions_on_timeline(
+    timeline_data: dict,
+    resort_id: str,
+    elevation: str,
+) -> None:
+    """Overlay actual conditions/history data onto the Open-Meteo timeline.
+
+    The timeline fetches from Open-Meteo directly, which can disagree with
+    the multi-source merged conditions stored in DynamoDB (e.g., Open-Meteo
+    says 0cm snowfall while OnTheSnow reports 20cm). This creates wildly
+    inconsistent data across the app.
+
+    This function overlays the actual merged data onto today's timeline
+    entries and daily history onto past entries, so the timeline is
+    consistent with the snow-quality and conditions endpoints.
+    """
+    try:
+        # Get current conditions from DynamoDB (merged multi-source data)
+        conditions = get_weather_service().get_latest_conditions_all_elevations(
+            resort_id
+        )
+        condition = next(
+            (c for c in conditions if c.elevation_level == elevation), None
+        )
+
+        # Get daily history for past days
+        history = get_daily_history_service().get_history(resort_id)
+        history_by_date = {h["date"]: h for h in history}
+
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        timeline = timeline_data.get("timeline", [])
+
+        for point in timeline:
+            date = point["date"]
+
+            if date == today and condition:
+                # Overlay current conditions for today
+                if condition.snow_depth_cm is not None:
+                    point["snow_depth_cm"] = round(condition.snow_depth_cm, 1)
+
+                # Distribute daily snowfall evenly across 3 time slots
+                daily_snow = condition.snowfall_24h_cm or 0
+                point["snowfall_cm"] = round(daily_snow / 3, 1)
+
+                # Overlay quality/score from merged conditions
+                if condition.quality_score is not None:
+                    raw_score = condition.quality_score
+                    quality = raw_score_to_quality(raw_score)
+                    quality_val = (
+                        quality.value if hasattr(quality, "value") else str(quality)
+                    )
+                    point["quality_score"] = round(raw_score, 2)
+                    point["snow_score"] = score_to_100(raw_score)
+                    point["snow_quality"] = quality_val
+                    point["explanation"] = generate_timeline_explanation(
+                        quality=quality_val,
+                        temperature_c=point["temperature_c"],
+                        snowfall_cm=point["snowfall_cm"],
+                        snow_depth_cm=point["snow_depth_cm"],
+                        wind_speed_kmh=point.get("wind_speed_kmh"),
+                        is_forecast=point.get("is_forecast", False),
+                        wind_gust_kmh=point.get("wind_gust_kmh"),
+                        visibility_m=point.get("visibility_m"),
+                    )
+
+            elif date < today and date in history_by_date:
+                # Overlay history data for past days
+                h = history_by_date[date]
+
+                if h.get("snow_depth_cm") is not None:
+                    point["snow_depth_cm"] = round(h["snow_depth_cm"], 1)
+
+                daily_snow = h.get("snowfall_24h_cm", 0)
+                point["snowfall_cm"] = round(daily_snow / 3, 1)
+
+                if h.get("quality_score") is not None:
+                    raw_score = h["quality_score"]
+                    quality_str = h.get("snow_quality", point["snow_quality"])
+                    point["quality_score"] = round(raw_score, 2)
+                    point["snow_score"] = score_to_100(raw_score)
+                    point["snow_quality"] = quality_str
+                    point["explanation"] = generate_timeline_explanation(
+                        quality=quality_str,
+                        temperature_c=point["temperature_c"],
+                        snowfall_cm=point["snowfall_cm"],
+                        snow_depth_cm=point["snow_depth_cm"],
+                        wind_speed_kmh=point.get("wind_speed_kmh"),
+                        is_forecast=False,
+                        wind_gust_kmh=point.get("wind_gust_kmh"),
+                        visibility_m=point.get("visibility_m"),
+                    )
+
+        # Re-run score change reasons after overlay
+        for i, point in enumerate(timeline):
+            prev = timeline[i - 1] if i > 0 else None
+            point["score_change_reason"] = generate_score_change_reason(point, prev)
+
+    except Exception as e:
+        # Best-effort overlay — if it fails, return original Open-Meteo data
+        logger.warning(
+            "Failed to overlay conditions on timeline for %s: %s", resort_id, e
+        )
+
+
 @app.get("/api/v1/resorts/{resort_id}/timeline")
 async def get_resort_timeline(
     resort_id: str,
@@ -1527,6 +1633,12 @@ async def get_resort_timeline(
             elevation_meters=elevation_point.elevation_meters,
             elevation_level=elevation,
         )
+
+        # Overlay actual conditions/history data from DynamoDB onto the
+        # Open-Meteo timeline. Without this, the timeline uses raw Open-Meteo
+        # data which can wildly disagree with the multi-source merged
+        # conditions (e.g., showing score 22 when snow-quality shows 94).
+        _overlay_conditions_on_timeline(timeline_data, resort_id, elevation)
 
         # Add resort_id to the response
         timeline_data["resort_id"] = resort_id
