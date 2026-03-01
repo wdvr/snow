@@ -435,11 +435,70 @@ struct AboutView: View {
                 }
                 .padding(.horizontal, 40)
 
+                Divider()
+                    .padding(.horizontal)
+
+                // Data Attribution
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Data Sources")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .center)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        attributionRow(
+                            name: "Open-Meteo",
+                            description: "Weather forecasts and historical data",
+                            url: "https://open-meteo.com/",
+                            license: "CC BY 4.0"
+                        )
+
+                        attributionRow(
+                            name: "OpenStreetMap",
+                            description: "Ski trail and piste map data",
+                            url: "https://www.openstreetmap.org/copyright",
+                            license: "ODbL"
+                        )
+
+                        attributionRow(
+                            name: "Apple Maps",
+                            description: "Base maps and geocoding",
+                            url: nil,
+                            license: nil
+                        )
+                    }
+                    .padding(.horizontal, 4)
+                }
+                .padding(.horizontal)
+
                 Spacer()
             }
             .padding()
         }
         .navigationTitle("About")
+    }
+
+    private func attributionRow(name: String, description: String, url: String?, license: String?) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                if let url, let link = URL(string: url) {
+                    Link(name, destination: link)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                } else {
+                    Text(name)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                }
+                if let license {
+                    Text("(\(license))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Text(description)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

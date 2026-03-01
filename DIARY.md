@@ -7,6 +7,18 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Mar 1, 2026
 
+### Fix: Timeline uses resort-local timezone instead of UTC
+Timeline endpoint hardcoded `timezone="GMT"` for Open-Meteo, causing `is_forecast` and overlay "today" to be wrong for users in non-UTC timezones. E.g., user at 10 PM Pacific saw today's data labeled as "tomorrow AM". Fixed backend to pass resort's timezone (IANA identifier like "America/Vancouver") to Open-Meteo and use resort-local time for `is_forecast` and overlay matching. iOS `TimelineView` now uses resort timezone from API response for "Today"/"Now" labels instead of device-local time.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### Fix: Recommendations endpoint timeout on cold start — S3 static JSON fast path
+`GET /api/v1/recommendations` timed out (~30s) on Lambda cold start because it queried all resort conditions from DynamoDB (28-31s total, exceeding API Gateway's 29s hard limit). Added `_build_recommendations_from_static()` that reads pre-computed S3 JSON and calculates distances in-memory (same pattern as best conditions endpoint). Response time: <1s on cold start.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ### Fix: Timeline data inconsistency with snow-quality — scores, snowfall, depth all mismatched
 Timeline endpoint called Open-Meteo directly, bypassing the multi-source merge pipeline. This caused wildly different data across the app: snow-quality showed score 94/powder_day while timeline showed score 22/bad for the same resort at the same time. FreshSnowChartView showed 0cm when conditions reported 20cm. Fixed by overlaying actual conditions (from DynamoDB) for today and daily history for past days onto the Open-Meteo timeline. Also fixed iOS `snowScore` formula (was using naive linear (score-1)/5*100 instead of backend's piecewise-linear calibration, causing 94 vs 87 discrepancy), and fixed `surfaceType` to treat `snowfall_24h >= 5cm` as fresh powder regardless of `hoursSinceLastSnowfall`. Fixed multi_source_merger to clamp `hours_since_last_snowfall` when merged snowfall contradicts Open-Meteo.
 | iOS | Android | Web | API |
