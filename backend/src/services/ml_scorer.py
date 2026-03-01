@@ -883,8 +883,8 @@ def _apply_fresh_snow_floor(
     softer snow but still fresh and very skiable.
 
     Rules:
-    - Heavy fresh snow (>=15cm/24h): floor 4.5 (cold) / 4.0 (cool) / 3.0 (warm)
-    - Moderate fresh snow (>=8cm/24h): floor 3.5 (cold) / 3.0 (cool) / 2.5 (warm)
+    - Heavy fresh snow (>=15cm/24h): floor 4.5 (cold) / 4.0 (cool) / 3.5 (warm)
+    - Moderate fresh snow (>=8cm/24h): floor 4.0 (cold) / 3.5 (cool) / 3.0 (warm)
     - Light fresh snow (>=3cm/24h): floor 2.5 (cold) / 2.0 (cool)
 
     Args:
@@ -912,9 +912,9 @@ def _apply_fresh_snow_floor(
             floor = 3.5  # Heavy fresh, mild but 15cm+ covers well
     elif snow_24h >= 8.0:
         if cur_temp <= -3.0:
-            floor = 3.5  # Moderate fresh snow at cold temps
+            floor = 4.0  # Moderate fresh snow at cold temps = good skiing
         elif cur_temp <= 0.0:
-            floor = 3.0  # Moderate fresh at freezing
+            floor = 3.5  # Moderate fresh at freezing = decent skiing
         elif cur_temp <= 5.0:
             floor = 3.0  # 8cm+ fresh covers refrozen base at mild temps
     elif snow_24h >= 3.0:

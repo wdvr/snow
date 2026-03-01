@@ -169,8 +169,10 @@ def _describe_surface(
     if quality == SnowQuality.MEDIOCRE:
         if fresh_cm >= 30:
             return f"Aging snow ({fresh_cm:.0f}cm) — firm, groomed-type surface."
+        elif snow_24h >= 8:
+            return f"Fresh snow ({snow_24h:.0f}cm/24h) on a warming base. Variable conditions."
         elif fresh_cm >= 2.5:
-            return f"Limited fresh snow ({fresh_cm:.0f}cm) on a firm base. Stick to groomed runs."
+            return f"Some fresh snow ({fresh_cm:.0f}cm) on a firm base. Best on groomed runs."
         return "Firm surface with limited fresh snow. Stick to groomed runs."
 
     if quality == SnowQuality.POOR:

@@ -758,15 +758,15 @@ class TestFreshSnowFloor:
         result = _apply_fresh_snow_floor(2.6, features)
         assert result >= 4.5
 
-    def test_moderate_snow_cold_temps_floor_3_5(self):
-        """10cm fresh snow at -4C should score at least 3.5."""
+    def test_moderate_snow_cold_temps_floor_4_0(self):
+        """10cm fresh snow at -4C should score at least 4.0."""
         features = {
             "snowfall_24h_cm": 10.0,
             "cur_temp": -4.0,
             "hours_since_last_snowfall": 2.0,
         }
         result = _apply_fresh_snow_floor(2.0, features)
-        assert result >= 3.5
+        assert result >= 4.0
 
     def test_light_snow_cold_temps_floor_2_5(self):
         """5cm fresh snow at -1C should score at least 2.5."""
@@ -787,6 +787,16 @@ class TestFreshSnowFloor:
         }
         result = _apply_fresh_snow_floor(2.0, features)
         assert result == 3.5  # Heavy fresh, mild but 15cm+ covers well
+
+    def test_moderate_snow_freezing_floor_3_5(self):
+        """10cm fresh snow at -0.9C (Mt. Baker scenario) should score at least 3.5."""
+        features = {
+            "snowfall_24h_cm": 10.2,
+            "cur_temp": -0.9,
+            "hours_since_last_snowfall": 12.0,
+        }
+        result = _apply_fresh_snow_floor(3.27, features)
+        assert result == 3.5  # 8cm+ at <=0°C → floor 3.5 (DECENT)
 
     def test_no_floor_hot_temps(self):
         """Snow at +6C should NOT be floored (melting conditions)."""
@@ -839,14 +849,14 @@ class TestFreshSnowFloor:
         assert result == 4.5
 
     def test_boundary_moderate_snow_8cm(self):
-        """Exactly 8cm at exactly -3C should trigger the 3.5 floor."""
+        """Exactly 8cm at exactly -3C should trigger the 4.0 floor."""
         features = {
             "snowfall_24h_cm": 8.0,
             "cur_temp": -3.0,
             "hours_since_last_snowfall": 0.0,
         }
         result = _apply_fresh_snow_floor(2.0, features)
-        assert result == 3.5
+        assert result == 4.0
 
     def test_boundary_light_snow_3cm(self):
         """Exactly 3cm at exactly 0C should trigger the 2.5 floor."""
