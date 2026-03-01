@@ -7,11 +7,23 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Feb 28, 2026
 
-### Fix: Notification "Session Expired" bug + NOW/SOON alert categories
-Guest users had `isAuthenticated = true` but no JWT token in keychain, causing 401s on notification API calls and showing "Session expired" error. Added `ensureAuthenticated()` to lazily authenticate guest users with the backend on first API use, and `withAutoRefresh()` to auto-refresh expired tokens with a single retry. All notification API calls (load, save, resort settings, test notification, trigger processor) now use this pattern. Also restructured the Alert Types UI into "Now" (fresh snow, events, thaw/freeze, powder day) and "Soon" (snowfall forecast with 3-day threshold) sections. Added `forecastAlerts` and `forecastSnowThresholdCm` fields to NotificationSettings, NotificationSettingsUpdate, and the ViewModel.
+### Fix: Global AuthInterceptor — auto token refresh on ALL API calls
+Replaced per-ViewModel `ensureAuthenticated()` / `withAutoRefresh()` with a global Alamofire `RequestInterceptor` on APIClient. The interceptor: (1) `adapt()` injects the current auth token from keychain on every request including retries (fixes critical bug where retried requests sent stale tokens), (2) `retry()` handles 401 by refreshing the token or lazily authenticating guests, queuing concurrent 401s with NSLock so only one refresh happens at a time, (3) uses URLSession.shared directly for refresh calls to avoid circular interceptor loops. Removed all manual auth handling from ChatViewModel and NotificationSettingsViewModel. Also fixed guest device ID persistence (generated UUIDs are now saved to keychain).
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
-| done | pending | n/a | pending |
+| done | pending | n/a | n/a |
+
+### Fix: Map race conditions — cancellable delays
+Converted all `DispatchQueue.main.asyncAfter` in ResortMapView to cancellable `Task` with `Task.sleep`. Fixes: nearby resort card tap, cluster sheet resort selection, and "Show on Map" navigation. Added sheet dismissal before showing new sheets in `onChange(of: mapTargetResort)` to prevent simultaneous sheet conflicts.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Fix: Notification "Session Expired" bug + NOW/SOON alert categories
+Guest users had `isAuthenticated = true` but no JWT token in keychain, causing 401s on notification API calls. Added backend forecast notification type with 3-day predicted snowfall check. Restructured the Alert Types UI into "Now" (fresh snow, events, thaw/freeze, powder day) and "Soon" (snowfall forecast with 3-day threshold) sections. Added `forecastAlerts` and `forecastSnowThresholdCm` fields to NotificationSettings, NotificationSettingsUpdate, and the ViewModel.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | pending | n/a | done |
 
 ### Fix: Nearby resort card tap crash
 Race condition when tapping nearby resort card on map — setting pendingRegion and selectedResort simultaneously caused SwiftUI to fight between map animation and sheet presentation. Fixed by delaying selectedResort by 0.5s.

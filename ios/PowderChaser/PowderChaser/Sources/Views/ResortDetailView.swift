@@ -114,8 +114,6 @@ struct ResortDetailView: View {
                         )
                     }
 
-                    runDifficultySection
-
                     // Snow history chart
                     SnowHistoryView(resortId: resort.id)
 
@@ -360,6 +358,9 @@ struct ResortDetailView: View {
                     .accessibilityLabel("Snow quality: \(quality.displayName)\(bestElevationSnowScore.map { ", score \($0) out of 100" } ?? "")")
                 }
             }
+
+            // Run difficulty + ticket price row
+            runDifficultyAndPriceRow
 
             // Links row
             HStack(spacing: 16) {
@@ -1017,73 +1018,104 @@ struct ResortDetailView: View {
         }
     }
 
-    // MARK: - Run Difficulty
+    // MARK: - Run Difficulty & Price (inline in header)
 
     @ViewBuilder
-    private var runDifficultySection: some View {
-        // Show if we have at least two trail percentages
+    private var runDifficultyAndPriceRow: some View {
         let green = resort.greenRunsPct
         let blue = resort.blueRunsPct
         let black = resort.blackRunsPct
-        let hasEnoughData = [green != nil, blue != nil, black != nil].filter { $0 }.count >= 2
+        let hasRunData = [green != nil, blue != nil, black != nil].filter { $0 }.count >= 2
+        let hasPrice = resort.dayTicketPriceMinUsd != nil || resort.dayTicketPriceMaxUsd != nil
 
-        if hasEnoughData {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Run Difficulty")
-                    .font(.headline)
+        if hasRunData || hasPrice {
+            HStack(spacing: 12) {
+                // Run difficulty bar + labels
+                if hasRunData {
+                    VStack(alignment: .leading, spacing: 4) {
+                        GeometryReader { geometry in
+                            let total = Double(green ?? 0) + Double(blue ?? 0) + Double(black ?? 0)
+                            let greenPct = total > 0 ? Double(green ?? 0) / total : 0
+                            let bluePct = total > 0 ? Double(blue ?? 0) / total : 0
+                            let blackPct = total > 0 ? Double(black ?? 0) / total : 0
 
-                VStack(spacing: 6) {
-                    GeometryReader { geometry in
-                        let total = Double(green ?? 0) + Double(blue ?? 0) + Double(black ?? 0)
-                        let greenPct = total > 0 ? Double(green ?? 0) / total : 0
-                        let bluePct = total > 0 ? Double(blue ?? 0) / total : 0
-                        let blackPct = total > 0 ? Double(black ?? 0) / total : 0
-
-                        HStack(spacing: 1) {
-                            if greenPct > 0 {
-                                Rectangle()
-                                    .fill(.green)
-                                    .frame(width: geometry.size.width * greenPct)
+                            HStack(spacing: 1) {
+                                if greenPct > 0 {
+                                    Rectangle()
+                                        .fill(.green)
+                                        .frame(width: geometry.size.width * greenPct)
+                                }
+                                if bluePct > 0 {
+                                    Rectangle()
+                                        .fill(.blue)
+                                        .frame(width: geometry.size.width * bluePct)
+                                }
+                                if blackPct > 0 {
+                                    Rectangle()
+                                        .fill(.primary)
+                                        .frame(width: geometry.size.width * blackPct)
+                                }
                             }
-                            if bluePct > 0 {
-                                Rectangle()
-                                    .fill(.blue)
-                                    .frame(width: geometry.size.width * bluePct)
+                            .clipShape(RoundedRectangle(cornerRadius: 3))
+                        }
+                        .frame(height: 6)
+
+                        HStack(spacing: 8) {
+                            if let green = green {
+                                Label("\(green)%", systemImage: "circle.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.green)
                             }
-                            if blackPct > 0 {
-                                Rectangle()
-                                    .fill(.primary)
-                                    .frame(width: geometry.size.width * blackPct)
+                            if let blue = blue {
+                                Label("\(blue)%", systemImage: "square.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.blue)
+                            }
+                            if let black = black {
+                                Label("\(black)%", systemImage: "diamond.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.primary)
                             }
                         }
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
-                    .frame(height: 8)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Run difficulty: \(green.map { "\($0)% beginner" } ?? ""), \(blue.map { "\($0)% intermediate" } ?? ""), \(black.map { "\($0)% advanced" } ?? "")")
+                }
 
-                    HStack(spacing: 12) {
-                        if let green = green {
-                            Label("\(green)%", systemImage: "circle.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.green)
-                        }
-                        if let blue = blue {
-                            Label("\(blue)%", systemImage: "square.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.blue)
-                        }
-                        if let black = black {
-                            Label("\(black)%", systemImage: "diamond.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.primary)
-                        }
-                        Spacer()
+                if hasRunData && hasPrice {
+                    Divider()
+                        .frame(height: 24)
+                }
+
+                // Day ticket price
+                if hasPrice {
+                    HStack(spacing: 4) {
+                        Image(systemName: "ticket")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(formatTicketPrice())
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
+                    .accessibilityLabel("Day ticket: \(formatTicketPrice())")
+                }
+
+                if !hasPrice {
+                    Spacer()
                 }
             }
-            .cardStyle()
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Run difficulty: \(green.map { "\($0)% beginner" } ?? ""), \(blue.map { "\($0)% intermediate" } ?? ""), \(black.map { "\($0)% advanced" } ?? "")")
         }
+    }
+
+    private func formatTicketPrice() -> String {
+        let min = resort.dayTicketPriceMinUsd
+        let max = resort.dayTicketPriceMaxUsd
+        if let min, let max, min != max {
+            return "$\(min)–$\(max)"
+        } else if let price = max ?? min {
+            return "$\(price)"
+        }
+        return ""
     }
 
     // MARK: - All Elevations Summary
