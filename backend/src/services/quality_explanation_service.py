@@ -81,9 +81,7 @@ def _describe_surface(
         elif snow_48h >= 15:
             return f"Champagne powder: {snow_48h:.0f}cm of ultra-dry snow in the last 48 hours."
         elif fresh_cm >= 10:
-            return (
-                f"Champagne powder: {fresh_cm:.0f}cm of ultra-light, uncompacted snow."
-            )
+            return f"Champagne powder: {fresh_cm:.0f}cm of ultra-light, dry snow."
         return "Champagne powder conditions — ultra-light, dry snow."
 
     if quality == SnowQuality.POWDER_DAY:
@@ -92,7 +90,7 @@ def _describe_surface(
         elif snow_48h >= 10:
             return f"Powder day: {snow_48h:.0f}cm of fresh snow in the last 48 hours."
         elif fresh_cm >= 7.6:
-            return f"Powder day: {fresh_cm:.0f}cm of uncompacted snow."
+            return f"Powder day: {fresh_cm:.0f}cm of recent snow."
         return "Deep fresh powder conditions."
 
     if quality == SnowQuality.EXCELLENT:
@@ -101,7 +99,7 @@ def _describe_surface(
         elif snow_48h >= 10:
             return f"Fresh powder: {snow_48h:.0f}cm in the last 48 hours."
         elif fresh_cm >= 7.6:
-            return f"Fresh powder: {fresh_cm:.0f}cm of uncompacted snow."
+            return f"Fresh powder: {fresh_cm:.0f}cm of recent snow."
         return "Fresh powder conditions."
 
     if quality == SnowQuality.GREAT:
@@ -112,6 +110,8 @@ def _describe_surface(
                 return f"Dry packed powder with {snow_24h:.0f}cm of recent snow."
             return f"Soft surface with {snow_24h:.0f}cm of recent snow."
         elif fresh_cm >= 80:
+            if hours_since and hours_since > 48:
+                return "Deep snow cover — settled base with great coverage."
             return f"Deep base with {fresh_cm:.0f}cm of fresh snow."
         elif fresh_cm >= 5:
             if hours_since and hours_since > 48:
@@ -129,9 +129,13 @@ def _describe_surface(
             return f"Good surface with {snow_24h:.0f}cm of recent snow."
         elif fresh_cm >= 30:
             if warming:
-                return f"Good base ({fresh_cm:.0f}cm fresh) but currently warming."
+                return f"Good base ({fresh_cm:.0f}cm settled) but currently warming."
+            if hours_since and hours_since > 48:
+                return f"Deep snow cover with {fresh_cm:.0f}cm of settled snow."
             return f"Good base with {fresh_cm:.0f}cm of fresh snow."
         elif fresh_cm >= 5:
+            if hours_since and hours_since > 48:
+                return f"Solid conditions with {fresh_cm:.0f}cm of settled snow on a good base."
             return (
                 f"Solid conditions with {fresh_cm:.0f}cm of fresh snow on a good base."
             )
@@ -141,16 +145,24 @@ def _describe_surface(
 
     if quality == SnowQuality.DECENT:
         if fresh_cm >= 80:
+            if hours_since and hours_since > 48:
+                return "Deep snow cover — settled but substantial."
             return f"Substantial base with {fresh_cm:.0f}cm of fresh snow."
         elif hours_since and hours_since > 72 and fresh_cm > 5:
             return f"Packed powder: {fresh_cm:.0f}cm of aged snow (last snowfall {_format_hours(hours_since)} ago)."
         elif fresh_cm >= 30:
             if warming:
-                return f"Good base ({fresh_cm:.0f}cm fresh) but currently warming."
+                return f"Good base ({fresh_cm:.0f}cm settled) but currently warming."
+            if hours_since and hours_since > 48:
+                return f"Good base with {fresh_cm:.0f}cm of settled snow."
             return f"Good base with {fresh_cm:.0f}cm of fresh snow."
         elif fresh_cm >= 2.5:
             if warming:
+                if hours_since and hours_since > 48:
+                    return f"Some settled snow ({fresh_cm:.0f}cm) but currently warming — surface softening."
                 return f"Some fresh snow ({fresh_cm:.0f}cm) but currently warming — surface softening."
+            if hours_since and hours_since > 48:
+                return f"Some settled snow ({fresh_cm:.0f}cm) on a firm base."
             return f"Some fresh snow ({fresh_cm:.0f}cm) on a firm base."
         return "Firm, groomed-type surface with limited fresh snow."
 
@@ -547,14 +559,14 @@ def _brief_summit(condition: WeatherCondition) -> str:
         if snow_24h >= 10:
             return f"Deep powder at summit ({snow_24h:.0f}cm in 24h)"
         if fresh_cm >= 8:
-            return f"Deep powder at summit ({fresh_cm:.0f}cm uncompacted)"
+            return f"Deep powder at summit ({fresh_cm:.0f}cm recent)"
         return "Deep powder at summit"
 
     if quality == SnowQuality.EXCELLENT:
         if snow_24h >= 10:
             return f"Fresh powder at summit ({snow_24h:.0f}cm in 24h)"
         if fresh_cm >= 8:
-            return f"Fresh powder at summit ({fresh_cm:.0f}cm uncompacted)"
+            return f"Fresh powder at summit ({fresh_cm:.0f}cm recent)"
         return "Fresh powder at summit"
 
     if quality == SnowQuality.GREAT:

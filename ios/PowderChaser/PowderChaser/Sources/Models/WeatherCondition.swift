@@ -146,13 +146,13 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
     var description: String {
         switch self {
         case .champagnePowder: return "Ultra-light, dry champagne powder"
-        case .powderDay: return "Deep fresh powder, perfect conditions"
-        case .excellent: return "Fresh powder, excellent conditions"
+        case .powderDay: return "Deep new powder, perfect conditions"
+        case .excellent: return "Recent powder, excellent conditions"
         case .great: return "Good snow with great coverage"
         case .good: return "Solid conditions, enjoyable skiing"
         case .decent: return "Some ice formation present"
-        case .mediocre: return "Limited fresh snow, aging surface"
-        case .poor: return "Hard packed, limited fresh snow"
+        case .mediocre: return "Aging snow surface, limited recent snowfall"
+        case .poor: return "Hard packed, limited recent snowfall"
         case .bad: return "Very poor conditions, icy or bare"
         case .horrible: return "Not skiable, no snow or dangerous"
         case .unknown: return "Conditions unknown"
@@ -183,55 +183,55 @@ enum SnowQuality: String, CaseIterable, Codable, Sendable {
             return (
                 title: "Champagne Powder",
                 description: "Ultra-light, dry powder with extremely low moisture content. The lightest, fluffiest snow — legendary conditions.",
-                criteria: "Highest ML score — abundant fresh snow, very cold temps, low humidity, no warming"
+                criteria: "Highest ML score — abundant new snow, very cold temps, low humidity, no warming"
             )
         case .powderDay:
             return (
                 title: "Powder Day",
-                description: "Deep fresh powder blanketing the mountain. Outstanding conditions for all types of skiing and riding.",
-                criteria: "Very high ML score — deep fresh snow, cold temps, no recent thaw-freeze"
+                description: "Deep new powder blanketing the mountain. Outstanding conditions for all types of skiing and riding.",
+                criteria: "Very high ML score — deep new snow, cold temps, no recent thaw-freeze"
             )
         case .excellent:
             return (
-                title: "Excellent - Fresh Powder",
-                description: "Deep fresh powder with no recent thaw-freeze events. Great conditions for all types of skiing.",
-                criteria: "High ML score from abundant fresh snow, cold temps, and no recent thaw-freeze"
+                title: "Excellent - Recent Powder",
+                description: "Deep recent powder with no recent thaw-freeze events. Great conditions for all types of skiing.",
+                criteria: "High ML score from abundant recent snowfall, cold temps, and no recent thaw-freeze"
             )
         case .great:
             return (
                 title: "Great Conditions",
                 description: "Good coverage of recent snow. Surface hasn't iced over. Enjoyable skiing on and off-piste.",
-                criteria: "Strong ML score from fresh snow, stable cold temps, limited warming"
+                criteria: "Strong ML score from recent snowfall, stable cold temps, limited warming"
             )
         case .good:
             return (
                 title: "Good Conditions",
                 description: "Solid snow coverage with decent surface quality. Groomed runs in good shape, off-piste still enjoyable.",
-                criteria: "Good ML score — fresh snow present, stable temperatures"
+                criteria: "Good ML score — recent snowfall, good preservation, stable temperatures"
             )
         case .decent:
             return (
-                title: "Decent - Some Fresh",
-                description: "Some fresh snow on top of older base. May have thin crust in places. Groomed runs in good shape.",
-                criteria: "Moderate ML score — some fresh snow but aging, or mild warming trends"
+                title: "Decent - Some New Snow",
+                description: "Some new snow on top of older base. May have thin crust in places. Groomed runs in good shape.",
+                criteria: "Moderate ML score — some recent snowfall but aging, or mild warming trends"
             )
         case .mediocre:
             return (
                 title: "Mediocre - Aging Snow",
-                description: "Limited fresh snow with aging surface. Snow may be getting heavy or crusty. Stick to groomed runs.",
+                description: "Limited recent snowfall with aging surface. Snow may be getting heavy or crusty. Stick to groomed runs.",
                 criteria: "Below-average ML score — minimal recent snowfall, surface degrading"
             )
         case .poor:
             return (
-                title: "Poor - Limited Fresh Snow",
-                description: "Limited fresh snow. Surface may be firm and packed (cold) or softening (warm). Groomed runs still skiable.",
-                criteria: "Low ML score — minimal fresh snow, or surface aging"
+                title: "Poor - Limited Recent Snowfall",
+                description: "Limited recent snowfall. Surface may be firm and packed (cold) or softening (warm). Groomed runs still skiable.",
+                criteria: "Low ML score — minimal recent snowfall, or surface aging"
             )
         case .bad:
             return (
                 title: "Bad - Icy/Refrozen",
-                description: "No fresh snow on top of icy base. Recent warm periods have created hard, refrozen surface. Challenging conditions.",
-                criteria: "Very low ML score — recent thaw-freeze with no fresh snow to cover ice"
+                description: "No new snow on top of icy base. Recent warm periods have created hard, refrozen surface. Challenging conditions.",
+                criteria: "Very low ML score — recent thaw-freeze with no new snow to cover ice"
             )
         case .horrible:
             return (
@@ -457,9 +457,9 @@ struct WeatherCondition: Codable, Identifiable, Hashable, Sendable {
 
     var formattedFreshSnow: String {
         if freshSnowCm < 0.1 {
-            return "No fresh snow"
+            return "No new snow"
         }
-        return "\(String(format: "%.1f", freshSnowCm))cm fresh"
+        return "\(String(format: "%.1f", freshSnowCm))cm new"
     }
 
     /// Total snow depth at this elevation (base snow + fresh)
@@ -710,12 +710,12 @@ extension WeatherCondition {
         if freshSnowCm < 0.1 {
             return "No new snow"
         }
-        return "\(Self.formatSnow(freshSnowCm, prefs: prefs)) fresh"
+        return "\(Self.formatSnow(freshSnowCm, prefs: prefs)) new"
     }
 
-    /// The most relevant snow label for stat displays: "24h" or "Fresh"
+    /// The most relevant snow label for stat displays: "24h" or "New Snow"
     var freshSnowLabel: String {
-        snowfall24hCm >= 0.5 ? "24h" : "Fresh"
+        snowfall24hCm >= 0.5 ? "24h" : "New Snow"
     }
 
     /// The most relevant fresh snow value in cm for stat displays
@@ -727,9 +727,9 @@ extension WeatherCondition {
     func formattedSnowSinceFreezeWithPrefs(_ prefs: UnitPreferences) -> String {
         let cm = snowSinceFreeze
         if cm < 0.1 {
-            return "No fresh snow"
+            return "No new snow"
         }
-        return "\(Self.formatSnow(cm, prefs: prefs)) fresh"
+        return "\(Self.formatSnow(cm, prefs: prefs)) new"
     }
 
     /// Format wind speed according to user preferences

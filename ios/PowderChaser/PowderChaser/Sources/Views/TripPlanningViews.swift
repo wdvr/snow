@@ -452,7 +452,7 @@ struct TripDetailView: View {
                     Text(formatSnow(conditions.freshSnowCm))
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                    Text("Fresh")
+                    Text("Snow")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

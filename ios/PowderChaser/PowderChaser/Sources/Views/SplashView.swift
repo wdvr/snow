@@ -65,7 +65,7 @@ struct SplashView: View {
                             .offset(y: showTitle ? 0 : 20)
                             .animation(.easeOut(duration: 0.5).delay(0.3), value: showTitle)
 
-                        Text("Fresh powder awaits")
+                        Text("Powder awaits")
                             .font(.system(size: 16, weight: .medium, design: .rounded))
                             .foregroundStyle(.white.opacity(0.8))
                             .opacity(showSubtitle ? 1 : 0)

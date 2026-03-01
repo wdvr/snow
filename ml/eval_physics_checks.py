@@ -1161,6 +1161,81 @@ def build_edge_cases() -> list[EdgeCase]:
         )
     )
 
+    # -----------------------------------------------------------------------
+    # Category 17: Breckenridge-like scenarios (recent snow 48-72h ago,
+    # daily diurnal freeze-thaw, deep base, operational resort)
+    # -----------------------------------------------------------------------
+    cases.append(
+        EdgeCase(
+            name="breck_like_recent_snow_diurnal",
+            raw_features=make_raw_features(
+                cur_temp=0.5,
+                max_temp_24h=2.0,
+                min_temp_24h=-6.0,
+                snowfall_24h_cm=2.0,
+                snowfall_72h_cm=10.0,
+                snow_depth_cm=90.0,
+                freeze_thaw_days_ago=0.3,
+                warmest_thaw=2.0,
+                snow_since_freeze_cm=2.0,
+                hours_since_last_snowfall=36.0,
+            ),
+            description="Breckenridge-like: diurnal FT, 10cm/72h, 90cm base, 0.5C",
+        )
+    )
+    cases.append(
+        EdgeCase(
+            name="groomed_cold_morning_deep_base",
+            raw_features=make_raw_features(
+                cur_temp=-4.0,
+                max_temp_24h=1.0,
+                min_temp_24h=-8.0,
+                snowfall_24h_cm=0.0,
+                snowfall_72h_cm=8.0,
+                snow_depth_cm=120.0,
+                freeze_thaw_days_ago=0.5,
+                warmest_thaw=1.0,
+                hours_since_last_snowfall=48.0,
+            ),
+            description="Cold morning after grooming: -4C, 8cm/72h, 120cm base",
+        )
+    )
+    cases.append(
+        EdgeCase(
+            name="tahoe_warm_dry_spring",
+            raw_features=make_raw_features(
+                cur_temp=6.0,
+                max_temp_24h=10.0,
+                min_temp_24h=-1.0,
+                snowfall_24h_cm=0.0,
+                snowfall_72h_cm=0.0,
+                snow_depth_cm=130.0,
+                freeze_thaw_days_ago=0.3,
+                warmest_thaw=10.0,
+                hours_since_last_snowfall=200.0,
+            ),
+            description="Tahoe spring: 6C, no fresh for 8+ days, deep base, FT daily",
+        )
+    )
+    cases.append(
+        EdgeCase(
+            name="moderate_base_mild_diurnal",
+            raw_features=make_raw_features(
+                cur_temp=1.5,
+                max_temp_24h=3.0,
+                min_temp_24h=-4.0,
+                snowfall_24h_cm=1.0,
+                snowfall_72h_cm=5.0,
+                snow_depth_cm=80.0,
+                freeze_thaw_days_ago=0.4,
+                warmest_thaw=3.0,
+                snow_since_freeze_cm=1.0,
+                hours_since_last_snowfall=24.0,
+            ),
+            description="Mild diurnal FT: 1.5C, 5cm/72h, 80cm base, normal cycle",
+        )
+    )
+
     return cases
 
 

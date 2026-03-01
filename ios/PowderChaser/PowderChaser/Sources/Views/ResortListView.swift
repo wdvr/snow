@@ -5,7 +5,7 @@ enum ResortSortOption: String, CaseIterable {
     case name = "Name"
     case distance = "Distance"
     case snowQuality = "Snow Quality"
-    case freshSnow = "Fresh Snow"
+    case freshSnow = "New Snow"
     case snowDepth = "Snow Depth"
     case predictedSnow = "Predicted Snow"
     case temperature = "Temperature"

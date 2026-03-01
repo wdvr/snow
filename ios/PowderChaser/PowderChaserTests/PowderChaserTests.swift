@@ -63,7 +63,7 @@ final class PowderChaserTests: XCTestCase {
     }
 
     func testSnowQualityDescription() {
-        XCTAssertEqual(SnowQuality.excellent.description, "Fresh powder, excellent conditions")
+        XCTAssertEqual(SnowQuality.excellent.description, "Recent powder, excellent conditions")
         XCTAssertEqual(SnowQuality.unknown.description, "Conditions unknown")
     }
 
@@ -271,7 +271,7 @@ final class PowderChaserTests: XCTestCase {
             sourceDetails: nil
         )
         XCTAssertEqual(condition.formattedSnowfall24h, "No new snow")
-        XCTAssertEqual(condition.formattedFreshSnow, "No fresh snow")
+        XCTAssertEqual(condition.formattedFreshSnow, "No new snow")
     }
 
     func testWeatherConditionElevationLevelEnum() {

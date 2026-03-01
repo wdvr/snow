@@ -53,9 +53,9 @@ struct FreshSnowChartView: View {
                 Image(systemName: "snowflake.circle")
                     .foregroundStyle(.cyan)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Fresh Powder")
+                    Text("Recent Snowfall")
                         .font(.headline)
-                    Text("\(WeatherCondition.formatSnow(freshSnowTotal, prefs: prefs)) since last thaw")
+                    Text("\(WeatherCondition.formatSnow(freshSnowTotal, prefs: prefs)) accumulated since last thaw")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

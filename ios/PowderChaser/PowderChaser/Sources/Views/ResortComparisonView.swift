@@ -76,7 +76,7 @@ struct ResortComparisonView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
 
-                Text("Compare snow quality, temperature, fresh snow, and forecasts at a glance.")
+                Text("Compare snow quality, temperature, new snow, and forecasts at a glance.")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
@@ -135,7 +135,7 @@ struct ResortComparisonView: View {
                 }
 
                 // Fresh snow
-                comparisonSection("Fresh Snow", metric: .freshSnow) { resortId in
+                comparisonSection("New Snow", metric: .freshSnow) { resortId in
                     if let condition = viewModel.topCondition(for: resortId) {
                         VStack(spacing: 4) {
                             Text(condition.formattedFreshSnowWithPrefs(userPreferencesManager.preferredUnits))

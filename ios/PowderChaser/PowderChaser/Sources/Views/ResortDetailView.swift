@@ -482,7 +482,7 @@ struct ResortDetailView: View {
                                 .font(.headline)
                             Text("A thaw-freeze cycle occurs when temperatures rise above freezing for several hours, then drop below freezing again. This creates an ice layer under the snow surface.")
                                 .font(.subheadline)
-                            Text("Fresh snow that falls after a thaw-freeze covers the ice and creates good skiing conditions. The more snow since the last cycle, the better the quality.")
+                            Text("New snow that falls after a thaw-freeze covers the ice and creates good skiing conditions. The more snow since the last cycle, the better the quality.")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }

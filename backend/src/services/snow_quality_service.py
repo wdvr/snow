@@ -485,10 +485,34 @@ class SnowQualityService:
         else:
             return SnowQuality.HORRIBLE
 
+    @staticmethod
+    def _settling_factor(hours_since_last_snowfall: float | None) -> float:
+        """Compute a settling/compaction factor based on snow age.
+
+        Snow compacts under its own weight over time. Raw cumulative snowfall
+        over-reports the actual depth on the ground because older layers settle.
+
+        Returns a multiplier (0.55 - 1.0) to apply to fresh_snow_cm:
+        - < 12 hours: 1.0  (still fluffy, no settling)
+        - 12-48 hours: 0.85 (15% settling)
+        - 48-96 hours: 0.70 (30% settling)
+        - > 96 hours: 0.55 (45% settling)
+        """
+        if hours_since_last_snowfall is None:
+            return 1.0
+        if hours_since_last_snowfall < 12:
+            return 1.0
+        if hours_since_last_snowfall <= 48:
+            return 0.85
+        if hours_since_last_snowfall <= 96:
+            return 0.70
+        return 0.55
+
     def _estimate_fresh_snow_simple(self, weather: WeatherCondition) -> float:
         """Simple fresh snow estimate using available fields."""
         snowfall_after_freeze = getattr(weather, "snowfall_after_freeze_cm", 0.0) or 0.0
         snow_depth = getattr(weather, "snow_depth_cm", None)
+        hours_since = getattr(weather, "hours_since_last_snowfall", None)
         if snowfall_after_freeze > 0:
             # Apply temperature degradation
             currently_warming = getattr(weather, "currently_warming", False)
@@ -497,6 +521,8 @@ class SnowQualityService:
                 fresh = max(0.0, snowfall_after_freeze * (1.0 - degradation))
             else:
                 fresh = snowfall_after_freeze
+            # Apply settling/compaction factor
+            fresh *= self._settling_factor(hours_since)
             # Cap at snow depth (fresh snow can't exceed total depth on ground)
             # BUT only if the depth is reliable — Open-Meteo often underestimates
             if snow_depth and snow_depth > 0 and snow_depth >= snowfall_after_freeze:
@@ -512,11 +538,15 @@ class SnowQualityService:
         This is snow that fell AFTER the last ice formation event
         (4+ consecutive hours at >= 3°C). This snow hasn't had a chance
         to form ice or crust and represents skiable, non-icy coverage.
+
+        Applies a settling/compaction factor based on hours since last snowfall
+        to account for snow compacting under its own weight over time.
         """
         # Primary metric: snow that fell after the last ice formation event
         snowfall_after_freeze = getattr(weather, "snowfall_after_freeze_cm", 0.0) or 0.0
         currently_warming = getattr(weather, "currently_warming", False)
         snow_depth = getattr(weather, "snow_depth_cm", None)
+        hours_since = getattr(weather, "hours_since_last_snowfall", None)
 
         if snowfall_after_freeze > 0:
             fresh_snow = snowfall_after_freeze
@@ -530,6 +560,9 @@ class SnowQualityService:
                     min(0.4, (current_temp - 3.0) * 0.1) if current_temp > 3.0 else 0.0
                 )
                 fresh_snow = fresh_snow * (1.0 - degradation)
+
+            # Apply settling/compaction factor
+            fresh_snow *= self._settling_factor(hours_since)
 
             # Cap at snow depth (fresh snow can't exceed total depth on ground)
             # BUT only if the depth is reliable — Open-Meteo often underestimates

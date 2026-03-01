@@ -389,7 +389,7 @@ struct AboutView: View {
                     .font(.title)
                     .fontWeight(.bold)
 
-                Text("Track snow conditions at your favorite ski resorts. Get real-time updates on snow quality, temperature, and fresh powder.")
+                Text("Track snow conditions at your favorite ski resorts. Get real-time updates on snow quality, temperature, and recent snowfall.")
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)

@@ -109,7 +109,7 @@ private struct ConditionsCardView: View {
 
                     statCell(
                         icon: "snowflake",
-                        label: "Fresh Snow",
+                        label: "New Snow",
                         value: condition.formattedFreshSnowWithPrefs(prefs)
                     )
                 }

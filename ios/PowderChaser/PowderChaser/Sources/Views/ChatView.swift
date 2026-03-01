@@ -297,7 +297,7 @@ struct ChatView: View {
         ChatSuggestion(label: "Top 5 resorts globally right now", prompt: "What are the top 5 resorts with the best snow conditions anywhere in the world right now?"),
         ChatSuggestion(label: "Ikon Pass best conditions", prompt: "Which Ikon Pass resorts have the best snow conditions right now?"),
         ChatSuggestion(label: "Snow forecast this week", prompt: "Which resorts near me are getting the most snow this week?"),
-        ChatSuggestion(label: "Hidden gems with fresh powder", prompt: "Show me lesser-known resorts that got fresh snow in the last 24 hours"),
+        ChatSuggestion(label: "Hidden gems with new snow", prompt: "Show me lesser-known resorts that got new snow in the last 24 hours"),
         ChatSuggestion(label: "Best in the Alps right now", prompt: "What are the best ski resorts in the Alps right now? Compare their conditions."),
         ChatSuggestion(label: "Deepest snowpack", prompt: "Which resorts have the deepest snowpack right now?"),
         ChatSuggestion(label: "Weekend trip under $100/day", prompt: "Plan me a weekend ski trip — resorts under $100/day with good snow within driving distance"),

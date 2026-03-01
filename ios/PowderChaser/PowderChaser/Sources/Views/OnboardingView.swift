@@ -38,7 +38,7 @@ struct OnboardingView: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(.blue)
 
-                    Text("We track fresh powder since the last ice layer, not just snowfall. Know the actual skiing conditions before you go.")
+                    Text("Our ML model analyzes snowfall, temperature, and thaw-freeze cycles -- accounting for settling and compaction -- to assess actual skiing conditions before you go.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

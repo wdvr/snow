@@ -1495,7 +1495,7 @@ struct SnowQualitySummaryLight: Codable {
             return "\(WeatherCondition.formatSnow(snow24, prefs: prefs))/24h"
         }
         guard let snow = snowfallFreshCm, snow >= 0.1 else { return nil }
-        return "\(WeatherCondition.formatSnow(snow, prefs: prefs)) fresh"
+        return "\(WeatherCondition.formatSnow(snow, prefs: prefs)) new"
     }
 
     private static let isoFractionalFormatter: ISO8601DateFormatter = {

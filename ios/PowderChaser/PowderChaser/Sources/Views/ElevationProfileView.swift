@@ -131,7 +131,7 @@ struct ElevationProfileView: View {
         if let condition {
             parts.append(condition.snowQuality.displayName)
             parts.append(condition.formattedTemperature(prefs))
-            parts.append("fresh snow \(WeatherCondition.formatSnow(condition.displayFreshSnowCm, prefs: prefs))")
+            parts.append("new snow \(WeatherCondition.formatSnow(condition.displayFreshSnowCm, prefs: prefs))")
         } else {
             parts.append("no data available")
         }

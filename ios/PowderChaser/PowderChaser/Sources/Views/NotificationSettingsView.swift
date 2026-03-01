@@ -52,7 +52,7 @@ struct NotificationSettingsView: View {
             if viewModel.notificationsEnabled {
                 // NOW Alerts Section
                 Section {
-                    Toggle("Fresh Snow Alerts", isOn: $viewModel.freshSnowAlerts)
+                    Toggle("New Snow Alerts", isOn: $viewModel.freshSnowAlerts)
                         .onChange(of: viewModel.freshSnowAlerts) { _, newValue in
                             viewModel.saveSettings()
                             AnalyticsService.shared.trackNotificationSettingChanged(setting: "fresh_snow_alerts", enabled: newValue)

@@ -1140,7 +1140,7 @@ struct ResortMapDetailSheet: View {
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 ConditionCard(
-                    title: "Fresh Snow",
+                    title: "New Snow",
                     value: condition.formattedSnowSinceFreezeWithPrefs(userPreferencesManager.preferredUnits),
                     icon: "snowflake",
                     color: .cyan
@@ -1225,7 +1225,7 @@ struct ResortMapDetailSheet: View {
                 }
 
                 if let snow = summary.formattedFreshSnow(userPreferencesManager.preferredUnits) {
-                    ConditionCard(title: "Fresh Snow", value: snow, icon: "snowflake", color: .cyan)
+                    ConditionCard(title: "New Snow", value: snow, icon: "snowflake", color: .cyan)
                 }
 
                 if let snow24 = summary.snowfall24hCm {

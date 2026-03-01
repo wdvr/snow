@@ -289,7 +289,7 @@ struct QualityInfoSheet: View {
                                     Text("Key factors:")
                                         .font(.caption)
                                         .fontWeight(.medium)
-                                    Text("Fresh snow since last thaw-freeze, temperature, snowfall history, wind, and elevation")
+                                    Text("Snow since last thaw-freeze, temperature, snowfall history, wind, and elevation")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
