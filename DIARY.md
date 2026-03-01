@@ -7,6 +7,18 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Mar 1, 2026
 
+### Fix: snowfall_after_freeze_cm stuck at 0 when Open-Meteo underreports
+Open-Meteo reports 0cm snowfall for Mt. Baker (and other Pacific NW resorts) while resort stations report 10+ cm/24h. Multi-source merger correctly overrides `snowfall_24h_cm` but not `snowfall_after_freeze_cm` (computed from Open-Meteo hourly data only). This cascaded: "Icy" surface, "Snow since then: 0cm", mediocre scores despite heavy snowfall. Fixed weather_worker to reconcile `snowfall_after_freeze_cm` with merged data when Open-Meteo is clearly wrong (diff >= 5cm). Fixed ML scorer to override `snow_since_freeze_cm` feature. Raised ML fresh-snow floors: 8cm+/≤0°C → 3.5 DECENT (was 3.0), 8cm+/≤-3°C → 4.0 GOOD (was 3.5). Fixed explanation text: "Limited fresh snow" → "Fresh snow (Xcm/24h) on a warming base" for MEDIOCRE with 8cm+. Mt. Baker top went from 65/MEDIOCRE to 74/GREAT. Validated across 10 resorts.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: Cross-view data inconsistencies — standardize elevation to mid > top > base
+Map annotation, map popup, list view, and favorites all showed different scores/quality for the same resort because each picked a different elevation. `getLatestCondition` returned `.first` (random), map annotations used top > mid > base, backend uses mid > top > base. Fixed all iOS elevation preferences to mid > top > base: `getLatestCondition`, `getSnowScore`, map annotations. Also fixed map popup "New Snow" showing 0 while "24h Snowfall" showed 10.2cm (switched to `formattedFreshSnowWithPrefs`), chart header showing "0cm accumulated" when there was recent snow (fall back to `displayFreshSnowCm`), and forecast arrow text appearing on wrong side of dashed line (`.trailing` → `.leading`).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
 ### Fix: Timeline uses resort-local timezone instead of UTC
 Timeline endpoint hardcoded `timezone="GMT"` for Open-Meteo, causing `is_forecast` and overlay "today" to be wrong for users in non-UTC timezones. E.g., user at 10 PM Pacific saw today's data labeled as "tomorrow AM". Fixed backend to pass resort's timezone (IANA identifier like "America/Vancouver") to Open-Meteo and use resort-local time for `is_forecast` and overlay matching. iOS `TimelineView` now uses resort timezone from API response for "Today"/"Now" labels instead of device-local time.
 | iOS | Android | Web | API |
