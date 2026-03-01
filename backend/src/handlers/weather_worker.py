@@ -297,6 +297,37 @@ def process_elevation_point(
         if s72 < s48:
             weather_data["snowfall_72h_cm"] = s48
 
+        # Reconcile snowfall_after_freeze_cm with merged multi-source data.
+        # Open-Meteo sometimes reports 0cm when resort stations report heavy snow
+        # (common in Pacific NW). snowfall_after_freeze_cm is computed from
+        # Open-Meteo hourly only, so it can be drastically wrong. Use merged
+        # snowfall_24h as a floor, proportionally adjusted for freeze timing.
+        #
+        # Only apply when Open-Meteo's hourly data clearly missed snowfall:
+        # merged_24h is at least 3x the post-freeze value AND >=5cm higher.
+        # This avoids overriding legitimate cases where Open-Meteo correctly
+        # shows partial snowfall (e.g., 5cm post-freeze out of 8cm total).
+        merged_24h = weather_data.get("snowfall_24h_cm", 0.0)
+        current_after_freeze = weather_data.get("snowfall_after_freeze_cm", 0.0)
+        freeze_hours = weather_data.get("last_freeze_thaw_hours_ago")
+
+        openmeteo_clearly_wrong = (
+            merged_24h > 0.5
+            and merged_24h >= current_after_freeze + 5.0
+            and (current_after_freeze < 1.0 or merged_24h > current_after_freeze * 3)
+        )
+        if openmeteo_clearly_wrong:
+            if freeze_hours is None or freeze_hours >= 24:
+                # Freeze was 24+ hours ago: all 24h snowfall is post-freeze
+                weather_data["snowfall_after_freeze_cm"] = merged_24h
+            else:
+                # Freeze within 24h: estimate post-freeze proportion
+                fraction = freeze_hours / 24.0
+                estimated_post_freeze = merged_24h * fraction
+                weather_data["snowfall_after_freeze_cm"] = max(
+                    current_after_freeze, estimated_post_freeze
+                )
+
         # Update snow summary based on weather data
         if snow_summary_service and existing_summary:
             freeze_detected = weather_data.get("freeze_event_detected", False)

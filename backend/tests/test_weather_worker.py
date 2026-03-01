@@ -695,6 +695,96 @@ class TestProcessElevationPoint:
         assert condition.snowfall_48h_cm == 25.0
         assert condition.snowfall_72h_cm == 25.0
 
+    def test_snowfall_after_freeze_reconciled_with_merged_data(self):
+        """When Open-Meteo reports 0cm but merged source reports 10cm,
+        snowfall_after_freeze_cm should be boosted proportionally."""
+        from handlers.weather_worker import process_elevation_point
+
+        # Simulates Mt. Baker case: Open-Meteo says 0cm, OnTheSnow says 10.2cm
+        weather_data = _make_weather_data(
+            freeze_event_detected=False,
+            snowfall_after_freeze_cm=0.0,  # Open-Meteo wrong
+            snowfall_24h_cm=10.2,  # Merged from OnTheSnow
+            last_freeze_thaw_hours_ago=14.0,
+        )
+        ws, sqs, table, sss = _setup_services(weather_data=weather_data)
+        ep = _make_elevation_point_dict("mid")
+
+        process_elevation_point(
+            elevation_point=ep,
+            resort_id="mt-baker",
+            weather_service=ws,
+            snow_quality_service=sqs,
+            weather_conditions_table=table,
+            scraper=None,
+            scraped_data=None,
+            snow_summary_service=sss,
+        )
+
+        condition = sqs.assess_snow_quality.call_args[0][0]
+        # Expected: 10.2 * (14/24) ≈ 5.95
+        assert condition.snowfall_after_freeze_cm == pytest.approx(5.95, abs=0.01)
+
+    def test_snowfall_after_freeze_not_reconciled_when_close(self):
+        """When Open-Meteo and merged are close, don't override."""
+        from handlers.weather_worker import process_elevation_point
+
+        weather_data = _make_weather_data(
+            freeze_event_detected=True,
+            detected_freeze_date="2026-02-28",
+            snowfall_after_freeze_cm=5.0,
+            snowfall_24h_cm=8.0,  # Only 3cm more — not a clear miss
+        )
+        existing_summary = _default_summary()
+        ws, sqs, table, sss = _setup_services(
+            weather_data=weather_data, existing_summary=existing_summary
+        )
+        ep = _make_elevation_point_dict("mid")
+
+        process_elevation_point(
+            elevation_point=ep,
+            resort_id="big-white",
+            weather_service=ws,
+            snow_quality_service=sqs,
+            weather_conditions_table=table,
+            scraper=None,
+            scraped_data=None,
+            snow_summary_service=sss,
+        )
+
+        condition = sqs.assess_snow_quality.call_args[0][0]
+        # Should NOT be overridden: 8.0 < 5.0 + 5.0 = 10.0
+        assert condition.snowfall_after_freeze_cm == 5.0
+
+    def test_snowfall_after_freeze_reconciled_freeze_older_than_24h(self):
+        """When freeze was >24h ago and Open-Meteo missed all snow,
+        use full merged_24h as floor."""
+        from handlers.weather_worker import process_elevation_point
+
+        weather_data = _make_weather_data(
+            freeze_event_detected=False,
+            snowfall_after_freeze_cm=0.0,
+            snowfall_24h_cm=15.0,
+            last_freeze_thaw_hours_ago=48.0,
+        )
+        ws, sqs, table, sss = _setup_services(weather_data=weather_data)
+        ep = _make_elevation_point_dict("top")
+
+        process_elevation_point(
+            elevation_point=ep,
+            resort_id="whistler",
+            weather_service=ws,
+            snow_quality_service=sqs,
+            weather_conditions_table=table,
+            scraper=None,
+            scraped_data=None,
+            snow_summary_service=sss,
+        )
+
+        condition = sqs.assess_snow_quality.call_args[0][0]
+        # Freeze 48h ago, all 24h snow is post-freeze
+        assert condition.snowfall_after_freeze_cm == 15.0
+
     def test_quality_attributes_set(self):
         """The weather condition should carry quality assessment results."""
         from handlers.weather_worker import process_elevation_point

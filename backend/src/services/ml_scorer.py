@@ -742,6 +742,16 @@ def _override_snowfall_from_condition(
         if merged_hours_since < raw_hours:
             raw_features["hours_since_last_snowfall"] = float(merged_hours_since)
 
+    # Reconcile snow_since_freeze_cm with merged snowfall data.
+    # When Open-Meteo reports 0cm but resort stations report heavy snow,
+    # snow_since_freeze_cm (computed from Open-Meteo hourly) can be 0
+    # while snowfall_24h_cm (from merged sources) is 10+cm.
+    merged_after_freeze = getattr(condition, "snowfall_after_freeze_cm", None)
+    if merged_after_freeze is not None:
+        raw_freeze = raw_features.get("snow_since_freeze_cm", 0.0)
+        if merged_after_freeze > raw_freeze:
+            raw_features["snow_since_freeze_cm"] = float(merged_after_freeze)
+
 
 def predict_quality(
     condition: Any,
