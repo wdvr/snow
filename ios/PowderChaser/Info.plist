@@ -35,8 +35,6 @@
 	<false/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Powder Chaser uses your location to show nearby ski resorts and calculate distances to resorts.</string>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

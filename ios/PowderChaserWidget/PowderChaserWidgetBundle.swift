@@ -6,6 +6,5 @@ struct PowderChaserWidgetBundle: WidgetBundle {
     var body: some Widget {
         FavoriteResortsWidget()
         BestResortsWidget()
-        SnowLiveActivity()
     }
 }

@@ -31,7 +31,6 @@ targets:
     sources:
       - path: PowderChaser/PowderChaser/Sources
       - path: PowderChaser/PowderChaser/Resources
-      - path: PowderChaserWidget/LiveActivity/SnowActivityAttributes.swift
     settings:
       base:
         INFOPLIST_FILE: PowderChaser/Info.plist
@@ -87,8 +86,6 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         # Privacy - Location Usage
         NSLocationWhenInUseUsageDescription: "Powder Chaser uses your location to show nearby ski resorts and calculate distances to resorts."
-        # Live Activities support
-        NSSupportsLiveActivities: true
         # App Store compliance
         ITSAppUsesNonExemptEncryption: false
         # Google Sign-In configuration

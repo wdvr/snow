@@ -61,7 +61,6 @@
 		9F7A9EC98AF452D9EA4F1932 /* FavoriteResortsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9510679C0B1D330FD796C1A4 /* FavoriteResortsWidget.swift */; };
 		A1C42B876DDBE4BA54A3364D /* ClusteredMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 887A38A0932830A6853E4820 /* ClusteredMapView.swift */; };
 		A3FA7AF1D19C7F6471FAB16B /* ResortDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DEE5D7D231F8D507BCC844 /* ResortDetailView.swift */; };
-		AB263A08172BBA7CAFFD377B /* SnowActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A695D283C9F654BEDA04AE33 /* SnowActivityAttributes.swift */; };
 		AC1E87E5B6E13BC84D859085 /* TrailMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F6B5ED084E68A409D2EE926 /* TrailMapView.swift */; };
 		AD5B7FDE74297C2CBBBD999E /* ConditionReportViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94B077BA7D560D2B7EB375FC /* ConditionReportViewModel.swift */; };
 		ADA9A5D3FF7B65ABEA4E7E55 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79A5AAE382EE96C48575438E /* TimelineView.swift */; };
@@ -82,8 +81,6 @@
 		E225A2BC1CF0CD9D108AFCDB /* ConditionReportModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86FE63CA3C14E74D6220DB4B /* ConditionReportModels.swift */; };
 		E506BEAF106DDC91156687A4 /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = AE7B59CE78565ECAEFF95FE2 /* Nuke */; };
 		E6C55E1C7960214C28DDBA0A /* BestResortsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE6ABD73F5F32CD39C5F6EDF /* BestResortsWidget.swift */; };
-		E8BEF9BADCA03E8FA4EDB0EE /* LiveActivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A58BF70C3394BF3C462AC2B /* LiveActivityService.swift */; };
-		EA29C3BA7E97F7DF201123CF /* SnowActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A695D283C9F654BEDA04AE33 /* SnowActivityAttributes.swift */; };
 		EAB2B28B1AA991116DCC7DAC /* MapViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0569396CDAC6175920C88A62 /* MapViewModel.swift */; };
 		EDA46340AE702160642BFB14 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 26FC029375EC04AB25E469B0 /* GoogleService-Info.plist */; };
 		EF8E662D0A756D0D5F790BA8 /* UITestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 284CE220A6D7ACFDF8385C87 /* UITestHelpers.swift */; };
@@ -92,7 +89,6 @@
 		FB55F58D9E56A8CF94C2E8F0 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D33E21DA6CEDD2A8E096C76 /* OnboardingView.swift */; };
 		FC6A9DEEBF9C42FD39B9F83F /* AccessibilityIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 977FFA5A004BF5CDDA448C6F /* AccessibilityIdentifiers.swift */; };
 		FDCD7FA3D54F49A9D567BB57 /* WidgetModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD664D414CF34A14CA42AD89 /* WidgetModels.swift */; };
-		FDE4A2BC1C89D5BEB03B1769 /* SnowLiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BC13F007D87476C7406D438 /* SnowLiveActivityView.swift */; };
 		FE7D7914F19E80975BB78429 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE911F3EEACD24710E2F4DC1 /* PushNotificationService.swift */; };
 		FEB04C344EC12D422DC329F6 /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E295314AFA6ADACA34C3640A /* ChatViewModel.swift */; };
 		FF25079569BAFE2E112A71E6 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 4D02508C890B91E8E3E9495B /* GoogleSignIn */; };
@@ -185,7 +181,6 @@
 		6615B32842326F509079C19D /* VerificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerificationTests.swift; sourceTree = "<group>"; };
 		698281A6736A753715EA5C9C /* ConditionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionsView.swift; sourceTree = "<group>"; };
 		6B362C0D3581E3342B91A457 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
-		6BC13F007D87476C7406D438 /* SnowLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowLiveActivityView.swift; sourceTree = "<group>"; };
 		6F23E7FA8569F6BA66707698 /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
 		798960813C9FA22D37C18A32 /* Region.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Region.swift; sourceTree = "<group>"; };
 		79A5AAE382EE96C48575438E /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
@@ -207,10 +202,8 @@
 		96A41C25F032E5E830817543 /* ForceUpdateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForceUpdateView.swift; sourceTree = "<group>"; };
 		973F58394A50D6EAE8CE2441 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
 		977FFA5A004BF5CDDA448C6F /* AccessibilityIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityIdentifiers.swift; sourceTree = "<group>"; };
-		9A58BF70C3394BF3C462AC2B /* LiveActivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityService.swift; sourceTree = "<group>"; };
 		9DC5FE774DC7B45C79E00C1A /* MarkdownTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownTextView.swift; sourceTree = "<group>"; };
 		A00FBDD5347D02E3E2E7544B /* CardStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardStyle.swift; sourceTree = "<group>"; };
-		A695D283C9F654BEDA04AE33 /* SnowActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowActivityAttributes.swift; sourceTree = "<group>"; };
 		A7ABC7453FA0CEEB7E84B6CE /* ChatModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModels.swift; sourceTree = "<group>"; };
 		AA2B7168D95A5F073D1B0F22 /* AuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
 		AE49DC94CB874A9B24AEBBA7 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
@@ -343,7 +336,6 @@
 		464FB92AEE71A89331DB9D77 = {
 			isa = PBXGroup;
 			children = (
-				CC80E7C87F6DC76837C1E61F /* LiveActivity */,
 				7B91DA111FCDC8FD30603E53 /* PowderChaserTests */,
 				4260AFBBF05177165BB58F17 /* PowderChaserUITests */,
 				AC62C62074AF3BCF3D1C1F0F /* PowderChaserWidget */,
@@ -414,7 +406,6 @@
 		AC62C62074AF3BCF3D1C1F0F /* PowderChaserWidget */ = {
 			isa = PBXGroup;
 			children = (
-				CC80E7C87F6DC76837C1E61F /* LiveActivity */,
 				EE6ABD73F5F32CD39C5F6EDF /* BestResortsWidget.swift */,
 				9510679C0B1D330FD796C1A4 /* FavoriteResortsWidget.swift */,
 				53391D3241AF563B0F8E4084 /* Info.plist */,
@@ -438,7 +429,6 @@
 				616D12D83765C0D1707C0181 /* ChatStreamService.swift */,
 				8083482BCE96D55D39A68A4E /* Configuration.swift */,
 				9227F9E2467867AD92765440 /* DemoDataService.swift */,
-				9A58BF70C3394BF3C462AC2B /* LiveActivityService.swift */,
 				41F80419CDC388E5DCD4C45A /* LocationManager.swift */,
 				04D82DD124E717B8AECCF17B /* NavigationCoordinator.swift */,
 				35F0F2B15293AD3AF98F531D /* NetworkMonitor.swift */,
@@ -446,16 +436,6 @@
 				DE911F3EEACD24710E2F4DC1 /* PushNotificationService.swift */,
 			);
 			path = Services;
-			sourceTree = "<group>";
-		};
-		CC80E7C87F6DC76837C1E61F /* LiveActivity */ = {
-			isa = PBXGroup;
-			children = (
-				A695D283C9F654BEDA04AE33 /* SnowActivityAttributes.swift */,
-				6BC13F007D87476C7406D438 /* SnowLiveActivityView.swift */,
-			);
-			name = LiveActivity;
-			path = PowderChaserWidget/LiveActivity;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -643,8 +623,6 @@
 				E6C55E1C7960214C28DDBA0A /* BestResortsWidget.swift in Sources */,
 				9F7A9EC98AF452D9EA4F1932 /* FavoriteResortsWidget.swift in Sources */,
 				306A7E200678BBE72867F7A2 /* PowderChaserWidgetBundle.swift in Sources */,
-				AB263A08172BBA7CAFFD377B /* SnowActivityAttributes.swift in Sources */,
-				FDE4A2BC1C89D5BEB03B1769 /* SnowLiveActivityView.swift in Sources */,
 				B1F2EDE2271F739BC1764858 /* WidgetDataService.swift in Sources */,
 				FDCD7FA3D54F49A9D567BB57 /* WidgetModels.swift in Sources */,
 				2B70EA29F04BD97135D18219 /* WidgetViews.swift in Sources */,
@@ -683,7 +661,6 @@
 				C1AA7A5DCABC34F34F6ECCE2 /* FeedbackView.swift in Sources */,
 				BF22E5D7DD478C7B2A50A6AC /* ForceUpdateView.swift in Sources */,
 				8A397C71E9D41DEC0E96E1BC /* FreshSnowChartView.swift in Sources */,
-				E8BEF9BADCA03E8FA4EDB0EE /* LiveActivityService.swift in Sources */,
 				485682662E1F48B8DC20FD18 /* LocationManager.swift in Sources */,
 				106688640CF680032FB66C92 /* Managers.swift in Sources */,
 				EAB2B28B1AA991116DCC7DAC /* MapViewModel.swift in Sources */,
@@ -705,7 +682,6 @@
 				2B966FC41D636C4F6D32822E /* ResortListView.swift in Sources */,
 				87956525477ABBA7AFE17032 /* ResortMapView.swift in Sources */,
 				5956F8E9D9EE0A9F5E71E291 /* SettingsView.swift in Sources */,
-				EA29C3BA7E97F7DF201123CF /* SnowActivityAttributes.swift in Sources */,
 				746A932ABF93FDCD305CA3C6 /* SnowHistoryModels.swift in Sources */,
 				293D5049BD459E35C272EBA4 /* SnowHistoryView.swift in Sources */,
 				57679F7399DC5AEB8BF88F36 /* SnowHistoryViewModel.swift in Sources */,
