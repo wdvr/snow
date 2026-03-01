@@ -7,6 +7,12 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ## Mar 1, 2026
 
+### Fix: Timeline data inconsistency with snow-quality — scores, snowfall, depth all mismatched
+Timeline endpoint called Open-Meteo directly, bypassing the multi-source merge pipeline. This caused wildly different data across the app: snow-quality showed score 94/powder_day while timeline showed score 22/bad for the same resort at the same time. FreshSnowChartView showed 0cm when conditions reported 20cm. Fixed by overlaying actual conditions (from DynamoDB) for today and daily history for past days onto the Open-Meteo timeline. Also fixed iOS `snowScore` formula (was using naive linear (score-1)/5*100 instead of backend's piecewise-linear calibration, causing 94 vs 87 discrepancy), and fixed `surfaceType` to treat `snowfall_24h >= 5cm` as fresh powder regardless of `hoursSinceLastSnowfall`. Fixed multi_source_merger to clamp `hours_since_last_snowfall` when merged snowfall contradicts Open-Meteo.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
 ### Fix: Best conditions endpoint 504 timeouts — S3 static JSON fast path
 `GET /api/v1/recommendations/best` was timing out (504) because `get_best_conditions_globally()` queried all resorts + all latest conditions from DynamoDB, taking 19+ seconds (exceeding API Gateway's 29s hard limit on cold starts). iOS showed "Server error: 504". Fix: Added `_build_best_conditions_from_static()` that reads pre-computed S3 static JSON files (snow-quality.json + resorts.json) instead of DynamoDB. Response time dropped from 19s to 0.15s. Falls back to DynamoDB if S3 data unavailable. The API integration test was already coded to skip 5xx responses, masking the problem.
 | iOS | Android | Web | API |
