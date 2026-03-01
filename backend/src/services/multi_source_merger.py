@@ -28,6 +28,14 @@ DEFAULT_WEIGHTS = {
 # Priority order for snow depth (resort-reported overrides model estimates)
 DEPTH_PRIORITY = ["onthesnow", "snowforecast", "open-meteo"]
 
+# Sources that report from actual resort measurements (snow stakes)
+# vs weather models that use ~9km grid cells and miss terrain-driven snow
+RESORT_REPORTED_SOURCES = {"onthesnow", "snowforecast"}
+
+# Minimum snowfall (cm) from a resort source to override near-zero model consensus.
+# Below this, the disagreement is ambiguous (could be stale data or flurries).
+RESORT_SNOWFALL_OVERRIDE_THRESHOLD = 5.0
+
 # Internal source name → public domain name
 SOURCE_DOMAIN_MAP = {
     "open-meteo": "open-meteo.com",
@@ -355,7 +363,44 @@ class MultiSourceMerger:
         reasons: dict[str, str] = {}
 
         if median_val < 1.0:
-            # Near-zero median: use absolute threshold
+            # Near-zero median: check for resort-reported snowfall first.
+            # Weather models (9km grid) systematically miss terrain-driven
+            # mountain snow; resort snow stakes are ground truth.
+            resort_reports = {
+                n: v
+                for n, v in values_by_source.items()
+                if n in RESORT_REPORTED_SOURCES
+                and v >= RESORT_SNOWFALL_OVERRIDE_THRESHOLD
+            }
+
+            if resort_reports:
+                # Resort reports significant snow while models say near-zero
+                # → Use resort-reported data (analogous to depth priority)
+                resort_avg = round(
+                    sum(resort_reports.values()) / len(resort_reports), 1
+                )
+                for n, v in values_by_source.items():
+                    if n in resort_reports:
+                        reasons[n] = (
+                            f"Reported {v}cm — resort-measured snowfall trusted "
+                            f"over weather models (near-zero median {median_val:.1f}cm)"
+                        )
+                    else:
+                        reasons[n] = (
+                            f"Reported {v}cm — weather model likely underreported "
+                            f"(resort measures {resort_avg}cm)"
+                        )
+                return resort_avg, {
+                    "merge_method": "resort_priority",
+                    "source_statuses": {
+                        n: "consensus" if n in resort_reports else "outlier"
+                        for n in values_by_source
+                    },
+                    "source_reasons": reasons,
+                    "consensus_value_cm": resort_avg,
+                }
+
+            # Standard near-zero threshold (no significant resort data)
             consensus = {}
             for n, v in values_by_source.items():
                 if v <= 1.0:

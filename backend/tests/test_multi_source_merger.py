@@ -665,3 +665,115 @@ class TestSourceDetails:
         assert sd["sources"]["open-meteo.com"]["snowfall_24h_cm"] == 0.1
         assert sd["sources"]["onthesnow.com"]["snowfall_24h_cm"] is None
         assert sd["sources"]["snow-forecast.com"]["snowfall_24h_cm"] is None
+
+
+class TestResortPrioritySnowfall:
+    """Tests for resort-reported snowfall priority over weather models.
+
+    When weather models (Open-Meteo, WeatherKit) report near-zero snowfall
+    but resort-reported sources (OnTheSnow) report significant snow (≥5cm),
+    the resort data should be trusted. Weather models use ~9km grid cells
+    and systematically miss terrain-driven mountain snow.
+    """
+
+    def test_lake_louise_scenario(self):
+        """The motivating bug: OnTheSnow=14cm excluded as outlier when models say near-zero.
+
+        Before fix: median=0.6 < 1.0, OnTheSnow 14cm > 1cm → excluded → result 0.3cm
+        After fix: OnTheSnow 14cm ≥ 5cm threshold → resort priority → result 14.0cm
+        """
+        base = {"snowfall_24h_cm": 0.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=14.0),
+            SourceData(source_name="weatherkit", snowfall_24h_cm=0.6),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        # Resort reports 14cm → trusted over models
+        assert result["snowfall_24h_cm"] == 14.0
+        sd = result["source_details"]
+        assert sd["merge_method"] == "resort_priority"
+        assert sd["sources"]["onthesnow.com"]["status"] == "consensus"
+        assert sd["sources"]["open-meteo.com"]["status"] == "outlier"
+        assert sd["sources"]["weatherkit.apple.com"]["status"] == "outlier"
+
+    def test_resort_priority_models_all_zero(self):
+        """3 sources: OM=0, WK=0, OTS=10 → resort priority trusts OnTheSnow."""
+        base = {"snowfall_24h_cm": 0.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=10.0),
+            SourceData(source_name="weatherkit", snowfall_24h_cm=0.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        # median=0 < 1.0, OTS=10 ≥ 5cm → resort priority
+        assert result["snowfall_24h_cm"] == 10.0
+        sd = result["source_details"]
+        assert sd["merge_method"] == "resort_priority"
+        assert sd["sources"]["onthesnow.com"]["status"] == "consensus"
+        assert sd["sources"]["open-meteo.com"]["status"] == "outlier"
+        assert sd["sources"]["weatherkit.apple.com"]["status"] == "outlier"
+
+    def test_below_threshold_still_excluded(self):
+        """Resort source with < 5cm in near-zero case → standard near-zero logic applies."""
+        base = {"snowfall_24h_cm": 0.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=3.0),
+            SourceData(source_name="weatherkit", snowfall_24h_cm=0.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        # OnTheSnow=3cm < 5cm threshold → standard near-zero → excluded
+        assert result["snowfall_24h_cm"] == 0.0
+
+    def test_near_zero_majority_still_works(self):
+        """Two sources at zero + one resort at small value → majority wins (unchanged)."""
+        base = {"snowfall_24h_cm": 0.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=0.0),
+            SourceData(source_name="snowforecast", snowfall_24h_cm=3.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        # OM=0, OTS=0, SF=3: median=0, SF=3 < 5cm → standard near-zero
+        # Consensus={OM=0, OTS=0}, SF excluded
+        assert result["snowfall_24h_cm"] == 0.0
+
+    def test_resort_priority_reason_strings(self):
+        """Verify transparency: reasons explain why resort data was trusted."""
+        base = {"snowfall_24h_cm": 0.2}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=12.0),
+            SourceData(source_name="weatherkit", snowfall_24h_cm=0.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        sd = result["source_details"]
+        assert "resort-measured" in sd["sources"]["onthesnow.com"]["reason"]
+        assert "underreported" in sd["sources"]["open-meteo.com"]["reason"]
+
+    def test_exactly_at_threshold(self):
+        """Resort source at exactly 5cm → should trigger resort priority."""
+        base = {"snowfall_24h_cm": 0.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=5.0),
+            SourceData(source_name="weatherkit", snowfall_24h_cm=0.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        assert result["snowfall_24h_cm"] == 5.0
+        assert result["source_details"]["merge_method"] == "resort_priority"
+
+    def test_standard_case_unaffected(self):
+        """When median ≥ 1.0, resort priority doesn't apply (standard outlier detection)."""
+        base = {"snowfall_24h_cm": 5.0}
+        sources = [
+            SourceData(source_name="onthesnow", snowfall_24h_cm=5.0),
+            SourceData(source_name="snowforecast", snowfall_24h_cm=15.0),
+        ]
+        result = MultiSourceMerger.merge(base, sources)
+
+        # Median=5.0 ≥ 1.0 → standard outlier detection
+        # SF=15 is outlier (>50% from median 5)
+        assert result["snowfall_24h_cm"] == 5.0
+        assert result["source_details"]["merge_method"] == "outlier_detection"
