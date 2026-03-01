@@ -2893,8 +2893,20 @@ def _build_recommendations_from_static(
     scored_items = []
     for resort in static_resorts:
         resort_id = resort.get("resort_id", "")
-        resort_lat = resort.get("latitude")
-        resort_lon = resort.get("longitude")
+        # Coordinates are on elevation_points (prefer mid > base > top)
+        resort_lat, resort_lon = None, None
+        for level in ("mid", "base", "top"):
+            for ep in resort.get("elevation_points", []):
+                if (
+                    ep.get("level") == level
+                    and ep.get("latitude")
+                    and ep.get("longitude")
+                ):
+                    resort_lat = ep["latitude"]
+                    resort_lon = ep["longitude"]
+                    break
+            if resort_lat is not None:
+                break
         if resort_lat is None or resort_lon is None:
             continue
 
