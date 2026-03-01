@@ -6,7 +6,7 @@ import os
 import re
 import time
 from datetime import UTC, datetime, timezone
-from typing import Annotated, Dict, List, Optional
+from typing import Annotated
 
 import boto3
 from botocore.exceptions import ClientError

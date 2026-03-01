@@ -29,6 +29,7 @@ from fastapi.responses import StreamingResponse
 from ulid import ULID
 
 from services.chat_service import RESORT_ALIASES, SYSTEM_PROMPT, TOOL_DEFINITIONS
+from utils.geo_utils import haversine_distance
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -786,7 +787,7 @@ def _execute_tool(tool_name: str, tool_input: dict, dynamodb) -> dict:
             ep = eps[0]
             rlat = float(ep.get("latitude", 0))
             rlon = float(ep.get("longitude", 0))
-            dist = _haversine(lat, lon, rlat, rlon)
+            dist = haversine_distance(lat, lon, rlat, rlon)
             radius = tool_input.get("radius_km", 200)
             if dist <= radius:
                 entry = {
@@ -910,21 +911,6 @@ def _execute_tool(tool_name: str, tool_input: dict, dynamodb) -> dict:
         return {"resorts": results, "count": len(results)}
 
     return {"error": f"Unknown tool: {tool_name}"}
-
-
-def _haversine(lat1, lon1, lat2, lon2):
-    import math
-
-    R = 6371
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-    a = (
-        math.sin(dlat / 2) ** 2
-        + math.cos(math.radians(lat1))
-        * math.cos(math.radians(lat2))
-        * math.sin(dlon / 2) ** 2
-    )
-    return R * 2 * math.asin(math.sqrt(a))
 
 
 def _load_history(chat_table, conversation_id, user_id):
