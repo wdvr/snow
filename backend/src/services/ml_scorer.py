@@ -714,6 +714,35 @@ def extract_features_from_raw_data(
     )
 
 
+def _override_snowfall_from_condition(
+    raw_features: dict[str, float],
+    condition: Any,
+) -> None:
+    """Override snowfall features with merged values from the condition.
+
+    When supplementary sources (OnTheSnow, Snow-Forecast) report higher
+    snowfall than Open-Meteo's hourly data, the merged condition fields
+    are more accurate. This ensures the ML model uses the best available
+    snowfall data rather than Open-Meteo's raw (often underreported) values.
+    """
+    merged_24h = getattr(condition, "snowfall_24h_cm", None)
+    merged_72h = getattr(condition, "snowfall_72h_cm", None)
+    merged_hours_since = getattr(condition, "hours_since_last_snowfall", None)
+
+    if merged_24h is not None and merged_24h > raw_features.get("snowfall_24h_cm", 0):
+        raw_features["snowfall_24h_cm"] = float(merged_24h)
+
+    if merged_72h is not None and merged_72h > raw_features.get("snowfall_72h_cm", 0):
+        raw_features["snowfall_72h_cm"] = float(merged_72h)
+
+    # If merged hours_since_last_snowfall is set (e.g., estimated from resort data)
+    # and it's smaller (more recent) than the raw_data value, use it
+    if merged_hours_since is not None:
+        raw_hours = raw_features.get("hours_since_last_snowfall", 336.0)
+        if merged_hours_since < raw_hours:
+            raw_features["hours_since_last_snowfall"] = float(merged_hours_since)
+
+
 def predict_quality(
     condition: Any,
     elevation_m: float | None = None,
@@ -741,6 +770,13 @@ def predict_quality(
         raw_features = extract_features_from_condition(condition, elevation_m)
     if raw_features is None:
         return SnowQuality.UNKNOWN, 3.5
+
+    # Override snowfall features with merged values from the condition.
+    # raw_data features use Open-Meteo's hourly arrays, but the merger
+    # may have corrected snowfall totals using resort-reported data
+    # (OnTheSnow, Snow-Forecast). Without this, the ML model sees
+    # Open-Meteo's underreported snowfall instead of the merged values.
+    _override_snowfall_from_condition(raw_features, condition)
 
     # Engineer features
     features = engineer_features(raw_features)

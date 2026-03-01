@@ -13,6 +13,7 @@ from services.ml_scorer import (
     _compute_wind_chill,
     _extract_features_at_hour,
     _forward_single,
+    _override_snowfall_from_condition,
     _relu,
     _sigmoid,
     _transpose_weights,
@@ -874,3 +875,70 @@ class TestFreshSnowFloor:
         }
         result = _apply_fresh_snow_floor(2.0, features)
         assert result == 2.0
+
+
+class TestOverrideSnowfallFromCondition:
+    """Tests for _override_snowfall_from_condition.
+
+    When the merger corrects snowfall totals using resort-reported data,
+    these overrides must propagate to the ML features (which otherwise
+    use Open-Meteo's raw hourly data directly).
+    """
+
+    def test_higher_merged_snowfall_overrides_raw(self):
+        """Merged 24h snowfall > raw → override."""
+        features = {"snowfall_24h_cm": 0.0, "snowfall_72h_cm": 2.0}
+        condition = SimpleNamespace(
+            snowfall_24h_cm=14.0,
+            snowfall_72h_cm=25.0,
+            hours_since_last_snowfall=12.0,
+        )
+        _override_snowfall_from_condition(features, condition)
+        assert features["snowfall_24h_cm"] == 14.0
+        assert features["snowfall_72h_cm"] == 25.0
+
+    def test_lower_merged_snowfall_does_not_override(self):
+        """Merged 24h snowfall < raw → keep raw (don't downgrade)."""
+        features = {"snowfall_24h_cm": 10.0, "snowfall_72h_cm": 20.0}
+        condition = SimpleNamespace(
+            snowfall_24h_cm=5.0,
+            snowfall_72h_cm=15.0,
+            hours_since_last_snowfall=None,
+        )
+        _override_snowfall_from_condition(features, condition)
+        assert features["snowfall_24h_cm"] == 10.0
+        assert features["snowfall_72h_cm"] == 20.0
+
+    def test_hours_since_override_when_more_recent(self):
+        """Merged hours_since < raw → override (snow is more recent)."""
+        features = {"hours_since_last_snowfall": 336.0}
+        condition = SimpleNamespace(
+            snowfall_24h_cm=None,
+            snowfall_72h_cm=None,
+            hours_since_last_snowfall=12.0,
+        )
+        _override_snowfall_from_condition(features, condition)
+        assert features["hours_since_last_snowfall"] == 12.0
+
+    def test_hours_since_no_override_when_raw_more_recent(self):
+        """Raw hours_since < merged → keep raw."""
+        features = {"hours_since_last_snowfall": 3.0}
+        condition = SimpleNamespace(
+            snowfall_24h_cm=None,
+            snowfall_72h_cm=None,
+            hours_since_last_snowfall=12.0,
+        )
+        _override_snowfall_from_condition(features, condition)
+        assert features["hours_since_last_snowfall"] == 3.0
+
+    def test_none_values_do_not_override(self):
+        """None merged values don't affect raw features."""
+        features = {"snowfall_24h_cm": 5.0, "hours_since_last_snowfall": 6.0}
+        condition = SimpleNamespace(
+            snowfall_24h_cm=None,
+            snowfall_72h_cm=None,
+            hours_since_last_snowfall=None,
+        )
+        _override_snowfall_from_condition(features, condition)
+        assert features["snowfall_24h_cm"] == 5.0
+        assert features["hours_since_last_snowfall"] == 6.0
