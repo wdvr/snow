@@ -875,14 +875,17 @@ def _apply_fresh_snow_floor(
 ) -> float:
     """Enforce minimum score when significant fresh snow is present.
 
-    The ML model can underestimate quality when freeze-thaw detection
-    incorrectly ages truly fresh snowfall. This floor ensures that
-    heavy fresh snow at cold temps produces at least a reasonable score.
+    The ML model can underestimate quality when Open-Meteo's raw hourly
+    data shows 0cm but merged sources (resort stations) report heavy snow.
+    This creates internally inconsistent features that confuse the model.
 
-    Rules (symmetric to _apply_no_snowfall_cap):
-    - Heavy fresh snow (>=15cm/24h) at very cold temps (<=-5C): floor at 4.5
-    - Moderate fresh snow (>=8cm/24h) at cold temps (<=-3C): floor at 3.5
-    - Light fresh snow (>=3cm/24h) at sub-zero temps (<=0C): floor at 2.5
+    Temperature tiers: cold temps produce better powder, warm temps mean
+    softer snow but still fresh and very skiable.
+
+    Rules:
+    - Heavy fresh snow (>=15cm/24h): floor 4.5 (cold) / 4.0 (cool) / 3.0 (warm)
+    - Moderate fresh snow (>=8cm/24h): floor 3.5 (cold) / 3.0 (cool) / 2.5 (warm)
+    - Light fresh snow (>=3cm/24h): floor 2.5 (cold) / 2.0 (cool)
 
     Args:
         score: Raw ML score (1.0-6.0)
@@ -895,17 +898,32 @@ def _apply_fresh_snow_floor(
     cur_temp = raw_features.get("cur_temp", 0.0)
     hours_since = raw_features.get("hours_since_last_snowfall", 336.0)
 
-    # Only apply if snow is truly recent (within last 12 hours)
-    if hours_since > 12:
+    # Only apply if snow is truly recent (within last 24 hours)
+    if hours_since > 24:
         return score
 
-    if snow_24h >= 15.0 and cur_temp <= -5.0:
-        floor = 4.5  # Heavy powder at very cold temps
-    elif snow_24h >= 8.0 and cur_temp <= -3.0:
-        floor = 3.5  # Moderate fresh snow at cold temps
-    elif snow_24h >= 3.0 and cur_temp <= 0.0:
-        floor = 2.5  # Light fresh snow at freezing temps
-    else:
+    floor = None
+    if snow_24h >= 15.0:
+        if cur_temp <= -5.0:
+            floor = 4.5  # Heavy powder at very cold temps
+        elif cur_temp <= 0.0:
+            floor = 4.0  # Heavy fresh snow at freezing
+        elif cur_temp <= 5.0:
+            floor = 3.5  # Heavy fresh, mild but 15cm+ covers well
+    elif snow_24h >= 8.0:
+        if cur_temp <= -3.0:
+            floor = 3.5  # Moderate fresh snow at cold temps
+        elif cur_temp <= 0.0:
+            floor = 3.0  # Moderate fresh at freezing
+        elif cur_temp <= 5.0:
+            floor = 3.0  # 8cm+ fresh covers refrozen base at mild temps
+    elif snow_24h >= 3.0:
+        if cur_temp <= 0.0:
+            floor = 2.5  # Light fresh snow at freezing temps
+        elif cur_temp <= 5.0:
+            floor = 2.0  # Light fresh, slightly warm
+
+    if floor is None:
         return score
 
     if score < floor:

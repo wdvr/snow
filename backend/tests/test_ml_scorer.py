@@ -778,22 +778,32 @@ class TestFreshSnowFloor:
         result = _apply_fresh_snow_floor(1.5, features)
         assert result >= 2.5
 
-    def test_no_floor_warm_temps(self):
-        """Snow at +3C should NOT be floored (melting conditions)."""
+    def test_floor_warm_temps_heavy_snow(self):
+        """Heavy snow at +3C should be floored (still fresh coverage)."""
         features = {
             "snowfall_24h_cm": 20.0,
             "cur_temp": 3.0,
             "hours_since_last_snowfall": 1.0,
         }
         result = _apply_fresh_snow_floor(2.0, features)
+        assert result == 3.5  # Heavy fresh, mild but 15cm+ covers well
+
+    def test_no_floor_hot_temps(self):
+        """Snow at +6C should NOT be floored (melting conditions)."""
+        features = {
+            "snowfall_24h_cm": 20.0,
+            "cur_temp": 6.0,
+            "hours_since_last_snowfall": 1.0,
+        }
+        result = _apply_fresh_snow_floor(2.0, features)
         assert result == 2.0
 
     def test_no_floor_stale_snow(self):
-        """Snow that fell >12 hours ago should NOT be floored."""
+        """Snow that fell >24 hours ago should NOT be floored."""
         features = {
             "snowfall_24h_cm": 20.0,
             "cur_temp": -10.0,
-            "hours_since_last_snowfall": 18.0,
+            "hours_since_last_snowfall": 30.0,
         }
         result = _apply_fresh_snow_floor(2.0, features)
         assert result == 2.0
