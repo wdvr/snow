@@ -91,6 +91,19 @@ struct FreshSnowChartView: View {
                         }
                     }
 
+                    // Today line — separates actual data from forecast
+                    if let todayDay = dailyData.last(where: { !$0.isForecast }),
+                       let todayDateVal = todayDay.dateValue {
+                        RuleMark(x: .value("Today", todayDateVal, unit: .day))
+                            .foregroundStyle(.white.opacity(0.5))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                            .annotation(position: .top, alignment: .trailing) {
+                                Text("Forecast →")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                    }
+
                     // Ice crust line — marks when the last thaw ended and snow re-froze
                     if let crustDate = crustFormedDate,
                        let crustDay = dailyData.first(where: { $0.date == crustDate }),

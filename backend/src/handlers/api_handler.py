@@ -1506,7 +1506,11 @@ def _overlay_conditions_on_timeline(
             date = point["date"]
 
             if date == today and condition:
-                # Overlay current conditions for today
+                # Overlay current conditions for today.
+                # Mark as not forecast — this is actual measured data,
+                # even if the UTC time slot is technically in the future.
+                point["is_forecast"] = False
+
                 if condition.snow_depth_cm is not None:
                     point["snow_depth_cm"] = round(condition.snow_depth_cm, 1)
 
@@ -1530,7 +1534,7 @@ def _overlay_conditions_on_timeline(
                         snowfall_cm=point["snowfall_cm"],
                         snow_depth_cm=point["snow_depth_cm"],
                         wind_speed_kmh=point.get("wind_speed_kmh"),
-                        is_forecast=point.get("is_forecast", False),
+                        is_forecast=False,
                         wind_gust_kmh=point.get("wind_gust_kmh"),
                         visibility_m=point.get("visibility_m"),
                     )
