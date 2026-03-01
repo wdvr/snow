@@ -11,18 +11,26 @@
 
 ---
 
-## Active Work (Feb 28) — Map UX + Backend Fixes
+## Active Work (Mar 1) — Weather Data Pipeline Overhaul
 
 ### In Progress
-- [ ] Fix "Show on Map" zoom (only pans, doesn't zoom from list view)
-- [ ] Fix nearby card tap offset (resort should appear in upper half above sheet)
-- [ ] Add "Zoom to Resort" button in map detail sheet
-- [ ] Search location context: "Near {place}" label + distance-sorted nearby
-- [ ] Search location: cancel/clear to return to user location
-- [ ] All map features work without location permissions
+- [ ] Rewrite OnTheSnow scraper: JSON extraction from `<script id="__NEXT_DATA__">` instead of fragile regex
+- [ ] Expand OnTheSnow resort mapping: 16 → 100+ resorts (NA + Europe)
+- [ ] Enable Snow-Forecast as secondary data source (currently disabled)
+- [ ] Simulation: compare current scores vs. scores with OnTheSnow supplementary data for 20 resorts
+- [ ] Operational status proposal: how to surface lifts/runs/surface data without polluting ML score
+
+### Completed (Feb 28-Mar 1)
+- [x] Remove Live Activity / Dynamic Island feature (doesn't change fast enough)
+- [x] Fix list view → map zoom (NavigationCoordinator 100ms delay)
+- [x] Rethink fresh snow metric: settling factor + "New Snow" terminology (15+ iOS files)
+- [x] Add settling factor to backend (time-based 1.0/0.85/0.70/0.55 multiplier)
+- [x] Update marketing text (40 data points, compaction-aware language)
+- [x] Physics eval: 4 new Breckenridge/Tahoe test cases (126/126 checks pass)
+- [x] Run difficulty display + ticket price display
+- [x] Enable Snow-Forecast in infrastructure config (ENABLE_SNOWFORECAST → "true")
 
 ### Queued
-- [x] ~~Fix API `/resorts` limit param bug~~ — was a false positive, limit works correctly
 - [ ] App Store screenshots for v2.1 (Powder Chaser branding, new features)
 - [ ] Trip Planning Mode (#23) — multi-component feature
 - [ ] Web: Trail map viewer fix (page URLs instead of DZI thumbnails) (#191)

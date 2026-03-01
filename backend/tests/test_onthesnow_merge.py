@@ -1,18 +1,24 @@
-"""Tests for OnTheSnow scraper merge_with_weather_data snow_depth integration.
+"""Tests for OnTheSnow scraper: JSON extraction, regex fallback, and merge logic.
 
-Regression: The scraper was scraping base_depth and summit_depth from OnTheSnow
-but only storing them in raw_data (debug info). The snow_depth_cm field was never
-updated, so Open-Meteo's grid-level model depth (often 0cm for mountain resorts)
-was used instead. Combined with the scraper upgrading source_confidence to HIGH,
-this made snow_depth_reliable=True with depth=0, triggering the HORRIBLE floor
-for resorts that actually have plenty of snow (e.g., Palisades Tahoe 28" base,
-Vail 65" base, Steamboat 57" base).
+Covers:
+- JSON extraction from __NEXT_DATA__ script tag (primary path)
+- Regex-based HTML parsing (fallback path)
+- merge_with_weather_data snow_depth integration
+- Resort URL mapping completeness
 
-Fix: merge_with_weather_data() now promotes scraped base_depth/summit_depth
-to the snow_depth_cm field based on the elevation level being processed.
+Regression history:
+- Scraper stored depths only in raw_data, causing HORRIBLE ratings for resorts
+  with actual snow (Palisades Tahoe 28" base, Vail 65", Steamboat 57").
+- Regex was too greedy: matched lifts count as base depth, copyright year as summit.
 """
 
-from services.onthesnow_scraper import OnTheSnowScraper, ScrapedSnowData
+import json
+
+from services.onthesnow_scraper import (
+    RESORT_URL_MAPPING,
+    OnTheSnowScraper,
+    ScrapedSnowData,
+)
 
 
 def _make_scraped_data(
@@ -368,3 +374,374 @@ class TestSnowDepthRegexParsing:
         result = scraper._parse_snow_report(html, "test", "https://test.com")
         assert result.base_depth_inches == 37.0
         assert result.summit_depth_inches is None
+
+
+# ── Helper to build __NEXT_DATA__ HTML ──────────────────────────────
+
+
+def _build_next_data_html(
+    snow: dict | None = None,
+    depths: dict | None = None,
+    lifts: dict | None = None,
+    runs: dict | None = None,
+    status: dict | None = None,
+    updated_at: str | None = None,
+    extra_html: str = "",
+) -> str:
+    """Build a minimal HTML page with __NEXT_DATA__ JSON for testing."""
+    full_resort = {}
+    if snow is not None:
+        full_resort["snow"] = snow
+    if depths is not None:
+        full_resort["depths"] = depths
+    if lifts is not None:
+        full_resort["lifts"] = lifts
+    if runs is not None:
+        full_resort["runs"] = runs
+    if status is not None:
+        full_resort["status"] = status
+    if updated_at is not None:
+        full_resort["updatedAt"] = updated_at
+
+    next_data = {
+        "props": {
+            "pageProps": {
+                "type": "resort",
+                "route": "skireport",
+                "fullResort": full_resort,
+            }
+        }
+    }
+    json_str = json.dumps(next_data)
+    return (
+        f"<html><head></head><body>"
+        f'<script id="__NEXT_DATA__" type="application/json">{json_str}</script>'
+        f"{extra_html}</body></html>"
+    )
+
+
+class TestJsonExtraction:
+    """Tests for the __NEXT_DATA__ JSON extraction path."""
+
+    def test_extracts_snowfall_from_json(self):
+        """Snowfall values (cm in JSON) are converted to inches."""
+        scraper = OnTheSnowScraper()
+        # 5.08 cm = 2 inches, 10.16 cm = 4 inches, 15.24 cm = 6 inches
+        html = _build_next_data_html(
+            snow={"last24": 5.08, "last48": 10.16, "last72": 15.24}
+        )
+        result = scraper._parse_snow_report(html, "vail", "https://test.com")
+
+        assert result is not None
+        assert abs(result.snowfall_24h_inches - 2.0) < 0.01
+        assert abs(result.snowfall_48h_inches - 4.0) < 0.01
+        assert abs(result.snowfall_72h_inches - 6.0) < 0.01
+
+    def test_extracts_depths_from_json(self):
+        """Depth values (cm in JSON) are converted to inches."""
+        scraper = OnTheSnowScraper()
+        # 119.38 cm = ~47 inches, 152.4 cm = 60 inches
+        html = _build_next_data_html(
+            depths={"base": 119.38, "middle": 135.0, "summit": 152.4}
+        )
+        result = scraper._parse_snow_report(html, "vail", "https://test.com")
+
+        assert result is not None
+        assert abs(result.base_depth_inches - 46.99) < 0.1
+        assert abs(result.mid_depth_inches - 53.15) < 0.1
+        assert abs(result.summit_depth_inches - 60.0) < 0.01
+
+    def test_extracts_lifts_and_runs(self):
+        """Lifts and runs are extracted as integers."""
+        scraper = OnTheSnowScraper()
+        html = _build_next_data_html(
+            lifts={"open": 28, "total": 33},
+            runs={"open": 222, "total": 277, "openPercent": 80},
+        )
+        result = scraper._parse_snow_report(html, "vail", "https://test.com")
+
+        assert result is not None
+        assert result.lifts_open == 28
+        assert result.lifts_total == 33
+        assert result.runs_open == 222
+        assert result.runs_total == 277
+
+    def test_extracts_open_flag_true(self):
+        """openFlag=1 maps to open_flag=True."""
+        scraper = OnTheSnowScraper()
+        html = _build_next_data_html(status={"openFlag": 1})
+        result = scraper._parse_snow_report(html, "vail", "https://test.com")
+
+        assert result is not None
+        assert result.open_flag is True
+
+    def test_extracts_open_flag_false(self):
+        """openFlag=0 maps to open_flag=False."""
+        scraper = OnTheSnowScraper()
+        html = _build_next_data_html(status={"openFlag": 0})
+        result = scraper._parse_snow_report(html, "vail", "https://test.com")
+
+        assert result is not None
+        assert result.open_flag is False
+
+    def test_extracts_updated_at(self):
+        """updatedAt ISO timestamp is stored in last_updated."""
+        scraper = OnTheSnowScraper()
+        html = _build_next_data_html(updated_at="2026-02-28T12:25:49+00:00")
+        result = scraper._parse_snow_report(html, "vail", "https://test.com")
+
+        assert result is not None
+        assert result.last_updated == "2026-02-28T12:25:49+00:00"
+
+    def test_null_values_become_none(self):
+        """Null/None JSON values result in None fields."""
+        scraper = OnTheSnowScraper()
+        html = _build_next_data_html(
+            snow={"last24": None, "last48": 0, "last72": None},
+            depths={"base": None, "middle": None, "summit": None},
+        )
+        result = scraper._parse_snow_report(html, "vail", "https://test.com")
+
+        assert result is not None
+        assert result.snowfall_24h_inches is None
+        # 0 cm -> 0 inches, not None
+        assert result.snowfall_48h_inches == 0.0
+        assert result.snowfall_72h_inches is None
+        assert result.base_depth_inches is None
+        assert result.summit_depth_inches is None
+
+    def test_zero_snowfall_preserved(self):
+        """Zero snowfall should be 0.0, not None."""
+        scraper = OnTheSnowScraper()
+        html = _build_next_data_html(snow={"last24": 0, "last48": 0.0, "last72": 0})
+        result = scraper._parse_snow_report(html, "vail", "https://test.com")
+
+        assert result is not None
+        assert result.snowfall_24h_inches == 0.0
+        assert result.snowfall_48h_inches == 0.0
+        assert result.snowfall_72h_inches == 0.0
+
+    def test_missing_snow_section(self):
+        """Missing snow section results in None snowfall fields."""
+        scraper = OnTheSnowScraper()
+        html = _build_next_data_html(lifts={"open": 10, "total": 15})
+        result = scraper._parse_snow_report(html, "vail", "https://test.com")
+
+        assert result is not None
+        assert result.snowfall_24h_inches is None
+        assert result.lifts_open == 10
+
+    def test_base_depth_fallback_to_snow_base(self):
+        """When depths.base is null, fall back to snow.base."""
+        scraper = OnTheSnowScraper()
+        html = _build_next_data_html(
+            snow={"base": 119.38},
+            depths={"base": None, "summit": None},
+        )
+        result = scraper._parse_snow_report(html, "vail", "https://test.com")
+
+        assert result is not None
+        assert abs(result.base_depth_inches - 46.99) < 0.1
+
+    def test_full_resort_data(self):
+        """Test complete resort data extraction matching real Vail structure."""
+        scraper = OnTheSnowScraper()
+        html = _build_next_data_html(
+            snow={"last24": 0, "last48": 5.08, "last72": 10.16, "base": 119.38},
+            depths={"base": 119.38, "middle": None, "summit": None},
+            lifts={"open": 28, "total": 33},
+            runs={"open": 222, "total": 277, "openPercent": 80},
+            status={"openFlag": 1},
+            updated_at="2026-02-28T12:25:49+00:00",
+        )
+        result = scraper._parse_snow_report(html, "vail", "https://test.com")
+
+        assert result is not None
+        assert result.resort_id == "vail"
+        assert result.snowfall_24h_inches == 0.0
+        assert abs(result.snowfall_48h_inches - 2.0) < 0.01
+        assert abs(result.snowfall_72h_inches - 4.0) < 0.01
+        assert abs(result.base_depth_inches - 46.99) < 0.1
+        assert result.lifts_open == 28
+        assert result.lifts_total == 33
+        assert result.runs_open == 222
+        assert result.runs_total == 277
+        assert result.open_flag is True
+        assert result.last_updated == "2026-02-28T12:25:49+00:00"
+        assert result.source_url == "https://test.com"
+
+    def test_json_preferred_over_regex(self):
+        """When both JSON and regex-parseable text exist, JSON wins."""
+        scraper = OnTheSnowScraper()
+        # JSON says 5.08cm = 2 inches for 24h
+        # HTML text says 99 inches for 24h (from regex pattern "24 hr 99")
+        html = _build_next_data_html(
+            snow={"last24": 5.08, "last48": 0, "last72": 0},
+            extra_html='<div>24 hr 99"</div>',
+        )
+        result = scraper._parse_snow_report(html, "vail", "https://test.com")
+
+        assert result is not None
+        # Should use JSON value (2"), not regex value (99")
+        assert abs(result.snowfall_24h_inches - 2.0) < 0.01
+
+
+class TestJsonFallbackToRegex:
+    """Tests that regex parsing kicks in when JSON is unavailable."""
+
+    def test_no_next_data_falls_back_to_regex(self):
+        """Without __NEXT_DATA__, regex parsing is used."""
+        scraper = OnTheSnowScraper()
+        html = '<div>Base 37" Machine Groomed Summit 41" Packed Powder</div>'
+        result = scraper._parse_snow_report(html, "test", "https://test.com")
+
+        assert result is not None
+        assert result.base_depth_inches == 37.0
+        assert result.summit_depth_inches == 41.0
+
+    def test_malformed_json_falls_back_to_regex(self):
+        """Malformed JSON in __NEXT_DATA__ triggers regex fallback."""
+        scraper = OnTheSnowScraper()
+        html = (
+            "<html><body>"
+            '<script id="__NEXT_DATA__" type="application/json">{bad json}</script>'
+            '<div>Base 37" Machine Groomed</div>'
+            "</body></html>"
+        )
+        result = scraper._parse_snow_report(html, "test", "https://test.com")
+
+        assert result is not None
+        assert result.base_depth_inches == 37.0
+
+    def test_missing_full_resort_falls_back_to_regex(self):
+        """JSON without fullResort key triggers regex fallback."""
+        scraper = OnTheSnowScraper()
+        next_data = json.dumps({"props": {"pageProps": {"type": "other"}}})
+        html = (
+            f"<html><body>"
+            f'<script id="__NEXT_DATA__" type="application/json">{next_data}</script>'
+            f'<div>Base 37" Machine Groomed</div>'
+            f"</body></html>"
+        )
+        result = scraper._parse_snow_report(html, "test", "https://test.com")
+
+        assert result is not None
+        assert result.base_depth_inches == 37.0
+
+
+class TestCmToInchesHelper:
+    """Tests for the _cm_to_inches static method."""
+
+    def test_converts_positive_cm(self):
+        assert abs(OnTheSnowScraper._cm_to_inches(2.54) - 1.0) < 0.01
+
+    def test_returns_none_for_none(self):
+        assert OnTheSnowScraper._cm_to_inches(None) is None
+
+    def test_returns_none_for_negative(self):
+        assert OnTheSnowScraper._cm_to_inches(-5.0) is None
+
+    def test_handles_zero(self):
+        assert OnTheSnowScraper._cm_to_inches(0) == 0.0
+
+    def test_handles_string_number(self):
+        assert abs(OnTheSnowScraper._cm_to_inches("2.54") - 1.0) < 0.01
+
+    def test_returns_none_for_non_numeric(self):
+        assert OnTheSnowScraper._cm_to_inches("abc") is None
+
+
+class TestOpenFlag:
+    """Tests for the open_flag field on ScrapedSnowData."""
+
+    def test_open_flag_default_none(self):
+        """Default open_flag is None."""
+        data = _make_scraped_data()
+        assert data.open_flag is None
+
+    def test_open_flag_can_be_set(self):
+        """open_flag can be explicitly set."""
+        data = ScrapedSnowData(
+            resort_id="test",
+            snowfall_24h_inches=None,
+            snowfall_48h_inches=None,
+            snowfall_72h_inches=None,
+            base_depth_inches=None,
+            summit_depth_inches=None,
+            surface_conditions=None,
+            lifts_open=None,
+            lifts_total=None,
+            runs_open=None,
+            runs_total=None,
+            last_updated=None,
+            source_url="https://test.com",
+            open_flag=True,
+        )
+        assert data.open_flag is True
+
+
+class TestResortMapping:
+    """Tests for the RESORT_URL_MAPPING completeness."""
+
+    def test_mapping_has_na_west_resorts(self):
+        """Key NA West resorts are mapped."""
+        assert RESORT_URL_MAPPING.get("whistler-blackcomb") is not None
+        assert RESORT_URL_MAPPING.get("mammoth-mountain") is not None
+        assert RESORT_URL_MAPPING.get("crystal-mountain-wa") is not None
+        assert RESORT_URL_MAPPING.get("mt-baker") is not None
+        assert RESORT_URL_MAPPING.get("mt-bachelor") is not None
+        assert RESORT_URL_MAPPING.get("stevens-pass") is not None
+
+    def test_mapping_has_na_rockies_resorts(self):
+        """Key NA Rockies resorts are mapped."""
+        assert RESORT_URL_MAPPING.get("vail") is not None
+        assert RESORT_URL_MAPPING.get("jackson-hole") is not None
+        assert RESORT_URL_MAPPING.get("big-sky-resort") is not None
+        assert RESORT_URL_MAPPING.get("alta") is not None
+        assert RESORT_URL_MAPPING.get("snowbird") is not None
+        assert RESORT_URL_MAPPING.get("deer-valley") is not None
+        assert RESORT_URL_MAPPING.get("grand-targhee") is not None
+        assert RESORT_URL_MAPPING.get("taos") is not None
+
+    def test_mapping_has_na_east_resorts(self):
+        """Key NA East resorts are mapped."""
+        assert RESORT_URL_MAPPING.get("stowe") is not None
+        assert RESORT_URL_MAPPING.get("killington") is not None
+        assert RESORT_URL_MAPPING.get("jay-peak") is not None
+        assert RESORT_URL_MAPPING.get("sugarbush") is not None
+        assert RESORT_URL_MAPPING.get("sunday-river") is not None
+        assert RESORT_URL_MAPPING.get("sugarloaf") is not None
+
+    def test_mapping_has_european_resorts(self):
+        """Key Alps resorts are mapped (not None)."""
+        assert RESORT_URL_MAPPING.get("chamonix") is not None
+        assert RESORT_URL_MAPPING.get("zermatt") is not None
+        assert RESORT_URL_MAPPING.get("st-anton") is not None
+        assert RESORT_URL_MAPPING.get("verbier") is not None
+        assert RESORT_URL_MAPPING.get("val-disere") is not None
+        assert RESORT_URL_MAPPING.get("courchevel") is not None
+        assert RESORT_URL_MAPPING.get("kitzbuehel") is not None
+        assert RESORT_URL_MAPPING.get("cortina") is not None
+
+    def test_japan_oceania_south_america_are_none(self):
+        """Japan/Oceania/South America resorts are None (not on OnTheSnow)."""
+        assert RESORT_URL_MAPPING.get("niseko") is None
+        assert RESORT_URL_MAPPING.get("hakuba") is None
+        assert RESORT_URL_MAPPING.get("queenstown-remarkables") is None
+        assert RESORT_URL_MAPPING.get("portillo") is None
+
+    def test_url_slugs_have_valid_format(self):
+        """All non-None slugs follow region/resort-name pattern."""
+        for resort_id, slug in RESORT_URL_MAPPING.items():
+            if slug is not None:
+                parts = slug.split("/")
+                assert len(parts) == 2, (
+                    f"{resort_id}: slug '{slug}' should be 'region/resort-name'"
+                )
+                assert len(parts[0]) > 0, f"{resort_id}: empty region in slug"
+                assert len(parts[1]) > 0, f"{resort_id}: empty resort name in slug"
+
+    def test_mapping_count_at_least_60(self):
+        """Mapping should have at least 60 active (non-None) entries."""
+        active = sum(1 for v in RESORT_URL_MAPPING.values() if v is not None)
+        assert active >= 60, f"Only {active} active mappings, expected >= 60"

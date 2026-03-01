@@ -546,7 +546,7 @@ weather_processor_lambda = aws.lambda_.Function(
             "SNOW_SUMMARY_TABLE": f"{app_name}-snow-summary-{environment}",
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
             # Multi-source weather data
-            "ENABLE_SNOWFORECAST": config.get("enableSnowForecast") or "false",
+            "ENABLE_SNOWFORECAST": "true",
             "ENABLE_WEATHERKIT": config.get("enableWeatherKit") or "false",
             "WEATHERKIT_KEY_ID": config.get("weatherKitKeyId") or "",
             "WEATHERKIT_TEAM_ID": config.get("weatherKitTeamId") or "",
@@ -593,7 +593,7 @@ weather_worker_lambda = aws.lambda_.Function(
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
             "WEBSITE_BUCKET": website_bucket_name,
             # Multi-source weather data
-            "ENABLE_SNOWFORECAST": config.get("enableSnowForecast") or "false",
+            "ENABLE_SNOWFORECAST": "true",
             "ENABLE_WEATHERKIT": config.get("enableWeatherKit") or "false",
             "WEATHERKIT_KEY_ID": config.get("weatherKitKeyId") or "",
             "WEATHERKIT_TEAM_ID": config.get("weatherKitTeamId") or "",
@@ -730,7 +730,7 @@ snowforecast_prefetch_lambda = aws.lambda_.Function(
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "WEBSITE_BUCKET": website_bucket_name,
             "AWS_REGION_NAME": aws_region,
-            "ENABLE_SNOWFORECAST": config.get("enableSnowForecast") or "false",
+            "ENABLE_SNOWFORECAST": "true",
         }
     ),
     tags=tags,
