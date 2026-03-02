@@ -104,7 +104,7 @@ class AuthService:
             )
         self.apple_team_id = apple_team_id or os.environ.get("APPLE_SIGNIN_TEAM_ID")
         self.apple_client_id = apple_client_id or os.environ.get(
-            "APPLE_SIGNIN_CLIENT_ID", "com.snowtracker.app"
+            "APPLE_SIGNIN_CLIENT_ID", "com.wouterdevriendt.snowtracker"
         )
         self.google_client_id = google_client_id or os.environ.get("GOOGLE_CLIENT_ID")
 

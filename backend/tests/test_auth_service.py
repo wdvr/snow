@@ -531,6 +531,63 @@ class TestAuthService:
         assert verified_user_id == user.user_id
 
     # ============================================
+    # Regression Tests: Client ID / Audience
+    # ============================================
+
+    def test_apple_client_id_default_matches_bundle_id(self):
+        """Regression: apple_client_id must default to the real iOS bundle ID.
+
+        Previously defaulted to 'com.snowtracker.app' causing audience mismatch.
+        """
+        import os
+
+        # Temporarily clear the env var to test the default
+        old_val = os.environ.pop("APPLE_SIGNIN_CLIENT_ID", None)
+        try:
+            service = AuthService(
+                user_table=Mock(),
+                jwt_secret="test-secret",
+            )
+            assert service.apple_client_id == "com.wouterdevriendt.snowtracker"
+        finally:
+            if old_val is not None:
+                os.environ["APPLE_SIGNIN_CLIENT_ID"] = old_val
+
+    def test_apple_client_id_from_env_var(self):
+        """Test apple_client_id can be overridden via env var."""
+        import os
+
+        os.environ["APPLE_SIGNIN_CLIENT_ID"] = "com.custom.bundle"
+        try:
+            service = AuthService(
+                user_table=Mock(),
+                jwt_secret="test-secret",
+            )
+            assert service.apple_client_id == "com.custom.bundle"
+        finally:
+            del os.environ["APPLE_SIGNIN_CLIENT_ID"]
+
+    def test_google_client_id_stored_on_init(self, mock_user_table):
+        """Test google_client_id is properly stored."""
+        service = AuthService(
+            user_table=mock_user_table,
+            jwt_secret="test-secret",
+            google_client_id="my-google-id.apps.googleusercontent.com",
+        )
+        assert service.google_client_id == "my-google-id.apps.googleusercontent.com"
+
+    def test_google_client_id_none_disables_google_auth(self, mock_user_table):
+        """Test that missing google_client_id disables Google auth."""
+        service = AuthService(
+            user_table=mock_user_table,
+            jwt_secret="test-secret",
+            google_client_id=None,
+        )
+        assert service.google_client_id is None
+        with pytest.raises(AuthenticationError, match="not configured"):
+            service.verify_google_token(id_token_str="any-token")
+
+    # ============================================
     # User Management Tests
     # ============================================
 

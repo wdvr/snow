@@ -372,7 +372,7 @@ def get_auth_service():
             jwt_secret=os.environ.get("JWT_SECRET_KEY"),
             apple_team_id=os.environ.get("APPLE_SIGNIN_TEAM_ID"),
             apple_client_id=os.environ.get(
-                "APPLE_SIGNIN_CLIENT_ID", "com.snowtracker.app"
+                "APPLE_SIGNIN_CLIENT_ID", "com.wouterdevriendt.snowtracker"
             ),
             google_client_id=os.environ.get("GOOGLE_CLIENT_ID"),
         )

@@ -1368,6 +1368,8 @@ def get_conditions(resort_id, headers):
             "AWS_REGION_NAME": aws_region,
             # JWT secret for authentication - set via: pulumi config set --secret jwtSecretKey "..."
             "JWT_SECRET_KEY": config.get_secret("jwtSecretKey") or "",
+            # Apple Sign In - must match iOS bundle ID for JWT audience verification
+            "APPLE_SIGNIN_CLIENT_ID": "com.wouterdevriendt.snowtracker",
             # Google OAuth Client ID for Google Sign In
             "GOOGLE_CLIENT_ID": "269334695221-p2i31pdp3n7ms7o7rpf6cb3vsdmc4ohs.apps.googleusercontent.com",
         }

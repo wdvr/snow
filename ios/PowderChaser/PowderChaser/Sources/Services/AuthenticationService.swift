@@ -249,25 +249,18 @@ class AuthenticationService: NSObject, ObservableObject {
     func handleSuccessfulAppleSignIn(credential: ASAuthorizationAppleIDCredential) {
         let userIdentifier = credential.user
 
-        // Store user identifier and provider
-        keychain.set(userIdentifier, forKey: Keys.userIdentifier)
-        keychain.set(AuthProvider.apple.rawValue, forKey: Keys.authProvider)
-
-        // Store email from credential (only provided on first sign in)
-        // This is critical - Apple only sends email once!
-        if let email = credential.email, !email.isEmpty {
-            keychain.set(email, forKey: Keys.userEmail)
-        }
-
-        // Extract name components (only provided on first sign in)
+        // Extract user info from credential (Apple only sends these on FIRST sign-in!)
+        // Hold in memory — only persist to keychain after backend auth succeeds.
+        let appleEmail = credential.email
         var firstName: String?
         var lastName: String?
+        var displayName: String?
         if let fullName = credential.fullName {
             firstName = fullName.givenName
             lastName = fullName.familyName
             let name = PersonNameComponentsFormatter().string(from: fullName)
             if !name.isEmpty {
-                keychain.set(name, forKey: Keys.userName)
+                displayName = name
             }
         }
 
@@ -275,39 +268,34 @@ class AuthenticationService: NSObject, ObservableObject {
         if let identityTokenData = credential.identityToken,
            let identityToken = String(data: identityTokenData, encoding: .utf8) {
             let authCode = credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
+            isLoading = true
             Task {
                 await authenticateWithAppleBackend(
                     identityToken: identityToken,
                     authorizationCode: authCode,
                     firstName: firstName,
                     lastName: lastName,
-                    userIdentifier: userIdentifier
+                    userIdentifier: userIdentifier,
+                    appleEmail: appleEmail,
+                    displayName: displayName
                 )
             }
         } else {
-            restoreUserSession(userIdentifier: userIdentifier, provider: .apple)
+            authLog.error("Apple Sign In: no identity token in credential")
+            errorMessage = "Sign in failed. Please try again."
             isLoading = false
         }
     }
 
     private func handleSuccessfulGoogleSignIn(userID: String, email: String?, fullName: String?, givenName: String?, familyName: String?, idToken: String) {
-        // Store user identifier and provider
-        keychain.set(userID, forKey: Keys.userIdentifier)
-        keychain.set(AuthProvider.google.rawValue, forKey: Keys.authProvider)
-
-        // Store email and name
-        if let email = email {
-            keychain.set(email, forKey: Keys.userEmail)
-        }
-        if let fullName = fullName {
-            keychain.set(fullName, forKey: Keys.userName)
-        }
-
+        // Don't store anything in keychain yet — wait for backend auth to succeed.
         Task {
             await authenticateWithGoogleBackend(
                 idToken: idToken,
                 firstName: givenName,
                 lastName: familyName,
+                googleEmail: email,
+                googleDisplayName: fullName,
                 userIdentifier: userID
             )
         }
@@ -318,7 +306,9 @@ class AuthenticationService: NSObject, ObservableObject {
         authorizationCode: String?,
         firstName: String?,
         lastName: String?,
-        userIdentifier: String
+        userIdentifier: String,
+        appleEmail: String?,
+        displayName: String?
     ) async {
         defer { isLoading = false }
 
@@ -330,32 +320,40 @@ class AuthenticationService: NSObject, ObservableObject {
                 lastName: lastName
             )
 
-            // Store tokens from backend
+            // Backend auth succeeded — NOW store everything in keychain
             keychain.set(response.accessToken, forKey: Keys.authToken)
             keychain.set(response.refreshToken, forKey: Keys.refreshToken)
+            keychain.set(userIdentifier, forKey: Keys.userIdentifier)
+            keychain.set(AuthProvider.apple.rawValue, forKey: Keys.authProvider)
 
             // Store user info from backend (includes private relay email!)
-            if let email = response.user.email {
+            let email = response.user.email ?? appleEmail
+            if let email = email, !email.isEmpty {
                 keychain.set(email, forKey: Keys.userEmail)
             }
-            if let name = [response.user.firstName, response.user.lastName]
-                .compactMap({ $0 })
-                .joined(separator: " ") as String?,
-               !name.isEmpty {
-                keychain.set(name, forKey: Keys.userName)
+            let name = [response.user.firstName, response.user.lastName]
+                .compactMap { $0 }
+                .joined(separator: " ")
+            let finalName = name.isEmpty ? displayName : name
+            if let finalName = finalName, !finalName.isEmpty {
+                keychain.set(finalName, forKey: Keys.userName)
             }
 
-            // Create user from backend response
             currentUser = AuthenticatedUser(
                 id: response.user.userId,
-                email: response.user.email,
-                fullName: [response.user.firstName, response.user.lastName].compactMap { $0 }.joined(separator: " "),
+                email: email,
+                fullName: finalName,
                 provider: .apple
             )
             isAuthenticated = true
 
         } catch {
-            authLog.error("Backend auth failed: \(error.localizedDescription)")
+            authLog.error("Apple backend auth failed: \(error.localizedDescription)")
+            // Don't leave stale credentials — clean up
+            keychain.delete(Keys.authToken)
+            keychain.delete(Keys.refreshToken)
+            keychain.delete(Keys.userIdentifier)
+            keychain.delete(Keys.authProvider)
             errorMessage = "Sign in failed. Please try again."
             isAuthenticated = false
         }
@@ -365,6 +363,8 @@ class AuthenticationService: NSObject, ObservableObject {
         idToken: String,
         firstName: String?,
         lastName: String?,
+        googleEmail: String?,
+        googleDisplayName: String?,
         userIdentifier: String
     ) async {
         defer { isLoading = false }
@@ -376,32 +376,39 @@ class AuthenticationService: NSObject, ObservableObject {
                 lastName: lastName
             )
 
-            // Store tokens from backend
+            // Backend auth succeeded — NOW store everything in keychain
             keychain.set(response.accessToken, forKey: Keys.authToken)
             keychain.set(response.refreshToken, forKey: Keys.refreshToken)
+            keychain.set(userIdentifier, forKey: Keys.userIdentifier)
+            keychain.set(AuthProvider.google.rawValue, forKey: Keys.authProvider)
 
-            // Store user info from backend
-            if let email = response.user.email {
+            let email = response.user.email ?? googleEmail
+            if let email = email, !email.isEmpty {
                 keychain.set(email, forKey: Keys.userEmail)
             }
-            if let name = [response.user.firstName, response.user.lastName]
-                .compactMap({ $0 })
-                .joined(separator: " ") as String?,
-               !name.isEmpty {
-                keychain.set(name, forKey: Keys.userName)
+            let name = [response.user.firstName, response.user.lastName]
+                .compactMap { $0 }
+                .joined(separator: " ")
+            let finalName = name.isEmpty ? googleDisplayName : name
+            if let finalName = finalName, !finalName.isEmpty {
+                keychain.set(finalName, forKey: Keys.userName)
             }
 
-            // Create user from backend response
             currentUser = AuthenticatedUser(
                 id: response.user.userId,
-                email: response.user.email,
-                fullName: [response.user.firstName, response.user.lastName].compactMap { $0 }.joined(separator: " "),
+                email: email,
+                fullName: finalName,
                 provider: .google
             )
             isAuthenticated = true
 
         } catch {
             authLog.error("Google backend auth failed: \(error.localizedDescription)")
+            // Don't leave stale credentials — clean up
+            keychain.delete(Keys.authToken)
+            keychain.delete(Keys.refreshToken)
+            keychain.delete(Keys.userIdentifier)
+            keychain.delete(Keys.authProvider)
             errorMessage = "Sign in failed. Please try again."
             isAuthenticated = false
         }
