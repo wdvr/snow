@@ -68,7 +68,10 @@ def _get_bedrock():
 def _validate_jwt(token: str) -> str | None:
     from jose import jwt as jose_jwt
 
-    jwt_secret = os.environ.get("JWT_SECRET_KEY", "dev-secret-change-in-prod")
+    jwt_secret = os.environ.get("JWT_SECRET_KEY")
+    if not jwt_secret:
+        logger.error("JWT_SECRET_KEY not configured")
+        return None
     try:
         payload = jose_jwt.decode(token, jwt_secret, algorithms=["HS256"])
         user_id = payload.get("sub")

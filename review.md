@@ -140,7 +140,7 @@
 
 | Severity | Issue | Location | Status |
 |----------|-------|----------|--------|
-| CRITICAL | JWT secret falls back to `"dev-secret-change-in-prod"` if env var missing | auth_service.py:89-91 | **FIXED** — raise error in prod |
+| CRITICAL | JWT secret hardcoded fallback removed — now requires JWT_SECRET_KEY env var on all environments | auth_service.py:89-91 | **FIXED** — raises ValueError if missing |
 | CRITICAL | Anonymous chat rate limiter creates new boto3 resource per call | api_handler.py:523,577 | **FIXED** — use `get_dynamodb()` |
 | HIGH | No admin check on event creation/deletion (any auth user can create events) | api_handler.py:2308-2388 | **NOT FIX** — events feature barely used |
 | HIGH | Feedback endpoint has no auth or rate limiting | api_handler.py:2394-2428 | **NOT FIX** — low risk, DynamoDB has TTL |

@@ -88,10 +88,10 @@ class AuthService:
         self.user_table = user_table
         self.jwt_secret = jwt_secret or os.environ.get("JWT_SECRET_KEY")
         if not self.jwt_secret:
-            environment = os.environ.get("ENVIRONMENT", "dev")
-            if environment == "prod":
-                raise ValueError("JWT_SECRET_KEY must be set in production")
-            self.jwt_secret = "dev-secret-change-in-prod"
+            raise ValueError(
+                "JWT_SECRET_KEY must be set. Configure it via environment variable "
+                "or pass jwt_secret parameter."
+            )
         self.apple_team_id = apple_team_id or os.environ.get("APPLE_SIGNIN_TEAM_ID")
         self.apple_client_id = apple_client_id or os.environ.get(
             "APPLE_SIGNIN_CLIENT_ID", "com.snowtracker.app"
