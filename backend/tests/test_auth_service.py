@@ -34,6 +34,7 @@ class TestAuthService:
             jwt_secret="test-secret-key-for-testing",
             apple_team_id="TEAM123",
             apple_client_id="com.test.app",
+            google_client_id="test-google-client-id.apps.googleusercontent.com",
         )
 
     @pytest.fixture
@@ -132,7 +133,9 @@ class TestAuthService:
         with pytest.raises(AuthenticationError):
             auth_service.verify_access_token(wrong_secret_token)
 
-    def test_refresh_tokens_success(self, auth_service, mock_user_table, sample_user_data):
+    def test_refresh_tokens_success(
+        self, auth_service, mock_user_table, sample_user_data
+    ):
         """Test successful token refresh."""
         mock_user_table.get_item.return_value = {"Item": sample_user_data}
 
@@ -171,7 +174,9 @@ class TestAuthService:
         with pytest.raises(AuthenticationError, match="Invalid token type"):
             auth_service.refresh_tokens(tokens["access_token"])
 
-    def test_refresh_tokens_inactive_user(self, auth_service, mock_user_table, sample_user_data):
+    def test_refresh_tokens_inactive_user(
+        self, auth_service, mock_user_table, sample_user_data
+    ):
         """Test refresh fails for inactive user."""
         sample_user_data["is_active"] = False
         mock_user_table.get_item.return_value = {"Item": sample_user_data}
@@ -292,9 +297,7 @@ class TestAuthService:
         assert user.email is None
 
     @patch.object(AuthService, "_decode_apple_token")
-    def test_verify_apple_token_missing_sub(
-        self, mock_decode, auth_service
-    ):
+    def test_verify_apple_token_missing_sub(self, mock_decode, auth_service):
         """Test Apple token without sub claim fails."""
         mock_decode.return_value = {
             "email": "user@icloud.com",
@@ -308,6 +311,224 @@ class TestAuthService:
         """Test invalid Apple token is rejected."""
         with pytest.raises(AuthenticationError):
             auth_service.verify_apple_token(identity_token="invalid-token")
+
+    # ============================================
+    # Google Sign In Tests (Mocked)
+    # ============================================
+
+    @patch.object(AuthService, "_decode_google_token")
+    def test_verify_google_token_new_user(
+        self, mock_decode, auth_service, mock_user_table
+    ):
+        """Test Google Sign In creates new user."""
+        mock_decode.return_value = {
+            "sub": "google-user-001",
+            "email": "user@gmail.com",
+            "email_verified": True,
+            "given_name": "Jane",
+            "family_name": "Smith",
+        }
+        mock_user_table.get_item.return_value = {}  # No existing user
+
+        user = auth_service.verify_google_token(
+            id_token_str="fake-google-token",
+            first_name="Jane",
+            last_name="Smith",
+        )
+
+        assert user.email == "user@gmail.com"
+        assert user.first_name == "Jane"
+        assert user.last_name == "Smith"
+        assert user.provider == AuthProvider.GOOGLE
+        assert user.is_new_user is True
+
+    @patch.object(AuthService, "_decode_google_token")
+    def test_verify_google_token_existing_user(
+        self, mock_decode, auth_service, mock_user_table, sample_user_data
+    ):
+        """Test Google Sign In updates existing user."""
+        mock_decode.return_value = {
+            "sub": "google-user-123",
+            "email": "user@gmail.com",
+            "email_verified": True,
+        }
+        sample_user_data["auth_provider"] = "google"
+        mock_user_table.get_item.return_value = {"Item": sample_user_data}
+
+        user = auth_service.verify_google_token(
+            id_token_str="fake-google-token",
+        )
+
+        assert user.is_new_user is False
+        assert mock_user_table.put_item.call_count >= 1
+
+    @patch.object(AuthService, "_decode_google_token")
+    def test_verify_google_token_unverified_email(
+        self, mock_decode, auth_service, mock_user_table
+    ):
+        """Test Google Sign In handles unverified email."""
+        mock_decode.return_value = {
+            "sub": "google-user-002",
+            "email": "user@gmail.com",
+            "email_verified": False,
+        }
+        mock_user_table.get_item.return_value = {}
+
+        user = auth_service.verify_google_token(id_token_str="fake-token")
+
+        assert user.email is None
+
+    @patch.object(AuthService, "_decode_google_token")
+    def test_verify_google_token_missing_sub(self, mock_decode, auth_service):
+        """Test Google token without sub claim fails."""
+        mock_decode.return_value = {
+            "email": "user@gmail.com",
+        }
+
+        with pytest.raises(AuthenticationError, match="Missing user ID"):
+            auth_service.verify_google_token(id_token_str="bad-token")
+
+    def test_verify_google_token_invalid(self, auth_service):
+        """Test invalid Google token is rejected."""
+        with pytest.raises(AuthenticationError):
+            auth_service.verify_google_token(id_token_str="invalid-token")
+
+    def test_verify_google_token_not_configured(self, mock_user_table):
+        """Test Google auth fails when client ID not set."""
+        service = AuthService(
+            user_table=mock_user_table,
+            jwt_secret="test-secret-key-for-testing",
+            google_client_id=None,
+        )
+        with pytest.raises(AuthenticationError, match="not configured"):
+            service.verify_google_token(id_token_str="some-token")
+
+    @patch.object(AuthService, "_decode_google_token")
+    def test_verify_google_token_names_from_claims(
+        self, mock_decode, auth_service, mock_user_table
+    ):
+        """Test Google Sign In uses names from claims when not provided."""
+        mock_decode.return_value = {
+            "sub": "google-user-003",
+            "email": "user@gmail.com",
+            "email_verified": True,
+            "given_name": "From",
+            "family_name": "Claims",
+        }
+        mock_user_table.get_item.return_value = {}
+
+        user = auth_service.verify_google_token(id_token_str="fake-token")
+
+        assert user.first_name == "From"
+        assert user.last_name == "Claims"
+
+    # ============================================
+    # Google Public Keys Tests (Mocked)
+    # ============================================
+
+    @patch("requests.get")
+    def test_get_google_public_keys_success(self, mock_get, auth_service):
+        """Test fetching Google's public keys."""
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "keys": [
+                {"kid": "key-1", "alg": "RS256"},
+                {"kid": "key-2", "alg": "RS256"},
+            ]
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+
+        auth_service._google_keys_cache = None
+
+        keys = auth_service._get_google_public_keys()
+
+        assert "keys" in keys
+        assert len(keys["keys"]) == 2
+        mock_get.assert_called_once()
+
+    @patch("requests.get")
+    def test_get_google_public_keys_cached(self, mock_get, auth_service):
+        """Test Google public keys are cached."""
+        mock_response = Mock()
+        mock_response.json.return_value = {"keys": [{"kid": "key-1"}]}
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+
+        auth_service._google_keys_cache = None
+        auth_service._google_keys_cache_time = 0
+
+        keys1 = auth_service._get_google_public_keys()
+        keys2 = auth_service._get_google_public_keys()
+
+        assert mock_get.call_count == 1
+        assert keys1 == keys2
+
+    @patch("services.auth_service.requests.get")
+    def test_get_google_public_keys_error_with_cache(self, mock_get, auth_service):
+        """Test fallback to cached keys on error."""
+        import requests as req
+
+        auth_service._google_keys_cache = {"keys": [{"kid": "cached-key"}]}
+        auth_service._google_keys_cache_time = 0
+
+        mock_get.side_effect = req.RequestException("Network error")
+
+        keys = auth_service._get_google_public_keys()
+
+        assert keys == {"keys": [{"kid": "cached-key"}]}
+
+    @patch("services.auth_service.requests.get")
+    def test_get_google_public_keys_error_no_cache(self, mock_get, auth_service):
+        """Test error handling when no cache available."""
+        import requests as req
+
+        auth_service._google_keys_cache = None
+        auth_service._google_keys_cache_time = 0
+
+        mock_get.side_effect = req.RequestException("Network error")
+
+        with pytest.raises(AuthenticationError, match="Failed to fetch"):
+            auth_service._get_google_public_keys()
+
+    # ============================================
+    # Cross-Provider User ID Tests
+    # ============================================
+
+    def test_user_id_different_across_all_providers(self, auth_service):
+        """Test user IDs are unique across all providers for same external ID."""
+        apple_id = auth_service._generate_user_id("user-123", AuthProvider.APPLE)
+        google_id = auth_service._generate_user_id("user-123", AuthProvider.GOOGLE)
+        guest_id = auth_service._generate_user_id("user-123", AuthProvider.GUEST)
+
+        assert apple_id != google_id
+        assert apple_id != guest_id
+        assert google_id != guest_id
+
+    @patch.object(AuthService, "_decode_google_token")
+    def test_full_google_flow(self, mock_decode, auth_service, mock_user_table):
+        """Test complete Google authentication flow."""
+        mock_decode.return_value = {
+            "sub": "google-user-flow",
+            "email": "flow@gmail.com",
+            "email_verified": True,
+            "given_name": "Flow",
+            "family_name": "Test",
+        }
+        mock_user_table.get_item.return_value = {}
+
+        # 1. Verify Google token and create user
+        user = auth_service.verify_google_token(id_token_str="fake-token")
+        assert user.is_new_user is True
+        assert user.provider == AuthProvider.GOOGLE
+
+        # 2. Create session tokens
+        tokens = auth_service.create_session_tokens(user.user_id)
+        assert "access_token" in tokens
+
+        # 3. Verify access token
+        verified_user_id = auth_service.verify_access_token(tokens["access_token"])
+        assert verified_user_id == user.user_id
 
     # ============================================
     # User Management Tests

@@ -573,6 +573,37 @@ final class APIClient {
         }
     }
 
+    /// Authenticate with Google Sign In
+    func authenticateWithGoogle(idToken: String, firstName: String?, lastName: String?) async throws -> AuthResponse {
+        let url = baseURL.appendingPathComponent("api/v1/auth/google")
+
+        let request = GoogleSignInRequest(
+            idToken: idToken,
+            firstName: firstName,
+            lastName: lastName
+        )
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(
+                url,
+                method: .post,
+                parameters: request,
+                encoder: JSONParameterEncoder.default
+            )
+            .validate()
+            .responseDecodable(of: AuthResponse.self) { response in
+                switch response.result {
+                case .success(let authResponse):
+                    self.log.debug("Authenticated with Google")
+                    continuation.resume(returning: authResponse)
+                case .failure(let error):
+                    self.log.error("Error authenticating with Google: \(error)")
+                    continuation.resume(throwing: self.mapError(error))
+                }
+            }
+        }
+    }
+
     /// Authenticate as guest
     func authenticateAsGuest(deviceId: String) async throws -> AuthResponse {
         let url = baseURL.appendingPathComponent("api/v1/auth/guest")
@@ -1850,6 +1881,18 @@ struct AppleSignInRequest: Codable {
     private enum CodingKeys: String, CodingKey {
         case identityToken = "identity_token"
         case authorizationCode = "authorization_code"
+        case firstName = "first_name"
+        case lastName = "last_name"
+    }
+}
+
+struct GoogleSignInRequest: Codable {
+    let idToken: String
+    let firstName: String?
+    let lastName: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case idToken = "id_token"
         case firstName = "first_name"
         case lastName = "last_name"
     }

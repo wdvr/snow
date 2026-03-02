@@ -70,12 +70,21 @@ class AuthService:
     _apple_keys_cache_time: float = 0
     APPLE_KEYS_CACHE_DURATION = 3600  # 1 hour
 
+    # Google's public keys URL
+    GOOGLE_KEYS_URL = "https://www.googleapis.com/oauth2/v3/certs"
+
+    # Cache for Google's public keys
+    _google_keys_cache: dict[str, Any] | None = None
+    _google_keys_cache_time: float = 0
+    GOOGLE_KEYS_CACHE_DURATION = 3600  # 1 hour
+
     def __init__(
         self,
         user_table,
         jwt_secret: str | None = None,
         apple_team_id: str | None = None,
         apple_client_id: str | None = None,
+        google_client_id: str | None = None,
     ):
         """Initialize auth service.
 
@@ -84,6 +93,7 @@ class AuthService:
             jwt_secret: Secret for signing JWTs
             apple_team_id: Apple Developer Team ID
             apple_client_id: Apple App Bundle ID
+            google_client_id: Google OAuth Client ID (optional, disables Google auth if missing)
         """
         self.user_table = user_table
         self.jwt_secret = jwt_secret or os.environ.get("JWT_SECRET_KEY")
@@ -96,6 +106,7 @@ class AuthService:
         self.apple_client_id = apple_client_id or os.environ.get(
             "APPLE_SIGNIN_CLIENT_ID", "com.snowtracker.app"
         )
+        self.google_client_id = google_client_id or os.environ.get("GOOGLE_CLIENT_ID")
 
     # ============================================
     # Apple Sign In
@@ -269,6 +280,187 @@ class AuthService:
                 # Return stale cache if fetch fails
                 return self._apple_keys_cache
             raise AuthenticationError(f"Failed to fetch Apple public keys: {str(e)}")
+
+    # ============================================
+    # Google Sign In
+    # ============================================
+
+    def verify_google_token(
+        self,
+        id_token_str: str,
+        first_name: str | None = None,
+        last_name: str | None = None,
+    ) -> AuthenticatedUser:
+        """Verify a Google ID token and create/update user.
+
+        Args:
+            id_token_str: JWT from Google Sign In
+            first_name: User's first name (from Google profile)
+            last_name: User's last name (from Google profile)
+
+        Returns:
+            AuthenticatedUser with session info
+
+        Raises:
+            AuthenticationError: If token is invalid or Google auth not configured
+        """
+        if not self.google_client_id:
+            raise AuthenticationError("Google Sign In is not configured")
+
+        try:
+            # Decode and verify the Google JWT
+            claims = self._decode_google_token(id_token_str)
+
+            # Extract user info from claims
+            google_sub = claims.get("sub")
+            email = claims.get("email")
+            raw_verified = claims.get("email_verified", False)
+            email_verified = raw_verified in (True, "true")
+
+            if not google_sub:
+                raise AuthenticationError("Missing user ID in Google token")
+
+            # Use name from claims if not provided as params
+            if not first_name:
+                first_name = claims.get("given_name")
+            if not last_name:
+                last_name = claims.get("family_name")
+
+            # Generate internal user ID from Google user ID
+            user_id = self._generate_user_id(google_sub, AuthProvider.GOOGLE)
+
+            # Check if user exists
+            existing_user = self._get_user(user_id)
+            is_new_user = existing_user is None
+
+            # Create or update user
+            if is_new_user:
+                user = self._create_user(
+                    user_id=user_id,
+                    email=email if email_verified else None,
+                    first_name=first_name,
+                    last_name=last_name,
+                    provider=AuthProvider.GOOGLE,
+                    external_id=google_sub,
+                )
+            else:
+                user = self._update_user_login(
+                    user_id=user_id,
+                    email=email if email_verified else existing_user.email,
+                    first_name=first_name or existing_user.first_name,
+                    last_name=last_name or existing_user.last_name,
+                )
+
+            return AuthenticatedUser(
+                user_id=user_id,
+                email=user.email,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                provider=AuthProvider.GOOGLE,
+                is_new_user=is_new_user,
+            )
+
+        except JWTError as e:
+            raise AuthenticationError(f"Invalid Google token: {str(e)}")
+        except AuthenticationError:
+            raise
+        except Exception as e:
+            raise AuthenticationError(f"Google authentication failed: {str(e)}")
+
+    def _decode_google_token(self, token: str) -> dict[str, Any]:
+        """Decode and verify a Google ID token.
+
+        Args:
+            token: JWT from Google
+
+        Returns:
+            Token claims
+
+        Raises:
+            AuthenticationError: If token is invalid
+        """
+        google_keys = self._get_google_public_keys()
+
+        try:
+            unverified_header = jwt.get_unverified_header(token)
+            kid = unverified_header.get("kid")
+        except JWTError as e:
+            raise AuthenticationError(f"Invalid token header: {str(e)}")
+
+        if not kid:
+            raise AuthenticationError("Missing key ID in token header")
+
+        # Find the matching public key
+        matching_key = None
+        for key in google_keys.get("keys", []):
+            if key.get("kid") == kid:
+                matching_key = key
+                break
+
+        if not matching_key:
+            # Refresh keys and try again
+            self._google_keys_cache = None
+            google_keys = self._get_google_public_keys()
+            for key in google_keys.get("keys", []):
+                if key.get("kid") == kid:
+                    matching_key = key
+                    break
+
+        if not matching_key:
+            raise AuthenticationError("No matching public key found")
+
+        # Verify and decode the token
+        try:
+            claims = jwt.decode(
+                token,
+                matching_key,
+                algorithms=["RS256"],
+                audience=self.google_client_id,
+                issuer=["accounts.google.com", "https://accounts.google.com"],
+                options={
+                    "verify_exp": True,
+                    "verify_iat": True,
+                    "verify_aud": True,
+                    "verify_iss": True,
+                },
+            )
+            return claims
+        except ExpiredSignatureError:
+            raise AuthenticationError("Token has expired")
+        except JWTClaimsError as e:
+            error_msg = str(e).lower()
+            if "audience" in error_msg:
+                raise AuthenticationError("Invalid token audience")
+            elif "issuer" in error_msg:
+                raise AuthenticationError("Invalid token issuer")
+            raise AuthenticationError(f"Token validation failed: {str(e)}")
+        except JWTError as e:
+            error_msg = str(e).lower()
+            if "audience" in error_msg:
+                raise AuthenticationError("Invalid token audience")
+            elif "issuer" in error_msg:
+                raise AuthenticationError("Invalid token issuer")
+            raise AuthenticationError(f"Token validation failed: {str(e)}")
+
+    def _get_google_public_keys(self) -> dict[str, Any]:
+        """Get Google's public keys for JWT verification."""
+        if (
+            self._google_keys_cache
+            and time.time() - self._google_keys_cache_time
+            < self.GOOGLE_KEYS_CACHE_DURATION
+        ):
+            return self._google_keys_cache
+
+        try:
+            response = requests.get(self.GOOGLE_KEYS_URL, timeout=10)
+            response.raise_for_status()
+            self._google_keys_cache = response.json()
+            self._google_keys_cache_time = time.time()
+            return self._google_keys_cache
+        except requests.RequestException as e:
+            if self._google_keys_cache:
+                return self._google_keys_cache
+            raise AuthenticationError(f"Failed to fetch Google public keys: {str(e)}")
 
     # ============================================
     # JWT Session Management

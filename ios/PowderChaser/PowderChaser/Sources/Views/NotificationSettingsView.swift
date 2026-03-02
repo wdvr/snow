@@ -225,6 +225,15 @@ struct NotificationSettingsView: View {
                         }
                         .font(.subheadline)
 
+                        // Show current API environment
+                        HStack {
+                            Text("API")
+                            Spacer()
+                            Text(AppConfiguration.shared.apiBaseURL.host ?? "unknown")
+                                .foregroundStyle(.secondary)
+                        }
+                        .font(.subheadline)
+
                         Button {
                             viewModel.sendTestNotification()
                         } label: {
@@ -255,9 +264,9 @@ struct NotificationSettingsView: View {
                                         .foregroundStyle(.secondary)
                                 }
 
-                                if !testResult.success && testResult.message.contains("Session expired") {
-                                    Button("Sign out and re-authenticate") {
-                                        AuthenticationService.shared.signOut()
+                                if !testResult.success {
+                                    Button("Retry") {
+                                        viewModel.testResult = nil
                                     }
                                     .font(.caption)
                                     .foregroundStyle(.blue)
@@ -631,11 +640,6 @@ class NotificationSettingsViewModel: ObservableObject {
     func sendTestNotification() {
         guard !isSendingTest else { return }
 
-        guard AuthenticationService.shared.isAuthenticated else {
-            testResult = TestResult(success: false, message: "Please sign in first")
-            return
-        }
-
         isSendingTest = true
         testResult = nil
 
@@ -643,8 +647,6 @@ class NotificationSettingsViewModel: ObservableObject {
             do {
                 let result = try await apiClient.sendTestPushNotification()
                 testResult = TestResult(success: true, message: result.message)
-            } catch let error as APIError {
-                testResult = TestResult(success: false, message: formatAuthError(error))
             } catch {
                 testResult = TestResult(success: false, message: error.localizedDescription)
             }
@@ -655,18 +657,6 @@ class NotificationSettingsViewModel: ObservableObject {
     func triggerNotificationProcessor() {
         guard !isSendingTest else { return }
 
-        // Check authentication first
-        let authService = AuthenticationService.shared
-        guard authService.isAuthenticated else {
-            testResult = TestResult(success: false, message: "Please sign in first")
-            return
-        }
-
-        if authService.currentUser?.provider == .guest {
-            testResult = TestResult(success: false, message: "Debug features require signing in with Apple or Google")
-            return
-        }
-
         isSendingTest = true
         testResult = nil
 
@@ -674,23 +664,10 @@ class NotificationSettingsViewModel: ObservableObject {
             do {
                 let result = try await apiClient.triggerNotificationProcessor()
                 testResult = TestResult(success: true, message: result.message)
-            } catch let error as APIError {
-                testResult = TestResult(success: false, message: formatAuthError(error))
             } catch {
                 testResult = TestResult(success: false, message: error.localizedDescription)
             }
             isSendingTest = false
-        }
-    }
-
-    private func formatAuthError(_ error: APIError) -> String {
-        switch error {
-        case .unauthorized:
-            return "Session expired. Please sign out and sign in again."
-        case .forbidden:
-            return "Debug features not available in this environment."
-        default:
-            return error.localizedDescription
         }
     }
 }

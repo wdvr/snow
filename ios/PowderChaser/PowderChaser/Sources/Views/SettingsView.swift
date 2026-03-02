@@ -282,8 +282,13 @@ struct SettingsView: View {
             } else {
                 HStack {
                     let isApple = user.provider == .apple
-                    Image(systemName: isApple ? "apple.logo" : "g.circle.fill")
-                        .foregroundStyle(isApple ? Color.primary : Color.blue)
+                    if isApple {
+                        Image(systemName: "apple.logo")
+                            .foregroundStyle(Color.primary)
+                    } else {
+                        GoogleLogoView()
+                            .frame(width: 18, height: 18)
+                    }
 
                     VStack(alignment: .leading, spacing: 2) {
                         // Show name if available

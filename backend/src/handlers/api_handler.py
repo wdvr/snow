@@ -374,6 +374,7 @@ def get_auth_service():
             apple_client_id=os.environ.get(
                 "APPLE_SIGNIN_CLIENT_ID", "com.snowtracker.app"
             ),
+            google_client_id=os.environ.get("GOOGLE_CLIENT_ID"),
         )
     return _auth_service
 
@@ -2772,6 +2773,14 @@ class AppleSignInRequest(BaseModel):
     last_name: str | None = Field(None, description="User's last name")
 
 
+class GoogleSignInRequest(BaseModel):
+    """Request body for Google Sign In."""
+
+    id_token: str = Field(..., description="JWT from Google Sign In")
+    first_name: str | None = Field(None, description="User's first name")
+    last_name: str | None = Field(None, description="User's last name")
+
+
 class GuestAuthRequest(BaseModel):
     """Request body for guest authentication."""
 
@@ -2822,6 +2831,49 @@ async def sign_in_with_apple(request: AppleSignInRequest):
         )
     except Exception as e:
         logger.error("Apple Sign In error: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authentication failed",
+        )
+
+
+@app.post("/api/v1/auth/google")
+async def sign_in_with_google(request: GoogleSignInRequest):
+    """Authenticate with Google Sign In.
+
+    Verifies the Google ID token, creates or updates the user,
+    and returns session tokens.
+    """
+    try:
+        auth_service = get_auth_service()
+
+        # Verify Google token and get/create user
+        user = auth_service.verify_google_token(
+            id_token_str=request.id_token,
+            first_name=request.first_name,
+            last_name=request.last_name,
+        )
+
+        # Create session tokens
+        tokens = auth_service.create_session_tokens(user.user_id)
+
+        # Return user info with tokens at top level (iOS expects flat structure)
+        return {
+            "user": user.to_dict(),
+            "access_token": tokens["access_token"],
+            "refresh_token": tokens["refresh_token"],
+            "token_type": tokens["token_type"],
+            "expires_in": tokens["expires_in"],
+            "is_new_user": user.is_new_user,
+        }
+
+    except AuthenticationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.error("Google Sign In error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Authentication failed",

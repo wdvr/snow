@@ -38,12 +38,12 @@ struct WelcomeView: View {
                     switch result {
                     case .success(let authorization):
                         if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
-                            // The AuthenticationService delegate handles this
-                            _ = appleIDCredential
+                            authService.handleSuccessfulAppleSignIn(credential: appleIDCredential)
                         }
-                    case .failure:
-                        // Error is handled by AuthenticationService delegate
-                        break
+                    case .failure(let error):
+                        if (error as NSError).code != ASAuthorizationError.canceled.rawValue {
+                            authService.errorMessage = "Sign in failed. Please try again."
+                        }
                     }
                 }
                 .signInWithAppleButtonStyle(.black)
@@ -65,8 +65,8 @@ struct WelcomeView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
-                    .background(Color(.systemBackground))
-                    .foregroundStyle(.primary)
+                    .background(Color.white)
+                    .foregroundStyle(.black)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)

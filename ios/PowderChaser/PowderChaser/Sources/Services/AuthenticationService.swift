@@ -94,6 +94,8 @@ class AuthenticationService: NSObject, ObservableObject {
             let userID = result?.user.userID ?? UUID().uuidString
             let email = result?.user.profile?.email
             let fullName = result?.user.profile?.name
+            let givenName = result?.user.profile?.givenName
+            let familyName = result?.user.profile?.familyName
             let idToken = result?.user.idToken?.tokenString
 
             Task { @MainActor in
@@ -117,6 +119,8 @@ class AuthenticationService: NSObject, ObservableObject {
                     userID: userID,
                     email: email,
                     fullName: fullName,
+                    givenName: givenName,
+                    familyName: familyName,
                     idToken: idToken
                 )
             }
@@ -242,7 +246,7 @@ class AuthenticationService: NSObject, ObservableObject {
         isAuthenticated = true
     }
 
-    private func handleSuccessfulAppleSignIn(credential: ASAuthorizationAppleIDCredential) {
+    func handleSuccessfulAppleSignIn(credential: ASAuthorizationAppleIDCredential) {
         let userIdentifier = credential.user
 
         // Store user identifier and provider
@@ -286,7 +290,7 @@ class AuthenticationService: NSObject, ObservableObject {
         }
     }
 
-    private func handleSuccessfulGoogleSignIn(userID: String, email: String?, fullName: String?, idToken: String) {
+    private func handleSuccessfulGoogleSignIn(userID: String, email: String?, fullName: String?, givenName: String?, familyName: String?, idToken: String) {
         // Store user identifier and provider
         keychain.set(userID, forKey: Keys.userIdentifier)
         keychain.set(AuthProvider.google.rawValue, forKey: Keys.authProvider)
@@ -300,7 +304,12 @@ class AuthenticationService: NSObject, ObservableObject {
         }
 
         Task {
-            await authenticateWithBackend(token: idToken, provider: .google, userIdentifier: userID)
+            await authenticateWithGoogleBackend(
+                idToken: idToken,
+                firstName: givenName,
+                lastName: familyName,
+                userIdentifier: userID
+            )
         }
     }
 
@@ -346,31 +355,56 @@ class AuthenticationService: NSObject, ObservableObject {
             isAuthenticated = true
 
         } catch {
-            authLog.warning("Backend auth failed: \(error.localizedDescription). Using local auth.")
-            // Fallback to local-only authentication - notifications still work without backend auth
-            keychain.set(identityToken, forKey: Keys.authToken)
-
-            // Read any previously stored email (from credential or prior backend auth)
-            let storedEmail = keychain.get(Keys.userEmail)
-            let storedName = keychain.get(Keys.userName)
-
-            currentUser = AuthenticatedUser(
-                id: userIdentifier,
-                email: storedEmail,
-                fullName: storedName,
-                provider: .apple
-            )
-            isAuthenticated = true
+            authLog.error("Backend auth failed: \(error.localizedDescription)")
+            errorMessage = "Sign in failed. Please try again."
+            isAuthenticated = false
         }
     }
 
-    private func authenticateWithBackend(token: String, provider: AuthProvider, userIdentifier: String) async {
+    private func authenticateWithGoogleBackend(
+        idToken: String,
+        firstName: String?,
+        lastName: String?,
+        userIdentifier: String
+    ) async {
         defer { isLoading = false }
 
-        // For Google, just store the token locally for now
-        // TODO: Implement Google backend auth when needed
-        keychain.set(token, forKey: Keys.authToken)
-        restoreUserSession(userIdentifier: userIdentifier, provider: provider)
+        do {
+            let response = try await APIClient.shared.authenticateWithGoogle(
+                idToken: idToken,
+                firstName: firstName,
+                lastName: lastName
+            )
+
+            // Store tokens from backend
+            keychain.set(response.accessToken, forKey: Keys.authToken)
+            keychain.set(response.refreshToken, forKey: Keys.refreshToken)
+
+            // Store user info from backend
+            if let email = response.user.email {
+                keychain.set(email, forKey: Keys.userEmail)
+            }
+            if let name = [response.user.firstName, response.user.lastName]
+                .compactMap({ $0 })
+                .joined(separator: " ") as String?,
+               !name.isEmpty {
+                keychain.set(name, forKey: Keys.userName)
+            }
+
+            // Create user from backend response
+            currentUser = AuthenticatedUser(
+                id: response.user.userId,
+                email: response.user.email,
+                fullName: [response.user.firstName, response.user.lastName].compactMap { $0 }.joined(separator: " "),
+                provider: .google
+            )
+            isAuthenticated = true
+
+        } catch {
+            authLog.error("Google backend auth failed: \(error.localizedDescription)")
+            errorMessage = "Sign in failed. Please try again."
+            isAuthenticated = false
+        }
     }
 
     // MARK: - Refresh User Info

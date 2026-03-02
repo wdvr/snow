@@ -1368,6 +1368,8 @@ def get_conditions(resort_id, headers):
             "AWS_REGION_NAME": aws_region,
             # JWT secret for authentication - set via: pulumi config set --secret jwtSecretKey "..."
             "JWT_SECRET_KEY": config.get_secret("jwtSecretKey") or "",
+            # Google OAuth Client ID for Google Sign In
+            "GOOGLE_CLIENT_ID": "269334695221-p2i31pdp3n7ms7o7rpf6cb3vsdmc4ohs.apps.googleusercontent.com",
         }
     ),
     tags=tags,
@@ -2365,6 +2367,33 @@ auth_apple_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# Google auth resource: /api/v1/auth/google
+auth_google_resource = aws.apigateway.Resource(
+    f"{app_name}-auth-google-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=auth_resource.id,
+    path_part="google",
+)
+
+# POST /api/v1/auth/google
+auth_google_method = aws.apigateway.Method(
+    f"{app_name}-auth-google-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=auth_google_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+auth_google_integration = aws.apigateway.Integration(
+    f"{app_name}-auth-google-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=auth_google_resource.id,
+    http_method=auth_google_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # Guest auth resource: /api/v1/auth/guest
 auth_guest_resource = aws.apigateway.Resource(
     f"{app_name}-auth-guest-resource-{environment}",
@@ -3043,6 +3072,7 @@ add_cors_options(
     "quality-explanations", quality_explanations_resource.id, api_gateway.id
 )
 add_cors_options("auth-apple", auth_apple_resource.id, api_gateway.id)
+add_cors_options("auth-google", auth_google_resource.id, api_gateway.id)
 add_cors_options("auth-guest", auth_guest_resource.id, api_gateway.id)
 add_cors_options("auth-refresh", auth_refresh_resource.id, api_gateway.id)
 add_cors_options("auth-me", auth_me_resource.id, api_gateway.id)
@@ -3097,6 +3127,7 @@ api_deployment = aws.apigateway.Deployment(
             recommendations_integration.id,
             recommendations_best_integration.id,
             auth_apple_integration.id,
+            auth_google_integration.id,
             auth_guest_integration.id,
             auth_refresh_integration.id,
             auth_me_integration.id,
@@ -3155,6 +3186,7 @@ api_deployment = aws.apigateway.Deployment(
             recommendations_integration,
             recommendations_best_integration,
             auth_apple_integration,
+            auth_google_integration,
             auth_guest_integration,
             auth_refresh_integration,
             auth_me_integration,
