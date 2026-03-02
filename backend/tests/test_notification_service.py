@@ -1,6 +1,7 @@
 """Tests for NotificationService."""
 
 import json
+import os
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, Mock, patch
 
@@ -252,10 +253,12 @@ class TestSendPushNotification:
         )
         assert call_kwargs["MessageStructure"] == "json"
 
-        # Verify the message is properly formatted JSON with APNS key
+        # Verify the message is properly formatted JSON with correct APNS key
         message = json.loads(call_kwargs["Message"])
-        assert "APNS" in message
-        apns_payload = json.loads(message["APNS"])
+        # Default ENVIRONMENT is "dev" so uses APNS_SANDBOX
+        apns_key = "APNS" if os.environ.get("ENVIRONMENT") == "prod" else "APNS_SANDBOX"
+        assert apns_key in message
+        apns_payload = json.loads(message[apns_key])
         assert apns_payload["aps"]["alert"]["title"] == "Fresh Snow at Whistler!"
 
     def test_send_push_notification_no_platform_arn(self, sample_payload):

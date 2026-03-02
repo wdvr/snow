@@ -2088,6 +2088,20 @@ async def register_device_token(
             app_version=request.app_version,
         )
 
+        # If authenticated, clean up any old device:UUID entry for this device
+        if user_id:
+            old_user_id = f"device:{request.device_id}"
+            if old_user_id != effective_user_id:
+                try:
+                    get_device_tokens_table().delete_item(
+                        Key={
+                            "user_id": old_user_id,
+                            "device_id": request.device_id,
+                        }
+                    )
+                except Exception:
+                    pass  # Best-effort cleanup
+
         return {
             "message": "Device token registered successfully",
             "device_id": device_token.device_id,
@@ -3830,6 +3844,38 @@ async def test_push_notification(
             ExpressionAttributeValues={":uid": user_id},
         )
         tokens = result.get("Items", [])
+
+        # Also check for tokens registered before authentication completed
+        # (stored under "device:UUID" instead of the user's hashed ID)
+        if not tokens:
+            scan_result = device_tokens_table.scan(
+                FilterExpression="begins_with(user_id, :prefix)",
+                ExpressionAttributeValues={":prefix": "device:"},
+                Limit=20,
+            )
+            device_tokens = scan_result.get("Items", [])
+            if device_tokens:
+                tokens = device_tokens
+                # Migrate these tokens to the authenticated user_id
+                for t in device_tokens:
+                    try:
+                        # Create new entry under authenticated user_id
+                        new_item = {**t, "user_id": user_id}
+                        device_tokens_table.put_item(Item=new_item)
+                        # Delete old device: entry
+                        device_tokens_table.delete_item(
+                            Key={
+                                "user_id": t["user_id"],
+                                "device_id": t["device_id"],
+                            }
+                        )
+                        logger.info(
+                            "Migrated device token from %s to %s",
+                            t["user_id"],
+                            user_id,
+                        )
+                    except Exception:
+                        pass  # Best-effort migration
 
         if not tokens:
             return {

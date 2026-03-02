@@ -82,13 +82,18 @@ final class PushNotificationService: NSObject, ObservableObject {
         pushLog.error("Failed to register for remote notifications: \(error)")
     }
 
+    /// Re-register the device token with the backend when auth state changes.
+    /// This ensures the token is stored under the authenticated user's ID
+    /// rather than the anonymous device:UUID fallback.
+    func reregisterTokenIfNeeded() async {
+        guard let token = deviceToken else { return }
+        await registerTokenWithBackend(token)
+    }
+
     /// Register token with backend API
     private func registerTokenWithBackend(_ token: String) async {
-        guard AuthenticationService.shared.isAuthenticated else {
-            pushLog.debug("Not authenticated, skipping token registration")
-            return
-        }
-
+        // Always register — the backend uses optional auth and falls back to
+        // device:UUID if not authenticated, so the token is stored either way.
         do {
             try await apiClient.registerDeviceToken(
                 deviceId: getDeviceId(),
@@ -97,8 +102,10 @@ final class PushNotificationService: NSObject, ObservableObject {
                 appVersion: getAppVersion()
             )
             pushLog.debug("Device token registered with backend")
+            AnalyticsService.shared.trackPushTokenRegistered(success: true)
         } catch {
             pushLog.error("Failed to register device token with backend: \(error)")
+            AnalyticsService.shared.trackPushTokenRegistered(success: false)
         }
     }
 

@@ -522,6 +522,14 @@ class NotificationSettingsViewModel: ObservableObject {
     }
 
     func saveSettings() {
+        // Track global notification setting changes
+        AnalyticsService.shared.trackNotificationSettingChanged(setting: "notifications_enabled", enabled: notificationsEnabled)
+        AnalyticsService.shared.trackNotificationSettingChanged(setting: "fresh_snow_alerts", enabled: freshSnowAlerts)
+        AnalyticsService.shared.trackNotificationSettingChanged(setting: "powder_alerts", enabled: powderAlerts)
+        AnalyticsService.shared.trackNotificationSettingChanged(setting: "event_alerts", enabled: eventAlerts)
+        AnalyticsService.shared.trackNotificationSettingChanged(setting: "thaw_freeze_alerts", enabled: thawFreezeAlerts)
+        AnalyticsService.shared.trackNotificationSettingChanged(setting: "forecast_alerts", enabled: forecastAlerts)
+
         Task {
             do {
                 let update = NotificationSettingsUpdate(
@@ -567,18 +575,33 @@ class NotificationSettingsViewModel: ObservableObject {
 
         if let freshSnowEnabled {
             settings.freshSnowEnabled = freshSnowEnabled
+            AnalyticsService.shared.trackResortAlertChanged(
+                resortId: resortId, resortName: resortId, alertType: "fresh_snow", enabled: freshSnowEnabled
+            )
         }
         if let freshSnowThresholdCm {
             settings.freshSnowThresholdCm = freshSnowThresholdCm
+            AnalyticsService.shared.trackResortAlertThresholdChanged(
+                resortId: resortId, alertType: "fresh_snow", thresholdCm: freshSnowThresholdCm
+            )
         }
         if let eventNotificationsEnabled {
             settings.eventNotificationsEnabled = eventNotificationsEnabled
+            AnalyticsService.shared.trackResortAlertChanged(
+                resortId: resortId, resortName: resortId, alertType: "events", enabled: eventNotificationsEnabled
+            )
         }
         if let powderAlertsEnabled {
             settings.powderAlertsEnabled = powderAlertsEnabled
+            AnalyticsService.shared.trackResortAlertChanged(
+                resortId: resortId, resortName: resortId, alertType: "powder", enabled: powderAlertsEnabled
+            )
         }
         if let powderThresholdCm {
             settings.powderThresholdCm = powderThresholdCm
+            AnalyticsService.shared.trackResortAlertThresholdChanged(
+                resortId: resortId, alertType: "powder", thresholdCm: powderThresholdCm
+            )
         }
 
         resortSettings[resortId] = settings

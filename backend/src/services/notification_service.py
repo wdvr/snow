@@ -166,7 +166,9 @@ class NotificationService:
 
             # Send the notification
             apns_payload = payload.to_apns_payload()
-            message = json.dumps({"APNS": json.dumps(apns_payload)})
+            environment = os.environ.get("ENVIRONMENT", "dev")
+            apns_key = "APNS" if environment == "prod" else "APNS_SANDBOX"
+            message = json.dumps({apns_key: json.dumps(apns_payload)})
 
             self.sns.publish(
                 TargetArn=endpoint_arn,

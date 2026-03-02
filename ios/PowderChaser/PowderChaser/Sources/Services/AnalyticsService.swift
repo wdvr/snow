@@ -377,6 +377,32 @@ final class AnalyticsService: @unchecked Sendable {
         ])
     }
 
+    /// Track resort-specific alert enabled/disabled
+    func trackResortAlertChanged(resortId: String, resortName: String, alertType: String, enabled: Bool) {
+        logEvent("resort_alert_changed", parameters: [
+            "resort_id": resortId,
+            "resort_name": resortName,
+            "alert_type": alertType,  // "fresh_snow", "powder", "events"
+            "enabled": enabled
+        ])
+    }
+
+    /// Track resort alert threshold changed
+    func trackResortAlertThresholdChanged(resortId: String, alertType: String, thresholdCm: Double) {
+        logEvent("resort_alert_threshold_changed", parameters: [
+            "resort_id": resortId,
+            "alert_type": alertType,
+            "threshold_cm": thresholdCm
+        ])
+    }
+
+    /// Track device token registered for push notifications
+    func trackPushTokenRegistered(success: Bool) {
+        logEvent("push_token_registered", parameters: [
+            "success": success
+        ])
+    }
+
     /// Track notification received
     func trackNotificationReceived(type: String) {
         logEvent("notification_received", parameters: [

@@ -1346,6 +1346,8 @@ def get_conditions(resort_id, headers):
             else "",
             "WEBSITE_BUCKET": website_bucket_name,
             "AWS_REGION_NAME": aws_region,
+            # JWT secret for authentication - set via: pulumi config set --secret jwtSecretKey "..."
+            "JWT_SECRET_KEY": config.get_secret("jwtSecretKey") or "",
         }
     ),
     tags=tags,

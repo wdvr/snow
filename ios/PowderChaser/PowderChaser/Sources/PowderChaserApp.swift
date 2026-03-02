@@ -122,7 +122,9 @@ struct PowderChaserApp: App {
                     // Request notification permissions when user is authenticated (skip in test mode)
                     if !ProcessInfo.processInfo.arguments.contains("UI_TESTING") {
                         Task {
-                            await pushNotificationService.requestAuthorization()
+                            _ = await pushNotificationService.requestAuthorization()
+                            // Re-register device token under the authenticated user's ID
+                            await pushNotificationService.reregisterTokenIfNeeded()
                         }
                     }
                 }
