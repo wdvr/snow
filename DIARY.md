@@ -5,6 +5,40 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Mar 2, 2026
+
+### Fix: Apple Sign-In audience mismatch — wrong bundle ID default
+`APPLE_SIGNIN_CLIENT_ID` was never set in Lambda env vars, so backend defaulted to `com.snowtracker.app` instead of the real iOS bundle ID `com.wouterdevriendt.snowtracker`. Every Apple Sign-In failed JWT audience verification. Added env var to Pulumi config and deploy.yml, fixed default.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: Keychain race condition — credentials stored before backend auth
+Both Apple and Google sign-in stored userIdentifier and authProvider in keychain *before* the backend auth call. If backend failed, stale credentials remained, making the app appear "signed in" on restart but with no valid JWT. All API calls returned 401 "session expired". Now credentials only persist after successful backend auth, cleaned up on failure.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Fix: Google Sign-In broken — raw ID token stored instead of backend JWT
+Google Sign-In appeared to work but every subsequent API call failed with 401. The iOS app was storing the raw Google ID token directly in keychain (`authenticateWithBackend` stub) instead of exchanging it with the backend for a JWT. Added full backend Google auth: `verify_google_token()` with JWKS fetch/cache from Google's certs endpoint, `POST /api/v1/auth/google` endpoint, API Gateway route, and `GOOGLE_CLIENT_ID` env var. iOS now calls `authenticateWithGoogleBackend()` which exchanges the token and stores the backend JWT — same pattern as the fixed Apple flow.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### Fix: Apple Sign-In broken on WelcomeView — credential discarded
+`SignInWithAppleButton` in WelcomeView received the `ASAuthorizationAppleIDCredential` in `onCompletion` but discarded it (`_ = appleIDCredential`). Made `handleSuccessfulAppleSignIn` accessible and called it from `onCompletion`. User was stuck on login screen after Apple auth.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Fix: Google button dark mode + settings logo
+Google sign-in button used `Color(.systemBackground)` and `.foregroundStyle(.primary)` which made it invisible in dark mode. Changed to fixed `Color.white` / `.foregroundStyle(.black)`. Settings view used SF Symbol `g.circle.fill` instead of actual Google logo — replaced with `GoogleLogoView()`.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+---
+
 ## Mar 1, 2026
 
 ### Feature: Authenticated chat rate limiting (Feature 2.11)
