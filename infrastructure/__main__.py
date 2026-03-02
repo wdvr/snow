@@ -2890,6 +2890,122 @@ admin_backfill_geohashes_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# Notifications resource: /api/v1/notifications
+notifications_resource = aws.apigateway.Resource(
+    f"{app_name}-notifications-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="notifications",
+)
+
+# GET /api/v1/notifications
+notifications_get_method = aws.apigateway.Method(
+    f"{app_name}-notifications-get-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notifications_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+notifications_get_integration = aws.apigateway.Integration(
+    f"{app_name}-notifications-get-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notifications_resource.id,
+    http_method=notifications_get_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Unread count resource: /api/v1/notifications/unread-count
+notifications_unread_count_resource = aws.apigateway.Resource(
+    f"{app_name}-notifications-unread-count-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=notifications_resource.id,
+    path_part="unread-count",
+)
+
+# GET /api/v1/notifications/unread-count
+notifications_unread_count_method = aws.apigateway.Method(
+    f"{app_name}-notifications-unread-count-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notifications_unread_count_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+notifications_unread_count_integration = aws.apigateway.Integration(
+    f"{app_name}-notifications-unread-count-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notifications_unread_count_resource.id,
+    http_method=notifications_unread_count_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Read all resource: /api/v1/notifications/read-all
+notifications_read_all_resource = aws.apigateway.Resource(
+    f"{app_name}-notifications-read-all-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=notifications_resource.id,
+    path_part="read-all",
+)
+
+# POST /api/v1/notifications/read-all
+notifications_read_all_method = aws.apigateway.Method(
+    f"{app_name}-notifications-read-all-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notifications_read_all_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+notifications_read_all_integration = aws.apigateway.Integration(
+    f"{app_name}-notifications-read-all-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notifications_read_all_resource.id,
+    http_method=notifications_read_all_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
+# Single notification resource: /api/v1/notifications/{notificationId}
+notification_resource = aws.apigateway.Resource(
+    f"{app_name}-notification-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=notifications_resource.id,
+    path_part="{notificationId}",
+)
+
+# Notification read resource: /api/v1/notifications/{notificationId}/read
+notification_read_resource = aws.apigateway.Resource(
+    f"{app_name}-notification-read-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=notification_resource.id,
+    path_part="read",
+)
+
+# POST /api/v1/notifications/{notificationId}/read
+notification_read_method = aws.apigateway.Method(
+    f"{app_name}-notification-read-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notification_read_resource.id,
+    http_method="POST",
+    authorization="NONE",
+)
+
+notification_read_integration = aws.apigateway.Integration(
+    f"{app_name}-notification-read-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notification_read_resource.id,
+    http_method=notification_read_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # --- CORS: Add OPTIONS to all API resources ---
 # Required for browser CORS preflight requests (triggered by Content-Type or Authorization headers)
 add_cors_options("resort", resort_resource.id, api_gateway.id)
@@ -2939,6 +3055,15 @@ add_cors_options("chat", chat_resource.id, api_gateway.id)
 add_cors_options("chat-suggestions", chat_suggestions_resource.id, api_gateway.id)
 add_cors_options("chat-conversations", chat_conversations_resource.id, api_gateway.id)
 add_cors_options("chat-conversation", chat_conversation_resource.id, api_gateway.id)
+add_cors_options("notifications", notifications_resource.id, api_gateway.id)
+add_cors_options(
+    "notifications-unread-count", notifications_unread_count_resource.id, api_gateway.id
+)
+add_cors_options(
+    "notifications-read-all", notifications_read_all_resource.id, api_gateway.id
+)
+add_cors_options("notification", notification_resource.id, api_gateway.id)
+add_cors_options("notification-read", notification_read_resource.id, api_gateway.id)
 
 # API Gateway Deployment (depends on all integrations)
 # Note: triggers parameter forces recreation when routes change
@@ -2999,6 +3124,10 @@ api_deployment = aws.apigateway.Deployment(
             debug_trigger_notifications_integration.id,
             debug_test_push_integration.id,
             admin_backfill_geohashes_integration.id,
+            notifications_get_integration.id,
+            notifications_unread_count_integration.id,
+            notifications_read_all_integration.id,
+            notification_read_integration.id,
         ).apply(lambda ids: ",".join(ids)),
     },
     opts=pulumi.ResourceOptions(
@@ -3053,6 +3182,10 @@ api_deployment = aws.apigateway.Deployment(
             debug_trigger_notifications_integration,
             debug_test_push_integration,
             admin_backfill_geohashes_integration,
+            notifications_get_integration,
+            notifications_unread_count_integration,
+            notifications_read_all_integration,
+            notification_read_integration,
         ]
     ),
 )
