@@ -220,6 +220,10 @@ GET  /api/v1/resorts/{id}/condition-reports - List condition reports for resort
 GET  /api/v1/user/condition-reports    - List user's own condition reports
 DELETE /api/v1/resorts/{id}/condition-reports/{report_id} - Delete condition report
 GET  /api/v1/resorts/{id}/history      - Snow history (daily snowfall chart data + season summary)
+GET  /api/v1/notifications               - Paginated notification history (?limit=30&cursor=)
+GET  /api/v1/notifications/unread-count   - Unread notification count (for badge)
+POST /api/v1/notifications/{id}/read      - Mark notification as read
+POST /api/v1/notifications/read-all       - Mark all notifications as read
 ```
 
 ### DynamoDB Tables
@@ -235,6 +239,7 @@ snow-tracker-feedback-{env}                - User feedback
 snow-tracker-chat-{env}                    - AI chat conversations (30d TTL)
 snow-tracker-condition-reports-{env}       - User condition reports (90d TTL)
 snow-tracker-chat-suggestions-{env}       - Dynamic AI chat suggestions (no TTL)
+snow-tracker-notifications-{env}          - In-app notification history (30d TTL)
 ```
 
 ### Bedrock Configuration

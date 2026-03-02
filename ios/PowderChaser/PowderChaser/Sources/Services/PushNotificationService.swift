@@ -3,6 +3,10 @@ import UserNotifications
 import UIKit
 import os.log
 
+extension Notification.Name {
+    static let didReceiveForegroundNotification = Notification.Name("didReceiveForegroundNotification")
+}
+
 private let pushLog = Logger(subsystem: "com.snowtracker.app", category: "PushNotifications")
 
 // MARK: - Push Notification Service
@@ -154,6 +158,10 @@ extension PushNotificationService: UNUserNotificationCenterDelegate {
     ) {
         // Show notification even when app is in foreground
         completionHandler([.banner, .badge, .sound])
+        // Notify bell button to refresh unread count
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .didReceiveForegroundNotification, object: nil)
+        }
     }
 
     /// Called when user taps on notification

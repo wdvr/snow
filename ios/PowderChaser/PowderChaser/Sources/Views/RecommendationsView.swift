@@ -61,6 +61,8 @@ struct BestSnowNearYouView: View {
     @StateObject private var locationManager = LocationManager.shared
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
+    @EnvironmentObject private var notificationHistoryVM: NotificationHistoryViewModel
+    @State private var showingNotifications = false
 
     @State private var selectedTab = 0
     @State private var searchRadius: Double = 1000
@@ -102,6 +104,14 @@ struct BestSnowNearYouView: View {
                 }
             }
             .navigationTitle("Best Snow")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NotificationBellButton(viewModel: notificationHistoryVM, showingSheet: $showingNotifications)
+                }
+            }
+            .sheet(isPresented: $showingNotifications) {
+                NotificationHistoryView(viewModel: notificationHistoryVM)
+            }
             .navigationDestination(for: Resort.self) { resort in
                 ResortDetailView(resort: resort)
             }

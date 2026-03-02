@@ -142,6 +142,7 @@ _trips_table = None
 _condition_report_service = None
 _chat_service = None
 _daily_history_service = None
+_notification_history_service = None
 
 # Security scheme for bearer token authentication
 security = HTTPBearer(auto_error=False)
@@ -2036,6 +2037,20 @@ def get_device_tokens_table():
     return _device_tokens_table
 
 
+def get_notification_history_service():
+    """Get or create NotificationHistoryService (lazy init for SnapStart)."""
+    global _notification_history_service
+    if _notification_history_service is None:
+        from services.notification_history_service import NotificationHistoryService
+
+        _notification_history_service = NotificationHistoryService(
+            table=get_dynamodb().Table(
+                os.environ.get("NOTIFICATIONS_TABLE", "snow-tracker-notifications-dev")
+            )
+        )
+    return _notification_history_service
+
+
 def get_notification_service():
     """Get or create NotificationService (lazy init for SnapStart)."""
     global _notification_service
@@ -2061,6 +2076,7 @@ def get_notification_service():
             resorts_table=dynamodb.Table(
                 os.environ.get("RESORTS_TABLE", "snow-tracker-resorts-dev")
             ),
+            notification_history_service=get_notification_history_service(),
         )
     return _notification_service
 
@@ -2436,6 +2452,114 @@ async def delete_resort_notification_settings(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete resort notification settings",
+        )
+
+
+# MARK: - Notification History Endpoints
+
+
+@app.get("/api/v1/notifications")
+async def get_notification_history(
+    limit: int = Query(default=30, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    user_id: str = Depends(get_current_user_id),
+):
+    """Get paginated notification history for the current user."""
+    try:
+        service = get_notification_history_service()
+        result = service.get_notifications(user_id, limit=limit, cursor=cursor)
+
+        notifications = [
+            {
+                "notification_id": n.notification_id,
+                "notification_type": n.notification_type.value,
+                "resort_id": n.resort_id,
+                "resort_name": n.resort_name,
+                "title": n.title,
+                "body": n.body,
+                "sent_at": n.sent_at,
+                "read_at": n.read_at,
+                "data": n.data,
+            }
+            for n in result["notifications"]
+        ]
+
+        response_data = {"notifications": notifications}
+        if "cursor" in result:
+            response_data["cursor"] = result["cursor"]
+
+        return JSONResponse(
+            content=response_data,
+            headers={"Cache-Control": "private, no-cache"},
+        )
+    except Exception as e:
+        logger.error("Failed to get notification history: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get notification history",
+        )
+
+
+@app.get("/api/v1/notifications/unread-count")
+async def get_unread_notification_count(
+    user_id: str = Depends(get_current_user_id),
+):
+    """Get the number of unread notifications for badge display."""
+    try:
+        service = get_notification_history_service()
+        count = service.get_unread_count(user_id)
+        return JSONResponse(
+            content={"unread_count": count},
+            headers={"Cache-Control": "private, no-cache"},
+        )
+    except Exception as e:
+        logger.error("Failed to get unread count: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get unread notification count",
+        )
+
+
+@app.post("/api/v1/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Mark a single notification as read."""
+    _validate_resource_id(notification_id, "notification_id")
+    try:
+        service = get_notification_history_service()
+        found = service.mark_as_read(user_id, notification_id)
+        if not found:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Notification not found",
+            )
+        return JSONResponse(content={"status": "ok"})
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to mark notification as read: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to mark notification as read",
+        )
+
+
+@app.post("/api/v1/notifications/read-all")
+async def mark_all_notifications_read(
+    user_id: str = Depends(get_current_user_id),
+):
+    """Mark all notifications as read."""
+    try:
+        service = get_notification_history_service()
+        count = service.mark_all_as_read(user_id)
+        return JSONResponse(content={"status": "ok", "marked_count": count})
+    except Exception as e:
+        logger.error("Failed to mark all as read: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to mark all notifications as read",
         )
 
 

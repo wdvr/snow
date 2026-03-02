@@ -1034,6 +1034,92 @@ final class APIClient {
         }
     }
 
+    // MARK: - Notification History API
+
+    /// Get paginated notification history for the current user
+    func getNotificationHistory(limit: Int = 30, cursor: String? = nil) async throws -> NotificationHistoryResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/notifications"), resolvingAgainstBaseURL: false)!
+        var queryItems = [URLQueryItem(name: "limit", value: String(limit))]
+        if let cursor {
+            queryItems.append(URLQueryItem(name: "cursor", value: cursor))
+        }
+        components.queryItems = queryItems
+
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, headers: authHeaders())
+                .validate()
+                .responseDecodable(of: NotificationHistoryResponse.self) { response in
+                    switch response.result {
+                    case .success(let historyResponse):
+                        self.log.debug("Fetched \(historyResponse.notifications.count) notifications")
+                        continuation.resume(returning: historyResponse)
+                    case .failure(let error):
+                        self.log.error("Error fetching notification history: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
+    /// Get the number of unread notifications (for badge)
+    func getUnreadNotificationCount() async throws -> Int {
+        let url = baseURL.appendingPathComponent("api/v1/notifications/unread-count")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, headers: authHeaders())
+                .validate()
+                .responseDecodable(of: UnreadCountResponse.self) { response in
+                    switch response.result {
+                    case .success(let countResponse):
+                        continuation.resume(returning: countResponse.unreadCount)
+                    case .failure(let error):
+                        self.log.error("Error fetching unread count: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
+    /// Mark a single notification as read
+    func markNotificationRead(notificationId: String) async throws {
+        let url = baseURL.appendingPathComponent("api/v1/notifications/\(notificationId)/read")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, method: .post, headers: authHeaders())
+                .validate()
+                .response { response in
+                    if let error = response.error {
+                        self.log.error("Error marking notification as read: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    } else {
+                        continuation.resume()
+                    }
+                }
+        }
+    }
+
+    /// Mark all notifications as read
+    func markAllNotificationsRead() async throws {
+        let url = baseURL.appendingPathComponent("api/v1/notifications/read-all")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, method: .post, headers: authHeaders())
+                .validate()
+                .response { response in
+                    if let error = response.error {
+                        self.log.error("Error marking all notifications as read: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    } else {
+                        continuation.resume()
+                    }
+                }
+        }
+    }
+
     // MARK: - Feedback API
 
     func submitFeedback(_ feedback: FeedbackSubmission) async throws {

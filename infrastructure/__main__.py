@@ -329,6 +329,22 @@ chat_suggestions_table = aws.dynamodb.Table(
     tags=tags,
 )
 
+# Notification history table for in-app alert history
+notifications_table = aws.dynamodb.Table(
+    f"{app_name}-notifications-{environment}",
+    name=f"{app_name}-notifications-{environment}",
+    billing_mode="PAY_PER_REQUEST",
+    hash_key="user_id",
+    range_key="notification_id",
+    attributes=[
+        {"name": "user_id", "type": "S"},
+        {"name": "notification_id", "type": "S"},
+    ],
+    ttl={"attribute_name": "expires_at", "enabled": True},
+    point_in_time_recovery=aws.dynamodb.TablePointInTimeRecoveryArgs(enabled=True),
+    tags=tags,
+)
+
 # IAM Role for Lambda functions
 lambda_role = aws.iam.Role(
     f"{app_name}-lambda-role-{environment}",
@@ -367,6 +383,7 @@ lambda_policy = aws.iam.RolePolicy(
         daily_history_table.arn,
         chat_rate_limit_table.arn,
         chat_suggestions_table.arn,
+        notifications_table.arn,
     ).apply(
         lambda arns: f"""{{
         "Version": "2012-10-17",
@@ -405,6 +422,7 @@ lambda_policy = aws.iam.RolePolicy(
                     "{arns[9]}",
                     "{arns[10]}",
                     "{arns[11]}",
+                    "{arns[12]}",
                     "{arns[0]}/index/*",
                     "{arns[1]}/index/*",
                     "{arns[2]}/index/*",
@@ -416,7 +434,8 @@ lambda_policy = aws.iam.RolePolicy(
                     "{arns[8]}/index/*",
                     "{arns[9]}/index/*",
                     "{arns[10]}/index/*",
-                    "{arns[11]}/index/*"
+                    "{arns[11]}/index/*",
+                    "{arns[12]}/index/*"
                 ]
             }},
             {{
@@ -1341,6 +1360,7 @@ def get_conditions(resort_id, headers):
             "SNOW_SUMMARY_TABLE": f"{app_name}-snow-summary-{environment}",
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
             "CHAT_SUGGESTIONS_TABLE": f"{app_name}-chat-suggestions-{environment}",
+            "NOTIFICATIONS_TABLE": f"{app_name}-notifications-{environment}",
             "APNS_PLATFORM_APP_ARN": apns_platform_app_arn
             if apns_platform_app_arn
             else "",
@@ -3511,6 +3531,7 @@ pulumi.export("chat_table_name", chat_table.name)
 pulumi.export("chat_rate_limit_table_name", chat_rate_limit_table.name)
 pulumi.export("condition_reports_table_name", condition_reports_table.name)
 pulumi.export("daily_history_table_name", daily_history_table.name)
+pulumi.export("notifications_table_name", notifications_table.name)
 pulumi.export("lambda_role_arn", lambda_role.arn)
 pulumi.export("api_gateway_id", api_gateway.id)
 pulumi.export("api_gateway_url", api_deployment.invoke_url)

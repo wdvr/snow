@@ -21,6 +21,8 @@ struct FavoritesView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
+    @EnvironmentObject private var notificationHistoryVM: NotificationHistoryViewModel
+    @State private var showingNotifications = false
     @State private var resortToRemove: Resort?
     @State private var showingGroupManager = false
     @State private var showingMoveSheet = false
@@ -85,6 +87,12 @@ struct FavoritesView: View {
                         }
                     }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    NotificationBellButton(viewModel: notificationHistoryVM, showingSheet: $showingNotifications)
+                }
+            }
+            .sheet(isPresented: $showingNotifications) {
+                NotificationHistoryView(viewModel: notificationHistoryVM)
             }
             .onAppear {
                 AnalyticsService.shared.trackScreen("Favorites", screenClass: "FavoritesView")

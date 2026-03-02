@@ -52,8 +52,10 @@ struct ResortListView: View {
     @EnvironmentObject private var snowConditionsManager: SnowConditionsManager
     @EnvironmentObject private var userPreferencesManager: UserPreferencesManager
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
+    @EnvironmentObject private var notificationHistoryVM: NotificationHistoryViewModel
     @ObservedObject private var locationManager = LocationManager.shared
     @Binding var deepLinkResort: Resort?
+    @State private var showingNotifications = false
 
     init(deepLinkResort: Binding<Resort?> = .constant(nil)) {
         _deepLinkResort = deepLinkResort
@@ -344,6 +346,14 @@ struct ResortListView: View {
                 }
             }
             .navigationTitle("Snow Resorts")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NotificationBellButton(viewModel: notificationHistoryVM, showingSheet: $showingNotifications)
+                }
+            }
+            .sheet(isPresented: $showingNotifications) {
+                NotificationHistoryView(viewModel: notificationHistoryVM)
+            }
             .onAppear {
                 // Restore saved region filter
                 if !savedRegionFilter.isEmpty, let region = SkiRegion(rawValue: savedRegionFilter) {

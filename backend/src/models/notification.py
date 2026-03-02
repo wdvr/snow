@@ -323,14 +323,43 @@ class NotificationPayload(BaseModel):
 class NotificationRecord(BaseModel):
     """Record of a sent notification (for deduplication and history)."""
 
-    notification_id: str = Field(..., description="Unique notification ID")
+    notification_id: str = Field(..., description="Unique notification ID (ULID)")
     user_id: str = Field(..., description="User who received notification")
     notification_type: NotificationType = Field(..., description="Type of notification")
     resort_id: str | None = Field(None, description="Related resort ID")
+    resort_name: str | None = Field(None, description="Related resort name")
     title: str = Field(..., description="Notification title")
     body: str = Field(..., description="Notification body")
     sent_at: str = Field(..., description="ISO timestamp when notification was sent")
     read_at: str | None = Field(
         None, description="ISO timestamp when notification was read"
     )
+    expires_at: int | None = Field(None, description="TTL epoch timestamp")
     data: dict = Field(default_factory=dict, description="Additional data")
+
+    @classmethod
+    def create(
+        cls,
+        user_id: str,
+        payload: "NotificationPayload",
+        ttl_days: int = 30,
+    ) -> "NotificationRecord":
+        """Create a new notification record from a payload."""
+        from ulid import ULID
+
+        now = datetime.now(UTC)
+        notification_id = str(ULID())
+        expires_at = int(now.timestamp()) + (ttl_days * 24 * 60 * 60)
+
+        return cls(
+            notification_id=notification_id,
+            user_id=user_id,
+            notification_type=payload.notification_type,
+            resort_id=payload.resort_id,
+            resort_name=payload.resort_name,
+            title=payload.title,
+            body=payload.body,
+            sent_at=now.isoformat(),
+            expires_at=expires_at,
+            data=payload.data,
+        )

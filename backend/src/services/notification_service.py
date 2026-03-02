@@ -38,6 +38,7 @@ class NotificationService:
         resorts_table,
         sns_client=None,
         apns_platform_arn: str | None = None,
+        notification_history_service=None,
     ):
         """Initialize notification service.
 
@@ -49,6 +50,7 @@ class NotificationService:
             resorts_table: DynamoDB table for resorts
             sns_client: Optional SNS client (for testing)
             apns_platform_arn: ARN of the APNs platform application
+            notification_history_service: Optional service for storing notification history
         """
         self.device_tokens_table = device_tokens_table
         self.user_preferences_table = user_preferences_table
@@ -59,6 +61,7 @@ class NotificationService:
         self.apns_platform_arn = apns_platform_arn or os.environ.get(
             "APNS_PLATFORM_APP_ARN"
         )
+        self.notification_history_service = notification_history_service
 
     # =========================================================================
     # Device Token Management
@@ -208,6 +211,15 @@ class NotificationService:
         for device in device_tokens:
             if self.send_push_notification(device.token, payload):
                 sent_count += 1
+
+        # Store in notification history for in-app bell icon
+        if sent_count > 0 and self.notification_history_service:
+            try:
+                self.notification_history_service.store_notification(user_id, payload)
+            except Exception:
+                logger.warning(
+                    "Failed to store notification history for user %s", user_id
+                )
 
         return sent_count
 

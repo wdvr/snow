@@ -150,6 +150,8 @@ struct MainTabView: View {
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @State private var deepLinkResort: Resort?
     @State private var showingChat = false
+    @State private var showingNotifications = false
+    @StateObject private var notificationHistoryVM = NotificationHistoryViewModel()
     @ObservedObject private var userPrefs = UserPreferencesManager.shared
 
     /// Number of favorited resorts with significant predicted snow (≥10cm in 48h)
@@ -172,6 +174,7 @@ struct MainTabView: View {
 
                 TabView(selection: $navigationCoordinator.selectedTab) {
                     ResortListView(deepLinkResort: $deepLinkResort)
+                        .environmentObject(notificationHistoryVM)
                         .tabItem {
                             Image(systemName: "mountain.2")
                             Text("Resorts")
@@ -186,6 +189,7 @@ struct MainTabView: View {
                         .tag(1)
 
                     BestSnowNearYouView()
+                        .environmentObject(notificationHistoryVM)
                         .tabItem {
                             Image(systemName: "star.fill")
                             Text("Best Snow")
@@ -193,6 +197,7 @@ struct MainTabView: View {
                         .tag(2)
 
                     FavoritesView()
+                        .environmentObject(notificationHistoryVM)
                         .tabItem {
                             Image(systemName: "heart")
                             Text("Favorites")
@@ -255,6 +260,7 @@ struct MainTabView: View {
         .animation(.easeInOut(duration: 0.3), value: networkMonitor.isConnected)
         .onAppear {
             snowConditionsManager.loadInitialData()
+            Task { await notificationHistoryVM.fetchUnreadCount() }
         }
         .onChange(of: pushService.pendingResortId) { _, resortId in
             guard let resortId else { return }
@@ -270,8 +276,12 @@ struct MainTabView: View {
             if networkMonitor.isConnected {
                 Task {
                     await snowConditionsManager.prefetchFavoriteData()
+                    await notificationHistoryVM.fetchUnreadCount()
                 }
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .didReceiveForegroundNotification)) { _ in
+            Task { await notificationHistoryVM.fetchUnreadCount() }
         }
     }
 }

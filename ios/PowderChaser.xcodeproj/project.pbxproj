@@ -92,6 +92,9 @@
 		FE7D7914F19E80975BB78429 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE911F3EEACD24710E2F4DC1 /* PushNotificationService.swift */; };
 		FEB04C344EC12D422DC329F6 /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E295314AFA6ADACA34C3640A /* ChatViewModel.swift */; };
 		FF25079569BAFE2E112A71E6 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 4D02508C890B91E8E3E9495B /* GoogleSignIn */; };
+		E164B0CD5051D50F5EBCCE6E /* NotificationHistoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88BCAA948E830038B48885C5 /* NotificationHistoryModels.swift */; };
+		41BFB33176D0FF37553DE489 /* NotificationHistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0D5A5AB469D440398866D38 /* NotificationHistoryViewModel.swift */; };
+		DDFFE9D53213AFA2D6A686DF /* NotificationHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D033513DE720D6FA80F5FDF /* NotificationHistoryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -235,6 +238,9 @@
 		F42C72717DA69A8551F89D5B /* AppIconPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconPickerView.swift; sourceTree = "<group>"; };
 		F5D3176F78365825024B48A3 /* SnowHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnowHistoryViewModel.swift; sourceTree = "<group>"; };
 		FCF3C7BC5068669C74C58714 /* Managers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Managers.swift; sourceTree = "<group>"; };
+		88BCAA948E830038B48885C5 /* NotificationHistoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHistoryModels.swift; sourceTree = "<group>"; };
+		D0D5A5AB469D440398866D38 /* NotificationHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHistoryViewModel.swift; sourceTree = "<group>"; };
+		6D033513DE720D6FA80F5FDF /* NotificationHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHistoryView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -259,6 +265,7 @@
 			children = (
 				A7ABC7453FA0CEEB7E84B6CE /* ChatModels.swift */,
 				86FE63CA3C14E74D6220DB4B /* ConditionReportModels.swift */,
+				88BCAA948E830038B48885C5 /* NotificationHistoryModels.swift */,
 				798960813C9FA22D37C18A32 /* Region.swift */,
 				590F19E3D19CEF6B71EA73B9 /* Resort.swift */,
 				288892794C30488D590E9E1C /* SnowHistoryModels.swift */,
@@ -298,6 +305,7 @@
 				96A41C25F032E5E830817543 /* ForceUpdateView.swift */,
 				3BEAF3EDFE4DAAB7C1AC4CC7 /* FreshSnowChartView.swift */,
 				9DC5FE774DC7B45C79E00C1A /* MarkdownTextView.swift */,
+				6D033513DE720D6FA80F5FDF /* NotificationHistoryView.swift */,
 				973F58394A50D6EAE8CE2441 /* NotificationSettingsView.swift */,
 				1D33E21DA6CEDD2A8E096C76 /* OnboardingView.swift */,
 				1E2965605FC3B12EB522BCF2 /* RecommendationsView.swift */,
@@ -361,6 +369,7 @@
 				94B077BA7D560D2B7EB375FC /* ConditionReportViewModel.swift */,
 				FCF3C7BC5068669C74C58714 /* Managers.swift */,
 				0569396CDAC6175920C88A62 /* MapViewModel.swift */,
+				D0D5A5AB469D440398866D38 /* NotificationHistoryViewModel.swift */,
 				F5D3176F78365825024B48A3 /* SnowHistoryViewModel.swift */,
 			);
 			path = ViewModels;
@@ -667,6 +676,9 @@
 				067A213BFFA86220BECA6A3F /* MarkdownTextView.swift in Sources */,
 				0CA7FE20399E56E6BC1250D0 /* NavigationCoordinator.swift in Sources */,
 				543F2633EED51FED49E4564C /* NetworkMonitor.swift in Sources */,
+				E164B0CD5051D50F5EBCCE6E /* NotificationHistoryModels.swift in Sources */,
+				DDFFE9D53213AFA2D6A686DF /* NotificationHistoryView.swift in Sources */,
+				41BFB33176D0FF37553DE489 /* NotificationHistoryViewModel.swift in Sources */,
 				62F490B6732ED46DBCADD259 /* NotificationSettingsView.swift in Sources */,
 				B10D083CC4F609518293DA76 /* OfflineBanner.swift in Sources */,
 				FB55F58D9E56A8CF94C2E8F0 /* OnboardingView.swift in Sources */,
