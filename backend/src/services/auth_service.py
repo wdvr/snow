@@ -240,7 +240,7 @@ class AuthService:
             unverified_claims = jwt.get_unverified_claims(token)
             token_aud = unverified_claims.get("aud")
             token_iss = unverified_claims.get("iss")
-            logger.info(
+            logger.warning(
                 "Apple token claims: aud=%s (expected=%s), iss=%s",
                 token_aud,
                 self.apple_client_id,
@@ -438,7 +438,7 @@ class AuthService:
         # Log unverified claims for debugging
         try:
             unverified_claims = jwt.get_unverified_claims(token)
-            logger.info(
+            logger.warning(
                 "Google token claims: aud=%s (expected=%s), iss=%s",
                 unverified_claims.get("aud"),
                 self.google_client_id,
