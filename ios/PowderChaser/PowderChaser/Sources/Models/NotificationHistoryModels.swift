@@ -11,6 +11,7 @@ enum AlertNotificationType: String, Codable, CaseIterable {
     case freezeAlert = "freeze_alert"
     case weeklySummary = "weekly_summary"
     case forecastSnow = "forecast_snow"
+    case test = "test"
 
     var displayName: String {
         switch self {
@@ -22,6 +23,7 @@ enum AlertNotificationType: String, Codable, CaseIterable {
         case .freezeAlert: "Freeze Alert"
         case .weeklySummary: "Weekly Summary"
         case .forecastSnow: "Snow Forecast"
+        case .test: "Test"
         }
     }
 
@@ -35,6 +37,7 @@ enum AlertNotificationType: String, Codable, CaseIterable {
         case .freezeAlert: "thermometer.snowflake"
         case .weeklySummary: "chart.bar.fill"
         case .forecastSnow: "cloud.snow.fill"
+        case .test: "testtube.2"
         }
     }
 
@@ -48,6 +51,7 @@ enum AlertNotificationType: String, Codable, CaseIterable {
         case .freezeAlert: .red
         case .weeklySummary: .indigo
         case .forecastSnow: .teal
+        case .test: .gray
         }
     }
 }

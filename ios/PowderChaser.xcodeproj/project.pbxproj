@@ -95,6 +95,7 @@
 		E164B0CD5051D50F5EBCCE6E /* NotificationHistoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88BCAA948E830038B48885C5 /* NotificationHistoryModels.swift */; };
 		41BFB33176D0FF37553DE489 /* NotificationHistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0D5A5AB469D440398866D38 /* NotificationHistoryViewModel.swift */; };
 		DDFFE9D53213AFA2D6A686DF /* NotificationHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D033513DE720D6FA80F5FDF /* NotificationHistoryView.swift */; };
+		CD90919BC70F286FF1130F25 /* InAppNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF7487475B56AA2F63B3AC7A /* InAppNotificationManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -241,6 +242,7 @@
 		88BCAA948E830038B48885C5 /* NotificationHistoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHistoryModels.swift; sourceTree = "<group>"; };
 		D0D5A5AB469D440398866D38 /* NotificationHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHistoryViewModel.swift; sourceTree = "<group>"; };
 		6D033513DE720D6FA80F5FDF /* NotificationHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHistoryView.swift; sourceTree = "<group>"; };
+		BF7487475B56AA2F63B3AC7A /* InAppNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppNotificationManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -438,6 +440,7 @@
 				616D12D83765C0D1707C0181 /* ChatStreamService.swift */,
 				8083482BCE96D55D39A68A4E /* Configuration.swift */,
 				9227F9E2467867AD92765440 /* DemoDataService.swift */,
+				BF7487475B56AA2F63B3AC7A /* InAppNotificationManager.swift */,
 				41F80419CDC388E5DCD4C45A /* LocationManager.swift */,
 				04D82DD124E717B8AECCF17B /* NavigationCoordinator.swift */,
 				35F0F2B15293AD3AF98F531D /* NetworkMonitor.swift */,
@@ -670,6 +673,7 @@
 				C1AA7A5DCABC34F34F6ECCE2 /* FeedbackView.swift in Sources */,
 				BF22E5D7DD478C7B2A50A6AC /* ForceUpdateView.swift in Sources */,
 				8A397C71E9D41DEC0E96E1BC /* FreshSnowChartView.swift in Sources */,
+				CD90919BC70F286FF1130F25 /* InAppNotificationManager.swift in Sources */,
 				485682662E1F48B8DC20FD18 /* LocationManager.swift in Sources */,
 				106688640CF680032FB66C92 /* Managers.swift in Sources */,
 				EAB2B28B1AA991116DCC7DAC /* MapViewModel.swift in Sources */,

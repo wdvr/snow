@@ -156,9 +156,26 @@ extension PushNotificationService: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        // Show notification even when app is in foreground
-        completionHandler([.banner, .badge, .sound])
-        // Notify bell button to refresh unread count
+        let content = notification.request.content
+        let title = content.title
+        let body = content.body
+        let userInfo = content.userInfo
+        let resortId = userInfo["resort_id"] as? String
+        let notificationType = userInfo["notification_type"] as? String
+
+        // Show in-app banner
+        Task { @MainActor in
+            InAppNotificationManager.shared.show(
+                title: title,
+                body: body,
+                resortId: resortId,
+                notificationType: notificationType
+            )
+        }
+
+        // Still show system banner + badge + sound
+        completionHandler([.badge, .sound])
+        // Notify bell button to refresh unread count + history
         DispatchQueue.main.async {
             NotificationCenter.default.post(name: .didReceiveForegroundNotification, object: nil)
         }

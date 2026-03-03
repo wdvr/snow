@@ -18,6 +18,7 @@ class NotificationType(str, Enum):
     FREEZE_ALERT = "freeze_alert"  # Temperature went from plus to minus
     WEEKLY_SUMMARY = "weekly_summary"  # Weekly snow digest
     FORECAST_SNOW = "forecast_snow"  # Predicted snowfall in next 3 days
+    TEST = "test"  # Manual test notification from debug settings
 
 
 # Funny messages for thaw alerts (rotate through these)

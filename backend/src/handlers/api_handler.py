@@ -4134,7 +4134,8 @@ async def test_push_notification(
                         "sound": "default",
                         "badge": 1,
                     },
-                    "test": True,
+                    "notification_type": "test",
+                    "test": "true",
                 }
 
                 # Derive key from platform ARN to match sandbox vs production
@@ -4160,6 +4161,22 @@ async def test_push_notification(
                         "error": str(e),
                     }
                 )
+
+        # Store in notification history so it appears in the bell icon
+        sent_count = sum(1 for r in results if r.get("status") == "sent")
+        if sent_count > 0:
+            try:
+                from models.notification import NotificationPayload, NotificationType
+
+                payload = NotificationPayload(
+                    notification_type=NotificationType.TEST,
+                    title=title,
+                    body=body,
+                    data={"test": "true"},
+                )
+                get_notification_history_service().store_notification(user_id, payload)
+            except Exception as e:
+                logger.warning("Failed to store test notification in history: %s", e)
 
         return {
             "message": "Test notification sent",

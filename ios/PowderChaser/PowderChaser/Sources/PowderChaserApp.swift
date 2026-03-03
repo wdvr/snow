@@ -68,6 +68,13 @@ struct PowderChaserApp: App {
                             .environmentObject(userPreferencesManager)
                             .environmentObject(pushNotificationService)
                             .environmentObject(navigationCoordinator)
+                            .overlay {
+                                InAppNotificationOverlay { resortId in
+                                    if let resortId {
+                                        pushNotificationService.pendingResortId = resortId
+                                    }
+                                }
+                            }
                     }
                 } else {
                     WelcomeView()
@@ -281,7 +288,10 @@ struct MainTabView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .didReceiveForegroundNotification)) { _ in
-            Task { await notificationHistoryVM.fetchUnreadCount() }
+            Task {
+                await notificationHistoryVM.fetchUnreadCount()
+                await notificationHistoryVM.loadNotifications()
+            }
         }
     }
 }
