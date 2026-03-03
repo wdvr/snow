@@ -646,7 +646,17 @@ class NotificationSettingsViewModel: ObservableObject {
         Task {
             do {
                 let result = try await apiClient.sendTestPushNotification()
-                testResult = TestResult(success: true, message: result.message)
+                var msg = result.message
+                if let tokensFound = result.tokensFound {
+                    msg += " (\(tokensFound) token(s))"
+                }
+                if let results = result.results {
+                    let failures = results.filter { $0.status == "failed" }
+                    for f in failures {
+                        msg += "\nFailed: \(f.error ?? "unknown error")"
+                    }
+                }
+                testResult = TestResult(success: true, message: msg)
             } catch {
                 testResult = TestResult(success: false, message: error.localizedDescription)
             }
