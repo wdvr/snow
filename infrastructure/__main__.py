@@ -1057,7 +1057,9 @@ if apns_private_key and apns_key_id:
     apns_platform_app = aws.sns.PlatformApplication(
         f"{app_name}-apns-{environment}",
         name=f"{app_name}-apns-{environment}",
-        platform="APNS_SANDBOX" if environment != "prod" else "APNS",
+        # Use APNS_SANDBOX until the app ships to App Store (aps-environment=development)
+        # Change to: "APNS_SANDBOX" if environment != "prod" else "APNS"
+        platform="APNS_SANDBOX",
         # Token-based authentication credentials
         platform_credential=apns_private_key,
         platform_principal=apns_key_id,

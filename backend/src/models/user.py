@@ -49,11 +49,11 @@ class UserPreferences(BaseModel):
         default="decent",
         description="Minimum snow quality to trigger alerts",
     )
-    created_at: str = Field(
-        ..., description="ISO timestamp when preferences were created"
+    created_at: str | None = Field(
+        default=None, description="ISO timestamp when preferences were created"
     )
-    updated_at: str = Field(
-        ..., description="ISO timestamp when preferences were last updated"
+    updated_at: str | None = Field(
+        default=None, description="ISO timestamp when preferences were last updated"
     )
 
     def get_notification_settings(self) -> UserNotificationPreferences:

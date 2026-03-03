@@ -255,10 +255,9 @@ class TestSendPushNotification:
 
         # Verify the message is properly formatted JSON with correct APNS key
         message = json.loads(call_kwargs["Message"])
-        # Default ENVIRONMENT is "dev" so uses APNS_SANDBOX
-        apns_key = "APNS" if os.environ.get("ENVIRONMENT") == "prod" else "APNS_SANDBOX"
-        assert apns_key in message
-        apns_payload = json.loads(message[apns_key])
+        # APNS key is derived from platform ARN: "APNS/snow" → "APNS"
+        assert "APNS" in message
+        apns_payload = json.loads(message["APNS"])
         assert apns_payload["aps"]["alert"]["title"] == "Fresh Snow at Whistler!"
 
     def test_send_push_notification_no_platform_arn(self, sample_payload):

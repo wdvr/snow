@@ -4108,6 +4108,22 @@ async def test_push_notification(
                 )
                 endpoint_arn = endpoint_response["EndpointArn"]
 
+                # Re-enable endpoint if disabled (e.g. after token refresh)
+                try:
+                    attrs = sns_client.get_endpoint_attributes(EndpointArn=endpoint_arn)
+                    enabled = attrs.get("Attributes", {}).get("Enabled", "true")
+                    stored_token = attrs.get("Attributes", {}).get("Token", "")
+                    if enabled.lower() != "true" or stored_token != device_token:
+                        sns_client.set_endpoint_attributes(
+                            EndpointArn=endpoint_arn,
+                            Attributes={
+                                "Enabled": "true",
+                                "Token": device_token,
+                            },
+                        )
+                except Exception:
+                    pass  # Best-effort re-enable
+
                 # Send the notification
                 apns_payload = {
                     "aps": {
@@ -4121,8 +4137,8 @@ async def test_push_notification(
                     "test": True,
                 }
 
-                # Use APNS for prod, APNS_SANDBOX for staging/dev
-                apns_key = "APNS" if environment == "prod" else "APNS_SANDBOX"
+                # Derive key from platform ARN to match sandbox vs production
+                apns_key = "APNS_SANDBOX" if "APNS_SANDBOX" in apns_arn else "APNS"
                 sns_client.publish(
                     TargetArn=endpoint_arn,
                     Message=json.dumps({apns_key: json.dumps(apns_payload)}),
