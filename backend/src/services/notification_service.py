@@ -167,6 +167,23 @@ class NotificationService:
             )
             endpoint_arn = endpoint_response["EndpointArn"]
 
+            # Check if endpoint is enabled; re-enable if disabled
+            try:
+                attrs = self.sns.get_endpoint_attributes(EndpointArn=endpoint_arn)
+                enabled = attrs.get("Attributes", {}).get("Enabled", "true")
+                stored_token = attrs.get("Attributes", {}).get("Token", "")
+                if enabled.lower() != "true" or stored_token != device_token:
+                    logger.warning(
+                        "Endpoint disabled or stale token, re-enabling: %s...",
+                        device_token[:20],
+                    )
+                    self.sns.set_endpoint_attributes(
+                        EndpointArn=endpoint_arn,
+                        Attributes={"Enabled": "true", "Token": device_token},
+                    )
+            except ClientError as e:
+                logger.warning("Failed to check/update endpoint attributes: %s", e)
+
             # Send the notification
             apns_payload = payload.to_apns_payload()
             environment = os.environ.get("ENVIRONMENT", "dev")
@@ -186,9 +203,9 @@ class NotificationService:
             error_code = e.response.get("Error", {}).get("Code", "")
             if error_code == "EndpointDisabled":
                 logger.warning(
-                    f"Endpoint disabled for token, removing: {device_token[:20]}..."
+                    "Endpoint still disabled after re-enable attempt: %s...",
+                    device_token[:20],
                 )
-                # Token is no longer valid, could clean up here
             else:
                 logger.error(f"Error sending push notification: {e}")
             return False

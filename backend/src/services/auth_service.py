@@ -460,6 +460,7 @@ class AuthService:
                     "verify_iat": True,
                     "verify_aud": True,
                     "verify_iss": True,
+                    "verify_at_hash": False,
                 },
             )
             return claims

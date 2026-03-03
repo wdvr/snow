@@ -354,7 +354,7 @@ class AuthenticationService: NSObject, ObservableObject {
             keychain.delete(Keys.refreshToken)
             keychain.delete(Keys.userIdentifier)
             keychain.delete(Keys.authProvider)
-            errorMessage = "Apple sign in failed: \(error.localizedDescription)"
+            errorMessage = "Sign in failed. Please try again."
             isAuthenticated = false
         }
     }
@@ -409,7 +409,7 @@ class AuthenticationService: NSObject, ObservableObject {
             keychain.delete(Keys.refreshToken)
             keychain.delete(Keys.userIdentifier)
             keychain.delete(Keys.authProvider)
-            errorMessage = "Google sign in failed: \(error.localizedDescription)"
+            errorMessage = "Sign in failed. Please try again."
             isAuthenticated = false
         }
     }
