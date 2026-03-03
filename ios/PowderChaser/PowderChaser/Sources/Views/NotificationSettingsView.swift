@@ -657,6 +657,9 @@ class NotificationSettingsViewModel: ObservableObject {
                     }
                 }
                 testResult = TestResult(success: true, message: msg)
+                // Refresh bell badge after backend stores the notification
+                try? await Task.sleep(for: .seconds(1))
+                NotificationCenter.default.post(name: .didReceiveForegroundNotification, object: nil)
             } catch {
                 testResult = TestResult(success: false, message: error.localizedDescription)
             }

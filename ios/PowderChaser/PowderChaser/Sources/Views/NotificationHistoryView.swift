@@ -7,28 +7,26 @@ struct NotificationBellButton: View {
     @Binding var showingSheet: Bool
 
     var body: some View {
-        Button {
-            showingSheet = true
-        } label: {
-            Image(systemName: "bell.fill")
-                .font(.body)
-                .foregroundStyle(.primary)
-                .overlay(alignment: .topTrailing) {
-                    if viewModel.unreadCount > 0 {
-                        Text(viewModel.unreadCount > 99 ? "99+" : "\(viewModel.unreadCount)")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(Color.red)
-                            .clipShape(Capsule())
-                            .offset(x: 8, y: -8)
-                            .fixedSize()
-                    }
+        Image(systemName: "bell.fill")
+            .font(.body)
+            .foregroundStyle(.primary)
+            .overlay(alignment: .topTrailing) {
+                if viewModel.unreadCount > 0 {
+                    Text(viewModel.unreadCount > 99 ? "99+" : "\(viewModel.unreadCount)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(Capsule().fill(Color(red: 1, green: 0, blue: 0)))
+                        .compositingGroup()
+                        .padding(1.5)
+                        .background(Capsule().fill(Color(.systemBackground)))
+                        .offset(x: 10, y: -8)
                 }
-        }
-        .accessibilityLabel("Notifications")
-        .accessibilityValue(viewModel.unreadCount > 0 ? "\(viewModel.unreadCount) unread" : "No unread")
+            }
+            .onTapGesture { showingSheet = true }
+            .accessibilityLabel("Notifications")
+            .accessibilityValue(viewModel.unreadCount > 0 ? "\(viewModel.unreadCount) unread" : "No unread")
     }
 }
 

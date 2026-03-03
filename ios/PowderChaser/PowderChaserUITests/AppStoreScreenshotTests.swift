@@ -270,6 +270,35 @@ final class AppStoreScreenshotTests: XCTestCase {
         }
     }
 
+    func testScreenshot14_MapResortDetail() throws {
+        let tabBar = ensureTabBar()
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
+
+        // Go to Resorts tab
+        tabBar.buttons["Resorts"].tap()
+        sleep(3)
+
+        // Scroll down to find resorts further in the list (more interesting data)
+        let listScroll = app.scrollViews.firstMatch
+        if listScroll.exists {
+            listScroll.swipeUp()
+            sleep(1)
+            listScroll.swipeUp()
+            sleep(1)
+        }
+
+        // Tap a resort from this section
+        let cells = app.cells
+        if cells.count > 0 {
+            // Pick a resort visible after scrolling (shows trail map, run difficulty etc.)
+            let index = min(3, cells.count - 1)
+            cells.element(boundBy: index).tap()
+            sleep(3)
+        }
+
+        takeScreenshot(name: "14-resort-detail-scroll")
+    }
+
     func testScreenshot13_Favorites() throws {
         let tabBar = ensureTabBar()
         XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
