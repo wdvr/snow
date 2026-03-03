@@ -348,13 +348,13 @@ class AuthenticationService: NSObject, ObservableObject {
             isAuthenticated = true
 
         } catch {
-            authLog.error("Apple backend auth failed: \(error.localizedDescription)")
+            authLog.error("Apple backend auth failed: \(String(describing: error))")
             // Don't leave stale credentials — clean up
             keychain.delete(Keys.authToken)
             keychain.delete(Keys.refreshToken)
             keychain.delete(Keys.userIdentifier)
             keychain.delete(Keys.authProvider)
-            errorMessage = "Sign in failed. Please try again."
+            errorMessage = "Apple sign in failed: \(error.localizedDescription)"
             isAuthenticated = false
         }
     }
@@ -403,13 +403,13 @@ class AuthenticationService: NSObject, ObservableObject {
             isAuthenticated = true
 
         } catch {
-            authLog.error("Google backend auth failed: \(error.localizedDescription)")
+            authLog.error("Google backend auth failed: \(String(describing: error))")
             // Don't leave stale credentials — clean up
             keychain.delete(Keys.authToken)
             keychain.delete(Keys.refreshToken)
             keychain.delete(Keys.userIdentifier)
             keychain.delete(Keys.authProvider)
-            errorMessage = "Sign in failed. Please try again."
+            errorMessage = "Google sign in failed: \(error.localizedDescription)"
             isAuthenticated = false
         }
     }

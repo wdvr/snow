@@ -566,8 +566,9 @@ final class APIClient {
                     self.log.debug("Authenticated with Apple")
                     continuation.resume(returning: authResponse)
                 case .failure(let error):
-                    self.log.error("Error authenticating with Apple: \(error)")
-                    continuation.resume(throwing: self.mapError(error))
+                    let detail = self.extractErrorDetail(from: response.data)
+                    self.log.error("Error authenticating with Apple: \(error) detail=\(detail ?? "none")")
+                    continuation.resume(throwing: self.mapAuthError(error, detail: detail))
                 }
             }
         }
@@ -597,8 +598,9 @@ final class APIClient {
                     self.log.debug("Authenticated with Google")
                     continuation.resume(returning: authResponse)
                 case .failure(let error):
-                    self.log.error("Error authenticating with Google: \(error)")
-                    continuation.resume(throwing: self.mapError(error))
+                    let detail = self.extractErrorDetail(from: response.data)
+                    self.log.error("Error authenticating with Google: \(error) detail=\(detail ?? "none")")
+                    continuation.resume(throwing: self.mapAuthError(error, detail: detail))
                 }
             }
         }
@@ -1384,6 +1386,24 @@ final class APIClient {
     }
 
     // MARK: - Error Mapping
+
+    /// Extract the "detail" field from a FastAPI error response body.
+    private nonisolated func extractErrorDetail(from data: Data?) -> String? {
+        guard let data = data,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let detail = json["detail"] as? String else {
+            return nil
+        }
+        return detail
+    }
+
+    /// Map auth-specific errors, including the backend error detail in the message.
+    private nonisolated func mapAuthError(_ error: AFError, detail: String?) -> APIError {
+        if let detail = detail {
+            return .networkError(detail)
+        }
+        return mapError(error)
+    }
 
     private nonisolated func mapError(_ error: AFError) -> APIError {
         switch error {
