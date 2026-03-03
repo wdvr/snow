@@ -5,6 +5,34 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Mar 3, 2026
+
+### Feature: Account Deletion (App Store requirement)
+App Store review requires account deletion for apps with sign-in. Added `DELETE /api/v1/auth/account` endpoint that cascades across all 7 DynamoDB tables (user-preferences, device-tokens, trips, chat, notifications, condition-reports, feedback). iOS Settings shows "Delete Account" button with 2-step confirmation alert. On deletion: server data wiped, local UserDefaults/app group cleared, keychain cleared via signOut.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### Fix: Launch crash — revoked signing certificate
+CI cert cleanup revoked the dev cert that signed the on-device build. Deleted revoked certs from keychain, updated `CODE_SIGN_IDENTITY` from "iPhone Developer" to "Apple Development" in project.pbxproj.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Feature: Swipe-to-delete notifications in history view
+Added `DELETE /api/v1/notifications/{id}` endpoint + API Gateway route. iOS notification history (bell icon) now supports swipe-to-delete on individual notifications. Reduces unread count when deleting unread items.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### Fix: In-app notification banner blocking touches
+`InAppNotificationOverlay` had no explicit init (auto-synthesized memberwise init didn't support optional closure) and blocked all touches even when hidden. Added explicit `init(onTap:)` and `.allowsHitTesting(manager.currentNotification != nil)`.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+---
+
 ## Mar 2, 2026
 
 ### Fix: Apple Sign-In audience mismatch — wrong bundle ID default

@@ -7,6 +7,9 @@ struct SettingsView: View {
     @EnvironmentObject var userPreferencesManager: UserPreferencesManager
     @State private var showingResetAlert = false
     @State private var showingSignOutAlert = false
+    @State private var showingDeleteAccountAlert = false
+    @State private var showingDeleteAccountConfirmation = false
+    @State private var isDeletingAccount = false
     @State private var showingClearCacheAlert = false
     @State private var customURL: String = ""
     @State private var urlValidationError: String?
@@ -225,6 +228,22 @@ struct SettingsView: View {
             } message: {
                 Text("Are you sure you want to sign out?")
             }
+            .alert("Delete Account?", isPresented: $showingDeleteAccountAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Continue", role: .destructive) {
+                    showingDeleteAccountConfirmation = true
+                }
+            } message: {
+                Text("This will permanently delete your account and all associated data including favorites, trips, chat history, and notification settings.")
+            }
+            .alert("Are you sure?", isPresented: $showingDeleteAccountConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete My Account", role: .destructive) {
+                    deleteAccount()
+                }
+            } message: {
+                Text("This action cannot be undone. All your data will be permanently removed.")
+            }
             .alert("Clear Cache?", isPresented: $showingClearCacheAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Clear", role: .destructive) {
@@ -249,6 +268,22 @@ struct SettingsView: View {
             config.customAPIURLString = urlString
         } else {
             urlValidationError = "Invalid URL format. Must start with http:// or https://"
+        }
+    }
+
+    private func deleteAccount() {
+        isDeletingAccount = true
+        Task {
+            do {
+                try await APIClient.shared.deleteAccount()
+                userPreferencesManager.clearAllLocalData()
+                authService.signOut()
+            } catch {
+                // Still sign out locally even if server deletion fails
+                userPreferencesManager.clearAllLocalData()
+                authService.signOut()
+            }
+            isDeletingAccount = false
         }
     }
 
@@ -317,6 +352,19 @@ struct SettingsView: View {
                     showingSignOutAlert = true
                 }
                 .foregroundStyle(.red)
+
+                Button(role: .destructive) {
+                    showingDeleteAccountAlert = true
+                } label: {
+                    HStack {
+                        if isDeletingAccount {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        Text("Delete Account")
+                    }
+                }
+                .disabled(isDeletingAccount)
             }
         } else {
             Text("Not signed in")

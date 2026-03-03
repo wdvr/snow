@@ -174,13 +174,16 @@ jobs:
           pulumi stack select ${{ inputs.environment }} || pulumi stack init ${{ inputs.environment }}
 
           # Set APNs configuration
-          # Using App Store Connect key ID (same key can be used for APNs if configured)
-          pulumi config set apnsKeyId "${{ secrets.APP_STORE_CONNECT_KEY_ID }}"
+          # IMPORTANT: APNs requires a dedicated key with "Apple Push Notifications service" capability
+          # The App Store Connect API key does NOT work for APNs push delivery
+          pulumi config set apnsKeyId "${{ secrets.APNS_KEY_ID }}"
           pulumi config set apnsTeamId "N324UX8D9M"
           pulumi config set apnsBundleId "com.wouterdevriendt.snowtracker"
 
-          # Set APNs private key (same as App Store Connect key)
-          pulumi config set --secret apnsPrivateKey "${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}"
+          # Set APNs private key (must be a key with APNs push capability, NOT the ASC API key)
+          export APNS_KEY='${{ secrets.APNS_PRIVATE_KEY }}'
+          printf '%s' "$APNS_KEY" | pulumi config set --secret apnsPrivateKey --
+          unset APNS_KEY
 
           echo "APNs configuration set successfully"
 

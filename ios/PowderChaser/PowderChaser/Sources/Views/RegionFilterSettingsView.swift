@@ -47,7 +47,7 @@ struct RegionFilterSettingsView: View {
             } header: {
                 Text("Asia Pacific")
             } footer: {
-                Text("Japan, Asia, and Oceania (Australia & New Zealand) are hidden by default as they have opposite ski seasons or limited data.")
+                Text("Oceania (Australia & New Zealand) has an opposite ski season (June - October). Japan and Asia share the northern hemisphere season.")
             }
 
             // South America Section
@@ -81,7 +81,7 @@ struct RegionFilterSettingsView: View {
 
                 Button("Reset to Defaults") {
                     withAnimation {
-                        userPreferencesManager.hiddenRegions = Set(["oceania", "japan"])
+                        userPreferencesManager.hiddenRegions = Set(["oceania", "south_america"])
                     }
                 }
             } header: {

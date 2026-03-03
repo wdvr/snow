@@ -2479,6 +2479,32 @@ auth_me_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# DELETE /api/v1/auth/account
+auth_account_resource = aws.apigateway.Resource(
+    f"{app_name}-auth-account-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=auth_resource.id,
+    path_part="account",
+)
+
+auth_account_delete_method = aws.apigateway.Method(
+    f"{app_name}-auth-account-delete-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=auth_account_resource.id,
+    http_method="DELETE",
+    authorization="NONE",
+)
+
+auth_account_delete_integration = aws.apigateway.Integration(
+    f"{app_name}-auth-account-delete-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=auth_account_resource.id,
+    http_method=auth_account_delete_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # =============================================================================
 # Trips API Routes
 # =============================================================================
@@ -2950,6 +2976,25 @@ notifications_get_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# DELETE /api/v1/notifications (delete all)
+notifications_delete_method = aws.apigateway.Method(
+    f"{app_name}-notifications-delete-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notifications_resource.id,
+    http_method="DELETE",
+    authorization="NONE",
+)
+
+notifications_delete_integration = aws.apigateway.Integration(
+    f"{app_name}-notifications-delete-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notifications_resource.id,
+    http_method=notifications_delete_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # Unread count resource: /api/v1/notifications/unread-count
 notifications_unread_count_resource = aws.apigateway.Resource(
     f"{app_name}-notifications-unread-count-resource-{environment}",
@@ -3010,6 +3055,25 @@ notification_resource = aws.apigateway.Resource(
     rest_api=api_gateway.id,
     parent_id=notifications_resource.id,
     path_part="{notificationId}",
+)
+
+# DELETE /api/v1/notifications/{notificationId}
+notification_delete_method = aws.apigateway.Method(
+    f"{app_name}-notification-delete-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notification_resource.id,
+    http_method="DELETE",
+    authorization="NONE",
+)
+
+notification_delete_integration = aws.apigateway.Integration(
+    f"{app_name}-notification-delete-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=notification_resource.id,
+    http_method=notification_delete_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
 )
 
 # Notification read resource: /api/v1/notifications/{notificationId}/read
@@ -3080,6 +3144,7 @@ add_cors_options("auth-google", auth_google_resource.id, api_gateway.id)
 add_cors_options("auth-guest", auth_guest_resource.id, api_gateway.id)
 add_cors_options("auth-refresh", auth_refresh_resource.id, api_gateway.id)
 add_cors_options("auth-me", auth_me_resource.id, api_gateway.id)
+add_cors_options("auth-account", auth_account_resource.id, api_gateway.id)
 add_cors_options("trips", trips_resource.id, api_gateway.id)
 add_cors_options("trip", trip_resource.id, api_gateway.id)
 add_cors_options("trip-refresh", trip_refresh_resource.id, api_gateway.id)
@@ -3135,6 +3200,7 @@ api_deployment = aws.apigateway.Deployment(
             auth_guest_integration.id,
             auth_refresh_integration.id,
             auth_me_integration.id,
+            auth_account_delete_integration.id,
             trips_post_integration.id,
             trips_get_integration.id,
             trip_get_integration.id,
@@ -3160,9 +3226,11 @@ api_deployment = aws.apigateway.Deployment(
             debug_test_push_integration.id,
             admin_backfill_geohashes_integration.id,
             notifications_get_integration.id,
+            notifications_delete_integration.id,
             notifications_unread_count_integration.id,
             notifications_read_all_integration.id,
             notification_read_integration.id,
+            notification_delete_integration.id,
         ).apply(lambda ids: ",".join(ids)),
     },
     opts=pulumi.ResourceOptions(
@@ -3194,6 +3262,7 @@ api_deployment = aws.apigateway.Deployment(
             auth_guest_integration,
             auth_refresh_integration,
             auth_me_integration,
+            auth_account_delete_integration,
             trips_post_integration,
             trips_get_integration,
             trip_get_integration,
@@ -3219,9 +3288,11 @@ api_deployment = aws.apigateway.Deployment(
             debug_test_push_integration,
             admin_backfill_geohashes_integration,
             notifications_get_integration,
+            notifications_delete_integration,
             notifications_unread_count_integration,
             notifications_read_all_integration,
             notification_read_integration,
+            notification_delete_integration,
         ]
     ),
 )

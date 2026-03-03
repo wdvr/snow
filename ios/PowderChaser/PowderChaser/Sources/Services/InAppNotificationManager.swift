@@ -59,6 +59,10 @@ struct InAppNotificationOverlay: View {
     @ObservedObject private var manager = InAppNotificationManager.shared
     var onTap: ((String?) -> Void)?
 
+    init(onTap: ((String?) -> Void)? = nil) {
+        self.onTap = onTap
+    }
+
     var body: some View {
         VStack {
             if let notification = manager.currentNotification {
@@ -69,6 +73,7 @@ struct InAppNotificationOverlay: View {
             Spacer()
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: manager.currentNotification)
+        .allowsHitTesting(manager.currentNotification != nil)
     }
 
     @ViewBuilder

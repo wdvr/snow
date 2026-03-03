@@ -2564,6 +2564,47 @@ async def mark_all_notifications_read(
         )
 
 
+@app.delete("/api/v1/notifications/{notification_id}")
+async def delete_notification(
+    notification_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Delete a single notification."""
+    _validate_resource_id(notification_id, "notification_id")
+    try:
+        service = get_notification_history_service()
+        found = service.delete_notification(user_id, notification_id)
+        if not found:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Notification not found",
+            )
+        return JSONResponse(content={"status": "ok"})
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to delete notification: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete notification",
+        )
+
+
+@app.delete("/api/v1/notifications")
+async def delete_all_notifications(user_id: str = Depends(get_current_user_id)):
+    """Delete all notifications for the current user."""
+    try:
+        service = get_notification_history_service()
+        count = service.delete_all_notifications(user_id)
+        return {"deleted": count}
+    except Exception as e:
+        logger.error("Failed to delete all notifications: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete all notifications",
+        )
+
+
 # MARK: - Resort Events Endpoints
 
 _resort_events_table = None
@@ -2991,6 +3032,46 @@ async def get_current_user(user_id: str = Depends(get_current_user_id)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get user info",
+        )
+
+
+@app.delete("/api/v1/auth/account")
+async def delete_account(user_id: str = Depends(get_current_user_id)):
+    """Delete user account and all associated data."""
+    try:
+        environment = os.environ.get("ENVIRONMENT", "dev")
+        dynamodb = get_dynamodb()
+
+        user_service = get_user_service()
+        results = user_service.delete_user_data(
+            user_id=user_id,
+            device_tokens_table=get_device_tokens_table(),
+            trips_table=get_trips_table(),
+            chat_table=dynamodb.Table(
+                os.environ.get("CHAT_TABLE", f"snow-tracker-chat-{environment}")
+            ),
+            notifications_table=dynamodb.Table(
+                os.environ.get(
+                    "NOTIFICATIONS_TABLE", f"snow-tracker-notifications-{environment}"
+                )
+            ),
+            condition_reports_table=dynamodb.Table(
+                os.environ.get(
+                    "CONDITION_REPORTS_TABLE",
+                    f"snow-tracker-condition-reports-{environment}",
+                )
+            ),
+            feedback_table=get_feedback_table(),
+        )
+
+        logger.info("Account deleted for user %s: %s", user_id, results)
+        return {"message": "Account deleted successfully"}
+
+    except Exception as e:
+        logger.error("Account deletion error for %s: %s", user_id, e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete account",
         )
 
 
@@ -4140,7 +4221,7 @@ async def test_push_notification(
 
                 # Derive key from platform ARN to match sandbox vs production
                 apns_key = "APNS_SANDBOX" if "APNS_SANDBOX" in apns_arn else "APNS"
-                sns_client.publish(
+                publish_response = sns_client.publish(
                     TargetArn=endpoint_arn,
                     Message=json.dumps({apns_key: json.dumps(apns_payload)}),
                     MessageStructure="json",
@@ -4150,6 +4231,9 @@ async def test_push_notification(
                     {
                         "device_id": token_record.get("device_id"),
                         "status": "sent",
+                        "message_id": publish_response.get("MessageId"),
+                        "endpoint_arn": endpoint_arn,
+                        "token_prefix": device_token[:8],
                     }
                 )
 
@@ -4178,11 +4262,28 @@ async def test_push_notification(
             except Exception as e:
                 logger.warning("Failed to store test notification in history: %s", e)
 
+        # Get platform app info for diagnostics
+        apns_info = {}
+        try:
+            pa_attrs = sns_client.get_platform_application_attributes(
+                PlatformApplicationArn=apns_arn
+            )
+            attrs = pa_attrs.get("Attributes", {})
+            apns_info = {
+                "platform": "APNS_SANDBOX" if "APNS_SANDBOX" in apns_arn else "APNS",
+                "enabled": attrs.get("Enabled"),
+                "auth_method": attrs.get("AuthenticationMethod"),
+                "bundle_id": attrs.get("ApplePlatformBundleID"),
+            }
+        except Exception:
+            pass
+
         return {
             "message": "Test notification sent",
             "user_id": user_id or "anonymous",
             "tokens_found": len(tokens),
             "results": results,
+            "apns_config": apns_info,
         }
 
     except Exception as e:

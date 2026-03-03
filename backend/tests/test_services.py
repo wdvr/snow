@@ -846,11 +846,56 @@ class TestUserService:
             user_service.save_user_preferences(sample_user_preferences)
 
     def test_delete_user_data_success(self, user_service, mock_table):
-        """Test successful deletion of user data."""
+        """Test successful deletion of user data (preferences table only)."""
         result = user_service.delete_user_data("test_user_123")
 
-        assert result is True
+        assert result["user_preferences"] == 1
         mock_table.delete_item.assert_called_once_with(Key={"user_id": "test_user_123"})
+
+    def test_delete_user_data_with_all_tables(self, user_service, mock_table):
+        """Test deletion across all tables."""
+        from unittest.mock import MagicMock
+
+        device_tokens_table = MagicMock()
+        device_tokens_table.query.return_value = {
+            "Items": [{"user_id": "u1", "device_id": "d1"}]
+        }
+        trips_table = MagicMock()
+        trips_table.query.return_value = {"Items": [{"user_id": "u1", "trip_id": "t1"}]}
+        chat_table = MagicMock()
+        chat_table.query.return_value = {
+            "Items": [{"user_id": "u1", "conversation_id": "c1"}]
+        }
+        notifications_table = MagicMock()
+        notifications_table.query.return_value = {
+            "Items": [{"user_id": "u1", "notification_id": "n1"}]
+        }
+        condition_reports_table = MagicMock()
+        condition_reports_table.query.return_value = {
+            "Items": [{"user_id": "u1", "resort_id": "r1", "report_id": "rp1"}]
+        }
+        feedback_table = MagicMock()
+        feedback_table.scan.return_value = {
+            "Items": [{"user_id": "u1", "feedback_id": "f1"}]
+        }
+
+        result = user_service.delete_user_data(
+            "u1",
+            device_tokens_table=device_tokens_table,
+            trips_table=trips_table,
+            chat_table=chat_table,
+            notifications_table=notifications_table,
+            condition_reports_table=condition_reports_table,
+            feedback_table=feedback_table,
+        )
+
+        assert result["user_preferences"] == 1
+        assert result["device_tokens"] == 1
+        assert result["trips"] == 1
+        assert result["chat"] == 1
+        assert result["notifications"] == 1
+        assert result["condition_reports"] == 1
+        assert result["feedback"] == 1
 
     def test_delete_user_data_db_error(self, user_service, mock_table):
         """Test handling of database errors during user data deletion."""
@@ -859,5 +904,6 @@ class TestUserService:
             "delete_item",
         )
 
-        with pytest.raises(Exception, match="Failed to delete user data"):
-            user_service.delete_user_data("test_user_123")
+        # Now returns partial results instead of raising
+        result = user_service.delete_user_data("test_user_123")
+        assert result["user_preferences"] == 0

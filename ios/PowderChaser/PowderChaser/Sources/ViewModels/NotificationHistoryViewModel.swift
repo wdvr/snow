@@ -1,10 +1,13 @@
 import SwiftUI
+import UserNotifications
 import os.log
 
 @MainActor
 final class NotificationHistoryViewModel: ObservableObject {
     @Published var notifications: [NotificationHistoryItem] = []
-    @Published var unreadCount: Int = 0
+    @Published var unreadCount: Int = 0 {
+        didSet { updateAppBadge() }
+    }
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -12,6 +15,16 @@ final class NotificationHistoryViewModel: ObservableObject {
     private var hasMore = true
     private let apiClient = APIClient.shared
     private let log = Logger(subsystem: "com.snowtracker.app", category: "NotificationHistoryVM")
+
+    /// Sync the app icon badge with the unread notification count
+    private func updateAppBadge() {
+        let count = unreadCount
+        UNUserNotificationCenter.current().setBadgeCount(count) { [self] error in
+            if let error {
+                log.error("Failed to set badge count: \(error.localizedDescription)")
+            }
+        }
+    }
 
     func loadNotifications() async {
         isLoading = true
@@ -93,6 +106,40 @@ final class NotificationHistoryViewModel: ObservableObject {
             unreadCount = 0
         } catch {
             log.error("Error marking all as read: \(error.localizedDescription)")
+        }
+    }
+
+    func deleteNotification(_ notification: NotificationHistoryItem) async {
+        // Optimistic: remove locally first
+        let wasUnread = notification.isUnread
+        notifications.removeAll { $0.id == notification.id }
+        if wasUnread {
+            unreadCount = max(0, unreadCount - 1)
+        }
+
+        do {
+            try await apiClient.deleteNotification(notificationId: notification.notificationId)
+        } catch {
+            log.error("Error deleting notification: \(error.localizedDescription)")
+            // Don't re-add — user intent is clear, server will catch up on next deploy
+        }
+    }
+
+    func deleteAllNotifications() async {
+        let previousNotifications = notifications
+        let previousUnread = unreadCount
+
+        // Optimistic: clear locally
+        notifications = []
+        unreadCount = 0
+
+        do {
+            try await apiClient.deleteAllNotifications()
+        } catch {
+            log.error("Error deleting all notifications: \(error.localizedDescription)")
+            // Restore on failure
+            notifications = previousNotifications
+            unreadCount = previousUnread
         }
     }
 

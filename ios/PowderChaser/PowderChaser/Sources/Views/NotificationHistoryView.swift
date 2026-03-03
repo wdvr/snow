@@ -10,22 +10,22 @@ struct NotificationBellButton: View {
         Button {
             showingSheet = true
         } label: {
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: "bell.fill")
-                    .font(.body)
-                    .foregroundStyle(.primary)
-
-                if viewModel.unreadCount > 0 {
-                    Text(viewModel.unreadCount > 99 ? "99+" : "\(viewModel.unreadCount)")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(Color.red)
-                        .clipShape(Capsule())
-                        .offset(x: 8, y: -6)
+            Image(systemName: "bell.fill")
+                .font(.body)
+                .foregroundStyle(.primary)
+                .overlay(alignment: .topTrailing) {
+                    if viewModel.unreadCount > 0 {
+                        Text(viewModel.unreadCount > 99 ? "99+" : "\(viewModel.unreadCount)")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(Color.red)
+                            .clipShape(Capsule())
+                            .offset(x: 8, y: -8)
+                            .fixedSize()
+                    }
                 }
-            }
         }
         .accessibilityLabel("Notifications")
         .accessibilityValue(viewModel.unreadCount > 0 ? "\(viewModel.unreadCount) unread" : "No unread")
@@ -56,10 +56,23 @@ struct NotificationHistoryView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Close") { dismiss() }
                 }
-                if !viewModel.notifications.isEmpty && viewModel.unreadCount > 0 {
+                if !viewModel.notifications.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("Read All") {
-                            Task { await viewModel.markAllAsRead() }
+                        Menu {
+                            if viewModel.unreadCount > 0 {
+                                Button {
+                                    Task { await viewModel.markAllAsRead() }
+                                } label: {
+                                    Label("Mark All as Read", systemImage: "envelope.open")
+                                }
+                            }
+                            Button(role: .destructive) {
+                                Task { await viewModel.deleteAllNotifications() }
+                            } label: {
+                                Label("Delete All", systemImage: "trash")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
                         }
                     }
                 }
@@ -109,6 +122,13 @@ struct NotificationHistoryView: View {
                         }
                     }
                     .listRowBackground(notification.isUnread ? Color.blue.opacity(0.05) : Color.clear)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            Task { await viewModel.deleteNotification(notification) }
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
             }
         }
         .listStyle(.plain)

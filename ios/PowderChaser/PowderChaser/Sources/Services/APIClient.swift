@@ -678,6 +678,26 @@ final class APIClient {
         }
     }
 
+    /// Delete user account and all associated data
+    func deleteAccount() async throws {
+        let url = baseURL.appendingPathComponent("api/v1/auth/account")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, method: .delete, headers: authHeaders())
+                .validate()
+                .response { response in
+                    switch response.result {
+                    case .success:
+                        self.log.info("Account deleted successfully")
+                        continuation.resume()
+                    case .failure(let error):
+                        self.log.error("Error deleting account: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
     // MARK: - Trip Planning API
 
     /// Create a new trip
@@ -1145,6 +1165,40 @@ final class APIClient {
                 .response { response in
                     if let error = response.error {
                         self.log.error("Error marking all notifications as read: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    } else {
+                        continuation.resume()
+                    }
+                }
+        }
+    }
+
+    func deleteNotification(notificationId: String) async throws {
+        let url = baseURL.appendingPathComponent("api/v1/notifications/\(notificationId)")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, method: .delete, headers: authHeaders())
+                .validate()
+                .response { response in
+                    if let error = response.error {
+                        self.log.error("Error deleting notification: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    } else {
+                        continuation.resume()
+                    }
+                }
+        }
+    }
+
+    func deleteAllNotifications() async throws {
+        let url = baseURL.appendingPathComponent("api/v1/notifications")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url, method: .delete, headers: authHeaders())
+                .validate()
+                .response { response in
+                    if let error = response.error {
+                        self.log.error("Error deleting all notifications: \(error)")
                         continuation.resume(throwing: self.mapError(error))
                     } else {
                         continuation.resume()

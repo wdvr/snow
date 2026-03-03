@@ -163,6 +163,8 @@ extension PushNotificationService: UNUserNotificationCenterDelegate {
         let resortId = userInfo["resort_id"] as? String
         let notificationType = userInfo["notification_type"] as? String
 
+        pushLog.warning("willPresent fired: title=\(title), type=\(notificationType ?? "nil")")
+
         // Show in-app banner
         Task { @MainActor in
             InAppNotificationManager.shared.show(
@@ -173,8 +175,8 @@ extension PushNotificationService: UNUserNotificationCenterDelegate {
             )
         }
 
-        // Still show system banner + badge + sound
-        completionHandler([.badge, .sound])
+        // Show system banner as fallback + badge + sound
+        completionHandler([.banner, .badge, .sound])
         // Notify bell button to refresh unread count + history
         DispatchQueue.main.async {
             NotificationCenter.default.post(name: .didReceiveForegroundNotification, object: nil)

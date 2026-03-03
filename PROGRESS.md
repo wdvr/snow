@@ -11,9 +11,22 @@
 
 ---
 
-## Active Work (Week of Mar 1) — Data Quality & Cross-Platform Consistency
+## Active Work (Week of Mar 3) — v2.1 App Store Review Fixes
 
 ### In Progress
+- [ ] App Store screenshots update (settings with delete account, chat UI, maps)
+
+### Completed (Mar 3)
+- [x] Fix launch crash: delete revoked dev certs from keychain, update CODE_SIGN_IDENTITY to "Apple Development"
+- [x] Add account deletion (App Store requirement): `DELETE /api/v1/auth/account` + API Gateway route + Pulumi infra
+- [x] iOS: Delete Account button in Settings (2-step confirmation, server + local data wipe)
+- [x] iOS: `clearAllLocalData()` in UserPreferencesManager (favorites, groups, units, regions, onboarding)
+- [x] Fix in-app notification banner: explicit init for overlay, `allowsHitTesting` when no notification
+- [x] Backend tests updated for new `delete_user_data()` return type (dict with per-table counts)
+- [x] Swipe-to-delete in notification history (bell icon): `DELETE /api/v1/notifications/{id}` + API Gateway + iOS UI
+- [x] Backend tests: 1743 passing, iOS builds and deploys to device
+
+### Backlog
 - [ ] Fix review.md HIGH items: `MKLocalSearch` not on main thread, `isFetchingTimelines` race condition
 - [ ] Fix review.md Web items: scrollbar CSS, UTC date parsing, stale selectedDayIndex, empty array Math
 - [ ] Operational status proposal: how to surface lifts/runs/surface data without polluting ML score

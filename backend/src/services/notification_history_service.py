@@ -164,6 +164,67 @@ class NotificationHistoryService:
             )
             raise
 
+    def delete_notification(self, user_id: str, notification_id: str) -> bool:
+        """Delete a single notification.
+
+        Args:
+            user_id: User ID (partition key)
+            notification_id: Notification ID (sort key)
+
+        Returns:
+            True if deleted, False if not found
+        """
+        try:
+            self.table.delete_item(
+                Key={
+                    "user_id": user_id,
+                    "notification_id": notification_id,
+                },
+                ConditionExpression="attribute_exists(notification_id)",
+            )
+            return True
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                return False
+            logger.error("Failed to delete notification: %s", e)
+            raise
+
+    def delete_all_notifications(self, user_id: str) -> int:
+        """Delete all notifications for a user.
+
+        Args:
+            user_id: User ID (partition key)
+
+        Returns:
+            Number of notifications deleted
+        """
+        try:
+            response = self.table.query(
+                KeyConditionExpression=Key("user_id").eq(user_id),
+                ProjectionExpression="user_id, notification_id",
+            )
+            items = response.get("Items", [])
+            count = 0
+            for item in items:
+                try:
+                    self.table.delete_item(
+                        Key={
+                            "user_id": item["user_id"],
+                            "notification_id": item["notification_id"],
+                        }
+                    )
+                    count += 1
+                except ClientError:
+                    logger.warning(
+                        "Failed to delete notification %s", item["notification_id"]
+                    )
+            return count
+        except ClientError as e:
+            logger.error(
+                "Failed to delete all notifications for user %s: %s", user_id, e
+            )
+            raise
+
     def get_unread_count(self, user_id: str) -> int:
         """Get the count of unread notifications for a user.
 

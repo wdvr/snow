@@ -687,7 +687,7 @@ class UserPreferencesManager: ObservableObject {
     @Published var notificationSettings: NotificationSettings = NotificationSettings()
 
     /// Regions that the user has chosen to hide from the app
-    /// Default: oceania and japan are hidden (southern hemisphere and distant regions)
+    /// Default: oceania and south_america are hidden (southern hemisphere regions)
     @Published var hiddenRegions: Set<String> = [] {
         didSet {
             saveHiddenRegions()
@@ -776,8 +776,8 @@ class UserPreferencesManager: ObservableObject {
             // User has explicitly set their preferences
             hiddenRegions = Set(savedRegions)
         } else {
-            // First launch: set default hidden regions (oceania and japan)
-            hiddenRegions = Set(["oceania", "japan"])
+            // First launch: set default hidden regions (southern hemisphere)
+            hiddenRegions = Set(["oceania", "south_america"])
             saveHiddenRegions()
         }
     }
@@ -987,6 +987,30 @@ class UserPreferencesManager: ObservableObject {
         saveLocalPreferences()
         // Also sync to backend when explicitly called
         await syncPreferencesToBackend()
+    }
+
+    /// Clear all local user data (for account deletion)
+    func clearAllLocalData() {
+        // Clear in-memory state
+        favoriteResorts = []
+        favoriteGroups = []
+        preferredUnits = UnitPreferences()
+        notificationSettings = NotificationSettings()
+        hiddenRegions = Set(["oceania", "south_america"])
+        hasCompletedOnboarding = false
+
+        // Clear standard UserDefaults
+        let standardKeys = [favoritesKey, favoriteGroupsKey, unitPreferencesKey, hiddenRegionsKey, hasCompletedOnboardingKey]
+        for key in standardKeys {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+
+        // Clear shared app group defaults
+        if let sharedDefaults = sharedDefaults {
+            for key in standardKeys {
+                sharedDefaults.removeObject(forKey: key)
+            }
+        }
     }
 
     /// Update notification settings and sync to backend
