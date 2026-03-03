@@ -2855,8 +2855,10 @@ async def sign_in_with_google(request: GoogleSignInRequest):
     and returns session tokens.
     """
     try:
-        logger.info(
-            "Google Sign In request received (token length=%d)", len(request.id_token)
+        logger.warning(
+            "Google Sign In request received (token length=%d, prefix=%.30s)",
+            len(request.id_token),
+            request.id_token,
         )
         auth_service = get_auth_service()
 
