@@ -2801,6 +2801,10 @@ async def sign_in_with_apple(request: AppleSignInRequest):
     and returns session tokens.
     """
     try:
+        logger.info(
+            "Apple Sign In request received (token length=%d)",
+            len(request.identity_token),
+        )
         auth_service = get_auth_service()
 
         # Verify Apple token and get/create user
@@ -2813,6 +2817,11 @@ async def sign_in_with_apple(request: AppleSignInRequest):
 
         # Create session tokens
         tokens = auth_service.create_session_tokens(user.user_id)
+        logger.info(
+            "Apple Sign In success: user_id=%s, is_new=%s",
+            user.user_id,
+            user.is_new_user,
+        )
 
         # Return user info with tokens at top level (iOS expects flat structure)
         return {
@@ -2825,6 +2834,7 @@ async def sign_in_with_apple(request: AppleSignInRequest):
         }
 
     except AuthenticationError as e:
+        logger.warning("Apple Sign In auth failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
@@ -2845,6 +2855,9 @@ async def sign_in_with_google(request: GoogleSignInRequest):
     and returns session tokens.
     """
     try:
+        logger.info(
+            "Google Sign In request received (token length=%d)", len(request.id_token)
+        )
         auth_service = get_auth_service()
 
         # Verify Google token and get/create user
@@ -2856,6 +2869,11 @@ async def sign_in_with_google(request: GoogleSignInRequest):
 
         # Create session tokens
         tokens = auth_service.create_session_tokens(user.user_id)
+        logger.info(
+            "Google Sign In success: user_id=%s, is_new=%s",
+            user.user_id,
+            user.is_new_user,
+        )
 
         # Return user info with tokens at top level (iOS expects flat structure)
         return {
@@ -2868,6 +2886,7 @@ async def sign_in_with_google(request: GoogleSignInRequest):
         }
 
     except AuthenticationError as e:
+        logger.warning("Google Sign In auth failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),

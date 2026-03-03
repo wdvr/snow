@@ -1,6 +1,7 @@
 """Authentication service for Sign in with Apple and JWT management."""
 
 import hashlib
+import logging
 import os
 import time
 from dataclasses import dataclass
@@ -15,6 +16,8 @@ from jose.exceptions import ExpiredSignatureError, JWTClaimsError
 
 from models.user import User
 from utils.dynamodb_utils import parse_from_dynamodb, prepare_for_dynamodb
+
+logger = logging.getLogger(__name__)
 
 
 class AuthProvider(str, Enum):
@@ -232,6 +235,20 @@ class AuthService:
         if not matching_key:
             raise AuthenticationError("No matching public key found")
 
+        # Log unverified claims for debugging audience/issuer mismatches
+        try:
+            unverified_claims = jwt.get_unverified_claims(token)
+            token_aud = unverified_claims.get("aud")
+            token_iss = unverified_claims.get("iss")
+            logger.info(
+                "Apple token claims: aud=%s (expected=%s), iss=%s",
+                token_aud,
+                self.apple_client_id,
+                token_iss,
+            )
+        except Exception:
+            pass  # Best-effort logging
+
         # Verify and decode the token using JWKS
         try:
             claims = jwt.decode(
@@ -253,7 +270,16 @@ class AuthService:
         except JWTError as e:
             error_msg = str(e).lower()
             if "audience" in error_msg:
-                raise AuthenticationError("Invalid token audience")
+                # Include actual vs expected in error for debugging
+                try:
+                    uc = jwt.get_unverified_claims(token)
+                    actual_aud = uc.get("aud", "unknown")
+                except Exception:
+                    actual_aud = "unparseable"
+                raise AuthenticationError(
+                    f"Token audience mismatch: got '{actual_aud}', "
+                    f"expected '{self.apple_client_id}'"
+                )
             elif "issuer" in error_msg:
                 raise AuthenticationError("Invalid token issuer")
             raise AuthenticationError(f"Token validation failed: {str(e)}")
@@ -409,6 +435,18 @@ class AuthService:
         if not matching_key:
             raise AuthenticationError("No matching public key found")
 
+        # Log unverified claims for debugging
+        try:
+            unverified_claims = jwt.get_unverified_claims(token)
+            logger.info(
+                "Google token claims: aud=%s (expected=%s), iss=%s",
+                unverified_claims.get("aud"),
+                self.google_client_id,
+                unverified_claims.get("iss"),
+            )
+        except Exception:
+            pass
+
         # Verify and decode the token
         try:
             claims = jwt.decode(
@@ -427,17 +465,18 @@ class AuthService:
             return claims
         except ExpiredSignatureError:
             raise AuthenticationError("Token has expired")
-        except JWTClaimsError as e:
+        except (JWTClaimsError, JWTError) as e:
             error_msg = str(e).lower()
             if "audience" in error_msg:
-                raise AuthenticationError("Invalid token audience")
-            elif "issuer" in error_msg:
-                raise AuthenticationError("Invalid token issuer")
-            raise AuthenticationError(f"Token validation failed: {str(e)}")
-        except JWTError as e:
-            error_msg = str(e).lower()
-            if "audience" in error_msg:
-                raise AuthenticationError("Invalid token audience")
+                try:
+                    uc = jwt.get_unverified_claims(token)
+                    actual_aud = uc.get("aud", "unknown")
+                except Exception:
+                    actual_aud = "unparseable"
+                raise AuthenticationError(
+                    f"Token audience mismatch: got '{actual_aud}', "
+                    f"expected '{self.google_client_id}'"
+                )
             elif "issuer" in error_msg:
                 raise AuthenticationError("Invalid token issuer")
             raise AuthenticationError(f"Token validation failed: {str(e)}")
