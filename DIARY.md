@@ -5,6 +5,16 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Mar 4, 2026
+
+### UI: Update app background gradient to warm red tones
+Changed `AppBackgroundModifier` gradient from blue/lavender to warm red tones. Light mode uses faint warm red-white, dark mode uses deep dark red for a warmer mountain feel.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+---
+
 ## Mar 3, 2026
 
 ### Feature: Account Deletion (App Store requirement)
