@@ -653,11 +653,6 @@ class NotificationService:
 
         # Process each favorite resort
         for resort_id in prefs.favorite_resorts:
-            # Check grace period - max 1 notification per 24h per resort
-            if not notification_settings.can_notify_for_resort(resort_id):
-                logger.debug(f"Skipping {resort_id} for user {user_id} - grace period")
-                continue
-
             # Get resort-specific settings or use defaults
             resort_settings = notification_settings.resort_settings.get(resort_id)
             snow_threshold = (
@@ -679,7 +674,10 @@ class NotificationService:
             resort_name = self.get_resort_name(resort_id)
 
             # Check for fresh snow (uses snowfall_24h_cm, not cumulative fresh_snow_cm)
-            if fresh_snow_enabled:
+            # Each notification type has its own 24h grace period
+            if fresh_snow_enabled and notification_settings.can_notify_for_resort(
+                resort_id, NotificationType.FRESH_SNOW.value
+            ):
                 fresh_snow = self.get_fresh_snow_cm(resort_id)
                 if fresh_snow >= snow_threshold:
                     snow_cm = int(round(fresh_snow))
@@ -693,11 +691,14 @@ class NotificationService:
                             data={"snowfall_24h_cm": fresh_snow},
                         )
                     )
-                    # Mark as notified for this resort
-                    notification_settings.mark_notified(resort_id)
+                    notification_settings.mark_notified(
+                        resort_id, NotificationType.FRESH_SNOW.value
+                    )
 
             # Check for new events
-            if events_enabled:
+            if events_enabled and notification_settings.can_notify_for_resort(
+                resort_id, NotificationType.RESORT_EVENT.value
+            ):
                 # Get events created in the last hour
                 one_hour_ago = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
                 new_events = self.get_new_events_since(resort_id, one_hour_ago)
@@ -717,10 +718,12 @@ class NotificationService:
                             },
                         )
                     )
-                    # Mark as notified for this resort
-                    notification_settings.mark_notified(resort_id)
+                    notification_settings.mark_notified(
+                        resort_id, NotificationType.RESORT_EVENT.value
+                    )
 
             # Check for thaw/freeze cycles
+            # Thaw/freeze uses its own grace period per type
             if notification_settings.thaw_freeze_alerts:
                 current_temp = self.get_current_temperature(resort_id)
                 if current_temp is not None:
@@ -731,8 +734,12 @@ class NotificationService:
                         notification_settings=notification_settings,
                     )
                     if thaw_freeze_notification:
-                        notifications.append(thaw_freeze_notification)
-                        notification_settings.mark_notified(resort_id)
+                        notif_type = thaw_freeze_notification.notification_type.value
+                        if notification_settings.can_notify_for_resort(
+                            resort_id, notif_type
+                        ):
+                            notifications.append(thaw_freeze_notification)
+                            notification_settings.mark_notified(resort_id, notif_type)
 
             # Check for powder day
             powder_enabled = notification_settings.powder_alerts
@@ -740,7 +747,9 @@ class NotificationService:
                 powder_enabled = (
                     powder_enabled and resort_settings.powder_alerts_enabled
                 )
-            if powder_enabled:
+            if powder_enabled and notification_settings.can_notify_for_resort(
+                resort_id, NotificationType.POWDER_ALERT.value
+            ):
                 powder_threshold = (
                     resort_settings.powder_threshold_cm
                     if resort_settings
@@ -757,10 +766,17 @@ class NotificationService:
                     )
                     if powder_notification:
                         notifications.append(powder_notification)
-                        notification_settings.mark_notified(resort_id)
+                        notification_settings.mark_notified(
+                            resort_id, NotificationType.POWDER_ALERT.value
+                        )
 
             # Check for forecast snow (SOON alerts)
-            if notification_settings.forecast_alerts:
+            if (
+                notification_settings.forecast_alerts
+                and notification_settings.can_notify_for_resort(
+                    resort_id, NotificationType.FORECAST_SNOW.value
+                )
+            ):
                 forecast = self.get_resort_forecast_next_3_days(resort_id)
                 if forecast:
                     forecast_threshold = (
@@ -774,7 +790,9 @@ class NotificationService:
                     )
                     if forecast_notification:
                         notifications.append(forecast_notification)
-                        notification_settings.mark_notified(resort_id)
+                        notification_settings.mark_notified(
+                            resort_id, NotificationType.FORECAST_SNOW.value
+                        )
 
         # Save updated notification settings (with last_notified times and temp state)
         # Always save to persist temperature state tracking

@@ -72,26 +72,44 @@ class TestUserNotificationPreferences:
         """Test that we can notify for a resort that hasn't been notified before."""
         prefs = UserNotificationPreferences()
         assert prefs.can_notify_for_resort("resort123") is True
+        assert prefs.can_notify_for_resort("resort123", "fresh_snow") is True
 
     def test_can_notify_respects_grace_period(self):
         """Test that grace period is respected."""
         prefs = UserNotificationPreferences()
 
-        # Mark as notified now
-        prefs.mark_notified("resort123")
+        # Mark as notified now (with type)
+        prefs.mark_notified("resort123", "fresh_snow")
 
-        # Should not be able to notify again immediately
+        # Should not be able to notify same type again immediately
+        assert prefs.can_notify_for_resort("resort123", "fresh_snow") is False
+        # But different type should still be allowed
+        assert prefs.can_notify_for_resort("resort123", "forecast_snow") is True
+
+    def test_can_notify_respects_grace_period_legacy(self):
+        """Test that legacy (no type) grace period still works."""
+        prefs = UserNotificationPreferences()
+        prefs.mark_notified("resort123")
         assert prefs.can_notify_for_resort("resort123") is False
 
     def test_can_notify_after_grace_period(self):
         """Test that we can notify after grace period has passed."""
         prefs = UserNotificationPreferences(grace_period_hours=1)
 
-        # Set last_notified to 2 hours ago
+        # Set last_notified to 2 hours ago (with type key)
+        two_hours_ago = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
+        prefs.last_notified["resort123:fresh_snow"] = two_hours_ago
+
+        # Should be able to notify now
+        assert prefs.can_notify_for_resort("resort123", "fresh_snow") is True
+
+    def test_can_notify_after_grace_period_legacy(self):
+        """Test legacy key format still works for grace period."""
+        prefs = UserNotificationPreferences(grace_period_hours=1)
+
         two_hours_ago = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
         prefs.last_notified["resort123"] = two_hours_ago
 
-        # Should be able to notify now
         assert prefs.can_notify_for_resort("resort123") is True
 
 

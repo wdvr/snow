@@ -219,12 +219,22 @@ class UserNotificationPreferences(BaseModel):
         description="When temperature went positive per resort",
     )
 
-    def can_notify_for_resort(self, resort_id: str) -> bool:
-        """Check if we can send a notification for this resort based on grace period."""
-        if resort_id not in self.last_notified:
+    def can_notify_for_resort(
+        self, resort_id: str, notification_type: str | None = None
+    ) -> bool:
+        """Check if we can send a notification for this resort based on grace period.
+
+        Args:
+            resort_id: Resort ID
+            notification_type: Optional notification type for per-type grace periods.
+                If provided, checks grace period for this specific type at this resort.
+                If None, checks the legacy resort-level grace period.
+        """
+        key = f"{resort_id}:{notification_type}" if notification_type else resort_id
+        if key not in self.last_notified:
             return True
 
-        last_time_str = self.last_notified[resort_id]
+        last_time_str = self.last_notified[key]
         try:
             last_time = datetime.fromisoformat(last_time_str.replace("Z", "+00:00"))
             if last_time.tzinfo is None:
@@ -235,9 +245,17 @@ class UserNotificationPreferences(BaseModel):
         except (ValueError, TypeError):
             return True
 
-    def mark_notified(self, resort_id: str) -> None:
-        """Mark that a notification was sent for this resort."""
-        self.last_notified[resort_id] = datetime.now(UTC).isoformat()
+    def mark_notified(
+        self, resort_id: str, notification_type: str | None = None
+    ) -> None:
+        """Mark that a notification was sent for this resort.
+
+        Args:
+            resort_id: Resort ID
+            notification_type: Optional notification type for per-type tracking.
+        """
+        key = f"{resort_id}:{notification_type}" if notification_type else resort_id
+        self.last_notified[key] = datetime.now(UTC).isoformat()
 
 
 class ResortEvent(BaseModel):
