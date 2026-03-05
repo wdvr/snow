@@ -1,17 +1,11 @@
-Version 2.0 — 1040+ Resorts, Webcam Previews & Smarter Maps
+What's New in Powder Chaser 2.1.1
 
-NEW:
-- 1040+ ski resorts across 25 countries — the largest coverage of any snow quality app
-- Live webcam previews right from the map detail sheet — no more leaving the app
-- Map now refreshes conditions on zoom, not just pan — see fresh data as you explore
+TRAIL MAP OVERLAY IMPROVEMENTS
+- Dramatically faster piste and lift overlay loading
+- Pre-cached trail data for 1000+ resorts (no more waiting for external APIs)
+- Smart per-resort caching: zoom and pan without reloading
+- Parallel data fetching for multiple visible resorts
 
-IMPROVEMENTS:
-- AI Snow Assistant with smarter, context-aware responses
-- Redesigned map with clustering, forecast mode, and piste overlays
-- Community condition reports from fellow skiers
-- 10-level snow quality scale powered by ML model v15
-- Live Activities & Dynamic Island for real-time conditions
-- Push notifications for powder alerts
-- 7-day fresh powder chart with per-elevation breakdown
+Bug fixes and performance improvements.
 
-We'd love your feedback — tap Settings > Send Feedback to share your thoughts.
+We'd love your feedback - tap Settings > Send Feedback.
