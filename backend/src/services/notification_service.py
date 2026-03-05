@@ -22,6 +22,7 @@ from models.notification import (
     UserNotificationPreferences,
 )
 from models.user import UserPreferences
+from utils.dynamodb_utils import prepare_for_dynamodb
 
 logger = logging.getLogger(__name__)
 
@@ -1077,7 +1078,8 @@ class NotificationService:
     def _save_user_preferences(self, prefs: UserPreferences) -> None:
         """Save user preferences to DynamoDB."""
         try:
-            self.user_preferences_table.put_item(Item=prefs.model_dump())
+            item = prepare_for_dynamodb(prefs.model_dump())
+            self.user_preferences_table.put_item(Item=item)
         except Exception as e:
             logger.error(f"Error saving user preferences: {e}")
 
