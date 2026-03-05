@@ -253,7 +253,7 @@ class TestForecastAlertModelFields:
         prefs = UserNotificationPreferences()
 
         assert prefs.forecast_alerts is True
-        assert prefs.forecast_snow_threshold_cm == 15.0
+        assert prefs.forecast_snow_threshold_cm == 10.0
 
     def test_user_notification_preferences_forecast_custom(self):
         """Test setting custom forecast alert values."""

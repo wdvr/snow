@@ -175,7 +175,7 @@ class UserNotificationPreferences(BaseModel):
         description="Fresh snow threshold for powder day alert (cm)",
     )
     forecast_snow_threshold_cm: float = Field(
-        default=15.0,
+        default=10.0,
         description="Minimum predicted snowfall in cm over 3 days to trigger forecast alert",
     )
 
