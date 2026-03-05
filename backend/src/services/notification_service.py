@@ -319,29 +319,35 @@ class NotificationService:
     # =========================================================================
 
     def get_fresh_snow_cm(self, resort_id: str) -> float:
-        """Get the fresh snow in cm for a resort from recent conditions.
+        """Get the recent snowfall in cm for a resort (max across elevations).
+
+        Uses snowfall_24h_cm (actual recent precipitation) rather than
+        fresh_snow_cm (cumulative since last thaw), because fresh_snow_cm
+        stays high for days and would trigger repeat alerts.
+
+        Checks all 3 elevation levels and returns the maximum.
 
         Args:
             resort_id: Resort ID
 
         Returns:
-            Fresh snow in cm (0 if not available)
+            Recent snowfall in cm (0 if not available)
         """
         try:
-            # Get the most recent condition
+            # Get most recent conditions (3 elevation levels)
             response = self.weather_conditions_table.query(
                 KeyConditionExpression="resort_id = :rid",
                 ExpressionAttributeValues={":rid": resort_id},
                 ScanIndexForward=False,  # Most recent first
-                Limit=1,
+                Limit=3,
             )
 
             items = response.get("Items", [])
             if not items:
                 return 0.0
 
-            # Get fresh_snow_cm from the condition
-            return float(items[0].get("fresh_snow_cm", 0.0))
+            # Use snowfall_24h_cm and take max across elevations
+            return max(float(item.get("snowfall_24h_cm", 0.0)) for item in items)
 
         except Exception as e:
             logger.error(f"Error getting fresh snow for {resort_id}: {e}")
@@ -672,18 +678,19 @@ class NotificationService:
 
             resort_name = self.get_resort_name(resort_id)
 
-            # Check for fresh snow
+            # Check for fresh snow (uses snowfall_24h_cm, not cumulative fresh_snow_cm)
             if fresh_snow_enabled:
                 fresh_snow = self.get_fresh_snow_cm(resort_id)
                 if fresh_snow >= snow_threshold:
+                    snow_cm = int(round(fresh_snow))
                     notifications.append(
                         NotificationPayload(
                             notification_type=NotificationType.FRESH_SNOW,
                             title=f"Fresh Snow at {resort_name}!",
-                            body=f"{fresh_snow:.0f}cm of fresh snow has fallen. Perfect conditions for skiing!",
+                            body=f"{snow_cm}cm of new snow in the last 24 hours!",
                             resort_id=resort_id,
                             resort_name=resort_name,
-                            data={"fresh_snow_cm": fresh_snow},
+                            data={"snowfall_24h_cm": fresh_snow},
                         )
                     )
                     # Mark as notified for this resort

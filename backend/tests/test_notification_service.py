@@ -593,10 +593,26 @@ class TestGetFreshSnowCm:
             apns_platform_arn="arn:test",
         )
 
-    def test_get_fresh_snow_cm_returns_value(self, service):
-        """Test get_fresh_snow_cm returns the fresh_snow_cm from the latest condition."""
+    def test_get_fresh_snow_cm_returns_max_across_elevations(self, service):
+        """Test get_fresh_snow_cm returns max snowfall_24h_cm across elevations."""
         service.weather_conditions_table.query.return_value = {
-            "Items": [{"resort_id": "whistler-blackcomb", "fresh_snow_cm": 12.5}]
+            "Items": [
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "elevation_level": "top",
+                    "snowfall_24h_cm": 12.5,
+                },
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "elevation_level": "mid",
+                    "snowfall_24h_cm": 8.0,
+                },
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "elevation_level": "base",
+                    "snowfall_24h_cm": 3.0,
+                },
+            ]
         }
 
         result = service.get_fresh_snow_cm("whistler-blackcomb")
@@ -609,7 +625,7 @@ class TestGetFreshSnowCm:
         assert result == 0.0
 
     def test_get_fresh_snow_cm_missing_field(self, service):
-        """Test get_fresh_snow_cm returns 0.0 when fresh_snow_cm field is absent."""
+        """Test get_fresh_snow_cm returns 0.0 when snowfall_24h_cm field is absent."""
         service.weather_conditions_table.query.return_value = {
             "Items": [{"resort_id": "whistler-blackcomb"}]
         }
@@ -956,7 +972,18 @@ class TestProcessUserNotifications:
             notification_settings=settings,
         )
         service.weather_conditions_table.query.return_value = {
-            "Items": [{"resort_id": "whistler-blackcomb", "fresh_snow_cm": 10.0}]
+            "Items": [
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "elevation_level": "top",
+                    "snowfall_24h_cm": 10.0,
+                },
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "elevation_level": "mid",
+                    "snowfall_24h_cm": 6.0,
+                },
+            ]
         }
 
         result = service.process_user_notifications("user1", prefs)
@@ -1242,7 +1269,18 @@ class TestProcessAllNotifications:
             "Item": {"resort_id": "whistler-blackcomb", "name": "Whistler Blackcomb"}
         }
         service.weather_conditions_table.query.return_value = {
-            "Items": [{"resort_id": "whistler-blackcomb", "fresh_snow_cm": 15.0}]
+            "Items": [
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "elevation_level": "top",
+                    "snowfall_24h_cm": 15.0,
+                },
+                {
+                    "resort_id": "whistler-blackcomb",
+                    "elevation_level": "mid",
+                    "snowfall_24h_cm": 10.0,
+                },
+            ]
         }
         # Devices for user
         service.device_tokens_table.query.return_value = {
@@ -1775,6 +1813,7 @@ class TestPowderDayProcessing:
                 "whistler-blackcomb": ResortNotificationSettings(
                     resort_id="whistler-blackcomb",
                     powder_alerts_enabled=False,  # Per-resort disabled
+                    fresh_snow_enabled=False,  # Also disable fresh snow
                 ),
             },
         )
@@ -1812,6 +1851,7 @@ class TestPowderDayProcessing:
                     resort_id="whistler-blackcomb",
                     powder_alerts_enabled=True,
                     powder_threshold_cm=15.0,  # Per-resort: only 15cm needed
+                    fresh_snow_enabled=False,  # Disable fresh snow for this test
                 ),
             },
         )

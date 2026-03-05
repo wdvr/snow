@@ -65,7 +65,7 @@ class TestUserNotificationPreferences:
         assert prefs.fresh_snow_alerts is True
         assert prefs.event_alerts is True
         assert prefs.weekly_summary is False
-        assert prefs.default_snow_threshold_cm == 1.0
+        assert prefs.default_snow_threshold_cm == 5.0
         assert prefs.grace_period_hours == 24
 
     def test_can_notify_for_resort_first_time(self):
@@ -253,7 +253,7 @@ class TestForecastAlertModelFields:
         prefs = UserNotificationPreferences()
 
         assert prefs.forecast_alerts is True
-        assert prefs.forecast_snow_threshold_cm == 10.0
+        assert prefs.forecast_snow_threshold_cm == 15.0
 
     def test_user_notification_preferences_forecast_custom(self):
         """Test setting custom forecast alert values."""

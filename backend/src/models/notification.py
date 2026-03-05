@@ -167,14 +167,15 @@ class UserNotificationPreferences(BaseModel):
 
     # Default thresholds (can be overridden per resort)
     default_snow_threshold_cm: float = Field(
-        default=1.0, description="Default minimum snow in cm to trigger notification"
+        default=5.0,
+        description="Default minimum snowfall in last 24h (cm) to trigger notification",
     )
     powder_snow_threshold_cm: float = Field(
         default=15.0,
         description="Fresh snow threshold for powder day alert (cm)",
     )
     forecast_snow_threshold_cm: float = Field(
-        default=10.0,
+        default=15.0,
         description="Minimum predicted snowfall in cm over 3 days to trigger forecast alert",
     )
 
