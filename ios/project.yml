@@ -37,7 +37,7 @@ targets:
         PRODUCT_NAME: Powder Chaser
         PRODUCT_MODULE_NAME: PowderChaser
         PRODUCT_BUNDLE_IDENTIFIER: com.wouterdevriendt.snowtracker
-        MARKETING_VERSION: "2.1.0"
+        MARKETING_VERSION: "2.1.1"
         CURRENT_PROJECT_VERSION: "1"
         DEVELOPMENT_TEAM: N324UX8D9M
         CODE_SIGN_STYLE: Automatic
@@ -71,7 +71,7 @@ targets:
       properties:
         CFBundleName: Powder Chaser
         CFBundleDisplayName: Powder Chaser
-        CFBundleShortVersionString: "2.1.0"
+        CFBundleShortVersionString: "2.1.1"
         CFBundleVersion: "1"
         UILaunchScreen:
           UIColorName: AccentColor
@@ -103,7 +103,7 @@ targets:
       base:
         INFOPLIST_FILE: PowderChaserWidget/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.wouterdevriendt.snowtracker.widget
-        MARKETING_VERSION: "2.1.0"
+        MARKETING_VERSION: "2.1.1"
         CURRENT_PROJECT_VERSION: "1"
         DEVELOPMENT_TEAM: N324UX8D9M
         CODE_SIGN_STYLE: Automatic
@@ -119,7 +119,7 @@ targets:
       properties:
         CFBundleName: Powder Chaser Widget
         CFBundleDisplayName: Powder Chaser Widget
-        CFBundleShortVersionString: "2.1.0"
+        CFBundleShortVersionString: "2.1.1"
         CFBundleVersion: "1"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
