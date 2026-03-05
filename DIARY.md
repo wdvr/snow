@@ -5,6 +5,28 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Mar 5, 2026
+
+### Fix: Piste overlay performance — S3 precache, per-resort caching, parallel fetch
+Root cause: S3 piste data bucket was empty — every request got the website SPA HTML fallback (200 OK but HTML, not JSON), then fell back to Overpass API (25s timeout, rate-limited). Fix: ran precache_pistes.py to populate S3 with piste JSON for all 1019 resorts. iOS fixes: store piste data per-resort instead of accumulating globally (caused growing lag when panning), fetch visible resorts in parallel via withTaskGroup, added 50MB URLSession disk cache, detect S3 HTML fallback and remember misses, reduced timeouts (5s S3, 15s Overpass).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+### Chore: Upload App Store screenshots for v2.1.1
+New screenshots (9 iPhone 17 Pro Max + 9 iPhone 17 + 2 iPad) uploaded to ASC via Fastlane. Removed old/invalid screenshots with wrong dimensions. Bumped version to 2.1.1, triggered App Store build via GitHub Actions.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+### Feature: Spring season push notification broadcast
+Sent "Spring Season is Here!" push notification to all registered production devices via SNS/APNs. Stored in notification history table for in-app bell icon display.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+---
+
 ## Mar 3, 2026
 
 ### Feature: Account Deletion (App Store requirement)
