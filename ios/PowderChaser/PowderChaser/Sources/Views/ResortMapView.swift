@@ -18,7 +18,8 @@ struct ResortMapView: View {
     @State private var isFetchingVisibleConditions: Bool = false
     @State private var nearbyCollapsed: Bool = false
     @State private var pisteOverlayResult: PisteOverlayResult?
-    @State private var pisteLoadedForResorts: Set<String> = []
+    /// Per-resort cached piste data so we can rebuild the visible set without re-fetching
+    @State private var pisteDataByResort: [String: PisteOverlayResult] = [:]
     @State private var pisteLoadTask: Task<Void, Never>?
     @State private var showMapSearch: Bool = false
     @State private var showOnMapTask: Task<Void, Never>?
@@ -277,6 +278,7 @@ struct ResortMapView: View {
 
     /// Fetch vector piste overlays for resorts visible at high zoom levels.
     /// Only fetches when piste overlay is enabled and zoom is sufficient.
+    /// Caches per-resort data so pan/zoom never re-downloads, and only renders visible resorts.
     private func fetchPisteOverlaysForVisibleResorts() {
         guard showPisteOverlay else {
             if pisteOverlayResult != nil {
@@ -285,13 +287,12 @@ struct ResortMapView: View {
             return
         }
 
-        // Check zoom level — only load vector pistes when zoomed in
+        // Check zoom level — only show vector pistes when zoomed in
         guard let region = mapViewModel.currentVisibleRegion,
               region.span.latitudeDelta < 0.5 else {
-            // Zoomed out too far — clear vector overlays
+            // Zoomed out — hide overlays but keep per-resort cache
             if pisteOverlayResult != nil {
                 pisteOverlayResult = nil
-                pisteLoadedForResorts = []
             }
             return
         }
@@ -305,42 +306,67 @@ struct ResortMapView: View {
                 && abs(coord.longitude - center.longitude) < span.longitudeDelta / 2
         }
 
-        // Only fetch for resorts not yet loaded
-        let newResorts = visibleResorts.filter { !pisteLoadedForResorts.contains($0.id) }
-        guard !newResorts.isEmpty else { return }
+        let visibleIds = Set(visibleResorts.map(\.id))
+
+        // Resorts that need fetching (not in per-resort cache)
+        let newResorts = visibleResorts.filter { pisteDataByResort[$0.id] == nil }
+
+        if newResorts.isEmpty {
+            // All visible resorts already cached — rebuild from cache instantly
+            rebuildPisteOverlay(visibleIds: visibleIds)
+            return
+        }
 
         pisteLoadTask?.cancel()
         pisteLoadTask = Task {
-            var allPistes: [PistePolyline] = []
-            var allLifts: [LiftPolyline] = []
-
-            // Keep existing data
-            if let existing = pisteOverlayResult {
-                allPistes = existing.pistes
-                allLifts = existing.lifts
-            }
-
-            for resort in newResorts {
-                guard !Task.isCancelled else { return }
-                do {
-                    let result = try await PisteOverlayService.shared.overlays(
-                        for: resort.id,
-                        coordinate: resort.primaryCoordinate,
-                        colorScheme: PisteColorScheme(country: resort.country)
-                    )
-                    allPistes.append(contentsOf: result.pistes)
-                    allLifts.append(contentsOf: result.lifts)
-                    pisteLoadedForResorts.insert(resort.id)
-                } catch {
-                    // Silently skip — resort may not have OSM piste data
-                    pisteLoadedForResorts.insert(resort.id) // don't retry
+            // Fetch new resorts in parallel
+            let results = await withTaskGroup(of: (String, PisteOverlayResult?).self) { group in
+                for resort in newResorts {
+                    group.addTask {
+                        do {
+                            let result = try await PisteOverlayService.shared.overlays(
+                                for: resort.id,
+                                coordinate: resort.primaryCoordinate,
+                                colorScheme: PisteColorScheme(country: resort.country)
+                            )
+                            return (resort.id, result)
+                        } catch {
+                            return (resort.id, nil as PisteOverlayResult?)
+                        }
+                    }
                 }
+                var collected: [(String, PisteOverlayResult?)] = []
+                for await result in group {
+                    collected.append(result)
+                }
+                return collected
             }
 
             guard !Task.isCancelled else { return }
 
-            pisteOverlayResult = PisteOverlayResult(pistes: allPistes, lifts: allLifts)
+            // Store per-resort results (even empty ones to avoid re-fetching)
+            for (resortId, result) in results {
+                pisteDataByResort[resortId] = result ?? PisteOverlayResult(pistes: [], lifts: [])
+            }
+
+            // Rebuild overlay from only visible resorts
+            rebuildPisteOverlay(visibleIds: visibleIds)
         }
+    }
+
+    /// Rebuild the combined piste overlay from cached per-resort data for visible resorts only.
+    private func rebuildPisteOverlay(visibleIds: Set<String>) {
+        var allPistes: [PistePolyline] = []
+        var allLifts: [LiftPolyline] = []
+
+        for id in visibleIds {
+            if let data = pisteDataByResort[id] {
+                allPistes.append(contentsOf: data.pistes)
+                allLifts.append(contentsOf: data.lifts)
+            }
+        }
+
+        pisteOverlayResult = PisteOverlayResult(pistes: allPistes, lifts: allLifts)
     }
 
     private func handleFilterChange(_ newValue: MapFilterOption) {

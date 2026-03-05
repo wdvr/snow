@@ -40,8 +40,8 @@ S3_PREFIX = "data/pistes"
 AWS_REGION = "us-west-2"
 
 BBOX_OFFSET = 0.05  # ±0.05° around resort center (~5.5 km)
-BATCH_SIZE = 5
-BATCH_DELAY = 2  # seconds between batches
+BATCH_SIZE = 3
+BATCH_DELAY = 12  # seconds between batches (Overpass rate limit is ~2 req/10s)
 
 # Pass through OSM piste:difficulty values (iOS PisteDifficulty enum matches these)
 DIFFICULTY_MAP = {

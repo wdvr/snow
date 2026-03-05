@@ -273,17 +273,51 @@ actor PisteOverlayService {
 
     // MARK: - S3 Pre-Cache Fetch
 
+    /// Dedicated URLSession with disk caching for piste JSON files.
+    /// Piste geometry rarely changes, so a 7-day cache is fine.
+    private static let cachedSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.urlCache = URLCache(
+            memoryCapacity: 10 * 1024 * 1024,   // 10 MB memory
+            diskCapacity: 50 * 1024 * 1024,      // 50 MB disk
+            diskPath: "piste_cache"
+        )
+        config.requestCachePolicy = .returnCacheDataElseLoad
+        return URLSession(configuration: config)
+    }()
+
+    /// Set of resort slugs known to have no S3 piste data (avoid retrying).
+    private var s3MissCache: Set<String> = []
+
     private func fetchFromS3(resortSlug: String, colorScheme: PisteColorScheme) async throws -> PisteOverlayResult {
+        // Skip S3 if we already know this resort has no data there
+        if s3MissCache.contains(resortSlug) {
+            throw PisteOverlayError.networkError
+        }
+
         let urlString = String(format: Self.s3URLTemplate, resortSlug)
         guard let url = URL(string: urlString) else { throw PisteOverlayError.parseError }
 
         var request = URLRequest(url: url)
-        request.timeoutInterval = 10
+        request.timeoutInterval = 5  // Short timeout — S3 should be fast
+        request.cachePolicy = .returnCacheDataElseLoad
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await Self.cachedSession.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200 else {
+            s3MissCache.insert(resortSlug)
+            throw PisteOverlayError.networkError
+        }
+
+        // Validate content is actually JSON, not an HTML SPA fallback
+        let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type") ?? ""
+        let isJSON = contentType.contains("json")
+        let startsWithBrace = data.first == UInt8(ascii: "{")
+
+        guard isJSON || startsWithBrace else {
+            // SPA fallback — cache miss, remember to skip next time
+            s3MissCache.insert(resortSlug)
             throw PisteOverlayError.networkError
         }
 
@@ -357,7 +391,7 @@ actor PisteOverlayService {
         request.httpMethod = "POST"
         request.httpBody = query.data(using: .utf8)
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 25
+        request.timeoutInterval = 15
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
