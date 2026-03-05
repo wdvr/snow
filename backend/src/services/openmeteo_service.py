@@ -605,11 +605,12 @@ class OpenMeteoService:
                 tz = UTC
             now = datetime.now(tz)
 
-            # Define the 3 windows per day
+            # Define the 3 windows per day (non-overlapping, covering all 24h)
+            # Morning includes overnight snow (0-9), midday (10-15), afternoon/evening (16-23)
             windows = [
-                ("morning", 7, 5, 9),
-                ("midday", 12, 10, 14),
-                ("afternoon", 16, 14, 18),
+                ("morning", 7, 0, 9),
+                ("midday", 12, 10, 15),
+                ("afternoon", 16, 16, 23),
             ]
 
             # Build a mapping from (date, hour) -> index for quick lookups

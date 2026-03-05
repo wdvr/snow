@@ -252,7 +252,7 @@ class TestTimelineSnowfallWindows:
 
     @patch("services.openmeteo_service._request_with_retry")
     def test_timeline_data_snowfall_windows(self, mock_request, openmeteo_service):
-        """Morning sums h5-9, midday sums h10-14, afternoon sums h14-18."""
+        """Morning sums h0-9, midday sums h10-15, afternoon sums h16-23."""
         base_time = datetime.now(UTC)
         hourly_times = _build_hourly_times(base_time)
         n = len(hourly_times)
@@ -295,19 +295,19 @@ class TestTimelineSnowfallWindows:
 
             points_by_label = {p["time_label"]: p for p in day_points}
 
-            # Morning window: hours 5-9 inclusive = 5 hours of 1.0 cm each = 5.0
-            assert points_by_label["morning"]["snowfall_cm"] == pytest.approx(5.0), (
-                f"Morning snowfall should be 5.0, got {points_by_label['morning']['snowfall_cm']}"
+            # Morning window: hours 0-9 inclusive = 10 hours of 1.0 cm each = 10.0
+            assert points_by_label["morning"]["snowfall_cm"] == pytest.approx(10.0), (
+                f"Morning snowfall should be 10.0, got {points_by_label['morning']['snowfall_cm']}"
             )
 
-            # Midday window: hours 10-14 inclusive = 5 hours of 1.0 cm each = 5.0
-            assert points_by_label["midday"]["snowfall_cm"] == pytest.approx(5.0), (
-                f"Midday snowfall should be 5.0, got {points_by_label['midday']['snowfall_cm']}"
+            # Midday window: hours 10-15 inclusive = 6 hours of 1.0 cm each = 6.0
+            assert points_by_label["midday"]["snowfall_cm"] == pytest.approx(6.0), (
+                f"Midday snowfall should be 6.0, got {points_by_label['midday']['snowfall_cm']}"
             )
 
-            # Afternoon window: hours 14-18 inclusive = 5 hours of 1.0 cm each = 5.0
-            assert points_by_label["afternoon"]["snowfall_cm"] == pytest.approx(5.0), (
-                f"Afternoon snowfall should be 5.0, got {points_by_label['afternoon']['snowfall_cm']}"
+            # Afternoon window: hours 16-23 inclusive = 8 hours of 1.0 cm each = 8.0
+            assert points_by_label["afternoon"]["snowfall_cm"] == pytest.approx(8.0), (
+                f"Afternoon snowfall should be 8.0, got {points_by_label['afternoon']['snowfall_cm']}"
             )
 
             # One day verified is enough
