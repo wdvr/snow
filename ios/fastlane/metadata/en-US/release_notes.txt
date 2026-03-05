@@ -1,10 +1,21 @@
-What's New in Powder Chaser 2.1.1
+What's New in Powder Chaser 2.1
 
-TRAIL MAP OVERLAY IMPROVEMENTS
+PUSH NOTIFICATIONS
+- Fresh snow alerts when your favorite resorts get new powder
+- Forecast alerts: know when a storm is heading your way
+- Powder day alerts for epic conditions
+- Thaw/freeze cycle warnings
+- In-app notification history with bell icon
+- Per-resort notification settings and thresholds
+
+ACCOUNT MANAGEMENT
+- Delete your account and all data from Settings
+- Google Sign-In support
+
+TRAIL MAP OVERLAYS
 - Dramatically faster piste and lift overlay loading
-- Pre-cached trail data for 1000+ resorts (no more waiting for external APIs)
+- Pre-cached trail data for 1000+ resorts
 - Smart per-resort caching: zoom and pan without reloading
-- Parallel data fetching for multiple visible resorts
 
 Bug fixes and performance improvements.
 
