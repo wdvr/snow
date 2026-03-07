@@ -344,9 +344,11 @@ struct ResortMapView: View {
 
             guard !Task.isCancelled else { return }
 
-            // Store per-resort results (even empty ones to avoid re-fetching)
+            // Store per-resort results; skip failures so they retry on next map move
             for (resortId, result) in results {
-                pisteDataByResort[resortId] = result ?? PisteOverlayResult(pistes: [], lifts: [])
+                if let result {
+                    pisteDataByResort[resortId] = result
+                }
             }
 
             // Rebuild overlay from only visible resorts

@@ -10,6 +10,7 @@ import pytest
 from models.resort import ElevationLevel, ElevationPoint, Resort
 from models.weather import ConfidenceLevel, SnowQuality, WeatherCondition
 from services.static_json_generator import StaticJsonGenerator
+from utils.cache import clear_all_caches
 
 
 class TestStaticJsonGenerator:
@@ -155,29 +156,28 @@ class TestStaticJsonGenerator:
             }
 
         # Weather table returns excellent condition
+        condition_item = {
+            "resort_id": "whistler-blackcomb",
+            "elevation_level": "mid",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "current_temp_celsius": Decimal("-5.0"),
+            "min_temp_celsius": Decimal("-10.0"),
+            "max_temp_celsius": Decimal("0.0"),
+            "snowfall_24h_cm": Decimal("20.0"),
+            "snowfall_48h_cm": Decimal("30.0"),
+            "snowfall_72h_cm": Decimal("40.0"),
+            "hours_above_ice_threshold": Decimal("0.0"),
+            "snow_quality": "excellent",
+            "source_confidence": "high",
+            "snowfall_after_freeze_cm": Decimal("25.0"),
+            "data_source": "open-meteo",
+        }
+
         def mock_query(**kwargs):
             if "ElevationIndex" in str(kwargs.get("IndexName", "")):
-                return {"Items": []}
-            return {
-                "Items": [
-                    {
-                        "resort_id": "whistler-blackcomb",
-                        "elevation_level": "mid",
-                        "timestamp": datetime.now(UTC).isoformat(),
-                        "current_temp_celsius": Decimal("-5.0"),
-                        "min_temp_celsius": Decimal("-10.0"),
-                        "max_temp_celsius": Decimal("0.0"),
-                        "snowfall_24h_cm": Decimal("20.0"),
-                        "snowfall_48h_cm": Decimal("30.0"),
-                        "snowfall_72h_cm": Decimal("40.0"),
-                        "hours_above_ice_threshold": Decimal("0.0"),
-                        "snow_quality": "excellent",
-                        "source_confidence": "high",
-                        "snowfall_after_freeze_cm": Decimal("25.0"),
-                        "data_source": "open-meteo",
-                    }
-                ]
-            }
+                # Bulk query via GSI — return condition for "mid" elevation
+                return {"Items": [condition_item]}
+            return {"Items": [condition_item]}
 
         resorts_table = MagicMock()
         resorts_table.scan = mock_scan
@@ -216,6 +216,7 @@ class TestStaticJsonGenerator:
         self, mock_dynamodb, mock_s3
     ):
         """Test that HORRIBLE quality at any elevation makes resort not skiable."""
+        clear_all_caches()  # Clear cached bulk conditions from prior test
         resorts_table = MagicMock()
         resorts_table.scan.return_value = {
             "Items": [
@@ -278,18 +279,13 @@ class TestStaticJsonGenerator:
 
         # Return conditions based on query type
         def mock_query(**kwargs):
-            expr_vals = kwargs.get("ExpressionAttributeValues", {})
-            if ":level" in str(expr_vals):
-                # Per-elevation query (get_latest_condition)
-                level = expr_vals.get(":level", "")
-                if level == "base":
-                    return {"Items": [base_condition]}
-                elif level == "top":
-                    return {"Items": [top_condition]}
-            else:
-                # All-elevations query (get_latest_conditions_all_elevations)
+            index_name = kwargs.get("IndexName", "")
+            if index_name == "ElevationIndex":
+                # Bulk GSI query — return both conditions (dedup handles grouping)
                 return {"Items": [top_condition, base_condition]}
-            return {"Items": []}
+            else:
+                # Per-resort query (get_latest_conditions_all_elevations)
+                return {"Items": [top_condition, base_condition]}
 
         conditions_table.query = mock_query
 

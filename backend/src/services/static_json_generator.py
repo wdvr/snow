@@ -164,8 +164,12 @@ class StaticJsonGenerator:
         # Get all resorts
         resorts = self.resort_service.get_all_resorts()
 
-        # Build snow quality summaries sequentially to avoid connection pool exhaustion
-        # Each resort requires 1 DynamoDB query (~50ms) — 1040 resorts ≈ 60-90s total
+        # Bulk-fetch conditions for ALL resorts in 3 GSI queries (one per elevation)
+        # instead of 1019 individual queries. Uses ProjectionExpression to exclude
+        # raw_data (~15KB per item), reducing RCU from ~57,000 to ~170.
+        all_conditions = self.weather_service.get_all_latest_conditions()
+        logger.info(f"Bulk-fetched conditions for {len(all_conditions)} resorts")
+
         quality_summaries = {}
         processed = 0
         errors = 0
@@ -173,7 +177,10 @@ class StaticJsonGenerator:
 
         for i, resort in enumerate(resorts):
             try:
-                summary = self._get_snow_quality_for_resort(resort)
+                conditions = all_conditions.get(resort.resort_id, [])
+                summary = self._get_snow_quality_for_resort(
+                    resort, conditions=conditions
+                )
                 if summary:
                     quality_summaries[resort.resort_id] = summary
                     processed += 1
@@ -208,15 +215,21 @@ class StaticJsonGenerator:
             "errors": errors,
         }
 
-    def _get_snow_quality_for_resort(self, resort: Resort) -> dict | None:
+    def _get_snow_quality_for_resort(
+        self, resort: Resort, conditions: list | None = None
+    ) -> dict | None:
         """Get snow quality summary for a single resort.
 
         This mirrors the API's _get_snow_quality_for_resort function logic.
+
+        Args:
+            resort: Resort object
+            conditions: Pre-fetched conditions list. If None, queries DynamoDB per-resort.
         """
-        # Single query to get latest condition per elevation (instead of 3 separate)
-        conditions = self.weather_service.get_latest_conditions_all_elevations(
-            resort.resort_id
-        )
+        if conditions is None:
+            conditions = self.weather_service.get_latest_conditions_all_elevations(
+                resort.resort_id
+            )
 
         if not conditions:
             return {

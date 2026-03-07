@@ -5,6 +5,7 @@ import logging
 import os
 import random
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Optional
 
 import boto3
@@ -63,6 +64,13 @@ class NotificationService:
             "APNS_PLATFORM_APP_ARN"
         )
         self.notification_history_service = notification_history_service
+
+    @staticmethod
+    def _json_default(obj):
+        """Handle Decimal serialization from DynamoDB values."""
+        if isinstance(obj, Decimal):
+            return float(obj)
+        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
     # =========================================================================
     # Device Token Management
@@ -193,7 +201,9 @@ class NotificationService:
                 if "APNS_SANDBOX" in (self.apns_platform_arn or "")
                 else "APNS"
             )
-            message = json.dumps({apns_key: json.dumps(apns_payload)})
+            message = json.dumps(
+                {apns_key: json.dumps(apns_payload, default=self._json_default)}
+            )
 
             self.sns.publish(
                 TargetArn=endpoint_arn,
