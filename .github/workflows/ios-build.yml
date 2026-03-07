@@ -162,11 +162,13 @@ jobs:
           rm -f $RUNNER_TEMP/cert.p12
         fi
 
-        # Ensure signing keychain is in search list (idempotent)
+        # Ensure signing keychain is in search list and set as default
+        # Default keychain is where Xcode installs new dev certs — must be unlocked
         CURRENT_KEYCHAINS=$(security list-keychains -d user | tr -d '"' | tr '\n' ' ')
         if ! echo "$CURRENT_KEYCHAINS" | grep -q "ios-signing.keychain-db"; then
           security list-keychains -d user -s "$KEYCHAIN_PATH" $CURRENT_KEYCHAINS
         fi
+        security default-keychain -s "$KEYCHAIN_PATH"
 
         # Revoke stale dev certs from Apple + delete from local keychains
         pip3 install --break-system-packages PyJWT cryptography 2>/dev/null || true
@@ -207,6 +209,10 @@ jobs:
 
         # Clear cached provisioning profiles
         rm -rf ~/Library/MobileDevice/Provisioning\ Profiles/*
+
+        # Ensure codesign can access keychain without UI prompt
+        security set-key-partition-list -S apple-tool:,apple:,codesign: \
+          -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" 2>/dev/null || true
 
         security find-identity -v -p codesigning | head -5
 
