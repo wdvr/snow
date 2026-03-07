@@ -139,8 +139,8 @@ jobs:
         security set-key-partition-list -S apple-tool:,apple:,codesign: \
           -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-        # Replace keychain search list with ONLY the signing keychain
-        security list-keychains -d user -s "$KEYCHAIN_PATH"
+        # Prepend signing keychain to search list (don't replace - other runners share the user keychain list)
+        security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
         security default-keychain -s "$KEYCHAIN_PATH"
 
         echo "SIGNING_KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
@@ -237,8 +237,6 @@ jobs:
     - name: Cleanup
       if: always()
       run: |
-        # Restore login keychain to search list
-        security list-keychains -d user -s ~/Library/Keychains/login.keychain-db
-        security default-keychain -s ~/Library/Keychains/login.keychain-db
+        # Don't reset keychain list - other runners may be using their signing keychains
         security delete-keychain $RUNNER_TEMP/signing.keychain-db 2>/dev/null || true
         rm -rf $RUNNER_TEMP/private_keys $RUNNER_TEMP/Export
