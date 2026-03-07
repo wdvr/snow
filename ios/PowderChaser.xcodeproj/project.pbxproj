@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FA1B2C3D4E5F6A7B8C9D0E1F /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = FA1B2C3D4E5F6A7B8C9D0E10 /* FirebaseAnalytics */; };
+		FA2B3C4D5E6F7A8B9C0D1E2F /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = FA2B3C4D5E6F7A8B9C0D1E20 /* FirebaseCrashlytics */; };
 		01547942C09A801D623291E4 /* PowderChaserApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB5A6775EF00F74AB97F8BD7 /* PowderChaserApp.swift */; };
 		0171DE1E8AA53007FD349CE2 /* NotificationHistoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BB8E161FE1E82BC94FDEEA1 /* NotificationHistoryModels.swift */; };
 		0429CAF8C7E02BD487FA82CB /* ChatStreamService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616D12D83765C0D1707C0181 /* ChatStreamService.swift */; };
@@ -256,6 +258,8 @@
 				502ABA75A67C0E54D38AE4EB /* Get in Frameworks */,
 				E506BEAF106DDC91156687A4 /* Nuke in Frameworks */,
 				913EF26FE824CEEB342190D1 /* KeychainSwift in Frameworks */,
+				FA1B2C3D4E5F6A7B8C9D0E1F /* FirebaseAnalytics in Frameworks */,
+				FA2B3C4D5E6F7A8B9C0D1E2F /* FirebaseCrashlytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -514,6 +518,7 @@
 				3731EFBE68E294C5A889C3C0 /* Resources */,
 				5A91516C22F06F4E2E836D18 /* Frameworks */,
 				4F6C8B3D1755DABB8C06BDA5 /* Embed Foundation Extensions */,
+				FA3C4D5E6F708A9B0C1D2E3F /* Upload Crashlytics dSYMs */,
 			);
 			buildRules = (
 			);
@@ -528,6 +533,8 @@
 				2E65C9AFAF97912CECF2495C /* Get */,
 				AE7B59CE78565ECAEFF95FE2 /* Nuke */,
 				7492F8FF050DAFD045264C25 /* KeychainSwift */,
+				FA1B2C3D4E5F6A7B8C9D0E10 /* FirebaseAnalytics */,
+				FA2B3C4D5E6F7A8B9C0D1E20 /* FirebaseCrashlytics */,
 			);
 			productName = PowderChaser;
 			productReference = 1244F914F81649B40BD96C00 /* PowderChaser.app */;
@@ -587,6 +594,7 @@
 				746BD2EF857351F2251CD820 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				67D3BDF69D4F1F8DD7B30866 /* XCRemoteSwiftPackageReference "keychain-swift" */,
 				5413B05F94E49F95848F8A34 /* XCRemoteSwiftPackageReference "Nuke" */,
+				FA0B1C2D3E4F5A6B7C8D9E0F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
@@ -613,6 +621,32 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		FA3C4D5E6F708A9B0C1D2E3F /* Upload Crashlytics dSYMs */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${PRODUCT_NAME}",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Info.plist",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
+			);
+			name = "Upload Crashlytics dSYMs";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5E6342B51BDAEDF5CDE33D76 /* Sources */ = {
@@ -1147,6 +1181,14 @@
 				minimumVersion = 5.8.0;
 			};
 		};
+		FA0B1C2D3E4F5A6B7C8D9E0F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1179,6 +1221,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B37977F2FB8028445E147828 /* XCRemoteSwiftPackageReference "Alamofire" */;
 			productName = Alamofire;
+		};
+		FA1B2C3D4E5F6A7B8C9D0E10 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FA0B1C2D3E4F5A6B7C8D9E0F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		FA2B3C4D5E6F7A8B9C0D1E20 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FA0B1C2D3E4F5A6B7C8D9E0F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

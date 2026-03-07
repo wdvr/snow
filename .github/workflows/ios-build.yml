@@ -262,6 +262,23 @@ jobs:
           -authenticationKeyID ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
           -authenticationKeyIssuerID ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
 
+    - name: Upload Crashlytics dSYMs
+      if: github.event_name != 'pull_request'
+      run: |
+        DSYM_PATH="${{ runner.temp }}/Export/App.xcarchive/dSYMs"
+        UPLOAD_SCRIPT=$(find ~/Library/Developer/Xcode/DerivedData -name "upload-symbols" -path "*/firebase-ios-sdk/Crashlytics/*" 2>/dev/null | head -1)
+        if [ -z "$UPLOAD_SCRIPT" ]; then
+          echo "::warning::upload-symbols not found in DerivedData, skipping Crashlytics dSYM upload"
+        elif [ ! -d "$DSYM_PATH" ]; then
+          echo "::warning::dSYMs directory not found at $DSYM_PATH"
+        else
+          echo "Uploading dSYMs from $DSYM_PATH"
+          "$UPLOAD_SCRIPT" \
+            -gsp ios/PowderChaser/PowderChaser/Resources/GoogleService-Info.plist \
+            -p ios "$DSYM_PATH"/*.dSYM
+          echo "Crashlytics dSYM upload complete"
+        fi
+
     - name: Upload IPA artifact
       if: github.event_name != 'pull_request'
       uses: actions/upload-artifact@v4

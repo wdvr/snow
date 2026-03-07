@@ -5,16 +5,10 @@
 //  Firebase Analytics and Crashlytics integration
 //
 
-import Foundation
-#if canImport(FirebaseCore)
-import FirebaseCore
-#endif
-#if canImport(FirebaseAnalytics)
 import FirebaseAnalytics
-#endif
-#if canImport(FirebaseCrashlytics)
+import FirebaseCore
 import FirebaseCrashlytics
-#endif
+import Foundation
 
 /// Analytics service for tracking user behavior and crashes
 final class AnalyticsService: @unchecked Sendable {
@@ -34,17 +28,13 @@ final class AnalyticsService: @unchecked Sendable {
 
     /// Call this in App.init
     func configure() {
-        #if canImport(FirebaseCore)
         // Only configure if not already configured
         if FirebaseApp.app() == nil {
             FirebaseApp.configure()
         }
-        #endif
 
         // Enable analytics
-        #if canImport(FirebaseAnalytics)
         Analytics.setAnalyticsCollectionEnabled(true)
-        #endif
 
         // Start session tracking
         startSession()
@@ -91,7 +81,6 @@ final class AnalyticsService: @unchecked Sendable {
 
     /// Track screen view with automatic duration calculation
     func trackScreen(_ screenName: String, screenClass: String? = nil) {
-        #if canImport(FirebaseAnalytics)
         var params: [String: Any] = [
             AnalyticsParameterScreenName: screenName
         ]
@@ -99,7 +88,6 @@ final class AnalyticsService: @unchecked Sendable {
             params[AnalyticsParameterScreenClass] = screenClass
         }
         Analytics.logEvent(AnalyticsEventScreenView, parameters: params)
-        #endif
 
         // Record start time for duration tracking
         queue.async {
@@ -532,46 +520,34 @@ final class AnalyticsService: @unchecked Sendable {
 
     /// Record a non-fatal error
     func recordError(_ error: Error, context: [String: Any]? = nil) {
-        #if canImport(FirebaseCrashlytics)
         if let context = context {
             for (key, value) in context {
                 Crashlytics.crashlytics().setCustomValue(value, forKey: key)
             }
         }
         Crashlytics.crashlytics().record(error: error)
-        #endif
     }
 
     /// Set user identifier for crash reports (anonymized)
     func setUserId(_ userId: String?) {
-        #if canImport(FirebaseCrashlytics)
         Crashlytics.crashlytics().setUserID(userId ?? "")
-        #endif
-        #if canImport(FirebaseAnalytics)
         Analytics.setUserID(userId)
-        #endif
     }
 
     /// Set user property for analytics
     func setUserProperty(_ value: String?, forName name: String) {
-        #if canImport(FirebaseAnalytics)
         Analytics.setUserProperty(value, forName: name)
-        #endif
     }
 
     /// Log a breadcrumb message for crash context
     func log(_ message: String) {
-        #if canImport(FirebaseCrashlytics)
         Crashlytics.crashlytics().log(message)
-        #endif
     }
 
     // MARK: - Private
 
     private func logEvent(_ name: String, parameters: [String: Any]? = nil) {
-        #if canImport(FirebaseAnalytics)
         Analytics.logEvent(name, parameters: parameters)
-        #endif
 
         #if DEBUG
         print("[Analytics] \(name): \(parameters ?? [:])")

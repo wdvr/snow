@@ -1,8 +1,6 @@
+import FirebaseCore
 import SwiftUI
 import UserNotifications
-#if canImport(FirebaseCore)
-import FirebaseCore
-#endif
 
 // MARK: - App Delegate for Push Notifications
 
