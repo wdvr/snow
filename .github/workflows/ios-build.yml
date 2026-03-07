@@ -1,10 +1,5 @@
 name: iOS Build
 
-# Inline build workflow using App Store Connect API for automatic signing.
-# A stored .p12 signing certificate is imported from GitHub Secrets into a
-# temporary keychain. This prevents Xcode from creating a new certificate
-# on every build (ephemeral runners have no persistent keychain).
-
 on:
   push:
     branches:
@@ -106,37 +101,6 @@ jobs:
         echo "${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}" | tr -d '\r' > $RUNNER_TEMP/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
         chmod 600 $RUNNER_TEMP/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
 
-    - name: Setup signing keychain
-      if: github.event_name != 'pull_request'
-      env:
-        CERT_BASE64: ${{ secrets.DISTRIBUTION_CERTIFICATE_BASE64 }}
-        CERT_PASSWORD: ${{ secrets.DISTRIBUTION_CERTIFICATE_PASSWORD }}
-      run: |
-        KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
-        KEYCHAIN_PASSWORD="$(openssl rand -hex 16)"
-
-        security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-        security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-        security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
-        echo "$CERT_BASE64" | base64 --decode > $RUNNER_TEMP/cert.p12
-        security import $RUNNER_TEMP/cert.p12 \
-          -P "$CERT_PASSWORD" \
-          -A -t cert -f pkcs12 \
-          -k "$KEYCHAIN_PATH"
-
-        security set-key-partition-list -S apple-tool:,apple:,codesign: \
-          -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
-        # Prepend signing keychain to search list (don't replace - other runners share the user keychain list)
-        security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
-        security default-keychain -s "$KEYCHAIN_PATH"
-
-        echo "SIGNING_KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
-        echo "SIGNING_KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> $GITHUB_ENV
-        security find-identity -v -p codesigning | head -5
-        rm -f $RUNNER_TEMP/cert.p12
-
     - name: Build (PR - no signing)
       if: github.event_name == 'pull_request'
       run: |
@@ -150,10 +114,14 @@ jobs:
     - name: Archive app (with signing lock)
       if: github.event_name != 'pull_request'
       env:
+        CERT_BASE64: ${{ secrets.DISTRIBUTION_CERTIFICATE_BASE64 }}
+        CERT_PASSWORD: ${{ secrets.DISTRIBUTION_CERTIFICATE_PASSWORD }}
         KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
         ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       run: |
         LOCKFILE="/tmp/ios-signing.lock"
+        KEYCHAIN_PATH="$HOME/ios-signing.keychain-db"
+        KEYCHAIN_PASSWORD="ios-signing-shared"
 
         # Acquire lock (wait up to 10 minutes for other runners)
         echo "Waiting for signing lock..."
@@ -162,7 +130,6 @@ jobs:
             echo "Lock acquired"
             break
           fi
-          # Check if lock holder is still alive
           LOCK_PID=$(cat "$LOCKFILE" 2>/dev/null)
           if [ -n "$LOCK_PID" ] && ! kill -0 "$LOCK_PID" 2>/dev/null; then
             rm -f "$LOCKFILE"
@@ -171,11 +138,37 @@ jobs:
           sleep 5
         done
 
-        # Cleanup function
         cleanup_lock() { rm -f "$LOCKFILE"; }
         trap cleanup_lock EXIT
 
-        # Revoke stale development certificates
+        # Setup persistent signing keychain (shared across all runners)
+        if [ ! -f "$KEYCHAIN_PATH" ]; then
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+        fi
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+        # Import distribution cert if not already present
+        DIST_COUNT=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" 2>/dev/null | grep "Apple Distribution" | wc -l | tr -d ' ')
+        if [ "$DIST_COUNT" -eq "0" ]; then
+          echo "Importing distribution certificate..."
+          echo "$CERT_BASE64" | base64 --decode > $RUNNER_TEMP/cert.p12
+          security import $RUNNER_TEMP/cert.p12 \
+            -P "$CERT_PASSWORD" \
+            -A -t cert -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          rm -f $RUNNER_TEMP/cert.p12
+        fi
+
+        # Ensure signing keychain is in search list (idempotent)
+        CURRENT_KEYCHAINS=$(security list-keychains -d user | tr -d '"' | tr '\n' ' ')
+        if ! echo "$CURRENT_KEYCHAINS" | grep -q "ios-signing.keychain-db"; then
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $CURRENT_KEYCHAINS
+        fi
+
+        # Revoke stale dev certs from Apple + delete from local keychains
         pip3 install --break-system-packages PyJWT cryptography 2>/dev/null || true
         python3 - <<'PYEOF'
         import jwt, time, os, json, urllib.request, urllib.error
@@ -204,11 +197,20 @@ jobs:
                 print(f"Failed to revoke {cert['id']}: {e.code}")
         PYEOF
 
-        # Clear cached provisioning profiles (may reference revoked certs)
+        # Delete stale dev certs from ALL local keychains
+        for kc in ~/Library/Keychains/login.keychain-db "$KEYCHAIN_PATH"; do
+          while security find-certificate -c "Apple Development: Created via API" -Z "$kc" 2>/dev/null | grep -q "SHA-1"; do
+            HASH=$(security find-certificate -c "Apple Development: Created via API" -Z "$kc" 2>/dev/null | grep "SHA-1" | head -1 | awk '{print $NF}')
+            security delete-certificate -Z "$HASH" "$kc" 2>/dev/null && echo "Deleted local cert $HASH from $kc" || break
+          done
+        done
+
+        # Clear cached provisioning profiles
         rm -rf ~/Library/MobileDevice/Provisioning\ Profiles/*
 
+        security find-identity -v -p codesigning | head -5
+
         # Archive with automatic signing (Xcode creates fresh dev cert + profiles)
-        security unlock-keychain -p "$SIGNING_KEYCHAIN_PASSWORD" "$SIGNING_KEYCHAIN_PATH"
         xcodebuild archive \
           -project ios/PowderChaser.xcodeproj \
           -scheme PowderChaser \
@@ -222,7 +224,7 @@ jobs:
           CODE_SIGN_STYLE=Automatic \
           DEVELOPMENT_TEAM=${{ env.TEAM_ID }}
 
-    - name: Create ExportOptions.plist
+    - name: Export IPA
       if: github.event_name != 'pull_request'
       run: |
         cat > /tmp/ExportOptions.plist << EOF
@@ -244,9 +246,7 @@ jobs:
         </plist>
         EOF
 
-    - name: Export IPA
-      if: github.event_name != 'pull_request'
-      run: |
+        security unlock-keychain -p "ios-signing-shared" "$HOME/ios-signing.keychain-db" 2>/dev/null || true
         xcodebuild -exportArchive \
           -archivePath $RUNNER_TEMP/Export/App.xcarchive \
           -exportPath $RUNNER_TEMP/Export \
@@ -283,6 +283,4 @@ jobs:
     - name: Cleanup
       if: always()
       run: |
-        # Don't reset keychain list - other runners may be using their signing keychains
-        security delete-keychain $RUNNER_TEMP/signing.keychain-db 2>/dev/null || true
         rm -rf $RUNNER_TEMP/private_keys $RUNNER_TEMP/Export
