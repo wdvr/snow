@@ -5,6 +5,22 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Mar 6, 2026
+
+### Fix: AWS cost reduction — SnapStart removal + DynamoDB provisioned capacity
+Lambda SnapStart was enabled on API handler functions (prod + staging) with 37 published versions cached 24/7, costing $9.49/6 days (~$47/month) for zero benefit (Python functions, not Java). Deleted all published versions, disabled SnapStart, removed from Pulumi config. Switched 6 high-write DynamoDB tables (weather-conditions, snow-summary, daily-history × prod/staging) from on-demand to provisioned capacity with auto-scaling (min 1, max 50 WCU, 70% target). On-demand has no free tier for reads/writes; provisioned gets 25 WCU free. Expected savings: ~$65/month total.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Chore: Piste precache continued runs
+Ran precache_pistes.py multiple times with --skip-existing to fill remaining Overpass failures. Coverage: ~985/1019 resorts (96.7%). Remaining ~34 consistently hit Overpass API rate limits (504 timeouts, 429 rate limits).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
 ## Mar 5, 2026
 
 ### Fix: Piste overlay performance — S3 precache, per-resort caching, parallel fetch

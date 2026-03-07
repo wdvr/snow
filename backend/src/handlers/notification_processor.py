@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 
 import boto3
 
+from services.notification_history_service import NotificationHistoryService
 from services.notification_service import NotificationService
 
 # Configure logging
@@ -36,6 +37,9 @@ RESORT_EVENTS_TABLE = os.environ.get(
     "RESORT_EVENTS_TABLE", f"snow-tracker-resort-events-{ENVIRONMENT}"
 )
 RESORTS_TABLE = os.environ.get("RESORTS_TABLE", f"snow-tracker-resorts-{ENVIRONMENT}")
+NOTIFICATIONS_TABLE = os.environ.get(
+    "NOTIFICATIONS_TABLE", f"snow-tracker-notifications-{ENVIRONMENT}"
+)
 APNS_PLATFORM_ARN = os.environ.get("APNS_PLATFORM_APP_ARN")
 
 # Lazy-initialized service
@@ -47,6 +51,9 @@ def get_notification_service() -> NotificationService:
     global _notification_service
     if _notification_service is None:
         dynamodb = boto3.resource("dynamodb")
+        notification_history_service = NotificationHistoryService(
+            table=dynamodb.Table(NOTIFICATIONS_TABLE)
+        )
         _notification_service = NotificationService(
             device_tokens_table=dynamodb.Table(DEVICE_TOKENS_TABLE),
             user_preferences_table=dynamodb.Table(USER_PREFERENCES_TABLE),
@@ -54,6 +61,7 @@ def get_notification_service() -> NotificationService:
             weather_conditions_table=dynamodb.Table(WEATHER_CONDITIONS_TABLE),
             resorts_table=dynamodb.Table(RESORTS_TABLE),
             apns_platform_arn=APNS_PLATFORM_ARN,
+            notification_history_service=notification_history_service,
         )
     return _notification_service
 

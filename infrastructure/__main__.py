@@ -125,7 +125,9 @@ resorts_table = aws.dynamodb.Table(
 weather_conditions_table = aws.dynamodb.Table(
     f"{app_name}-weather-conditions-{environment}",
     name=f"{app_name}-weather-conditions-{environment}",
-    billing_mode="PAY_PER_REQUEST",
+    billing_mode="PROVISIONED",
+    read_capacity=25,
+    write_capacity=5,
     hash_key="resort_id",
     range_key="timestamp",
     attributes=[
@@ -139,6 +141,8 @@ weather_conditions_table = aws.dynamodb.Table(
             "hash_key": "elevation_level",
             "range_key": "timestamp",
             "projection_type": "ALL",
+            "read_capacity": 25,
+            "write_capacity": 1,
         }
     ],
     ttl={"attribute_name": "ttl", "enabled": True},
@@ -197,7 +201,9 @@ device_tokens_table = aws.dynamodb.Table(
 snow_summary_table = aws.dynamodb.Table(
     f"{app_name}-snow-summary-{environment}",
     name=f"{app_name}-snow-summary-{environment}",
-    billing_mode="PAY_PER_REQUEST",
+    billing_mode="PROVISIONED",
+    read_capacity=5,
+    write_capacity=5,
     hash_key="resort_id",
     range_key="elevation_level",  # base, mid, top
     attributes=[
@@ -215,7 +221,9 @@ daily_history_table = aws.dynamodb.Table(
     name=f"{app_name}-daily-history-{environment}",
     hash_key="resort_id",
     range_key="date",
-    billing_mode="PAY_PER_REQUEST",
+    billing_mode="PROVISIONED",
+    read_capacity=5,
+    write_capacity=5,
     attributes=[
         {"name": "resort_id", "type": "S"},
         {"name": "date", "type": "S"},  # YYYY-MM-DD format
@@ -1095,6 +1103,7 @@ notification_processor_lambda = aws.lambda_.Function(
             "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
             "RESORT_EVENTS_TABLE": f"{app_name}-resort-events-{environment}",
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
+            "NOTIFICATIONS_TABLE": f"{app_name}-notifications-{environment}",
             "AWS_REGION_NAME": aws_region,
             # APNs platform ARN is optional - notifications will be skipped if not configured
             "APNS_PLATFORM_APP_ARN": apns_platform_app_arn
@@ -1237,10 +1246,7 @@ api_handler_lambda = aws.lambda_.Function(
     runtime="python3.12",
     timeout=90,
     memory_size=512,
-    publish=True,  # Required for SnapStart
-    snap_start=aws.lambda_.FunctionSnapStartArgs(
-        apply_on="PublishedVersions"  # Enable SnapStart for faster cold starts
-    ),
+    publish=False,
     code=pulumi.AssetArchive(
         {
             "api_handler.py": pulumi.StringAsset(

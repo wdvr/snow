@@ -675,11 +675,17 @@ class NotificationService:
 
             # Check for fresh snow (uses snowfall_24h_cm, not cumulative fresh_snow_cm)
             # Each notification type has its own 24h grace period
-            if fresh_snow_enabled and notification_settings.can_notify_for_resort(
-                resort_id, NotificationType.FRESH_SNOW.value
-            ):
+            # Smart re-notification: if 10cm+ more snow fell, notify again
+            if fresh_snow_enabled:
                 fresh_snow = self.get_fresh_snow_cm(resort_id)
-                if fresh_snow >= snow_threshold:
+                if (
+                    fresh_snow >= snow_threshold
+                    and notification_settings.can_notify_for_resort(
+                        resort_id,
+                        NotificationType.FRESH_SNOW.value,
+                        current_amount=fresh_snow,
+                    )
+                ):
                     snow_cm = int(round(fresh_snow))
                     notifications.append(
                         NotificationPayload(
@@ -692,7 +698,7 @@ class NotificationService:
                         )
                     )
                     notification_settings.mark_notified(
-                        resort_id, NotificationType.FRESH_SNOW.value
+                        resort_id, NotificationType.FRESH_SNOW.value, amount=fresh_snow
                     )
 
             # Check for new events
@@ -747,9 +753,7 @@ class NotificationService:
                 powder_enabled = (
                     powder_enabled and resort_settings.powder_alerts_enabled
                 )
-            if powder_enabled and notification_settings.can_notify_for_resort(
-                resort_id, NotificationType.POWDER_ALERT.value
-            ):
+            if powder_enabled:
                 powder_threshold = (
                     resort_settings.powder_threshold_cm
                     if resort_settings
@@ -758,17 +762,25 @@ class NotificationService:
                 )
                 conditions = self.get_powder_conditions(resort_id)
                 if conditions:
-                    powder_notification = self.check_powder_day(
-                        resort_id=resort_id,
-                        resort_name=resort_name,
-                        conditions=conditions,
-                        powder_threshold=powder_threshold,
-                    )
-                    if powder_notification:
-                        notifications.append(powder_notification)
-                        notification_settings.mark_notified(
-                            resort_id, NotificationType.POWDER_ALERT.value
+                    snowfall = conditions.get("snowfall_24h_cm", 0.0)
+                    if notification_settings.can_notify_for_resort(
+                        resort_id,
+                        NotificationType.POWDER_ALERT.value,
+                        current_amount=snowfall,
+                    ):
+                        powder_notification = self.check_powder_day(
+                            resort_id=resort_id,
+                            resort_name=resort_name,
+                            conditions=conditions,
+                            powder_threshold=powder_threshold,
                         )
+                        if powder_notification:
+                            notifications.append(powder_notification)
+                            notification_settings.mark_notified(
+                                resort_id,
+                                NotificationType.POWDER_ALERT.value,
+                                amount=snowfall,
+                            )
 
             # Check for forecast snow (SOON alerts)
             if (
@@ -851,9 +863,10 @@ class NotificationService:
             return []
 
     def get_resort_forecast_next_3_days(self, resort_id: str) -> dict:
-        """Get forecast data for the next 3 days for a resort.
+        """Get forecast data for the next 3 days for a resort (max across elevations).
 
-        Uses the most recent weather record which contains predicted snowfall.
+        Checks all 3 elevation levels and returns the maximum predicted snowfall,
+        matching the approach used by get_fresh_snow_cm().
 
         Args:
             resort_id: Resort ID
@@ -866,18 +879,24 @@ class NotificationService:
                 KeyConditionExpression="resort_id = :rid",
                 ExpressionAttributeValues={":rid": resort_id},
                 ScanIndexForward=False,
-                Limit=1,
+                Limit=3,  # Get all 3 elevation levels
             )
 
             items = response.get("Items", [])
             if not items:
                 return {}
 
-            item = items[0]
+            # Take max across elevations for each forecast period
             return {
-                "predicted_snow_24h_cm": float(item.get("predicted_snow_24h_cm", 0.0)),
-                "predicted_snow_48h_cm": float(item.get("predicted_snow_48h_cm", 0.0)),
-                "predicted_snow_72h_cm": float(item.get("predicted_snow_72h_cm", 0.0)),
+                "predicted_snow_24h_cm": max(
+                    float(item.get("predicted_snow_24h_cm", 0.0)) for item in items
+                ),
+                "predicted_snow_48h_cm": max(
+                    float(item.get("predicted_snow_48h_cm", 0.0)) for item in items
+                ),
+                "predicted_snow_72h_cm": max(
+                    float(item.get("predicted_snow_72h_cm", 0.0)) for item in items
+                ),
             }
 
         except Exception as e:

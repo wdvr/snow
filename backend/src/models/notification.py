@@ -205,6 +205,14 @@ class UserNotificationPreferences(BaseModel):
         default=24, description="Minimum hours between notifications for same resort"
     )
 
+    # Track the snowfall amount last notified, to allow re-notification when
+    # significantly more snow falls within the grace period.
+    # Key: "resort_id:notification_type", Value: snowfall cm that was notified
+    last_notified_amount: dict[str, float] = Field(
+        default_factory=dict,
+        description="Snowfall amount (cm) at time of last notification per resort:type",
+    )
+
     # Temperature state tracking per resort for thaw/freeze alerts
     # Key: resort_id, Value: "frozen" (below 0), "thawed" (above 0), or "unknown"
     temperature_state: dict[str, str] = Field(
@@ -220,15 +228,27 @@ class UserNotificationPreferences(BaseModel):
     )
 
     def can_notify_for_resort(
-        self, resort_id: str, notification_type: str | None = None
+        self,
+        resort_id: str,
+        notification_type: str | None = None,
+        current_amount: float | None = None,
     ) -> bool:
         """Check if we can send a notification for this resort based on grace period.
+
+        For snow-related notifications (fresh_snow, powder_alert), the grace period
+        can be overridden if the current snowfall is significantly higher than what
+        was already notified. This handles multi-storm scenarios where a resort gets
+        5cm, then 16cm, then 14cm more — users should know about each wave.
+
+        Re-notification within grace period triggers when current_amount is at least
+        10cm more than the previously notified amount (absolute increase).
 
         Args:
             resort_id: Resort ID
             notification_type: Optional notification type for per-type grace periods.
-                If provided, checks grace period for this specific type at this resort.
-                If None, checks the legacy resort-level grace period.
+            current_amount: Optional current snowfall amount in cm. If provided and
+                significantly higher than last notified amount, allows re-notification
+                within the grace period.
         """
         key = f"{resort_id}:{notification_type}" if notification_type else resort_id
         if key not in self.last_notified:
@@ -241,21 +261,42 @@ class UserNotificationPreferences(BaseModel):
                 last_time = last_time.replace(tzinfo=UTC)
             now = datetime.now(UTC)
             hours_since = (now - last_time).total_seconds() / 3600
-            return hours_since >= self.grace_period_hours
+
+            # Normal grace period elapsed
+            if hours_since >= self.grace_period_hours:
+                return True
+
+            # Within grace period — check if snowfall increased significantly
+            if current_amount is not None and notification_type in (
+                "fresh_snow",
+                "powder_alert",
+            ):
+                last_amount = self.last_notified_amount.get(key, 0.0)
+                # Re-notify if 10cm+ more snow since last notification
+                if current_amount >= last_amount + 10:
+                    return True
+
+            return False
         except (ValueError, TypeError):
             return True
 
     def mark_notified(
-        self, resort_id: str, notification_type: str | None = None
+        self,
+        resort_id: str,
+        notification_type: str | None = None,
+        amount: float | None = None,
     ) -> None:
         """Mark that a notification was sent for this resort.
 
         Args:
             resort_id: Resort ID
             notification_type: Optional notification type for per-type tracking.
+            amount: Optional snowfall amount in cm (for smart re-notification).
         """
         key = f"{resort_id}:{notification_type}" if notification_type else resort_id
         self.last_notified[key] = datetime.now(UTC).isoformat()
+        if amount is not None:
+            self.last_notified_amount[key] = amount
 
 
 class ResortEvent(BaseModel):

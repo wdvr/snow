@@ -325,12 +325,15 @@ def main():
             f"(resorts {batch_start + 1}-{batch_end} of {total})"
         )
 
+        had_query = False
         for resort in batch:
             result = process_resort(resort, s3_client, args.dry_run, args.skip_existing)
             results.append(result)
+            if not result["skipped"] or result["error"]:
+                had_query = True
 
-        # Delay between batches (skip after last batch)
-        if batch_end < total:
+        # Only delay if we made Overpass queries (skip for all-cached batches)
+        if had_query and batch_end < total:
             time.sleep(BATCH_DELAY)
 
     # Summary
