@@ -204,7 +204,10 @@ jobs:
                 print(f"Failed to revoke {cert['id']}: {e.code}")
         PYEOF
 
-        # Archive with automatic signing (Xcode creates fresh dev cert)
+        # Clear cached provisioning profiles (may reference revoked certs)
+        rm -rf ~/Library/MobileDevice/Provisioning\ Profiles/*
+
+        # Archive with automatic signing (Xcode creates fresh dev cert + profiles)
         security unlock-keychain -p "$SIGNING_KEYCHAIN_PASSWORD" "$SIGNING_KEYCHAIN_PATH"
         xcodebuild archive \
           -project ios/PowderChaser.xcodeproj \
