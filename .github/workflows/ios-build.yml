@@ -144,6 +144,7 @@ jobs:
         security default-keychain -s "$KEYCHAIN_PATH"
 
         echo "SIGNING_KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
+        echo "SIGNING_KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> $GITHUB_ENV
         security find-identity -v -p codesigning | head -5
         rm -f $RUNNER_TEMP/cert.p12 $RUNNER_TEMP/dev_cert.p12
 
@@ -160,6 +161,8 @@ jobs:
     - name: Archive app
       if: github.event_name != 'pull_request'
       run: |
+        # Unlock keychain before archive to prevent errSecInternalComponent
+        security unlock-keychain -p "$SIGNING_KEYCHAIN_PASSWORD" "$SIGNING_KEYCHAIN_PATH"
         xcodebuild archive \
           -project ios/PowderChaser.xcodeproj \
           -scheme PowderChaser \
