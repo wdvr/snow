@@ -128,62 +128,13 @@ jobs:
         security set-key-partition-list -S apple-tool:,apple:,codesign: \
           -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-        # Replace keychain search list with ONLY the signing keychain
-        # This prevents Xcode from finding dev certs in login keychain
-        security list-keychains -d user -s "$KEYCHAIN_PATH"
+        # Include both signing keychain (distribution cert) and login keychain (dev cert)
+        security list-keychains -d user -s "$KEYCHAIN_PATH" ~/Library/Keychains/login.keychain-db
         security default-keychain -s "$KEYCHAIN_PATH"
 
         echo "SIGNING_KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
         security find-identity -v -p codesigning | head -5
         rm -f $RUNNER_TEMP/cert.p12
-
-    - name: Revoke stale development certificates
-      if: github.event_name != 'pull_request'
-      env:
-        KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-        ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-      run: |
-        pip3 install --break-system-packages PyJWT cryptography 2>/dev/null || true
-        python3 - <<'PYEOF'
-        import jwt, time, os, json, urllib.request, urllib.error
-
-        key_id = os.environ["KEY_ID"]
-        issuer_id = os.environ["ISSUER_ID"]
-        key_path = f"{os.environ['RUNNER_TEMP']}/private_keys/AuthKey_{key_id}.p8"
-
-        with open(key_path) as f:
-            private_key = f.read()
-
-        token = jwt.encode(
-            {"iss": issuer_id, "iat": int(time.time()), "exp": int(time.time()) + 1200, "aud": "appstoreconnect-v1"},
-            private_key, algorithm="ES256", headers={"kid": key_id}
-        )
-
-        # List all development certificates
-        req = urllib.request.Request(
-            "https://api.appstoreconnect.apple.com/v1/certificates?filter[certificateType]=DEVELOPMENT",
-            headers={"Authorization": f"Bearer {token}"}
-        )
-        resp = json.loads(urllib.request.urlopen(req).read())
-        dev_certs = resp.get("data", [])
-        print(f"Found {len(dev_certs)} development certificate(s)")
-
-        # Revoke all dev certs (they'll be recreated by Xcode)
-        for cert in dev_certs:
-            cert_id = cert["id"]
-            cert_name = cert.get("attributes", {}).get("name", "unknown")
-            print(f"Revoking dev cert: {cert_name} ({cert_id})")
-            try:
-                req = urllib.request.Request(
-                    f"https://api.appstoreconnect.apple.com/v1/certificates/{cert_id}",
-                    method="DELETE",
-                    headers={"Authorization": f"Bearer {token}"}
-                )
-                urllib.request.urlopen(req)
-                print(f"  Revoked successfully")
-            except urllib.error.HTTPError as e:
-                print(f"  Failed to revoke: {e.code} {e.reason}")
-        PYEOF
 
     - name: Build (PR - no signing)
       if: github.event_name == 'pull_request'
