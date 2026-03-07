@@ -76,7 +76,7 @@ targets:
       - target: PowderChaserWidgetExtension
     postBuildScripts:
       - script: |
-          "${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run"
+          "${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run" || true
         name: Upload Crashlytics dSYMs
         basedOnDependencyAnalysis: false
         inputFiles:

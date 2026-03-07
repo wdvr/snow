@@ -147,8 +147,8 @@ ehthumbs.db
 ios/fastlane/.bundle/
 ios/fastlane/vendor/
 
-# Firebase credentials (use template + env vars)
-ios/PowderChaser/PowderChaser/Resources/GoogleService-Info.plist
+# Firebase config (API keys are non-secret, safe to commit)
+# ios/PowderChaser/PowderChaser/Resources/GoogleService-Info.plist
 
 # ML training data (too large for git, regenerate with collect_historical.py)
 ml/training_features.json
