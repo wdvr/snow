@@ -366,6 +366,12 @@ xcrun devicectl device process launch --device 00008150-001625E20AE2401C com.sno
 
 Detailed instructions in `.claude/commands/`:
 
-- **`/build-test`** — Build iOS app and run tests, run backend pytest
-- **`/deploy-testflight`** — Deploy to TestFlight (via GH Actions or manual xcodebuild)
-- **`/deploy-backend`** — Deploy backend to AWS Lambda via Pulumi or GH Actions
+| Skill | What it does |
+|-------|-------------|
+| `/build-test` | Build iOS app and run unit tests, run backend pytest |
+| `/testflight` | Trigger CI build + upload to TestFlight Internal (2-step GH Actions) |
+| `/pushiosdevice` | Build locally and deploy to connected physical iPhone |
+| `/deploy-testflight` | Deploy to TestFlight (manual xcodebuild alternative) |
+| `/deploy-backend` | Deploy backend to AWS Lambda via Pulumi or GH Actions |
+| `/test-ui` | Run UI tests on iOS Simulator |
+| `/weatherkit-debug` | Debug WeatherKit setup and configuration |

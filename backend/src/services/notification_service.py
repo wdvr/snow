@@ -23,7 +23,15 @@ from models.notification import (
     UserNotificationPreferences,
 )
 from models.user import UserPreferences
-from utils.dynamodb_utils import prepare_for_dynamodb
+from utils.dynamodb_utils import parse_from_dynamodb, prepare_for_dynamodb
+
+
+def _to_float(val) -> float:
+    """Convert DynamoDB Decimal (or any numeric) to float."""
+    if val is None:
+        return 0.0
+    return float(val)
+
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +111,22 @@ class NotificationService:
             platform=platform,
             app_version=app_version,
         )
+
+        # Remove any other devices with the same token (from reinstalls)
+        try:
+            existing = self.get_user_device_tokens(user_id)
+            for dt in existing:
+                if dt.token == token and dt.device_id != device_id:
+                    self.device_tokens_table.delete_item(
+                        Key={"user_id": user_id, "device_id": dt.device_id}
+                    )
+                    logger.info(
+                        "Removed stale device %s (same token as %s)",
+                        dt.device_id,
+                        device_id,
+                    )
+        except Exception:
+            pass  # Best-effort dedup
 
         # Store in DynamoDB
         self.device_tokens_table.put_item(Item=device_token.model_dump())
@@ -384,7 +408,8 @@ class NotificationService:
             if not items:
                 return None
 
-            return items[0].get("current_temp_celsius")
+            temp = items[0].get("current_temp_celsius")
+            return _to_float(temp) if temp is not None else None
 
         except Exception as e:
             logger.error(f"Error getting temperature for {resort_id}: {e}")
@@ -413,10 +438,16 @@ class NotificationService:
 
             item = items[0]
             return {
-                "snowfall_24h_cm": float(item.get("snowfall_24h_cm", 0.0)),
-                "current_temp_celsius": item.get("current_temp_celsius"),
-                "wind_speed_kmh": item.get("wind_speed_kmh"),
-                "quality_score": item.get("quality_score"),
+                "snowfall_24h_cm": _to_float(item.get("snowfall_24h_cm", 0.0)),
+                "current_temp_celsius": _to_float(item.get("current_temp_celsius"))
+                if item.get("current_temp_celsius") is not None
+                else None,
+                "wind_speed_kmh": _to_float(item.get("wind_speed_kmh"))
+                if item.get("wind_speed_kmh") is not None
+                else None,
+                "quality_score": _to_float(item.get("quality_score"))
+                if item.get("quality_score") is not None
+                else None,
             }
 
         except Exception as e:
@@ -478,10 +509,10 @@ class NotificationService:
             resort_id=resort_id,
             resort_name=resort_name,
             data={
-                "snowfall_24h_cm": snowfall,
-                "current_temp_celsius": temp,
-                "wind_speed_kmh": wind,
-                "quality_score": quality,
+                "snowfall_24h_cm": _to_float(snowfall),
+                "current_temp_celsius": _to_float(temp),
+                "wind_speed_kmh": _to_float(wind) if wind is not None else None,
+                "quality_score": _to_float(quality) if quality is not None else None,
             },
         )
 
@@ -522,7 +553,7 @@ class NotificationService:
             resort_id=resort_id,
             resort_name=resort_name,
             data={
-                "predicted_snow_72h_cm": predicted_snow,
+                "predicted_snow_72h_cm": _to_float(predicted_snow),
             },
         )
 
@@ -585,8 +616,8 @@ class NotificationService:
                             resort_id=resort_id,
                             resort_name=resort_name,
                             data={
-                                "current_temp_celsius": current_temp,
-                                "hours_thawed": round(hours_thawed, 1),
+                                "current_temp_celsius": _to_float(current_temp),
+                                "hours_thawed": round(float(hours_thawed), 1),
                             },
                         )
                 except (ValueError, TypeError) as e:
@@ -609,7 +640,7 @@ class NotificationService:
                 body=message,
                 resort_id=resort_id,
                 resort_name=resort_name,
-                data={"current_temp_celsius": current_temp},
+                data={"current_temp_celsius": _to_float(current_temp)},
             )
 
         # Case 4: Still frozen, just update state
@@ -656,6 +687,7 @@ class NotificationService:
         """
         notifications = []
         notification_settings = prefs.get_notification_settings()
+        fresh_snow_resorts: set[str] = set()  # Track resorts that got fresh_snow alert
 
         # Skip if notifications are disabled
         if not notification_settings.notifications_enabled:
@@ -704,12 +736,15 @@ class NotificationService:
                             body=f"{snow_cm}cm of new snow in the last 24 hours!",
                             resort_id=resort_id,
                             resort_name=resort_name,
-                            data={"snowfall_24h_cm": fresh_snow},
+                            data={"snowfall_24h_cm": _to_float(fresh_snow)},
                         )
                     )
                     notification_settings.mark_notified(
-                        resort_id, NotificationType.FRESH_SNOW.value, amount=fresh_snow
+                        resort_id,
+                        NotificationType.FRESH_SNOW.value,
+                        amount=_to_float(fresh_snow),
                     )
+                    fresh_snow_resorts.add(resort_id)
 
             # Check for new events
             if events_enabled and notification_settings.can_notify_for_resort(
@@ -763,7 +798,9 @@ class NotificationService:
                 powder_enabled = (
                     powder_enabled and resort_settings.powder_alerts_enabled
                 )
-            if powder_enabled:
+            # Skip powder alert if fresh_snow already fired for this resort
+            # (both are triggered by same snowfall, avoid duplicate notifications)
+            if powder_enabled and resort_id not in fresh_snow_resorts:
                 powder_threshold = (
                     resort_settings.powder_threshold_cm
                     if resort_settings
@@ -789,7 +826,7 @@ class NotificationService:
                             notification_settings.mark_notified(
                                 resort_id,
                                 NotificationType.POWDER_ALERT.value,
-                                amount=snowfall,
+                                amount=_to_float(snowfall),
                             )
 
             # Check for forecast snow (SOON alerts)
@@ -1135,7 +1172,7 @@ class NotificationService:
             item = prepare_for_dynamodb(prefs.model_dump())
             self.user_preferences_table.put_item(Item=item)
         except Exception as e:
-            logger.error(f"Error saving user preferences: {e}")
+            logger.error(f"Error saving user preferences: {e}", exc_info=True)
 
     def process_all_notifications(self) -> dict:
         """Process notifications for all users.
@@ -1186,7 +1223,8 @@ class NotificationService:
 
                 except Exception as e:
                     logger.error(
-                        f"Error processing user {user_data.get('user_id')}: {e}"
+                        f"Error processing user {user_data.get('user_id')}: {e}",
+                        exc_info=True,
                     )
                     summary["errors"] += 1
 
