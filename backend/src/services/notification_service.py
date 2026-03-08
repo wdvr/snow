@@ -200,22 +200,18 @@ class NotificationService:
             )
             endpoint_arn = endpoint_response["EndpointArn"]
 
-            # Check if endpoint is enabled; re-enable if disabled
+            # Check if endpoint is enabled; skip if disabled (stale token)
             try:
                 attrs = self.sns.get_endpoint_attributes(EndpointArn=endpoint_arn)
                 enabled = attrs.get("Attributes", {}).get("Enabled", "true")
-                stored_token = attrs.get("Attributes", {}).get("Token", "")
-                if enabled.lower() != "true" or stored_token != device_token:
+                if enabled.lower() != "true":
                     logger.warning(
-                        "Endpoint disabled or stale token, re-enabling: %s...",
+                        "Endpoint disabled (stale token), skipping: %s...",
                         device_token[:20],
                     )
-                    self.sns.set_endpoint_attributes(
-                        EndpointArn=endpoint_arn,
-                        Attributes={"Enabled": "true", "Token": device_token},
-                    )
+                    return False
             except ClientError as e:
-                logger.warning("Failed to check/update endpoint attributes: %s", e)
+                logger.warning("Failed to check endpoint attributes: %s", e)
 
             # Send the notification
             apns_payload = payload.to_apns_payload()

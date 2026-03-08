@@ -1,5 +1,39 @@
 import SwiftUI
 
+// MARK: - Flexible JSON Value (handles string, number, bool, null)
+
+enum AnyCodableValue: Codable {
+    case string(String)
+    case number(Double)
+    case bool(Bool)
+    case null
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let s = try? container.decode(String.self) {
+            self = .string(s)
+        } else if let d = try? container.decode(Double.self) {
+            self = .number(d)
+        } else if let b = try? container.decode(Bool.self) {
+            self = .bool(b)
+        } else if container.decodeNil() {
+            self = .null
+        } else {
+            self = .null
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .string(let s): try container.encode(s)
+        case .number(let d): try container.encode(d)
+        case .bool(let b): try container.encode(b)
+        case .null: try container.encodeNil()
+        }
+    }
+}
+
 // MARK: - Alert Notification Type
 
 enum AlertNotificationType: String, Codable, CaseIterable {
@@ -67,7 +101,7 @@ struct NotificationHistoryItem: Codable, Identifiable {
     let body: String
     let sentAt: String
     let readAt: String?
-    let data: [String: String]?
+    let data: [String: AnyCodableValue]?
 
     var id: String { notificationId }
 

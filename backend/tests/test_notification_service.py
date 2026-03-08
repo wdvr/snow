@@ -237,6 +237,9 @@ class TestSendPushNotification:
         service.sns.create_platform_endpoint.return_value = {
             "EndpointArn": "arn:aws:sns:us-west-2:123:endpoint/APNS/snow/abc"
         }
+        service.sns.get_endpoint_attributes.return_value = {
+            "Attributes": {"Enabled": "true", "Token": "device-token-123"}
+        }
 
         result = service.send_push_notification("device-token-123", sample_payload)
 
@@ -278,45 +281,26 @@ class TestSendPushNotification:
         assert result is False
 
     def test_send_push_notification_endpoint_disabled(self, service, sample_payload):
-        """Test handling of EndpointDisabled error after re-enable attempt."""
+        """Test that disabled endpoints are skipped (stale token)."""
         service.sns.create_platform_endpoint.return_value = {
             "EndpointArn": "arn:aws:sns:us-west-2:123:endpoint/APNS/snow/abc"
         }
         service.sns.get_endpoint_attributes.return_value = {
             "Attributes": {"Enabled": "false", "Token": "device-token-123"}
         }
-        service.sns.publish.side_effect = ClientError(
-            {"Error": {"Code": "EndpointDisabled", "Message": "Endpoint disabled"}},
-            "Publish",
-        )
 
         result = service.send_push_notification("device-token-123", sample_payload)
         assert result is False
-        # Should have tried to re-enable the endpoint
-        service.sns.set_endpoint_attributes.assert_called_once()
-
-    def test_send_push_notification_reenables_disabled_endpoint(
-        self, service, sample_payload
-    ):
-        """Test that a disabled endpoint is re-enabled before publish."""
-        service.sns.create_platform_endpoint.return_value = {
-            "EndpointArn": "arn:aws:sns:us-west-2:123:endpoint/APNS/snow/abc"
-        }
-        service.sns.get_endpoint_attributes.return_value = {
-            "Attributes": {"Enabled": "false", "Token": "device-token-123"}
-        }
-
-        result = service.send_push_notification("device-token-123", sample_payload)
-        assert result is True
-        service.sns.set_endpoint_attributes.assert_called_once_with(
-            EndpointArn="arn:aws:sns:us-west-2:123:endpoint/APNS/snow/abc",
-            Attributes={"Enabled": "true", "Token": "device-token-123"},
-        )
+        # Should NOT try to publish to disabled endpoint
+        service.sns.publish.assert_not_called()
 
     def test_send_push_notification_generic_client_error(self, service, sample_payload):
         """Test handling of a generic ClientError during publish."""
         service.sns.create_platform_endpoint.return_value = {
             "EndpointArn": "arn:aws:sns:us-west-2:123:endpoint/APNS/snow/abc"
+        }
+        service.sns.get_endpoint_attributes.return_value = {
+            "Attributes": {"Enabled": "true", "Token": "device-token-123"}
         }
         service.sns.publish.side_effect = ClientError(
             {"Error": {"Code": "InternalError", "Message": "Something went wrong"}},
@@ -390,6 +374,9 @@ class TestSendNotificationToUser:
         service.sns.create_platform_endpoint.return_value = {
             "EndpointArn": "arn:endpoint/abc"
         }
+        service.sns.get_endpoint_attributes.return_value = {
+            "Attributes": {"Enabled": "true", "Token": "tok1"}
+        }
 
         result = service.send_notification_to_user("user1", sample_payload)
 
@@ -428,6 +415,9 @@ class TestSendNotificationToUser:
         }
         service.sns.create_platform_endpoint.return_value = {
             "EndpointArn": "arn:endpoint/abc"
+        }
+        service.sns.get_endpoint_attributes.return_value = {
+            "Attributes": {"Enabled": "true", "Token": "tok1"}
         }
         # First publish succeeds, second fails
         service.sns.publish.side_effect = [
@@ -1297,6 +1287,9 @@ class TestProcessAllNotifications:
         }
         service.sns.create_platform_endpoint.return_value = {
             "EndpointArn": "arn:endpoint/abc"
+        }
+        service.sns.get_endpoint_attributes.return_value = {
+            "Attributes": {"Enabled": "true", "Token": "tok1"}
         }
 
         summary = service.process_all_notifications()
@@ -2652,6 +2645,9 @@ class TestProcessWeeklyDigest:
         }
         service.sns.create_platform_endpoint.return_value = {
             "EndpointArn": "arn:endpoint/abc"
+        }
+        service.sns.get_endpoint_attributes.return_value = {
+            "Attributes": {"Enabled": "true", "Token": "tok1"}
         }
 
         summary = service.process_weekly_digest()
