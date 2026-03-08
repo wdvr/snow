@@ -638,8 +638,8 @@ weather_worker_lambda = aws.lambda_.Function(
 weather_schedule_rule = aws.cloudwatch.EventRule(
     f"{app_name}-weather-schedule-{environment}",
     name=f"{app_name}-weather-schedule-{environment}",
-    description="Trigger weather data fetch every hour",
-    schedule_expression="rate(1 hour)",
+    description="Trigger weather data fetch periodically",
+    schedule_expression="rate(1 hour)" if environment == "prod" else "rate(6 hours)",
     is_enabled=True,
     tags=tags,
 )
@@ -680,7 +680,7 @@ static_json_lambda = aws.lambda_.Function(
     handler="handlers.static_json_handler.static_json_handler",
     runtime="python3.12",
     timeout=900,  # 15 minutes for 1000+ resorts
-    memory_size=1024,
+    memory_size=256,  # Actual usage: ~144MB
     code=pulumi.AssetArchive(
         {
             "index.py": pulumi.StringAsset(placeholder_lambda_code),
@@ -745,7 +745,7 @@ snowforecast_prefetch_lambda = aws.lambda_.Function(
     handler="handlers.snowforecast_prefetch.snowforecast_prefetch_handler",
     runtime="python3.12",
     timeout=900,  # 15 minutes for sequential scraping with 1s delay
-    memory_size=512,
+    memory_size=128,  # Actual usage: ~46MB
     code=pulumi.AssetArchive(
         {
             "index.py": pulumi.StringAsset(placeholder_lambda_code),
@@ -849,7 +849,7 @@ scraper_worker_lambda = aws.lambda_.Function(
     handler="handlers.scraper_worker.scraper_worker_handler",
     runtime="python3.12",
     timeout=600,  # 10 minutes per country (some countries have many resorts)
-    memory_size=512,  # More memory for HTML parsing
+    memory_size=256,  # Actual usage: ~165MB
     code=pulumi.AssetArchive(
         {
             "index.py": pulumi.StringAsset(placeholder_lambda_code),
@@ -982,7 +982,7 @@ version_consolidator_lambda = aws.lambda_.Function(
     handler="handlers.version_consolidator.version_consolidator_handler",
     runtime="python3.12",
     timeout=300,  # 5 minutes to consolidate results
-    memory_size=512,  # More memory for processing large datasets
+    memory_size=256,  # Actual usage: ~143MB
     code=pulumi.AssetArchive(
         {
             "index.py": pulumi.StringAsset(placeholder_lambda_code),
@@ -1245,7 +1245,7 @@ api_handler_lambda = aws.lambda_.Function(
     handler="handlers.api_handler.api_handler",
     runtime="python3.12",
     timeout=90,
-    memory_size=512,
+    memory_size=512,  # Keep high for CPU/cold-start perf (actual usage: ~88MB)
     publish=False,
     code=pulumi.AssetArchive(
         {
@@ -1406,7 +1406,7 @@ chat_stream_lambda = aws.lambda_.Function(
     handler="run.sh",
     runtime="python3.12",
     timeout=90,
-    memory_size=512,
+    memory_size=256,  # Actual usage: ~147MB
     layers=[lwa_layer_arn],
     code=pulumi.AssetArchive(
         {"placeholder.py": pulumi.StringAsset("# placeholder - deployed via CI")}
