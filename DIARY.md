@@ -5,6 +5,16 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Mar 12, 2026
+
+### Chore: Fix App Store screenshots (metadata only)
+Removed stale/broken screenshots: old resorts list (02) with buggy `na_west` labels, empty Favorites (13). Fixed resort detail screenshot to show Mammoth Mountain, CA instead of Balea Lac, Romania. Fixed Best Snow screenshot to tap "Best Globally" tab instead of showing "Location Disabled" empty state. Regenerated all screenshots across 4 devices (iPhone 17 Pro Max, iPhone 17, iPad Pro 13", iPad Pro 11") via fastlane snapshot. Added new iPad screenshots (splash, resorts list, resort detail, map, AI chat). No app binary changes — metadata-only update for App Store Connect.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+---
+
 ## Mar 6, 2026
 
 ### Fix: AWS cost reduction — SnapStart removal + DynamoDB provisioned capacity
