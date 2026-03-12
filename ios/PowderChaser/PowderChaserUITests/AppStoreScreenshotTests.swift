@@ -90,19 +90,6 @@ final class AppStoreScreenshotTests: XCTestCase {
         snapshot("01-splash-screen")
     }
 
-    func testScreenshot02_ResortsList() throws {
-        let tabBar = ensureTabBar()
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
-
-        // Ensure we're on Resorts tab (default)
-        tabBar.buttons["Resorts"].tap()
-
-        // Wait for resort data to load
-        sleep(5)
-
-        takeScreenshot(name: "02-resorts-list")
-    }
-
     func testScreenshot03_ResortDetail() throws {
         let tabBar = ensureTabBar()
         XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
@@ -110,7 +97,15 @@ final class AppStoreScreenshotTests: XCTestCase {
         tabBar.buttons["Resorts"].tap()
         sleep(3)
 
-        // Tap the first resort cell we can find
+        // Search for a California resort
+        let searchField = app.searchFields.firstMatch
+        if searchField.waitForExistence(timeout: 5) {
+            searchField.tap()
+            searchField.typeText("Mammoth")
+            sleep(3)
+        }
+
+        // Tap the first result
         let cells = app.cells
         if cells.count > 0 {
             cells.element(boundBy: 0).tap()
@@ -141,6 +136,13 @@ final class AppStoreScreenshotTests: XCTestCase {
 
         // Navigate to Best Snow tab
         tabBar.buttons["Best Snow"].tap()
+        sleep(2)
+
+        // Tap "Best Globally" to avoid location permission issue
+        let bestGlobally = app.buttons["Best Globally"]
+        if bestGlobally.waitForExistence(timeout: 5) {
+            bestGlobally.tap()
+        }
 
         // Wait for recommendations to load
         sleep(5)
@@ -299,14 +301,4 @@ final class AppStoreScreenshotTests: XCTestCase {
         takeScreenshot(name: "14-resort-detail-scroll")
     }
 
-    func testScreenshot13_Favorites() throws {
-        let tabBar = ensureTabBar()
-        XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
-
-        // Go to Favorites tab
-        tabBar.buttons["Favorites"].tap()
-        sleep(2)
-
-        takeScreenshot(name: "13-favorites")
-    }
 }

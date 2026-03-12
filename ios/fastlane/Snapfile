@@ -2,6 +2,8 @@
 
 # Devices to capture screenshots on (Xcode 26 / iOS 19 simulators)
 devices([
+  "iPhone 17 Pro Max",
+  "iPhone 17",
   "iPad Pro 13-inch (M5)",
   "iPad Pro 11-inch (M5)"
 ])
