@@ -153,7 +153,8 @@ class UserNotificationPreferences(BaseModel):
         default=True, description="Enable resort event notifications globally"
     )
     thaw_freeze_alerts: bool = Field(
-        default=True, description="Enable thaw/freeze cycle notifications"
+        default=False,
+        description="Enable thaw/freeze cycle notifications (off by default — only notify about good conditions)",
     )
     powder_alerts: bool = Field(
         default=True, description="Enable powder day notifications"

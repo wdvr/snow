@@ -471,7 +471,7 @@ class NotificationSettingsViewModel: ObservableObject {
     @Published var notificationsEnabled = true
     @Published var freshSnowAlerts = true
     @Published var eventAlerts = true
-    @Published var thawFreezeAlerts = true
+    @Published var thawFreezeAlerts = false
     @Published var powderAlerts = true
     @Published var forecastAlerts = true
     @Published var weeklySummary = false
