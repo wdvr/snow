@@ -5,6 +5,16 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Mar 14, 2026
+
+### Fix: Default thaw/freeze alerts to off
+Changed `thaw_freeze_alerts` default from `true` to `false` in both the backend `UserNotificationPreferences` model and the iOS `NotificationSettingsViewModel`. New users will only receive notifications about positive conditions (powder days, fresh snow) by default, not negative ones (thaw/freeze cycles). Existing users' preferences are unchanged.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+---
+
 ## Mar 6, 2026
 
 ### Fix: AWS cost reduction — SnapStart removal + DynamoDB provisioned capacity
