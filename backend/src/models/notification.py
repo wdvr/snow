@@ -154,7 +154,7 @@ class UserNotificationPreferences(BaseModel):
     )
     thaw_freeze_alerts: bool = Field(
         default=True,
-        description="Enable thaw alert after fresh snow (one-shot: notifies once when snow degrades, then suppressed until next snowfall)",
+        description="Enable thaw/freeze alerts after fresh snow (one thaw + one freeze per snow cycle, then suppressed until next snowfall)",
     )
     powder_alerts: bool = Field(
         default=True, description="Enable powder day notifications"
@@ -228,12 +228,13 @@ class UserNotificationPreferences(BaseModel):
         description="When temperature went positive per resort",
     )
 
-    # One-shot thaw suppression: after sending a thaw alert, suppress further
-    # freeze/thaw notifications until fresh snow resets the cycle.
-    # Key: resort_id, Value: "true" when suppressed
+    # Thaw/freeze cycle state machine per resort:
+    # - not present: no alerts sent this cycle
+    # - "thaw_sent": thaw alert fired, waiting for freeze transition
+    # - "true": both thaw and freeze sent, fully suppressed until next snowfall
     thaw_cycle_suppressed: dict[str, str] = Field(
         default_factory=dict,
-        description="Resorts where thaw alert already sent (suppressed until next snowfall)",
+        description="Thaw/freeze cycle state per resort (thaw_sent | true)",
     )
 
     def can_notify_for_resort(

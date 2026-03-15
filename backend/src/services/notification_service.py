@@ -560,13 +560,15 @@ class NotificationService:
         current_temp: float,
         notification_settings: UserNotificationPreferences,
     ) -> NotificationPayload | None:
-        """Check for thaw cycle and return a one-shot notification if warranted.
+        """Check for thaw/freeze cycle and return a notification if warranted.
 
-        One-shot logic:
-        - After fresh snow, track temperature state.
-        - When temp stays above 0 for 4+ hours, send ONE thaw alert (snow degrading).
-        - After that, suppress all further thaw/freeze notifications for this resort
-          until the next fresh snowfall resets thaw_cycle_suppressed.
+        Two-step cycle per snow event:
+        1. After fresh snow, track temperature state.
+        2. When temp stays above 0 for 4+ hours → send ONE thaw alert.
+           (thaw_cycle_suppressed = "thaw_sent")
+        3. When temp goes below 0 after thaw → send ONE freeze alert.
+           (thaw_cycle_suppressed = "true")
+        4. Silence until next fresh snowfall resets thaw_cycle_suppressed.
 
         Args:
             resort_id: Resort ID
@@ -575,20 +577,47 @@ class NotificationService:
             notification_settings: User's notification preferences
 
         Returns:
-            NotificationPayload if a thaw alert should be sent, None otherwise
+            NotificationPayload if a thaw or freeze alert should be sent, None otherwise
         """
         now = datetime.now(UTC)
         prev_state = notification_settings.temperature_state.get(resort_id, "unknown")
+        suppression = notification_settings.thaw_cycle_suppressed.get(resort_id)
 
-        # If thaw cycle already fired for this resort, suppress until next snowfall
-        if notification_settings.thaw_cycle_suppressed.get(resort_id):
-            # Still update temperature state for tracking
+        # Fully suppressed (both thaw and freeze already sent) — wait for fresh snow
+        if suppression == "true":
             notification_settings.temperature_state[resort_id] = (
                 "thawed" if current_temp >= 0 else "frozen"
             )
             if current_temp < 0:
                 notification_settings.thaw_started_at.pop(resort_id, None)
             return None
+
+        # Thaw already sent, waiting for freeze transition
+        if suppression == "thaw_sent":
+            if current_temp < 0 and prev_state == "thawed":
+                # Freeze after thaw → send ONE freeze alert, then fully suppress
+                notification_settings.temperature_state[resort_id] = "frozen"
+                notification_settings.thaw_started_at.pop(resort_id, None)
+                notification_settings.thaw_cycle_suppressed[resort_id] = "true"
+
+                message = random.choice(FREEZE_MESSAGES)
+                return NotificationPayload(
+                    notification_type=NotificationType.FREEZE_ALERT,
+                    title=f"Freeze Alert at {resort_name}!",
+                    body=message,
+                    resort_id=resort_id,
+                    resort_name=resort_name,
+                    data={"current_temp_celsius": _to_float(current_temp)},
+                )
+            # Still thawed or already frozen — just update state
+            notification_settings.temperature_state[resort_id] = (
+                "thawed" if current_temp >= 0 else "frozen"
+            )
+            if current_temp < 0:
+                notification_settings.thaw_started_at.pop(resort_id, None)
+            return None
+
+        # No suppression — normal thaw detection logic
 
         # Case 1: Temperature just went positive (potential thaw starting)
         if current_temp >= 0 and prev_state == "frozen":
@@ -613,8 +642,10 @@ class NotificationService:
                         # Clear thaw_started_at so we don't re-notify
                         del notification_settings.thaw_started_at[resort_id]
 
-                        # Suppress further thaw/freeze alerts until next snowfall
-                        notification_settings.thaw_cycle_suppressed[resort_id] = "true"
+                        # Mark thaw as sent — now waiting for freeze
+                        notification_settings.thaw_cycle_suppressed[resort_id] = (
+                            "thaw_sent"
+                        )
 
                         # Pick a random funny message
                         message = random.choice(THAW_MESSAGES)

@@ -912,8 +912,8 @@ class TestCheckThawFreezeCycle:
         settings.thaw_cycle_suppressed.pop("resort1", None)
         assert "resort1" not in settings.thaw_cycle_suppressed
 
-    def test_thaw_alert_sets_suppression(self, service):
-        """Test that a thaw alert marks the resort as suppressed."""
+    def test_thaw_alert_sets_thaw_sent_state(self, service):
+        """Test that a thaw alert sets suppression to 'thaw_sent' (waiting for freeze)."""
         thaw_start = (datetime.now(UTC) - timedelta(hours=5)).isoformat()
         settings = UserNotificationPreferences(
             temperature_state={"resort1": "thawed"},
@@ -933,8 +933,8 @@ class TestCheckThawFreezeCycle:
 
         assert result is not None
         assert result.notification_type == NotificationType.THAW_ALERT
-        # Should now be suppressed
-        assert settings.thaw_cycle_suppressed.get("resort1") == "true"
+        # Should be in thaw_sent state, waiting for freeze
+        assert settings.thaw_cycle_suppressed.get("resort1") == "thaw_sent"
 
     def test_thaw_at_exactly_zero_degrees(self, service):
         """Test that exactly 0 degrees is treated as thawed (>= 0)."""
@@ -950,6 +950,125 @@ class TestCheckThawFreezeCycle:
         )
 
         assert result is None  # Just starts tracking
+        assert settings.temperature_state["resort1"] == "thawed"
+
+    def test_freeze_alert_after_thaw_sent(self, service):
+        """Test that freeze alert fires when temp goes negative after thaw was sent."""
+        settings = UserNotificationPreferences(
+            temperature_state={"resort1": "thawed"},
+            thaw_cycle_suppressed={"resort1": "thaw_sent"},
+        )
+
+        result = service.check_thaw_freeze_cycle(
+            resort_id="resort1",
+            resort_name="Resort One",
+            current_temp=-3.0,
+            notification_settings=settings,
+        )
+
+        assert result is not None
+        assert result.notification_type == NotificationType.FREEZE_ALERT
+        assert "Resort One" in result.title
+        assert result.resort_id == "resort1"
+        # Should now be fully suppressed
+        assert settings.thaw_cycle_suppressed.get("resort1") == "true"
+        assert settings.temperature_state["resort1"] == "frozen"
+
+    def test_no_freeze_alert_when_still_thawed_after_thaw_sent(self, service):
+        """Test no alert when temp stays positive after thaw was sent."""
+        settings = UserNotificationPreferences(
+            temperature_state={"resort1": "thawed"},
+            thaw_cycle_suppressed={"resort1": "thaw_sent"},
+        )
+
+        result = service.check_thaw_freeze_cycle(
+            resort_id="resort1",
+            resort_name="Resort One",
+            current_temp=5.0,
+            notification_settings=settings,
+        )
+
+        assert result is None
+        # Still in thaw_sent state
+        assert settings.thaw_cycle_suppressed.get("resort1") == "thaw_sent"
+
+    def test_full_snow_cycle_regression(self, service):
+        """Regression test: full cycle — thaw, freeze, then silence until fresh snow.
+
+        Verifies the exact behavior: ONE thaw → ONE freeze → nothing → fresh snow resets.
+        """
+        settings = UserNotificationPreferences(
+            temperature_state={"resort1": "frozen"},
+        )
+
+        # Step 1: Temp goes positive — thaw tracking starts
+        result = service.check_thaw_freeze_cycle(
+            resort_id="resort1",
+            resort_name="Resort One",
+            current_temp=2.0,
+            notification_settings=settings,
+        )
+        assert result is None
+        assert settings.temperature_state["resort1"] == "thawed"
+        assert "resort1" in settings.thaw_started_at
+
+        # Step 2: 5 hours later, temp still positive — thaw alert fires
+        settings.thaw_started_at["resort1"] = (
+            datetime.now(UTC) - timedelta(hours=5)
+        ).isoformat()
+        result = service.check_thaw_freeze_cycle(
+            resort_id="resort1",
+            resort_name="Resort One",
+            current_temp=3.0,
+            notification_settings=settings,
+        )
+        assert result is not None
+        assert result.notification_type == NotificationType.THAW_ALERT
+        assert settings.thaw_cycle_suppressed.get("resort1") == "thaw_sent"
+
+        # Step 3: Temp still positive — no more thaw alerts
+        result = service.check_thaw_freeze_cycle(
+            resort_id="resort1",
+            resort_name="Resort One",
+            current_temp=4.0,
+            notification_settings=settings,
+        )
+        assert result is None
+
+        # Step 4: Temp goes negative — freeze alert fires
+        result = service.check_thaw_freeze_cycle(
+            resort_id="resort1",
+            resort_name="Resort One",
+            current_temp=-2.0,
+            notification_settings=settings,
+        )
+        assert result is not None
+        assert result.notification_type == NotificationType.FREEZE_ALERT
+        assert settings.thaw_cycle_suppressed.get("resort1") == "true"
+
+        # Step 5: Temp fluctuates — silence, no more alerts
+        for temp in [1.0, -1.0, 3.0, -5.0, 2.0]:
+            result = service.check_thaw_freeze_cycle(
+                resort_id="resort1",
+                resort_name="Resort One",
+                current_temp=temp,
+                notification_settings=settings,
+            )
+            assert result is None, f"Expected silence at {temp}°C but got alert"
+
+        # Step 6: Fresh snow resets the cycle
+        settings.thaw_cycle_suppressed.pop("resort1", None)
+        assert "resort1" not in settings.thaw_cycle_suppressed
+
+        # Step 7: New thaw cycle can begin again
+        settings.temperature_state["resort1"] = "frozen"
+        result = service.check_thaw_freeze_cycle(
+            resort_id="resort1",
+            resort_name="Resort One",
+            current_temp=2.0,
+            notification_settings=settings,
+        )
+        assert result is None
         assert settings.temperature_state["resort1"] == "thawed"
 
 
