@@ -560,11 +560,15 @@ class NotificationService:
         current_temp: float,
         notification_settings: UserNotificationPreferences,
     ) -> NotificationPayload | None:
-        """Check for thaw/freeze cycle transitions and return notification if warranted.
+        """Check for thaw/freeze cycle and return a notification if warranted.
 
-        Logic:
-        - Thaw alert: Temp was below 0, now above 0 for 4+ consecutive hours
-        - Freeze alert: Temp was above 0, now below 0
+        Two-step cycle per snow event:
+        1. After fresh snow, track temperature state.
+        2. When temp stays above 0 for 4+ hours → send ONE thaw alert.
+           (thaw_cycle_suppressed = "thaw_sent")
+        3. When temp goes below 0 after thaw → send ONE freeze alert.
+           (thaw_cycle_suppressed = "true")
+        4. Silence until next fresh snowfall resets thaw_cycle_suppressed.
 
         Args:
             resort_id: Resort ID
@@ -573,11 +577,47 @@ class NotificationService:
             notification_settings: User's notification preferences
 
         Returns:
-            NotificationPayload if a thaw/freeze alert should be sent, None otherwise
+            NotificationPayload if a thaw or freeze alert should be sent, None otherwise
         """
         now = datetime.now(UTC)
         prev_state = notification_settings.temperature_state.get(resort_id, "unknown")
-        current_state = "thawed" if current_temp >= 0 else "frozen"
+        suppression = notification_settings.thaw_cycle_suppressed.get(resort_id)
+
+        # Fully suppressed (both thaw and freeze already sent) — wait for fresh snow
+        if suppression == "true":
+            notification_settings.temperature_state[resort_id] = (
+                "thawed" if current_temp >= 0 else "frozen"
+            )
+            if current_temp < 0:
+                notification_settings.thaw_started_at.pop(resort_id, None)
+            return None
+
+        # Thaw already sent, waiting for freeze transition
+        if suppression == "thaw_sent":
+            if current_temp < 0 and prev_state == "thawed":
+                # Freeze after thaw → send ONE freeze alert, then fully suppress
+                notification_settings.temperature_state[resort_id] = "frozen"
+                notification_settings.thaw_started_at.pop(resort_id, None)
+                notification_settings.thaw_cycle_suppressed[resort_id] = "true"
+
+                message = random.choice(FREEZE_MESSAGES)
+                return NotificationPayload(
+                    notification_type=NotificationType.FREEZE_ALERT,
+                    title=f"Freeze Alert at {resort_name}!",
+                    body=message,
+                    resort_id=resort_id,
+                    resort_name=resort_name,
+                    data={"current_temp_celsius": _to_float(current_temp)},
+                )
+            # Still thawed or already frozen — just update state
+            notification_settings.temperature_state[resort_id] = (
+                "thawed" if current_temp >= 0 else "frozen"
+            )
+            if current_temp < 0:
+                notification_settings.thaw_started_at.pop(resort_id, None)
+            return None
+
+        # No suppression — normal thaw detection logic
 
         # Case 1: Temperature just went positive (potential thaw starting)
         if current_temp >= 0 and prev_state == "frozen":
@@ -602,6 +642,11 @@ class NotificationService:
                         # Clear thaw_started_at so we don't re-notify
                         del notification_settings.thaw_started_at[resort_id]
 
+                        # Mark thaw as sent — now waiting for freeze
+                        notification_settings.thaw_cycle_suppressed[resort_id] = (
+                            "thaw_sent"
+                        )
+
                         # Pick a random funny message
                         message = random.choice(THAW_MESSAGES)
 
@@ -621,23 +666,11 @@ class NotificationService:
                         "Error processing thaw alert for %s: %s", resort_id, e
                     )
 
-        # Case 3: Temperature just went negative (freeze started)
+        # Case 3: Temperature just went negative — update state only, no notification
         if current_temp < 0 and prev_state == "thawed":
             notification_settings.temperature_state[resort_id] = "frozen"
-            # Clear any thaw tracking
             notification_settings.thaw_started_at.pop(resort_id, None)
-
-            # Pick a random funny message
-            message = random.choice(FREEZE_MESSAGES)
-
-            return NotificationPayload(
-                notification_type=NotificationType.FREEZE_ALERT,
-                title=f"Freeze Alert at {resort_name}!",
-                body=message,
-                resort_id=resort_id,
-                resort_name=resort_name,
-                data={"current_temp_celsius": _to_float(current_temp)},
-            )
+            return None
 
         # Case 4: Still frozen, just update state
         if current_temp < 0 and prev_state != "frozen":
@@ -741,6 +774,11 @@ class NotificationService:
                         amount=_to_float(fresh_snow),
                     )
                     fresh_snow_resorts.add(resort_id)
+                    # Fresh snow resets the one-shot thaw suppression —
+                    # user should be notified again when this new snow degrades
+                    notification_settings.thaw_cycle_suppressed.pop(
+                        resort_id, None
+                    )
 
             # Check for new events
             if events_enabled and notification_settings.can_notify_for_resort(
@@ -823,6 +861,10 @@ class NotificationService:
                                 resort_id,
                                 NotificationType.POWDER_ALERT.value,
                                 amount=_to_float(snowfall),
+                            )
+                            # Powder day also resets thaw suppression
+                            notification_settings.thaw_cycle_suppressed.pop(
+                                resort_id, None
                             )
 
             # Check for forecast snow (SOON alerts)

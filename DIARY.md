@@ -5,6 +5,16 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Mar 14, 2026
+
+### Feature: One-shot thaw alerts — notify once per snow cycle
+Replaced the old thaw/freeze notification system with a smarter one-shot approach. After fresh snow, if temps stay above 0 for 4+ hours, one thaw alert fires to let users know conditions are degrading. After that, all further thaw/freeze notifications for that resort are suppressed until the next fresh snowfall resets the cycle. Freeze alerts removed entirely (users don't need to know it refroze). Default reverted back to ON. Added `thaw_cycle_suppressed` per-resort tracking in `UserNotificationPreferences`. iOS toggle renamed from "Thaw/Freeze Alerts" to "Thaw Alerts".
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | done |
+
+---
+
 ## Mar 6, 2026
 
 ### Fix: AWS cost reduction — SnapStart removal + DynamoDB provisioned capacity

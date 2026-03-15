@@ -88,7 +88,7 @@ struct NotificationSettingsView: View {
                             AnalyticsService.shared.trackNotificationSettingChanged(setting: "event_alerts", enabled: newValue)
                         }
 
-                    Toggle("Thaw/Freeze Alerts", isOn: $viewModel.thawFreezeAlerts)
+                    Toggle("Thaw Alerts", isOn: $viewModel.thawFreezeAlerts)
                         .onChange(of: viewModel.thawFreezeAlerts) { _, newValue in
                             viewModel.saveSettings()
                             AnalyticsService.shared.trackNotificationSettingChanged(setting: "thaw_freeze_alerts", enabled: newValue)
