@@ -816,27 +816,24 @@ class TestCheckThawFreezeCycle:
 
         assert result is None
 
-    def test_freeze_alert_when_temp_goes_negative_from_thawed(self, service):
-        """Test freeze alert fires when temp goes from positive to negative."""
+    def test_no_freeze_alert_when_temp_goes_negative_from_thawed(self, service):
+        """Test that freeze transitions update state but do NOT send a notification.
+
+        Freeze alerts were removed — only thaw alerts (one-shot) are sent.
+        """
         settings = UserNotificationPreferences(
             temperature_state={"resort1": "thawed"},
             thaw_started_at={"resort1": datetime.now(UTC).isoformat()},
         )
 
-        with patch(
-            "services.notification_service.random.choice",
-            return_value=FREEZE_MESSAGES[0],
-        ):
-            result = service.check_thaw_freeze_cycle(
-                resort_id="resort1",
-                resort_name="Resort One",
-                current_temp=-3.0,
-                notification_settings=settings,
-            )
+        result = service.check_thaw_freeze_cycle(
+            resort_id="resort1",
+            resort_name="Resort One",
+            current_temp=-3.0,
+            notification_settings=settings,
+        )
 
-        assert result is not None
-        assert result.notification_type == NotificationType.FREEZE_ALERT
-        assert "Resort One" in result.title
+        assert result is None
         assert settings.temperature_state["resort1"] == "frozen"
         assert "resort1" not in settings.thaw_started_at
 
@@ -887,6 +884,57 @@ class TestCheckThawFreezeCycle:
 
         # Should not crash, just return None
         assert result is None
+
+    def test_thaw_suppressed_after_first_alert(self, service):
+        """Test that after a thaw alert fires, further thaw checks are suppressed."""
+        settings = UserNotificationPreferences(
+            temperature_state={"resort1": "thawed"},
+            thaw_cycle_suppressed={"resort1": "true"},
+        )
+
+        # Even with positive temp and previous thaw tracking, should be suppressed
+        result = service.check_thaw_freeze_cycle(
+            resort_id="resort1",
+            resort_name="Resort One",
+            current_temp=5.0,
+            notification_settings=settings,
+        )
+
+        assert result is None
+
+    def test_thaw_suppression_reset_by_fresh_snow(self, service):
+        """Test that thaw_cycle_suppressed is cleared when fresh snow notif fires."""
+        settings = UserNotificationPreferences(
+            thaw_cycle_suppressed={"resort1": "true"},
+        )
+
+        # Simulate fresh snow clearing suppression
+        settings.thaw_cycle_suppressed.pop("resort1", None)
+        assert "resort1" not in settings.thaw_cycle_suppressed
+
+    def test_thaw_alert_sets_suppression(self, service):
+        """Test that a thaw alert marks the resort as suppressed."""
+        thaw_start = (datetime.now(UTC) - timedelta(hours=5)).isoformat()
+        settings = UserNotificationPreferences(
+            temperature_state={"resort1": "thawed"},
+            thaw_started_at={"resort1": thaw_start},
+        )
+
+        with patch(
+            "services.notification_service.random.choice",
+            return_value=THAW_MESSAGES[0],
+        ):
+            result = service.check_thaw_freeze_cycle(
+                resort_id="resort1",
+                resort_name="Resort One",
+                current_temp=3.0,
+                notification_settings=settings,
+            )
+
+        assert result is not None
+        assert result.notification_type == NotificationType.THAW_ALERT
+        # Should now be suppressed
+        assert settings.thaw_cycle_suppressed.get("resort1") == "true"
 
     def test_thaw_at_exactly_zero_degrees(self, service):
         """Test that exactly 0 degrees is treated as thawed (>= 0)."""
@@ -1099,37 +1147,40 @@ class TestProcessUserNotifications:
 
         service.user_preferences_table.put_item.assert_called_once()
 
-    def test_thaw_freeze_alert_in_processing(self, service):
-        """Test that thaw/freeze alerts are generated during user notification processing."""
+    def test_thaw_alert_in_processing(self, service):
+        """Test that a thaw alert is generated during user notification processing
+        after 4+ hours of positive temps."""
+        thaw_start = (datetime.now(UTC) - timedelta(hours=5)).isoformat()
         settings = UserNotificationPreferences(
             notifications_enabled=True,
             fresh_snow_alerts=False,
             event_alerts=False,
             thaw_freeze_alerts=True,
             temperature_state={"whistler-blackcomb": "thawed"},
+            thaw_started_at={"whistler-blackcomb": thaw_start},
         )
         prefs = self._make_prefs(
             favorite_resorts=["whistler-blackcomb"],
             notification_settings=settings,
         )
-        # Return negative temperature to trigger freeze alert
+        # Return positive temperature to trigger thaw alert (4+ hours)
         service.weather_conditions_table.query.return_value = {
             "Items": [
                 {
                     "resort_id": "whistler-blackcomb",
-                    "current_temp_celsius": -5.0,
+                    "current_temp_celsius": 3.0,
                 }
             ]
         }
 
         with patch(
             "services.notification_service.random.choice",
-            return_value=FREEZE_MESSAGES[0],
+            return_value=THAW_MESSAGES[0],
         ):
             result = service.process_user_notifications("user1", prefs)
 
         assert len(result) == 1
-        assert result[0].notification_type == NotificationType.FREEZE_ALERT
+        assert result[0].notification_type == NotificationType.THAW_ALERT
 
     def test_thaw_freeze_no_temp_data(self, service):
         """Test that missing temperature data does not generate thaw/freeze alerts."""
