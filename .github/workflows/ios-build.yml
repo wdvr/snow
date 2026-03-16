@@ -169,45 +169,10 @@ jobs:
         fi
         security default-keychain -s "$KEYCHAIN_PATH"
 
-        # Clean up old CI-created dev certs from the signing keychain (NOT login)
-        while security find-certificate -c "Apple Development: Created via API" -Z "$KEYCHAIN_PATH" 2>/dev/null | grep -q "SHA-1"; do
-          HASH=$(security find-certificate -c "Apple Development: Created via API" -Z "$KEYCHAIN_PATH" 2>/dev/null | grep "SHA-1" | head -1 | awk '{print $NF}')
-          security delete-certificate -Z "$HASH" "$KEYCHAIN_PATH" 2>/dev/null && echo "Deleted old CI cert $HASH" || break
-        done
-
-        # Revoke only CI-created ("Created via API") dev certs from Apple
-        # Leaves personal Xcode dev certs intact
-        pip3 install --break-system-packages PyJWT 2>/dev/null || true
-        python3 - <<'PYEOF'
-        import jwt, time, os, json, urllib.request, urllib.error
-        key_id = os.environ["KEY_ID"]
-        issuer_id = os.environ["ISSUER_ID"]
-        key_path = f"{os.environ['RUNNER_TEMP']}/private_keys/AuthKey_{key_id}.p8"
-        with open(key_path) as f:
-            private_key = f.read()
-        token = jwt.encode(
-            {"iss": issuer_id, "iat": int(time.time()), "exp": int(time.time()) + 1200, "aud": "appstoreconnect-v1"},
-            private_key, algorithm="ES256", headers={"kid": key_id}
-        )
-        req = urllib.request.Request(
-            "https://api.appstoreconnect.apple.com/v1/certificates?filter[certificateType]=DEVELOPMENT&fields[certificates]=name,certificateType",
-            headers={"Authorization": f"Bearer {token}"}
-        )
-        resp = json.loads(urllib.request.urlopen(req).read())
-        for cert in resp.get("data", []):
-            name = cert.get("attributes", {}).get("name", "")
-            if "Created via API" in name:
-                try:
-                    urllib.request.urlopen(urllib.request.Request(
-                        f"https://api.appstoreconnect.apple.com/v1/certificates/{cert['id']}",
-                        method="DELETE", headers={"Authorization": f"Bearer {token}"}
-                    ))
-                    print(f"Revoked CI dev cert: {name} ({cert['id']})")
-                except urllib.error.HTTPError as e:
-                    print(f"Failed to revoke {cert['id']}: {e.code}")
-            else:
-                print(f"Keeping personal dev cert: {name}")
-        PYEOF
+        # Do NOT revoke or delete dev certs — the signing keychain persists
+        # the CI-created dev cert across builds. Revoking breaks other repos
+        # that share the same Apple developer account.
+        security find-identity -v -p codesigning "$KEYCHAIN_PATH" | head -5
 
         # Ensure codesign can access keychain without UI prompt
         security set-key-partition-list -S apple-tool:,apple:,codesign: \
