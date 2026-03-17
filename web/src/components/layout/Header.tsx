@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Snowflake, MessageCircle, Mountain, Map, Menu, X, Settings } from 'lucide-react'
+import { Snowflake, MessageCircle, Mountain, Map, Menu, X, Settings, Trophy } from 'lucide-react'
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -9,6 +9,7 @@ export function Header() {
   const navLinks = [
     { to: '/', label: 'Explore', icon: Mountain },
     { to: '/map', label: 'Map', icon: Map },
+    { to: '/best', label: 'Best', icon: Trophy },
     { to: '/chat', label: 'Chat', icon: MessageCircle },
   ]
 

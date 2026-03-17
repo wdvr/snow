@@ -5,6 +5,7 @@ import { ResortDetailPage } from './pages/ResortDetailPage'
 import { ChatPage } from './pages/ChatPage'
 import { MapPage } from './pages/MapPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { BestConditionsPage } from './pages/BestConditionsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/map" element={<MapPage />} />
+        <Route path="/best" element={<BestConditionsPage />} />
         <Route path="/resort/:resortId" element={<ResortDetailPage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/chat/:conversationId" element={<ChatPage />} />
