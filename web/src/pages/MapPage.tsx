@@ -164,12 +164,14 @@ const PISTE_OVERLAY = {
 }
 
 // Component that shows/hides piste overlay based on zoom level and toggle
-function PisteOverlay({ enabled }: { enabled: boolean }) {
+function PisteOverlay({ enabled, onZoomChange }: { enabled: boolean; onZoomChange?: (zoom: number) => void }) {
   const [zoom, setZoom] = useState(3)
 
   useMapEvents({
     zoomend: (e) => {
-      setZoom(e.target.getZoom())
+      const z = e.target.getZoom()
+      setZoom(z)
+      onZoomChange?.(z)
     },
   })
 
@@ -194,6 +196,7 @@ export function MapPage() {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
   const [tileLayer, setTileLayer] = useState<TileLayerKey>('standard')
   const [showPistes, setShowPistes] = useState(false)
+  const [currentZoom, setCurrentZoom] = useState(3)
   const [flyTo, setFlyTo] = useState<{ center: [number, number]; zoom: number } | null>(null)
 
   // Fly to resort location from URL query params (e.g. ?lat=46.8&lon=6.9&zoom=12)
@@ -318,6 +321,9 @@ export function MapPage() {
         >
           <Mountain className="w-4 h-4" />
           <span className="hidden sm:inline">Trails</span>
+          {showPistes && currentZoom < PISTE_OVERLAY.minZoom && (
+            <span className="text-[10px] opacity-75 hidden sm:inline">(zoom in)</span>
+          )}
         </button>
         <button
           onClick={cycleTileLayer}
@@ -360,7 +366,7 @@ export function MapPage() {
         attributionControl={true}
       >
         <TileLayer url={tile.url} attribution={tile.attribution} />
-        <PisteOverlay enabled={showPistes} />
+        <PisteOverlay enabled={showPistes} onZoomChange={setCurrentZoom} />
         <MapController flyTo={flyTo} />
 
         <MarkerClusterGroup
