@@ -30,18 +30,88 @@ function getResortCoords(resort: Resort): { lat: number; lon: number } | null {
   return { lat: point.latitude, lon: point.longitude }
 }
 
-// Custom cluster icon creator with quality-colored clusters
+// Quality color grouping for cluster pie chart (matches iOS: green/yellow/orange/red/black)
+const CLUSTER_COLOR_GROUPS: { color: string; qualities: string[] }[] = [
+  { color: '#22c55e', qualities: ['#6366f1', '#2563eb', '#10b981', '#22c55e', '#3b82f6'] }, // green: champagne, powder, excellent, great, good
+  { color: '#eab308', qualities: ['#84cc16', '#eab308', '#f59e0b'] }, // yellow: decent, mediocre, fair
+  { color: '#f97316', qualities: ['#f97316', '#ea580c'] }, // orange: poor, slushy
+  { color: '#ef4444', qualities: ['#ef4444'] }, // red: bad
+  { color: '#1a1a1a', qualities: ['#991b1b'] }, // black: horrible
+]
+
+function getClusterGroup(hex: string): string {
+  for (const group of CLUSTER_COLOR_GROUPS) {
+    if (group.qualities.includes(hex)) return group.color
+  }
+  return '#9ca3af' // gray for unknown
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function createClusterCustomIcon(cluster: any) {
   const count = cluster.getChildCount()
-  let size = 'w-8 h-8 text-xs'
-  if (count >= 50) size = 'w-12 h-12 text-sm'
-  else if (count >= 20) size = 'w-10 h-10 text-sm'
+  const childMarkers = cluster.getAllChildMarkers()
+
+  // Count resorts per color group
+  const groupCounts: Record<string, number> = {}
+  for (const marker of childMarkers) {
+    const fillColor = marker.options?.fillColor || marker.options?.pathOptions?.fillColor || '#9ca3af'
+    const group = getClusterGroup(fillColor)
+    groupCounts[group] = (groupCounts[group] || 0) + 1
+  }
+
+  // Determine size based on count
+  let diameter = 36
+  if (count >= 50) diameter = 48
+  else if (count >= 20) diameter = 42
+
+  const radius = diameter / 2
+  const center = radius
+
+  // Build SVG pie chart
+  const segments = Object.entries(groupCounts).filter(([, c]) => c > 0)
+  const total = segments.reduce((sum, [, c]) => sum + c, 0)
+
+  let svg: string
+  if (segments.length === 1) {
+    // Single color — just fill the circle
+    svg = `<circle cx="${center}" cy="${center}" r="${radius - 2}" fill="${segments[0][0]}" />`
+  } else {
+    // Pie chart segments
+    let startAngle = -Math.PI / 2
+    const paths: string[] = []
+    for (const [color, segCount] of segments) {
+      const angle = (segCount / total) * 2 * Math.PI
+      const endAngle = startAngle + angle
+      const x1 = center + (radius - 2) * Math.cos(startAngle)
+      const y1 = center + (radius - 2) * Math.sin(startAngle)
+      const x2 = center + (radius - 2) * Math.cos(endAngle)
+      const y2 = center + (radius - 2) * Math.sin(endAngle)
+      const largeArc = angle > Math.PI ? 1 : 0
+      paths.push(
+        `<path d="M${center},${center} L${x1},${y1} A${radius - 2},${radius - 2} 0 ${largeArc} 1 ${x2},${y2} Z" fill="${color}" />`
+      )
+      startAngle = endAngle
+    }
+    svg = paths.join('')
+  }
+
+  const countDisplay = count > 99 ? '99+' : count
+  const fontSize = count >= 50 ? 12 : count >= 20 ? 11 : 10
+
+  const html = `
+    <svg width="${diameter}" height="${diameter}" viewBox="0 0 ${diameter} ${diameter}" xmlns="http://www.w3.org/2000/svg">
+      ${svg}
+      <circle cx="${center}" cy="${center}" r="${radius - 2}" fill="none" stroke="white" stroke-width="2.5" />
+      <circle cx="${center}" cy="${center}" r="${radius * 0.55}" fill="white" fill-opacity="0.9" />
+      <text x="${center}" y="${center}" text-anchor="middle" dominant-baseline="central"
+        font-size="${fontSize}" font-weight="700" fill="#1f2937">${countDisplay}</text>
+    </svg>`
 
   return L.divIcon({
-    html: `<div class="flex items-center justify-center ${size} rounded-full bg-blue-600 text-white font-bold shadow-lg border-2 border-white">${count}</div>`,
+    html,
     className: 'custom-cluster-icon',
-    iconSize: L.point(40, 40, true),
+    iconSize: L.point(diameter, diameter, true),
+    iconAnchor: L.point(center, center, true),
   })
 }
 
@@ -307,6 +377,7 @@ export function MapPage() {
                 key={resort.resort_id}
                 center={[coords.lat, coords.lon]}
                 radius={8}
+                fillColor={color.hex}
                 pathOptions={{
                   fillColor: color.hex,
                   fillOpacity: 0.9,
