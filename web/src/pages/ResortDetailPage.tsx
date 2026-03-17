@@ -32,6 +32,7 @@ import { HourlyTimeline } from '../components/resort/HourlyTimeline'
 import { FreshSnowChart } from '../components/resort/FreshSnowChart'
 import { TrailDistribution } from '../components/resort/TrailDistribution'
 import { ElevationPicker } from '../components/resort/ElevationPicker'
+import { ElevationProfile } from '../components/resort/ElevationProfile'
 import { SnowDetailsCard } from '../components/resort/SnowDetailsCard'
 import { WeatherDetailsCard } from '../components/resort/WeatherDetailsCard'
 import { AllElevationsSummary } from '../components/resort/AllElevationsSummary'
@@ -343,6 +344,16 @@ export function ResortDetailPage() {
               </div>
             ) : conditions && conditions.length > 0 ? (
               <>
+                {/* Elevation Profile */}
+                {conditions.length > 1 && (
+                  <ElevationProfile
+                    conditions={conditions}
+                    elevationMeters={elevationMeters}
+                    selectedLevel={effectiveElevation}
+                    onSelectLevel={setSelectedElevation}
+                  />
+                )}
+
                 {/* Elevation Picker */}
                 {availableLevels.length > 1 && (
                   <ElevationPicker
