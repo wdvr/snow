@@ -5,6 +5,16 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Mar 24, 2026
+
+### Fix: Map zoom race condition when showing resort on map
+Fixed a timing bug where tapping "Show on Map" from resort detail wouldn't reliably zoom to the resort. The issue was in ClusteredMapView's updateUIView: pendingRegion was being cleared async after applying the region change, which could cause re-entry issues if the view updated multiple times during sheet presentation. Changed to clear pendingRegion before applying the region (capturing it in a local variable), ensuring each zoom request is processed exactly once. Build succeeded on iPhone 17 simulator.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done | n/a | n/a | n/a |
+
+---
+
 ## Mar 14, 2026
 
 ### Feature: One-shot thaw alerts — notify once per snow cycle

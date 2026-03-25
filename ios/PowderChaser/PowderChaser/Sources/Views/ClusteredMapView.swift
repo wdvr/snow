@@ -79,10 +79,19 @@ struct ClusteredMapView: UIViewRepresentable {
 
         // Apply pending region change (from preset selection, fitAll, etc.)
         if let region = pendingRegion {
+            // Store the region we're about to apply
+            let regionToApply = region
+
+            // Clear pendingRegion BEFORE applying the region change
+            // This prevents re-entry issues and ensures the change happens exactly once
+            DispatchQueue.main.async {
+                self.pendingRegion = nil
+            }
+
+            // Now apply the region change
             context.coordinator.isProgrammaticRegionChange = true
-            mapView.setRegion(region, animated: context.coordinator.hasInitialized)
+            mapView.setRegion(regionToApply, animated: context.coordinator.hasInitialized)
             context.coordinator.hasInitialized = true
-            DispatchQueue.main.async { self.pendingRegion = nil }
         }
 
         // Update annotations
