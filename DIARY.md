@@ -5,6 +5,22 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Apr 22, 2026
+
+### Feature: Season-aware polling and alert gating (#202)
+Stops polling and alerting on resorts outside their active ski season window. Addresses late-April alert spam from already-closed resorts. New `season_utils.py` with hemisphere detection from latitude, default windows (Northern Nov 15 → May 10, Southern Jun 1 → Oct 31), 21-day pre-season buffer for polling, and optional per-resort overrides (`season_start_month_day` / `season_end_month_day`). Polling gated in `weather_processor.py` (parallel + sequential paths); alerts gated in `notification_service.py` (RESORT_EVENT remains unconditional). Static JSON emits `overall_quality: "out_of_season"` for skipped resorts. Clients decode unknown values into `UNKNOWN` gracefully — no crash. 1802 tests passing (+52). iOS/Android/Web need `outOfSeason` enum case + badge in follow-up PRs.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| pending | pending | pending | done |
+
+### Fix: AWS cost reduction — DynamoDB on-demand + autoscaling alarm cleanup (#201)
+3 DynamoDB tables (`weather-conditions`, `snow-summary`, `daily-history`) were PROVISIONED with auto-scaling, which auto-created 64 TargetTracking CloudWatch alarms (~$6.40/mo) plus RCU-hours (~$4.66/mo). Switched all 6 prod+staging tables to PAY_PER_REQUEST via AWS CLI, deregistered 16 dangling autoscaling targets, and updated Pulumi to match the live state so the next `pulumi up` doesn't revert it. Also: deleted unused Managed Grafana workspace (–$9/mo), disabled 2 staging EventBridge schedules that were running live on an unused env (–~$3/mo), and set retention policies on 6 log groups. Expected savings: ~$25/mo, annual ~$300.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+---
+
 ## Mar 24, 2026
 
 ### Fix: Map zoom race condition when showing resort on map
