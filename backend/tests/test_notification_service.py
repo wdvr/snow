@@ -3404,3 +3404,264 @@ class TestForecastAlertProcessing:
 
         result = service.process_user_notifications("user1", prefs)
         assert len(result) == 0
+
+
+# ---------------------------------------------------------------------------
+# Season-aware alert gating
+# ---------------------------------------------------------------------------
+
+
+class TestSeasonAwareAlertGating:
+    """Most alerts are suppressed out-of-season; RESORT_EVENT is not.
+
+    These tests patch ``is_in_active_window`` directly so they're independent
+    of the real date — the date math is covered in test_season_utils.py.
+    """
+
+    MODULE = "services.notification_service"
+
+    @pytest.fixture
+    def service(self):
+        svc = NotificationService(
+            device_tokens_table=MagicMock(),
+            user_preferences_table=MagicMock(),
+            resort_events_table=MagicMock(),
+            weather_conditions_table=MagicMock(),
+            resorts_table=MagicMock(),
+            sns_client=MagicMock(),
+            apns_platform_arn="arn:test",
+        )
+        # get_resort_name path
+        svc.resorts_table.get_item.return_value = {
+            "Item": {
+                "resort_id": "portillo",
+                "name": "Portillo",
+                "country": "CL",
+                "region": "south_america",
+                "elevation_points": [
+                    {
+                        "level": "mid",
+                        "elevation_meters": 2880,
+                        "elevation_feet": 9449,
+                        "latitude": -32.8,
+                        "longitude": -70.1,
+                    }
+                ],
+                "timezone": "America/Santiago",
+            }
+        }
+        return svc
+
+    def _make_prefs(self, **kwargs):
+        now = datetime.now(UTC).isoformat()
+        defaults = {
+            "user_id": "user1",
+            "favorite_resorts": ["portillo"],
+            "created_at": now,
+            "updated_at": now,
+        }
+        defaults.update(kwargs)
+        return UserPreferences(**defaults)
+
+    def test_fresh_snow_suppressed_out_of_season(self, service):
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=True,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            default_snow_threshold_cm=5.0,
+        )
+        prefs = self._make_prefs(notification_settings=settings)
+        # Plenty of fresh snow
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "portillo",
+                    "elevation_level": "top",
+                    "snowfall_24h_cm": 20.0,
+                }
+            ]
+        }
+
+        with patch(f"{self.MODULE}.is_in_active_window", return_value=False):
+            result = service.process_user_notifications("user1", prefs)
+
+        # Out-of-season: no notification despite snow above threshold.
+        assert result == []
+
+    def test_fresh_snow_fires_in_season(self, service):
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=True,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            default_snow_threshold_cm=5.0,
+        )
+        prefs = self._make_prefs(notification_settings=settings)
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "portillo",
+                    "elevation_level": "top",
+                    "snowfall_24h_cm": 20.0,
+                }
+            ]
+        }
+
+        with patch(f"{self.MODULE}.is_in_active_window", return_value=True):
+            result = service.process_user_notifications("user1", prefs)
+
+        assert len(result) == 1
+        assert result[0].notification_type == NotificationType.FRESH_SNOW
+
+    def test_resort_event_fires_even_out_of_season(self, service):
+        """RESORT_EVENT is the one alert type NOT gated by season."""
+        now = datetime.now(UTC)
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=True,
+            thaw_freeze_alerts=False,
+        )
+        prefs = self._make_prefs(notification_settings=settings)
+        service.resort_events_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "portillo",
+                    "event_id": "evt1",
+                    "event_type": "opening_date",
+                    "title": "Opening Day Announced",
+                    "event_date": "2026-06-15",
+                    "created_at": now.isoformat(),
+                }
+            ]
+        }
+
+        with patch(f"{self.MODULE}.is_in_active_window", return_value=False):
+            result = service.process_user_notifications("user1", prefs)
+
+        assert len(result) == 1
+        assert result[0].notification_type == NotificationType.RESORT_EVENT
+
+    def test_thaw_freeze_suppressed_out_of_season(self, service):
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=False,
+            thaw_freeze_alerts=True,
+        )
+        prefs = self._make_prefs(notification_settings=settings)
+        # Mock a thaw-inducing temperature reading
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "portillo",
+                    "elevation_level": "top",
+                    "current_temp_celsius": 5.0,
+                }
+            ]
+        }
+
+        with (
+            patch(f"{self.MODULE}.is_in_active_window", return_value=False),
+            patch.object(service, "check_thaw_freeze_cycle") as mock_check,
+        ):
+            result = service.process_user_notifications("user1", prefs)
+
+        assert result == []
+        # Should not even get as far as the thaw check.
+        mock_check.assert_not_called()
+
+    def test_forecast_alert_suppressed_out_of_season(self, service):
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            forecast_alerts=True,
+            forecast_snow_threshold_cm=10.0,
+        )
+        prefs = self._make_prefs(notification_settings=settings)
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "portillo",
+                    "elevation_level": "top",
+                    "predicted_snow_24h_cm": 30.0,
+                    "predicted_snow_48h_cm": 30.0,
+                    "predicted_snow_72h_cm": 30.0,
+                }
+            ]
+        }
+
+        with patch(f"{self.MODULE}.is_in_active_window", return_value=False):
+            result = service.process_user_notifications("user1", prefs)
+
+        assert result == []
+
+    def test_powder_alert_suppressed_out_of_season(self, service):
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=False,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            powder_alerts=True,
+            powder_snow_threshold_cm=15.0,
+        )
+        prefs = self._make_prefs(notification_settings=settings)
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "portillo",
+                    "elevation_level": "top",
+                    "snowfall_24h_cm": 40.0,
+                }
+            ]
+        }
+
+        with (
+            patch(f"{self.MODULE}.is_in_active_window", return_value=False),
+            patch.object(service, "check_powder_day") as mock_check,
+        ):
+            result = service.process_user_notifications("user1", prefs)
+
+        assert result == []
+        mock_check.assert_not_called()
+
+    def test_missing_resort_treated_as_in_season(self, service):
+        """Fail-open: if get_resort returns None, alerts still fire.
+
+        This prevents silently dropping alerts for a resort whose DynamoDB
+        row is briefly unavailable.
+        """
+        settings = UserNotificationPreferences(
+            notifications_enabled=True,
+            fresh_snow_alerts=True,
+            event_alerts=False,
+            thaw_freeze_alerts=False,
+            default_snow_threshold_cm=5.0,
+        )
+        prefs = self._make_prefs(notification_settings=settings)
+        # get_resort (via get_item) returns nothing usable
+        service.resorts_table.get_item.return_value = {}
+        service.weather_conditions_table.query.return_value = {
+            "Items": [
+                {
+                    "resort_id": "portillo",
+                    "elevation_level": "top",
+                    "snowfall_24h_cm": 20.0,
+                }
+            ]
+        }
+
+        # Even if is_in_active_window would say False, the resort is missing,
+        # so season_active remains True and the alert fires.
+        with patch(
+            f"{self.MODULE}.is_in_active_window", return_value=False
+        ) as mock_window:
+            result = service.process_user_notifications("user1", prefs)
+
+        assert len(result) == 1
+        assert result[0].notification_type == NotificationType.FRESH_SNOW
+        # The gate function should not have been invoked (no Resort loaded).
+        mock_window.assert_not_called()

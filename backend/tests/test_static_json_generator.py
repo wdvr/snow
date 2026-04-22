@@ -335,6 +335,61 @@ class TestStaticJsonGenerator:
         assert "data/snow-quality.json" in file_names
         assert result["success"] is True
 
+    def test_out_of_season_resort_short_circuits(
+        self, mock_dynamodb, mock_s3, sample_resort
+    ):
+        """Out-of-season resorts emit a stable "out_of_season" quality marker."""
+        generator = StaticJsonGenerator(
+            resorts_table_name="test-resorts",
+            weather_conditions_table_name="test-conditions",
+            website_bucket="test-bucket",
+        )
+
+        # Even if there are stale conditions, the out-of-season gate wins.
+        stale_condition = MagicMock()
+        stale_condition.elevation_level = "mid"
+        stale_condition.quality_score = 50
+        stale_condition.timestamp = "2024-05-01T00:00:00+00:00"
+        stale_condition.current_temp_celsius = 10.0
+        stale_condition.fresh_snow_cm = 0.0
+        stale_condition.snowfall_24h_cm = 0.0
+        stale_condition.snow_depth_cm = 0.0
+        stale_condition.predicted_snow_48h_cm = 0.0
+
+        with patch(
+            "services.static_json_generator.is_in_active_window", return_value=False
+        ):
+            result = generator._get_snow_quality_for_resort(
+                sample_resort, conditions=[stale_condition]
+            )
+
+        assert result["overall_quality"] == "out_of_season"
+        assert result["last_updated"] is None
+        assert result["temperature_c"] is None
+        assert result["snowfall_fresh_cm"] is None
+
+    def test_in_season_resort_with_no_conditions_returns_unknown(
+        self, mock_dynamodb, mock_s3, sample_resort
+    ):
+        """When in-season but no conditions, returns the "unknown" branch —
+        never the new "out_of_season" value (those are only for off-season).
+        """
+        generator = StaticJsonGenerator(
+            resorts_table_name="test-resorts",
+            weather_conditions_table_name="test-conditions",
+            website_bucket="test-bucket",
+        )
+
+        with patch(
+            "services.static_json_generator.is_in_active_window", return_value=True
+        ):
+            result = generator._get_snow_quality_for_resort(
+                sample_resort, conditions=[]
+            )
+
+        assert result["overall_quality"] == "unknown"
+        assert result["overall_quality"] != "out_of_season"
+
     def test_s3_upload_content_type_and_cache(self, mock_dynamodb, mock_s3):
         """Test that S3 uploads have correct content type and cache headers."""
         mock_table = MagicMock()

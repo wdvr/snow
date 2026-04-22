@@ -206,10 +206,11 @@ class TestWeatherModels:
         assert SnowQuality.BAD == "bad"
         assert SnowQuality.HORRIBLE == "horrible"
         assert SnowQuality.UNKNOWN == "unknown"
+        assert SnowQuality.OUT_OF_SEASON == "out_of_season"
 
-        # Test all values are present (11 total)
+        # Test all values are present (12 total)
         all_qualities = list(SnowQuality)
-        assert len(all_qualities) == 11
+        assert len(all_qualities) == 12
 
     def test_confidence_level_enum(self):
         """Test ConfidenceLevel enum values."""

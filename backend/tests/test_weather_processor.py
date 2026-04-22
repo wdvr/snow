@@ -1321,3 +1321,228 @@ class TestProcessorRawDataCollection:
 
             result = weather_processor_handler({}, _make_lambda_context())
             assert result["statusCode"] == 200
+
+
+# ---------------------------------------------------------------------------
+# Tests for season-aware polling gate
+# ---------------------------------------------------------------------------
+
+
+def _make_resort_with_season(
+    resort_id="test",
+    lat=49.72,
+    year_round=False,
+    season_start=None,
+    season_end=None,
+    region="na_west",
+):
+    """Build a Resort-like stub that season_utils can introspect."""
+    ep = SimpleNamespace(
+        level=SimpleNamespace(value="mid"),
+        latitude=lat,
+        longitude=-120.0,
+        elevation_meters=1800,
+    )
+    return SimpleNamespace(
+        resort_id=resort_id,
+        name=resort_id,
+        region=region,
+        elevation_points=[ep],
+        year_round=year_round,
+        season_start_month_day=season_start,
+        season_end_month_day=season_end,
+    )
+
+
+class TestSeasonFilterSequential:
+    """Out-of-season resorts are skipped entirely in sequential mode.
+
+    Rather than mock the system clock, we patch ``is_in_active_window`` so
+    the tests are time-independent and test the *wiring* rather than the
+    date math (the date math has dedicated coverage in test_season_utils.py).
+    """
+
+    MODULE = "handlers.weather_processor"
+
+    def test_out_of_season_resorts_are_skipped(self):
+        from handlers.weather_processor import weather_processor_handler
+
+        in_season = _make_resort_with_season(resort_id="in-season", lat=49.72)
+        off_season = _make_resort_with_season(resort_id="off-season", lat=39.6)
+
+        def fake_in_window(resort, now, pre_season_days=21):
+            return resort.resort_id == "in-season"
+
+        with (
+            patch(f"{self.MODULE}.PARALLEL_PROCESSING", False),
+            patch(f"{self.MODULE}.ENABLE_STATIC_JSON", False),
+            patch(f"{self.MODULE}.ENABLE_SCRAPING", False),
+            patch(f"{self.MODULE}.dynamodb"),
+            patch(f"{self.MODULE}.ResortService") as mock_rs_cls,
+            patch(f"{self.MODULE}.OpenMeteoService"),
+            patch(f"{self.MODULE}.SnowQualityService"),
+            patch(f"{self.MODULE}.SnowSummaryService"),
+            patch(f"{self.MODULE}.process_elevation_point") as mock_pep,
+            patch(f"{self.MODULE}.is_in_active_window", side_effect=fake_in_window),
+        ):
+            mock_rs_cls.return_value.get_all_resorts.return_value = [
+                in_season,
+                off_season,
+            ]
+            mock_pep.return_value = {
+                "success": True,
+                "error": None,
+                "level": "mid",
+                "weather_condition": SimpleNamespace(
+                    snow_quality=SimpleNamespace(value="good"),
+                    fresh_snow_cm=10.0,
+                    confidence_level=SimpleNamespace(value="high"),
+                ),
+            }
+
+            result = weather_processor_handler({}, _make_lambda_context(300000))
+
+        body = json.loads(result["body"])
+        assert result["statusCode"] == 200
+        assert body["stats"]["resorts_processed"] == 1
+        assert body["stats"]["resorts_skipped_off_season"] == 1
+        assert mock_pep.call_count == 1
+
+    def test_all_in_season_none_skipped(self):
+        from handlers.weather_processor import weather_processor_handler
+
+        r = _make_resort_with_season(resort_id="always-on", lat=49.72)
+
+        with (
+            patch(f"{self.MODULE}.PARALLEL_PROCESSING", False),
+            patch(f"{self.MODULE}.ENABLE_STATIC_JSON", False),
+            patch(f"{self.MODULE}.ENABLE_SCRAPING", False),
+            patch(f"{self.MODULE}.dynamodb"),
+            patch(f"{self.MODULE}.ResortService") as mock_rs_cls,
+            patch(f"{self.MODULE}.OpenMeteoService"),
+            patch(f"{self.MODULE}.SnowQualityService"),
+            patch(f"{self.MODULE}.SnowSummaryService"),
+            patch(f"{self.MODULE}.process_elevation_point") as mock_pep,
+            patch(f"{self.MODULE}.is_in_active_window", return_value=True),
+        ):
+            mock_rs_cls.return_value.get_all_resorts.return_value = [r]
+            mock_pep.return_value = {
+                "success": True,
+                "error": None,
+                "level": "mid",
+                "weather_condition": SimpleNamespace(
+                    snow_quality=SimpleNamespace(value="good"),
+                    fresh_snow_cm=10.0,
+                    confidence_level=SimpleNamespace(value="high"),
+                ),
+            }
+
+            result = weather_processor_handler({}, _make_lambda_context(300000))
+
+        body = json.loads(result["body"])
+        assert body["stats"]["resorts_processed"] == 1
+        assert body["stats"]["resorts_skipped_off_season"] == 0
+
+    def test_uses_21_day_pre_season_buffer(self):
+        """Polling uses a 21-day pre-season buffer (not the default of 21)."""
+        from handlers.weather_processor import weather_processor_handler
+
+        r = _make_resort_with_season(resort_id="whistler", lat=49.72)
+        seen_buffers: list[int] = []
+
+        def fake_in_window(resort, now, pre_season_days=21):
+            seen_buffers.append(pre_season_days)
+            return True
+
+        with (
+            patch(f"{self.MODULE}.PARALLEL_PROCESSING", False),
+            patch(f"{self.MODULE}.ENABLE_STATIC_JSON", False),
+            patch(f"{self.MODULE}.ENABLE_SCRAPING", False),
+            patch(f"{self.MODULE}.dynamodb"),
+            patch(f"{self.MODULE}.ResortService") as mock_rs_cls,
+            patch(f"{self.MODULE}.OpenMeteoService"),
+            patch(f"{self.MODULE}.SnowQualityService"),
+            patch(f"{self.MODULE}.SnowSummaryService"),
+            patch(f"{self.MODULE}.process_elevation_point") as mock_pep,
+            patch(f"{self.MODULE}.is_in_active_window", side_effect=fake_in_window),
+        ):
+            mock_rs_cls.return_value.get_all_resorts.return_value = [r]
+            mock_pep.return_value = {
+                "success": True,
+                "error": None,
+                "level": "mid",
+                "weather_condition": SimpleNamespace(
+                    snow_quality=SimpleNamespace(value="good"),
+                    fresh_snow_cm=10.0,
+                    confidence_level=SimpleNamespace(value="high"),
+                ),
+            }
+
+            weather_processor_handler({}, _make_lambda_context(300000))
+
+        assert seen_buffers and all(b == 21 for b in seen_buffers)
+
+
+class TestSeasonFilterParallel:
+    """Out-of-season resorts are skipped in orchestrate_parallel_processing too."""
+
+    MODULE = "handlers.weather_processor"
+
+    def test_off_season_resorts_not_dispatched(self):
+        from handlers.weather_processor import orchestrate_parallel_processing
+
+        in_season = _make_resort_with_season(
+            resort_id="portillo", lat=-32.8, region="south_america"
+        )
+        off_season = _make_resort_with_season(
+            resort_id="vail", lat=39.6, region="na_rockies"
+        )
+
+        def fake_in_window(resort, now, pre_season_days=21):
+            return resort.resort_id == "portillo"
+
+        with (
+            patch(f"{self.MODULE}.dynamodb"),
+            patch(f"{self.MODULE}.ResortService") as mock_rs_cls,
+            patch(f"{self.MODULE}.lambda_client") as mock_lc,
+            patch(f"{self.MODULE}.is_in_active_window", side_effect=fake_in_window),
+        ):
+            mock_rs_cls.return_value.get_all_resorts.return_value = [
+                in_season,
+                off_season,
+            ]
+            mock_lc.invoke.return_value = {"StatusCode": 202}
+
+            result = orchestrate_parallel_processing(_make_lambda_context())
+
+        body = json.loads(result["body"])
+        assert body["total_resorts"] == 1  # Only in-season dispatched
+        assert body["skipped_off_season"] == 1
+        assert body["workers_invoked"] == 1
+        # The payload sent to the worker should only contain the in-season resort.
+        payload = json.loads(mock_lc.invoke.call_args[1]["Payload"])
+        assert payload["resort_ids"] == ["portillo"]
+
+    def test_all_resorts_off_season_returns_early(self):
+        from handlers.weather_processor import orchestrate_parallel_processing
+
+        off_season = _make_resort_with_season(
+            resort_id="vail", lat=39.6, region="na_rockies"
+        )
+
+        with (
+            patch(f"{self.MODULE}.dynamodb"),
+            patch(f"{self.MODULE}.ResortService") as mock_rs_cls,
+            patch(f"{self.MODULE}.lambda_client") as mock_lc,
+            patch(f"{self.MODULE}.is_in_active_window", return_value=False),
+        ):
+            mock_rs_cls.return_value.get_all_resorts.return_value = [off_season]
+
+            result = orchestrate_parallel_processing(_make_lambda_context())
+
+        body = json.loads(result["body"])
+        assert result["statusCode"] == 200
+        assert body["skipped_off_season"] == 1
+        assert body["total_resorts"] == 1
+        # No lambda invocations.
+        mock_lc.invoke.assert_not_called()

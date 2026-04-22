@@ -28,6 +28,7 @@ from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
 from services.snow_summary_service import SnowSummaryService
 from utils.dynamodb_utils import prepare_for_dynamodb
+from utils.season_utils import is_in_active_window
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -65,6 +66,11 @@ ENABLE_STATIC_JSON = os.environ.get("ENABLE_STATIC_JSON", "true").lower() == "tr
 
 # TTL for weather conditions: 60 days (extended from 7 days)
 WEATHER_CONDITIONS_TTL_DAYS = 60
+
+# Pre-season polling buffer (days). Resorts are polled starting this many
+# days before the season start to catch opening-day storms and populate the
+# forecast view before opening.
+POLLING_PRE_SEASON_DAYS = 21
 
 
 def get_remaining_time_ms(context) -> int:
@@ -466,12 +472,40 @@ def orchestrate_parallel_processing(context) -> dict[str, Any]:
 
     # Get all resorts
     resort_service = ResortService(dynamodb.Table(RESORTS_TABLE))
-    resorts = resort_service.get_all_resorts()
+    all_resorts = resort_service.get_all_resorts()
+
+    if not all_resorts:
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"message": "No resorts to process"}),
+        }
+
+    # Filter to only resorts currently in their (buffered) season window.
+    # Out-of-season resorts are skipped entirely — no Open-Meteo call, no
+    # scrape, no DynamoDB write.
+    now = datetime.now(UTC)
+    resorts = [
+        r
+        for r in all_resorts
+        if is_in_active_window(r, now, pre_season_days=POLLING_PRE_SEASON_DAYS)
+    ]
+    skipped_off_season = len(all_resorts) - len(resorts)
+    if skipped_off_season:
+        logger.info(
+            f"Season filter: skipping {skipped_off_season} out-of-season resorts "
+            f"(polling {len(resorts)} of {len(all_resorts)})"
+        )
 
     if not resorts:
         return {
             "statusCode": 200,
-            "body": json.dumps({"message": "No resorts to process"}),
+            "body": json.dumps(
+                {
+                    "message": "All resorts out of season; nothing to process",
+                    "total_resorts": len(all_resorts),
+                    "skipped_off_season": skipped_off_season,
+                }
+            ),
         }
 
     # Group resorts by region
@@ -558,6 +592,7 @@ def orchestrate_parallel_processing(context) -> dict[str, Any]:
                 "workers_invoked": successful,
                 "workers_failed": failed,
                 "total_resorts": len(resorts),
+                "skipped_off_season": skipped_off_season,
                 "regions": list(chunked_regions.keys()),
                 "duration_seconds": duration,
                 "invocations": invocations,
@@ -647,6 +682,7 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
         stats = {
             "resorts_processed": 0,
             "resorts_skipped": 0,
+            "resorts_skipped_off_season": 0,
             "elevation_points_processed": 0,
             "conditions_saved": 0,
             "scraper_hits": 0,
@@ -656,8 +692,23 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
             "timeout_graceful": False,
         }
 
-        # Get all active resorts
-        resorts = resort_service.get_all_resorts()
+        # Get all active resorts, then filter to those in their season window.
+        # Out-of-season resorts are skipped entirely — no Open-Meteo, no scrape,
+        # no DynamoDB write. See utils/season_utils.py for window logic.
+        all_resorts = resort_service.get_all_resorts()
+        now = datetime.now(UTC)
+        resorts = [
+            r
+            for r in all_resorts
+            if is_in_active_window(r, now, pre_season_days=POLLING_PRE_SEASON_DAYS)
+        ]
+        stats["resorts_skipped_off_season"] = len(all_resorts) - len(resorts)
+        if stats["resorts_skipped_off_season"]:
+            logger.info(
+                f"Season filter: skipping {stats['resorts_skipped_off_season']} "
+                f"out-of-season resorts "
+                f"(polling {len(resorts)} of {len(all_resorts)})"
+            )
         logger.info(f"Found {len(resorts)} resorts to process")
 
         weather_conditions_table = dynamodb.Table(WEATHER_CONDITIONS_TABLE)

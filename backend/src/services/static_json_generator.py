@@ -29,6 +29,7 @@ from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
 from services.weather_service import WeatherService
 from utils.constants import DEFAULT_ELEVATION_WEIGHT, ELEVATION_WEIGHTS
+from utils.season_utils import is_in_active_window
 
 logger = logging.getLogger(__name__)
 
@@ -226,6 +227,23 @@ class StaticJsonGenerator:
             resort: Resort object
             conditions: Pre-fetched conditions list. If None, queries DynamoDB per-resort.
         """
+        # Short-circuit for resorts currently outside their active season window.
+        # These aren't polled, so we emit a stable "out_of_season" marker rather
+        # than stale conditions or "unknown" (which suggests a data outage).
+        # Use pre_season_days=0 so that during the pre-season polling buffer we
+        # still present the fresh data we've just fetched.
+        if not is_in_active_window(resort, datetime.now(UTC), pre_season_days=0):
+            return {
+                "resort_id": resort.resort_id,
+                "overall_quality": SnowQuality.OUT_OF_SEASON.value,
+                "last_updated": None,
+                "temperature_c": None,
+                "snowfall_fresh_cm": None,
+                "snowfall_24h_cm": None,
+                "snow_depth_cm": None,
+                "predicted_snow_48h_cm": None,
+            }
+
         if conditions is None:
             conditions = self.weather_service.get_latest_conditions_all_elevations(
                 resort.resort_id

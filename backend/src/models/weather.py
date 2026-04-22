@@ -34,6 +34,7 @@ class SnowQuality(str, Enum):
     BAD = "bad"  # Icy, no fresh snow on icy base
     HORRIBLE = "horrible"  # Not skiable, no snow cover or actively melting
     UNKNOWN = "unknown"  # Insufficient data
+    OUT_OF_SEASON = "out_of_season"  # Resort outside its active season window
 
 
 # Quality rating explanations for UI info indicators
@@ -94,6 +95,11 @@ SNOW_QUALITY_EXPLANATIONS: dict[SnowQuality, dict[str, str]] = {
         "title": "Unknown",
         "description": "Insufficient data to assess conditions. Check resort reports directly.",
         "criteria": "Weather data unavailable or incomplete",
+    },
+    SnowQuality.OUT_OF_SEASON: {
+        "title": "Out of Season",
+        "description": "Resort is outside its active ski season. Check back closer to opening day.",
+        "criteria": "Current date is outside the resort's configured season window",
     },
 }
 
