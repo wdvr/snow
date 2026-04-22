@@ -1,9 +1,10 @@
 """Resort data models."""
 
+import re
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ElevationLevel(str, Enum):
@@ -116,8 +117,39 @@ class Resort(BaseModel):
     scraped_at: str | None = Field(
         None, description="ISO timestamp when resort was last scraped"
     )
+    # Season-aware polling overrides. When both are set, they override the
+    # hemisphere-default window. Format: "MM-DD". See utils/season_utils.py.
+    season_start_month_day: str | None = Field(
+        None, description="Season start override (MM-DD)"
+    )
+    season_end_month_day: str | None = Field(
+        None, description="Season end override (MM-DD)"
+    )
+    year_round: bool = Field(
+        False,
+        description="If true, resort is polled year-round regardless of latitude",
+    )
 
     model_config = ConfigDict(use_enum_values=True)
+
+    @field_validator("season_start_month_day", "season_end_month_day")
+    @classmethod
+    def _validate_month_day(cls, v: str | None) -> str | None:
+        """Validate 'MM-DD' format and that the date is real."""
+        if v is None:
+            return v
+        if not isinstance(v, str) or not re.fullmatch(r"\d{2}-\d{2}", v):
+            raise ValueError(f"season_*_month_day must match 'MM-DD' format, got {v!r}")
+        month = int(v[0:2])
+        day = int(v[3:5])
+        # Validate via a real date in a leap year to allow Feb 29.
+        from datetime import date as _date
+
+        try:
+            _date(2000, month, day)
+        except ValueError as e:
+            raise ValueError(f"Invalid month-day value {v!r}: {e}") from e
+        return v
 
     @property
     def display_location(self) -> str:

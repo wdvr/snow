@@ -22,8 +22,10 @@ from models.notification import (
     ResortEvent,
     UserNotificationPreferences,
 )
+from models.resort import Resort
 from models.user import UserPreferences
 from utils.dynamodb_utils import parse_from_dynamodb, prepare_for_dynamodb
+from utils.season_utils import is_in_active_window
 
 
 def _to_float(val) -> float:
@@ -698,6 +700,25 @@ class NotificationService:
             logger.error(f"Error getting resort name for {resort_id}: {e}")
             return resort_id
 
+    def get_resort(self, resort_id: str) -> Resort | None:
+        """Load a Resort model from DynamoDB.
+
+        Used for season-window checks during notification processing. Returns
+        None on any failure — callers should treat a missing resort as
+        in-season (fail open) to avoid silently dropping alerts for resorts
+        whose DynamoDB row is briefly unavailable.
+        """
+        try:
+            response = self.resorts_table.get_item(Key={"resort_id": resort_id})
+            item = response.get("Item")
+            if not item:
+                return None
+            parsed = parse_from_dynamodb(item)
+            return Resort(**parsed)
+        except Exception as e:
+            logger.error(f"Error loading resort {resort_id}: {e}")
+            return None
+
     def process_user_notifications(
         self, user_id: str, prefs: UserPreferences
     ) -> list[NotificationPayload]:
@@ -744,10 +765,23 @@ class NotificationService:
 
             resort_name = self.get_resort_name(resort_id)
 
+            # Season gate: only RESORT_EVENT alerts fire year-round (opening-date
+            # announcements are useful off-season). Snow-quality-dependent alerts
+            # (fresh snow, powder, thaw/freeze, forecast) are gated behind the
+            # resort's active season window. Use pre_season_days=0 here — the
+            # feature spec wants alerts active only for truly in-season resorts,
+            # whereas polling uses a 21-day pre-season buffer.
+            resort_obj = self.get_resort(resort_id)
+            season_active = True
+            if resort_obj is not None:
+                season_active = is_in_active_window(
+                    resort_obj, datetime.now(UTC), pre_season_days=0
+                )
+
             # Check for fresh snow (uses snowfall_24h_cm, not cumulative fresh_snow_cm)
             # Each notification type has its own 24h grace period
             # Smart re-notification: if 10cm+ more snow fell, notify again
-            if fresh_snow_enabled:
+            if fresh_snow_enabled and season_active:
                 fresh_snow = self.get_fresh_snow_cm(resort_id)
                 if (
                     fresh_snow >= snow_threshold
@@ -776,9 +810,7 @@ class NotificationService:
                     fresh_snow_resorts.add(resort_id)
                     # Fresh snow resets the one-shot thaw suppression —
                     # user should be notified again when this new snow degrades
-                    notification_settings.thaw_cycle_suppressed.pop(
-                        resort_id, None
-                    )
+                    notification_settings.thaw_cycle_suppressed.pop(resort_id, None)
 
             # Check for new events
             if events_enabled and notification_settings.can_notify_for_resort(
@@ -809,7 +841,7 @@ class NotificationService:
 
             # Check for thaw/freeze cycles
             # Thaw/freeze uses its own grace period per type
-            if notification_settings.thaw_freeze_alerts:
+            if notification_settings.thaw_freeze_alerts and season_active:
                 current_temp = self.get_current_temperature(resort_id)
                 if current_temp is not None:
                     thaw_freeze_notification = self.check_thaw_freeze_cycle(
@@ -834,7 +866,7 @@ class NotificationService:
                 )
             # Skip powder alert if fresh_snow already fired for this resort
             # (both are triggered by same snowfall, avoid duplicate notifications)
-            if powder_enabled and resort_id not in fresh_snow_resorts:
+            if powder_enabled and season_active and resort_id not in fresh_snow_resorts:
                 powder_threshold = (
                     resort_settings.powder_threshold_cm
                     if resort_settings
@@ -870,6 +902,7 @@ class NotificationService:
             # Check for forecast snow (SOON alerts)
             if (
                 notification_settings.forecast_alerts
+                and season_active
                 and notification_settings.can_notify_for_resort(
                     resort_id, NotificationType.FORECAST_SNOW.value
                 )
