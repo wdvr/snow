@@ -125,9 +125,7 @@ resorts_table = aws.dynamodb.Table(
 weather_conditions_table = aws.dynamodb.Table(
     f"{app_name}-weather-conditions-{environment}",
     name=f"{app_name}-weather-conditions-{environment}",
-    billing_mode="PROVISIONED",
-    read_capacity=25,
-    write_capacity=5,
+    billing_mode="PAY_PER_REQUEST",
     hash_key="resort_id",
     range_key="timestamp",
     attributes=[
@@ -141,8 +139,6 @@ weather_conditions_table = aws.dynamodb.Table(
             "hash_key": "elevation_level",
             "range_key": "timestamp",
             "projection_type": "ALL",
-            "read_capacity": 25,
-            "write_capacity": 1,
         }
     ],
     ttl={"attribute_name": "ttl", "enabled": True},
@@ -201,9 +197,7 @@ device_tokens_table = aws.dynamodb.Table(
 snow_summary_table = aws.dynamodb.Table(
     f"{app_name}-snow-summary-{environment}",
     name=f"{app_name}-snow-summary-{environment}",
-    billing_mode="PROVISIONED",
-    read_capacity=5,
-    write_capacity=5,
+    billing_mode="PAY_PER_REQUEST",
     hash_key="resort_id",
     range_key="elevation_level",  # base, mid, top
     attributes=[
@@ -221,9 +215,7 @@ daily_history_table = aws.dynamodb.Table(
     name=f"{app_name}-daily-history-{environment}",
     hash_key="resort_id",
     range_key="date",
-    billing_mode="PROVISIONED",
-    read_capacity=5,
-    write_capacity=5,
+    billing_mode="PAY_PER_REQUEST",
     attributes=[
         {"name": "resort_id", "type": "S"},
         {"name": "date", "type": "S"},  # YYYY-MM-DD format
