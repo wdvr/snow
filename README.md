@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://powderchaserapp.com">Website</a> &bull;
-  <a href="https://apps.apple.com/app/powder-chaser">App Store</a> &bull;
-  <a href="https://buymeacoffee.com/wdvr">Buy Me a Coffee</a>
+  <a href="https://apps.apple.com/app/powder-chaser/id6758333173"><img alt="App Store" src="https://img.shields.io/badge/App_Store-Download-007AFF?style=flat-square&logo=apple&logoColor=white" /></a>
+  <a href="https://powderchaserapp.com"><img alt="Website" src="https://img.shields.io/badge/Website-powderchaserapp.com-2E7D32?style=flat-square" /></a>
+  <a href="https://github.com/wdvr/snow/issues"><img alt="Issues" src="https://img.shields.io/github/issues/wdvr/snow?style=flat-square" /></a>
 </p>
 
 ---
