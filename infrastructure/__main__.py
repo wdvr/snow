@@ -3294,6 +3294,44 @@ api_deployment = aws.apigateway.Deployment(
     ),
 )
 
+# Per-method throttling on the chat POST.
+# Native API Gateway throttling — no extra monthly fee. Acts as a hard
+# stage-level cap so even a runaway client can't sustain >2 req/s on
+# chat, complementing the per-user 100/24h in-code limit.
+chat_throttle = aws.apigateway.MethodSettings(
+    f"{app_name}-chat-throttle-{environment}",
+    rest_api=api_gateway.id,
+    stage_name=environment,
+    method_path="api/v1/chat/POST",
+    settings=aws.apigateway.MethodSettingsSettingsArgs(
+        throttling_rate_limit=2.0,    # steady req/sec
+        throttling_burst_limit=5,     # short-term burst
+        metrics_enabled=True,
+    ),
+    opts=pulumi.ResourceOptions(depends_on=[api_deployment]),
+)
+
+# Stage-level fallback throttling on everything else (generous).
+api_default_throttle = aws.apigateway.MethodSettings(
+    f"{app_name}-api-default-throttle-{environment}",
+    rest_api=api_gateway.id,
+    stage_name=environment,
+    method_path="*/*",
+    settings=aws.apigateway.MethodSettingsSettingsArgs(
+        throttling_rate_limit=20.0,
+        throttling_burst_limit=50,
+        metrics_enabled=True,
+    ),
+    opts=pulumi.ResourceOptions(depends_on=[api_deployment]),
+)
+
+# NOTE: The "Monthly-50USD-Bedrock-Stop" budget is managed manually in the
+# AWS console — already filtered to Bedrock-only services (Amazon Bedrock +
+# the per-model line items) so it doesn't fire on unrelated spend, and the
+# auto-action attaches the DenyBedrock policy at 100% of actual. Not
+# Pulumi-managed because importing the existing resource into state is
+# more friction than it's worth for a single budget.
+
 # Cognito User Pool for authentication
 user_pool = aws.cognito.UserPool(
     f"{app_name}-user-pool-{environment}",

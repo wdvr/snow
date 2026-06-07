@@ -2944,42 +2944,16 @@ async def sign_in_with_google(request: GoogleSignInRequest):
 
 @app.post("/api/v1/auth/guest")
 async def sign_in_as_guest(request: GuestAuthRequest):
-    """Create a guest session.
+    """Guest sign-in is disabled.
 
-    Guest users have limited functionality but can still use the app.
+    Anonymous access is no longer supported — clients must authenticate via
+    Apple or Google Sign-In. Returning 410 so old iOS clients see a clear
+    "endpoint gone" rather than a transient error.
     """
-    try:
-        auth_service = get_auth_service()
-
-        # Create guest user/session
-        user = auth_service.create_guest_session(request.device_id)
-
-        # Create session tokens
-        tokens = auth_service.create_session_tokens(user.user_id)
-
-        # Return user info with tokens at top level (iOS expects flat structure)
-        return {
-            "user": user.to_dict(),
-            "access_token": tokens["access_token"],
-            "refresh_token": tokens["refresh_token"],
-            "token_type": tokens["token_type"],
-            "expires_in": tokens["expires_in"],
-            "is_new_user": user.is_new_user,
-        }
-
-    except AuthenticationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-        )
-    except Exception as e:
-        logger.error(
-            "Guest auth error for device %s: %s", request.device_id, e, exc_info=True
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Guest authentication failed",
-        )
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Guest sign-in is no longer supported. Sign in with Apple or Google.",
+    )
 
 
 @app.post("/api/v1/auth/refresh")
@@ -4339,31 +4313,25 @@ async def send_chat_message(
 ):
     """Send a message to the AI ski conditions assistant.
 
-    Authenticated users: 100 messages per 24 hours.
-    Anonymous users: 5 messages per IP per 6 hours.
+    Authenticated users only — anonymous access removed. Per-user limit
+    100 messages / 24h. Stage-level throttling on POST /api/v1/chat caps
+    total request rate so a single bot can't burn budget (configured in
+    Pulumi via aws.apigateway.MethodSettings).
     """
     try:
-        remaining_messages = None
-
         if not user_id:
-            # Anonymous: IP-based rate limit
-            client_ip = _get_client_ip(fastapi_request)
-            if not _check_anonymous_chat_limit(client_ip):
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Chat limit reached. Sign in for unlimited access, or try again later.",
-                )
-            user_id = f"anon_{client_ip}"
-            remaining_messages = _get_remaining_anonymous_messages(client_ip)
-        else:
-            # Authenticated: per-user daily limit
-            allowed, remaining = _check_authenticated_chat_limit(user_id)
-            if not allowed:
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Daily chat limit reached. Try again tomorrow.",
-                )
-            remaining_messages = remaining
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Sign in with Apple or Google to use chat.",
+            )
+
+        allowed, remaining = _check_authenticated_chat_limit(user_id)
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Daily chat limit reached. Try again tomorrow.",
+            )
+        remaining_messages = remaining
 
         service = get_chat_service()
         result = service.chat(
