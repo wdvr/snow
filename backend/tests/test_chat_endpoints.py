@@ -126,44 +126,12 @@ class TestSendChatMessage:
         )
         assert resp.status_code == 422  # Validation error
 
-    @patch("handlers.api_handler._check_anonymous_chat_limit")
-    @patch("handlers.api_handler._get_remaining_anonymous_messages")
-    @patch("handlers.api_handler.get_chat_service")
-    def test_send_message_no_auth_anonymous(
-        self, mock_chat_svc, mock_remaining, mock_limit, mock_auth, client
-    ):
-        """Should allow anonymous chat without auth header."""
-        # Auth returns None for anonymous
+    def test_send_message_no_auth_returns_401(self, mock_auth, client):
+        """Anonymous chat is no longer supported — must be signed in."""
         mock_auth.return_value = MagicMock()
-        mock_limit.return_value = True
-        mock_remaining.return_value = 4
-
-        svc = MagicMock()
-        svc.chat.return_value = ChatResponse(
-            conversation_id="conv_anon",
-            response="Whistler is great!",
-            message_id="01ANON",
-        )
-        mock_chat_svc.return_value = svc
-
         resp = client.post("/api/v1/chat", json={"message": "Hello"})
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["conversation_id"] == "conv_anon"
-        assert data["remaining_messages"] == 4
-        # Verify service called with anon user ID
-        call_args = svc.chat.call_args
-        assert call_args[0][2].startswith("anon_")
-
-    @patch("handlers.api_handler._check_anonymous_chat_limit")
-    def test_send_message_anonymous_rate_limited(self, mock_limit, mock_auth, client):
-        """Should return 429 when anonymous rate limit exceeded."""
-        mock_auth.return_value = MagicMock()
-        mock_limit.return_value = False
-
-        resp = client.post("/api/v1/chat", json={"message": "Hello"})
-        assert resp.status_code == 429
-        assert "Chat limit reached" in resp.json()["detail"]
+        assert resp.status_code == 401
+        assert "Sign in" in resp.json()["detail"]
 
     @patch("handlers.api_handler.get_chat_service")
     def test_send_message_service_error(self, mock_chat_svc, mock_auth, client):
@@ -419,29 +387,11 @@ class TestAnonymousChatRateLimit:
     """Tests for anonymous IP-based chat rate limiting."""
 
     @patch("handlers.api_handler.get_auth_service")
-    @patch("handlers.api_handler._check_anonymous_chat_limit")
-    @patch("handlers.api_handler._get_remaining_anonymous_messages")
-    @patch("handlers.api_handler.get_chat_service")
-    def test_anonymous_chat_includes_remaining_messages(
-        self, mock_chat_svc, mock_remaining, mock_limit, mock_auth, client
-    ):
-        """Anonymous response should include remaining_messages field."""
+    def test_anonymous_chat_now_rejected(self, mock_auth, client):
+        """Anonymous chat removed — no token = 401, never 200."""
         mock_auth.return_value = MagicMock()
-        mock_limit.return_value = True
-        mock_remaining.return_value = 3
-
-        svc = MagicMock()
-        svc.chat.return_value = ChatResponse(
-            conversation_id="conv_1",
-            response="Great snow!",
-            message_id="01X",
-        )
-        mock_chat_svc.return_value = svc
-
         resp = client.post("/api/v1/chat", json={"message": "How is Whistler?"})
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["remaining_messages"] == 3
+        assert resp.status_code == 401
 
     @patch("handlers.api_handler._check_authenticated_chat_limit")
     @patch("handlers.api_handler.get_auth_service")
@@ -473,17 +423,12 @@ class TestAnonymousChatRateLimit:
         assert data["remaining_messages"] == 95
 
     @patch("handlers.api_handler.get_auth_service")
-    @patch("handlers.api_handler._check_anonymous_chat_limit")
-    def test_anonymous_rate_limit_returns_429(self, mock_limit, mock_auth, client):
-        """Should return 429 with helpful message when limit reached."""
+    def test_anonymous_now_returns_401_not_429(self, mock_auth, client):
+        """Anon used to get 429 when rate-limited. Now it always gets 401."""
         mock_auth.return_value = MagicMock()
-        mock_limit.return_value = False
-
         resp = client.post("/api/v1/chat", json={"message": "Hello"})
-        assert resp.status_code == 429
-        data = resp.json()
-        assert "Sign in" in data["detail"]
-        assert "try again later" in data["detail"]
+        assert resp.status_code == 401
+        assert "Sign in" in resp.json()["detail"]
 
 
 # ---------------------------------------------------------------------------
