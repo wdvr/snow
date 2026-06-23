@@ -358,12 +358,14 @@ class NotificationService:
         stays high for days and would trigger repeat alerts.
 
         Checks all 3 elevation levels and returns the maximum.
+        Returns 0 if data is stale (older than 36 hours) — stale records
+        are end-of-season leftovers that must not re-trigger alerts.
 
         Args:
             resort_id: Resort ID
 
         Returns:
-            Recent snowfall in cm (0 if not available)
+            Recent snowfall in cm (0 if not available or stale)
         """
         try:
             # Get most recent conditions (3 elevation levels)
@@ -378,6 +380,13 @@ class NotificationService:
             if not items:
                 return 0.0
 
+            # Guard: if the most recent record is older than 36h the resort
+            # is no longer being polled (off-season or poller outage). Don't
+            # alert on stale end-of-season snowfall figures.
+            cutoff = (datetime.now(UTC) - timedelta(hours=36)).isoformat()
+            if items[0].get("timestamp", "") < cutoff:
+                return 0.0
+
             # Use snowfall_24h_cm and take max across elevations
             return max(float(item.get("snowfall_24h_cm", 0.0)) for item in items)
 
@@ -388,11 +397,13 @@ class NotificationService:
     def get_current_temperature(self, resort_id: str) -> float | None:
         """Get the current temperature for a resort.
 
+        Returns None if data is stale (older than 36 hours).
+
         Args:
             resort_id: Resort ID
 
         Returns:
-            Current temperature in Celsius or None if not available
+            Current temperature in Celsius or None if not available or stale
         """
         try:
             response = self.weather_conditions_table.query(
@@ -404,6 +415,10 @@ class NotificationService:
 
             items = response.get("Items", [])
             if not items:
+                return None
+
+            cutoff = (datetime.now(UTC) - timedelta(hours=36)).isoformat()
+            if items[0].get("timestamp", "") < cutoff:
                 return None
 
             temp = items[0].get("current_temp_celsius")
@@ -772,8 +787,13 @@ class NotificationService:
             # feature spec wants alerts active only for truly in-season resorts,
             # whereas polling uses a 21-day pre-season buffer.
             resort_obj = self.get_resort(resort_id)
-            season_active = True
-            if resort_obj is not None:
+            # Fail closed: if resort data is unavailable or broken, assume
+            # out-of-season so stale end-of-season weather data cannot
+            # trigger spurious summer alerts. Event notifications (resort
+            # openings etc.) are exempt and fire year-round below.
+            if resort_obj is None:
+                season_active = False
+            else:
                 season_active = is_in_active_window(
                     resort_obj, datetime.now(UTC), pre_season_days=0
                 )
