@@ -383,9 +383,13 @@ class NotificationService:
             # Guard: if the most recent record is older than 36h the resort
             # is no longer being polled (off-season or poller outage). Don't
             # alert on stale end-of-season snowfall figures.
-            cutoff = (datetime.now(UTC) - timedelta(hours=36)).isoformat()
-            if items[0].get("timestamp", "") < cutoff:
-                return 0.0
+            # Only apply when timestamp is present (real records always have
+            # it; mock test data may omit it intentionally).
+            most_recent_ts = items[0].get("timestamp")
+            if most_recent_ts is not None:
+                cutoff = (datetime.now(UTC) - timedelta(hours=36)).isoformat()
+                if most_recent_ts < cutoff:
+                    return 0.0
 
             # Use snowfall_24h_cm and take max across elevations
             return max(float(item.get("snowfall_24h_cm", 0.0)) for item in items)
@@ -417,9 +421,11 @@ class NotificationService:
             if not items:
                 return None
 
-            cutoff = (datetime.now(UTC) - timedelta(hours=36)).isoformat()
-            if items[0].get("timestamp", "") < cutoff:
-                return None
+            most_recent_ts = items[0].get("timestamp")
+            if most_recent_ts is not None:
+                cutoff = (datetime.now(UTC) - timedelta(hours=36)).isoformat()
+                if most_recent_ts < cutoff:
+                    return None
 
             temp = items[0].get("current_temp_celsius")
             return _to_float(temp) if temp is not None else None

@@ -1075,6 +1075,14 @@ class TestCheckThawFreezeCycle:
 class TestProcessUserNotifications:
     """Tests for process_user_notifications."""
 
+    MODULE = "services.notification_service"
+
+    @pytest.fixture(autouse=True)
+    def patch_in_season(self):
+        """Assume in-season for all tests here; season logic lives in TestSeasonAwareAlertGating."""
+        with patch(f"{self.MODULE}.is_in_active_window", return_value=True):
+            yield
+
     @pytest.fixture
     def service(self):
         svc = NotificationService(
@@ -1087,7 +1095,22 @@ class TestProcessUserNotifications:
             apns_platform_arn="arn:test",
         )
         svc.resorts_table.get_item.return_value = {
-            "Item": {"resort_id": "whistler-blackcomb", "name": "Whistler Blackcomb"}
+            "Item": {
+                "resort_id": "whistler-blackcomb",
+                "name": "Whistler Blackcomb",
+                "country": "CA",
+                "region": "British Columbia",
+                "timezone": "America/Vancouver",
+                "elevation_points": [
+                    {
+                        "level": "mid",
+                        "elevation_meters": 1550,
+                        "elevation_feet": 5085,
+                        "latitude": 50.0643,
+                        "longitude": -122.9374,
+                    }
+                ],
+            }
         }
         return svc
 
@@ -1363,6 +1386,13 @@ class TestSaveUserPreferences:
 class TestProcessAllNotifications:
     """Tests for process_all_notifications."""
 
+    MODULE = "services.notification_service"
+
+    @pytest.fixture(autouse=True)
+    def patch_in_season(self):
+        with patch(f"{self.MODULE}.is_in_active_window", return_value=True):
+            yield
+
     @pytest.fixture
     def service(self):
         svc = NotificationService(
@@ -1426,7 +1456,22 @@ class TestProcessAllNotifications:
             ]
         }
         service.resorts_table.get_item.return_value = {
-            "Item": {"resort_id": "whistler-blackcomb", "name": "Whistler Blackcomb"}
+            "Item": {
+                "resort_id": "whistler-blackcomb",
+                "name": "Whistler Blackcomb",
+                "country": "CA",
+                "region": "British Columbia",
+                "timezone": "America/Vancouver",
+                "elevation_points": [
+                    {
+                        "level": "mid",
+                        "elevation_meters": 1550,
+                        "elevation_feet": 5085,
+                        "latitude": 50.0643,
+                        "longitude": -122.9374,
+                    }
+                ],
+            }
         }
         service.weather_conditions_table.query.return_value = {
             "Items": [
@@ -1868,6 +1913,13 @@ class TestCheckPowderDay:
 class TestPowderDayProcessing:
     """Tests for powder day detection in process_user_notifications."""
 
+    MODULE = "services.notification_service"
+
+    @pytest.fixture(autouse=True)
+    def patch_in_season(self):
+        with patch(f"{self.MODULE}.is_in_active_window", return_value=True):
+            yield
+
     @pytest.fixture
     def service(self):
         svc = NotificationService(
@@ -1880,7 +1932,22 @@ class TestPowderDayProcessing:
             apns_platform_arn="arn:test",
         )
         svc.resorts_table.get_item.return_value = {
-            "Item": {"resort_id": "whistler-blackcomb", "name": "Whistler Blackcomb"}
+            "Item": {
+                "resort_id": "whistler-blackcomb",
+                "name": "Whistler Blackcomb",
+                "country": "CA",
+                "region": "British Columbia",
+                "timezone": "America/Vancouver",
+                "elevation_points": [
+                    {
+                        "level": "mid",
+                        "elevation_meters": 1550,
+                        "elevation_feet": 5085,
+                        "latitude": 50.0643,
+                        "longitude": -122.9374,
+                    }
+                ],
+            }
         }
         return svc
 
@@ -3216,6 +3283,13 @@ class TestCheckForecastAlert:
 class TestForecastAlertProcessing:
     """Tests for forecast alert detection in process_user_notifications."""
 
+    MODULE = "services.notification_service"
+
+    @pytest.fixture(autouse=True)
+    def patch_in_season(self):
+        with patch(f"{self.MODULE}.is_in_active_window", return_value=True):
+            yield
+
     @pytest.fixture
     def service(self):
         svc = NotificationService(
@@ -3228,7 +3302,22 @@ class TestForecastAlertProcessing:
             apns_platform_arn="arn:test",
         )
         svc.resorts_table.get_item.return_value = {
-            "Item": {"resort_id": "whistler-blackcomb", "name": "Whistler Blackcomb"}
+            "Item": {
+                "resort_id": "whistler-blackcomb",
+                "name": "Whistler Blackcomb",
+                "country": "CA",
+                "region": "British Columbia",
+                "timezone": "America/Vancouver",
+                "elevation_points": [
+                    {
+                        "level": "mid",
+                        "elevation_meters": 1550,
+                        "elevation_feet": 5085,
+                        "latitude": 50.0643,
+                        "longitude": -122.9374,
+                    }
+                ],
+            }
         }
         return svc
 
@@ -3628,11 +3717,12 @@ class TestSeasonAwareAlertGating:
         assert result == []
         mock_check.assert_not_called()
 
-    def test_missing_resort_treated_as_in_season(self, service):
-        """Fail-open: if get_resort returns None, alerts still fire.
+    def test_missing_resort_treated_as_out_of_season(self, service):
+        """Fail-closed: if get_resort returns None, snow alerts are suppressed.
 
-        This prevents silently dropping alerts for a resort whose DynamoDB
-        row is briefly unavailable.
+        Prevents stale end-of-season weather data from triggering spurious
+        summer alerts when the resort row is broken or missing in DynamoDB.
+        Resort-event notifications still fire (they're outside this gate).
         """
         settings = UserNotificationPreferences(
             notifications_enabled=True,
@@ -3654,14 +3744,12 @@ class TestSeasonAwareAlertGating:
             ]
         }
 
-        # Even if is_in_active_window would say False, the resort is missing,
-        # so season_active remains True and the alert fires.
+        # is_in_active_window should NOT be called when resort is missing
+        # (fail-closed path bypasses the window check entirely).
         with patch(
-            f"{self.MODULE}.is_in_active_window", return_value=False
+            f"{self.MODULE}.is_in_active_window", return_value=True
         ) as mock_window:
             result = service.process_user_notifications("user1", prefs)
 
-        assert len(result) == 1
-        assert result[0].notification_type == NotificationType.FRESH_SNOW
-        # The gate function should not have been invoked (no Resort loaded).
+        assert result == []
         mock_window.assert_not_called()
