@@ -198,7 +198,8 @@ class TestStaticJsonGenerator:
             website_bucket="test-bucket",
         )
 
-        generator._generate_snow_quality_json()
+        with patch("services.static_json_generator.is_in_active_window", return_value=True):
+            generator._generate_snow_quality_json()
 
         # Verify S3 upload was called
         assert mock_s3.put_object.called
@@ -302,7 +303,8 @@ class TestStaticJsonGenerator:
             website_bucket="test-bucket",
         )
 
-        generator._generate_snow_quality_json()
+        with patch("services.static_json_generator.is_in_active_window", return_value=True):
+            generator._generate_snow_quality_json()
 
         # Check the uploaded JSON content
         call_args = mock_s3.put_object.call_args

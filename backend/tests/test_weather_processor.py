@@ -634,6 +634,7 @@ class TestWeatherProcessorHandler:
 
         with (
             patch(f"{self.MODULE}.PARALLEL_PROCESSING", False),
+            patch(f"{self.MODULE}.is_in_active_window", return_value=True),
             patch(f"{self.MODULE}.ENABLE_STATIC_JSON", False),
             patch(f"{self.MODULE}.ENABLE_SCRAPING", False),
             patch(f"{self.MODULE}.dynamodb") as mock_ddb,
@@ -702,6 +703,7 @@ class TestWeatherProcessorHandler:
 
         with (
             patch(f"{self.MODULE}.PARALLEL_PROCESSING", False),
+            patch(f"{self.MODULE}.is_in_active_window", return_value=True),
             patch(f"{self.MODULE}.ENABLE_STATIC_JSON", False),
             patch(f"{self.MODULE}.ENABLE_SCRAPING", False),
             patch(f"{self.MODULE}.dynamodb") as mock_ddb,
@@ -781,6 +783,7 @@ class TestWeatherProcessorHandler:
 
         with (
             patch(f"{self.MODULE}.PARALLEL_PROCESSING", False),
+            patch(f"{self.MODULE}.is_in_active_window", return_value=True),
             patch(f"{self.MODULE}.ENABLE_STATIC_JSON", False),
             patch(f"{self.MODULE}.ENABLE_SCRAPING", True),
             patch(f"{self.MODULE}.dynamodb"),
@@ -824,6 +827,7 @@ class TestWeatherProcessorHandler:
 
         with (
             patch(f"{self.MODULE}.PARALLEL_PROCESSING", False),
+            patch(f"{self.MODULE}.is_in_active_window", return_value=True),
             patch(f"{self.MODULE}.ENABLE_STATIC_JSON", False),
             patch(f"{self.MODULE}.ENABLE_SCRAPING", True),
             patch(f"{self.MODULE}.dynamodb"),
@@ -864,6 +868,7 @@ class TestWeatherProcessorHandler:
 
         with (
             patch(f"{self.MODULE}.PARALLEL_PROCESSING", False),
+            patch(f"{self.MODULE}.is_in_active_window", return_value=True),
             patch(f"{self.MODULE}.ENABLE_STATIC_JSON", False),
             patch(f"{self.MODULE}.ENABLE_SCRAPING", False),
             patch(f"{self.MODULE}.dynamodb"),
@@ -900,6 +905,7 @@ class TestWeatherProcessorHandler:
 
         with (
             patch(f"{self.MODULE}.PARALLEL_PROCESSING", False),
+            patch(f"{self.MODULE}.is_in_active_window", return_value=True),
             patch(f"{self.MODULE}.ENABLE_STATIC_JSON", False),
             patch(f"{self.MODULE}.ENABLE_SCRAPING", False),
             patch(f"{self.MODULE}.dynamodb"),
@@ -977,6 +983,7 @@ class TestOrchestrateParallelProcessing:
             patch(f"{self.MODULE}.dynamodb") as mock_ddb,
             patch(f"{self.MODULE}.ResortService") as mock_rs_cls,
             patch(f"{self.MODULE}.lambda_client") as mock_lc,
+            patch(f"{self.MODULE}.is_in_active_window", return_value=True),
         ):
             mock_rs_cls.return_value.get_all_resorts.return_value = [resort]
             mock_lc.invoke.return_value = {"StatusCode": 202}
@@ -1004,6 +1011,7 @@ class TestOrchestrateParallelProcessing:
             patch(f"{self.MODULE}.dynamodb"),
             patch(f"{self.MODULE}.ResortService") as mock_rs_cls,
             patch(f"{self.MODULE}.lambda_client") as mock_lc,
+            patch(f"{self.MODULE}.is_in_active_window", return_value=True),
         ):
             mock_rs_cls.return_value.get_all_resorts.return_value = resorts
             mock_lc.invoke.return_value = {"StatusCode": 202}
@@ -1024,6 +1032,7 @@ class TestOrchestrateParallelProcessing:
             patch(f"{self.MODULE}.dynamodb"),
             patch(f"{self.MODULE}.ResortService") as mock_rs_cls,
             patch(f"{self.MODULE}.lambda_client") as mock_lc,
+            patch(f"{self.MODULE}.is_in_active_window", return_value=True),
         ):
             mock_rs_cls.return_value.get_all_resorts.return_value = [resort]
             mock_lc.invoke.side_effect = RuntimeError("Lambda throttled")
@@ -1057,6 +1066,7 @@ class TestOrchestrateParallelProcessing:
             patch(f"{self.MODULE}.dynamodb"),
             patch(f"{self.MODULE}.ResortService") as mock_rs_cls,
             patch(f"{self.MODULE}.lambda_client") as mock_lc,
+            patch(f"{self.MODULE}.is_in_active_window", return_value=True),
         ):
             mock_rs_cls.return_value.get_all_resorts.return_value = resorts
             mock_lc.invoke.side_effect = invoke_side_effect
@@ -1091,6 +1101,7 @@ class TestOrchestrateParallelProcessing:
             patch(f"{self.MODULE}.dynamodb"),
             patch(f"{self.MODULE}.ResortService") as mock_rs_cls,
             patch(f"{self.MODULE}.lambda_client") as mock_lc,
+            patch(f"{self.MODULE}.is_in_active_window", return_value=True),
         ):
             mock_rs_cls.return_value.get_all_resorts.return_value = [resort]
             mock_lc.invoke.return_value = {"StatusCode": 202}
@@ -1109,6 +1120,7 @@ class TestOrchestrateParallelProcessing:
             patch(f"{self.MODULE}.dynamodb"),
             patch(f"{self.MODULE}.ResortService") as mock_rs_cls,
             patch(f"{self.MODULE}.lambda_client") as mock_lc,
+            patch(f"{self.MODULE}.is_in_active_window", return_value=True),
         ):
             mock_rs_cls.return_value.get_all_resorts.return_value = [resort]
             mock_lc.invoke.return_value = {"StatusCode": 500}
@@ -1264,6 +1276,7 @@ class TestProcessorRawDataCollection:
             patch(f"{MODULE}.ENABLE_STATIC_JSON", False),
             patch(f"{MODULE}.WEBSITE_BUCKET", "test-bucket"),
             patch(f"{MODULE}.ENVIRONMENT", "prod"),
+            patch(f"{MODULE}.is_in_active_window", return_value=True),
             patch(f"{MODULE}.process_elevation_point") as mock_pep,
             patch(f"{MODULE}._archive_raw_data_to_s3") as mock_archive,
         ):

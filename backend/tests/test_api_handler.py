@@ -1282,41 +1282,16 @@ class TestFeedback:
 class TestAuthEndpoints:
     """Tests for auth endpoints."""
 
-    @patch("handlers.api_handler.get_auth_service")
-    def test_guest_auth_success(self, mock_auth_svc, client):
-        user = MagicMock()
-        user.to_dict.return_value = {"user_id": "guest_123", "is_guest": True}
-        user.is_new_user = True
-        user.user_id = "guest_123"
-
-        auth = MagicMock()
-        auth.create_guest_session.return_value = user
-        auth.create_session_tokens.return_value = {
-            "access_token": "at",
-            "refresh_token": "rt",
-            "token_type": "Bearer",
-            "expires_in": 604800,
-        }
-        mock_auth_svc.return_value = auth
-
+    def test_guest_auth_returns_410(self, client):
+        """Guest sign-in is disabled — endpoint now returns 410 Gone."""
         resp = client.post("/api/v1/auth/guest", json={"device_id": "dev-123"})
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "user" in data
-        assert "access_token" in data
-        assert "refresh_token" in data
-        assert "is_new_user" in data
+        assert resp.status_code == 410
+        assert "Apple or Google" in resp.json()["detail"]
 
-    @patch("handlers.api_handler.get_auth_service")
-    def test_guest_auth_error(self, mock_auth_svc, client):
-        from services.auth_service import AuthenticationError
-
-        auth = MagicMock()
-        auth.create_guest_session.side_effect = AuthenticationError("fail")
-        mock_auth_svc.return_value = auth
-
-        resp = client.post("/api/v1/auth/guest", json={"device_id": "dev-123"})
-        assert resp.status_code == 401
+    def test_guest_auth_returns_410_even_on_bad_input(self, client):
+        """410 fires regardless of payload — auth service is never invoked."""
+        resp = client.post("/api/v1/auth/guest", json={"device_id": ""})
+        assert resp.status_code == 410
 
     @patch("handlers.api_handler.get_auth_service")
     def test_refresh_token_success(self, mock_auth_svc, client):
