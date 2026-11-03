@@ -2758,6 +2758,7 @@ async def submit_feedback(submission: FeedbackSubmission):
             build_number=submission.build_number,
             device_model=submission.device_model,
             ios_version=submission.ios_version,
+            os_version=submission.os_version,
             status="new",
             created_at=datetime.now(UTC).isoformat(),
         )

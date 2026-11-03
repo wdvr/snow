@@ -1288,6 +1288,26 @@ class TestFeedback:
         assert data["status"] == "received"
         assert "id" in data
 
+    @patch("handlers.api_handler.get_feedback_table")
+    def test_submit_feedback_android_os_version_stored(self, mock_table, client):
+        """Android sends os_version (not ios_version); it must not be dropped."""
+        table = MagicMock()
+        mock_table.return_value = table
+
+        payload = {
+            "subject": "Resort Edit: Jasna - Elevation data",
+            "message": "[Resort Edit Suggestion]\nTop elevation is 2024 m.",
+            "app_version": "1.1.0",
+            "build_number": "2",
+            "device_model": "Pixel 9",
+            "os_version": "15",
+        }
+        resp = client.post("/api/v1/feedback", json=payload)
+        assert resp.status_code == 200
+        item = table.put_item.call_args.kwargs["Item"]
+        assert item["os_version"] == "15"
+        assert item["ios_version"] is None
+
     def test_submit_feedback_missing_required_fields(self, client):
         resp = client.post("/api/v1/feedback", json={"subject": "Hi"})
         assert resp.status_code == 422

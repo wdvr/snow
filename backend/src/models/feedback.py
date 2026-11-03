@@ -15,6 +15,8 @@ class FeedbackSubmission(BaseModel):
     build_number: str = Field(..., min_length=1, max_length=20)
     device_model: str | None = Field(None, max_length=50)
     ios_version: str | None = Field(None, max_length=20)
+    # Android (and future clients) send a platform-neutral OS version
+    os_version: str | None = Field(None, max_length=20)
 
 
 class Feedback(BaseModel):
@@ -29,5 +31,6 @@ class Feedback(BaseModel):
     build_number: str
     device_model: str | None = None
     ios_version: str | None = None
+    os_version: str | None = None
     status: str = "new"  # new, reviewed, resolved, archived
     created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
