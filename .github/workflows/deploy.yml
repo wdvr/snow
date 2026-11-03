@@ -475,7 +475,12 @@ jobs:
 
         if [ -n "$WEBSITE_BUCKET" ]; then
           echo "Deploying website to S3 bucket: $WEBSITE_BUCKET"
-          aws s3 sync ../website/dist/ "s3://$WEBSITE_BUCKET/" --delete
+          # The bucket also holds backend-generated files (data/*.json, precached
+          # data/pistes/*, raw-data/*). Exclude them so --delete only prunes old
+          # website assets.
+          aws s3 sync ../website/dist/ "s3://$WEBSITE_BUCKET/" --delete \
+            --exclude "data/*" \
+            --exclude "raw-data/*"
 
           if [ -n "$CLOUDFRONT_ID" ]; then
             echo "Invalidating CloudFront cache: $CLOUDFRONT_ID"
