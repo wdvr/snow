@@ -37,6 +37,7 @@ from models.trip import Trip, TripCreate, TripStatus, TripUpdate
 from models.user import UserPreferences
 from models.weather import SNOW_QUALITY_EXPLANATIONS, SnowQuality, TimelineResponse
 from services.auth_service import AuthenticationError, AuthProvider, AuthService
+from services.chat_rate_limit import AUTH_CHAT_DAILY_LIMIT, check_user_daily_limit
 from services.condition_report_service import ConditionReportService
 from services.daily_history_service import DailyHistoryService
 from services.ml_scorer import raw_score_to_quality
@@ -506,7 +507,6 @@ async def get_optional_user_id(
 
 ANON_CHAT_LIMIT = 5
 ANON_CHAT_WINDOW_HOURS = 6
-AUTH_CHAT_DAILY_LIMIT = 100  # Authenticated users: 100 messages per day
 
 
 def _get_client_ip(request: Request) -> str:
@@ -582,43 +582,7 @@ def _check_authenticated_chat_limit(user_id: str) -> tuple[bool, int]:
 
     try:
         table = get_dynamodb().Table(table_name)
-
-        now = int(time.time())
-        # 24-hour sliding window
-        window_start = now - (24 * 3600)
-        expires_at = now + (24 * 3600)
-
-        key = f"user_{user_id}"
-        response = table.get_item(Key={"ip_address": key})
-        item = response.get("Item")
-
-        if item:
-            timestamps = item.get("timestamps", [])
-            recent = [t for t in timestamps if t > window_start]
-
-            if len(recent) >= AUTH_CHAT_DAILY_LIMIT:
-                return False, 0
-
-            recent.append(now)
-            table.put_item(
-                Item={
-                    "ip_address": key,
-                    "timestamps": recent,
-                    "message_count": len(recent),
-                    "expires_at": expires_at,
-                }
-            )
-            return True, max(0, AUTH_CHAT_DAILY_LIMIT - len(recent))
-        else:
-            table.put_item(
-                Item={
-                    "ip_address": key,
-                    "timestamps": [now],
-                    "message_count": 1,
-                    "expires_at": expires_at,
-                }
-            )
-            return True, AUTH_CHAT_DAILY_LIMIT - 1
+        return check_user_daily_limit(table, user_id)
     except Exception as e:
         logger.error("Auth rate limit check failed for %s: %s", user_id, e)
         return True, AUTH_CHAT_DAILY_LIMIT

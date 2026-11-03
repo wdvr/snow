@@ -28,6 +28,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from ulid import ULID
 
+from services.chat_rate_limit import AUTH_CHAT_DAILY_LIMIT, check_user_daily_limit
 from services.chat_service import RESORT_ALIASES, SYSTEM_PROMPT, TOOL_DEFINITIONS
 from utils.geo_utils import haversine_distance
 
@@ -74,12 +75,37 @@ def _validate_jwt(token: str) -> str | None:
         return None
     try:
         payload = jose_jwt.decode(token, jwt_secret, algorithms=["HS256"])
+        if payload.get("type") != "access":
+            logger.warning("JWT rejected: not an access token")
+            return None
         user_id = payload.get("sub")
         logger.info("JWT validated, user_id=%s", user_id)
         return user_id
     except Exception as e:
         logger.warning("JWT validation failed: %s", e)
         return None
+
+
+def _sse_error_response(message: str, status_code: int) -> StreamingResponse:
+    return StreamingResponse(
+        iter([_sse({"type": "error", "message": message})]),
+        media_type="text/event-stream",
+        status_code=status_code,
+    )
+
+
+def _check_daily_limit(user_id: str) -> tuple[bool, int]:
+    """Per-user daily limit shared with POST /api/v1/chat. Fails open."""
+    table_name = os.environ.get("CHAT_RATE_LIMIT_TABLE_NAME")
+    if not table_name:
+        logger.warning("CHAT_RATE_LIMIT_TABLE_NAME not configured, skipping limit")
+        return True, AUTH_CHAT_DAILY_LIMIT
+    try:
+        table = _get_dynamodb().Table(table_name)
+        return check_user_daily_limit(table, user_id)
+    except Exception as e:
+        logger.error("Chat rate limit check failed for %s: %s", user_id, e)
+        return True, AUTH_CHAT_DAILY_LIMIT
 
 
 @app.get("/")
@@ -110,20 +136,27 @@ async def chat_stream(request: Request):
             media_type="text/event-stream",
         )
 
-    # Auth
+    # Auth: signed-in users only, same as POST /api/v1/chat. The Function URL
+    # is public, so without this anyone could drive unlimited Bedrock calls.
     auth_header = request.headers.get("authorization", "")
     user_id = None
     if auth_header.startswith("Bearer "):
         user_id = _validate_jwt(auth_header[7:])
     if not user_id:
-        user_id = f"anon_{request.client.host if request.client else 'unknown'}"
         logger.info(
-            "Using anonymous user_id=%s (auth_header present: %s)",
-            user_id,
+            "Rejected unauthenticated chat stream (auth_header present: %s)",
             bool(auth_header),
         )
-    else:
-        logger.info("Authenticated user_id=%s", user_id)
+        return _sse_error_response(
+            "Sign in with Apple or Google to use chat.", status_code=401
+        )
+    logger.info("Authenticated user_id=%s", user_id)
+
+    allowed, _remaining = _check_daily_limit(user_id)
+    if not allowed:
+        return _sse_error_response(
+            "Daily chat limit reached. Try again tomorrow.", status_code=429
+        )
 
     # Use a thread-safe queue for the generator to yield from
     q: queue.Queue[str | object] = queue.Queue()

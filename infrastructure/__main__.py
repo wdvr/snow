@@ -1407,8 +1407,12 @@ chat_stream_lambda = aws.lambda_.Function(
         variables={
             "ENVIRONMENT": environment,
             "CHAT_TABLE_NAME": f"{app_name}-chat-{environment}",
+            # Shared per-user daily limit with POST /api/v1/chat
+            "CHAT_RATE_LIMIT_TABLE_NAME": chat_rate_limit_table.name,
             "RESULTS_BUCKET": "snow-tracker-pulumi-state-us-west-2",
             "AWS_REGION_NAME": aws_region,
+            # The stream rejects requests without a valid access token
+            "JWT_SECRET_KEY": config.get_secret("jwtSecretKey") or "",
             "AWS_LAMBDA_EXEC_WRAPPER": "/opt/bootstrap",
             "AWS_LWA_INVOKE_MODE": "response_stream",
             "AWS_LWA_PORT": "8080",
