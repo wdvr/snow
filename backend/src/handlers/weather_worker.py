@@ -23,6 +23,7 @@ from services.onthesnow_scraper import OnTheSnowScraper
 from services.openmeteo_service import OpenMeteoService
 from services.snow_quality_service import SnowQualityService
 from services.snow_summary_service import SnowSummaryService
+from services.snowforecast_scraper import fresh_cache_entries
 from utils.dynamodb_utils import prepare_for_dynamodb
 
 # Configure logging
@@ -113,8 +114,13 @@ def _load_snowforecast_cache() -> dict[str, Any]:
             Bucket=WEBSITE_BUCKET, Key="data/snowforecast-cache.json"
         )
         data = json.loads(response["Body"].read().decode("utf-8"))
-        # Cache file wraps resort data under "resorts" key
-        return data.get("resorts", data) if isinstance(data, dict) else {}
+        fresh = fresh_cache_entries(data)
+        total = len(data.get("resorts", {})) if isinstance(data, dict) else 0
+        if total and len(fresh) < total:
+            logger.info(
+                f"Snow-Forecast cache: using {len(fresh)}/{total} fresh entries"
+            )
+        return fresh
     except Exception as e:
         logger.warning(f"Failed to load Snow-Forecast cache from S3: {e}")
         return {}

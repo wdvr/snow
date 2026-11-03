@@ -9,7 +9,9 @@ import json
 import logging
 import re
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup
@@ -18,8 +20,13 @@ from models.weather import ConfidenceLevel
 
 logger = logging.getLogger(__name__)
 
-# Path to override slugs file
-SLUGS_FILE = Path(__file__).parent.parent.parent / "data" / "snowforecast_slugs.json"
+# Snow-Forecast cache entries older than this are not used for scoring.
+# The prefetch Lambda runs every 6h and rotates through all resorts.
+CACHE_MAX_AGE_HOURS = 24
+
+# Path to override slugs file. Lives inside src/ so it ships in the Lambda zip
+# (deploy packages src/* only; backend/data/ is not deployed).
+SLUGS_FILE = Path(__file__).parent / "snowforecast_slugs.json"
 
 
 @dataclass
@@ -64,6 +71,8 @@ class SnowForecastScraper:
                 logger.debug(
                     f"Loaded {len(self._slug_overrides)} Snow-Forecast slug overrides"
                 )
+            else:
+                logger.warning(f"Snow-Forecast slug overrides not found: {SLUGS_FILE}")
         except (json.JSONDecodeError, OSError) as e:
             logger.warning(f"Failed to load Snow-Forecast slug overrides: {e}")
             self._slug_overrides = {}
@@ -194,3 +203,42 @@ class SnowForecastScraper:
         fetch the page (404 = not supported).
         """
         return True
+
+
+def _parse_timestamp(value: Any) -> datetime | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        ts = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return ts if ts.tzinfo else ts.replace(tzinfo=UTC)
+
+
+def fresh_cache_entries(
+    cache_data: Any,
+    now: datetime | None = None,
+    max_age_hours: float = CACHE_MAX_AGE_HOURS,
+) -> dict[str, dict[str, Any]]:
+    """Return resort entries from the S3 cache file that are still fresh.
+
+    Each entry's ``fetched_at`` is used when present; older cache files only
+    have a file-level ``generated_at``. Entries with no usable timestamp are
+    dropped, since stale "24h snowfall" numbers would skew scoring.
+    """
+    if not isinstance(cache_data, dict):
+        return {}
+    resorts = cache_data.get("resorts")
+    if not isinstance(resorts, dict):
+        return {}
+
+    cutoff = (now or datetime.now(UTC)) - timedelta(hours=max_age_hours)
+    file_ts = _parse_timestamp(cache_data.get("generated_at"))
+    fresh = {}
+    for resort_id, entry in resorts.items():
+        if not isinstance(entry, dict):
+            continue
+        ts = _parse_timestamp(entry.get("fetched_at")) or file_ts
+        if ts is not None and ts >= cutoff:
+            fresh[resort_id] = entry
+    return fresh

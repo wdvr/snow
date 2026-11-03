@@ -6,6 +6,11 @@ weather processing, which would be too slow and risk rate limiting.
 
 Lambda config: 512MB memory, 900s timeout.
 Runs on a schedule (e.g., every 6 hours).
+
+One run cannot scrape ~1,000 resorts within the timeout, so each run starts
+from the previous cache, scrapes the least recently attempted resorts first,
+and keeps earlier entries until they are older than CACHE_MAX_AGE_HOURS.
+Over consecutive runs every resort gets a turn.
 """
 
 import json
@@ -19,7 +24,7 @@ import boto3
 from botocore.config import Config as BotoConfig
 
 from services.resort_service import ResortService
-from services.snowforecast_scraper import SnowForecastScraper
+from services.snowforecast_scraper import SnowForecastScraper, fresh_cache_entries
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -49,6 +54,22 @@ def get_remaining_time_ms(context) -> int:
     if context and hasattr(context, "get_remaining_time_in_millis"):
         return context.get_remaining_time_in_millis()
     return 600000  # Default 10 minutes if no context
+
+
+def _load_previous_cache() -> dict[str, Any]:
+    """Load the existing cache file from S3. Returns {} if missing/unreadable."""
+    try:
+        response = s3_client.get_object(Bucket=WEBSITE_BUCKET, Key=CACHE_S3_KEY)
+        data = json.loads(response["Body"].read().decode("utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception as e:
+        logger.info(f"No previous Snow-Forecast cache loaded: {e}")
+        return {}
+
+
+def _order_by_last_attempt(resorts: list, last_attempted: dict[str, str]) -> list:
+    """Never-attempted resorts first, then oldest attempt first."""
+    return sorted(resorts, key=lambda r: last_attempted.get(r.resort_id, ""))
 
 
 def snowforecast_prefetch_handler(event: dict[str, Any], context) -> dict[str, Any]:
@@ -93,11 +114,16 @@ def snowforecast_prefetch_handler(event: dict[str, Any], context) -> dict[str, A
                 ),
             }
 
+        # Start from the previous cache so a partial run doesn't wipe data
+        previous = _load_previous_cache()
+        cache: dict[str, dict[str, Any]] = fresh_cache_entries(previous)
+        last_attempted: dict[str, str] = dict(previous.get("last_attempted") or {})
+        stats["carried_over"] = len(cache)
+
         # Scrape each resort sequentially with delay
         scraper = SnowForecastScraper()
-        cache: dict[str, dict[str, Any]] = {}
 
-        for resort in resorts:
+        for resort in _order_by_last_attempt(resorts, last_attempted):
             # Check remaining time before each request
             remaining_ms = get_remaining_time_ms(context)
             if remaining_ms < MIN_TIME_BUFFER_MS:
@@ -109,6 +135,8 @@ def snowforecast_prefetch_handler(event: dict[str, Any], context) -> dict[str, A
                 break
 
             resort_id = resort.resort_id
+            attempted_at = datetime.now(UTC).isoformat()
+            last_attempted[resort_id] = attempted_at
 
             try:
                 data = scraper.get_snow_report(resort_id)
@@ -122,6 +150,7 @@ def snowforecast_prefetch_handler(event: dict[str, Any], context) -> dict[str, A
                         "lower_depth_cm": data.lower_depth_cm,
                         "surface_conditions": data.surface_conditions,
                         "source_url": data.source_url,
+                        "fetched_at": attempted_at,
                     }
                     stats["hits"] += 1
                 else:
@@ -137,11 +166,17 @@ def snowforecast_prefetch_handler(event: dict[str, Any], context) -> dict[str, A
             time.sleep(REQUEST_DELAY_SECONDS)
 
         # Write cache to S3
+        # Drop bookkeeping for resorts that no longer exist
+        known_ids = {r.resort_id for r in resorts}
         cache_data = {
             "generated_at": datetime.now(UTC).isoformat(),
             "resort_count": len(cache),
-            "resorts": cache,
+            "resorts": {k: v for k, v in cache.items() if k in known_ids},
+            "last_attempted": {
+                k: v for k, v in last_attempted.items() if k in known_ids
+            },
         }
+        cache_data["resort_count"] = len(cache_data["resorts"])
 
         s3_client.put_object(
             Bucket=WEBSITE_BUCKET,
@@ -151,7 +186,8 @@ def snowforecast_prefetch_handler(event: dict[str, Any], context) -> dict[str, A
         )
 
         logger.info(
-            f"Wrote {len(cache)} resort records to s3://{WEBSITE_BUCKET}/{CACHE_S3_KEY}"
+            f"Wrote {cache_data['resort_count']} resort records to "
+            f"s3://{WEBSITE_BUCKET}/{CACHE_S3_KEY}"
         )
 
         # Finalize stats

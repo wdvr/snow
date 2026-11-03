@@ -1,6 +1,7 @@
 """Tests for the Snow-Forecast.com scraper."""
 
 import json
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -10,6 +11,7 @@ from services.snowforecast_scraper import (
     SLUGS_FILE,
     SnowForecastData,
     SnowForecastScraper,
+    fresh_cache_entries,
 )
 
 
@@ -57,6 +59,16 @@ class TestSlugGeneration:
 
 class TestSlugOverridesLoading:
     """Tests for loading slug overrides from file."""
+
+    def test_slugs_file_ships_with_lambda_package(self):
+        """Deploy zips backend/src/* only, so the file must live under src/."""
+        from pathlib import Path
+
+        src_dir = Path(__file__).parent.parent / "src"
+        assert SLUGS_FILE.exists()
+        assert src_dir.resolve() in SLUGS_FILE.resolve().parents
+        overrides = json.loads(SLUGS_FILE.read_text())
+        assert overrides["st-anton"] == "St-Anton-am-Arlberg"
 
     def test_loads_overrides_from_file(self):
         """Slug overrides file should be loaded on init."""
@@ -351,3 +363,32 @@ class TestDataclass:
         assert data.resort_id == "test"
         assert data.snowfall_24h_cm is None
         assert data.upper_depth_cm is None
+
+
+class TestFreshCacheEntries:
+    """Tests for the age filter applied when reading the S3 cache."""
+
+    NOW = datetime(2026, 11, 3, 12, 0, tzinfo=UTC)
+
+    def test_per_entry_timestamps(self):
+        data = {
+            "generated_at": "2026-11-03T11:00:00+00:00",
+            "resorts": {
+                "fresh": {"fetched_at": "2026-11-03T06:00:00+00:00"},
+                "stale": {"fetched_at": "2026-11-01T06:00:00+00:00"},
+            },
+        }
+        assert set(fresh_cache_entries(data, now=self.NOW)) == {"fresh"}
+
+    def test_legacy_file_uses_generated_at(self):
+        entries = {"a": {"snowfall_24h_cm": 3.0}}
+        recent = {"generated_at": "2026-11-03T10:00:00+00:00", "resorts": entries}
+        old = {"generated_at": "2026-10-20T10:00:00+00:00", "resorts": entries}
+        assert fresh_cache_entries(recent, now=self.NOW) == entries
+        assert fresh_cache_entries(old, now=self.NOW) == {}
+
+    @pytest.mark.parametrize(
+        "data", [None, [], {}, {"resorts": []}, {"resorts": {"a": {}}}]
+    )
+    def test_malformed_or_untimestamped_is_empty(self, data):
+        assert fresh_cache_entries(data, now=self.NOW) == {}

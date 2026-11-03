@@ -449,3 +449,125 @@ class TestPrefetchCacheContent:
         assert "ok" in cache_data["resorts"]
         assert "fail" not in cache_data["resorts"]
         assert "miss" not in cache_data["resorts"]
+
+
+# ---------------------------------------------------------------------------
+# Tests for carry-over and rotation across runs
+# ---------------------------------------------------------------------------
+
+
+def _s3_body(payload: dict) -> dict:
+    body = MagicMock()
+    body.read.return_value = json.dumps(payload).encode("utf-8")
+    return {"Body": body}
+
+
+@patch("handlers.snowforecast_prefetch.time.sleep")
+@patch("handlers.snowforecast_prefetch.s3_client")
+@patch("handlers.snowforecast_prefetch.SnowForecastScraper")
+@patch("handlers.snowforecast_prefetch.ResortService")
+@patch("handlers.snowforecast_prefetch.dynamodb")
+class TestPrefetchCarryOverAndRotation:
+    def test_partial_run_keeps_previous_fresh_entries(
+        self, mock_dynamodb, mock_rs_cls, mock_scraper_cls, mock_s3, mock_sleep
+    ):
+        """A run cut short by the timeout must not wipe earlier results."""
+        now = datetime.now(UTC).isoformat()
+        mock_rs_cls.return_value.get_all_resorts.return_value = [
+            _make_resort("a"),
+            _make_resort("b"),
+        ]
+        mock_s3.get_object.return_value = _s3_body(
+            {
+                "generated_at": now,
+                "resorts": {"b": {"snowfall_24h_cm": 7.0, "fetched_at": now}},
+                "last_attempted": {"b": now},
+            }
+        )
+        mock_scraper_cls.return_value.get_snow_report.return_value = (
+            _make_snow_forecast_data("a")
+        )
+        # Only enough time for one request
+        context = Mock()
+        context.get_remaining_time_in_millis.side_effect = [
+            600000,
+            MIN_TIME_BUFFER_MS - 1,
+        ]
+
+        snowforecast_prefetch_handler({}, context)
+
+        # "a" was never attempted, so it goes first; "b" is carried over
+        mock_scraper_cls.return_value.get_snow_report.assert_called_once_with("a")
+        cache = json.loads(mock_s3.put_object.call_args.kwargs["Body"])
+        assert set(cache["resorts"]) == {"a", "b"}
+        assert cache["resorts"]["b"]["snowfall_24h_cm"] == 7.0
+        assert "fetched_at" in cache["resorts"]["a"]
+        assert set(cache["last_attempted"]) == {"a", "b"}
+        assert cache["resort_count"] == 2
+
+    def test_least_recently_attempted_first(
+        self, mock_dynamodb, mock_rs_cls, mock_scraper_cls, mock_s3, mock_sleep
+    ):
+        mock_rs_cls.return_value.get_all_resorts.return_value = [
+            _make_resort("new-1"),
+            _make_resort("old"),
+            _make_resort("newer"),
+        ]
+        mock_s3.get_object.return_value = _s3_body(
+            {
+                "resorts": {},
+                "last_attempted": {
+                    "old": "2026-11-01T00:00:00+00:00",
+                    "newer": "2026-11-02T00:00:00+00:00",
+                },
+            }
+        )
+        mock_scraper_cls.return_value.get_snow_report.return_value = None
+
+        snowforecast_prefetch_handler({}, _make_context())
+
+        order = [
+            c.args[0]
+            for c in mock_scraper_cls.return_value.get_snow_report.call_args_list
+        ]
+        assert order == ["new-1", "old", "newer"]
+
+    def test_stale_and_removed_entries_dropped(
+        self, mock_dynamodb, mock_rs_cls, mock_scraper_cls, mock_s3, mock_sleep
+    ):
+        now = datetime.now(UTC).isoformat()
+        mock_rs_cls.return_value.get_all_resorts.return_value = [
+            _make_resort("stale"),
+            _make_resort("fresh"),
+        ]
+        mock_s3.get_object.return_value = _s3_body(
+            {
+                "resorts": {
+                    "stale": {"fetched_at": "2020-01-01T00:00:00+00:00"},
+                    "fresh": {"fetched_at": now},
+                    "deleted-resort": {"fetched_at": now},
+                },
+                "last_attempted": {"stale": now, "fresh": now, "deleted-resort": now},
+            }
+        )
+        # Out of time immediately: nothing scraped, only carry-over
+        snowforecast_prefetch_handler({}, _make_context(MIN_TIME_BUFFER_MS - 1))
+
+        cache = json.loads(mock_s3.put_object.call_args.kwargs["Body"])
+        assert set(cache["resorts"]) == {"fresh"}
+        assert "deleted-resort" not in cache["last_attempted"]
+
+    def test_unreadable_previous_cache_starts_fresh(
+        self, mock_dynamodb, mock_rs_cls, mock_scraper_cls, mock_s3, mock_sleep
+    ):
+        mock_rs_cls.return_value.get_all_resorts.return_value = [_make_resort("a")]
+        mock_s3.get_object.side_effect = Exception("NoSuchKey")
+        mock_scraper_cls.return_value.get_snow_report.return_value = (
+            _make_snow_forecast_data("a")
+        )
+
+        result = snowforecast_prefetch_handler({}, _make_context())
+
+        assert result["statusCode"] == 200
+        cache = json.loads(mock_s3.put_object.call_args.kwargs["Body"])
+        assert set(cache["resorts"]) == {"a"}

@@ -2061,3 +2061,35 @@ class TestWorkerRawDataCollection:
 
             # Handler should still return 200
             assert result["statusCode"] == 200
+
+
+class TestLoadSnowForecastCache:
+    """The worker must ignore stale Snow-Forecast cache entries."""
+
+    def test_only_fresh_entries_returned(self):
+        from handlers import weather_worker
+
+        now = datetime.now(UTC).isoformat()
+        payload = {
+            "generated_at": now,
+            "resorts": {
+                "fresh": {"snowfall_24h_cm": 5.0, "fetched_at": now},
+                "stale": {"snowfall_24h_cm": 40.0, "fetched_at": "2020-01-01T00:00:00"},
+            },
+        }
+        body = MagicMock()
+        body.read.return_value = json.dumps(payload).encode("utf-8")
+        with (
+            patch.object(weather_worker, "ENABLE_SNOWFORECAST", True),
+            patch.object(weather_worker, "WEBSITE_BUCKET", "bucket"),
+            patch.object(weather_worker, "s3_client") as s3,
+        ):
+            s3.get_object.return_value = {"Body": body}
+            cache = weather_worker._load_snowforecast_cache()
+        assert set(cache) == {"fresh"}
+
+    def test_disabled_returns_empty(self):
+        from handlers import weather_worker
+
+        with patch.object(weather_worker, "ENABLE_SNOWFORECAST", False):
+            assert weather_worker._load_snowforecast_cache() == {}
