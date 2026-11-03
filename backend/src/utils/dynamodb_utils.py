@@ -4,8 +4,12 @@ DynamoDB stores numbers as Decimal types, but Python/Pydantic models use float/i
 This module provides utilities for converting between the two formats.
 """
 
+import logging
+import time
 from decimal import Decimal
 from typing import Any, Dict, List, Union
+
+logger = logging.getLogger(__name__)
 
 
 def decimal_to_python(obj: Any) -> Any:
@@ -109,3 +113,39 @@ def parse_items_from_dynamodb(items: list[dict[str, Any]]) -> list[dict[str, Any
         List of dictionaries with all Decimal values converted
     """
     return [parse_from_dynamodb(item) for item in items]
+
+
+def batch_get_all(
+    client,
+    table_name: str,
+    keys: list[dict[str, Any]],
+    max_retries: int = 5,
+    base_delay: float = 0.1,
+    **request_options: Any,
+) -> list[dict[str, Any]]:
+    """batch_get_item that retries UnprocessedKeys with exponential backoff.
+
+    DynamoDB may return part of a batch as UnprocessedKeys when throttled;
+    ignoring them silently drops items. Chunks keys into groups of 100.
+    Items still unprocessed after max_retries are logged and skipped.
+    """
+    items: list[dict[str, Any]] = []
+    for start in range(0, len(keys), 100):
+        request = {table_name: {"Keys": keys[start : start + 100], **request_options}}
+        attempt = 0
+        while request:
+            response = client.batch_get_item(RequestItems=request)
+            items.extend(response.get("Responses", {}).get(table_name, []))
+            request = response.get("UnprocessedKeys") or {}
+            if not request:
+                break
+            if attempt >= max_retries:
+                missing = len(request.get(table_name, {}).get("Keys", []))
+                logger.warning(
+                    f"batch_get_item on {table_name}: giving up on {missing} "
+                    f"unprocessed keys after {max_retries} retries"
+                )
+                break
+            time.sleep(base_delay * (2**attempt))
+            attempt += 1
+    return items

@@ -24,7 +24,7 @@ from services.openmeteo_service import OpenMeteoService
 from services.snow_quality_service import SnowQualityService
 from services.snow_summary_service import SnowSummaryService
 from services.snowforecast_scraper import fresh_cache_entries
-from utils.dynamodb_utils import prepare_for_dynamodb
+from utils.dynamodb_utils import batch_get_all, prepare_for_dynamodb
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -426,7 +426,7 @@ def process_elevation_point(
         )
 
         # Assess snow quality (pass elevation for ML model)
-        elev_m = getattr(elevation_point, "elevation_meters", None)
+        elev_m = elev
         snow_quality, fresh_snow_cm, confidence, quality_score = (
             snow_quality_service.assess_snow_quality(
                 weather_condition, elevation_m=elev_m
@@ -573,14 +573,12 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
         # Fetch resorts by ID using batch get
         resort_keys = [{"resort_id": rid} for rid in resort_ids]
 
-        # DynamoDB batch_get_item has a limit of 100 items
-        resorts = []
-        for i in range(0, len(resort_keys), 100):
-            batch_keys = resort_keys[i : i + 100]
-            response = dynamodb.meta.client.batch_get_item(
-                RequestItems={RESORTS_TABLE: {"Keys": batch_keys}}
+        # Retries UnprocessedKeys so throttling doesn't silently skip resorts
+        resorts = batch_get_all(dynamodb.meta.client, RESORTS_TABLE, resort_keys)
+        if len(resorts) < len(resort_ids):
+            logger.warning(
+                f"Fetched {len(resorts)} of {len(resort_ids)} requested resorts"
             )
-            resorts.extend(response.get("Responses", {}).get(RESORTS_TABLE, []))
 
         logger.info(f"Fetched {len(resorts)} resorts from DynamoDB")
 

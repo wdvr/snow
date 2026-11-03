@@ -1,10 +1,12 @@
 """Tests for DynamoDB utility functions."""
 
 from decimal import Decimal
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from utils.dynamodb_utils import (
+    batch_get_all,
     decimal_to_python,
     parse_from_dynamodb,
     parse_items_from_dynamodb,
@@ -339,3 +341,47 @@ class TestRoundTrip:
         # Check that booleans and None are preserved
         assert recovered["active"] is True
         assert recovered["notes"] is None
+
+
+class TestBatchGetAll:
+    """batch_get_item must not silently drop UnprocessedKeys."""
+
+    @patch("utils.dynamodb_utils.time.sleep")
+    def test_retries_unprocessed_keys(self, mock_sleep):
+        client = MagicMock()
+        client.batch_get_item.side_effect = [
+            {
+                "Responses": {"t": [{"id": "a"}]},
+                "UnprocessedKeys": {"t": {"Keys": [{"id": "b"}]}},
+            },
+            {"Responses": {"t": [{"id": "b"}]}, "UnprocessedKeys": {}},
+        ]
+        items = batch_get_all(client, "t", [{"id": "a"}, {"id": "b"}])
+        assert items == [{"id": "a"}, {"id": "b"}]
+        assert client.batch_get_item.call_count == 2
+        retry_request = client.batch_get_item.call_args_list[1].kwargs["RequestItems"]
+        assert retry_request == {"t": {"Keys": [{"id": "b"}]}}
+        mock_sleep.assert_called_once()
+
+    @patch("utils.dynamodb_utils.time.sleep")
+    def test_gives_up_after_max_retries(self, mock_sleep):
+        client = MagicMock()
+        client.batch_get_item.return_value = {
+            "Responses": {"t": []},
+            "UnprocessedKeys": {"t": {"Keys": [{"id": "x"}]}},
+        }
+        assert batch_get_all(client, "t", [{"id": "x"}], max_retries=2) == []
+        assert client.batch_get_item.call_count == 3
+
+    def test_chunks_into_100_and_passes_options(self):
+        client = MagicMock()
+        client.batch_get_item.return_value = {"Responses": {"t": []}}
+        keys = [{"id": str(i)} for i in range(250)]
+        batch_get_all(client, "t", keys, ProjectionExpression="id")
+        sizes = [
+            len(c.kwargs["RequestItems"]["t"]["Keys"])
+            for c in client.batch_get_item.call_args_list
+        ]
+        assert sizes == [100, 100, 50]
+        first = client.batch_get_item.call_args_list[0].kwargs["RequestItems"]["t"]
+        assert first["ProjectionExpression"] == "id"

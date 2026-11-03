@@ -8,7 +8,11 @@ from models.resort import Resort
 
 # Import directly from module to avoid circular import through utils/__init__.py
 from utils.cache import get_resort_metadata_cache
-from utils.dynamodb_utils import parse_from_dynamodb, prepare_for_dynamodb
+from utils.dynamodb_utils import (
+    batch_get_all,
+    parse_from_dynamodb,
+    prepare_for_dynamodb,
+)
 from utils.geo_utils import (
     bounding_box,
     encode_geohash,
@@ -437,30 +441,18 @@ class ResortService:
         # Batch fetch uncached resort names
         if ids_to_fetch:
             try:
-                # DynamoDB batch_get_item can fetch up to 100 items
-                for batch_start in range(0, len(ids_to_fetch), 100):
-                    batch_ids = ids_to_fetch[batch_start : batch_start + 100]
-                    keys = [{"resort_id": rid} for rid in batch_ids]
-
-                    # Get table name for batch request
-                    table_name = self.table.table_name
-                    response = self.table.meta.client.batch_get_item(
-                        RequestItems={
-                            table_name: {
-                                "Keys": keys,
-                                "ProjectionExpression": "resort_id, #n",
-                                "ExpressionAttributeNames": {"#n": "name"},
-                            }
-                        }
-                    )
-
-                    # Process results
-                    items = response.get("Responses", {}).get(table_name, [])
-                    for item in items:
-                        resort_id = item.get("resort_id")
-                        name = item.get("name", resort_id)
-                        result[resort_id] = name
-                        cache[f"name:{resort_id}"] = name
+                items = batch_get_all(
+                    self.table.meta.client,
+                    self.table.table_name,
+                    [{"resort_id": rid} for rid in ids_to_fetch],
+                    ProjectionExpression="resort_id, #n",
+                    ExpressionAttributeNames={"#n": "name"},
+                )
+                for item in items:
+                    resort_id = item.get("resort_id")
+                    name = item.get("name", resort_id)
+                    result[resort_id] = name
+                    cache[f"name:{resort_id}"] = name
 
             except ClientError as e:
                 # Fallback to individual gets on error

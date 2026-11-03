@@ -614,6 +614,26 @@ class TestProcessElevationPoint:
         condition = call_args[0][0]
         assert condition.snowfall_after_freeze_cm == 12.0  # max(5.0, 12.0)
 
+    @pytest.mark.parametrize("as_dict", [True, False])
+    def test_elevation_passed_to_ml_scorer(self, as_dict):
+        """Resort items from DynamoDB are dicts; the ML scorer must still
+        receive the real elevation instead of None (defaulting to 1500m)."""
+        from handlers.weather_worker import process_elevation_point
+
+        ws, sqs, table, sss = _setup_services()
+        make = _make_elevation_point_dict if as_dict else _make_elevation_point_obj
+        process_elevation_point(
+            elevation_point=make("top", elev=2284),
+            resort_id="big-white",
+            weather_service=ws,
+            snow_quality_service=sqs,
+            weather_conditions_table=table,
+            scraper=None,
+            scraped_data=None,
+            snow_summary_service=sss,
+        )
+        assert sqs.assess_snow_quality.call_args.kwargs["elevation_m"] == 2284
+
     def test_snowfall_window_consistency_48h_fix(self):
         """48h snowfall should be bumped up to match 24h if lower."""
         from handlers.weather_worker import process_elevation_point
