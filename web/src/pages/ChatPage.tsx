@@ -54,6 +54,8 @@ export function ChatPage() {
 
   const handleSend = useCallback(
     async (content: string) => {
+      // Chat needs an account; the web has no sign-in yet (see banner)
+      if (!isAuthenticated) return
       setSendError(null)
       try {
         await sendMessage(content)
@@ -63,7 +65,7 @@ export function ChatPage() {
         }
       }
     },
-    [sendMessage],
+    [sendMessage, isAuthenticated],
   )
 
   const handleNewConversation = useCallback(() => {
@@ -186,11 +188,19 @@ export function ChatPage() {
             <AlertTriangle className="w-4 h-4 shrink-0" />
             <span>
               Rate limit reached. Please try again later.
-              {!isAuthenticated && ' Sign in for more messages.'}
             </span>
           </div>
         )}
-        {sendError && !isRateLimited && (
+        {!isAuthenticated && (
+          <div className="mx-4 mb-2 flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>
+              AI chat requires a signed-in account, and sign-in on the web is not
+              available yet. Use the Powder Chaser iOS app to chat.
+            </span>
+          </div>
+        )}
+        {sendError && !isRateLimited && isAuthenticated && (
           <div className="mx-4 mb-2 flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
             <AlertTriangle className="w-4 h-4 shrink-0" />
             <span>{sendError}</span>
@@ -202,9 +212,11 @@ export function ChatPage() {
           <div className="max-w-3xl mx-auto">
             <ChatInput
               onSend={handleSend}
-              disabled={isLoading}
+              disabled={isLoading || !isAuthenticated}
               placeholder={
-                isRateLimited
+                !isAuthenticated
+                  ? 'Sign-in required for AI chat'
+                  : isRateLimited
                   ? 'Rate limit reached. Please try again later.'
                   : 'Ask about ski conditions at any resort...'
               }

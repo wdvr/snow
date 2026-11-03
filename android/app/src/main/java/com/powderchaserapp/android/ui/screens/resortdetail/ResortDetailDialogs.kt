@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -143,8 +144,8 @@ fun SuggestEditDialog(
     onSubmit: (section: String, suggestion: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var section by remember { mutableStateOf("") }
-    var suggestion by remember { mutableStateOf("") }
+    var section by rememberSaveable { mutableStateOf("") }
+    var suggestion by rememberSaveable { mutableStateOf("") }
     val submitting = status == SuggestEditStatus.Submitting
 
     if (status == SuggestEditStatus.Sent) {
