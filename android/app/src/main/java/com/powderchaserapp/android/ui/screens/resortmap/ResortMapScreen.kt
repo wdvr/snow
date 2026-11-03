@@ -31,12 +31,14 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.gms.maps.model.UrlTileProvider
 import com.google.maps.android.compose.*
 import com.google.maps.android.compose.clustering.Clustering
 import com.google.maps.android.clustering.ClusterItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.net.URL
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -58,8 +60,10 @@ val regionPresets = listOf(
     RegionPreset("na_rockies", "Rockies", LatLng(40.6, -111.5), 5f),
     RegionPreset("na_east", "NA East", LatLng(44.5, -72.0), 6f),
     RegionPreset("alps", "Alps", LatLng(46.8, 10.0), 6f),
+    RegionPreset("europe_east", "E. Europe", LatLng(47.5, 21.0), 5.5f),
     RegionPreset("scandinavia", "Scandinavia", LatLng(62.0, 15.0), 5f),
     RegionPreset("japan", "Japan", LatLng(37.0, 139.0), 6f),
+    RegionPreset("asia", "Korea/China", LatLng(39.5, 122.0), 4.5f),
     RegionPreset("oceania", "Oceania", LatLng(-42.0, 170.0), 5.5f),
     RegionPreset("south_america", "S. America", LatLng(-33.5, -70.0), 6f),
 )
@@ -103,6 +107,7 @@ data class MapUiState(
     val selectedQuality: SnowQualitySummaryLight? = null,
     val unitPreferences: UnitPreferences = UnitPreferences(),
     val mapStyle: MapDisplayStyle = MapDisplayStyle.NORMAL,
+    val showPistes: Boolean = false,
     val selectedRegion: String = "na_rockies",
     // Forecast mode
     val forecastDays: List<ForecastDay> = emptyList(),
@@ -185,6 +190,10 @@ class ResortMapViewModel @Inject constructor(
         _uiState.update { it.copy(mapStyle = style) }
     }
 
+    fun setShowPistes(show: Boolean) {
+        _uiState.update { it.copy(showPistes = show) }
+    }
+
     fun setRegion(regionId: String) {
         _uiState.update { it.copy(selectedRegion = regionId) }
     }
@@ -256,6 +265,7 @@ fun ResortMapScreen(
         MapDisplayStyle.TERRAIN -> MapType.TERRAIN
     }
     val mapProperties = MapProperties(mapType = mapType)
+    val pisteTileProvider = remember { OpenSnowMapTileProvider() }
 
     // Whether we're in forecast mode
     val isForecastMode = uiState.selectedForecastDate != null
@@ -279,6 +289,12 @@ fun ResortMapScreen(
             properties = mapProperties,
             onMapClick = { viewModel.clearSelection() },
         ) {
+            if (uiState.showPistes) {
+                TileOverlay(
+                    tileProvider = pisteTileProvider,
+                    zIndex = 1f,
+                )
+            }
             Clustering(
                 items = clusterItems,
                 onClusterClick = { cluster ->
@@ -441,6 +457,26 @@ fun ResortMapScreen(
             }
         }
 
+        // Piste overlay attribution (required by OpenSnowMap) and zoom hint
+        if (uiState.showPistes) {
+            val zoomedOut = cameraPositionState.position.zoom < OpenSnowMapTiles.MIN_ZOOM
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 8.dp, bottom = 16.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                shape = MaterialTheme.shapes.small,
+            ) {
+                Text(
+                    if (zoomedOut) stringResource(R.string.zoom_in_for_pistes) else OpenSnowMapTiles.ATTRIBUTION,
+                    modifier = Modifier
+                        .widthIn(max = 220.dp)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
+        }
+
         // Resort count badge (bottom-left)
         Surface(
             modifier = Modifier
@@ -496,6 +532,32 @@ fun ResortMapScreen(
                         },
                     )
                 }
+                HorizontalDivider()
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.show_pistes)) },
+                    onClick = {
+                        val enable = !uiState.showPistes
+                        viewModel.setShowPistes(enable)
+                        showStyleMenu = false
+                        // Pistes only render from zoom 12; jump there if needed
+                        if (enable && cameraPositionState.position.zoom < OpenSnowMapTiles.MIN_ZOOM) {
+                            uiState.selectedResort?.let { resort ->
+                                val point = resort.midElevation ?: resort.baseElevation
+                                point?.let {
+                                    cameraPositionState.move(
+                                        CameraUpdateFactory.newLatLngZoom(
+                                            LatLng(it.latitude, it.longitude),
+                                            13f,
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    leadingIcon = {
+                        Checkbox(checked = uiState.showPistes, onCheckedChange = null)
+                    },
+                )
             }
         }
 
@@ -590,4 +652,16 @@ fun ResortMapScreen(
             }
         }
     }
+}
+
+// =============================================================================
+// OpenSnowMap piste tiles (#188)
+// =============================================================================
+
+private class OpenSnowMapTileProvider : UrlTileProvider(
+    OpenSnowMapTiles.TILE_SIZE,
+    OpenSnowMapTiles.TILE_SIZE,
+) {
+    override fun getTileUrl(x: Int, y: Int, zoom: Int): URL? =
+        OpenSnowMapTiles.tileUrl(x, y, zoom)?.let { URL(it) }
 }

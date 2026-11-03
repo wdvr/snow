@@ -15,8 +15,8 @@ android {
         applicationId = "com.powderchaserapp.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -125,6 +125,9 @@ dependencies {
     implementation("com.google.maps.android:maps-compose-utils:6.2.1")
     implementation("com.google.android.gms:play-services-maps:19.0.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    // Custom Tabs for trail map pages and resort websites
+    implementation("androidx.browser:browser:1.8.0")
 
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.7.0")

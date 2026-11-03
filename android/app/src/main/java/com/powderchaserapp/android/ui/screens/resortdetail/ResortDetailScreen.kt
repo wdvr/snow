@@ -53,7 +53,15 @@ data class ResortDetailUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val unitPreferences: UnitPreferences = UnitPreferences(),
+    val suggestEdit: SuggestEditStatus = SuggestEditStatus.Idle,
 )
+
+sealed interface SuggestEditStatus {
+    data object Idle : SuggestEditStatus
+    data object Submitting : SuggestEditStatus
+    data object Sent : SuggestEditStatus
+    data class Failed(val message: String) : SuggestEditStatus
+}
 
 @HiltViewModel
 class ResortDetailViewModel @Inject constructor(
@@ -63,6 +71,7 @@ class ResortDetailViewModel @Inject constructor(
     private val snowQualityRepository: SnowQualityRepository,
     private val timelineRepository: TimelineRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
+    private val feedbackRepository: FeedbackRepository,
 ) : ViewModel() {
     private val resortId: String = savedStateHandle["resortId"] ?: ""
 
@@ -130,6 +139,25 @@ class ResortDetailViewModel @Inject constructor(
             userPreferencesRepository.toggleFavorite(resortId)
         }
     }
+
+    fun submitEditSuggestion(section: String, suggestion: String) {
+        val resortName = _uiState.value.resort?.name ?: resortId
+        _uiState.update { it.copy(suggestEdit = SuggestEditStatus.Submitting) }
+        viewModelScope.launch {
+            feedbackRepository.submitResortEdit(resortId, resortName, section, suggestion).fold(
+                onSuccess = { _uiState.update { it.copy(suggestEdit = SuggestEditStatus.Sent) } },
+                onFailure = { e ->
+                    _uiState.update {
+                        it.copy(suggestEdit = SuggestEditStatus.Failed(e.message ?: "Failed to submit"))
+                    }
+                },
+            )
+        }
+    }
+
+    fun resetEditSuggestion() {
+        _uiState.update { it.copy(suggestEdit = SuggestEditStatus.Idle) }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -144,6 +172,8 @@ fun ResortDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val units = uiState.unitPreferences
+    var trailMapImageUrl by remember { mutableStateOf<String?>(null) }
+    var showSuggestEdit by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -304,8 +334,11 @@ fun ResortDetailScreen(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 4.dp)
                                 .clickable {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(trailMapUrl))
-                                    context.startActivity(intent)
+                                    if (TrailMapUrl.isDirectImage(trailMapUrl)) {
+                                        trailMapImageUrl = trailMapUrl
+                                    } else {
+                                        openInBrowserTab(context, trailMapUrl)
+                                    }
                                 },
                         ) {
                             Row(
@@ -317,7 +350,7 @@ fun ResortDetailScreen(
                                 Icon(Icons.Default.Map, contentDescription = null)
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    "View Trail Map",
+                                    stringResource(R.string.view_trail_map),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                 )
@@ -340,7 +373,8 @@ fun ResortDetailScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .clickable { openInBrowserTab(context, website) },
                         ) {
                             Row(
                                 modifier = Modifier
@@ -371,10 +405,48 @@ fun ResortDetailScreen(
                         Text(stringResource(R.string.condition_reports))
                     }
 
+                    // Suggest an edit (same flow as iOS SuggestEditView and web SuggestEditModal)
+                    if (uiState.resort != null) {
+                        TextButton(
+                            onClick = {
+                                viewModel.resetEditSuggestion()
+                                showSuggestEdit = true
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                        ) {
+                            Icon(Icons.Default.EditNote, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.suggest_edit))
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(32.dp))
                 }
             }
         }
+    }
+
+    trailMapImageUrl?.let { url ->
+        TrailMapViewerDialog(
+            url = url,
+            resortName = uiState.resort?.name.orEmpty(),
+            onOpenInBrowser = { openInBrowserTab(context, url) },
+            onDismiss = { trailMapImageUrl = null },
+        )
+    }
+
+    if (showSuggestEdit) {
+        SuggestEditDialog(
+            resortName = uiState.resort?.name.orEmpty(),
+            status = uiState.suggestEdit,
+            onSubmit = { section, suggestion -> viewModel.submitEditSuggestion(section, suggestion) },
+            onDismiss = {
+                showSuggestEdit = false
+                viewModel.resetEditSuggestion()
+            },
+        )
     }
 }
 

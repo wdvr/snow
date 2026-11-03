@@ -205,4 +205,22 @@
     <!-- Offline Banner -->
     <string name="you_are_offline">You are offline</string>
     <string name="showing_cached_data">Showing cached data</string>
+
+    <!-- Trail map, website and Suggest an Edit -->
+    <string name="view_trail_map">View Trail Map</string>
+    <string name="trail_map_of">Trail map of %1$s</string>
+    <string name="trail_map_load_failed">Could not load the trail map</string>
+    <string name="open_in_browser">Open in browser</string>
+    <string name="close">Close</string>
+    <string name="submit">Submit</string>
+    <string name="suggest_edit">Suggest an Edit</string>
+    <string name="suggest_edit_section">What needs fixing?</string>
+    <string name="suggest_edit_correction">Suggested correction</string>
+    <string name="suggest_edit_min_length">At least %1$d characters</string>
+    <string name="suggest_edit_thanks_title">Thanks!</string>
+    <string name="suggest_edit_thanks_body">Your suggestion was sent. We review every edit before updating resort data.</string>
+
+    <!-- Map piste overlay -->
+    <string name="show_pistes">Ski runs (OpenSnowMap)</string>
+    <string name="zoom_in_for_pistes">Zoom in to see ski runs</string>
 </resources>

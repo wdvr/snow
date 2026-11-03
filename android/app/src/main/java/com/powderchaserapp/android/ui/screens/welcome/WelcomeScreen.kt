@@ -77,7 +77,7 @@ fun WelcomeScreen(
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Track snow conditions at 130+ ski resorts worldwide.\nFind the best powder days.",
+                text = "Track snow conditions at 1,000+ ski resorts worldwide.\nFind the best powder days.",
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
