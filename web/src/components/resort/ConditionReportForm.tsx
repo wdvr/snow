@@ -29,7 +29,7 @@ const ELEVATION_LEVELS: { value: ElevationLevel | ''; label: string }[] = [
 ]
 
 export function ConditionReportForm({ resortId, onClose }: ConditionReportFormProps) {
-  const { isAuthenticated, loginAsGuest } = useAuth()
+  const { isAuthenticated } = useAuth()
   const queryClient = useQueryClient()
 
   const [conditionType, setConditionType] = useState<ConditionType>('powder')
@@ -41,15 +41,15 @@ export function ConditionReportForm({ resortId, onClose }: ConditionReportFormPr
   const [success, setSuccess] = useState(false)
 
   const handleSubmit = async () => {
+    // Guest sign-in was removed from the API; reports need a signed-in account
+    if (!isAuthenticated) {
+      setError('Signing in is required to submit condition reports.')
+      return
+    }
     setSubmitting(true)
     setError(null)
 
     try {
-      // Auto-authenticate as guest if not logged in
-      if (!isAuthenticated) {
-        await loginAsGuest()
-      }
-
       await api.submitConditionReport(resortId, {
         condition_type: conditionType,
         score,

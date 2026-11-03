@@ -219,13 +219,6 @@ class ApiClient {
 
   // --- Auth ---
 
-  guestAuth(deviceId: string): Promise<AuthTokens> {
-    return this.fetch<AuthTokens>('/api/v1/auth/guest', {
-      method: 'POST',
-      body: JSON.stringify({ device_id: deviceId }),
-    })
-  }
-
   refreshToken(refreshToken: string): Promise<AuthTokens> {
     return this.fetch<AuthTokens>('/api/v1/auth/refresh', {
       method: 'POST',

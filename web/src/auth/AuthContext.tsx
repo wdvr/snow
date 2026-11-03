@@ -17,7 +17,6 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  loginAsGuest: () => Promise<void>
   logout: () => void
 }
 
@@ -27,20 +26,10 @@ const STORAGE_KEYS = {
   accessToken: 'pc_access_token',
   refreshToken: 'pc_refresh_token',
   tokenExpiry: 'pc_token_expiry',
-  deviceId: 'pc_device_id',
   userId: 'pc_user_id',
   displayName: 'pc_display_name',
   authProvider: 'pc_auth_provider',
 } as const
-
-function getDeviceId(): string {
-  let deviceId = localStorage.getItem(STORAGE_KEYS.deviceId)
-  if (!deviceId) {
-    deviceId = crypto.randomUUID()
-    localStorage.setItem(STORAGE_KEYS.deviceId, deviceId)
-  }
-  return deviceId
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -137,21 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     restoreSession()
   }, [setAuthenticated, clearAuth])
 
-  const loginAsGuest = useCallback(async () => {
-    const deviceId = getDeviceId()
-    const tokens = await api.guestAuth(deviceId)
-    api.setToken(tokens.access_token)
-    localStorage.setItem(STORAGE_KEYS.accessToken, tokens.access_token)
-    localStorage.setItem(STORAGE_KEYS.refreshToken, tokens.refresh_token)
-    localStorage.setItem(
-      STORAGE_KEYS.tokenExpiry,
-      String(Date.now() + tokens.expires_in * 1000),
-    )
-
-    const me = await api.getMe()
-    setAuthenticated(me.user_id, me.display_name, me.auth_provider)
-  }, [setAuthenticated])
-
   const logout = useCallback(() => {
     clearAuth()
   }, [clearAuth])
@@ -159,10 +133,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       ...state,
-      loginAsGuest,
       logout,
     }),
-    [state, loginAsGuest, logout],
+    [state, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

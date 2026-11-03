@@ -3,8 +3,7 @@ import { useAuth } from '../auth/useAuth'
 import { useUnits, type TempUnit, type SnowUnit } from '../hooks/useUnits'
 
 export function SettingsPage() {
-  const { isAuthenticated, userId, displayName, authProvider, loginAsGuest, logout, isLoading } =
-    useAuth()
+  const { isAuthenticated, userId, displayName, authProvider, logout } = useAuth()
   const { tempUnit, snowUnit, setTempUnit, setSnowUnit } = useUnits()
 
   return (
@@ -107,16 +106,10 @@ export function SettingsPage() {
         ) : (
           <div className="space-y-3">
             <p className="text-sm text-gray-500">
-              Sign in to submit condition reports and sync your favorites.
+              Sign-in on the web is not available yet. AI chat and condition reports
+              need a signed-in account; browsing conditions, favorites and suggesting
+              edits work without one.
             </p>
-            <button
-              onClick={loginAsGuest}
-              disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              <User className="w-4 h-4" />
-              Sign In as Guest
-            </button>
           </div>
         )}
       </section>

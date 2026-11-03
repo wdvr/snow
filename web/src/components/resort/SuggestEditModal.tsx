@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { X, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 import { api } from '../../api/client'
-import { useAuth } from '../../auth/useAuth'
 
 interface SuggestEditModalProps {
   resortId: string
@@ -20,8 +19,6 @@ const SECTION_OPTIONS = [
 ]
 
 export function SuggestEditModal({ resortId, resortName, onClose }: SuggestEditModalProps) {
-  const { isAuthenticated, loginAsGuest } = useAuth()
-
   const [section, setSection] = useState('')
   const [suggestion, setSuggestion] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -36,10 +33,7 @@ export function SuggestEditModal({ resortId, resortName, onClose }: SuggestEditM
     setError(null)
 
     try {
-      if (!isAuthenticated) {
-        await loginAsGuest()
-      }
-
+      // Feedback is accepted without sign-in
       await api.submitFeedback({
         subject: `Resort Edit: ${resortName} - ${section}`,
         message: `[Resort Edit Suggestion]\nResort: ${resortName} (${resortId})\nSection: ${section}\n\nSuggested correction:\n${suggestion.trim()}`,
@@ -168,12 +162,6 @@ export function SuggestEditModal({ resortId, resortName, onClose }: SuggestEditM
                 )}
               </button>
             </div>
-
-            {!isAuthenticated && (
-              <p className="text-xs text-gray-400 text-center">
-                You will be signed in as a guest automatically.
-              </p>
-            )}
           </div>
         )}
       </div>

@@ -19,7 +19,7 @@ export function ChatPage() {
     conversationId: string
   }>()
   const navigate = useNavigate()
-  const { isAuthenticated, loginAsGuest } = useAuth()
+  const { isAuthenticated } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
 
@@ -37,15 +37,6 @@ export function ChatPage() {
 
   const { data: conversations } = useConversations()
   const deleteConversation = useDeleteConversation()
-
-  // Auto-authenticate as guest for chat if not already authenticated
-  useEffect(() => {
-    if (!isAuthenticated) {
-      loginAsGuest().catch(() => {
-        // Silent - guest auth may fail, chat still works without auth
-      })
-    }
-  }, [isAuthenticated, loginAsGuest])
 
   // Sync URL with conversation ID
   useEffect(() => {
