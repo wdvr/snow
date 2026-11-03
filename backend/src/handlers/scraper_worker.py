@@ -92,6 +92,8 @@ REGION_MAPPINGS = {
     "PL": "europe_east",
     "CZ": "europe_east",
     "SK": "europe_east",
+    "RO": "europe_east",
+    "BG": "europe_east",
     "KR": "asia",
     "CN": "asia",
 }

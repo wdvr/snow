@@ -691,21 +691,43 @@ async def get_app_config():
 # MARK: - Resort Endpoints
 
 
-# Valid region codes for filtering
+# Valid region codes for filtering (must match iOS SkiRegion / resorts.json)
 VALID_REGIONS = [
     "na_west",
     "na_rockies",
     "na_east",
     "alps",
+    "europe_east",
     "scandinavia",
     "japan",
+    "asia",
     "oceania",
     "south_america",
 ]
 
+# Country -> ski region for resorts whose stored region is a state/province
+# code rather than a ski region key. Mirrors SkiRegion.countries on iOS.
+_COUNTRY_REGIONS = {
+    **dict.fromkeys(("FR", "CH", "AT", "IT", "DE", "SI", "ES", "AD"), "alps"),
+    **dict.fromkeys(("PL", "CZ", "SK", "RO", "BG"), "europe_east"),
+    **dict.fromkeys(("NO", "SE", "FI"), "scandinavia"),
+    "JP": "japan",
+    **dict.fromkeys(("KR", "CN"), "asia"),
+    **dict.fromkeys(("AU", "NZ"), "oceania"),
+    **dict.fromkeys(("CL", "AR"), "south_america"),
+}
+
 
 def infer_resort_region(resort: Resort) -> str:
-    """Infer the region based on country and longitude."""
+    """Return the resort's ski region.
+
+    Uses the stored region when it is already a ski region key (as in
+    resorts.json), otherwise infers it from country and longitude. Unknown
+    countries map to "other" instead of being misfiled under the Alps.
+    """
+    if resort.region in VALID_REGIONS:
+        return resort.region
+
     country = resort.country.upper()
 
     if country in ("CA", "US"):
@@ -719,18 +741,7 @@ def infer_resort_region(resort: Resort) -> str:
             else:
                 return "na_east"
         return "na_rockies"  # Default for NA
-    elif country in ("FR", "CH", "AT", "IT", "DE"):
-        return "alps"
-    elif country in ("NO", "SE", "FI"):
-        return "scandinavia"
-    elif country == "JP":
-        return "japan"
-    elif country in ("AU", "NZ"):
-        return "oceania"
-    elif country in ("CL", "AR"):
-        return "south_america"
-    else:
-        return "alps"  # Default
+    return _COUNTRY_REGIONS.get(country, "other")
 
 
 @app.get("/api/v1/regions")
@@ -759,8 +770,10 @@ async def get_regions(response: Response):
                 "display_name": "NA East Coast",
             },
             "alps": {"name": "European Alps", "display_name": "Alps"},
+            "europe_east": {"name": "Eastern Europe", "display_name": "Eastern Europe"},
             "scandinavia": {"name": "Scandinavia", "display_name": "Scandinavia"},
             "japan": {"name": "Japan", "display_name": "Japan"},
+            "asia": {"name": "Asia", "display_name": "Asia"},
             "oceania": {"name": "Australia & New Zealand", "display_name": "Oceania"},
             "south_america": {"name": "South America", "display_name": "South America"},
         }

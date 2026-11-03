@@ -229,6 +229,35 @@ class TestGetResorts:
         assert "west" in ids
         assert "rockies" not in ids
 
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_filter_by_europe_east_and_asia(self, mock_cached, client):
+        cz = _make_resort(resort_id="cz", country="CZ", region="europe_east")
+        kr = _make_resort(resort_id="kr", country="KR", region="Gangwon")
+        fr = _make_resort(resort_id="fr", country="FR", region="alps")
+        mock_cached.return_value = [cz, kr, fr]
+
+        resp = client.get("/api/v1/resorts?region=europe_east")
+        assert resp.status_code == 200
+        assert [r["resort_id"] for r in resp.json()["resorts"]] == ["cz"]
+
+        resp = client.get("/api/v1/resorts?region=asia")
+        assert resp.status_code == 200
+        assert [r["resort_id"] for r in resp.json()["resorts"]] == ["kr"]
+
+    @patch("handlers.api_handler._get_all_resorts_cached")
+    def test_regions_endpoint_counts_new_regions(self, mock_cached, client):
+        mock_cached.return_value = [
+            _make_resort(resort_id="cz", country="CZ", region="europe_east"),
+            _make_resort(resort_id="cn", country="CN", region="asia"),
+            _make_resort(resort_id="fr", country="FR", region="alps"),
+        ]
+        resp = client.get("/api/v1/regions")
+        assert resp.status_code == 200
+        counts = {r["id"]: r["resort_count"] for r in resp.json()["regions"]}
+        assert counts == {"alps": 1, "europe_east": 1, "asia": 1}
+        names = {r["id"]: r["display_name"] for r in resp.json()["regions"]}
+        assert names["europe_east"] == "Eastern Europe"
+
     def test_invalid_region(self, client):
         resp = client.get("/api/v1/resorts?region=invalid_region")
         assert resp.status_code == 400
@@ -2019,11 +2048,39 @@ class TestInferResortRegion:
         resort = _make_resort(country="SE", lon=13.0)
         assert infer_resort_region(resort) == "scandinavia"
 
-    def test_unknown_country_defaults_to_alps(self):
+    def test_unknown_country_is_other_not_alps(self):
         from handlers.api_handler import infer_resort_region
 
         resort = _make_resort(country="XX", lon=0.0)
-        assert infer_resort_region(resort) == "alps"
+        assert infer_resort_region(resort) == "other"
+
+    @pytest.mark.parametrize(
+        "country,expected",
+        [
+            ("CZ", "europe_east"),
+            ("PL", "europe_east"),
+            ("BG", "europe_east"),
+            ("KR", "asia"),
+            ("CN", "asia"),
+            ("SI", "alps"),
+            ("ES", "alps"),
+            ("AD", "alps"),
+        ],
+    )
+    def test_country_mapping_matches_ios(self, country, expected):
+        from handlers.api_handler import infer_resort_region
+
+        resort = _make_resort(country=country, lon=15.0)
+        assert infer_resort_region(resort) == expected
+
+    def test_stored_ski_region_wins(self):
+        from handlers.api_handler import infer_resort_region
+
+        # Colorado longitude would infer na_rockies; trust the stored key
+        resort = _make_resort(country="US", region="na_west", lon=-106.0)
+        assert infer_resort_region(resort) == "na_west"
+        resort = _make_resort(country="SK", region="europe_east")
+        assert infer_resort_region(resort) == "europe_east"
 
     def test_na_no_elevation_points_defaults_to_rockies(self):
         from handlers.api_handler import infer_resort_region
@@ -2251,3 +2308,14 @@ class TestAppConfig:
         data = client.get("/api/v1/app-config").json()
         assert data["minimum_ios_version"] == "2.1.0"
         assert data["force_update"] is False
+
+
+class TestScraperRegionMapping:
+    """Scraper region mapping must agree with the API's country mapping."""
+
+    def test_scraper_and_api_agree_on_countries(self):
+        from handlers.api_handler import _COUNTRY_REGIONS
+        from handlers.scraper_worker import REGION_MAPPINGS
+
+        for country, region in _COUNTRY_REGIONS.items():
+            assert REGION_MAPPINGS.get(country) == region, country
