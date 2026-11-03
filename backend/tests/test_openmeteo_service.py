@@ -135,6 +135,33 @@ class TestRequestWithRetry(unittest.TestCase):
         self.assertEqual(mock_request.call_count, 2)
         mock_sleep.assert_called_once_with(1)  # first delay
 
+    @patch("services.openmeteo_service.time.monotonic")
+    @patch("services.openmeteo_service.time.sleep")
+    @patch("services.openmeteo_service.requests.request")
+    def test_time_budget_stops_retries(self, mock_request, mock_sleep, mock_clock):
+        """Worst case stays under API Gateway's 29s limit for /timeline."""
+        mock_request.side_effect = requests.exceptions.Timeout("timeout")
+        # start=0; first failure at 10s (retry fits: 10+1+10<=24);
+        # second failure at 21s (21+2+10 > 24, so give up)
+        mock_clock.side_effect = [0.0, 10.0, 21.0]
+
+        with self.assertRaises(requests.exceptions.Timeout):
+            _request_with_retry(
+                "GET", "https://example.com", timeout=10, max_total_seconds=24
+            )
+        self.assertEqual(mock_request.call_count, 2)
+        mock_sleep.assert_called_once_with(1)
+
+    @patch("services.openmeteo_service.time.sleep")
+    @patch("services.openmeteo_service.requests.request")
+    def test_time_budget_not_passed_to_requests(self, mock_request, mock_sleep):
+        resp = Mock()
+        resp.raise_for_status = Mock()
+        mock_request.return_value = resp
+
+        _request_with_retry("GET", "https://example.com", max_total_seconds=5)
+        self.assertNotIn("max_total_seconds", mock_request.call_args.kwargs)
+
     @patch("services.openmeteo_service.time.sleep")
     @patch("services.openmeteo_service.requests.request")
     def test_raises_after_max_retries_exhausted(self, mock_request, mock_sleep):

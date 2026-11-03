@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # Retry configuration for API calls
 MAX_RETRIES = 3
 RETRY_DELAYS = [1, 2, 4]  # Exponential backoff: 1s, 2s, 4s
+TIMELINE_TIME_BUDGET_SECONDS = 24
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
@@ -40,6 +41,7 @@ def _is_retryable_error(exception: Exception) -> bool:
 def _request_with_retry(
     method: str,
     url: str,
+    max_total_seconds: float | None = None,
     **kwargs,
 ) -> requests.Response:
     """Make an HTTP request with retry logic and exponential backoff.
@@ -47,6 +49,9 @@ def _request_with_retry(
     Args:
         method: HTTP method (GET, POST, etc.)
         url: Request URL
+        max_total_seconds: Overall time budget. A retry is skipped if the
+            backoff delay plus another full request timeout would exceed it
+            (used by synchronous API paths behind API Gateway's 29s limit).
         **kwargs: Additional arguments passed to requests
 
     Returns:
@@ -56,6 +61,7 @@ def _request_with_retry(
         requests.exceptions.RequestException: If all retries fail
     """
     last_exception = None
+    start = time.monotonic()
 
     for attempt in range(MAX_RETRIES):
         try:
@@ -68,6 +74,15 @@ def _request_with_retry(
                 raise
 
             delay = RETRY_DELAYS[attempt]
+            if max_total_seconds is not None:
+                elapsed = time.monotonic() - start
+                next_timeout = kwargs.get("timeout") or 0
+                if elapsed + delay + next_timeout > max_total_seconds:
+                    logger.warning(
+                        f"Request to {url} failed after {elapsed:.1f}s: {e}. "
+                        f"Not retrying, time budget {max_total_seconds}s exhausted"
+                    )
+                    raise
             logger.warning(
                 f"Request to {url} failed (attempt {attempt + 1}/{MAX_RETRIES}): {e}. "
                 f"Retrying in {delay}s..."
@@ -578,8 +593,14 @@ class OpenMeteoService:
                 "timezone": timezone,
             }
 
+            # Called synchronously by GET /timeline: stay under API Gateway's
+            # 29s integration timeout even when retrying.
             response = _request_with_retry(
-                "GET", self.base_url, params=params, timeout=10
+                "GET",
+                self.base_url,
+                params=params,
+                timeout=10,
+                max_total_seconds=TIMELINE_TIME_BUDGET_SECONDS,
             )
 
             data = response.json()
