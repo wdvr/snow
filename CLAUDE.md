@@ -201,7 +201,7 @@ GET  /api/v1/quality-explanations      - Quality level descriptions
 GET  /api/v1/recommendations?lat=X&lon=Y - Nearby recommendations
 GET  /api/v1/recommendations/best      - Best conditions globally
 POST /api/v1/auth/apple                - Apple Sign In
-POST /api/v1/auth/guest                - Guest authentication
+POST /api/v1/auth/guest                - Removed (returns 410 since #205)
 POST /api/v1/auth/refresh              - Refresh auth token
 GET  /api/v1/auth/me                   - Current user info
 POST /api/v1/trips                     - Create trip

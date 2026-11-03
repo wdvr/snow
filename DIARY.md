@@ -5,6 +5,56 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Nov 3, 2026 (v2: backend 1.1.0, Android 1.1.0)
+
+### Fix: Prod deploy no longer deletes backend data from the website bucket
+`deploy.yml` synced `website/dist` to the website bucket with `--delete`, but that bucket also holds `data/resorts.json`, `data/snow-quality.json`, `data/snowforecast-cache.json`, `raw-data/*` and the ~985 precached `data/pistes/*.json`. Every `v*` tag deploy wiped them (pistes never come back on their own). The sync now excludes `data/*` and `raw-data/*`.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: Streaming chat requires sign-in and shares the 100/day limit
+#205 made `POST /api/v1/chat` auth-only, but the public chat-stream Function URL (what all clients use) still accepted anyone as `anon_<ip>` with no limit. It now rejects missing, invalid, expired and refresh tokens with 401 and enforces the same per-user 100/day budget (new `services/chat_rate_limit.py`) with 429. Clients already fall back to REST on a non-200 stream, and REST shows the proper sign-in / rate-limit message. Chat-stream Lambda gets `CHAT_RATE_LIMIT_TABLE_NAME` (Pulumi + deploy.yml) and the JWT secret in Pulumi.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: Eastern Europe and Asia regions
+`/api/v1/regions` counted 288 CZ/PL/SK/RO/BG/CN/KR resorts as Alps and `?region=europe_east|asia` returned 400. Region inference now trusts the stored ski region, mirrors iOS `SkiRegion.countries`, and maps unknown countries to `other`. Scraper region map gains RO and BG. Android map presets gain Eastern Europe and Korea/China.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | done | n/a | done |
+
+### Fix: Data-source reliability in the ingest path
+- Snow-Forecast slug overrides moved to `src/services/` so they ship in the Lambda zip (all 18 were silently unused).
+- Snow-Forecast prefetch starts from the previous cache, scrapes least recently attempted resorts first and stamps `fetched_at`, so a run cut short by the 900s timeout no longer wipes the cache. Worker and processor ignore entries older than 24h.
+- New `batch_get_all` retries DynamoDB `UnprocessedKeys` (worker and ResortService); throttled resorts were silently skipped for the hour.
+- Worker now passes the real elevation to the ML scorer (was always None for DynamoDB dict items).
+- `/timeline` Open-Meteo retries capped by a 24s budget to stay under API Gateway's 29s limit.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: Web stopped calling the removed guest sign-in
+Since #205 `/auth/guest` returns 410, which broke Suggest an Edit on the web (feedback needs no auth at all), made condition reports fail with a raw error, and left a dead "Sign In as Guest" button in Settings. Removed guest login from the web app; Suggest an Edit submits directly; condition reports and Settings explain that sign-in is required.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | done | n/a |
+
+### Feature: Android Suggest an Edit, piste overlay, trail map viewer (#187, #188, #189)
+Suggest an Edit dialog with the same sections and payload as iOS/web. OpenSnowMap piste tile overlay (zoom 12 to 18) from the map layers menu with attribution. Direct trail map images open in an in-app zoomable viewer; trail map pages and resort websites open in a Custom Tab. Also fixed the "Visit website" card (was not clickable) and the welcome text (130+ to 1,000+ resorts). Backend now stores the `os_version` Android sends with feedback. 73 Android unit tests (+7).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | done | n/a | done |
+
+### Chore: Versions
+Backend 1.1.0 (`/health` and `pyproject.toml`, kept in sync by a test). Android `versionName` 1.1.0, `versionCode` 2. Backend tests: 1804 passing (+44). iOS unchanged at 2.1.1.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | done | n/a | done |
+
+---
+
 ## Apr 22, 2026
 
 ### Feature: Season-aware polling and alert gating (#202)
