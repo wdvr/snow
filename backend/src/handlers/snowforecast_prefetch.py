@@ -117,6 +117,10 @@ def snowforecast_prefetch_handler(event: dict[str, Any], context) -> dict[str, A
         # Start from the previous cache so a partial run doesn't wipe data
         previous = _load_previous_cache()
         cache: dict[str, dict[str, Any]] = fresh_cache_entries(previous)
+        # Legacy entries have no fetched_at; pin them to the old file time so
+        # they still age out instead of inheriting each new generated_at.
+        for entry in cache.values():
+            entry.setdefault("fetched_at", previous.get("generated_at"))
         last_attempted: dict[str, str] = dict(previous.get("last_attempted") or {})
         stats["carried_over"] = len(cache)
 

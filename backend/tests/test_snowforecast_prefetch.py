@@ -571,3 +571,21 @@ class TestPrefetchCarryOverAndRotation:
         assert result["statusCode"] == 200
         cache = json.loads(mock_s3.put_object.call_args.kwargs["Body"])
         assert set(cache["resorts"]) == {"a"}
+
+    def test_legacy_entries_keep_their_original_age(
+        self, mock_dynamodb, mock_rs_cls, mock_scraper_cls, mock_s3, mock_sleep
+    ):
+        """Entries without fetched_at must not be refreshed by a new generated_at."""
+        old_generated = "2026-11-03T00:00:00+00:00"
+        mock_rs_cls.return_value.get_all_resorts.return_value = [_make_resort("a")]
+        mock_s3.get_object.return_value = _s3_body(
+            {"generated_at": old_generated, "resorts": {"a": {"snowfall_24h_cm": 1.0}}}
+        )
+        with patch(
+            "handlers.snowforecast_prefetch.fresh_cache_entries",
+            side_effect=lambda data: {k: dict(v) for k, v in data["resorts"].items()},
+        ):
+            snowforecast_prefetch_handler({}, _make_context(MIN_TIME_BUFFER_MS - 1))
+
+        cache = json.loads(mock_s3.put_object.call_args.kwargs["Body"])
+        assert cache["resorts"]["a"]["fetched_at"] == old_generated
