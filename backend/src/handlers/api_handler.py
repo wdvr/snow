@@ -640,6 +640,9 @@ def _sanitize_id_for_message(value: str, max_len: int = 60) -> str:
 
 # MARK: - Health Check
 
+# Backend version; keep in sync with backend/pyproject.toml (checked by tests)
+API_VERSION = "1.1.0"
+
 
 @app.get("/health")
 async def health_check():
@@ -647,7 +650,7 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": datetime.now(UTC).isoformat(),
-        "version": "1.0.0",
+        "version": API_VERSION,
     }
 
 

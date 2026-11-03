@@ -166,6 +166,14 @@ class TestHealthCheck:
         assert "timestamp" in data
         assert "version" in data
 
+    def test_health_version_matches_pyproject(self, client):
+        import tomllib
+        from pathlib import Path
+
+        pyproject = Path(__file__).parent.parent / "pyproject.toml"
+        expected = tomllib.loads(pyproject.read_text())["project"]["version"]
+        assert client.get("/health").json()["version"] == expected
+
 
 # ===========================================================================
 # Resort Endpoints
