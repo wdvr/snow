@@ -77,10 +77,10 @@ data class ResortClusterItem(
     val quality: SnowQualitySummaryLight?,
     val latLng: LatLng,
 ) : ClusterItem {
-    override fun getPosition(): LatLng = latLng
-    override fun getTitle(): String = resort.name
-    override fun getSnippet(): String? = quality?.overallSnowQuality?.displayName
-    override fun getZIndex(): Float = 0f
+    override val position: LatLng get() = latLng
+    override val title: String get() = resort.name
+    override val snippet: String? get() = quality?.overallSnowQuality?.displayName
+    override val zIndex: Float get() = 0f
 }
 
 // =============================================================================
