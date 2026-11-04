@@ -275,6 +275,9 @@ gh run list --workflow=deploy.yml
 gh workflow run trigger-weather.yml -f environment=staging -f wait_for_completion=true
 ```
 
+### Lambda Environment Variables
+Pulumi (`infrastructure/__main__.py`) is the single source of truth for Lambda env vars. `deploy.yml` only ships code; it passes secrets and flags to Pulumi as config (`jwtSecretKey`, `weatherApiKey`, `enableWeatherKit`, ...) and then checks the live values. Never set env vars with `aws lambda update-function-configuration --environment`: the next Pulumi update would silently revert them.
+
 ### Pull Request Requirements
 - Link to GitHub issue (use "Closes #123")
 - All tests must pass

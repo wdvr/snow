@@ -552,6 +552,9 @@ weather_processor_lambda = aws.lambda_.Function(
     ),
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
+            # Pulumi is the single source of truth for Lambda env vars;
+            # deploy.yml only ships code.
+            "ENV_MANAGED_BY": "pulumi",
             "ENVIRONMENT": environment,
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
@@ -564,6 +567,7 @@ weather_processor_lambda = aws.lambda_.Function(
             "WEBSITE_BUCKET": website_bucket_name,
             "SNOW_SUMMARY_TABLE": f"{app_name}-snow-summary-{environment}",
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
+            "WEATHER_API_KEY": config.get_secret("weatherApiKey") or "",
             # Multi-source weather data
             "ENABLE_SNOWFORECAST": "true",
             "ENABLE_WEATHERKIT": config.get("enableWeatherKit") or "false",
@@ -603,6 +607,9 @@ weather_worker_lambda = aws.lambda_.Function(
     ),
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
+            # Pulumi is the single source of truth for Lambda env vars;
+            # deploy.yml only ships code.
+            "ENV_MANAGED_BY": "pulumi",
             "ENVIRONMENT": environment,
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
@@ -680,6 +687,9 @@ static_json_lambda = aws.lambda_.Function(
     ),
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
+            # Pulumi is the single source of truth for Lambda env vars;
+            # deploy.yml only ships code.
+            "ENV_MANAGED_BY": "pulumi",
             "ENVIRONMENT": environment,
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
@@ -745,6 +755,9 @@ snowforecast_prefetch_lambda = aws.lambda_.Function(
     ),
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
+            # Pulumi is the single source of truth for Lambda env vars;
+            # deploy.yml only ships code.
+            "ENV_MANAGED_BY": "pulumi",
             "ENVIRONMENT": environment,
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "WEBSITE_BUCKET": website_bucket_name,
@@ -812,6 +825,9 @@ scraper_orchestrator_lambda = aws.lambda_.Function(
     ),
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
+            # Pulumi is the single source of truth for Lambda env vars;
+            # deploy.yml only ships code.
+            "ENV_MANAGED_BY": "pulumi",
             "ENVIRONMENT": environment,
             "SCRAPER_WORKER_LAMBDA": f"{app_name}-scraper-worker-{environment}",
             "RESULTS_BUCKET": state_bucket_name,
@@ -849,6 +865,9 @@ scraper_worker_lambda = aws.lambda_.Function(
     ),
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
+            # Pulumi is the single source of truth for Lambda env vars;
+            # deploy.yml only ships code.
+            "ENV_MANAGED_BY": "pulumi",
             "ENVIRONMENT": environment,
             "RESULTS_BUCKET": state_bucket_name,
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
@@ -915,6 +934,9 @@ scraper_results_processor_lambda = aws.lambda_.Function(
     ),
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
+            # Pulumi is the single source of truth for Lambda env vars;
+            # deploy.yml only ships code.
+            "ENV_MANAGED_BY": "pulumi",
             "ENVIRONMENT": environment,
             "RESULTS_BUCKET": state_bucket_name,
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
@@ -967,6 +989,13 @@ version_consolidator_log_group = aws.cloudwatch.LogGroup(
 )
 
 # Version consolidator Lambda
+# SNS Topic for resort updates notifications
+resort_updates_topic = aws.sns.Topic(
+    f"{app_name}-resort-updates-{environment}",
+    name=f"{app_name}-resort-updates-{environment}",
+    tags=tags,
+)
+
 version_consolidator_lambda = aws.lambda_.Function(
     f"{app_name}-version-consolidator-{environment}",
     name=f"{app_name}-version-consolidator-{environment}",
@@ -982,11 +1011,14 @@ version_consolidator_lambda = aws.lambda_.Function(
     ),
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
+            # Pulumi is the single source of truth for Lambda env vars;
+            # deploy.yml only ships code.
+            "ENV_MANAGED_BY": "pulumi",
             "ENVIRONMENT": environment,
             "RESULTS_BUCKET": state_bucket_name,
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "AWS_REGION_NAME": aws_region,
-            "RESORT_UPDATES_TOPIC_ARN": "",  # Will be set after topic creation
+            "RESORT_UPDATES_TOPIC_ARN": resort_updates_topic.arn,
         }
     ),
     tags=tags,
@@ -1089,6 +1121,9 @@ notification_processor_lambda = aws.lambda_.Function(
     ),
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
+            # Pulumi is the single source of truth for Lambda env vars;
+            # deploy.yml only ships code.
+            "ENV_MANAGED_BY": "pulumi",
             "ENVIRONMENT": environment,
             "USER_PREFERENCES_TABLE": f"{app_name}-user-preferences-{environment}",
             "DEVICE_TOKENS_TABLE": f"{app_name}-device-tokens-{environment}",
@@ -1346,6 +1381,9 @@ def get_conditions(resort_id, headers):
     ),
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
+            # Pulumi is the single source of truth for Lambda env vars;
+            # deploy.yml only ships code.
+            "ENV_MANAGED_BY": "pulumi",
             "ENVIRONMENT": environment,
             "RESORTS_TABLE": f"{app_name}-resorts-{environment}",
             "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
@@ -1405,6 +1443,9 @@ chat_stream_lambda = aws.lambda_.Function(
     ),
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
+            # Pulumi is the single source of truth for Lambda env vars;
+            # deploy.yml only ships code.
+            "ENV_MANAGED_BY": "pulumi",
             "ENVIRONMENT": environment,
             "CHAT_TABLE_NAME": f"{app_name}-chat-{environment}",
             # Shared per-user daily limit with POST /api/v1/chat
@@ -3814,13 +3855,6 @@ pulumi.export("notifications_table_name", notifications_table.name)
 pulumi.export("lambda_role_arn", lambda_role.arn)
 pulumi.export("api_gateway_id", api_gateway.id)
 pulumi.export("api_gateway_url", api_deployment.invoke_url)
-# SNS Topic for resort updates notifications
-resort_updates_topic = aws.sns.Topic(
-    f"{app_name}-resort-updates-{environment}",
-    name=f"{app_name}-resort-updates-{environment}",
-    tags=tags,
-)
-
 # Email subscription for resort updates (only in prod)
 if environment == "prod":
     resort_updates_subscription = aws.sns.TopicSubscription(

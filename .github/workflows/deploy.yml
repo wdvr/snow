@@ -177,6 +177,18 @@ jobs:
           echo "WeatherKit credentials configured"
         fi
 
+        # Lambda env vars come only from Pulumi (deploy.yml no longer sets them),
+        # so every secret and flag the functions need is passed in as config.
+        if [ -z "${{ secrets.JWT_SECRET_KEY }}" ]; then
+          echo "::error::JWT_SECRET_KEY secret is empty; refusing to deploy (auth would break)"
+          exit 1
+        fi
+        printf '%s' "${{ secrets.JWT_SECRET_KEY }}" | pulumi config set --secret snow-tracker-infrastructure:jwtSecretKey --
+        if [ -n "${{ secrets.WEATHER_API_KEY }}" ]; then
+          printf '%s' "${{ secrets.WEATHER_API_KEY }}" | pulumi config set --secret snow-tracker-infrastructure:weatherApiKey --
+        fi
+        pulumi config set snow-tracker-infrastructure:enableWeatherKit "${{ vars.ENABLE_WEATHERKIT || 'false' }}"
+
         # Clear any pending operations from previous failed deployments
         # pulumi refresh --yes can't clear pending CREATEs, so we use stack export/import
         if pulumi stack export 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); ops=d.get('deployment',{}).get('pending_operations',[]); sys.exit(0 if ops else 1)" 2>/dev/null; then
@@ -219,8 +231,6 @@ jobs:
 
         # Deploy API Handler Lambda
         API_LAMBDA=$(pulumi stack output api_handler_lambda_name 2>/dev/null || echo "")
-        APNS_PLATFORM_ARN=$(pulumi stack output apns_platform_app_arn 2>/dev/null || echo "")
-        WEBSITE_BUCKET=$(pulumi stack output website_bucket_name 2>/dev/null || echo "")
         if [ -n "$API_LAMBDA" ]; then
           echo "Deploying API handler Lambda: $API_LAMBDA"
           aws lambda update-function-code \
@@ -230,12 +240,6 @@ jobs:
             --region us-west-2
           aws lambda wait function-updated --function-name "$API_LAMBDA" --region us-west-2
 
-          # Update API Lambda environment variables (including WEBSITE_BUCKET for static JSON)
-          aws lambda update-function-configuration \
-            --function-name "$API_LAMBDA" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},USER_PREFERENCES_TABLE=snow-tracker-user-preferences-${{ env.ENVIRONMENT }},FEEDBACK_TABLE=snow-tracker-feedback-${{ env.ENVIRONMENT }},DEVICE_TOKENS_TABLE=snow-tracker-device-tokens-${{ env.ENVIRONMENT }},RESORT_EVENTS_TABLE=snow-tracker-resort-events-${{ env.ENVIRONMENT }},CHAT_TABLE=snow-tracker-chat-${{ env.ENVIRONMENT }},CONDITION_REPORTS_TABLE=snow-tracker-condition-reports-${{ env.ENVIRONMENT }},SNOW_SUMMARY_TABLE=snow-tracker-snow-summary-${{ env.ENVIRONMENT }},DAILY_HISTORY_TABLE=snow-tracker-daily-history-${{ env.ENVIRONMENT }},CHAT_RATE_LIMIT_TABLE_NAME=snow-tracker-chat-rate-limit-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,APNS_PLATFORM_APP_ARN=$APNS_PLATFORM_ARN,WEBSITE_BUCKET=$WEBSITE_BUCKET,JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }},CHAT_SUGGESTIONS_TABLE=snow-tracker-chat-suggestions-${{ env.ENVIRONMENT }},NOTIFICATIONS_TABLE=snow-tracker-notifications-${{ env.ENVIRONMENT }},GOOGLE_CLIENT_ID=269334695221-p2i31pdp3n7ms7o7rpf6cb3vsdmc4ohs.apps.googleusercontent.com,APPLE_SIGNIN_CLIENT_ID=com.wouterdevriendt.snowtracker}" \
-            --region us-west-2
-          aws lambda wait function-updated --function-name "$API_LAMBDA" --region us-west-2
           echo "API handler Lambda updated"
         fi
 
@@ -247,13 +251,6 @@ jobs:
             --function-name "$CHAT_STREAM_LAMBDA" \
             --s3-bucket "$S3_BUCKET" \
             --s3-key "$S3_KEY" \
-            --region us-west-2
-          aws lambda wait function-updated --function-name "$CHAT_STREAM_LAMBDA" --region us-west-2
-          aws lambda update-function-configuration \
-            --function-name "$CHAT_STREAM_LAMBDA" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},CHAT_TABLE_NAME=snow-tracker-chat-${{ env.ENVIRONMENT }},CHAT_RATE_LIMIT_TABLE_NAME=snow-tracker-chat-rate-limit-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2,AWS_LAMBDA_EXEC_WRAPPER=/opt/bootstrap,AWS_LWA_INVOKE_MODE=response_stream,AWS_LWA_PORT=8080,AWS_LWA_READINESS_CHECK_PATH=/,PYTHONPATH=/var/task,JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}}" \
-            --handler run.sh \
-            --layers "arn:aws:lambda:us-west-2:753240598075:layer:LambdaAdapterLayerX86:26" \
             --region us-west-2
           aws lambda wait function-updated --function-name "$CHAT_STREAM_LAMBDA" --region us-west-2
           echo "Chat stream Lambda updated"
@@ -270,14 +267,6 @@ jobs:
             --region us-west-2
           aws lambda wait function-updated --function-name "$WEATHER_LAMBDA" --region us-west-2
 
-          # Update Weather Lambda environment variables with Weather API key and parallel processing config
-          WEBSITE_BUCKET=$(pulumi stack output website_bucket_name 2>/dev/null || echo "")
-          aws lambda update-function-configuration \
-            --function-name "$WEATHER_LAMBDA" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},SNOW_SUMMARY_TABLE=snow-tracker-snow-summary-${{ env.ENVIRONMENT }},DAILY_HISTORY_TABLE=snow-tracker-daily-history-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,WEATHER_API_KEY=${{ secrets.WEATHER_API_KEY }},PARALLEL_PROCESSING=true,WEATHER_WORKER_LAMBDA=snow-tracker-weather-worker-${{ env.ENVIRONMENT }},ENABLE_SNOWFORECAST=${{ vars.ENABLE_SNOWFORECAST || 'false' }},ENABLE_WEATHERKIT=${{ vars.ENABLE_WEATHERKIT || 'false' }},WEBSITE_BUCKET=$WEBSITE_BUCKET}" \
-            --region us-west-2
-          # Wait for configuration update to complete before invoking
-          aws lambda wait function-updated --function-name "$WEATHER_LAMBDA" --region us-west-2
           echo "Weather processor Lambda updated"
         fi
 
@@ -292,13 +281,6 @@ jobs:
             --region us-west-2
           aws lambda wait function-updated --function-name "$WORKER_LAMBDA" --region us-west-2
 
-          # Update Worker Lambda environment variables
-          WEBSITE_BUCKET=$(pulumi stack output website_bucket_name 2>/dev/null || echo "")
-          aws lambda update-function-configuration \
-            --function-name "$WORKER_LAMBDA" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},SNOW_SUMMARY_TABLE=snow-tracker-snow-summary-${{ env.ENVIRONMENT }},DAILY_HISTORY_TABLE=snow-tracker-daily-history-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,ENABLE_SCRAPING=true,ENABLE_SNOWFORECAST=${{ vars.ENABLE_SNOWFORECAST || 'false' }},ENABLE_WEATHERKIT=${{ vars.ENABLE_WEATHERKIT || 'false' }},WEATHERKIT_KEY_ID=${{ secrets.WEATHERKIT_KEY_ID }},WEATHERKIT_TEAM_ID=${{ secrets.WEATHERKIT_TEAM_ID }},WEATHERKIT_SERVICE_ID=${{ secrets.WEATHERKIT_SERVICE_ID }},WEATHERKIT_PRIVATE_KEY=${{ secrets.APNS_PRIVATE_KEY }},WEBSITE_BUCKET=$WEBSITE_BUCKET}" \
-            --region us-west-2
-          aws lambda wait function-updated --function-name "$WORKER_LAMBDA" --region us-west-2
           echo "Weather worker Lambda updated"
         fi
 
@@ -313,18 +295,11 @@ jobs:
             --region us-west-2
           aws lambda wait function-updated --function-name "$SNOWFORECAST_PREFETCH" --region us-west-2
 
-          WEBSITE_BUCKET=$(pulumi stack output website_bucket_name 2>/dev/null || echo "")
-          aws lambda update-function-configuration \
-            --function-name "$SNOWFORECAST_PREFETCH" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEBSITE_BUCKET=$WEBSITE_BUCKET,AWS_REGION_NAME=us-west-2,ENABLE_SNOWFORECAST=${{ vars.ENABLE_SNOWFORECAST || 'false' }}}" \
-            --region us-west-2
-          aws lambda wait function-updated --function-name "$SNOWFORECAST_PREFETCH" --region us-west-2
           echo "Snow-Forecast prefetch Lambda updated"
         fi
 
         # Deploy Notification Processor Lambda
         NOTIFICATION_LAMBDA=$(pulumi stack output notification_processor_lambda_name 2>/dev/null || echo "")
-        APNS_PLATFORM_ARN=$(pulumi stack output apns_platform_app_arn 2>/dev/null || echo "")
         if [ -n "$NOTIFICATION_LAMBDA" ]; then
           echo "Deploying Notification processor Lambda: $NOTIFICATION_LAMBDA"
           aws lambda update-function-code \
@@ -334,12 +309,6 @@ jobs:
             --region us-west-2
           aws lambda wait function-updated --function-name "$NOTIFICATION_LAMBDA" --region us-west-2
 
-          # Update Notification Lambda environment variables
-          aws lambda update-function-configuration \
-            --function-name "$NOTIFICATION_LAMBDA" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},USER_PREFERENCES_TABLE=snow-tracker-user-preferences-${{ env.ENVIRONMENT }},DEVICE_TOKENS_TABLE=snow-tracker-device-tokens-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},RESORT_EVENTS_TABLE=snow-tracker-resort-events-${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},AWS_REGION_NAME=us-west-2,APNS_PLATFORM_APP_ARN=$APNS_PLATFORM_ARN}" \
-            --region us-west-2
-          aws lambda wait function-updated --function-name "$NOTIFICATION_LAMBDA" --region us-west-2
           echo "Notification processor Lambda updated"
         fi
 
@@ -354,12 +323,6 @@ jobs:
             --region us-west-2
           aws lambda wait function-updated --function-name "$SCRAPER_ORCHESTRATOR" --region us-west-2
 
-          # Update Scraper Orchestrator Lambda environment variables
-          aws lambda update-function-configuration \
-            --function-name "$SCRAPER_ORCHESTRATOR" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},SCRAPER_WORKER_LAMBDA=snow-tracker-scraper-worker-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2}" \
-            --region us-west-2
-          aws lambda wait function-updated --function-name "$SCRAPER_ORCHESTRATOR" --region us-west-2
           echo "Scraper orchestrator Lambda updated"
         fi
 
@@ -375,12 +338,6 @@ jobs:
             --region us-west-2
           aws lambda wait function-updated --function-name "$SCRAPER_WORKER" --region us-west-2
 
-          # Update Scraper Worker Lambda environment variables
-          aws lambda update-function-configuration \
-            --function-name "$SCRAPER_WORKER" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2,NEW_RESORTS_TOPIC_ARN=$NEW_RESORTS_TOPIC}" \
-            --region us-west-2
-          aws lambda wait function-updated --function-name "$SCRAPER_WORKER" --region us-west-2
           echo "Scraper worker Lambda updated"
         fi
 
@@ -395,12 +352,6 @@ jobs:
             --region us-west-2
           aws lambda wait function-updated --function-name "$SCRAPER_RESULTS_PROCESSOR" --region us-west-2
 
-          # Update Scraper Results Processor Lambda environment variables
-          aws lambda update-function-configuration \
-            --function-name "$SCRAPER_RESULTS_PROCESSOR" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2}" \
-            --region us-west-2
-          aws lambda wait function-updated --function-name "$SCRAPER_RESULTS_PROCESSOR" --region us-west-2
           echo "Scraper results processor Lambda updated"
         fi
 
@@ -416,18 +367,11 @@ jobs:
             --region us-west-2
           aws lambda wait function-updated --function-name "$VERSION_CONSOLIDATOR" --region us-west-2
 
-          # Update Version Consolidator Lambda environment variables
-          aws lambda update-function-configuration \
-            --function-name "$VERSION_CONSOLIDATOR" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},RESULTS_BUCKET=snow-tracker-pulumi-state-us-west-2,AWS_REGION_NAME=us-west-2,RESORT_UPDATES_TOPIC_ARN=$RESORT_UPDATES_TOPIC}" \
-            --region us-west-2
-          aws lambda wait function-updated --function-name "$VERSION_CONSOLIDATOR" --region us-west-2
           echo "Version consolidator Lambda updated"
         fi
 
         # Deploy Static JSON Lambda
         STATIC_JSON_LAMBDA=$(pulumi stack output static_json_lambda_name 2>/dev/null || echo "")
-        WEBSITE_BUCKET=$(pulumi stack output website_bucket_name 2>/dev/null || echo "")
         if [ -n "$STATIC_JSON_LAMBDA" ]; then
           echo "Deploying Static JSON Lambda: $STATIC_JSON_LAMBDA"
           aws lambda update-function-code \
@@ -437,16 +381,29 @@ jobs:
             --region us-west-2
           aws lambda wait function-updated --function-name "$STATIC_JSON_LAMBDA" --region us-west-2
 
-          # Update Static JSON Lambda environment variables
-          aws lambda update-function-configuration \
-            --function-name "$STATIC_JSON_LAMBDA" \
-            --environment "Variables={ENVIRONMENT=${{ env.ENVIRONMENT }},RESORTS_TABLE=snow-tracker-resorts-${{ env.ENVIRONMENT }},WEATHER_CONDITIONS_TABLE=snow-tracker-weather-conditions-${{ env.ENVIRONMENT }},WEBSITE_BUCKET=$WEBSITE_BUCKET,AWS_REGION_NAME=us-west-2}" \
-            --region us-west-2
-          aws lambda wait function-updated --function-name "$STATIC_JSON_LAMBDA" --region us-west-2
           echo "Static JSON Lambda updated"
         fi
 
         echo "Lambda deployment complete"
+
+    - name: Verify Lambda env vars come from Pulumi
+      run: |
+        ENV=${{ env.ENVIRONMENT }}
+        get() { aws lambda get-function-configuration --function-name "snow-tracker-$1-$ENV" --region us-west-2 --query "Environment.Variables.$2" --output text; }
+        fail=0
+        for fn in weather-processor weather-worker snowforecast-prefetch; do
+          v=$(get $fn ENABLE_SNOWFORECAST); echo "$fn ENABLE_SNOWFORECAST=$v"
+          [ "$v" = "true" ] || fail=1
+        done
+        for fn in api-handler chat-stream; do
+          v=$(get $fn JWT_SECRET_KEY)
+          if [ -z "$v" ] || [ "$v" = "None" ]; then echo "$fn JWT_SECRET_KEY missing"; fail=1; else echo "$fn JWT_SECRET_KEY set"; fi
+        done
+        for fn in api-handler chat-stream weather-processor weather-worker snowforecast-prefetch static-json notification-processor; do
+          v=$(get $fn ENV_MANAGED_BY); echo "$fn ENV_MANAGED_BY=$v"
+          [ "$v" = "pulumi" ] || fail=1
+        done
+        exit $fail
 
     - name: Seed resort data (dev/staging only)
       if: env.ENVIRONMENT == 'dev' || env.ENVIRONMENT == 'staging'
