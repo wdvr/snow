@@ -554,7 +554,7 @@ class OpenMeteoService:
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Open-Meteo API request failed: {str(e)}")
-            raise Exception(f"Failed to fetch weather data: {str(e)}")
+            raise Exception(f"Failed to fetch weather data: {str(e)}") from e
         except KeyError as e:
             logger.error(f"Unexpected Open-Meteo response format: missing {str(e)}")
             raise Exception(f"Unexpected weather API response format: missing {str(e)}")

@@ -1840,8 +1840,8 @@ class TestArchiveRawDataToS3:
                 assert decompressed["resort_count"] == 1  # both items same resort
                 assert len(decompressed["conditions"]) == 2
 
-    def test_skips_non_archival_hours(self):
-        """Should not upload when current hour is not 6, 14, or 22."""
+    def test_archives_every_hour(self):
+        """Each run only covers the resorts due that hour, so every run archives."""
         from handlers.weather_worker import _archive_raw_data_to_s3
 
         items = [
@@ -1855,7 +1855,7 @@ class TestArchiveRawDataToS3:
             ):
                 mock_dt.now.return_value = datetime(2026, 2, 26, hour, 0, 0, tzinfo=UTC)
                 _archive_raw_data_to_s3(items, "na_rockies", "prod")
-                mock_s3.put_object.assert_not_called()
+                mock_s3.put_object.assert_called_once()
 
     def test_skips_empty_items(self):
         """Should not upload when raw_data_items is empty."""

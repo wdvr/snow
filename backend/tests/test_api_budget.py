@@ -318,6 +318,26 @@ class TestWorkerCallPattern:
         )
         assert result["rate_limited"] is True
 
+    def test_real_openmeteo_429_is_flagged(self):
+        """OpenMeteoService wraps request errors; the 429 must still be seen."""
+        from handlers.weather_worker import process_elevation_point
+        from services import openmeteo_service
+
+        resp = requests.Response()
+        resp.status_code = 429
+        with patch.object(openmeteo_service.requests, "request", return_value=resp):
+            result = process_elevation_point(
+                _resort_data("a")["elevation_points"][0],
+                "a",
+                openmeteo_service.OpenMeteoService(),
+                MagicMock(),
+                MagicMock(),
+                None,
+                None,
+            )
+        assert result["success"] is False
+        assert result["rate_limited"] is True
+
     def test_process_elevation_point_respects_budget(self):
         from handlers.weather_worker import process_elevation_point
 

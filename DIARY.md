@@ -13,7 +13,7 @@ Apple WeatherKit (500k calls/month) returned `OVER_QUOTA` from Nov 2 19:18 UTC. 
 - **WeatherKit once per resort**, shared by its elevation points (it has no elevation parameter).
 - **Hard daily budgets** in the new `snow-tracker-api-budget-{env}` table (WeatherKit 15k units/day, a request counts as 2; Open-Meteo 30k/day), plus circuit breakers: `OVER_QUOTA` stops WeatherKit until the next UTC day, 429 bursts back Open-Meteo off for 15 minutes. 429 is no longer retried.
 - Worker stops before its timeout and async retries are off (`MaximumRetryAttempts=0`).
-- Bulk condition reads look back `COLD_REFRESH_HOURS + 2` hours instead of 2.
+- Bulk condition reads look back two refresh cycles (13h) instead of 2h; raw-data archival runs every hour (each run only covers the resorts due). Non-prod refreshes everything on each (6-hourly) run.
 Expected: WeatherKit ~5.1k calls/day (~157k/month), Open-Meteo forecast ~15k/day (was 73k + ERA5), with 50 demand resorts.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|

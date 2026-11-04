@@ -34,8 +34,9 @@ WEATHERKIT_UNITS_PER_CALL = 2
 OPENMETEO_DAILY_BUDGET = int(os.environ.get("OPENMETEO_DAILY_BUDGET", "30000"))
 
 DEMAND_TTL_HOURS = 48
-BUDGET_ITEM_TTL_DAYS = 3
-RESERVE_BLOCK = 25
+# Kept ~6 weeks so month-to-date usage can be reported (analytics dashboard)
+BUDGET_ITEM_TTL_DAYS = 40
+RESERVE_BLOCK = 10
 
 
 def _today(now: datetime | None = None) -> str:
@@ -67,7 +68,9 @@ class ApiBudget:
     ):
         self.provider = provider
         self.daily_limit = daily_limit
-        self.block_size = max(1, block_size)
+        # A block never exceeds the limit (the first reservation of the day
+        # has no counter to check against)
+        self.block_size = max(1, min(block_size, daily_limit))
         table_name = API_BUDGET_TABLE if table_name is None else table_name
         self._table = None
         if table_name:

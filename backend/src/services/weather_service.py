@@ -362,11 +362,11 @@ class WeatherService:
         start_time = time.time()
 
         try:
-            # Cutoff covers one full refresh cycle: resorts nobody looks at are
+            # Cutoff covers two refresh cycles: resorts nobody looks at are
             # refreshed every COLD_REFRESH_HOURS (see weather_processor), the
-            # rest hourly. That keeps ~1-2 items per resort per elevation, so a
-            # single DynamoDB page (~1MB) still covers ~500 resorts per level.
-            cutoff = datetime.now(UTC) - timedelta(hours=COLD_REFRESH_HOURS + 2)
+            # rest hourly, and one missed cycle must not blank a resort. That
+            # keeps ~2 items per cold resort per elevation; bulk reads paginate.
+            cutoff = datetime.now(UTC) - timedelta(hours=COLD_REFRESH_HOURS * 2 + 1)
             cutoff_str = cutoff.isoformat()
 
             conditions_by_resort: dict[str, list[WeatherCondition]] = defaultdict(list)

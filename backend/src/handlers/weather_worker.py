@@ -81,6 +81,25 @@ def _remaining_ms(context) -> int | None:
     return remaining if isinstance(remaining, int) else None
 
 
+def _is_rate_limited(exc: BaseException | None) -> bool:
+    """True if ``exc`` or an exception it wraps is an HTTP 429.
+
+    OpenMeteoService re-raises request errors as a plain Exception, so the
+    HTTPError is only reachable through the exception chain.
+    """
+    seen = 0
+    while exc is not None and seen < 5:
+        if (
+            isinstance(exc, requests.exceptions.HTTPError)
+            and exc.response is not None
+            and exc.response.status_code == 429
+        ):
+            return True
+        exc = exc.__cause__ or exc.__context__
+        seen += 1
+    return False
+
+
 def save_weather_condition(table, weather_condition: WeatherCondition) -> None:
     """Save weather condition to DynamoDB table."""
     try:
@@ -95,11 +114,12 @@ def save_weather_condition(table, weather_condition: WeatherCondition) -> None:
 def _archive_raw_data_to_s3(
     raw_data_items: list[dict], region: str, environment: str
 ) -> None:
-    """Archive raw weather data to S3 if current hour is an archival hour (6, 14, 22 UTC)."""
-    archival_hours = {6, 14, 22}
-    current_hour = datetime.now(UTC).hour
-    if current_hour not in archival_hours:
-        return
+    """Archive raw weather data to S3.
+
+    Runs on every invocation: with the refresh rotation each run only covers
+    the resorts due that hour, so fixed archival hours would miss most of the
+    cold resorts.
+    """
     if not raw_data_items:
         return
 
@@ -508,11 +528,7 @@ def process_elevation_point(
 
     except Exception as e:
         result["error"] = str(e)
-        if (
-            isinstance(e, requests.exceptions.HTTPError)
-            and e.response is not None
-            and e.response.status_code == 429
-        ):
+        if _is_rate_limited(e):
             result["rate_limited"] = True
         logger.error(
             f"Error processing elevation {result['level']} for {resort_id}: {e}"

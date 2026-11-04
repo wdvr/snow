@@ -312,7 +312,11 @@ api_budget_table = aws.dynamodb.Table(
 
 # Refresh discipline for the weather pipeline: resorts without demand refresh
 # every coldRefreshHours; daily hard budgets per provider
-cold_refresh_hours = config.get("coldRefreshHours") or "6"
+# Non-prod schedules run every 6h (and are usually disabled): refresh all
+# resorts on each run there, or most would never be refreshed
+cold_refresh_hours = config.get("coldRefreshHours") or (
+    "6" if environment == "prod" else "1"
+)
 weatherkit_daily_budget = config.get("weatherKitDailyBudget") or "15000"
 openmeteo_daily_budget = config.get("openMeteoDailyBudget") or "30000"
 

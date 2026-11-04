@@ -82,7 +82,10 @@ POLLING_PRE_SEASON_DAYS = 21
 # Refresh discipline: resorts someone wants (viewed in the last 48h or
 # favorited) refresh every hour; every other resort refreshes once every
 # COLD_REFRESH_HOURS, spread evenly over the hours by a stable hash.
-COLD_REFRESH_HOURS = max(1, int(os.environ.get("COLD_REFRESH_HOURS", "6")))
+COLD_REFRESH_HOURS = int(os.environ.get("COLD_REFRESH_HOURS", "6"))
+if COLD_REFRESH_HOURS < 1 or 24 % COLD_REFRESH_HOURS:
+    # Slots must tile the day evenly or some resorts wait longer than a cycle
+    COLD_REFRESH_HOURS = 6
 USER_PREFERENCES_TABLE = os.environ.get("USER_PREFERENCES_TABLE", "")
 
 _weatherkit_budget: ApiBudget | None = None
