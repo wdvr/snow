@@ -12,6 +12,9 @@ from boto3.dynamodb.conditions import Key
 from models.weather import ConfidenceLevel, WeatherCondition
 from utils.dynamodb_utils import parse_from_dynamodb
 
+# Must match weather_processor: resorts without demand refresh this often
+COLD_REFRESH_HOURS = max(1, int(os.environ.get("COLD_REFRESH_HOURS", "6")))
+
 
 class WeatherService:
     """Service for fetching weather data from external APIs."""
@@ -359,10 +362,11 @@ class WeatherService:
         start_time = time.time()
 
         try:
-            # Use 2-hour cutoff to reduce items per query (weather updates hourly)
-            # This means each resort has at most ~2 items per elevation, so a single
-            # DynamoDB page (~1MB) covers ~500 resorts per elevation level.
-            cutoff = datetime.now(UTC) - timedelta(hours=2)
+            # Cutoff covers one full refresh cycle: resorts nobody looks at are
+            # refreshed every COLD_REFRESH_HOURS (see weather_processor), the
+            # rest hourly. That keeps ~1-2 items per resort per elevation, so a
+            # single DynamoDB page (~1MB) still covers ~500 resorts per level.
+            cutoff = datetime.now(UTC) - timedelta(hours=COLD_REFRESH_HOURS + 2)
             cutoff_str = cutoff.isoformat()
 
             conditions_by_resort: dict[str, list[WeatherCondition]] = defaultdict(list)

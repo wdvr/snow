@@ -681,7 +681,7 @@ class TestWeatherProcessorHandler:
         assert result["statusCode"] == 200
         body = json.loads(result["body"])
         assert body["mode"] == "parallel"
-        mock_opp.assert_called_once_with(ctx)
+        mock_opp.assert_called_once_with(ctx, force_all=False)
 
     def test_timeout_handling(self):
         """Handler should stop processing when remaining time is low."""
@@ -973,6 +973,16 @@ class TestOrchestrateParallelProcessing:
     """Tests for the parallel orchestration function."""
 
     MODULE = "handlers.weather_processor"
+
+    @pytest.fixture(autouse=True)
+    def _refresh_every_resort(self):
+        """These tests predate the refresh filter: make every resort due."""
+        with (
+            patch(f"{self.MODULE}.COLD_REFRESH_HOURS", 1),
+            patch(f"{self.MODULE}.get_demand_resort_ids", return_value=set()),
+            patch(f"{self.MODULE}.get_favorite_resort_ids", return_value=set()),
+        ):
+            yield
 
     def test_success_single_region(self):
         from handlers.weather_processor import orchestrate_parallel_processing
@@ -1500,6 +1510,16 @@ class TestSeasonFilterParallel:
     """Out-of-season resorts are skipped in orchestrate_parallel_processing too."""
 
     MODULE = "handlers.weather_processor"
+
+    @pytest.fixture(autouse=True)
+    def _refresh_every_resort(self):
+        """These tests predate the refresh filter: make every resort due."""
+        with (
+            patch(f"{self.MODULE}.COLD_REFRESH_HOURS", 1),
+            patch(f"{self.MODULE}.get_demand_resort_ids", return_value=set()),
+            patch(f"{self.MODULE}.get_favorite_resort_ids", return_value=set()),
+        ):
+            yield
 
     def test_off_season_resorts_not_dispatched(self):
         from handlers.weather_processor import orchestrate_parallel_processing

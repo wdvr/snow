@@ -14,9 +14,16 @@ from datetime import UTC, datetime
 from typing import Any
 
 import boto3
+import requests
 from botocore.exceptions import ClientError
 
 from models.weather import WeatherCondition
+from services.api_budget import (
+    OPENMETEO_DAILY_BUDGET,
+    WEATHERKIT_DAILY_BUDGET,
+    WEATHERKIT_UNITS_PER_CALL,
+    ApiBudget,
+)
 from services.daily_history_service import DailyHistoryService
 from services.multi_source_merger import MultiSourceMerger, SourceData
 from services.onthesnow_scraper import OnTheSnowScraper
@@ -56,6 +63,22 @@ INTER_RESORT_DELAY = float(os.environ.get("INTER_RESORT_DELAY", "0.5"))
 
 # TTL for weather conditions: 60 days (extended from 7 days)
 WEATHER_CONDITIONS_TTL_DAYS = 60
+
+# Stop starting new resorts when less than this is left, so the worker never
+# hits its timeout (a timed-out async invoke would otherwise be retried).
+MIN_REMAINING_MS = 60000
+# After this many Open-Meteo 429s in one invocation, back off for all workers
+OPENMETEO_429_LIMIT = 5
+OPENMETEO_BACKOFF_SECONDS = 900
+
+
+def _remaining_ms(context) -> int | None:
+    """Milliseconds left in this invocation, or None outside Lambda."""
+    try:
+        remaining = context.get_remaining_time_in_millis()
+    except AttributeError:
+        return None
+    return remaining if isinstance(remaining, int) else None
 
 
 def save_weather_condition(table, weather_condition: WeatherCondition) -> None:
@@ -131,9 +154,7 @@ def _build_supplementary_sources(
     scraper: OnTheSnowScraper | None,
     scraped_data: Any | None,
     snowforecast_cache: dict[str, Any],
-    weatherkit_service: Any | None,
-    lat: float,
-    lon: float,
+    weatherkit_data: Any | None,
     elevation_level: str,
 ) -> list[SourceData]:
     """Build list of supplementary SourceData from available sources."""
@@ -200,24 +221,19 @@ def _build_supplementary_sources(
             )
         )
 
-    # WeatherKit inline fetch
-    if ENABLE_WEATHERKIT and weatherkit_service:
-        try:
-            wk_data = weatherkit_service.get_weather(lat, lon, resort_id=resort_id)
-            if wk_data:
-                sources.append(
-                    SourceData(
-                        source_name="weatherkit",
-                        snowfall_24h_cm=wk_data.snowfall_24h_cm,
-                        temperature_c=wk_data.temperature_c,
-                        raw_data={
-                            "snowfall_24h_mm": wk_data.snowfall_24h_mm,
-                            "precipitation_type": wk_data.precipitation_type,
-                        },
-                    )
-                )
-        except Exception as e:
-            logger.warning(f"WeatherKit failed for {resort_id}: {e}")
+    # WeatherKit (fetched once per resort by the caller)
+    if weatherkit_data:
+        sources.append(
+            SourceData(
+                source_name="weatherkit",
+                snowfall_24h_cm=weatherkit_data.snowfall_24h_cm,
+                temperature_c=weatherkit_data.temperature_c,
+                raw_data={
+                    "snowfall_24h_mm": weatherkit_data.snowfall_24h_mm,
+                    "precipitation_type": weatherkit_data.precipitation_type,
+                },
+            )
+        )
 
     return sources
 
@@ -233,7 +249,8 @@ def process_elevation_point(
     snow_summary_service: SnowSummaryService | None = None,
     daily_history_service: DailyHistoryService | None = None,
     snowforecast_cache: dict[str, Any] | None = None,
-    weatherkit_service: Any | None = None,
+    weatherkit_data: Any | None = None,
+    openmeteo_budget: ApiBudget | None = None,
 ) -> dict[str, Any]:
     """Process a single elevation point and save the weather condition.
 
@@ -241,7 +258,13 @@ def process_elevation_point(
 
     Returns a dict with success status and any error info.
     """
-    result = {"success": False, "error": None, "level": None}
+    result = {
+        "success": False,
+        "error": None,
+        "level": None,
+        "rate_limited": False,
+        "over_budget": False,
+    }
 
     try:
         # Handle both dict and object formats
@@ -267,6 +290,11 @@ def process_elevation_point(
             )
             last_known_freeze_date = existing_summary.get("last_freeze_date")
 
+        if openmeteo_budget is not None and not openmeteo_budget.try_consume(1):
+            result["over_budget"] = True
+            result["error"] = "Open-Meteo daily budget reached"
+            return result
+
         # Fetch current weather data from Open-Meteo
         # Pass the last known freeze date for better accumulation tracking
         weather_data = weather_service.get_current_weather(
@@ -282,9 +310,7 @@ def process_elevation_point(
             scraper=scraper,
             scraped_data=scraped_data,
             snowforecast_cache=snowforecast_cache or {},
-            weatherkit_service=weatherkit_service,
-            lat=lat,
-            lon=lon,
+            weatherkit_data=weatherkit_data,
             elevation_level=level,
         )
         if supplementary_sources:
@@ -482,6 +508,12 @@ def process_elevation_point(
 
     except Exception as e:
         result["error"] = str(e)
+        if (
+            isinstance(e, requests.exceptions.HTTPError)
+            and e.response is not None
+            and e.response.status_code == 429
+        ):
+            result["rate_limited"] = True
         logger.error(
             f"Error processing elevation {result['level']} for {resort_id}: {e}"
         )
@@ -523,6 +555,10 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
         "scraper_hits": 0,
         "scraper_misses": 0,
         "errors": 0,
+        "weatherkit_calls": 0,
+        "openmeteo_rate_limited": 0,
+        "openmeteo_over_budget": 0,
+        "stopped_early": None,
         "start_time": datetime.now(UTC).isoformat(),
         "region": region,
     }
@@ -547,6 +583,10 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
             logger.info(
                 f"Loaded Snow-Forecast cache with {len(snowforecast_cache)} resorts"
             )
+
+        # Hard daily budgets shared by all workers (DynamoDB counters)
+        openmeteo_budget = ApiBudget("openmeteo", OPENMETEO_DAILY_BUDGET)
+        weatherkit_budget = ApiBudget("weatherkit", WEATHERKIT_DAILY_BUDGET)
 
         # Initialize WeatherKit service if enabled
         weatherkit_service = None
@@ -590,6 +630,19 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
             resort_id = resort_data.get("resort_id")
             resort_name = resort_data.get("name", resort_id)
 
+            remaining = _remaining_ms(context)
+            if remaining is not None and remaining < MIN_REMAINING_MS:
+                stats["stopped_early"] = "time"
+                logger.warning(
+                    f"Stopping early: <{MIN_REMAINING_MS}ms left, "
+                    f"{stats['resorts_processed']}/{len(resorts)} resorts done"
+                )
+                break
+            if openmeteo_budget.is_tripped():
+                stats["stopped_early"] = "openmeteo_backoff"
+                logger.warning("Open-Meteo backoff active, stopping this batch")
+                break
+
             try:
                 logger.info(f"Processing resort: {resort_name} ({resort_id})")
 
@@ -617,6 +670,29 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
                         logger.warning(f"Scraper failed for {resort_id}: {e}")
                         stats["scraper_misses"] += 1
 
+                # WeatherKit has no elevation parameter: one call per resort,
+                # shared by all its elevation points
+                weatherkit_data = None
+                if weatherkit_service:
+                    first = elevation_points[0]
+                    lat = (
+                        first.get("latitude")
+                        if isinstance(first, dict)
+                        else first.latitude
+                    )
+                    lon = (
+                        first.get("longitude")
+                        if isinstance(first, dict)
+                        else first.longitude
+                    )
+                    if not weatherkit_budget.is_tripped():
+                        try:
+                            weatherkit_data = weatherkit_service.get_weather(
+                                lat, lon, resort_id=resort_id, budget=weatherkit_budget
+                            )
+                        except Exception as e:
+                            logger.warning(f"WeatherKit failed for {resort_id}: {e}")
+
                 # Process elevation points concurrently using ThreadPoolExecutor
                 with ThreadPoolExecutor(max_workers=ELEVATION_CONCURRENCY) as executor:
                     futures = {
@@ -632,7 +708,8 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
                             snow_summary_service,
                             daily_history_service,
                             snowforecast_cache,
-                            weatherkit_service,
+                            weatherkit_data,
+                            openmeteo_budget,
                         ): elevation_point
                         for elevation_point in elevation_points
                     }
@@ -650,10 +727,26 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
                                         "raw_data": result["raw_data"],
                                     }
                                 )
+                        elif result.get("over_budget"):
+                            stats["openmeteo_over_budget"] += 1
                         else:
                             stats["errors"] += 1
+                            if result.get("rate_limited"):
+                                stats["openmeteo_rate_limited"] += 1
 
                 stats["resorts_processed"] += 1
+
+                if (
+                    stats["openmeteo_rate_limited"] >= OPENMETEO_429_LIMIT
+                    and not openmeteo_budget.is_tripped()
+                ):
+                    openmeteo_budget.trip(
+                        time.time() + OPENMETEO_BACKOFF_SECONDS,
+                        f"{stats['openmeteo_rate_limited']} HTTP 429s",
+                    )
+                if stats["openmeteo_over_budget"]:
+                    stats["stopped_early"] = "openmeteo_budget"
+                    break
 
                 # Rate limit: small delay between resorts to avoid overwhelming APIs
                 if INTER_RESORT_DELAY > 0:
@@ -670,6 +763,8 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
             except Exception as e:
                 logger.error(f"Failed to archive raw data to S3: {e}")
 
+        stats["openmeteo_calls"] = openmeteo_budget.used
+        stats["weatherkit_calls"] = weatherkit_budget.used // WEATHERKIT_UNITS_PER_CALL
         stats["end_time"] = datetime.now(UTC).isoformat()
         stats["duration_seconds"] = (
             datetime.fromisoformat(stats["end_time"].replace("Z", "+00:00"))
@@ -680,7 +775,10 @@ def weather_worker_handler(event: dict[str, Any], context) -> dict[str, Any]:
             f"Worker completed for region {region}. "
             f"Processed {stats['resorts_processed']} resorts, "
             f"{stats['conditions_saved']} conditions saved, "
-            f"{stats['errors']} errors"
+            f"{stats['errors']} errors, "
+            f"openmeteo_calls={stats['openmeteo_calls']} "
+            f"weatherkit_calls={stats['weatherkit_calls']} "
+            f"stopped_early={stats['stopped_early']}"
         )
 
         return {

@@ -240,6 +240,7 @@ snow-tracker-chat-{env}                    - AI chat conversations (30d TTL)
 snow-tracker-condition-reports-{env}       - User condition reports (90d TTL)
 snow-tracker-chat-suggestions-{env}       - Dynamic AI chat suggestions (no TTL)
 snow-tracker-notifications-{env}          - In-app notification history (30d TTL)
+snow-tracker-api-budget-{env}             - Weather API daily budgets, circuit breakers, resort demand (TTL)
 ```
 
 ### Bedrock Configuration

@@ -22,7 +22,9 @@ logger = logging.getLogger(__name__)
 MAX_RETRIES = 3
 RETRY_DELAYS = [1, 2, 4]  # Exponential backoff: 1s, 2s, 4s
 TIMELINE_TIME_BUDGET_SECONDS = 24
-RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+# 429 is not retried: retrying a rate limit only burns more of the quota.
+# Callers back off instead (see weather_worker).
+RETRYABLE_STATUS_CODES = {500, 502, 503, 504}
 
 
 def _is_retryable_error(exception: Exception) -> bool:

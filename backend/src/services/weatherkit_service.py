@@ -15,7 +15,12 @@ from typing import Any
 import jwt  # PyJWT
 import requests
 
+from services.api_budget import WEATHERKIT_UNITS_PER_CALL, next_utc_midnight
+
 logger = logging.getLogger(__name__)
+
+# After a 429, stop calling WeatherKit for this long (all workers)
+RATE_LIMIT_BACKOFF_SECONDS = 900
 
 
 @dataclass
@@ -101,13 +106,23 @@ class WeatherKitService:
         return self._jwt_token
 
     def get_weather(
-        self, latitude: float, longitude: float, resort_id: str = ""
+        self,
+        latitude: float,
+        longitude: float,
+        resort_id: str = "",
+        budget: Any | None = None,
     ) -> WeatherKitData | None:
         """Fetch weather data from WeatherKit for a location.
 
-        Returns WeatherKitData or None if not configured or on error.
+        ``budget`` (an ``ApiBudget``) is checked before every request; on
+        OVER_QUOTA or 429 its circuit breaker is tripped so no further
+        requests go out until the quota can have recovered.
+
+        Returns WeatherKitData or None if not configured, over budget or on error.
         """
         if not self.configured:
+            return None
+        if budget is not None and not budget.try_consume(WEATHERKIT_UNITS_PER_CALL):
             return None
 
         try:
@@ -135,6 +150,12 @@ class WeatherKitService:
         except requests.exceptions.HTTPError as e:
             body = e.response.text[:200] if e.response is not None else "no body"
             logger.warning(f"WeatherKit request failed for {resort_id}: {e} — {body}")
+            status = e.response.status_code if e.response is not None else None
+            if budget is not None:
+                if "OVER_QUOTA" in body:
+                    budget.trip(next_utc_midnight(), "WeatherKit OVER_QUOTA")
+                elif status == 429:
+                    budget.trip(time.time() + RATE_LIMIT_BACKOFF_SECONDS, "HTTP 429")
             return None
         except requests.exceptions.RequestException as e:
             logger.warning(f"WeatherKit request failed for {resort_id}: {e}")

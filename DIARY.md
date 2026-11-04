@@ -5,6 +5,26 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Nov 4, 2026
+
+### Fix: Weather API quota burned in the first two days of the month
+Apple WeatherKit (500k calls/month) returned `OVER_QUOTA` from Nov 2 19:18 UTC. The hourly schedule fanned out to all 1,019 resorts and called WeatherKit once per elevation point (3,057/h, ~73k/day, ~2.27M/month) with no cache, no quota handling and no backoff; Open-Meteo got the same fan-out plus 3x retries on 429. Now:
+- **Demand-driven refresh:** resorts viewed through the API in the last 48h or favorited refresh hourly; all others once every `COLD_REFRESH_HOURS` (6), spread over the hours by a stable hash. `force_all` in the processor event refreshes everything.
+- **WeatherKit once per resort**, shared by its elevation points (it has no elevation parameter).
+- **Hard daily budgets** in the new `snow-tracker-api-budget-{env}` table (WeatherKit 15k units/day, a request counts as 2; Open-Meteo 30k/day), plus circuit breakers: `OVER_QUOTA` stops WeatherKit until the next UTC day, 429 bursts back Open-Meteo off for 15 minutes. 429 is no longer retried.
+- Worker stops before its timeout and async retries are off (`MaximumRetryAttempts=0`).
+- Bulk condition reads look back `COLD_REFRESH_HOURS + 2` hours instead of 2.
+Expected: WeatherKit ~5.1k calls/day (~157k/month), Open-Meteo forecast ~15k/day (was 73k + ERA5), with 50 demand resorts.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
+### Fix: Pulumi is the only source of Lambda env vars
+`deploy.yml` overwrote every Lambda's env vars after `pulumi up` with its own, different list. It now only ships code; secrets and flags go to Pulumi config and a deploy step checks the live values (`ENABLE_SNOWFORECAST=true`).
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| n/a | n/a | n/a | done |
+
 ## Nov 3, 2026 (v2: backend 1.1.0, Android 1.1.0)
 
 ### Fix: Prod deploy no longer deletes backend data from the website bucket

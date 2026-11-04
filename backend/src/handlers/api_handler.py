@@ -36,6 +36,7 @@ from models.resort import Resort
 from models.trip import Trip, TripCreate, TripStatus, TripUpdate
 from models.user import UserPreferences
 from models.weather import SNOW_QUALITY_EXPLANATIONS, SnowQuality, TimelineResponse
+from services.api_budget import record_demand
 from services.auth_service import AuthenticationError, AuthProvider, AuthService
 from services.chat_rate_limit import AUTH_CHAT_DAILY_LIMIT, check_user_daily_limit
 from services.condition_report_service import ConditionReportService
@@ -618,6 +619,26 @@ def _get_remaining_anonymous_messages(ip_address: str) -> int:
 _VALID_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{1,100}$")
 
 
+# Resort demand drives the weather refresh schedule (hourly for resorts
+# someone looked at in the last 48h). One write per resort per hour per
+# container is plenty.
+_DEMAND_WRITE_INTERVAL_S = 3600
+_demand_written_at: dict[str, float] = {}
+
+
+def _note_demand(resort_id: str) -> None:
+    now = time.time()
+    if now - _demand_written_at.get(resort_id, 0) < _DEMAND_WRITE_INTERVAL_S:
+        return
+    try:
+        if not _get_resort_cached(resort_id):  # only real resorts
+            return
+        _demand_written_at[resort_id] = now
+        record_demand(resort_id)
+    except Exception as e:  # never fail a request over bookkeeping
+        logger.warning(f"Failed to note demand for {resort_id}: {e}")
+
+
 def _validate_resource_id(value: str, name: str = "resource") -> None:
     """Validate a path-parameter ID (resort_id, trip_id, event_id, etc.).
 
@@ -1078,6 +1099,7 @@ async def get_nearby_resorts(
 async def get_resort(resort_id: str, response: Response):
     """Get details for a specific resort."""
     _validate_resource_id(resort_id, "resort_id")
+    _note_demand(resort_id)
     try:
         resort = _get_resort_cached(resort_id)
         if not resort:
@@ -1192,6 +1214,7 @@ async def get_resort_conditions(
 ):
     """Get current and recent weather conditions for all elevations at a resort."""
     _validate_resource_id(resort_id, "resort_id")
+    _note_demand(resort_id)
     try:
         # Verify resort exists
         resort = _get_resort_cached(resort_id)
@@ -1238,6 +1261,7 @@ async def get_elevation_condition(
 ):
     """Get current weather conditions for a specific elevation at a resort."""
     _validate_resource_id(resort_id, "resort_id")
+    _note_demand(resort_id)
     try:
         # Validate elevation level
         valid_levels = ["base", "mid", "top"]
@@ -1294,6 +1318,7 @@ def _get_latest_condition_cached(resort_id: str, elevation_level: str):
 async def get_snow_quality_summary(resort_id: str, response: Response):
     """Get snow quality summary for all elevations at a resort."""
     _validate_resource_id(resort_id, "resort_id")
+    _note_demand(resort_id)
     try:
         # Verify resort exists
         resort = _get_resort_cached(resort_id)
@@ -1421,6 +1446,7 @@ async def get_resort_history(
     If season is provided (e.g. "2025-2026"), computes Oct 1 to Apr 30 range.
     """
     _validate_resource_id(resort_id, "resort_id")
+    _note_demand(resort_id)
     try:
         # Verify resort exists
         resort = _get_resort_cached(resort_id)
@@ -1635,6 +1661,7 @@ async def get_resort_timeline(
     snow depth, and snow quality assessment.
     """
     _validate_resource_id(resort_id, "resort_id")
+    _note_demand(resort_id)
     try:
         # Validate elevation
         valid_levels = ["base", "mid", "top"]

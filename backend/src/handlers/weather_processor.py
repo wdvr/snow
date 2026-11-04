@@ -11,6 +11,7 @@ import gzip
 import json
 import logging
 import os
+import zlib
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
@@ -20,6 +21,11 @@ import boto3
 from botocore.exceptions import ClientError
 
 from models.weather import WeatherCondition
+from services.api_budget import (
+    WEATHERKIT_DAILY_BUDGET,
+    ApiBudget,
+    get_demand_resort_ids,
+)
 from services.daily_history_service import DailyHistoryService
 from services.multi_source_merger import MultiSourceMerger, SourceData
 from services.onthesnow_scraper import OnTheSnowScraper
@@ -72,6 +78,65 @@ WEATHER_CONDITIONS_TTL_DAYS = 60
 # days before the season start to catch opening-day storms and populate the
 # forecast view before opening.
 POLLING_PRE_SEASON_DAYS = 21
+
+# Refresh discipline: resorts someone wants (viewed in the last 48h or
+# favorited) refresh every hour; every other resort refreshes once every
+# COLD_REFRESH_HOURS, spread evenly over the hours by a stable hash.
+COLD_REFRESH_HOURS = max(1, int(os.environ.get("COLD_REFRESH_HOURS", "6")))
+USER_PREFERENCES_TABLE = os.environ.get("USER_PREFERENCES_TABLE", "")
+
+_weatherkit_budget: ApiBudget | None = None
+
+
+def _get_weatherkit_budget() -> ApiBudget:
+    global _weatherkit_budget
+    if _weatherkit_budget is None:
+        _weatherkit_budget = ApiBudget("weatherkit", WEATHERKIT_DAILY_BUDGET)
+    return _weatherkit_budget
+
+
+def refresh_slot(resort_id: str, cold_refresh_hours: int = COLD_REFRESH_HOURS) -> int:
+    """Stable hour slot (0..cold_refresh_hours-1) for a resort's cold refresh."""
+    return zlib.crc32(resort_id.encode()) % cold_refresh_hours
+
+
+def get_favorite_resort_ids() -> set[str]:
+    """All resorts favorited by any user (small table: few users)."""
+    if not USER_PREFERENCES_TABLE:
+        return set()
+    table = dynamodb.Table(USER_PREFERENCES_TABLE)
+    ids: set[str] = set()
+    kwargs: dict[str, Any] = {"ProjectionExpression": "favorite_resorts"}
+    try:
+        while True:
+            resp = table.scan(**kwargs)
+            for item in resp.get("Items", []):
+                ids.update(item.get("favorite_resorts") or [])
+            if "LastEvaluatedKey" not in resp:
+                break
+            kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
+    except Exception as e:
+        logger.warning(f"Failed to read favorite resorts: {e}")
+    return ids
+
+
+def select_due_resorts(
+    resorts: list,
+    demand_ids: set[str],
+    now: datetime,
+    cold_refresh_hours: int = COLD_REFRESH_HOURS,
+) -> tuple[list, int]:
+    """Resorts to refresh this hour and how many of them are demand-driven."""
+    current_slot = now.hour % cold_refresh_hours
+    due = []
+    hot = 0
+    for r in resorts:
+        if r.resort_id in demand_ids:
+            due.append(r)
+            hot += 1
+        elif refresh_slot(r.resort_id, cold_refresh_hours) == current_slot:
+            due.append(r)
+    return due, hot
 
 
 def get_remaining_time_ms(context) -> int:
@@ -215,7 +280,9 @@ def _build_supplementary_sources_processor(
     # WeatherKit inline fetch
     if ENABLE_WEATHERKIT and weatherkit_service:
         try:
-            wk_data = weatherkit_service.get_weather(lat, lon, resort_id=resort_id)
+            wk_data = weatherkit_service.get_weather(
+                lat, lon, resort_id=resort_id, budget=_get_weatherkit_budget()
+            )
             if wk_data:
                 sources.append(
                     SourceData(
@@ -463,7 +530,7 @@ def process_elevation_point(
 MIN_TIME_BUFFER_MS = 60000
 
 
-def orchestrate_parallel_processing(context) -> dict[str, Any]:
+def orchestrate_parallel_processing(context, force_all: bool = False) -> dict[str, Any]:
     """
     Orchestrate parallel weather processing by invoking worker Lambdas.
 
@@ -513,6 +580,20 @@ def orchestrate_parallel_processing(context) -> dict[str, Any]:
                 }
             ),
         }
+
+    # Only fan out to resorts that are due (demand-driven or TTL rotation)
+    in_season_count = len(resorts)
+    hot_count = 0
+    if not force_all:
+        demand_ids = get_demand_resort_ids() | get_favorite_resort_ids()
+        resorts, hot_count = select_due_resorts(
+            resorts, demand_ids, now, COLD_REFRESH_HOURS
+        )
+    logger.info(
+        f"Refresh filter: {len(resorts)} of {in_season_count} in-season resorts due "
+        f"({hot_count} by demand, cold refresh every {COLD_REFRESH_HOURS}h, "
+        f"force_all={force_all})"
+    )
 
     # Group resorts by region
     resorts_by_region: dict[str, list[str]] = defaultdict(list)
@@ -599,6 +680,8 @@ def orchestrate_parallel_processing(context) -> dict[str, Any]:
                 "workers_failed": failed,
                 "total_resorts": len(resorts),
                 "skipped_off_season": skipped_off_season,
+                "in_season_resorts": in_season_count,
+                "demand_resorts": hot_count,
                 "regions": list(chunked_regions.keys()),
                 "duration_seconds": duration,
                 "invocations": invocations,
@@ -637,7 +720,9 @@ def weather_processor_handler(event: dict[str, Any], context) -> dict[str, Any]:
         # Check if parallel processing is enabled
         if PARALLEL_PROCESSING:
             logger.info("Parallel processing mode enabled - orchestrating workers")
-            return orchestrate_parallel_processing(context)
+            return orchestrate_parallel_processing(
+                context, force_all=bool((event or {}).get("force_all"))
+            )
 
         logger.info(
             "Sequential processing mode (set PARALLEL_PROCESSING=true for parallel)"

@@ -385,7 +385,7 @@ class TripService:
 
         try:
             conditions = self.weather_service.get_conditions_for_resort(
-                resort_id, hours_back=6
+                resort_id, hours_back=12
             )
             if not conditions:
                 return None

@@ -11,6 +11,8 @@ This Pulumi program defines the AWS infrastructure for the Snow Quality Tracker 
 - EKS cluster with Grafana/Prometheus (staging/prod only)
 """
 
+import json
+
 import pulumi
 import pulumi_aws as aws
 
@@ -291,6 +293,29 @@ chat_rate_limit_table = aws.dynamodb.Table(
     tags=tags,
 )
 
+# Weather API daily budgets, circuit breakers and resort demand
+# (see backend/src/services/api_budget.py)
+api_budget_table = aws.dynamodb.Table(
+    f"{app_name}-api-budget-{environment}",
+    name=f"{app_name}-api-budget-{environment}",
+    billing_mode="PAY_PER_REQUEST",
+    hash_key="pk",
+    attributes=[
+        aws.dynamodb.TableAttributeArgs(name="pk", type="S"),
+    ],
+    ttl=aws.dynamodb.TableTtlArgs(
+        enabled=True,
+        attribute_name="expires_at",
+    ),
+    tags=tags,
+)
+
+# Refresh discipline for the weather pipeline: resorts without demand refresh
+# every coldRefreshHours; daily hard budgets per provider
+cold_refresh_hours = config.get("coldRefreshHours") or "6"
+weatherkit_daily_budget = config.get("weatherKitDailyBudget") or "15000"
+openmeteo_daily_budget = config.get("openMeteoDailyBudget") or "30000"
+
 # Condition reports table for user-submitted resort condition reports
 condition_reports_table = aws.dynamodb.Table(
     f"{app_name}-condition-reports-{environment}",
@@ -537,6 +562,30 @@ if environment == "prod":
         endpoint="wouterdevriendt@gmail.com",
     )
 
+lambda_api_budget_policy = aws.iam.RolePolicy(
+    f"{app_name}-lambda-api-budget-policy-{environment}",
+    role=lambda_role.id,
+    policy=api_budget_table.arn.apply(
+        lambda arn: json.dumps(
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "dynamodb:GetItem",
+                            "dynamodb:PutItem",
+                            "dynamodb:UpdateItem",
+                            "dynamodb:Scan",
+                        ],
+                        "Resource": arn,
+                    }
+                ],
+            }
+        )
+    ),
+)
+
 weather_processor_lambda = aws.lambda_.Function(
     f"{app_name}-weather-processor-{environment}",
     name=f"{app_name}-weather-processor-{environment}",
@@ -568,6 +617,10 @@ weather_processor_lambda = aws.lambda_.Function(
             "SNOW_SUMMARY_TABLE": f"{app_name}-snow-summary-{environment}",
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
             "WEATHER_API_KEY": config.get_secret("weatherApiKey") or "",
+            "API_BUDGET_TABLE": api_budget_table.name,
+            "USER_PREFERENCES_TABLE": f"{app_name}-user-preferences-{environment}",
+            "COLD_REFRESH_HOURS": cold_refresh_hours,
+            "WEATHERKIT_DAILY_BUDGET": weatherkit_daily_budget,
             # Multi-source weather data
             "ENABLE_SNOWFORECAST": "true",
             "ENABLE_WEATHERKIT": config.get("enableWeatherKit") or "false",
@@ -615,6 +668,9 @@ weather_worker_lambda = aws.lambda_.Function(
             "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
             "AWS_REGION_NAME": aws_region,
             "ENABLE_SCRAPING": "true",
+            "API_BUDGET_TABLE": api_budget_table.name,
+            "WEATHERKIT_DAILY_BUDGET": weatherkit_daily_budget,
+            "OPENMETEO_DAILY_BUDGET": openmeteo_daily_budget,
             "SNOW_SUMMARY_TABLE": f"{app_name}-snow-summary-{environment}",
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
             "WEBSITE_BUCKET": website_bucket_name,
@@ -631,6 +687,14 @@ weather_worker_lambda = aws.lambda_.Function(
     ),
     tags=tags,
     opts=pulumi.ResourceOptions(depends_on=[lambda_role, weather_worker_log_group]),
+)
+
+# A failed or timed-out worker is not retried: the next scheduled run picks
+# the resorts up again, and retries only multiply external API calls.
+weather_worker_invoke_config = aws.lambda_.FunctionEventInvokeConfig(
+    f"{app_name}-weather-worker-invoke-config-{environment}",
+    function_name=weather_worker_lambda.name,
+    maximum_retry_attempts=0,
 )
 
 # CloudWatch Events rule to trigger weather processor every hour
@@ -695,6 +759,7 @@ static_json_lambda = aws.lambda_.Function(
             "WEATHER_CONDITIONS_TABLE": f"{app_name}-weather-conditions-{environment}",
             "WEBSITE_BUCKET": website_bucket_name,
             "AWS_REGION_NAME": aws_region,
+            "COLD_REFRESH_HOURS": cold_refresh_hours,
         }
     ),
     tags=tags,
@@ -1398,6 +1463,8 @@ def get_conditions(resort_id, headers):
             "DAILY_HISTORY_TABLE": f"{app_name}-daily-history-{environment}",
             "CHAT_SUGGESTIONS_TABLE": f"{app_name}-chat-suggestions-{environment}",
             "NOTIFICATIONS_TABLE": f"{app_name}-notifications-{environment}",
+            "API_BUDGET_TABLE": api_budget_table.name,
+            "COLD_REFRESH_HOURS": cold_refresh_hours,
             "APNS_PLATFORM_APP_ARN": apns_platform_app_arn
             if apns_platform_app_arn
             else "",
