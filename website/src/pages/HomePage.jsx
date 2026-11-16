@@ -34,13 +34,13 @@ function HomePage() {
     },
     {
       icon: <FiMapPin />,
-      title: '130+ World-Class Resorts',
-      description: 'Track conditions at top resorts across North America, the Alps, Japan, and more.'
+      title: '1,000+ Resorts',
+      description: 'Track conditions at over 1,000 resorts in 25 countries across North America, Europe, Scandinavia, Japan, Oceania and South America.'
     },
     {
       icon: <FiCloud />,
-      title: '72h Forecasts',
-      description: 'See predicted snowfall for the next 24-72 hours. Plan your powder days in advance.'
+      title: '7-Day Forecasts',
+      description: 'See predicted snowfall and snow quality for the week ahead. Plan your powder days in advance.'
     },
     {
       icon: <FiSmartphone />,
@@ -50,8 +50,8 @@ function HomePage() {
   ]
 
   const stats = [
-    { number: '130+', label: 'Resorts' },
-    { number: '11', label: 'Countries' },
+    { number: '1,000+', label: 'Resorts' },
+    { number: '25', label: 'Countries' },
     { number: '24/7', label: 'Updates' },
     { number: '100%', label: 'Free' }
   ]
