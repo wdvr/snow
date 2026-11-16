@@ -403,6 +403,12 @@ jobs:
           v=$(get $fn ENV_MANAGED_BY); echo "$fn ENV_MANAGED_BY=$v"
           [ "$v" = "pulumi" ] || fail=1
         done
+        # Readers' lookbacks must match the processor's cold refresh cycle
+        cold=$(get weather-processor COLD_REFRESH_HOURS); echo "weather-processor COLD_REFRESH_HOURS=$cold"
+        for fn in api-handler chat-stream static-json; do
+          v=$(get $fn COLD_REFRESH_HOURS); echo "$fn COLD_REFRESH_HOURS=$v"
+          [ "$v" = "$cold" ] || fail=1
+        done
         exit $fail
 
     - name: Seed resort data (dev/staging only)

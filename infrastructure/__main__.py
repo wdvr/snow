@@ -312,10 +312,13 @@ api_budget_table = aws.dynamodb.Table(
 
 # Refresh discipline for the weather pipeline: resorts without demand refresh
 # every coldRefreshHours; daily hard budgets per provider
+# Prod: 12h keeps Open-Meteo forecast calls under the 10k/day free tier while
+# viewed/favorited resorts stay hourly (~7.8k/day at 950 in-season resorts and
+# 32 demand resorts; crosses 10k at ~65 demand resorts, then use 24)
 # Non-prod schedules run every 6h (and are usually disabled): refresh all
 # resorts on each run there, or most would never be refreshed
 cold_refresh_hours = config.get("coldRefreshHours") or (
-    "6" if environment == "prod" else "1"
+    "12" if environment == "prod" else "1"
 )
 weatherkit_daily_budget = config.get("weatherKitDailyBudget") or "15000"
 openmeteo_daily_budget = config.get("openMeteoDailyBudget") or "30000"
@@ -1523,6 +1526,8 @@ chat_stream_lambda = aws.lambda_.Function(
             "CHAT_RATE_LIMIT_TABLE_NAME": chat_rate_limit_table.name,
             "RESULTS_BUCKET": "snow-tracker-pulumi-state-us-west-2",
             "AWS_REGION_NAME": aws_region,
+            # Condition lookbacks must cover the cold refresh cycle
+            "COLD_REFRESH_HOURS": cold_refresh_hours,
             # The stream rejects requests without a valid access token
             "JWT_SECRET_KEY": config.get_secret("jwtSecretKey") or "",
             "AWS_LAMBDA_EXEC_WRAPPER": "/opt/bootstrap",

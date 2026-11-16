@@ -220,7 +220,10 @@ class WeatherService:
             return []
 
         try:
-            # Calculate cutoff timestamp for time filtering
+            # Never look back less than two refresh cycles: a resort nobody
+            # looks at is refreshed every COLD_REFRESH_HOURS, and one missed
+            # cycle must not blank it. Free: the query reads newest first.
+            hours_back = max(hours_back, COLD_REFRESH_HOURS * 2 + 1)
             cutoff = datetime.now(UTC) - timedelta(hours=hours_back)
             cutoff_str = cutoff.isoformat()
 

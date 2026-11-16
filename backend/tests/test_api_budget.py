@@ -440,3 +440,29 @@ class TestDailyCallVolume:
         # Fits Apple's 500k/month even if each request counts per data set (x2)
         assert after["weatherkit"] * 2 * 31 < 500_000
         assert after["openmeteo_forecast"] < before_openmeteo / 4
+
+    def test_prod_cadence_fits_openmeteo_free_tier(self):
+        """12h cold refresh (prod default) keeps forecast calls under 10k/day."""
+        # As observed in prod on Nov 16, 2026: 950 in-season, 32 by demand
+        resorts = _resorts(950)
+        start = datetime(2026, 11, 16, tzinfo=UTC)
+        demand = {f"resort-{i}" for i in range(32)}
+
+        def per_day(cold_hours):
+            from handlers.weather_processor import select_due_resorts
+
+            return 3 * sum(
+                len(
+                    select_due_resorts(
+                        resorts, demand, start + timedelta(hours=h), cold_hours
+                    )[0]
+                )
+                for h in range(24)
+            )
+
+        assert per_day(6) == 3 * (32 * 24 + 918 * 4) == 13_320  # measured: 13,362
+        assert per_day(12) == 3 * (32 * 24 + 918 * 2) == 7_812
+        assert per_day(24) == 3 * (32 * 24 + 918) == 5_058
+        # The Nov 3 assumptions (1,019 resorts, 50 by demand) also fit at 12h
+        nov3 = self._simulate(12, {f"resort-{i}" for i in range(self.DEMAND)})
+        assert nov3["openmeteo_forecast"] == 9_414 < 10_000

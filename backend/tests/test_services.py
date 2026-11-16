@@ -740,6 +740,24 @@ class TestGetConditionsForResort:
         # Should be a compound expression (resort_id AND timestamp)
         assert "&" in str(key_expr) or "AND" in str(key_expr).upper()
 
+    def _cutoff_age_hours(self, mock_table):
+        key_expr = mock_table.query.call_args.kwargs["KeyConditionExpression"]
+        cutoff = key_expr.get_expression()["values"][1].get_expression()["values"][1]
+        return (
+            datetime.now(UTC) - datetime.fromisoformat(cutoff)
+        ).total_seconds() / 3600
+
+    def test_lookback_covers_two_cold_refresh_cycles(self, service, mock_table):
+        """A resort refreshed every 12h must not blank after one missed cycle."""
+        with patch("services.weather_service.COLD_REFRESH_HOURS", 12):
+            service.get_conditions_for_resort("test-resort", hours_back=12)
+        assert self._cutoff_age_hours(mock_table) == pytest.approx(25, abs=0.1)
+
+    def test_longer_lookback_is_kept(self, service, mock_table):
+        with patch("services.weather_service.COLD_REFRESH_HOURS", 12):
+            service.get_conditions_for_resort("test-resort", hours_back=48)
+        assert self._cutoff_age_hours(mock_table) == pytest.approx(48, abs=0.1)
+
     def test_error_returns_empty_list(self, service, mock_table):
         """DynamoDB errors should be caught and return empty list."""
         mock_table.query.side_effect = Exception("DynamoDB error")
