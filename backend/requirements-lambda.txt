@@ -1,13 +1,13 @@
 # Core dependencies for Lambda deployment
-boto3>=1.43.123
+boto3>=1.44.3
 requests>=2.34.2
-pydantic>=2.14.2
-fastapi>=0.162.0
+pydantic>=2.14.3
+fastapi>=0.163.1
 mangum>=0.22.0
 httpx>=0.28.1
 python-jose[cryptography]>=3.5.0
 python-multipart>=0.0.33
-cachetools>=7.2.8
+cachetools>=8.0.0
 uvicorn>=0.54.0
 python-ulid>=4.1.0
 beautifulsoup4>=4.15.0
