@@ -26,6 +26,7 @@ from services.quality_explanation_service import (
     score_to_100,
 )
 from services.resort_service import ResortService
+from services.season_dates import apply_season_dates, load_season_dates
 from services.snow_quality_service import SnowQualityService
 from services.weather_service import WeatherService
 from utils.constants import DEFAULT_ELEVATION_WEIGHT, ELEVATION_WEIGHTS
@@ -128,6 +129,14 @@ class StaticJsonGenerator:
         # Get all resorts
         resorts = self.resort_service.get_all_resorts()
         logger.info(f"Found {len(resorts)} resorts")
+
+        # Merge season opening/closing dates (display metadata only)
+        try:
+            season_entries = load_season_dates(s3_client, self.website_bucket)
+            resorts = apply_season_dates(resorts, season_entries)
+            logger.info(f"Season dates available for {len(season_entries)} resorts")
+        except Exception as e:
+            logger.warning(f"Season dates not merged into resorts.json: {e}")
 
         # Convert to JSON-serializable format
         resorts_data = []

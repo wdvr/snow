@@ -5,6 +5,18 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Nov 17, 2026
+
+### Feature: Season opening/closing dates on resorts
+In mid-November the resort list showed "90 Powder Day" for Tahoe resorts that hadn't opened. Resorts now carry `opening_date`, `closing_date` (YYYY-MM-DD) and a derived `season_status` (`pre_season`, `open`, `closing_soon`, `post_season`, `temporarily_closed`, or null without data) on `/api/v1/resorts`, `/resorts/{id}`, `/resorts/nearby` and `data/resorts.json`. The fields are additive; scoring is untouched.
+- **Source:** OnTheSnow projected/announced dates plus the resort's reported state (open, closed, weekends only, temporarily closed). Each resort page also carries ~9 nearby resorts' status, so the refresh skips pages it already has.
+- **Mapping:** `services/onthesnow_season_pages.json` covers 595 of the 1,019 catalog resorts. It was matched by distance and name (`scripts/build_onthesnow_season_mapping.py`) and reviewed by hand; sub-areas that share an umbrella page are left out.
+- **Refresh:** the new `season-dates-refresh` Lambda runs every 12h and writes `data/season-dates.json`. Entries older than 14 days are dropped. A resort without source data gets no date and no status.
+- **Status:** dates first; a resort reported open counts as open, and a resort reported closed after its projected date is shown as not open yet (first half of the season) or closed early (second half). `closing_soon` = closing within 45 days.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| pending (2.1.3) | backlog | backlog | done |
+
 ## Nov 4, 2026
 
 ### Fix: Weather API quota burned in the first two days of the month

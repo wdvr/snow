@@ -5,6 +5,7 @@ from typing import Any
 from botocore.exceptions import ClientError
 
 from models.resort import Resort
+from services.season_dates import SEASON_FIELDS
 
 # Import directly from module to avoid circular import through utils/__init__.py
 from utils.cache import get_resort_metadata_cache
@@ -81,7 +82,8 @@ class ResortService:
         """Create a new resort."""
         try:
             # Convert resort to DynamoDB item format
-            item = resort.model_dump()
+            # Season dates are merged in at read time; never persist them.
+            item = resort.model_dump(exclude=SEASON_FIELDS)
 
             # Convert enum values to strings
             for point in item.get("elevation_points", []):
@@ -114,7 +116,8 @@ class ResortService:
         """Update an existing resort."""
         try:
             # Convert resort to DynamoDB item format
-            item = resort.model_dump()
+            # Season dates are merged in at read time; never persist them.
+            item = resort.model_dump(exclude=SEASON_FIELDS)
 
             # Convert enum values to strings
             for point in item.get("elevation_points", []):

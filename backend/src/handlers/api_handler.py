@@ -52,6 +52,7 @@ from services.quality_explanation_service import (
 )
 from services.recommendation_service import RecommendationService
 from services.resort_service import ResortService
+from services.season_dates import apply_season_dates, load_season_dates
 from services.snow_quality_service import SnowQualityService
 from services.trip_service import TripService
 from services.user_service import UserService
@@ -1021,10 +1022,27 @@ def _get_all_resorts_cached():
     static_resorts = _get_static_resorts_from_s3()
     if static_resorts is not None:
         # Convert dicts to Resort objects for compatibility
-        return [Resort(**r) for r in static_resorts]
+        return _with_season_dates([Resort(**r) for r in static_resorts])
 
     # Fall back to DynamoDB scan
-    return get_resort_service().get_all_resorts()
+    return _with_season_dates(get_resort_service().get_all_resorts())
+
+
+def _with_season_dates(resorts: list[Resort]) -> list[Resort]:
+    """Merge season opening/closing dates and status into resorts.
+
+    Display metadata only (scores are untouched). If the season-dates cache
+    is unavailable the resorts are returned as-is, so static resorts.json
+    values (if any) still come through.
+    """
+    try:
+        entries = load_season_dates(get_s3_client())
+        if not entries:
+            return resorts
+        return apply_season_dates(resorts, entries)
+    except Exception as e:
+        logger.warning("Season dates merge skipped: %s", e)
+        return resorts
 
 
 @app.get("/api/v1/resorts/nearby")
@@ -1066,8 +1084,9 @@ async def get_nearby_resorts(
         )
 
         # Format response with distances
+        dated = _with_season_dates([resort for resort, _ in nearby])
         results = []
-        for resort, distance_km in nearby:
+        for resort, (_, distance_km) in zip(dated, nearby, strict=True):
             results.append(
                 {
                     "resort": resort,
@@ -1126,7 +1145,10 @@ async def get_resort(resort_id: str, response: Response):
 @cached_resorts
 def _get_resort_cached(resort_id: str):
     """Cached wrapper for getting a single resort."""
-    return get_resort_service().get_resort(resort_id)
+    resort = get_resort_service().get_resort(resort_id)
+    if resort is None:
+        return None
+    return _with_season_dates([resort])[0]
 
 
 # MARK: - Weather Condition Endpoints
