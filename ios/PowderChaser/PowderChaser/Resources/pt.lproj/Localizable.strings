@@ -271,3 +271,23 @@
 "Delete Trip" = "Eliminar viagem";
 "Suggestion Sent!" = "Sugestão enviada!";
 "View Live Webcams" = "Ver webcams ao vivo";
+
+/* Season opening/closing dates (2.1.3) */
+"Opens %@" = "Abre a %@";
+"Closes %@" = "Fecha a %@";
+"Not open yet" = "Ainda não abriu";
+"Closed for season" = "Fechada para a temporada";
+"Temporarily closed" = "Temporariamente fechada";
+"today" = "hoje";
+"tomorrow" = "amanhã";
+"in %lld days" = "em %lld dias";
+"Open now" = "Abertas agora";
+"Opening soon" = "Abrem em breve";
+"Status:" = "Estado:";
+"No Open Resorts" = "Nenhuma estância aberta";
+"No Resorts Opening Soon" = "Nenhuma estância abre em breve";
+"None of the resorts matching your filters are reported open yet." = "Nenhuma das estâncias que correspondem aos seus filtros está aberta ainda.";
+"No resorts matching your filters have an opening date in the next %lld days." = "Nenhuma estância que corresponde aos seus filtros abre nos próximos %lld dias.";
+"Projected opening date" = "Data de abertura prevista";
+"Snow scores show the forecast and predict opening conditions." = "As pontuações de neve mostram a previsão e antecipam as condições na abertura.";
+"Snow forecast" = "Previsão de neve";

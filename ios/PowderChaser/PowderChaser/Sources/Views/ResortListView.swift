@@ -64,10 +64,12 @@ struct ResortListView: View {
     @State private var selectedRegion: SkiRegion? = nil
     @State private var sortOption: ResortSortOption = .name
     @State private var passFilter: PassFilter = .all
+    @State private var seasonFilter: SeasonFilter = .all
     @State private var visibleResortIds: Set<String> = []
     @AppStorage("selectedRegionFilter") private var savedRegionFilter: String = ""
     @AppStorage("resortSortOption") private var savedSortOption: String = "Name"
     @AppStorage("selectedPassFilter") private var savedPassFilter: String = "All"
+    @AppStorage("selectedSeasonFilter") private var savedSeasonFilter: String = "All"
 
     private var useMetricDistance: Bool {
         userPreferencesManager.preferredUnits.distance == .metric
@@ -99,12 +101,21 @@ struct ResortListView: View {
             passFiltered = regionFiltered.filter { $0.indyPass != nil }
         }
 
+        // Apply open-status filter (season dates)
+        let seasonFiltered: [Resort]
+        if seasonFilter == .all {
+            seasonFiltered = passFiltered
+        } else {
+            let now = Date()
+            seasonFiltered = passFiltered.filter { seasonFilter.matches($0, now: now) }
+        }
+
         // Apply search filter
         let searchFiltered: [Resort]
         if searchText.isEmpty {
-            searchFiltered = passFiltered
+            searchFiltered = seasonFiltered
         } else {
-            searchFiltered = passFiltered.filter { resort in
+            searchFiltered = seasonFiltered.filter { resort in
                 resort.name.localizedCaseInsensitiveContains(searchText) ||
                 resort.countryName.localizedCaseInsensitiveContains(searchText) ||
                 resort.country.localizedCaseInsensitiveContains(searchText) ||
@@ -247,6 +258,29 @@ struct ResortListView: View {
                         .padding(.horizontal)
                     }
 
+                    // Open-status filter
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack {
+                            Text("Status:")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            ForEach(SeasonFilter.allCases, id: \.self) { filter in
+                                FilterChip(
+                                    title: filter.title,
+                                    icon: filter.icon,
+                                    isSelected: seasonFilter == filter,
+                                    selectedColor: .teal
+                                ) {
+                                    seasonFilter = filter
+                                    savedSeasonFilter = filter.rawValue
+                                }
+                                .accessibilityIdentifier("seasonFilter_\(filter.rawValue)")
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+
                     // Sort options
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack {
@@ -335,6 +369,14 @@ struct ResortListView: View {
                     if filteredResorts.isEmpty && !snowConditionsManager.resorts.isEmpty {
                         if !searchText.isEmpty {
                             ContentUnavailableView.search(text: searchText)
+                        } else if seasonFilter != .all {
+                            ContentUnavailableView(
+                                seasonFilter == .openNow ? "No Open Resorts" : "No Resorts Opening Soon",
+                                systemImage: "calendar.badge.clock",
+                                description: Text(seasonFilter == .openNow
+                                    ? "None of the resorts matching your filters are reported open yet."
+                                    : "No resorts matching your filters have an opening date in the next \(SeasonFilter.openingSoonDays) days.")
+                            )
                         } else if passFilter != .all {
                             ContentUnavailableView(
                                 "No \(passFilter.rawValue) Pass Resorts",
@@ -366,6 +408,10 @@ struct ResortListView: View {
                 // Restore saved pass filter
                 if let filter = PassFilter(rawValue: savedPassFilter) {
                     passFilter = filter
+                }
+                // Restore saved open-status filter
+                if let filter = SeasonFilter(rawValue: savedSeasonFilter) {
+                    seasonFilter = filter
                 }
                 // Track screen view
                 AnalyticsService.shared.trackScreen("ResortList", screenClass: "ResortListView")
@@ -491,6 +537,10 @@ struct ResortRowView: View {
         snowConditionsManager.getSnowScore(for: resort.id)
     }
 
+    private var seasonDisplay: SeasonDisplay? {
+        resort.seasonDisplay()
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Header row: Logo + name + pass badges + quality badge
@@ -523,13 +573,28 @@ struct ResortRowView: View {
 
                 Spacer()
 
-                // Quality badge
-                if displayQuality != .unknown {
+                if let season = seasonDisplay, season.isClosed {
+                    // Closed resorts: season status is the dominant badge; the
+                    // snow score stays visible but secondary (it still predicts
+                    // opening conditions).
+                    VStack(alignment: .trailing, spacing: 4) {
+                        SeasonBadge(display: season)
+                        if displayQuality != .unknown {
+                            SecondaryScoreLabel(quality: displayQuality, snowScore: snowScore)
+                        }
+                    }
+                } else if displayQuality != .unknown {
+                    // Quality badge
                     QualityBadge(quality: displayQuality, snowScore: snowScore)
                 } else if snowConditionsManager.isLoadingSnowQuality {
                     ProgressView()
                         .scaleEffect(0.8)
                 }
+            }
+
+            // Open, closing soon: small "Closes <date>" note
+            if let season = seasonDisplay, !season.isClosed {
+                SeasonNote(display: season)
             }
 
             // Stats row using StatItem components
@@ -600,11 +665,12 @@ struct ResortRowView: View {
                 Text(explanation)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(seasonDisplay?.isClosed == true ? 1 : 2)
                     .truncationMode(.tail)
             }
         }
         .cardStyle()
+        .accessibilityIdentifier("resortList_cell_\(resort.id)")
     }
 
     private func tempColor(_ celsius: Double) -> Color {
@@ -652,6 +718,76 @@ struct FilterChip: View {
         .sensoryFeedback(.selection, trigger: isSelected)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .accessibilityLabel("\(title)\(isSelected ? ", selected" : "")")
+    }
+}
+
+/// Dominant season status for a resort that isn't open: "Opens Dec 4" with a
+/// countdown when near, or "Closed for season".
+struct SeasonBadge: View {
+    let display: SeasonDisplay
+    var large: Bool = false
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 1) {
+            HStack(spacing: 4) {
+                Image(systemName: display.icon)
+                Text(display.title)
+                    .fontWeight(.semibold)
+                    .lineLimit(1)
+            }
+            .font(large ? .headline : .caption)
+            if let countdown = display.countdown {
+                Text(countdown)
+                    .font(large ? .subheadline : .caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .foregroundStyle(.primary)
+        .padding(.horizontal, large ? 12 : 8)
+        .padding(.vertical, large ? 8 : 4)
+        .background(Color.gray.opacity(0.18))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("seasonBadge")
+    }
+}
+
+/// Muted snow score for closed resorts ("Snow 74 · Great").
+struct SecondaryScoreLabel: View {
+    let quality: SnowQuality
+    var snowScore: Int?
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "snowflake")
+            if let score = snowScore {
+                Text("\(score)")
+                    .fontDesign(.rounded)
+            }
+            Text(quality.displayName)
+        }
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Snow forecast: \(quality.displayName)\(snowScore.map { ", score \($0)" } ?? "")")
+    }
+}
+
+/// Small inline note for open resorts nearing their closing date.
+struct SeasonNote: View {
+    let display: SeasonDisplay
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: display.icon)
+            Text(display.title)
+            if let countdown = display.countdown {
+                Text("· \(countdown)")
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.orange)
+        .accessibilityElement(children: .combine)
     }
 }
 

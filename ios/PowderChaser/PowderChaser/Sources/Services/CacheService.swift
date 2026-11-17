@@ -34,6 +34,11 @@ final class CachedResort {
     var expertTerrain: Bool?
     var largeResort: Bool?
     var skiInOut: Bool?
+    // Season dates (optional, added in 2.1.3; lightweight migration)
+    var openingDate: String?
+    var closingDate: String?
+    var seasonStatusRaw: String?
+    var seasonDatesSource: String?
     var elevationPointsData: Data
     var weatherSourcesData: Data
     var cachedAt: Date
@@ -65,6 +70,10 @@ final class CachedResort {
         self.expertTerrain = resort.expertTerrain
         self.largeResort = resort.largeResort
         self.skiInOut = resort.skiInOut
+        self.openingDate = resort.openingDate
+        self.closingDate = resort.closingDate
+        self.seasonStatusRaw = resort.seasonStatusRaw
+        self.seasonDatesSource = resort.seasonDatesSource
 
         // Encode elevation points
         let encoder = JSONEncoder()
@@ -111,7 +120,11 @@ final class CachedResort {
             skiInOut: skiInOut,
             weatherSources: weatherSources,
             createdAt: nil,
-            updatedAt: nil
+            updatedAt: nil,
+            openingDate: openingDate,
+            closingDate: closingDate,
+            seasonStatusRaw: seasonStatusRaw,
+            seasonDatesSource: seasonDatesSource
         )
     }
 }
@@ -288,6 +301,10 @@ class CacheService {
                 existing.officialWebsite = resort.officialWebsite
                 existing.epicPass = resort.epicPass
                 existing.ikonPass = resort.ikonPass
+                existing.openingDate = resort.openingDate
+                existing.closingDate = resort.closingDate
+                existing.seasonStatusRaw = resort.seasonStatusRaw
+                existing.seasonDatesSource = resort.seasonDatesSource
                 let encoder = JSONEncoder()
                 existing.elevationPointsData = (try? encoder.encode(resort.elevationPoints)) ?? Data()
                 existing.weatherSourcesData = (try? encoder.encode(resort.weatherSources)) ?? Data()

@@ -1654,3 +1654,170 @@ final class PowderChaserTests: XCTestCase {
         XCTAssertNil(matchedDay, "Crust date outside timeline should not match any day")
     }
 }
+
+// MARK: - Season Dates Tests
+
+final class SeasonDatesTests: XCTestCase {
+
+    /// Noon UTC on the given day; resorts below use UTC so "today" is stable.
+    private func day(_ s: String) -> Date {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.dateFormat = "yyyy-MM-dd HH:mm"
+        return f.date(from: s + " 12:00")!
+    }
+
+    private func resort(
+        status: String?, opening: String? = nil, closing: String? = nil, timezone: String = "UTC"
+    ) -> Resort {
+        Resort(
+            id: "kirkwood", name: "Kirkwood", country: "US", region: "CA",
+            city: nil, stateProvince: nil, elevationPoints: [], timezone: timezone,
+            officialWebsite: nil, trailMapUrl: nil, webcamUrl: nil,
+            greenRunsPct: nil, blueRunsPct: nil, blackRunsPct: nil, doubleBlackRunsPct: nil,
+            hasSnowmaking: nil, dayTicketPriceMinUsd: nil, dayTicketPriceMaxUsd: nil,
+            annualSnowfallCm: nil, epicPass: nil, ikonPass: nil, mountainCollective: nil,
+            indyPass: nil, familyFriendly: nil, expertTerrain: nil, largeResort: nil,
+            skiInOut: nil, weatherSources: [], createdAt: nil, updatedAt: nil,
+            openingDate: opening, closingDate: closing, seasonStatusRaw: status,
+            seasonDatesSource: status == nil ? nil : "onthesnow"
+        )
+    }
+
+    func testDecodesSeasonFields() throws {
+        let json = """
+        {"resort_id": "kirkwood", "name": "Kirkwood", "country": "US", "region": "CA",
+         "elevation_points": [], "timezone": "America/Los_Angeles", "weather_sources": [],
+         "opening_date": "2026-12-04", "closing_date": "2027-04-11",
+         "season_status": "pre_season", "season_dates_source": "onthesnow"}
+        """
+        let r = try JSONDecoder().decode(Resort.self, from: json.data(using: .utf8)!)
+        XCTAssertEqual(r.openingDate, "2026-12-04")
+        XCTAssertEqual(r.closingDate, "2027-04-11")
+        XCTAssertEqual(r.seasonStatus, .preSeason)
+        XCTAssertEqual(r.seasonDatesSource, "onthesnow")
+    }
+
+    func testDecodesWithoutSeasonFields() throws {
+        // Older backends and resorts without data: fields absent or null
+        let json = """
+        {"resort_id": "x", "name": "X", "country": "JP", "region": "japan",
+         "elevation_points": [], "timezone": "Asia/Tokyo", "weather_sources": [],
+         "opening_date": null, "season_status": null}
+        """
+        let r = try JSONDecoder().decode(Resort.self, from: json.data(using: .utf8)!)
+        XCTAssertNil(r.openingDate)
+        XCTAssertNil(r.seasonStatus)
+        XCTAssertNil(r.seasonDisplay())
+        XCTAssertFalse(r.isOpenNow())
+    }
+
+    func testUnknownStatusIsIgnored() {
+        XCTAssertNil(resort(status: "something_new", opening: "2026-12-04").seasonDisplay())
+    }
+
+    func testPreSeasonShowsOpeningDateAndCountdown() {
+        let r = resort(status: "pre_season", opening: "2026-12-04", closing: "2027-04-11")
+        let display = r.seasonDisplay(now: day("2026-11-17"))
+        guard case .opensOn(_, let days)? = display else {
+            return XCTFail("expected opensOn, got \(String(describing: display))")
+        }
+        XCTAssertEqual(days, 17)
+        XCTAssertTrue(display!.isClosed)
+        XCTAssertEqual(display!.countdown, "in 17 days")
+        XCTAssertTrue(display!.title.hasPrefix("Opens "))
+        XCTAssertTrue(display!.title.contains("4"))
+    }
+
+    func testCountdownOnlyWhenNear() {
+        let far = resort(status: "pre_season", opening: "2027-06-05")
+        XCTAssertNil(far.seasonDisplay(now: day("2026-11-17"))?.countdown)
+        let tomorrow = resort(status: "pre_season", opening: "2026-11-18")
+        XCTAssertEqual(tomorrow.seasonDisplay(now: day("2026-11-17"))?.countdown, "tomorrow")
+        let today = resort(status: "pre_season", opening: "2026-11-17")
+        XCTAssertEqual(today.seasonDisplay(now: day("2026-11-17"))?.countdown, "today")
+    }
+
+    func testDelayedOpeningShowsNotOpenYet() {
+        // Server says pre-season but the projected date has passed
+        let r = resort(status: "pre_season", opening: "2026-11-14", closing: "2027-04-11")
+        XCTAssertEqual(r.seasonDisplay(now: day("2026-11-17")), .notOpenYet)
+        XCTAssertFalse(r.isOpenNow(now: day("2026-11-17")))
+    }
+
+    func testOpenResortHasNoBadgeUntilClosingIsNear() {
+        let r = resort(status: "open", opening: "2026-11-05", closing: "2027-06-06")
+        XCTAssertNil(r.seasonDisplay(now: day("2027-01-10")))
+        XCTAssertTrue(r.isOpenNow(now: day("2027-01-10")))
+    }
+
+    func testClosingSoonShowsClosingDate() {
+        let r = resort(status: "closing_soon", opening: "2026-12-04", closing: "2027-04-11")
+        let display = r.seasonDisplay(now: day("2027-03-20"))
+        guard case .closesOn(_, let days)? = display else {
+            return XCTFail("expected closesOn, got \(String(describing: display))")
+        }
+        XCTAssertEqual(days, 22)
+        XCTAssertFalse(display!.isClosed)
+        XCTAssertTrue(r.isOpenNow(now: day("2027-03-20")))
+    }
+
+    func testClosingDatePassedIsClosedForSeasonEvenWithStaleStatus() {
+        // Cached payload from before the closing date
+        let r = resort(status: "closing_soon", opening: "2026-12-04", closing: "2027-04-11")
+        XCTAssertEqual(r.seasonDisplay(now: day("2027-04-12")), .closedForSeason)
+        XCTAssertFalse(r.isOpenNow(now: day("2027-04-12")))
+    }
+
+    func testPostSeasonAndTemporarilyClosed() {
+        XCTAssertEqual(
+            resort(status: "post_season", opening: "2026-06-13", closing: "2026-10-04")
+                .seasonDisplay(now: day("2026-11-17")),
+            .closedForSeason
+        )
+        XCTAssertEqual(
+            resort(status: "temporarily_closed", opening: "2026-06-19", closing: "2026-12-01")
+                .seasonDisplay(now: day("2026-11-17")),
+            .temporarilyClosed
+        )
+    }
+
+    func testDaysUntilUsesResortTimezone() {
+        // 03:00 UTC Dec 4 is still Dec 3 in California: opening is tomorrow there
+        let f = ISO8601DateFormatter()
+        let now = f.date(from: "2026-12-04T03:00:00Z")!
+        let r = resort(status: "pre_season", opening: "2026-12-04", timezone: "America/Los_Angeles")
+        XCTAssertEqual(r.daysUntil(r.openingDay!, now: now), 1)
+    }
+
+    func testSeasonFilter() {
+        let now = day("2026-11-17")
+        let open = resort(status: "open", opening: "2026-11-05", closing: "2027-06-06")
+        let soon = resort(status: "pre_season", opening: "2026-11-25", closing: "2027-05-23")
+        let later = resort(status: "pre_season", opening: "2026-12-11", closing: "2027-03-14")
+        let unknown = resort(status: nil)
+
+        XCTAssertTrue(SeasonFilter.all.matches(unknown, now: now))
+        XCTAssertTrue(SeasonFilter.openNow.matches(open, now: now))
+        XCTAssertFalse(SeasonFilter.openNow.matches(soon, now: now))
+        XCTAssertFalse(SeasonFilter.openNow.matches(unknown, now: now))
+        XCTAssertTrue(SeasonFilter.openingSoon.matches(soon, now: now))
+        XCTAssertFalse(SeasonFilter.openingSoon.matches(later, now: now))  // 24 days out
+        XCTAssertFalse(SeasonFilter.openingSoon.matches(open, now: now))
+        XCTAssertFalse(SeasonFilter.openingSoon.matches(unknown, now: now))
+    }
+
+    func testSeasonFilterRawValuesArePersistable() {
+        for filter in SeasonFilter.allCases {
+            XCTAssertEqual(SeasonFilter(rawValue: filter.rawValue), filter)
+        }
+    }
+
+    func testFormatSeasonDateDoesNotShiftDay() {
+        let date = Resort.parseSeasonDate("2026-12-04")!
+        let text = Resort.formatSeasonDate(date)
+        XCTAssertTrue(text.contains("4"), text)
+        XCTAssertFalse(text.contains("3"), text)
+    }
+}

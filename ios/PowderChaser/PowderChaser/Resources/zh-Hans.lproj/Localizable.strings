@@ -271,3 +271,23 @@
 "Delete Trip" = "删除行程";
 "Suggestion Sent!" = "建议已发送！";
 "View Live Webcams" = "查看实时摄像头";
+
+/* Season opening/closing dates (2.1.3) */
+"Opens %@" = "%@开放";
+"Closes %@" = "%@关闭";
+"Not open yet" = "尚未开放";
+"Closed for season" = "本季已结束";
+"Temporarily closed" = "暂时关闭";
+"today" = "今天";
+"tomorrow" = "明天";
+"in %lld days" = "%lld天后";
+"Open now" = "现在开放";
+"Opening soon" = "即将开放";
+"Status:" = "状态：";
+"No Open Resorts" = "没有开放的雪场";
+"No Resorts Opening Soon" = "没有即将开放的雪场";
+"None of the resorts matching your filters are reported open yet." = "符合筛选条件的雪场尚未开放。";
+"No resorts matching your filters have an opening date in the next %lld days." = "符合筛选条件的雪场在未来%lld天内都不会开放。";
+"Projected opening date" = "预计开放日期";
+"Snow scores show the forecast and predict opening conditions." = "雪况评分显示预报，并预示开放时的条件。";
+"Snow forecast" = "降雪预报";
