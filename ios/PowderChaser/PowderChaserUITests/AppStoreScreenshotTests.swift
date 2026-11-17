@@ -106,7 +106,7 @@ final class AppStoreScreenshotTests: XCTestCase {
         }
 
         // Tap the first result
-        let cells = app.cells
+        let cells = app.resortCells
         if cells.count > 0 {
             cells.element(boundBy: 0).tap()
         }
@@ -196,7 +196,7 @@ final class AppStoreScreenshotTests: XCTestCase {
         selectTab("Resorts")
         sleep(3)
 
-        let cells = app.cells
+        let cells = app.resortCells
         if cells.count > 0 {
             cells.element(boundBy: 0).tap()
         }

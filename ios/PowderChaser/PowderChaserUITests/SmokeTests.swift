@@ -32,15 +32,15 @@ final class SmokeTests: XCTestCase {
 
     func testResortListLoads() throws {
         // Should be on Resorts tab by default
-        let firstCell = app.cells.firstMatch
+        let firstCell = app.resortCells.firstMatch
         XCTAssertTrue(firstCell.waitForExistence(timeout: 15), "Resort cells should load from API")
-        XCTAssertGreaterThan(app.cells.count, 1, "Should show multiple resorts")
+        XCTAssertGreaterThan(app.resortCells.count, 1, "Should show multiple resorts")
 
         app.takeScreenshot(name: "resort-list", in: self)
     }
 
     func testResortDetailNavigation() throws {
-        let firstCell = app.cells.firstMatch
+        let firstCell = app.resortCells.firstMatch
         firstCell.waitAndTap(timeout: 15)
 
         // Detail view should show resort content
@@ -139,7 +139,7 @@ final class SmokeTests: XCTestCase {
 
     func testNoStaleQualityLabels() throws {
         // Wait for resort list + quality data to load
-        let firstCell = app.cells.firstMatch
+        let firstCell = app.resortCells.firstMatch
         firstCell.waitToExist(timeout: 15)
         sleep(5) // Wait for batch quality
 
@@ -151,7 +151,7 @@ final class SmokeTests: XCTestCase {
     // MARK: - Data Source Verification
 
     func testResortShowsDataSource() throws {
-        let firstCell = app.cells.firstMatch
+        let firstCell = app.resortCells.firstMatch
         firstCell.waitAndTap(timeout: 15)
 
         // Scroll down to find data source info

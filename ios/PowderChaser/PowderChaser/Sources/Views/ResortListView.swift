@@ -324,6 +324,7 @@ struct ResortListView: View {
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .accessibilityIdentifier("resortList_cell_\(resort.id)")
                             .onAppear {
                                 visibleResortIds.insert(resort.id)
                                 snowConditionsManager.onResortAppeared(resort.id)
@@ -670,7 +671,6 @@ struct ResortRowView: View {
             }
         }
         .cardStyle()
-        .accessibilityIdentifier("resortList_cell_\(resort.id)")
     }
 
     private func tempColor(_ celsius: Double) -> Color {

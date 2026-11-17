@@ -55,6 +55,13 @@ enum TestID {
 // MARK: - XCUIApplication Helpers
 
 extension XCUIApplication {
+    /// Resort rows in the resort list. The list is a LazyVStack of
+    /// NavigationLinks, not a List, so `cells` is always empty there; rows are
+    /// found by their accessibility identifier instead.
+    var resortCells: XCUIElementQuery {
+        buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "resortList_cell_"))
+    }
+
     /// Find element by accessibility identifier.
     func element(id: String) -> XCUIElement {
         descendants(matching: .any).matching(identifier: id).firstMatch
