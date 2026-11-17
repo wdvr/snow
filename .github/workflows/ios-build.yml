@@ -74,8 +74,48 @@ jobs:
 
     - name: Calculate build number
       id: version
+      env:
+        ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+        ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        ASC_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        ASC_BUNDLE_ID: com.wouterdevriendt.snowtracker
       run: |
-        BUILD=$(git rev-list --count HEAD)
+        # Date-based build number YYYYMMDDNN (runner-local date), the same scheme
+        # as builds uploaded by hand from the release Mac. NN is one more than the
+        # highest build already in App Store Connect today, and the result is always
+        # above every existing build, so TestFlight uploads are never rejected as
+        # lower/duplicate. PR builds are never uploaded and get YYYYMMDD00.
+        TODAY=$(date +%Y%m%d)
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          BUILD="${TODAY}00"
+        else
+          python3 -c "import jwt, cryptography" 2>/dev/null || \
+            pip3 install --quiet --break-system-packages PyJWT cryptography
+          cat > "$RUNNER_TEMP/latest_build.py" <<'PY'
+        import json, os, time, urllib.parse, urllib.request
+        import jwt
+        api = "https://api.appstoreconnect.apple.com/v1"
+        now = int(time.time())
+        token = jwt.encode(
+            {"iss": os.environ["ASC_ISSUER_ID"], "iat": now, "exp": now + 600, "aud": "appstoreconnect-v1"},
+            os.environ["ASC_PRIVATE_KEY"].replace("\r", ""),
+            algorithm="ES256",
+            headers={"kid": os.environ["ASC_KEY_ID"]},
+        )
+        def get(path):
+            req = urllib.request.Request(api + path, headers={"Authorization": f"Bearer {token}"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return json.load(resp)["data"]
+        bundle_id = os.environ["ASC_BUNDLE_ID"]
+        apps = get("/apps?" + urllib.parse.urlencode({"filter[bundleId]": bundle_id}))
+        app_id = next(a["id"] for a in apps if a["attributes"]["bundleId"] == bundle_id)
+        builds = get(f"/builds?filter[app]={app_id}&sort=-uploadedDate&limit=200&fields[builds]=version")
+        print(max([int(b["attributes"]["version"]) for b in builds if b["attributes"]["version"].isdigit()] + [0]))
+        PY
+          LATEST=$(python3 "$RUNNER_TEMP/latest_build.py") || { echo "::error::Could not read existing builds from App Store Connect"; exit 1; }
+          BUILD=$(( LATEST >= ${TODAY}01 ? LATEST + 1 : ${TODAY}01 ))
+          echo "Highest existing build in App Store Connect: $LATEST"
+        fi
         PLIST="ios/PowderChaser/Info.plist"
         VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST" 2>/dev/null || echo "1.0.0")
 
@@ -192,7 +232,8 @@ jobs:
           -authenticationKeyID ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
           -authenticationKeyIssuerID ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }} \
           CODE_SIGN_STYLE=Automatic \
-          DEVELOPMENT_TEAM=${{ env.TEAM_ID }}
+          DEVELOPMENT_TEAM=${{ env.TEAM_ID }} \
+          CURRENT_PROJECT_VERSION=${{ steps.version.outputs.build }}
 
     - name: Export IPA
       if: github.event_name != 'pull_request'
