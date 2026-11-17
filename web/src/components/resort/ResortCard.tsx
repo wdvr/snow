@@ -3,6 +3,8 @@ import { Thermometer, Snowflake, Wind, Heart, Navigation } from 'lucide-react'
 import type { Resort, SnowQualitySummary } from '../../api/types'
 import { QualityBadge } from './QualityBadge'
 import { ResortLogo } from './ResortLogo'
+import { SeasonBadge, SeasonNote, SecondaryScoreLabel } from './SeasonBadge'
+import { getSeasonDisplay, isSeasonClosed } from '../../utils/season'
 import { countryFlag, regionDisplayName } from '../../utils/format'
 import { useUnits } from '../../hooks/useUnits'
 
@@ -16,6 +18,9 @@ interface ResortCardProps {
 
 export function ResortCard({ resort, quality, isFavorite, onToggleFavorite, distanceKm }: ResortCardProps) {
   const { formatTemp, formatSnow } = useUnits()
+  const season = getSeasonDisplay(resort)
+  const seasonClosed = isSeasonClosed(season)
+  const hasQuality = quality?.overall_quality != null && quality.overall_quality !== 'unknown'
   return (
     <Link
       to={`/resort/${resort.resort_id}`}
@@ -33,12 +38,24 @@ export function ResortCard({ resort, quality, isFavorite, onToggleFavorite, dist
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          <QualityBadge
-            quality={quality?.overall_quality}
-            score={quality?.snow_score}
-            size="sm"
-          />
+        <div className="flex items-start gap-1">
+          {season && seasonClosed ? (
+            // Closed resorts: season status is the dominant badge; the snow
+            // score stays visible but secondary (it still predicts opening
+            // conditions).
+            <div className="flex flex-col items-end gap-1">
+              <SeasonBadge display={season} />
+              {hasQuality && (
+                <SecondaryScoreLabel quality={quality.overall_quality} score={quality.snow_score} />
+              )}
+            </div>
+          ) : (
+            <QualityBadge
+              quality={quality?.overall_quality}
+              score={quality?.snow_score}
+              size="sm"
+            />
+          )}
           {onToggleFavorite && (
             <button
               onClick={(e) => {
@@ -56,6 +73,13 @@ export function ResortCard({ resort, quality, isFavorite, onToggleFavorite, dist
           )}
         </div>
       </div>
+
+      {/* Open, closing soon: small "Closes <date>" note */}
+      {season && !seasonClosed && (
+        <div className="-mt-1 mb-3">
+          <SeasonNote display={season} />
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-2">
         <div className="flex items-center gap-1.5 text-sm text-gray-600">

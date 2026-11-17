@@ -58,7 +58,20 @@ export interface Resort {
   epic_pass: string | null
   ikon_pass: string | null
   indy_pass: string | null
+  // Season dates (YYYY-MM-DD) and server-derived season status. Null/absent
+  // when the backend has no source data for this resort; see utils/season.ts.
+  opening_date?: string | null
+  closing_date?: string | null
+  season_status?: SeasonStatus | null
+  season_dates_source?: string | null
 }
+
+export type SeasonStatus =
+  | 'pre_season'
+  | 'open'
+  | 'closing_soon'
+  | 'post_season'
+  | 'temporarily_closed'
 
 // --- Weather / Conditions ---
 

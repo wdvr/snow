@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Trophy, ArrowRight, Loader2, MapPin, Navigation, Heart, ChevronDown } from 'lucide-react'
+import { Search, Trophy, ArrowRight, Loader2, MapPin, Navigation, Heart, ChevronDown, Calendar, CircleCheck, CalendarClock } from 'lucide-react'
 import {
   useResorts,
   flattenResorts,
@@ -16,6 +16,21 @@ import { ResortCard } from '../components/resort/ResortCard'
 import { RegionFilter } from '../components/resort/RegionFilter'
 import { QualityBadge } from '../components/resort/QualityBadge'
 import { countryFlag } from '../utils/format'
+import {
+  type SeasonFilter,
+  SEASON_FILTERS,
+  SEASON_FILTER_LABELS,
+  OPENING_SOON_DAYS,
+  loadSeasonFilter,
+  saveSeasonFilter,
+  matchesSeasonFilter,
+} from '../utils/season'
+
+const SEASON_FILTER_ICONS = {
+  all: Calendar,
+  open_now: CircleCheck,
+  opening_soon: CalendarClock,
+} as const
 
 type SortOption = 'quality' | 'snow' | 'name' | 'favorites' | 'distance'
 type PassFilter = 'all' | 'epic' | 'ikon' | 'indy'
@@ -53,6 +68,12 @@ export function HomePage() {
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('quality')
   const [passFilter, setPassFilter] = useState<PassFilter>('all')
+  const [seasonFilter, setSeasonFilterState] = useState<SeasonFilter>(loadSeasonFilter)
+
+  const setSeasonFilter = (filter: SeasonFilter) => {
+    setSeasonFilterState(filter)
+    saveSeasonFilter(filter)
+  }
 
   const geo = useGeolocation()
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
@@ -78,10 +99,23 @@ export function HomePage() {
   const resorts = flattenResorts(resortsData)
   const totalCount = getTotalCount(resortsData)
 
+  // The status filter only has a few dozen matches across 1,000+ resorts, so
+  // filtering just the first page would hide most of them: load the rest.
+  useEffect(() => {
+    if (seasonFilter !== 'all' && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [seasonFilter, hasNextPage, isFetchingNextPage, fetchNextPage])
+
   const { data: bestConditions } = useBestConditions(5)
 
-  // Fetch quality for loaded resorts
-  const resortIds = useMemo(() => resorts.map((r) => r.resort_id), [resorts])
+  // Fetch quality for loaded resorts (only the status-filter matches when one
+  // is active, so auto-loading the remaining pages doesn't refetch every page)
+  const resortIds = useMemo(() => {
+    if (seasonFilter === 'all') return resorts.map((r) => r.resort_id)
+    const now = new Date()
+    return resorts.filter((r) => matchesSeasonFilter(r, seasonFilter, now)).map((r) => r.resort_id)
+  }, [resorts, seasonFilter])
   const { data: qualityMap } = useSnowQualityBatch(resortIds)
 
   // Compute distances for each resort (for distance sorting)
@@ -115,6 +149,12 @@ export function HomePage() {
       filtered = filtered.filter((r) => r.ikon_pass != null)
     } else if (passFilter === 'indy') {
       filtered = filtered.filter((r) => r.indy_pass != null)
+    }
+
+    // Open-status filter (season dates)
+    if (seasonFilter !== 'all') {
+      const now = new Date()
+      filtered = filtered.filter((r) => matchesSeasonFilter(r, seasonFilter, now))
     }
 
     // Search filter
@@ -153,14 +193,16 @@ export function HomePage() {
 
     // Server already sorted for quality/snow/name — preserve order
     return filtered
-  }, [resorts, search, sortBy, qualityMap, selectedRegion, favorites, passFilter, distanceMap])
+  }, [resorts, search, sortBy, qualityMap, selectedRegion, favorites, passFilter, seasonFilter, distanceMap])
 
   const isLoading = resortsLoading || regionsLoading
+  // Status filter is still pulling in the remaining pages
+  const isLoadingAllForSeason = seasonFilter !== 'all' && (hasNextPage || isFetchingNextPage)
 
   // Count text: "Showing X of Y resorts"
   const countText = (() => {
     if (isLoading) return 'Loading...'
-    if (search || passFilter !== 'all' || selectedRegion === 'favorites') {
+    if (search || passFilter !== 'all' || seasonFilter !== 'all' || selectedRegion === 'favorites') {
       // Client-side filtering active — show filtered count
       return `${filteredResorts.length} resorts`
     }
@@ -342,6 +384,29 @@ export function HomePage() {
             ))}
           </div>
 
+          {/* Open-status filter */}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            <span className="text-sm text-gray-500 shrink-0">Status:</span>
+            {SEASON_FILTERS.map((value) => {
+              const Icon = SEASON_FILTER_ICONS[value]
+              return (
+                <button
+                  key={value}
+                  onClick={() => setSeasonFilter(value)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                    seasonFilter === value
+                      ? 'bg-teal-600 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  }`}
+                  aria-pressed={seasonFilter === value}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {SEASON_FILTER_LABELS[value]}
+                </button>
+              )
+            })}
+          </div>
+
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">
               {countText}
@@ -370,13 +435,27 @@ export function HomePage() {
         </section>
 
         {/* Resort grid */}
-        {isLoading ? (
+        {isLoading || (isLoadingAllForSeason && filteredResorts.length === 0) ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
           </div>
         ) : filteredResorts.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-gray-500">No resorts found</p>
+            {!search && seasonFilter !== 'all' ? (
+              <>
+                <CalendarClock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <p className="font-medium text-gray-700">
+                  {seasonFilter === 'open_now' ? 'No Open Resorts' : 'No Resorts Opening Soon'}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {seasonFilter === 'open_now'
+                    ? 'None of the resorts matching your filters are reported open yet.'
+                    : `No resorts matching your filters have an opening date in the next ${OPENING_SOON_DAYS} days.`}
+                </p>
+              </>
+            ) : (
+              <p className="text-gray-500">No resorts found</p>
+            )}
             {search && (
               <button
                 onClick={() => setSearch('')}

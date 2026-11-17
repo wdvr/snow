@@ -38,12 +38,14 @@ import { WeatherDetailsCard } from '../components/resort/WeatherDetailsCard'
 import { AllElevationsSummary } from '../components/resort/AllElevationsSummary'
 import { SnowForecastCard } from '../components/resort/SnowForecastCard'
 import { DataSourcesCard } from '../components/resort/DataSourcesCard'
-import { formatDate, countryFlag, regionDisplayName } from '../utils/format'
+import { formatDate, formatQuality, countryFlag, regionDisplayName } from '../utils/format'
 import { useUnits } from '../hooks/useUnits'
 import { ConditionReportForm } from '../components/resort/ConditionReportForm'
 import { SuggestEditModal } from '../components/resort/SuggestEditModal'
 import { ResortLogo } from '../components/resort/ResortLogo'
 import { TrailMapCard } from '../components/resort/TrailMapCard'
+import { SeasonBadge, SeasonNote } from '../components/resort/SeasonBadge'
+import { getSeasonDisplay, isSeasonClosed } from '../utils/season'
 import type { SnowQuality, ConditionType } from '../api/types'
 
 type Tab = 'conditions' | 'forecast' | 'history' | 'reports'
@@ -113,6 +115,11 @@ export function ResortDetailPage() {
   const overallQuality = qualityData?.overall_quality as string | undefined
   const snowScore = (qualityData?.overall_snow_score ?? qualityData?.snow_score) as number | undefined
   const overallExplanation = (qualityData?.overall_explanation ?? qualityData?.explanation) as string | undefined
+  const hasQuality = overallQuality != null && overallQuality !== 'unknown'
+
+  // Season status: the badge leads and the snow score is muted while closed
+  const season = getSeasonDisplay(resort)
+  const seasonClosed = isSeasonClosed(season)
 
   // Elevation data
   const availableLevels = conditions?.map((c) => c.elevation_level) ?? []
@@ -293,13 +300,25 @@ export function ResortDetailPage() {
             )}
           </div>
 
-          {/* Overall quality */}
+          {/* Overall quality (muted while the resort is closed) */}
           <div className="flex flex-col items-center sm:items-end gap-2">
-            <QualityBadge
-              quality={overallQuality as SnowQuality}
-              score={snowScore}
-              size="lg"
-            />
+            {seasonClosed && hasQuality ? (
+              <div
+                className="flex flex-col items-center rounded-xl bg-gray-100 px-3 py-2 text-gray-500"
+                aria-label={`Snow forecast: ${formatQuality(overallQuality)}${snowScore != null ? `, score ${snowScore} out of 100` : ''}`}
+                data-testid="muted-score"
+              >
+                {snowScore != null && <span className="text-xl font-bold">{snowScore}</span>}
+                <span className="text-xs font-semibold">{formatQuality(overallQuality)}</span>
+                <span className="text-[11px]">Snow forecast</span>
+              </div>
+            ) : (
+              <QualityBadge
+                quality={overallQuality as SnowQuality}
+                score={snowScore}
+                size="lg"
+              />
+            )}
             {overallExplanation && (
               <p className="text-xs text-gray-500 max-w-xs text-center sm:text-right">
                 {overallExplanation}
@@ -307,6 +326,27 @@ export function ResortDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Season status: opening / closing date */}
+        {season && (
+          <div className="mt-4 pt-4 border-t border-gray-100" data-testid="resort-season">
+            {seasonClosed ? (
+              <div className="flex items-center gap-3">
+                <SeasonBadge display={season} large />
+                <div className="min-w-0">
+                  {season.kind === 'opensOn' && (
+                    <p className="text-xs font-semibold text-gray-700">Projected opening date</p>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Snow scores show the forecast and predict opening conditions.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <SeasonNote display={season} />
+            )}
+          </div>
+        )}
       </div>
 
       {/* Trail Map */}
