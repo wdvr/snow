@@ -19,44 +19,54 @@ struct OnboardingView: View {
         self.onComplete = onComplete
     }
 
+    /// Readable column width on wide displays (iPad, iPhone Duo inner display)
+    private let maxContentWidth: CGFloat = 640
+
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            VStack(spacing: 16) {
-                Image(systemName: "snowflake")
-                    .font(.system(size: 60))
-                    .foregroundStyle(.blue)
-
-                Text("Welcome to Powder Chaser")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-
-                // Algorithm value proposition
-                VStack(spacing: 8) {
-                    Text("Powered by our proprietary snow quality algorithm")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+        // Header and regions scroll together, so the copy is never squeezed into a
+        // truncated line when height is short (landscape, iPhone Duo cover/inner).
+        ScrollView {
+            VStack(spacing: 24) {
+                // Header
+                VStack(spacing: 16) {
+                    Image(systemName: "snowflake")
+                        .font(.system(size: 60))
                         .foregroundStyle(.blue)
 
-                    Text("Our ML model analyzes snowfall, temperature, and thaw-freeze cycles -- accounting for settling and compaction -- to assess actual skiing conditions before you go.")
-                        .font(.footnote)
+                    Text("Welcome to Powder Chaser")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+                        .minimumScaleFactor(0.75)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    // Algorithm value proposition
+                    VStack(spacing: 8) {
+                        Text("Powered by our proprietary snow quality algorithm")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.blue)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Text("Our ML model analyzes snowfall, temperature, and thaw-freeze cycles -- accounting for settling and compaction -- to assess actual skiing conditions before you go.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 20)
+                    }
+                    .padding(.vertical, 8)
+
+                    Text("Select the ski regions you want to track:")
+                        .font(.body)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.vertical, 8)
+                .padding(.horizontal, 20)
 
-                Text("Select the ski regions you want to track:")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-            }
-            .padding(.top, 40)
-            .padding(.bottom, 24)
-
-            // Region selection
-            ScrollView {
+                // Region selection
                 VStack(spacing: 24) {
                     // Northern Hemisphere
                     RegionGroupView(
@@ -75,11 +85,13 @@ struct OnboardingView: View {
                     )
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 100) // Space for button
             }
-
-            Spacer()
-
+            .padding(.top, 32)
+            .padding(.bottom, 16)
+            .frame(maxWidth: maxContentWidth)
+            .frame(maxWidth: .infinity)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             // Continue button
             VStack(spacing: 12) {
                 Button {
@@ -102,17 +114,11 @@ struct OnboardingView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .padding(.bottom, 40)
-            .background(
-                LinearGradient(
-                    colors: [Color(.systemBackground).opacity(0), Color(.systemBackground)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 100)
-                .allowsHitTesting(false),
-                alignment: .top
-            )
+            .frame(maxWidth: maxContentWidth)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 12)
+            .padding(.bottom, 12)
+            .background(.bar)
         }
         .onAppear {
             // Initialize with default selections (northern hemisphere regions)

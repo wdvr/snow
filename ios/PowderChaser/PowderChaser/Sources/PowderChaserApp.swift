@@ -154,10 +154,12 @@ struct MainTabView: View {
     @ObservedObject private var pushService = PushNotificationService.shared
     @ObservedObject private var networkMonitor = NetworkMonitor.shared
     @State private var deepLinkResort: Resort?
-    @State private var showingChat = false
     @State private var showingNotifications = false
     @StateObject private var notificationHistoryVM = NotificationHistoryViewModel()
     @ObservedObject private var userPrefs = UserPreferencesManager.shared
+
+    /// Tabs (Resorts, Map) that put the AI chat button in their toolbar instead of the floating bubble
+    private static let tabsWithToolbarChatButton: Set<Int> = [0, 1]
 
     /// Number of favorited resorts with significant predicted snow (≥10cm in 48h)
     private var favoritesStormCount: Int {
@@ -221,39 +223,43 @@ struct MainTabView: View {
                 .tint(.blue)
             }
 
-            // Floating AI chat bubble
-            Button {
-                showingChat = true
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [.blue, .purple],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+            // Floating AI chat bubble. Resorts and Map show the AI button in their
+            // toolbar instead: on wide layouts (iPhone Duo inner display) the bubble
+            // sat on top of the map's Search button and the resort cards' badges.
+            if !Self.tabsWithToolbarChatButton.contains(navigationCoordinator.selectedTab) {
+                Button {
+                    navigationCoordinator.showingChat = true
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.blue, .purple],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
-                        .frame(width: 56, height: 56)
-                        .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                            .frame(width: 56, height: 56)
+                            .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
 
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundStyle(.white)
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundStyle(.white)
+                    }
                 }
+                .padding(.trailing, 16)
+                .padding(.bottom, 72) // Above the tab bar
+                .accessibilityLabel("Ask AI about snow conditions")
+                .accessibilityIdentifier(AccessibilityID.Tab.chatFAB)
             }
-            .padding(.trailing, 16)
-            .padding(.bottom, 72) // Above the tab bar
-            .accessibilityLabel("Ask AI about snow conditions")
-            .accessibilityIdentifier(AccessibilityID.Tab.chatFAB)
         }
-        .sheet(isPresented: $showingChat) {
+        .sheet(isPresented: $navigationCoordinator.showingChat) {
             NavigationStack {
                 ChatView()
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) {
                             Button("Close") {
-                                showingChat = false
+                                navigationCoordinator.showingChat = false
                             }
                         }
                     }
@@ -291,6 +297,26 @@ struct MainTabView: View {
                 await notificationHistoryVM.loadNotifications()
             }
         }
+    }
+}
+
+/// Toolbar version of the floating AI chat button, used by tabs where the bubble
+/// would cover content.
+struct AskAIToolbarButton: View {
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
+    var identifier: String = AccessibilityID.Tab.chatFAB
+
+    var body: some View {
+        Button {
+            navigationCoordinator.showingChat = true
+        } label: {
+            Image(systemName: "sparkles")
+                .foregroundStyle(
+                    LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
+        }
+        .accessibilityLabel("Ask AI about snow conditions")
+        .accessibilityIdentifier(identifier)
     }
 }
 

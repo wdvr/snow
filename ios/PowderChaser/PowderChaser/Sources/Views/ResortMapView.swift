@@ -752,6 +752,8 @@ struct ResortMapView: View {
             .accessibilityLabel(showLegend ? "Hide legend" : "Show legend")
 
             regionMenu
+
+            AskAIToolbarButton(identifier: "map_chatButton")
         }
     }
 

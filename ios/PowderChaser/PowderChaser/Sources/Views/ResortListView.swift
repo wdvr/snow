@@ -310,6 +310,10 @@ struct ResortListView: View {
                     }
                 }
                 .padding(.vertical, 8)
+                // Horizontal scroll views draw their overflow into the safe area; in
+                // landscape that put chips under the status/connectivity pill
+                // (iPhone Duo inner display and cover). Keep the chip rows inside it.
+                .clipped()
 
                 // Resort list
                 ScrollView {
@@ -390,6 +394,9 @@ struct ResortListView: View {
             }
             .navigationTitle("Snow Resorts")
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    AskAIToolbarButton()
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     NotificationBellButton(viewModel: notificationHistoryVM, showingSheet: $showingNotifications)
                 }
