@@ -2255,6 +2255,41 @@ recommendations_best_integration = aws.apigateway.Integration(
     uri=api_handler_lambda.invoke_arn,
 )
 
+# Rankings resource: /api/v1/rankings
+rankings_resource = aws.apigateway.Resource(
+    f"{app_name}-rankings-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=api_v1_resource.id,
+    path_part="rankings",
+)
+
+# Weekend rankings resource: /api/v1/rankings/weekend ("Best this weekend")
+rankings_weekend_resource = aws.apigateway.Resource(
+    f"{app_name}-rankings-weekend-resource-{environment}",
+    rest_api=api_gateway.id,
+    parent_id=rankings_resource.id,
+    path_part="weekend",
+)
+
+# GET /api/v1/rankings/weekend
+rankings_weekend_method = aws.apigateway.Method(
+    f"{app_name}-rankings-weekend-method-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=rankings_weekend_resource.id,
+    http_method="GET",
+    authorization="NONE",
+)
+
+rankings_weekend_integration = aws.apigateway.Integration(
+    f"{app_name}-rankings-weekend-integration-{environment}",
+    rest_api=api_gateway.id,
+    resource_id=rankings_weekend_resource.id,
+    http_method=rankings_weekend_method.http_method,
+    integration_http_method="POST",
+    type="AWS_PROXY",
+    uri=api_handler_lambda.invoke_arn,
+)
+
 # =============================================================================
 # User API Routes (preferences, device tokens, notification settings)
 # =============================================================================
@@ -3380,6 +3415,7 @@ api_deployment = aws.apigateway.Deployment(
             quality_explanations_integration.id,
             recommendations_integration.id,
             recommendations_best_integration.id,
+            rankings_weekend_integration.id,
             auth_apple_integration.id,
             auth_google_integration.id,
             auth_guest_integration.id,
@@ -3442,6 +3478,7 @@ api_deployment = aws.apigateway.Deployment(
             quality_explanations_integration,
             recommendations_integration,
             recommendations_best_integration,
+            rankings_weekend_integration,
             auth_apple_integration,
             auth_google_integration,
             auth_guest_integration,
