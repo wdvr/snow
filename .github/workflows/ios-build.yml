@@ -220,11 +220,7 @@ jobs:
 
         security find-identity -v -p codesigning | head -5
 
-        # Archive with automatic signing, pinned to the Distribution identity in
-        # the CI keychain. Unpinned, Xcode picked the newest "Created via API"
-        # dev cert, which sits in the login keychain; that keychain is locked
-        # for the runner, so codesign failed with errSecInternalComponent
-        # (widget extension, Nov 21 2026).
+        # Archive with automatic signing (Xcode creates fresh dev cert + profiles)
         xcodebuild archive \
           -project ios/PowderChaser.xcodeproj \
           -scheme PowderChaser \
@@ -236,8 +232,6 @@ jobs:
           -authenticationKeyID ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
           -authenticationKeyIssuerID ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }} \
           CODE_SIGN_STYLE=Automatic \
-          CODE_SIGN_IDENTITY="Apple Distribution" \
-          OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN_PATH" \
           DEVELOPMENT_TEAM=${{ env.TEAM_ID }} \
           CURRENT_PROJECT_VERSION=${{ steps.version.outputs.build }}
 
