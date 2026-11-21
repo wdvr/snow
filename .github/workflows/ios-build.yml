@@ -220,20 +220,30 @@ jobs:
 
         security find-identity -v -p codesigning | head -5
 
-        # Archive with automatic signing (Xcode creates fresh dev cert + profiles)
+        # Archive unsigned, then ad-hoc sign with the target entitlements. The
+        # Export step re-signs with Apple Distribution and keeps them. A signed
+        # archive needs an Apple Development identity, and the team's only valid
+        # dev cert lives in the login keychain, which is locked for the runner.
         xcodebuild archive \
           -project ios/PowderChaser.xcodeproj \
           -scheme PowderChaser \
           -configuration Release \
           -archivePath $RUNNER_TEMP/Export/App.xcarchive \
           -destination 'generic/platform=iOS' \
-          -allowProvisioningUpdates \
-          -authenticationKeyPath $RUNNER_TEMP/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8 \
-          -authenticationKeyID ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
-          -authenticationKeyIssuerID ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }} \
-          CODE_SIGN_STYLE=Automatic \
+          CODE_SIGNING_ALLOWED=NO \
           DEVELOPMENT_TEAM=${{ env.TEAM_ID }} \
           CURRENT_PROJECT_VERSION=${{ steps.version.outputs.build }}
+
+        APP=$(ls -d $RUNNER_TEMP/Export/App.xcarchive/Products/Applications/*.app)
+        for FW in "$APP"/Frameworks/*; do
+          [ -e "$FW" ] && codesign --force --sign - "$FW"
+        done
+        codesign --force --sign - \
+          --entitlements ios/PowderChaserWidget/PowderChaserWidget.entitlements \
+          "$APP/PlugIns/PowderChaserWidgetExtension.appex"
+        codesign --force --sign - \
+          --entitlements ios/PowderChaser/PowderChaser.entitlements \
+          "$APP"
 
     - name: Export IPA
       if: github.event_name != 'pull_request'
