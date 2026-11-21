@@ -870,6 +870,73 @@ snowforecast_prefetch_schedule_target = aws.cloudwatch.EventTarget(
 )
 
 # =============================================================================
+# Season Dates Refresh Lambda - Resort opening/closing dates from OnTheSnow
+# =============================================================================
+
+season_dates_refresh_log_group = aws.cloudwatch.LogGroup(
+    f"{app_name}-season-dates-refresh-logs-{environment}",
+    name=f"/aws/lambda/{app_name}-season-dates-refresh-{environment}",
+    retention_in_days=14,
+    tags=tags,
+)
+
+# Writes data/season-dates.json to the website bucket; the API handler and
+# static JSON generator merge it into the resort payload.
+season_dates_refresh_lambda = aws.lambda_.Function(
+    f"{app_name}-season-dates-refresh-{environment}",
+    name=f"{app_name}-season-dates-refresh-{environment}",
+    role=lambda_role.arn,
+    handler="handlers.season_dates_refresh.season_dates_refresh_handler",
+    runtime="python3.12",
+    timeout=900,  # A few hundred OnTheSnow pages, 4 at a time
+    memory_size=256,
+    code=pulumi.AssetArchive(
+        {
+            "index.py": pulumi.StringAsset(placeholder_lambda_code),
+        }
+    ),
+    environment=aws.lambda_.FunctionEnvironmentArgs(
+        variables={
+            # Pulumi is the single source of truth for Lambda env vars;
+            # deploy.yml only ships code.
+            "ENV_MANAGED_BY": "pulumi",
+            "ENVIRONMENT": environment,
+            "WEBSITE_BUCKET": website_bucket_name,
+            "AWS_REGION_NAME": aws_region,
+        }
+    ),
+    tags=tags,
+    opts=pulumi.ResourceOptions(
+        depends_on=[lambda_role, season_dates_refresh_log_group]
+    ),
+)
+
+# Season dates move with the weather (openings get pushed back), so refresh
+# twice a day.
+season_dates_refresh_schedule_rule = aws.cloudwatch.EventRule(
+    f"{app_name}-season-dates-refresh-schedule-{environment}",
+    name=f"{app_name}-season-dates-refresh-schedule-{environment}",
+    description="Refresh resort season opening/closing dates every 12 hours",
+    schedule_expression="rate(12 hours)",
+    tags=tags,
+)
+
+season_dates_refresh_schedule_permission = aws.lambda_.Permission(
+    f"{app_name}-season-dates-refresh-schedule-permission-{environment}",
+    action="lambda:InvokeFunction",
+    function=season_dates_refresh_lambda.name,
+    principal="events.amazonaws.com",
+    source_arn=season_dates_refresh_schedule_rule.arn,
+)
+
+season_dates_refresh_schedule_target = aws.cloudwatch.EventTarget(
+    f"{app_name}-season-dates-refresh-schedule-target-{environment}",
+    rule=season_dates_refresh_schedule_rule.name,
+    target_id=f"season-dates-{environment}",
+    arn=season_dates_refresh_lambda.arn,
+)
+
+# =============================================================================
 # Scraper Lambdas - Parallel resort scraping by country
 # =============================================================================
 
@@ -4292,6 +4359,7 @@ pulumi.export("weekly_digest_schedule_rule_name", weekly_digest_schedule_rule.na
 pulumi.export("static_json_lambda_name", static_json_lambda.name)
 pulumi.export("static_json_schedule_rule_name", static_json_schedule_rule.name)
 pulumi.export("snowforecast_prefetch_lambda_name", snowforecast_prefetch_lambda.name)
+pulumi.export("season_dates_refresh_lambda_name", season_dates_refresh_lambda.name)
 pulumi.export(
     "snowforecast_prefetch_schedule_rule_name",
     snowforecast_prefetch_schedule_rule.name,

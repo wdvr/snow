@@ -129,6 +129,25 @@ class Resort(BaseModel):
         False,
         description="If true, resort is polled year-round regardless of latitude",
     )
+    # Season dates from the season-dates cache (services/season_dates.py),
+    # merged in at read time and never stored in the resorts table. All None
+    # when the source has no data for the resort.
+    opening_date: str | None = Field(
+        None, description="Projected/announced season opening date (YYYY-MM-DD)"
+    )
+    closing_date: str | None = Field(
+        None, description="Projected/announced season closing date (YYYY-MM-DD)"
+    )
+    season_status: str | None = Field(
+        None,
+        description=(
+            "Derived season status: pre_season, open, closing_soon, "
+            "post_season, temporarily_closed (null without date data)"
+        ),
+    )
+    season_dates_source: str | None = Field(
+        None, description="Source of the season dates (e.g. 'onthesnow')"
+    )
 
     model_config = ConfigDict(use_enum_values=True)
 

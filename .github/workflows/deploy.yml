@@ -298,6 +298,20 @@ jobs:
           echo "Snow-Forecast prefetch Lambda updated"
         fi
 
+        # Deploy Season Dates Refresh Lambda
+        SEASON_DATES_REFRESH=$(pulumi stack output season_dates_refresh_lambda_name 2>/dev/null || echo "")
+        if [ -n "$SEASON_DATES_REFRESH" ]; then
+          echo "Deploying season dates refresh Lambda: $SEASON_DATES_REFRESH"
+          aws lambda update-function-code \
+            --function-name "$SEASON_DATES_REFRESH" \
+            --s3-bucket "$S3_BUCKET" \
+            --s3-key "$S3_KEY" \
+            --region us-west-2
+          aws lambda wait function-updated --function-name "$SEASON_DATES_REFRESH" --region us-west-2
+
+          echo "Season dates refresh Lambda updated"
+        fi
+
         # Deploy Notification Processor Lambda
         NOTIFICATION_LAMBDA=$(pulumi stack output notification_processor_lambda_name 2>/dev/null || echo "")
         if [ -n "$NOTIFICATION_LAMBDA" ]; then
@@ -399,7 +413,7 @@ jobs:
           v=$(get $fn JWT_SECRET_KEY)
           if [ -z "$v" ] || [ "$v" = "None" ]; then echo "$fn JWT_SECRET_KEY missing"; fail=1; else echo "$fn JWT_SECRET_KEY set"; fi
         done
-        for fn in api-handler chat-stream weather-processor weather-worker snowforecast-prefetch static-json notification-processor; do
+        for fn in api-handler chat-stream weather-processor weather-worker snowforecast-prefetch season-dates-refresh static-json notification-processor; do
           v=$(get $fn ENV_MANAGED_BY); echo "$fn ENV_MANAGED_BY=$v"
           [ "$v" = "pulumi" ] || fail=1
         done
