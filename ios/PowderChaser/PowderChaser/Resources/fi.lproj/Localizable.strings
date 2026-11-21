@@ -271,3 +271,23 @@
 "Delete Trip" = "Poista matka";
 "Suggestion Sent!" = "Ehdotus lähetetty!";
 "View Live Webcams" = "Katso live-webkamerat";
+
+/* Season opening/closing dates (2.1.3) */
+"Opens %@" = "Avautuu %@";
+"Closes %@" = "Sulkeutuu %@";
+"Not open yet" = "Ei vielä auki";
+"Closed for season" = "Suljettu kaudeksi";
+"Temporarily closed" = "Tilapäisesti suljettu";
+"today" = "tänään";
+"tomorrow" = "huomenna";
+"in %lld days" = "%lld päivän päästä";
+"Open now" = "Auki nyt";
+"Opening soon" = "Avautuu pian";
+"Status:" = "Tila:";
+"No Open Resorts" = "Ei avoimia hiihtokeskuksia";
+"No Resorts Opening Soon" = "Mikään hiihtokeskus ei avaudu pian";
+"None of the resorts matching your filters are reported open yet." = "Mikään suodattimiasi vastaava hiihtokeskus ei ole vielä auki.";
+"No resorts matching your filters have an opening date in the next %lld days." = "Mikään suodattimiasi vastaava hiihtokeskus ei avaudu seuraavan %lld päivän aikana.";
+"Projected opening date" = "Arvioitu avautumispäivä";
+"Snow scores show the forecast and predict opening conditions." = "Lumipisteet näyttävät ennusteen ja ennakoivat olosuhteita avautuessa.";
+"Snow forecast" = "Lumiennuste";

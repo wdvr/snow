@@ -1,0 +1,692 @@
+{
+  "_meta": {
+    "description": "Tahoe storm week Nov 16-20, 2026, as seen on Friday evening Nov 20 (PST).",
+    "today": "2026-11-20",
+    "sources": {
+      "conditions": "prod GET /api/v1/resorts/{id}/conditions, recorded 2026-11-21T04:19Z (Fri 20:19 PST); base/mid/top snow_depth_cm and snowfall_72h_cm",
+      "history": "prod GET /api/v1/resorts/{id}/history, daily snowfall_24h_cm Nov 14-20",
+      "forecast_daily_cm": "Open-Meteo daily snowfall_sum at the mid elevation point, timezone=auto, recorded 2026-11-21 ~00:55 PST",
+      "terrain": "OnTheSnow skireport via OnTheSnowScraper, recorded 2026-11-21 ~01:30 PST",
+      "resort_meta": "prod GET /api/v1/resorts?region=na_west (season dates from OnTheSnow); access/opening overrides from services/access_restrictions.json as of 2026-11-21",
+      "mt-rose": "Not in the resort DB yet: base depth 28in (71.1 cm) from skirose.com report 2026-11-20 12:32pm, history from Open-Meteo past days at the mid point"
+    }
+  },
+  "restrictions": {
+    "sugar-bowl": [
+      {
+        "start": "2026-11-21",
+        "end": "2026-11-26",
+        "kind": "passholder_only",
+        "eligible_passes": [
+          "sugar-bowl"
+        ],
+        "note": "Sugar Bowl season passholders only; public opens Nov 27",
+        "source": "https://www.sugarbowl.com/opening-2627 (checked 2026-11-21: passholder opening moved up to Sat Nov 21, regular public access begins Fri Nov 27)"
+      }
+    ]
+  },
+  "opening_dates": {
+    "sugar-bowl": "2026-11-21",
+    "palisades-tahoe": "2026-11-21",
+    "northstar": "2026-11-20",
+    "heavenly": "2026-11-20",
+    "mt-rose": "2026-11-06",
+    "kirkwood": "2026-11-23"
+  },
+  "resorts": [
+    {
+      "resort_id": "palisades-tahoe",
+      "region": "na_west",
+      "name": "Palisades Tahoe",
+      "state_province": "CA",
+      "ikon_pass": "full",
+      "epic_pass": null,
+      "mountain_collective": "2 days",
+      "indy_pass": null,
+      "opening_date": "2026-11-21",
+      "season_status": "pre_season",
+      "conditions": [
+        {
+          "elevation_level": "mid",
+          "snow_depth_cm": 90.0,
+          "snowfall_72h_cm": 49.49,
+          "lifts_open": null,
+          "lifts_total": null,
+          "runs_open": null,
+          "runs_total": null
+        },
+        {
+          "elevation_level": "top",
+          "snow_depth_cm": 89.0,
+          "snowfall_72h_cm": 47.88,
+          "lifts_open": null,
+          "lifts_total": null,
+          "runs_open": null,
+          "runs_total": null
+        },
+        {
+          "elevation_level": "base",
+          "snow_depth_cm": 67.0,
+          "snowfall_72h_cm": 28.56,
+          "lifts_open": null,
+          "lifts_total": null,
+          "runs_open": null,
+          "runs_total": null
+        }
+      ],
+      "history": [
+        {
+          "date": "2026-11-14",
+          "snowfall_24h_cm": 14.9
+        },
+        {
+          "date": "2026-11-15",
+          "snowfall_24h_cm": 0.0
+        },
+        {
+          "date": "2026-11-16",
+          "snowfall_24h_cm": 0.0
+        },
+        {
+          "date": "2026-11-17",
+          "snowfall_24h_cm": 1.6
+        },
+        {
+          "date": "2026-11-18",
+          "snowfall_24h_cm": 10.6
+        },
+        {
+          "date": "2026-11-19",
+          "snowfall_24h_cm": 37.0
+        },
+        {
+          "date": "2026-11-20",
+          "snowfall_24h_cm": 6.3
+        }
+      ],
+      "forecast_daily_cm": {
+        "2026-11-19": 19.0,
+        "2026-11-20": 3.1,
+        "2026-11-21": 0,
+        "2026-11-22": 10.3,
+        "2026-11-23": 0.6,
+        "2026-11-24": 0.1,
+        "2026-11-25": 20.9,
+        "2026-11-26": 0.6,
+        "2026-11-27": 0,
+        "2026-11-28": 0,
+        "2026-11-29": 2.4
+      }
+    },
+    {
+      "resort_id": "northstar",
+      "region": "na_west",
+      "name": "Northstar California Resort",
+      "state_province": "CA",
+      "ikon_pass": null,
+      "epic_pass": "full",
+      "mountain_collective": null,
+      "indy_pass": null,
+      "opening_date": "2026-11-20",
+      "season_status": "open",
+      "conditions": [
+        {
+          "elevation_level": "top",
+          "snow_depth_cm": 66.0,
+          "snowfall_72h_cm": 34.23,
+          "lifts_open": 7,
+          "lifts_total": 20,
+          "runs_open": 17,
+          "runs_total": 100
+        },
+        {
+          "elevation_level": "mid",
+          "snow_depth_cm": 50.0,
+          "snowfall_72h_cm": 31.43,
+          "lifts_open": 7,
+          "lifts_total": 20,
+          "runs_open": 17,
+          "runs_total": 100
+        },
+        {
+          "elevation_level": "base",
+          "snow_depth_cm": 40.0,
+          "snowfall_72h_cm": 32.76,
+          "lifts_open": 7,
+          "lifts_total": 20,
+          "runs_open": 17,
+          "runs_total": 100
+        }
+      ],
+      "history": [
+        {
+          "date": "2026-11-14",
+          "snowfall_24h_cm": 8.0
+        },
+        {
+          "date": "2026-11-15",
+          "snowfall_24h_cm": 0.0
+        },
+        {
+          "date": "2026-11-16",
+          "snowfall_24h_cm": 6.4
+        },
+        {
+          "date": "2026-11-17",
+          "snowfall_24h_cm": 1.3
+        },
+        {
+          "date": "2026-11-18",
+          "snowfall_24h_cm": 8.6
+        },
+        {
+          "date": "2026-11-19",
+          "snowfall_24h_cm": 25.7
+        },
+        {
+          "date": "2026-11-20",
+          "snowfall_24h_cm": 1.1
+        }
+      ],
+      "forecast_daily_cm": {
+        "2026-11-19": 12.1,
+        "2026-11-20": 0,
+        "2026-11-21": 0,
+        "2026-11-22": 4.5,
+        "2026-11-23": 0.1,
+        "2026-11-24": 0,
+        "2026-11-25": 13.3,
+        "2026-11-26": 0.3,
+        "2026-11-27": 0,
+        "2026-11-28": 0,
+        "2026-11-29": 1.0
+      }
+    },
+    {
+      "resort_id": "heavenly",
+      "region": "na_west",
+      "name": "Heavenly Mountain Resort",
+      "state_province": "CA",
+      "ikon_pass": null,
+      "epic_pass": "full",
+      "mountain_collective": null,
+      "indy_pass": null,
+      "opening_date": "2026-11-20",
+      "season_status": "open",
+      "conditions": [
+        {
+          "elevation_level": "mid",
+          "snow_depth_cm": 66.0,
+          "snowfall_72h_cm": 30.87,
+          "lifts_open": 5,
+          "lifts_total": 27,
+          "runs_open": 4,
+          "runs_total": 111
+        },
+        {
+          "elevation_level": "base",
+          "snow_depth_cm": 34.0,
+          "snowfall_72h_cm": 24.36,
+          "lifts_open": 5,
+          "lifts_total": 27,
+          "runs_open": 4,
+          "runs_total": 111
+        },
+        {
+          "elevation_level": "top",
+          "snow_depth_cm": 66.0,
+          "snowfall_72h_cm": 30.87,
+          "lifts_open": 5,
+          "lifts_total": 27,
+          "runs_open": 4,
+          "runs_total": 111
+        }
+      ],
+      "history": [
+        {
+          "date": "2026-11-14",
+          "snowfall_24h_cm": 12.5
+        },
+        {
+          "date": "2026-11-15",
+          "snowfall_24h_cm": 0.0
+        },
+        {
+          "date": "2026-11-16",
+          "snowfall_24h_cm": 7.9
+        },
+        {
+          "date": "2026-11-17",
+          "snowfall_24h_cm": 2.2
+        },
+        {
+          "date": "2026-11-18",
+          "snowfall_24h_cm": 3.7
+        },
+        {
+          "date": "2026-11-19",
+          "snowfall_24h_cm": 26.8
+        },
+        {
+          "date": "2026-11-20",
+          "snowfall_24h_cm": 2.2
+        }
+      ],
+      "forecast_daily_cm": {
+        "2026-11-19": 28.3,
+        "2026-11-20": 1.3,
+        "2026-11-21": 0,
+        "2026-11-22": 2.3,
+        "2026-11-23": 0,
+        "2026-11-24": 0,
+        "2026-11-25": 2.2,
+        "2026-11-26": 0,
+        "2026-11-27": 0,
+        "2026-11-28": 0,
+        "2026-11-29": 1.5
+      }
+    },
+    {
+      "resort_id": "sugar-bowl",
+      "region": "na_west",
+      "name": "Sugar Bowl Resort",
+      "state_province": "CA",
+      "ikon_pass": null,
+      "epic_pass": null,
+      "mountain_collective": null,
+      "indy_pass": null,
+      "opening_date": "2026-11-22",
+      "season_status": "pre_season",
+      "conditions": [
+        {
+          "elevation_level": "top",
+          "snow_depth_cm": 83.82,
+          "snowfall_72h_cm": 47.88,
+          "lifts_open": 0,
+          "lifts_total": 12,
+          "runs_open": null,
+          "runs_total": null
+        },
+        {
+          "elevation_level": "mid",
+          "snow_depth_cm": 83.82,
+          "snowfall_72h_cm": 47.88,
+          "lifts_open": 0,
+          "lifts_total": 12,
+          "runs_open": null,
+          "runs_total": null
+        },
+        {
+          "elevation_level": "base",
+          "snow_depth_cm": 83.82,
+          "snowfall_72h_cm": 39.76,
+          "lifts_open": 0,
+          "lifts_total": 12,
+          "runs_open": null,
+          "runs_total": null
+        }
+      ],
+      "history": [
+        {
+          "date": "2026-11-14",
+          "snowfall_24h_cm": 16.0
+        },
+        {
+          "date": "2026-11-15",
+          "snowfall_24h_cm": 0.0
+        },
+        {
+          "date": "2026-11-16",
+          "snowfall_24h_cm": 16.2
+        },
+        {
+          "date": "2026-11-17",
+          "snowfall_24h_cm": 1.7
+        },
+        {
+          "date": "2026-11-18",
+          "snowfall_24h_cm": 12.2
+        },
+        {
+          "date": "2026-11-19",
+          "snowfall_24h_cm": 33.7
+        },
+        {
+          "date": "2026-11-20",
+          "snowfall_24h_cm": 7.8
+        }
+      ],
+      "forecast_daily_cm": {
+        "2026-11-19": 18.0,
+        "2026-11-20": 3.6,
+        "2026-11-21": 0,
+        "2026-11-22": 12.9,
+        "2026-11-23": 0.8,
+        "2026-11-24": 0.1,
+        "2026-11-25": 23.5,
+        "2026-11-26": 0.6,
+        "2026-11-27": 0,
+        "2026-11-28": 0,
+        "2026-11-29": 4.1
+      }
+    },
+    {
+      "resort_id": "mt-rose",
+      "region": "na_west",
+      "name": "Mt. Rose Ski Tahoe",
+      "state_province": "NV",
+      "ikon_pass": null,
+      "epic_pass": null,
+      "mountain_collective": null,
+      "indy_pass": null,
+      "opening_date": null,
+      "season_status": null,
+      "conditions": [
+        {
+          "elevation_level": "base",
+          "snow_depth_cm": 71.1,
+          "snowfall_72h_cm": null,
+          "lifts_open": 4,
+          "lifts_total": 8,
+          "runs_open": 36,
+          "runs_total": 67
+        }
+      ],
+      "history": [
+        {
+          "date": "2026-11-14",
+          "snowfall_24h_cm": 0.0
+        },
+        {
+          "date": "2026-11-15",
+          "snowfall_24h_cm": 0.0
+        },
+        {
+          "date": "2026-11-16",
+          "snowfall_24h_cm": 11.5
+        },
+        {
+          "date": "2026-11-17",
+          "snowfall_24h_cm": 0.3
+        },
+        {
+          "date": "2026-11-18",
+          "snowfall_24h_cm": 36.8
+        },
+        {
+          "date": "2026-11-19",
+          "snowfall_24h_cm": 30.4
+        },
+        {
+          "date": "2026-11-20",
+          "snowfall_24h_cm": 2.5
+        }
+      ],
+      "forecast_daily_cm": {
+        "2026-11-19": 30.4,
+        "2026-11-20": 2.5,
+        "2026-11-21": 0,
+        "2026-11-22": 6.8,
+        "2026-11-23": 0.2,
+        "2026-11-24": 0,
+        "2026-11-25": 7.0,
+        "2026-11-26": 0.1,
+        "2026-11-27": 0,
+        "2026-11-28": 0,
+        "2026-11-29": 1.8
+      }
+    },
+    {
+      "resort_id": "kirkwood",
+      "region": "na_west",
+      "name": "Kirkwood Mountain Resort",
+      "state_province": "CA",
+      "ikon_pass": null,
+      "epic_pass": "full",
+      "mountain_collective": null,
+      "indy_pass": null,
+      "opening_date": "2026-12-04",
+      "season_status": "pre_season",
+      "conditions": [
+        {
+          "elevation_level": "top",
+          "snow_depth_cm": 102.0,
+          "snowfall_72h_cm": 52.71,
+          "lifts_open": null,
+          "lifts_total": null,
+          "runs_open": null,
+          "runs_total": null
+        },
+        {
+          "elevation_level": "mid",
+          "snow_depth_cm": 103.0,
+          "snowfall_72h_cm": 57.75,
+          "lifts_open": null,
+          "lifts_total": null,
+          "runs_open": null,
+          "runs_total": null
+        },
+        {
+          "elevation_level": "base",
+          "snow_depth_cm": 98.0,
+          "snowfall_72h_cm": 51.03,
+          "lifts_open": null,
+          "lifts_total": null,
+          "runs_open": null,
+          "runs_total": null
+        }
+      ],
+      "history": [
+        {
+          "date": "2026-11-14",
+          "snowfall_24h_cm": 11.3
+        },
+        {
+          "date": "2026-11-15",
+          "snowfall_24h_cm": 0.0
+        },
+        {
+          "date": "2026-11-16",
+          "snowfall_24h_cm": 18.1
+        },
+        {
+          "date": "2026-11-17",
+          "snowfall_24h_cm": 3.6
+        },
+        {
+          "date": "2026-11-18",
+          "snowfall_24h_cm": 14.4
+        },
+        {
+          "date": "2026-11-19",
+          "snowfall_24h_cm": 45.4
+        },
+        {
+          "date": "2026-11-20",
+          "snowfall_24h_cm": 4.4
+        }
+      ],
+      "forecast_daily_cm": {
+        "2026-11-19": 22.3,
+        "2026-11-20": 1.8,
+        "2026-11-21": 0,
+        "2026-11-22": 7.2,
+        "2026-11-23": 0.9,
+        "2026-11-24": 0.1,
+        "2026-11-25": 14.7,
+        "2026-11-26": 0.3,
+        "2026-11-27": 0,
+        "2026-11-28": 0,
+        "2026-11-29": 2.3
+      }
+    },
+    {
+      "resort_id": "sierra-at-tahoe",
+      "region": "na_west",
+      "name": "Sierra at Tahoe",
+      "state_province": "CA",
+      "ikon_pass": null,
+      "epic_pass": null,
+      "mountain_collective": null,
+      "indy_pass": null,
+      "opening_date": "2026-12-06",
+      "season_status": "pre_season",
+      "conditions": [
+        {
+          "elevation_level": "top",
+          "snow_depth_cm": 99.06,
+          "snowfall_72h_cm": 53.83,
+          "lifts_open": 0,
+          "lifts_total": 14,
+          "runs_open": null,
+          "runs_total": null
+        },
+        {
+          "elevation_level": "mid",
+          "snow_depth_cm": 99.06,
+          "snowfall_72h_cm": 49.56,
+          "lifts_open": 0,
+          "lifts_total": 14,
+          "runs_open": null,
+          "runs_total": null
+        },
+        {
+          "elevation_level": "base",
+          "snow_depth_cm": 99.06,
+          "snowfall_72h_cm": 41.72,
+          "lifts_open": 0,
+          "lifts_total": 14,
+          "runs_open": null,
+          "runs_total": null
+        }
+      ],
+      "history": [
+        {
+          "date": "2026-11-14",
+          "snowfall_24h_cm": 14.4
+        },
+        {
+          "date": "2026-11-15",
+          "snowfall_24h_cm": 0.0
+        },
+        {
+          "date": "2026-11-16",
+          "snowfall_24h_cm": 17.1
+        },
+        {
+          "date": "2026-11-17",
+          "snowfall_24h_cm": 3.1
+        },
+        {
+          "date": "2026-11-18",
+          "snowfall_24h_cm": 8.7
+        },
+        {
+          "date": "2026-11-19",
+          "snowfall_24h_cm": 38.7
+        },
+        {
+          "date": "2026-11-20",
+          "snowfall_24h_cm": 6.2
+        }
+      ],
+      "forecast_daily_cm": {
+        "2026-11-19": 25.1,
+        "2026-11-20": 3.1,
+        "2026-11-21": 0,
+        "2026-11-22": 8.9,
+        "2026-11-23": 0.7,
+        "2026-11-24": 0.1,
+        "2026-11-25": 11.3,
+        "2026-11-26": 0.1,
+        "2026-11-27": 0,
+        "2026-11-28": 0,
+        "2026-11-29": 2.7
+      }
+    },
+    {
+      "resort_id": "homewood-mountain-resort",
+      "region": "na_west",
+      "name": "Homewood Mountain Resort",
+      "state_province": "CA",
+      "ikon_pass": null,
+      "epic_pass": null,
+      "mountain_collective": null,
+      "indy_pass": null,
+      "opening_date": "2026-12-11",
+      "season_status": "pre_season",
+      "conditions": [
+        {
+          "elevation_level": "top",
+          "snow_depth_cm": 35.56,
+          "snowfall_72h_cm": 49.49,
+          "lifts_open": null,
+          "lifts_total": null,
+          "runs_open": null,
+          "runs_total": null
+        },
+        {
+          "elevation_level": "base",
+          "snow_depth_cm": 35.56,
+          "snowfall_72h_cm": 39.97,
+          "lifts_open": null,
+          "lifts_total": null,
+          "runs_open": null,
+          "runs_total": null
+        },
+        {
+          "elevation_level": "mid",
+          "snow_depth_cm": 35.56,
+          "snowfall_72h_cm": 47.53,
+          "lifts_open": null,
+          "lifts_total": null,
+          "runs_open": null,
+          "runs_total": null
+        }
+      ],
+      "history": [
+        {
+          "date": "2026-11-14",
+          "snowfall_24h_cm": 11.4
+        },
+        {
+          "date": "2026-11-15",
+          "snowfall_24h_cm": 0.0
+        },
+        {
+          "date": "2026-11-16",
+          "snowfall_24h_cm": 9.9
+        },
+        {
+          "date": "2026-11-17",
+          "snowfall_24h_cm": 0.6
+        },
+        {
+          "date": "2026-11-18",
+          "snowfall_24h_cm": 10.2
+        },
+        {
+          "date": "2026-11-19",
+          "snowfall_24h_cm": 35.9
+        },
+        {
+          "date": "2026-11-20",
+          "snowfall_24h_cm": 6.6
+        }
+      ],
+      "forecast_daily_cm": {
+        "2026-11-19": 14.4,
+        "2026-11-20": 1.3,
+        "2026-11-21": 0,
+        "2026-11-22": 9.7,
+        "2026-11-23": 0.3,
+        "2026-11-24": 0,
+        "2026-11-25": 2.9,
+        "2026-11-26": 0.1,
+        "2026-11-27": 0,
+        "2026-11-28": 0,
+        "2026-11-29": 2.1
+      }
+    }
+  ]
+}

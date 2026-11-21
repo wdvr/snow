@@ -271,3 +271,23 @@
 "Delete Trip" = "Smazat výlet";
 "Suggestion Sent!" = "Návrh odeslán!";
 "View Live Webcams" = "Zobrazit živé webkamery";
+
+/* Season opening/closing dates (2.1.3) */
+"Opens %@" = "Otevírá %@";
+"Closes %@" = "Zavírá %@";
+"Not open yet" = "Zatím zavřeno";
+"Closed for season" = "Sezóna skončila";
+"Temporarily closed" = "Dočasně zavřeno";
+"today" = "dnes";
+"tomorrow" = "zítra";
+"in %lld days" = "za %lld d.";
+"Open now" = "Otevřeno";
+"Opening soon" = "Brzy otevře";
+"Status:" = "Stav:";
+"No Open Resorts" = "Žádná otevřená střediska";
+"No Resorts Opening Soon" = "Žádné středisko brzy neotevírá";
+"None of the resorts matching your filters are reported open yet." = "Žádné ze středisek odpovídajících filtrům zatím není otevřené.";
+"No resorts matching your filters have an opening date in the next %lld days." = "Žádné středisko odpovídající filtrům neotevírá během příštích %lld d.";
+"Projected opening date" = "Předpokládané datum otevření";
+"Snow scores show the forecast and predict opening conditions." = "Sněhové skóre ukazuje předpověď a naznačuje podmínky při otevření.";
+"Snow forecast" = "Předpověď sněhu";

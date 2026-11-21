@@ -42,7 +42,7 @@ final class VerificationTests: XCTestCase {
         add(attachment)
 
         // Verify resorts are displayed
-        let cells = app.cells
+        let cells = app.resortCells
         XCTAssertGreaterThan(cells.count, 0, "List should show resort cells")
 
         // Check that quality scores are shown (not just "Loading")
@@ -57,7 +57,7 @@ final class VerificationTests: XCTestCase {
         sleep(5)
 
         // Tap first resort cell
-        let firstCell = app.cells.firstMatch
+        let firstCell = app.resortCells.firstMatch
         guard firstCell.waitForExistence(timeout: 5) else {
             XCTFail("No resort cells found")
             return
@@ -231,14 +231,14 @@ final class VerificationTests: XCTestCase {
         }
 
         // Tap the first matching cell
-        let heavenlyCell = app.cells.matching(
+        let heavenlyCell = app.resortCells.matching(
             NSPredicate(format: "label CONTAINS[c] 'Heavenly'")
         ).firstMatch
         if heavenlyCell.waitForExistence(timeout: 5) {
             heavenlyCell.tap()
         } else {
             // Fallback: just tap the first resort
-            let firstCell = app.cells.firstMatch
+            let firstCell = app.resortCells.firstMatch
             guard firstCell.waitForExistence(timeout: 5) else {
                 XCTFail("No resort cells found")
                 return

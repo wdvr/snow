@@ -271,3 +271,23 @@
 "Delete Trip" = "여행 삭제";
 "Suggestion Sent!" = "제안이 전송되었습니다!";
 "View Live Webcams" = "실시간 웹캠 보기";
+
+/* Season opening/closing dates (2.1.3) */
+"Opens %@" = "%@ 개장";
+"Closes %@" = "%@ 폐장";
+"Not open yet" = "아직 개장 전";
+"Closed for season" = "시즌 종료";
+"Temporarily closed" = "일시 휴장";
+"today" = "오늘";
+"tomorrow" = "내일";
+"in %lld days" = "%lld일 후";
+"Open now" = "현재 운영 중";
+"Opening soon" = "곧 개장";
+"Status:" = "상태:";
+"No Open Resorts" = "운영 중인 스키장이 없습니다";
+"No Resorts Opening Soon" = "곧 개장하는 스키장이 없습니다";
+"None of the resorts matching your filters are reported open yet." = "필터에 맞는 스키장 중 아직 개장한 곳이 없습니다.";
+"No resorts matching your filters have an opening date in the next %lld days." = "필터에 맞는 스키장 중 앞으로 %lld일 안에 개장하는 곳이 없습니다.";
+"Projected opening date" = "예상 개장일";
+"Snow scores show the forecast and predict opening conditions." = "스노우 점수는 예보를 보여주며 개장 시 컨디션을 예측합니다.";
+"Snow forecast" = "적설 예보";

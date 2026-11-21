@@ -539,6 +539,56 @@ final class APIClient {
         }
     }
 
+    /// "Best this weekend": resorts ranked by predicted quality over a ski window.
+    /// Scope is `resortIds` (favorites), else `region`, else global. Nil dates use
+    /// the coming Fri-Sun weekend.
+    func getWeekendRankings(
+        resortIds: [String]? = nil,
+        region: String? = nil,
+        start: String? = nil,
+        end: String? = nil,
+        passes: [String] = [],
+        limit: Int = 20
+    ) async throws -> WeekendRankingsResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/v1/rankings/weekend"), resolvingAgainstBaseURL: false)!
+        var queryItems = [
+            URLQueryItem(name: "limit", value: String(limit)),
+            URLQueryItem(name: "tz", value: TimeZone.current.identifier),
+        ]
+        if let resortIds, !resortIds.isEmpty {
+            queryItems.append(URLQueryItem(name: "resort_ids", value: resortIds.prefix(50).joined(separator: ",")))
+        } else if let region {
+            queryItems.append(URLQueryItem(name: "region", value: region))
+        }
+        if let start, let end {
+            queryItems.append(URLQueryItem(name: "start", value: start))
+            queryItems.append(URLQueryItem(name: "end", value: end))
+        }
+        if !passes.isEmpty {
+            queryItems.append(URLQueryItem(name: "passes", value: passes.joined(separator: ",")))
+        }
+        components.queryItems = queryItems
+
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(url)
+                .validate()
+                .responseDecodable(of: WeekendRankingsResponse.self) { response in
+                    switch response.result {
+                    case .success(let rankingsResponse):
+                        self.log.debug("Fetched \(rankingsResponse.rankings.count) weekend rankings")
+                        continuation.resume(returning: rankingsResponse)
+                    case .failure(let error):
+                        self.log.error("Error fetching weekend rankings: \(error)")
+                        continuation.resume(throwing: self.mapError(error))
+                    }
+                }
+        }
+    }
+
     // MARK: - Authentication API
 
     /// Authenticate with Apple Sign In

@@ -271,3 +271,23 @@
 "Delete Trip" = "Reis verwijderen";
 "Suggestion Sent!" = "Suggestie verzonden!";
 "View Live Webcams" = "Live webcams bekijken";
+
+/* Season opening/closing dates (2.1.3) */
+"Opens %@" = "Opent %@";
+"Closes %@" = "Sluit %@";
+"Not open yet" = "Nog niet open";
+"Closed for season" = "Gesloten voor het seizoen";
+"Temporarily closed" = "Tijdelijk gesloten";
+"today" = "vandaag";
+"tomorrow" = "morgen";
+"in %lld days" = "over %lld dagen";
+"Open now" = "Nu open";
+"Opening soon" = "Opent binnenkort";
+"Status:" = "Status:";
+"No Open Resorts" = "Geen open skigebieden";
+"No Resorts Opening Soon" = "Geen skigebieden die binnenkort openen";
+"None of the resorts matching your filters are reported open yet." = "Geen van de skigebieden binnen je filters is al open.";
+"No resorts matching your filters have an opening date in the next %lld days." = "Geen skigebieden binnen je filters openen in de komende %lld dagen.";
+"Projected opening date" = "Verwachte openingsdatum";
+"Snow scores show the forecast and predict opening conditions." = "Sneeuwscores tonen de voorspelling en geven een idee van de omstandigheden bij opening.";
+"Snow forecast" = "Sneeuwvoorspelling";

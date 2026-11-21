@@ -240,6 +240,43 @@ struct ResortDetailView: View {
         return conditions.first?.snowScore
     }
 
+    private var seasonDisplay: SeasonDisplay? {
+        resort.seasonDisplay()
+    }
+
+    private var isClosedForSeason: Bool {
+        seasonDisplay?.isClosed == true
+    }
+
+    @ViewBuilder
+    private func seasonRow(_ season: SeasonDisplay) -> some View {
+        if season.isClosed {
+            HStack(alignment: .center, spacing: 12) {
+                SeasonBadge(display: season, large: true)
+                VStack(alignment: .leading, spacing: 2) {
+                    if case .opensOn = season {
+                        Text("Projected opening date")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                    }
+                    Text("Snow scores show the forecast and predict opening conditions.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("resortDetail_season")
+        } else {
+            HStack {
+                SeasonNote(display: season)
+                Spacer()
+            }
+            .accessibilityIdentifier("resortDetail_season")
+        }
+    }
+
     private var resortHeader: some View {
         VStack(spacing: 8) {
             HStack {
@@ -272,8 +309,28 @@ struct ResortDetailView: View {
 
                 Spacer()
 
-                // Overall snow quality badge - use best quality across elevations
-                if let quality = bestElevationQuality {
+                // Overall snow quality badge - use best quality across elevations.
+                // Closed resorts get a muted version: the season status leads.
+                if let quality = bestElevationQuality, isClosedForSeason {
+                    VStack(spacing: 2) {
+                        if let score = bestElevationSnowScore {
+                            Text("\(score)")
+                                .font(.title3.weight(.bold))
+                                .fontDesign(.rounded)
+                        }
+                        Text(quality.displayName)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                        Text("Snow forecast")
+                            .font(.caption2)
+                    }
+                    .foregroundStyle(.secondary)
+                    .padding(10)
+                    .background(Color.gray.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Snow forecast: \(quality.displayName)\(bestElevationSnowScore.map { ", score \($0) out of 100" } ?? "")")
+                } else if let quality = bestElevationQuality {
                     VStack(spacing: 4) {
                         // Numeric snow score (0-100) from ML model
                         if let score = bestElevationSnowScore {
@@ -302,6 +359,11 @@ struct ResortDetailView: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("Snow quality: \(quality.displayName)\(bestElevationSnowScore.map { ", score \($0) out of 100" } ?? "")")
                 }
+            }
+
+            // Season status: opening / closing date
+            if let season = seasonDisplay {
+                seasonRow(season)
             }
 
             // Run difficulty + ticket price row

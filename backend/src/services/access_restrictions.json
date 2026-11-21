@@ -1,0 +1,42 @@
+{
+  "_comment": "Curated access constraints for the Best this weekend ranking. Each entry must cite a live source and the date it was checked. opening_dates override the scraped season dates when a resort announces a change.",
+  "updated": "2026-11-21",
+  "restrictions": {
+    "sugar-bowl": [
+      {
+        "start": "2026-11-21",
+        "end": "2026-11-26",
+        "kind": "passholder_only",
+        "eligible_passes": ["sugar-bowl"],
+        "note": "Sugar Bowl season passholders only; public opens Nov 27",
+        "source": "https://www.sugarbowl.com/opening-2627 (checked 2026-11-21: passholder opening moved up to Sat Nov 21, regular public access begins Fri Nov 27)"
+      }
+    ]
+  },
+  "opening_dates": {
+    "sugar-bowl": {
+      "date": "2026-11-21",
+      "source": "https://www.sugarbowl.com/opening-2627 (checked 2026-11-21, passholders-only start)"
+    },
+    "palisades-tahoe": {
+      "date": "2026-11-21",
+      "source": "https://www.palisadestahoe.com/mountain-information/lift-and-grooming-status (checked 2026-11-21)"
+    },
+    "northstar": {
+      "date": "2026-11-20",
+      "source": "https://abc7news.com/post/major-snow-brings-early-ski-season-tahoe-heres-whats-open/20060935/ (checked 2026-11-21)"
+    },
+    "heavenly": {
+      "date": "2026-11-20",
+      "source": "https://abc7news.com/post/major-snow-brings-early-ski-season-tahoe-heres-whats-open/20060935/ (checked 2026-11-21)"
+    },
+    "mt-rose": {
+      "date": "2026-11-06",
+      "source": "https://skirose.com/snow-report/ (checked 2026-11-21, open since Nov 6)"
+    },
+    "kirkwood": {
+      "date": "2026-11-23",
+      "source": "https://abc7news.com/post/major-snow-brings-early-ski-season-tahoe-heres-whats-open/20060935/ (checked 2026-11-21, moved up from Dec 4)"
+    }
+  }
+}

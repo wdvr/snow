@@ -7,6 +7,17 @@ options:
   generateEmptyDirectories: true
   groupSortPosition: top
 
+# Project-wide build settings (inherited by every target).
+# SWIFT_VERSION is the Swift *language mode*, not the compiler version. "5.0"
+# means Swift 5 mode on any toolchain (including Xcode 26/27 with Swift 6.x
+# compilers). Do NOT switch to "6.0" without first fixing strict-concurrency
+# diagnostics, which become hard errors in Swift 6 mode.
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: N324UX8D9M
+    CODE_SIGN_STYLE: Automatic
+
 packages:
   Alamofire:
     url: https://github.com/Alamofire/Alamofire.git
@@ -40,18 +51,20 @@ targets:
         PRODUCT_NAME: Powder Chaser
         PRODUCT_MODULE_NAME: PowderChaser
         PRODUCT_BUNDLE_IDENTIFIER: com.wouterdevriendt.snowtracker
-        MARKETING_VERSION: "2.1.1"
+        MARKETING_VERSION: "2.2.0"
         CURRENT_PROJECT_VERSION: "1"
         DEVELOPMENT_TEAM: N324UX8D9M
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
-        SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: true
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "AppIcon-Mountain AppIcon-Minimal AppIcon-Gradient AppIcon-Dark AppIcon-Neon AppIcon-Warm AppIcon-Forest AppIcon-Bold"
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        # The Crashlytics dSYM run script reads files from SourcePackages that
+        # are not declared as inputs; script sandboxing would fail the build.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
     entitlements:
       path: PowderChaser/PowderChaser.entitlements
       properties:
@@ -90,8 +103,8 @@ targets:
       properties:
         CFBundleName: Powder Chaser
         CFBundleDisplayName: Powder Chaser
-        CFBundleShortVersionString: "2.1.1"
-        CFBundleVersion: "1"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen:
           UIColorName: AccentColor
         UISupportedInterfaceOrientations:
@@ -122,12 +135,11 @@ targets:
       base:
         INFOPLIST_FILE: PowderChaserWidget/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.wouterdevriendt.snowtracker.widget
-        MARKETING_VERSION: "2.1.1"
+        MARKETING_VERSION: "2.2.0"
         CURRENT_PROJECT_VERSION: "1"
         DEVELOPMENT_TEAM: N324UX8D9M
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
-        SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1,2"
     entitlements:
       path: PowderChaserWidget/PowderChaserWidget.entitlements
@@ -139,8 +151,8 @@ targets:
       properties:
         CFBundleName: Powder Chaser Widget
         CFBundleDisplayName: Powder Chaser Widget
-        CFBundleShortVersionString: "2.1.1"
-        CFBundleVersion: "1"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 
@@ -155,6 +167,9 @@ targets:
     settings:
       base:
         INFOPLIST_FILE: PowderChaser/PowderChaserTests/Info.plist
+        DEVELOPMENT_TEAM: N324UX8D9M
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: Automatic
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Powder Chaser.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Powder Chaser"
 
   PowderChaserUITests:
@@ -168,6 +183,9 @@ targets:
     settings:
       base:
         INFOPLIST_FILE: PowderChaser/PowderChaserUITests/Info.plist
+        DEVELOPMENT_TEAM: N324UX8D9M
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: Automatic
         TEST_TARGET_NAME: PowderChaser
 
 schemes:

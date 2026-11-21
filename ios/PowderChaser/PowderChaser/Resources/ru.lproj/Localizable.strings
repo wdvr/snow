@@ -271,3 +271,23 @@
 "Delete Trip" = "Удалить поездку";
 "Suggestion Sent!" = "Предложение отправлено!";
 "View Live Webcams" = "Смотреть веб-камеры";
+
+/* Season opening/closing dates (2.1.3) */
+"Opens %@" = "Открытие %@";
+"Closes %@" = "Закрытие %@";
+"Not open yet" = "Ещё не открыт";
+"Closed for season" = "Сезон закрыт";
+"Temporarily closed" = "Временно закрыт";
+"today" = "сегодня";
+"tomorrow" = "завтра";
+"in %lld days" = "через %lld дн.";
+"Open now" = "Открыты сейчас";
+"Opening soon" = "Скоро откроются";
+"Status:" = "Статус:";
+"No Open Resorts" = "Нет открытых курортов";
+"No Resorts Opening Soon" = "Нет курортов, открывающихся скоро";
+"None of the resorts matching your filters are reported open yet." = "Ни один курорт по вашим фильтрам ещё не открыт.";
+"No resorts matching your filters have an opening date in the next %lld days." = "Ни один курорт по вашим фильтрам не откроется в ближайшие %lld дн.";
+"Projected opening date" = "Ожидаемая дата открытия";
+"Snow scores show the forecast and predict opening conditions." = "Оценка снега показывает прогноз и предсказывает условия на открытие.";
+"Snow forecast" = "Прогноз снега";

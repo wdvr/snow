@@ -271,3 +271,23 @@
 "Delete Trip" = "Delete Trip";
 "Suggestion Sent!" = "Suggestion Sent!";
 "View Live Webcams" = "View Live Webcams";
+
+/* Season opening/closing dates (2.1.3) */
+"Opens %@" = "Opens %@";
+"Closes %@" = "Closes %@";
+"Not open yet" = "Not open yet";
+"Closed for season" = "Closed for season";
+"Temporarily closed" = "Temporarily closed";
+"today" = "today";
+"tomorrow" = "tomorrow";
+"in %lld days" = "in %lld days";
+"Open now" = "Open now";
+"Opening soon" = "Opening soon";
+"Status:" = "Status:";
+"No Open Resorts" = "No Open Resorts";
+"No Resorts Opening Soon" = "No Resorts Opening Soon";
+"None of the resorts matching your filters are reported open yet." = "None of the resorts matching your filters are reported open yet.";
+"No resorts matching your filters have an opening date in the next %lld days." = "No resorts matching your filters have an opening date in the next %lld days.";
+"Projected opening date" = "Projected opening date";
+"Snow scores show the forecast and predict opening conditions." = "Snow scores show the forecast and predict opening conditions.";
+"Snow forecast" = "Snow forecast";

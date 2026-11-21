@@ -28,7 +28,7 @@ from services.api_budget import (
 )
 from services.daily_history_service import DailyHistoryService
 from services.multi_source_merger import MultiSourceMerger, SourceData
-from services.onthesnow_scraper import OnTheSnowScraper
+from services.onthesnow_scraper import OnTheSnowScraper, terrain_fields
 from services.openmeteo_service import OpenMeteoService
 from services.resort_service import ResortService
 from services.snow_quality_service import SnowQualityService
@@ -467,6 +467,11 @@ def process_elevation_point(
             timestamp=datetime.now(UTC).isoformat(),
             **weather_data,
         )
+
+        # Lift/terrain status feeds the "Best this weekend" ranking
+        if scraped_data is not None:
+            for key, value in terrain_fields(scraped_data).items():
+                setattr(weather_condition, key, value)
 
         # Assess snow quality (pass elevation for ML model)
         elev_m = getattr(elevation_point, "elevation_meters", None)

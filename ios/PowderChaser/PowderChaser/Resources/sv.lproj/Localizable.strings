@@ -271,3 +271,23 @@
 "Delete Trip" = "Ta bort resa";
 "Suggestion Sent!" = "Förslag skickat!";
 "View Live Webcams" = "Se livewebbkameror";
+
+/* Season opening/closing dates (2.1.3) */
+"Opens %@" = "Öppnar %@";
+"Closes %@" = "Stänger %@";
+"Not open yet" = "Inte öppet än";
+"Closed for season" = "Stängt för säsongen";
+"Temporarily closed" = "Tillfälligt stängt";
+"today" = "idag";
+"tomorrow" = "imorgon";
+"in %lld days" = "om %lld dagar";
+"Open now" = "Öppet nu";
+"Opening soon" = "Öppnar snart";
+"Status:" = "Status:";
+"No Open Resorts" = "Inga öppna skidorter";
+"No Resorts Opening Soon" = "Inga skidorter öppnar snart";
+"None of the resorts matching your filters are reported open yet." = "Ingen av skidorterna som matchar dina filter har öppnat än.";
+"No resorts matching your filters have an opening date in the next %lld days." = "Inga skidorter som matchar dina filter öppnar inom %lld dagar.";
+"Projected opening date" = "Beräknat öppningsdatum";
+"Snow scores show the forecast and predict opening conditions." = "Snöpoängen visar prognosen och förutspår förhållandena vid öppning.";
+"Snow forecast" = "Snöprognos";

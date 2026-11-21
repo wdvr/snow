@@ -114,6 +114,12 @@ struct Resort: Codable, Identifiable, Hashable {
     let weatherSources: [String]
     let createdAt: String?
     let updatedAt: String?
+    // Season dates (YYYY-MM-DD) and server-derived season status. Nil when the
+    // backend has no source data for this resort; see SeasonDisplay below.
+    var openingDate: String? = nil
+    var closingDate: String? = nil
+    var seasonStatusRaw: String? = nil
+    var seasonDatesSource: String? = nil
 
     private enum CodingKeys: String, CodingKey {
         case id = "resort_id"
@@ -147,6 +153,10 @@ struct Resort: Codable, Identifiable, Hashable {
         case weatherSources = "weather_sources"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case openingDate = "opening_date"
+        case closingDate = "closing_date"
+        case seasonStatusRaw = "season_status"
+        case seasonDatesSource = "season_dates_source"
     }
 
     // Computed properties for UI
@@ -518,4 +528,205 @@ extension Resort {
             updatedAt: "2026-01-20T08:00:00Z"
         )
     ]
+}
+
+// MARK: - Season Dates
+
+/// Server-derived season status (`season_status` on the resort payload).
+enum SeasonStatus: String, Codable {
+    case preSeason = "pre_season"
+    case open
+    case closingSoon = "closing_soon"
+    case postSeason = "post_season"
+    case temporarilyClosed = "temporarily_closed"
+}
+
+/// What the app shows for a resort's season. Nil (no badge) for resorts that
+/// are open with no closing date in sight, or without date data.
+enum SeasonDisplay: Equatable {
+    /// Not open yet; projected/announced opening date ahead (0 = today).
+    case opensOn(Date, daysUntil: Int)
+    /// Pre-season, but the projected opening date has passed (delayed).
+    case notOpenYet
+    /// Open; closing date within ~45 days (0 = today).
+    case closesOn(Date, daysUntil: Int)
+    /// Season is over (closing date passed or resort reported closed).
+    case closedForSeason
+    /// In season but temporarily closed.
+    case temporarilyClosed
+
+    /// Not skiable right now: the season badge replaces the snow score as the
+    /// dominant status on cards and the detail header.
+    var isClosed: Bool {
+        switch self {
+        case .opensOn, .notOpenYet, .closedForSeason, .temporarilyClosed: return true
+        case .closesOn: return false
+        }
+    }
+
+    /// Show "in N days" only when the date is near.
+    static let countdownDays = 30
+
+    var title: String {
+        switch self {
+        case .opensOn(let date, _):
+            return String(localized: "Opens \(Resort.formatSeasonDate(date))")
+        case .notOpenYet:
+            return String(localized: "Not open yet")
+        case .closesOn(let date, _):
+            return String(localized: "Closes \(Resort.formatSeasonDate(date))")
+        case .closedForSeason:
+            return String(localized: "Closed for season")
+        case .temporarilyClosed:
+            return String(localized: "Temporarily closed")
+        }
+    }
+
+    /// "today" / "tomorrow" / "in N days" for near dates, otherwise nil.
+    var countdown: String? {
+        let days: Int
+        switch self {
+        case .opensOn(_, let d), .closesOn(_, let d): days = d
+        default: return nil
+        }
+        switch days {
+        case 0: return String(localized: "today")
+        case 1: return String(localized: "tomorrow")
+        case 2...SeasonDisplay.countdownDays: return String(localized: "in \(days) days")
+        default: return nil
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .opensOn, .notOpenYet: return "calendar.badge.clock"
+        case .closesOn: return "calendar.badge.exclamationmark"
+        case .closedForSeason: return "moon.zzz.fill"
+        case .temporarilyClosed: return "pause.circle.fill"
+        }
+    }
+}
+
+/// Open-status filter for the resort list.
+enum SeasonFilter: String, CaseIterable {
+    case all = "All"
+    case openNow = "Open now"
+    case openingSoon = "Opening soon"
+
+    /// "Opening soon" = projected opening within this many days.
+    static let openingSoonDays = 14
+
+    var title: String {
+        switch self {
+        case .all: return String(localized: "All")
+        case .openNow: return String(localized: "Open now")
+        case .openingSoon: return String(localized: "Opening soon")
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .all: return "calendar"
+        case .openNow: return "checkmark.circle"
+        case .openingSoon: return "calendar.badge.clock"
+        }
+    }
+
+    func matches(_ resort: Resort, now: Date = Date()) -> Bool {
+        switch self {
+        case .all:
+            return true
+        case .openNow:
+            return resort.isOpenNow(now: now)
+        case .openingSoon:
+            if case .opensOn(_, let days) = resort.seasonDisplay(now: now) {
+                return days <= SeasonFilter.openingSoonDays
+            }
+            return false
+        }
+    }
+}
+
+extension Resort {
+    private static let utc = TimeZone(identifier: "UTC")!
+
+    /// Season dates are calendar days: parse and format them in UTC so the
+    /// day never shifts with the device timezone.
+    private static let seasonDateParser: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.calendar = Calendar(identifier: .gregorian)
+        f.timeZone = utc
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    static func parseSeasonDate(_ value: String?) -> Date? {
+        guard let value, value.count >= 10 else { return nil }
+        return seasonDateParser.date(from: String(value.prefix(10)))
+    }
+
+    /// "Dec 4" in the user's locale.
+    static func formatSeasonDate(_ date: Date) -> String {
+        var style = Date.FormatStyle().month(.abbreviated).day()
+        style.timeZone = utc
+        return date.formatted(style)
+    }
+
+    var seasonStatus: SeasonStatus? {
+        seasonStatusRaw.flatMap(SeasonStatus.init(rawValue:))
+    }
+
+    var openingDay: Date? { Resort.parseSeasonDate(openingDate) }
+    var closingDay: Date? { Resort.parseSeasonDate(closingDate) }
+
+    /// Whole days from today (in the resort's timezone) to a season date.
+    func daysUntil(_ day: Date, now: Date = Date()) -> Int {
+        var local = Calendar(identifier: .gregorian)
+        local.timeZone = TimeZone(identifier: timezone) ?? .current
+        var utcCal = Calendar(identifier: .gregorian)
+        utcCal.timeZone = Resort.utc
+        let parts = local.dateComponents([.year, .month, .day], from: now)
+        guard let today = utcCal.date(from: parts) else { return 0 }
+        return utcCal.dateComponents([.day], from: today, to: day).day ?? 0
+    }
+
+    /// The season badge to show, based on the server status. Dates are
+    /// re-checked locally so a cached payload stays right across midnight.
+    func seasonDisplay(now: Date = Date()) -> SeasonDisplay? {
+        guard let status = seasonStatus else { return nil }
+        let closingIn = closingDay.map { daysUntil($0, now: now) }
+        if let closingIn, closingIn < 0 {
+            return .closedForSeason
+        }
+        switch status {
+        case .preSeason:
+            if let opening = openingDay {
+                let days = daysUntil(opening, now: now)
+                return days >= 0 ? .opensOn(opening, daysUntil: days) : .notOpenYet
+            }
+            return .notOpenYet
+        case .postSeason:
+            return .closedForSeason
+        case .temporarilyClosed:
+            return .temporarilyClosed
+        case .closingSoon, .open:
+            if let closing = closingDay, let closingIn,
+               closingIn <= 45 {
+                return .closesOn(closing, daysUntil: closingIn)
+            }
+            return nil
+        }
+    }
+
+    /// Known to be open today (resorts without season data are not counted).
+    func isOpenNow(now: Date = Date()) -> Bool {
+        guard let status = seasonStatus, status == .open || status == .closingSoon else {
+            return false
+        }
+        if let closing = closingDay, daysUntil(closing, now: now) < 0 {
+            return false
+        }
+        return true
+    }
 }

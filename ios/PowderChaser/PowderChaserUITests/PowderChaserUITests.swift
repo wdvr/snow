@@ -19,21 +19,21 @@ final class PowderChaserUITests: XCTestCase {
 
     func testAppLoadsResortData() throws {
         // Wait for app to load data from API — at least one resort cell should appear
-        let firstCell = app.cells.firstMatch
+        let firstCell = app.resortCells.firstMatch
         let exists = firstCell.waitForExistence(timeout: 10)
         XCTAssertTrue(exists, "App should display resort cells from API data")
     }
 
     func testAppShowsMultipleResorts() throws {
         // Multiple resort cells should load within timeout
-        let firstCell = app.cells.firstMatch
+        let firstCell = app.resortCells.firstMatch
         guard firstCell.waitForExistence(timeout: 10) else {
             XCTFail("App should show resort cells from API")
             return
         }
 
         // Should have more than one cell
-        let cellCount = app.cells.count
+        let cellCount = app.resortCells.count
         XCTAssertGreaterThan(cellCount, 1, "App should show multiple resorts")
     }
 
@@ -59,7 +59,7 @@ final class PowderChaserUITests: XCTestCase {
 
     func testResortDetailShowsElevations() throws {
         // Wait for resorts to load
-        let firstCell = app.cells.firstMatch
+        let firstCell = app.resortCells.firstMatch
         guard firstCell.waitForExistence(timeout: 10) else {
             XCTFail("Resorts should load within 10 seconds")
             return
@@ -103,7 +103,7 @@ final class PowderChaserUITests: XCTestCase {
 
     func testPullToRefreshCompletesWithinTimeout() throws {
         // Wait for initial data load
-        let firstCell = app.cells.firstMatch
+        let firstCell = app.resortCells.firstMatch
         guard firstCell.waitForExistence(timeout: 15) else {
             XCTFail("Resort list should load within 15 seconds")
             return
@@ -150,7 +150,7 @@ final class PowderChaserUITests: XCTestCase {
 
     func testQualityLabelsNotSoft() throws {
         // Regression: quality label for .poor must show "Poor", not "Soft"
-        let firstCell = app.cells.firstMatch
+        let firstCell = app.resortCells.firstMatch
         guard firstCell.waitForExistence(timeout: 15) else {
             XCTFail("Resort list should load")
             return
@@ -402,7 +402,7 @@ final class PowderChaserUITests: XCTestCase {
 
     func testConditionReportFlowWorks() throws {
         // Wait for resorts to load
-        let firstCell = app.cells.firstMatch
+        let firstCell = app.resortCells.firstMatch
         guard firstCell.waitForExistence(timeout: 15) else {
             XCTFail("Resort list should load")
             return
