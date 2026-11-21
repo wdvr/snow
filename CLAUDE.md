@@ -200,6 +200,7 @@ GET  /api/v1/conditions/batch?resort_ids=a,b,c   - Batch conditions
 GET  /api/v1/quality-explanations      - Quality level descriptions
 GET  /api/v1/recommendations?lat=X&lon=Y - Nearby recommendations
 GET  /api/v1/recommendations/best      - Best conditions globally
+GET  /api/v1/rankings/weekend          - "Best this weekend" ranking (?resort_ids=|region=, start=&end=, passes=, tz=)
 POST /api/v1/auth/apple                - Apple Sign In
 POST /api/v1/auth/guest                - Removed (returns 410 since #205)
 POST /api/v1/auth/refresh              - Refresh auth token

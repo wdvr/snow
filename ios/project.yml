@@ -51,7 +51,7 @@ targets:
         PRODUCT_NAME: Powder Chaser
         PRODUCT_MODULE_NAME: PowderChaser
         PRODUCT_BUNDLE_IDENTIFIER: com.wouterdevriendt.snowtracker
-        MARKETING_VERSION: "2.1.3"
+        MARKETING_VERSION: "2.2.0"
         CURRENT_PROJECT_VERSION: "1"
         DEVELOPMENT_TEAM: N324UX8D9M
         CODE_SIGN_IDENTITY: "Apple Development"
@@ -135,7 +135,7 @@ targets:
       base:
         INFOPLIST_FILE: PowderChaserWidget/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.wouterdevriendt.snowtracker.widget
-        MARKETING_VERSION: "2.1.3"
+        MARKETING_VERSION: "2.2.0"
         CURRENT_PROJECT_VERSION: "1"
         DEVELOPMENT_TEAM: N324UX8D9M
         CODE_SIGN_IDENTITY: "Apple Development"

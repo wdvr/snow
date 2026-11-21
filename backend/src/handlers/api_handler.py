@@ -5,7 +5,7 @@ import logging
 import os
 import re
 import time
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Annotated
 
 import boto3
@@ -52,11 +52,23 @@ from services.quality_explanation_service import (
 )
 from services.recommendation_service import RecommendationService
 from services.resort_service import ResortService
-from services.season_dates import apply_season_dates, load_season_dates
+from services.season_dates import (
+    apply_season_dates,
+    load_season_dates,
+    resort_today,
+)
 from services.snow_quality_service import SnowQualityService
 from services.trip_service import TripService
 from services.user_service import UserService
 from services.weather_service import WeatherService
+from services.weekend_ranking_service import (
+    build_input,
+    fetch_daily_snowfall_forecast,
+    load_access_restrictions,
+    load_opening_overrides,
+    rank_resorts,
+    resolve_window,
+)
 from utils.cache import (
     CACHE_CONTROL_PRIVATE,
     CACHE_CONTROL_PUBLIC,
@@ -3580,6 +3592,208 @@ async def get_best_conditions(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get best conditions",
+        )
+
+
+# MARK: - Best This Weekend
+
+
+_WEEKEND_CANDIDATE_LIMIT = 50
+_weekend_access: tuple[dict, dict] | None = None
+
+
+def _get_weekend_access() -> tuple[dict, dict]:
+    """Curated access restrictions and opening dates, loaded once per container."""
+    global _weekend_access
+    if _weekend_access is None:
+        _weekend_access = (load_access_restrictions(), load_opening_overrides())
+    return _weekend_access
+
+
+def _weekend_candidates(resorts: list[Resort], start, end) -> list[Resort]:
+    """Prune a region/global list to resorts that could be skied in the window.
+
+    Drops resorts that are definitely closed for the whole window, then keeps
+    the most promising ones by the pre-computed snow-quality summary (forecast
+    48h, last 24h and depth) so one request never fans out to every resort.
+    """
+    viable = []
+    for r in resorts:
+        if r.season_status == "post_season":
+            continue
+        if r.opening_date and r.opening_date > end.isoformat():
+            continue
+        if r.closing_date and r.closing_date < start.isoformat():
+            continue
+        viable.append(r)
+    if len(viable) <= _WEEKEND_CANDIDATE_LIMIT:
+        return viable
+
+    summaries = _get_static_snow_quality_from_s3() or {}
+
+    def promise(r: Resort) -> float:
+        s = summaries.get(r.resort_id) or {}
+        return (
+            2 * (s.get("predicted_snow_48h_cm") or 0)
+            + (s.get("snowfall_24h_cm") or 0)
+            + 0.25 * (s.get("snow_depth_cm") or 0)
+        )
+
+    viable.sort(key=promise, reverse=True)
+    return viable[:_WEEKEND_CANDIDATE_LIMIT]
+
+
+@app.get("/api/v1/rankings/weekend")
+async def get_weekend_rankings(
+    response: Response,
+    resort_ids: str | None = Query(
+        None, description="Comma-separated resort IDs to rank (favorites, max 50)"
+    ),
+    region: str | None = Query(
+        None, description="Ski region to rank when no resort_ids (e.g. na_west)"
+    ),
+    start: str | None = Query(None, description="Window start YYYY-MM-DD"),
+    end: str | None = Query(None, description="Window end YYYY-MM-DD"),
+    passes: str | None = Query(
+        None,
+        description="Comma-separated passes the user holds (ikon, epic, "
+        "mountain_collective, indy, or a resort_id for a resort season pass)",
+    ),
+    tz: str | None = Query(None, description="User timezone for 'today'"),
+    limit: int = Query(20, ge=1, le=50, description="Number of results"),
+):
+    """Rank resorts by predicted quality over a ski window ("Best this weekend").
+
+    Default window is the coming Fri-Sun (clipped to today). Scope is the
+    given resort_ids, else the region, else all resorts. Each row carries the
+    deciding numbers (forecast snow over the window, last 7 days, base depth,
+    terrain open) plus access flags such as passholder-only days.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+    from datetime import date as date_cls
+
+    try:
+        today = resort_today(tz)
+        try:
+            start_date = date_cls.fromisoformat(start) if start else None
+            end_date = date_cls.fromisoformat(end) if end else None
+            window_start, window_end = resolve_window(today, start_date, end_date)
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+        user_passes = [p.strip() for p in (passes or "").split(",") if p.strip()]
+        for p in user_passes:
+            _validate_resource_id(p, "pass")
+
+        all_resorts = _get_all_resorts_cached()
+        if resort_ids:
+            ids = [i.strip() for i in resort_ids.split(",") if i.strip()]
+            if len(ids) > 50:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Maximum 50 resorts per request",
+                )
+            for rid in ids:
+                _validate_resource_id(rid, "resort_id")
+            by_id = {r.resort_id: r for r in all_resorts}
+            candidates = [by_id[i] for i in dict.fromkeys(ids) if i in by_id]
+            scope = "favorites"
+        elif region:
+            if region not in VALID_REGIONS:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid region. Must be one of: {VALID_REGIONS}",
+                )
+            candidates = _weekend_candidates(
+                [
+                    r
+                    for r in all_resorts
+                    if _has_valid_coordinates(r) and infer_resort_region(r) == region
+                ],
+                window_start,
+                window_end,
+            )
+            scope = "region"
+        else:
+            candidates = _weekend_candidates(
+                [r for r in all_resorts if _has_valid_coordinates(r)],
+                window_start,
+                window_end,
+            )
+            scope = "global"
+
+        cache_key = (
+            f"weekend:{','.join(sorted(r.resort_id for r in candidates))}:"
+            f"{window_start}:{window_end}:{','.join(sorted(user_passes))}:{limit}"
+        )
+        cache = get_recommendations_cache()
+        if cache_key in cache:
+            response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+            response.headers["X-Cache"] = "HIT"
+            return cache[cache_key]
+
+        forecasts = fetch_daily_snowfall_forecast(candidates) if candidates else {}
+        restrictions, opening_overrides = _get_weekend_access()
+        summaries = _get_static_snow_quality_from_s3() or {}
+        history_start = (today - timedelta(days=6)).isoformat()
+
+        def gather(resort: Resort):
+            try:
+                conditions = get_weather_service().get_latest_conditions_all_elevations(
+                    resort.resort_id
+                )
+            except Exception as e:
+                logger.warning(
+                    "Weekend conditions failed for %s: %s", resort.resort_id, e
+                )
+                conditions = []
+            try:
+                history = get_daily_history_service().get_history(
+                    resort.resort_id, start_date=history_start
+                )
+            except Exception as e:
+                logger.warning("Weekend history failed for %s: %s", resort.resort_id, e)
+                history = []
+            return build_input(
+                resort,
+                conditions,
+                history,
+                forecasts.get(resort.resort_id, {}),
+                restrictions.get(resort.resort_id, []),
+                today,
+                snow_score=(summaries.get(resort.resort_id) or {}).get("snow_score"),
+                opening_override=opening_overrides.get(resort.resort_id),
+            )
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            inputs = list(executor.map(gather, candidates))
+
+        rankings = rank_resorts(inputs, window_start, window_end, user_passes)
+        result = {
+            "window": {
+                "start": window_start.isoformat(),
+                "end": window_end.isoformat(),
+                "is_default_weekend": start is None and end is None,
+            },
+            "scope": scope,
+            "passes": user_passes,
+            "rankings": [r.to_dict() for r in rankings[:limit]],
+            "count": min(len(rankings), limit),
+            "candidates": len(rankings),
+            "generated_at": datetime.now(UTC).isoformat(),
+        }
+        cache[cache_key] = result
+        response.headers["Cache-Control"] = CACHE_CONTROL_PUBLIC
+        response.headers["X-Cache"] = "MISS"
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Weekend rankings error: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to rank resorts for the weekend",
         )
 
 

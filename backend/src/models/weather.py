@@ -187,6 +187,12 @@ class WeatherCondition(BaseModel):
         None, description="General weather description"
     )
 
+    # Lift/terrain status from the resort snow report (OnTheSnow), when scraped
+    lifts_open: int | None = Field(None, description="Lifts currently open")
+    lifts_total: int | None = Field(None, description="Total lifts")
+    runs_open: int | None = Field(None, description="Runs currently open")
+    runs_total: int | None = Field(None, description="Total runs")
+
     # Snow quality assessment (set after initial creation by snow quality service)
     snow_quality: SnowQuality = Field(
         default=SnowQuality.UNKNOWN, description="Calculated snow quality"

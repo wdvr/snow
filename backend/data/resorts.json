@@ -2646,6 +2646,24 @@
       "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/mt-norquay-banff.png"
     },
     {
+      "resort_id": "mt-rose",
+      "name": "Mt. Rose Ski Tahoe",
+      "country": "US",
+      "region": "na_west",
+      "state_province": "NV",
+      "elevation_base_m": 2520,
+      "elevation_mid_m": 2738,
+      "elevation_top_m": 2955,
+      "latitude": 39.3292,
+      "longitude": -119.8858,
+      "timezone": "America/Los_Angeles",
+      "website": "https://skirose.com",
+      "features": [],
+      "source": "manual (skirose.com, onthesnow.com, verified 2026-11-21)",
+      "vertical_drop_m": 550,
+      "city": "Reno"
+    },
+    {
       "resort_id": "myrkdalen",
       "name": "Myrkdalen",
       "country": "NO",

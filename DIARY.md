@@ -5,6 +5,19 @@ Status: done | pending | n/a (not applicable) | backlog
 
 ---
 
+## Nov 21, 2026
+
+### Feature: "Best this weekend" ranking (iOS 2.2.0)
+One-glance answer to "I want to ski this weekend, where is predicted best?". New `GET /api/v1/rankings/weekend` ranks resorts over the coming Fri-Sun (clipped to today) or a chosen range (`start`/`end`, up to 10 days, within 15 days). Scope: `resort_ids` (favorites), else `region`, else global (pruned to 50 candidates that can be open in the window).
+- **Score (0-100):** forecast snowfall over the window 35%, last-7-day snowfall 25%, base depth 20%, share of runs (or lifts) open 20%, each on a saturating curve; missing signals are dropped and reweighted and the row is flagged. Multiplied by 0.5 + 0.5 x (skiable days / window days).
+- **Access:** per day open / passholder_only / closed / unknown. Curated `services/access_restrictions.json` (Sugar Bowl season passholders only Nov 21-26, 2026; announced opening dates that override stale scraped ones, each with a source). `passes=ikon,epic,mountain_collective,indy,<resort_id>` unlocks passholder days. Order: skiable resorts, then passholder-only, then closed.
+- **Pipeline:** daily forecast comes from one multi-location Open-Meteo call per 50 resorts; lifts/runs open are now stored on each weather condition (`lifts_open`, `lifts_total`, `runs_open`, `runs_total`). The OnTheSnow page no longer embeds `__NEXT_DATA__`, and the regex fallback was reading the lift counts as runs ("Lifts Open 7 / 20 Runs ..."), which is fixed.
+- **Mt. Rose Ski Tahoe** added to `data/resorts.json` (it was missing from the catalog). Prod needs a resort seed run before it shows up.
+- **iOS:** "This Weekend" is now the first (default) segment on Best Snow. Each row shows its deciding numbers, per-day chips, best day and flags; scope, dates and "My passes" are chosen from chips.
+| iOS | Android | Web | API |
+|-----|---------|-----|-----|
+| done (2.2.0) | backlog | backlog | done |
+
 ## Nov 17, 2026
 
 ### Feature: Season opening/closing dates on resorts

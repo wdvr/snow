@@ -64,7 +64,8 @@ struct BestSnowNearYouView: View {
     @EnvironmentObject private var notificationHistoryVM: NotificationHistoryViewModel
     @State private var showingNotifications = false
 
-    @State private var selectedTab = 0
+    /// 2 = This Weekend (default), 0 = Near You, 1 = Best Globally
+    @State private var selectedTab = 2
     @State private var searchRadius: Double = 1000
 
     var useMetric: Bool {
@@ -90,6 +91,7 @@ struct BestSnowNearYouView: View {
             VStack(spacing: 0) {
                 // Tab Picker
                 Picker("View", selection: $selectedTab) {
+                    Text("This Weekend").tag(2)
                     Text("Near You").tag(0)
                     Text("Best Globally").tag(1)
                 }
@@ -97,7 +99,9 @@ struct BestSnowNearYouView: View {
                 .padding()
 
                 // Content
-                if selectedTab == 0 {
+                if selectedTab == 2 {
+                    BestWeekendContent()
+                } else if selectedTab == 0 {
                     nearYouContent
                 } else {
                     bestGloballyContent
@@ -122,7 +126,7 @@ struct BestSnowNearYouView: View {
                 AnalyticsService.shared.trackScreenExit("BestSnow")
             }
             .onChange(of: selectedTab) { _, newValue in
-                let tabName = newValue == 0 ? "nearby" : "global"
+                let tabName = newValue == 2 ? "weekend" : (newValue == 0 ? "nearby" : "global")
                 AnalyticsService.shared.trackFilterApplied(filterType: "best_snow_tab", filterValue: tabName)
             }
             .toolbar {

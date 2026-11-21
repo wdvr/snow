@@ -54,6 +54,7 @@ RESORT_URL_MAPPING: dict[str, str | None] = {
     "snoqualmie-pass": "washington/the-summit-at-snoqualmie",
     "stevens-pass": "washington/stevens-pass-resort",
     "sugar-bowl": "california/sugar-bowl-resort",
+    "mt-rose": "nevada/mt-rose-ski-tahoe",
     "sun-peaks": "british-columbia/sun-peaks",
     "timberline": "oregon/timberline-ski-area",
     "whistler-blackcomb": "british-columbia/whistler-blackcomb",
@@ -147,6 +148,29 @@ RESORT_URL_MAPPING: dict[str, str | None] = {
     "valle-nevado": None,
     "las-lenas": None,
 }
+
+
+TERRAIN_FIELDS = ("lifts_open", "lifts_total", "runs_open", "runs_total")
+
+
+def terrain_fields(scraped_data: Any) -> dict[str, int]:
+    """Lift/run counts from a scraped report, skipping missing or bogus values."""
+    fields = {}
+    for name in TERRAIN_FIELDS:
+        value = getattr(scraped_data, name, None)
+        if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+            fields[name] = value
+    for open_key, total_key in (
+        ("lifts_open", "lifts_total"),
+        ("runs_open", "runs_total"),
+    ):
+        if (
+            open_key in fields
+            and total_key in fields
+            and fields[open_key] > fields[total_key]
+        ):
+            del fields[open_key], fields[total_key]
+    return fields
 
 
 @dataclass
@@ -446,18 +470,32 @@ class OnTheSnowScraper:
         if conditions_match:
             data.surface_conditions = conditions_match.group(1).strip()
 
-        # Try to extract lifts open
+        # Lifts/runs open. The current page labels before the counts
+        # ("Lifts Open 7 / 20 Runs Open 17 / 100"); the count-first pattern
+        # ("7 of 20 lifts") is the older layout. Label-first must win: on the
+        # new layout the count-first runs pattern would read "7 / 20 Runs",
+        # i.e. the lift counts, as runs.
         lifts_match = re.search(
-            r"(\d+)\s*(?:of|/)\s*(\d+)\s*(?:lifts?)", text, re.IGNORECASE
-        )
+            r"lifts?\s*open\s*(\d+)\s*(?:of|/)\s*(\d+)", text, re.IGNORECASE
+        ) or re.search(r"(\d+)\s*(?:of|/)\s*(\d+)\s*(?:lifts?)", text, re.IGNORECASE)
         if lifts_match:
             data.lifts_open = int(lifts_match.group(1))
             data.lifts_total = int(lifts_match.group(2))
 
-        # Try to extract runs open
         runs_match = re.search(
-            r"(\d+)\s*(?:of|/)\s*(\d+)\s*(?:runs?|trails?)", text, re.IGNORECASE
+            r"(?:runs?|trails?)\s*open\s*(\d+)\s*(?:of|/)\s*(\d+)",
+            text,
+            re.IGNORECASE,
         )
+        if not runs_match:
+            fallback = re.search(
+                r"(\d+)\s*(?:of|/)\s*(\d+)\s*(?:runs?|trails?)", text, re.IGNORECASE
+            )
+            preceded_by_lifts = fallback and re.search(
+                r"lifts?\s*open\s*$", text[: fallback.start()], re.IGNORECASE
+            )
+            if fallback and not preceded_by_lifts:
+                runs_match = fallback
         if runs_match:
             data.runs_open = int(runs_match.group(1))
             data.runs_total = int(runs_match.group(2))
