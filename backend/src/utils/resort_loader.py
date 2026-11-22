@@ -187,6 +187,10 @@ class ResortLoader:
             weather_sources=["weatherapi"],
             created_at=now,
             updated_at=now,
+            opening_date=raw.get("opening_date"),
+            closing_date=raw.get("closing_date"),
+            season_status=raw.get("season_status"),
+            season_dates_source=raw.get("season_dates_source"),
         )
 
     def get_resort_by_id(self, resort_id: str) -> Resort | None:

@@ -168,7 +168,10 @@
       "city": "Alta",
       "webcam_url": "https://www.skiresort.info/ski-resort/alta/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/alta/trail-map/",
-      "logo_url": "https://www.pngkey.com/png/detail/301-3019581_alta-ski-resort-alta-ski-area-logo.png"
+      "logo_url": "https://www.pngkey.com/png/detail/301-3019581_alta-ski-resort-alta-ski-area-logo.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-25",
+      "season_dates_source": "deeparrival.com (delayed from Nov 20 to Nov 25)"
     },
     {
       "resort_id": "angel-fire",
@@ -262,7 +265,9 @@
       "expert_terrain": true,
       "webcam_url": "https://www.skiresort.info/ski-resort/arapahoe-basin/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/arapahoe-basin/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/arapahoe-basin.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/arapahoe-basin.png",
+      "season_status": "open",
+      "season_dates_source": "afar.com / tetongravity.com (opened Oct 28, first CO resort)"
     },
     {
       "resort_id": "are",
@@ -322,7 +327,10 @@
       "city": "Aspen",
       "webcam_url": "https://www.skiresort.info/ski-resort/aspen/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/aspen-mountain/trail-map/",
-      "logo_url": "https://www.aspensnowmass.com/-/media/aspen-snowmass/images/footer/partner-links/asc-logo_byaspenone_black.png"
+      "logo_url": "https://www.aspensnowmass.com/-/media/aspen-snowmass/images/footer/partner-links/asc-logo_byaspenone_black.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-26",
+      "season_dates_source": "OnTheSnow colorado/projected-openings / tetongravity.com 2026-27"
     },
     {
       "resort_id": "bald-mountain-sun-valley",
@@ -478,7 +486,10 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/big-sky-resort/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/big-sky-resort/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/big-sky-resort.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/big-sky-resort.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-25",
+      "season_dates_source": "bigskyresort.com/events/winter-opening-day / staymontana.com 2026-27"
     },
     {
       "resort_id": "big-white",
@@ -513,7 +524,10 @@
       "webcam_url": "https://www.skiresort.info/ski-resort/big-white/webcams/",
       "indy_pass": "full",
       "trail_map_url": "https://www.skiresort.info/ski-resort/big-white/trail-map/",
-      "logo_url": "https://www.bigwhite.com/themes/custom/ht_bigwhite/images/icons/logo/bw-logo-xl@2x.png"
+      "logo_url": "https://www.bigwhite.com/themes/custom/ht_bigwhite/images/icons/logo/bw-logo-xl@2x.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-26",
+      "season_dates_source": "OnTheSnow british-columbia/projected-openings 2026-27"
     },
     {
       "resort_id": "blue-mountain-resort-collingwood",
@@ -612,7 +626,9 @@
       "city": "Breckenridge",
       "webcam_url": "https://www.skiresort.info/ski-resort/breckenridge/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/breckenridge/trail-map/",
-      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/usa/breckenridge_ID_290/logo/breckenridge_colorado_logo.png"
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/usa/breckenridge_ID_290/logo/breckenridge_colorado_logo.png",
+      "season_status": "open",
+      "season_dates_source": "gilsonpropertygroup.com / unofficialnetworks.com (opened Nov 11)"
     },
     {
       "resort_id": "bretton-woods",
@@ -674,7 +690,10 @@
       "city": "Brighton",
       "webcam_url": "https://www.skiresort.info/ski-resort/brighton/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/brighton/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/brighton.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/brighton.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-24",
+      "season_dates_source": "skierstash.com/utah / OnTheSnow utah/projected-openings 2026-27"
     },
     {
       "resort_id": "bromont",
@@ -834,7 +853,9 @@
       "city": "Copper Mountain",
       "webcam_url": "https://www.skiresort.info/ski-resort/copper-mountain/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/copper-mountain/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/copper-mountain.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/copper-mountain.png",
+      "season_status": "open",
+      "season_dates_source": "OnTheSnow colorado/projected-openings (opened Nov 8)"
     },
     {
       "resort_id": "coronet-peak",
@@ -971,7 +992,10 @@
       "city": "Crested Butte",
       "webcam_url": "https://www.skiresort.info/ski-resort/crested-butte/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/crested-butte/trail-map/",
-      "logo_url": "https://www.skiresort.info/fileadmin/_processed_/96/6e/e4/45/07308c017f.png"
+      "logo_url": "https://www.skiresort.info/fileadmin/_processed_/96/6e/e4/45/07308c017f.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-25",
+      "season_dates_source": "OnTheSnow colorado/projected-openings / tetongravity.com 2026-27"
     },
     {
       "resort_id": "crystal-mountain-wa",
@@ -1003,7 +1027,10 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/crystal-mountain-wa/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/crystal-mountain-wa/trail-map/",
-      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/usa/crystal_mountain_ID_555/logo/crystal_mountain_resort_logo.png"
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/usa/crystal_mountain_ID_555/logo/crystal_mountain_resort_logo.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-27",
+      "season_dates_source": "OnTheSnow washington/projected-openings 2026-27"
     },
     {
       "resort_id": "cypress-mountain",
@@ -1068,7 +1095,10 @@
       "city": "Park City",
       "webcam_url": "https://www.skiresort.info/ski-resort/deer-valley/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/deer-valley/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/deer-valley.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/deer-valley.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-12-01",
+      "season_dates_source": "OnTheSnow utah/projected-openings / tetongravity.com 2026-27"
     },
     {
       "resort_id": "fernie",
@@ -1105,7 +1135,10 @@
       "city": "Fernie",
       "webcam_url": "https://www.skiresort.info/ski-resort/fernie/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/fernie/trail-map/",
-      "logo_url": "https://skifernie.com/wp-content/themes/kallyas-child/img/logo-fernie28x24.png"
+      "logo_url": "https://skifernie.com/wp-content/themes/kallyas-child/img/logo-fernie28x24.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-12-05",
+      "season_dates_source": "lodgingcompany.com/fernie opening dates 2026-27"
     },
     {
       "resort_id": "fortress-mountain",
@@ -1329,7 +1362,9 @@
       "city": "South Lake Tahoe",
       "webcam_url": "https://www.skiresort.info/ski-resort/heavenly/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/heavenly/trail-map/",
-      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/feUserUpload/295_Heavenly/Heavenly.png"
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/feUserUpload/295_Heavenly/Heavenly.png",
+      "season_status": "open",
+      "season_dates_source": "southtahoenow.com 2026-11-19 / unofficialnetworks.com 2026-11-18"
     },
     {
       "resort_id": "hemsedal",
@@ -1390,7 +1425,10 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/homewood-mountain-resort/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/homewood-mountain-resort/trail-map/",
-      "logo_url": "https://skihomewood.com/wp-content/uploads/2025/11/cropped-HomewoodLogo-1-2.png"
+      "logo_url": "https://skihomewood.com/wp-content/uploads/2025/11/cropped-HomewoodLogo-1-2.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-12-11",
+      "season_dates_source": "tahoetruckeevacations.com / snocal.com opening dates 2026-27"
     },
     {
       "resort_id": "hudson-bay-mountain-smithers",
@@ -1490,7 +1528,10 @@
       "city": "Teton Village",
       "webcam_url": "https://www.skiresort.info/ski-resort/jackson-hole/webcams/",
       "trail_map_url": "https://www.snow-forecast.com/pistemaps/Jackson-Hole_pistemap.jpg",
-      "logo_url": "https://www.jacksonhole.com/images/jh-tapped-icon.png"
+      "logo_url": "https://www.jacksonhole.com/images/jh-tapped-icon.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-27",
+      "season_dates_source": "OnTheSnow rocky-mountains/projected-openings / tetongravity.com 2026-27"
     },
     {
       "resort_id": "jay-peak",
@@ -1523,7 +1564,10 @@
       "webcam_url": "https://www.skiresort.info/ski-resort/jay-peak/webcams/",
       "indy_pass": "full",
       "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/jay-peak.png",
-      "trail_map_url": "https://www.snow-forecast.com/pistemaps/Jay-Peak_pistemap.jpg"
+      "trail_map_url": "https://www.snow-forecast.com/pistemaps/Jay-Peak_pistemap.jpg",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-28",
+      "season_dates_source": "skivermont.com / lakeshorevermont.com (Thanksgiving weekend Nov 28)"
     },
     {
       "resort_id": "june-mountain",
@@ -1587,7 +1631,9 @@
       "city": "Keystone",
       "webcam_url": "https://www.skiresort.info/ski-resort/keystone/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/keystone/trail-map/",
-      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/usa/keystone_ID_298/logo/keystone_logo.png"
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/usa/keystone_ID_298/logo/keystone_logo.png",
+      "season_status": "open",
+      "season_dates_source": "travelandtourworld.com / tetongravity.com (opened Oct 30)"
     },
     {
       "resort_id": "kicking-horse-golden",
@@ -1618,7 +1664,10 @@
       "city": "Area A (Kicking Horse/Kinbasket Lake)",
       "webcam_url": "https://www.skiresort.info/ski-resort/kicking-horse-golden/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/kicking-horse-golden/trail-map/",
-      "logo_url": "https://kickinghorseresort.com/wp-content/themes/kallyas-child/img/logo-khmr-29x24.png"
+      "logo_url": "https://kickinghorseresort.com/wp-content/themes/kallyas-child/img/logo-khmr-29x24.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-12-11",
+      "season_dates_source": "OnTheSnow british-columbia/projected-openings 2026-27"
     },
     {
       "resort_id": "killington",
@@ -1652,7 +1701,9 @@
       "city": "Killington",
       "webcam_url": "https://www.skiresort.info/ski-resort/killington/webcams/",
       "trail_map_url": "https://www.snow-forecast.com/pistemaps/Killington_pistemap.jpg",
-      "logo_url": "https://en.wikipedia.org/wiki/File:Killington_Ski_Resort_logo.svg"
+      "logo_url": "https://en.wikipedia.org/wiki/File:Killington_Ski_Resort_logo.svg",
+      "season_status": "open",
+      "season_dates_source": "skivermont.com / OnTheSnow vermont (already open by Nov 21)"
     },
     {
       "resort_id": "kimberley",
@@ -1716,7 +1767,10 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/kirkwood/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/kirkwood/trail-map/",
-      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/usa/kirkwood_ID_300/logo/kirkwood_logo.png"
+      "logo_url": "https://www.skiresort.info/fileadmin/user_upload/skigebiete/nordamerika_/usa/kirkwood_ID_300/logo/kirkwood_logo.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-12-04",
+      "season_dates_source": "tahoedailytribune.com / tahoetruckeevacations.com 2026-27"
     },
     {
       "resort_id": "kitzbuehel",
@@ -1816,7 +1870,9 @@
       "city": "Lake Louise",
       "webcam_url": "https://www.skiresort.info/ski-resort/lake-louise/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/lake-louise/trail-map/",
-      "logo_url": "https://www.skilouise.com/wp-content/uploads/2025/02/skibig3-logo-160x140-1.png"
+      "logo_url": "https://www.skilouise.com/wp-content/uploads/2025/02/skibig3-logo-160x140-1.png",
+      "season_status": "open",
+      "season_dates_source": "calgarycitizen.com (opened Nov 1, early opening)"
     },
     {
       "resort_id": "las-lenas",
@@ -2104,7 +2160,9 @@
       "city": "Mammoth Lakes",
       "webcam_url": "https://www.skiresort.info/ski-resort/mammoth-mountain/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/mammoth-mountain/trail-map/",
-      "logo_url": "https://www.mammothmountain.com/_next/image?url=%2F-%2Fmedia%2Fproject%2Fmammoth%2Fmammoth-mountain-primary-logo-whitefill.svg%3Fh%3D58%26iar%3D0%26w%3D85%26rev%3D64725d20529a4595818c61cbd2323b12%26hash%3D79EF4FD399B7BACEE2A72E56CC031F61&w=3840&q=75"
+      "logo_url": "https://www.mammothmountain.com/_next/image?url=%2F-%2Fmedia%2Fproject%2Fmammoth%2Fmammoth-mountain-primary-logo-whitefill.svg%3Fh%3D58%26iar%3D0%26w%3D85%26rev%3D64725d20529a4595818c61cbd2323b12%26hash%3D79EF4FD399B7BACEE2A72E56CC031F61&w=3840&q=75",
+      "season_status": "open",
+      "season_dates_source": "OnTheSnow / unofficialnetworks.com 2026-09-10"
     },
     {
       "resort_id": "marble-mountain-steady-brook-humber-valley",
@@ -2547,7 +2605,10 @@
       "city": "Bend",
       "webcam_url": "https://www.skiresort.info/ski-resort/mt-bachelor/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/mt-bachelor/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/mt-bachelor.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/mt-bachelor.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-12-04",
+      "season_dates_source": "OnTheSnow oregon/projected-openings 2026-27"
     },
     {
       "resort_id": "mt-baker",
@@ -2579,7 +2640,10 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/mt-baker/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/mt-baker/trail-map/",
-      "logo_url": "https://www.mtbaker.us/wp-content/uploads/2025/11/Baker_logo_2025-26.png"
+      "logo_url": "https://www.mtbaker.us/wp-content/uploads/2025/11/Baker_logo_2025-26.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-12-18",
+      "season_dates_source": "OnTheSnow washington/projected-openings 2026-27"
     },
     {
       "resort_id": "mt-hood-meadows",
@@ -2613,7 +2677,10 @@
       "expert_terrain": true,
       "webcam_url": "https://www.skiresort.info/ski-resort/mt-hood-meadows/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/mt-hood-meadows/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/mt-hood-meadows.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/mt-hood-meadows.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-12-04",
+      "season_dates_source": "OnTheSnow oregon/projected-openings 2026-27"
     },
     {
       "resort_id": "mt-norquay-banff",
@@ -2810,7 +2877,9 @@
       "city": "Olympic Valley",
       "webcam_url": "https://www.skiresort.info/ski-resort/palisades-tahoe/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/palisades-tahoe/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/palisades-tahoe.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/palisades-tahoe.png",
+      "season_status": "open",
+      "season_dates_source": "activenorcal.com 2026-11-21 (moved up from Nov 25)"
     },
     {
       "resort_id": "panorama",
@@ -2881,7 +2950,9 @@
       "city": "Park City",
       "webcam_url": "https://www.skiresort.info/ski-resort/park-city/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/park-city/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/park-city.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/park-city.png",
+      "season_status": "pre_season",
+      "season_dates_source": "pick-a-ski.com / travelerstoday.com 2026-11-18 (no new date set after delay)"
     },
     {
       "resort_id": "perisher",
@@ -3110,7 +3181,10 @@
       "city": "Revelstoke",
       "webcam_url": "https://www.skiresort.info/ski-resort/revelstoke/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/revelstoke-mountain-resort/trail-map/",
-      "logo_url": "https://www.revelstokemountainresort.com/site/themes/vwtheme/dist/img/mammut-logo.png"
+      "logo_url": "https://www.revelstokemountainresort.com/site/themes/vwtheme/dist/img/mammut-logo.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-12-05",
+      "season_dates_source": "OnTheSnow british-columbia/projected-openings 2026-27"
     },
     {
       "resort_id": "riksgransen",
@@ -3201,7 +3275,10 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/sierra-at-tahoe/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/sierra-at-tahoe/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/sierra-at-tahoe.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/sierra-at-tahoe.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-25",
+      "season_dates_source": "sierraattahoe.com / kcra.com 2026-27 opening dates"
     },
     {
       "resort_id": "silver-star",
@@ -3269,7 +3346,10 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/snoqualmie-pass/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/the-summit-at-snoqualmie/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/snoqualmie-pass.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/snoqualmie-pass.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-12-26",
+      "season_dates_source": "OnTheSnow washington/projected-openings 2026-27"
     },
     {
       "resort_id": "snow-king-mountain-jackson",
@@ -3333,7 +3413,10 @@
       "city": "Huntsville",
       "webcam_url": "https://www.skiresort.info/ski-resort/snowbasin/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/snowbasin/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/snowbasin.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/snowbasin.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-27",
+      "season_dates_source": "OnTheSnow utah/projected-openings / skierstash.com 2026-27"
     },
     {
       "resort_id": "snowbird",
@@ -3367,7 +3450,10 @@
       "city": "Snowbird",
       "webcam_url": "https://www.skiresort.info/ski-resort/snowbird/webcams/",
       "trail_map_url": "https://www.snow-forecast.com/pistemaps/Snowbird_pistemap.jpg",
-      "logo_url": "https://www.snowbird.com/logo.png"
+      "logo_url": "https://www.snowbird.com/logo.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-27",
+      "season_dates_source": "OnTheSnow utah/projected-openings / tetongravity.com 2026-27"
     },
     {
       "resort_id": "solitude",
@@ -3400,7 +3486,9 @@
       "city": "Solitude",
       "webcam_url": "https://www.skiresort.info/ski-resort/solitude/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/solitude/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/solitude.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/solitude.png",
+      "season_status": "open",
+      "season_dates_source": "skierstash.com/utah / skiutah.com (opened Nov 19)"
     },
     {
       "resort_id": "sommet-saint-sauveur",
@@ -3504,7 +3592,9 @@
       "city": "Steamboat Springs",
       "webcam_url": "https://www.skiresort.info/ski-resort/steamboat/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/steamboat/trail-map/",
-      "logo_url": "https://www.steamboat.com/-/media/steamboat/logos/steamboat-logo.svg"
+      "logo_url": "https://www.steamboat.com/-/media/steamboat/logos/steamboat-logo.svg",
+      "season_status": "open",
+      "season_dates_source": "tetongravity.com / lodgingcompany.com opening dates 2026-27 (opened Nov 21)"
     },
     {
       "resort_id": "stevens-pass",
@@ -3539,7 +3629,10 @@
       "city": "Skykomish",
       "webcam_url": "https://www.skiresort.info/ski-resort/stevens-pass/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/stevens-pass/trail-map/",
-      "logo_url": "https://www.stevenspass.com/media/logo.svg"
+      "logo_url": "https://www.stevenspass.com/media/logo.svg",
+      "season_status": "pre_season",
+      "opening_date": "2026-12-04",
+      "season_dates_source": "OnTheSnow washington/projected-openings 2026-27"
     },
     {
       "resort_id": "stoneham",
@@ -3604,7 +3697,9 @@
       "city": "Stowe",
       "webcam_url": "https://www.skiresort.info/ski-resort/stowe/webcams/",
       "trail_map_url": "https://www.snow-forecast.com/pistemaps/Stowe_pistemap.jpg",
-      "logo_url": "https://www.stowe.com/logo/flying-s.svg"
+      "logo_url": "https://www.stowe.com/logo/flying-s.svg",
+      "season_status": "open",
+      "season_dates_source": "skivermont.com / lakeshorevermont.com (opened Nov 21)"
     },
     {
       "resort_id": "stratton",
@@ -3668,7 +3763,10 @@
       "expert_terrain": true,
       "webcam_url": "https://www.skiresort.info/ski-resort/sugar-bowl/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/sugar-bowl/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/sugar-bowl.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/sugar-bowl.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-22",
+      "season_dates_source": "tahoetruckeevacations.com / snocal.com opening dates 2026-27"
     },
     {
       "resort_id": "sugarbush",
@@ -3734,7 +3832,9 @@
       "city": "Carrabassett Valley",
       "webcam_url": "https://www.skiresort.info/ski-resort/sugarloaf/webcams/",
       "trail_map_url": "https://www.snow-forecast.com/pistemaps/Sugarloaf_pistemap.jpg",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/sugarloaf.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/sugarloaf.png",
+      "season_status": "pre_season",
+      "season_dates_source": "deeparrival.com (delayed past Nov 20; no new date as of 2026-11-21)"
     },
     {
       "resort_id": "sun-peaks",
@@ -3801,7 +3901,9 @@
       "city": "Newry",
       "webcam_url": "https://www.skiresort.info/ski-resort/sunday-river/webcams/",
       "trail_map_url": "https://www.snow-forecast.com/pistemaps/Sunday-River_pistemap.jpg",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/sunday-river.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/sunday-river.png",
+      "season_status": "pre_season",
+      "season_dates_source": "OnTheSnow new-england/projected-openings (no date set as of 2026-11-21)"
     },
     {
       "resort_id": "sunshine-village",
@@ -3903,7 +4005,10 @@
       "city": "Telluride",
       "webcam_url": "https://www.skiresort.info/ski-resort/telluride/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/telluride/trail-map/",
-      "logo_url": "https://tellurideskiresort.com/wp-content/uploads/tesla-logo.png"
+      "logo_url": "https://tellurideskiresort.com/wp-content/uploads/tesla-logo.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-26",
+      "season_dates_source": "OnTheSnow colorado/projected-openings / tetongravity.com 2026-27"
     },
     {
       "resort_id": "thredbo",
@@ -4004,7 +4109,9 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/timberline/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/timberline/trail-map/",
-      "logo_url": "https://timberlinelodge.com/images/logo.svg"
+      "logo_url": "https://timberlinelodge.com/images/logo.svg",
+      "season_status": "open",
+      "season_dates_source": "OnTheSnow oregon/projected-openings 2026-27 (Nov 21 open)"
     },
     {
       "resort_id": "tremblant",
@@ -4104,7 +4211,9 @@
       "city": "Vail",
       "webcam_url": "https://www.skiresort.info/ski-resort/vail/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/vail/trail-map/",
-      "logo_url": "https://www.vail.com/logo.svg"
+      "logo_url": "https://www.vail.com/logo.svg",
+      "season_status": "open",
+      "season_dates_source": "unofficialnetworks.com / basemountainsports.com (opened Nov 13)"
     },
     {
       "resort_id": "val-disere",
@@ -4364,7 +4473,9 @@
       "city": "Whistler",
       "webcam_url": "https://www.skiresort.info/ski-resort/whistler-blackcomb/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/whistler-blackcomb/trail-map/",
-      "logo_url": "https://www.whistlerblackcomb.com/images/logo-whoosh.svg"
+      "logo_url": "https://www.whistlerblackcomb.com/images/logo-whoosh.svg",
+      "season_status": "open",
+      "season_dates_source": "canadiantravelnews.ca / blackcombpeaks.com (opened Nov 20)"
     },
     {
       "resort_id": "whiteface-lake-placid",
@@ -4425,7 +4536,10 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/whitefish-mountain-resort/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/whitefish-mountain-resort/trail-map/",
-      "logo_url": "https://skiwhitefish.com/wp-content/uploads/2023/10/SustainableSlope_LogoGrey-1.png"
+      "logo_url": "https://skiwhitefish.com/wp-content/uploads/2023/10/SustainableSlope_LogoGrey-1.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-12-04",
+      "season_dates_source": "OnTheSnow montana/projected-openings / staymontana.com 2026-27"
     },
     {
       "resort_id": "whitewater-nelson",
@@ -4485,7 +4599,9 @@
       "city": "Winter Park",
       "webcam_url": "https://www.skiresort.info/ski-resort/winter-park-resort/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/winter-park-resort/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/winter-park-resort.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/winter-park-resort.png",
+      "season_status": "open",
+      "season_dates_source": "OnTheSnow colorado/projected-openings (opened Nov 13)"
     },
     {
       "resort_id": "wolf-creek",
@@ -4545,7 +4661,10 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/yellowstone-club/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/yellowstone-club/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/yellowstone-club.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/yellowstone-club.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-25",
+      "season_dates_source": "OnTheSnow montana/projected-openings / tetongravity.com 2026-27"
     },
     {
       "resort_id": "zermatt",
@@ -7807,7 +7926,9 @@
       "vertical_drop_m": 1070,
       "webcam_url": "https://www.skiresort.info/ski-resort/banff-sunshine/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/banff-sunshine/trail-map/",
-      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/banff-sunshine.png"
+      "logo_url": "https://snow-tracker-webapp-prod-383757231925.s3.us-west-2.amazonaws.com/logos/banff-sunshine.png",
+      "season_status": "open",
+      "season_dates_source": "rmoutlook.com / mktgspace.com (opened Nov 6, earliest on record)"
     },
     {
       "resort_id": "canada-olympic-park-calgary",
@@ -31137,7 +31258,10 @@
       "city": "Aspen",
       "webcam_url": "https://www.skiresort.info/ski-resort/aspen-highlands/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/aspen-highlands/trail-map/",
-      "logo_url": "https://www.aspensnowmass.com/-/media/aspen-snowmass/images/footer/partner-links/asc-logo_byaspenone_black.png"
+      "logo_url": "https://www.aspensnowmass.com/-/media/aspen-snowmass/images/footer/partner-links/asc-logo_byaspenone_black.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-26",
+      "season_dates_source": "OnTheSnow colorado/projected-openings / tetongravity.com 2026-27"
     },
     {
       "resort_id": "aspen-mountain",
@@ -31169,7 +31293,10 @@
       "city": "Aspen",
       "webcam_url": "https://www.skiresort.info/ski-resort/aspen-mountain/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/aspen-mountain/trail-map/",
-      "logo_url": "https://www.aspensnowmass.com/-/media/aspen-snowmass/images/footer/partner-links/asc-logo_byaspenone_black.png"
+      "logo_url": "https://www.aspensnowmass.com/-/media/aspen-snowmass/images/footer/partner-links/asc-logo_byaspenone_black.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-26",
+      "season_dates_source": "OnTheSnow colorado/projected-openings / tetongravity.com 2026-27"
     },
     {
       "resort_id": "buttermilk-mountain",
@@ -31199,7 +31326,10 @@
       "expert_terrain": false,
       "webcam_url": "https://www.skiresort.info/ski-resort/buttermilk-mountain/webcams/",
       "trail_map_url": "https://www.skiresort.info/ski-resort/buttermilk-mountain/trail-map/",
-      "logo_url": "https://www.aspensnowmass.com/-/media/aspen-snowmass/images/footer/partner-links/asc-logo_byaspenone_black.png"
+      "logo_url": "https://www.aspensnowmass.com/-/media/aspen-snowmass/images/footer/partner-links/asc-logo_byaspenone_black.png",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-26",
+      "season_dates_source": "OnTheSnow colorado/projected-openings (opens with Aspen group)"
     },
     {
       "resort_id": "dollar-mountain-sun-valley",
@@ -31263,7 +31393,9 @@
       "city": "Truckee",
       "webcam_url": "https://www.skiresort.info/ski-resort/northstar/webcams/",
       "trail_map_url": "https://www.snow-forecast.com/pistemaps/Northstar-at-Tahoe_pistemap.jpg",
-      "logo_url": "https://scene7.vailresorts.com/is/image/vailresorts/resorts-bug-northstar.svg"
+      "logo_url": "https://scene7.vailresorts.com/is/image/vailresorts/resorts-bug-northstar.svg",
+      "season_status": "open",
+      "season_dates_source": "southtahoenow.com 2026-11-19 / unofficialnetworks.com 2026-11-18"
     },
     {
       "resort_id": "skiwelt-wilder-kaiser-brixental",
@@ -31329,7 +31461,10 @@
       "city": "Snowmass Village",
       "webcam_url": "https://www.skiresort.info/ski-resort/aspen-snowmass/webcams/",
       "logo_url": "https://www.aspensnowmass.com/-/media/aspen-snowmass/images/footer/partner-links/asc-logo_byaspenone_black.png",
-      "trail_map_url": "https://www.snow-forecast.com/pistemaps/Snowmass_pistemap.jpeg"
+      "trail_map_url": "https://www.snow-forecast.com/pistemaps/Snowmass_pistemap.jpeg",
+      "season_status": "pre_season",
+      "opening_date": "2026-11-26",
+      "season_dates_source": "OnTheSnow colorado/projected-openings / tetongravity.com 2026-27"
     }
   ]
 }

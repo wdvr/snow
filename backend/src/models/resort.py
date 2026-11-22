@@ -129,6 +129,22 @@ class Resort(BaseModel):
         False,
         description="If true, resort is polled year-round regardless of latitude",
     )
+    # Season opening/closing dates for display. All optional; iOS app shows
+    # nothing when absent. Dates are YYYY-MM-DD. Source records where the date
+    # was verified (resort site, OnTheSnow, Ski California, etc.).
+    opening_date: str | None = Field(
+        None, description="Season opening date (YYYY-MM-DD), verified at data-entry time"
+    )
+    closing_date: str | None = Field(
+        None, description="Season closing date (YYYY-MM-DD), verified at data-entry time"
+    )
+    season_status: str | None = Field(
+        None,
+        description="Current season status: open, pre_season, closing_soon, post_season, temporarily_closed",
+    )
+    season_dates_source: str | None = Field(
+        None, description="Named source for opening/closing dates (resort site, OnTheSnow, etc.)"
+    )
 
     model_config = ConfigDict(use_enum_values=True)
 
