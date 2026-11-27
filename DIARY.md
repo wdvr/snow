@@ -11,6 +11,7 @@ Status: done | pending | n/a (not applicable) | backlog
 - **Rolling windows:** `snowfall_24h/48h/72h_cm` summed 25/49/73 hourly values and `predicted_snow_24h/48h/72h_cm` 23/47/71. Both now cover exactly 24/48/72 hours (past `[now-23h, now]`, next `[now+1h, now+24h]`).
 - **Daily fallback:** when the last 48h were dry, `_process_snowfall` replaced the hourly result with today's + yesterday's daily `snowfall_sum`, which includes forecast hours later today, so forecast snow was stored as observed 24h snowfall. The fallback now runs only when hourly data is missing.
 - **OnTheSnow:** a reported 0" of 24h/48h/72h snowfall became `None` ("unknown"), so the merge ignored the resort's "no new snow" report. 0 now stays 0.
+- **Weekend ranking cache:** the cache key had no "today", so for an explicit `start`/`end` a ranking computed on one day (last-7-day snowfall, opening overrides) was served on the next for up to an hour. The key now includes today.
 | iOS | Android | Web | API |
 |-----|---------|-----|-----|
 | n/a | n/a | n/a | done |
