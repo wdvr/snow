@@ -609,6 +609,11 @@ class OnTheSnowScraper:
         """
         base = scraped_data.base_depth_cm
         summit = scraped_data.summit_depth_cm
+        # A 0 contradicted by the other reading on the same page is suspect.
+        if base == 0 and summit:
+            base = None
+        if summit == 0 and base:
+            summit = None
 
         if elevation_level == "base":
             return base

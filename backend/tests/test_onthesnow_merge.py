@@ -791,3 +791,10 @@ class TestScrapedZeroDepth:
         scraped = _make_scraped_data(base_depth_inches=0.0, summit_depth_inches=0.0)
         merged = OnTheSnowScraper().merge_with_weather_data(weather, scraped, "mid")
         assert merged["snow_depth_cm"] == 90.0
+
+    def test_zero_base_contradicted_by_summit_on_same_page(self):
+        scraped = _make_scraped_data(base_depth_inches=0.0, summit_depth_inches=80.0)
+        get = OnTheSnowScraper._get_scraped_depth_for_level
+        assert get(scraped, "mid") == 80.0 * 2.54
+        assert get(scraped, "top") == 80.0 * 2.54
+        assert get(scraped, "base") is None
