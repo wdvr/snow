@@ -278,9 +278,10 @@ class MultiSourceMerger:
     ) -> tuple[float | None, list[str]]:
         """Pick snow depth by DEPTH_PRIORITY, guarding against bogus zeros.
 
-        0cm (no snow, no skiing) is only accepted when at least two sources
-        report it. A zero contradicted by a source reporting snow is suspected
-        bad data: it is skipped and returned in the suspect list.
+        0cm (no snow, no skiing) is only accepted when at least two resort
+        sources report it. Open-Meteo's depth defaults to 0 when missing, so a
+        model zero never confirms. A zero contradicted by a source reporting
+        snow is suspected bad data: it is skipped and returned as suspect.
 
         Returns (depth or None to keep the base value, suspect source names).
         """
@@ -290,7 +291,7 @@ class MultiSourceMerger:
             if name in available_sources
             and available_sources[name].snow_depth_cm is not None
         }
-        zeros = [name for name, d in depths.items() if d <= 0]
+        zeros = [name for name, d in depths.items() if d <= 0 and name != "open-meteo"]
         positive = [name for name, d in depths.items() if d > 0]
         if len(zeros) >= 2:
             return 0.0, []
