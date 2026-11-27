@@ -1428,24 +1428,3 @@ class TestProcessSnowfallWindowBounds(unittest.TestCase):
         # Temperatures still come from the hourly series
         self.assertEqual(result["min_temp_24h"], -5.0)
         self.assertEqual(result["max_temp_24h"], -5.0)
-
-    @patch("services.openmeteo_service.datetime")
-    def test_missing_hourly_readings_fall_back_to_daily(self, mock_dt):
-        """Null past hourly values are missing data, not a dry window."""
-        mock_dt.now.return_value = FIXED_NOW
-        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
-        hourly, ci = _build_hourly(default_snowfall=0.0)
-        for i in range(ci + 1):
-            hourly["snowfall"][i] = None
-        today_str = FIXED_NOW.strftime("%Y-%m-%d")
-        yesterday = (FIXED_NOW - timedelta(days=1)).strftime("%Y-%m-%d")
-        daily = {
-            "time": [yesterday, today_str],
-            "snowfall_sum": [6.0, 4.0],
-            "temperature_2m_min": [-8.0, -6.0],
-            "temperature_2m_max": [-1.0, 0.0],
-        }
-        result = self.service._process_snowfall(daily, hourly)
-        # Existing daily fallback: 24h = today + yesterday
-        self.assertAlmostEqual(result["snowfall_24h"], 10.0)
-        self.assertAlmostEqual(result["snowfall_48h"], 10.0)

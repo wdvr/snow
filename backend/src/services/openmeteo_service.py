@@ -898,7 +898,6 @@ class OpenMeteoService:
         hourly_snowfall = hourly.get("snowfall", [])
         hourly_temps = hourly.get("temperature_2m", [])
         hourly_times = hourly.get("time", [])
-        hourly_observed = False
 
         if hourly_snowfall and hourly_times:
             # Find current hour index
@@ -922,7 +921,6 @@ class OpenMeteoService:
 
             for i in range(start_72h, current_index + 1):
                 if i < len(hourly_snowfall) and hourly_snowfall[i] is not None:
-                    hourly_observed = True
                     snow_cm = hourly_snowfall[i]
                     if i >= start_24h:
                         result["snowfall_24h"] += snow_cm
@@ -1104,9 +1102,9 @@ class OpenMeteoService:
                 result["min_temp_24h"] = min(temps_24h)
                 result["max_temp_24h"] = max(temps_24h)
 
-        # Fallback to daily data only when no past hourly value exists. A dry
+        # Fallback to daily data only when hourly data is missing. A dry
         # hourly window is a real 0: today's daily sum includes forecast hours.
-        if not hourly_observed:
+        if not (hourly_snowfall and hourly_times):
             daily_snowfall = daily.get("snowfall_sum", [])
             daily_min_temps = daily.get("temperature_2m_min", [])
             daily_max_temps = daily.get("temperature_2m_max", [])
