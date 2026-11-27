@@ -142,6 +142,9 @@ class MultiSourceMerger:
         depth, suspect_zero = MultiSourceMerger._select_snow_depth(available_sources)
         if depth is not None:
             merged["snow_depth_cm"] = depth
+        elif suspect_zero:
+            # A lone 0 nobody confirms is unknown depth, not "no snow".
+            merged["snow_depth_cm"] = None
 
         # Determine confidence level based on source agreement
         source_count = len(available_sources)
@@ -229,10 +232,15 @@ class MultiSourceMerger:
             }
 
         if suspect_zero:
+            contradicted = depth is not None
             merged["source_details"]["depth_check"] = {
-                "status": "suspect_zero",
+                "status": "suspect_zero" if contradicted else "unconfirmed_zero",
                 "sources": [SOURCE_DOMAIN_MAP.get(n, n) for n in suspect_zero],
-                "reason": "Reported 0cm depth while another source reports snow",
+                "reason": (
+                    "Reported 0cm depth while another source reports snow"
+                    if contradicted
+                    else "Only one source reports 0cm depth"
+                ),
             }
 
         # Add missing sources (not available for this resort) so the UI
@@ -282,7 +290,9 @@ class MultiSourceMerger:
         report it. A zero contradicted by a source reporting snow is suspected
         bad data: it is skipped and returned in the suspect list.
 
-        Returns (depth or None to keep the base value, suspect source names).
+        A single unconfirmed zero yields (None, [source]): depth unknown.
+
+        Returns (depth or None, zero-reporting sources not accepted).
         """
         depths = {
             name: available_sources[name].snow_depth_cm
@@ -296,7 +306,7 @@ class MultiSourceMerger:
             return 0.0, []
         if positive:
             return depths[positive[0]], zeros
-        return None, []
+        return None, zeros
 
     @staticmethod
     def _weighted_average(
