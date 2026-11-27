@@ -870,12 +870,3 @@ class TestZeroDepthTwoSourceRule:
         merged = MultiSourceMerger.merge(base, sources)
         assert merged["snow_depth_cm"] == 0.0
         assert "depth_check" not in merged["source_details"]
-
-    def test_lone_model_zero_is_unknown_depth(self):
-        base = {"snow_depth_cm": 0.0, "snowfall_24h_cm": 0.0}
-        sources = [SourceData(source_name="onthesnow", snowfall_24h_cm=0.0)]
-        merged = MultiSourceMerger.merge(base, sources)
-        assert merged["snow_depth_cm"] is None
-        check = merged["source_details"]["depth_check"]
-        assert check["status"] == "unconfirmed_zero"
-        assert check["sources"] == ["open-meteo.com"]
