@@ -292,10 +292,10 @@ class MultiSourceMerger:
         }
         zeros = [name for name, d in depths.items() if d <= 0]
         positive = [name for name, d in depths.items() if d > 0]
-        if positive:
-            return depths[positive[0]], zeros
         if len(zeros) >= 2:
             return 0.0, []
+        if positive:
+            return depths[positive[0]], zeros
         return None, []
 
     @staticmethod
