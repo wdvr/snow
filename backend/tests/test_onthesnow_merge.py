@@ -797,4 +797,4 @@ class TestScrapedZeroDepth:
         get = OnTheSnowScraper._get_scraped_depth_for_level
         assert get(scraped, "mid") == 80.0 * 2.54
         assert get(scraped, "top") == 80.0 * 2.54
-        assert get(scraped, "base") is None
+        assert get(scraped, "base") == 0.0

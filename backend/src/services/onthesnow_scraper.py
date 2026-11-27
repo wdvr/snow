@@ -609,15 +609,17 @@ class OnTheSnowScraper:
         """
         base = scraped_data.base_depth_cm
         summit = scraped_data.summit_depth_cm
-        # A 0 contradicted by the other reading on the same page is suspect.
+
+        if elevation_level == "base":
+            return base
+        # Bare base under a snowy summit is real at the base, but must not
+        # drag mid/top down; likewise a 0 summit over a snowy base.
         if base == 0 and summit:
             base = None
         if summit == 0 and base:
             summit = None
 
-        if elevation_level == "base":
-            return base
-        elif elevation_level == "top":
+        if elevation_level == "top":
             # Prefer summit depth, fall back to base if summit not available
             return summit if summit is not None else base
         else:  # mid
