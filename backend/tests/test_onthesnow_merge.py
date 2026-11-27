@@ -772,3 +772,22 @@ class TestScrapedZeroSnowfall:
         scraped = _make_scraped_data(snowfall_24h_inches=0.0)
         merged = scraper.merge_with_weather_data(weather, scraped, "mid")
         assert abs(merged["snowfall_24h_cm"] - 3.0) < 0.01
+
+
+class TestScrapedZeroDepth:
+    def test_zero_depth_converts_to_zero_cm(self):
+        scraped = _make_scraped_data(base_depth_inches=0.0, summit_depth_inches=0.0)
+        assert scraped.base_depth_cm == 0.0
+        assert OnTheSnowScraper._get_scraped_depth_for_level(scraped, "mid") == 0.0
+
+    def test_zero_depth_agreeing_with_model_is_no_snow(self):
+        weather = _make_weather_data(snow_depth_cm=0.0)
+        scraped = _make_scraped_data(base_depth_inches=0.0, summit_depth_inches=0.0)
+        merged = OnTheSnowScraper().merge_with_weather_data(weather, scraped, "mid")
+        assert merged["snow_depth_cm"] == 0.0
+
+    def test_zero_depth_contradicted_by_model_is_ignored(self):
+        weather = _make_weather_data(snow_depth_cm=90.0)
+        scraped = _make_scraped_data(base_depth_inches=0.0, summit_depth_inches=0.0)
+        merged = OnTheSnowScraper().merge_with_weather_data(weather, scraped, "mid")
+        assert merged["snow_depth_cm"] == 90.0
