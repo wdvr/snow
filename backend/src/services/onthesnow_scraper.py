@@ -196,17 +196,29 @@ class ScrapedSnowData:
     @property
     def snowfall_24h_cm(self) -> float | None:
         """Convert 24h snowfall to cm."""
-        return self.snowfall_24h_inches * 2.54 if self.snowfall_24h_inches else None
+        return (
+            self.snowfall_24h_inches * 2.54
+            if self.snowfall_24h_inches is not None
+            else None
+        )
 
     @property
     def snowfall_48h_cm(self) -> float | None:
         """Convert 48h snowfall to cm."""
-        return self.snowfall_48h_inches * 2.54 if self.snowfall_48h_inches else None
+        return (
+            self.snowfall_48h_inches * 2.54
+            if self.snowfall_48h_inches is not None
+            else None
+        )
 
     @property
     def snowfall_72h_cm(self) -> float | None:
         """Convert 72h snowfall to cm."""
-        return self.snowfall_72h_inches * 2.54 if self.snowfall_72h_inches else None
+        return (
+            self.snowfall_72h_inches * 2.54
+            if self.snowfall_72h_inches is not None
+            else None
+        )
 
     @property
     def base_depth_cm(self) -> float | None:
