@@ -415,9 +415,8 @@ class TestProcessSnowfallPredicted(unittest.TestCase):
         for i in range(ci + 1, ci + 25):
             hourly["snowfall"][i] = 0.5
         result = self.service._process_snowfall({}, hourly)
-        # future_24h = ci+24, loop is range(ci+1, ci+24) => 23 items => 11.5
-        self.assertAlmostEqual(result["predicted_24h"], 11.5)
-        # predicted_48h includes the 24th hour too => 24 * 0.5 = 12.0
+        # next 24h = ci+1 .. ci+24 => 24 items => 12.0
+        self.assertAlmostEqual(result["predicted_24h"], 12.0)
         self.assertAlmostEqual(result["predicted_48h"], 12.0)
         self.assertAlmostEqual(result["predicted_72h"], 12.0)
 
@@ -1349,3 +1348,83 @@ class TestSmoothTimelineSnowDepth(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ============================================================================
+# 13. _process_snowfall - window lengths and forecast leakage
+# ============================================================================
+
+
+class TestProcessSnowfallWindowBounds(unittest.TestCase):
+    """Rolling windows cover exactly N hourly values on each side of now.
+
+    Open-Meteo hourly snowfall is the sum over the preceding hour, so the
+    value at the current hour (ci) is already observed: the past 24h are
+    ci-23..ci and the next 24h are ci+1..ci+24.
+    """
+
+    def setUp(self):
+        self.service = OpenMeteoService()
+
+    @patch("services.openmeteo_service.datetime")
+    def test_snow_just_outside_window_not_counted(self, mock_dt):
+        mock_dt.now.return_value = FIXED_NOW
+        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+        hourly, ci = _build_hourly(default_snowfall=0.0)
+        hourly["snowfall"][ci - 24] = 4.0  # 25th hour back
+        hourly["snowfall"][ci - 48] = 2.0  # 49th hour back
+        hourly["snowfall"][ci - 72] = 1.0  # 73rd hour back
+        result = self.service._process_snowfall({}, hourly)
+        self.assertAlmostEqual(result["snowfall_24h"], 0.0)
+        self.assertAlmostEqual(result["snowfall_48h"], 4.0)
+        self.assertAlmostEqual(result["snowfall_72h"], 6.0)
+
+    @patch("services.openmeteo_service.datetime")
+    def test_constant_snowfall_counts_exactly_n_hours(self, mock_dt):
+        mock_dt.now.return_value = FIXED_NOW
+        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+        hourly, _ = _build_hourly(default_snowfall=1.0)
+        result = self.service._process_snowfall({}, hourly)
+        self.assertAlmostEqual(result["snowfall_24h"], 24.0)
+        self.assertAlmostEqual(result["snowfall_48h"], 48.0)
+        self.assertAlmostEqual(result["snowfall_72h"], 72.0)
+        self.assertAlmostEqual(result["predicted_24h"], 24.0)
+        self.assertAlmostEqual(result["predicted_48h"], 48.0)
+        self.assertAlmostEqual(result["predicted_72h"], 72.0)
+
+    @patch("services.openmeteo_service.datetime")
+    def test_last_forecast_hour_of_each_window_counted(self, mock_dt):
+        mock_dt.now.return_value = FIXED_NOW
+        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+        hourly, ci = _build_hourly(default_snowfall=0.0)
+        hourly["snowfall"][ci + 24] = 3.0
+        hourly["snowfall"][ci + 25] = 5.0
+        result = self.service._process_snowfall({}, hourly)
+        self.assertAlmostEqual(result["predicted_24h"], 3.0)
+        self.assertAlmostEqual(result["predicted_48h"], 8.0)
+
+    @patch("services.openmeteo_service.datetime")
+    def test_forecast_snow_later_today_not_reported_as_fallen(self, mock_dt):
+        """A dry last 48h must not pick up today's daily total, which
+        includes forecast hours that have not happened yet."""
+        mock_dt.now.return_value = FIXED_NOW
+        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+        hourly, ci = _build_hourly(default_snowfall=0.0)
+        for i in range(ci + 1, ci + 12):  # snow forecast for this afternoon
+            hourly["snowfall"][i] = 2.0
+        today_str = FIXED_NOW.strftime("%Y-%m-%d")
+        yesterday = (FIXED_NOW - timedelta(days=1)).strftime("%Y-%m-%d")
+        daily = {
+            "time": [yesterday, today_str],
+            "snowfall_sum": [0.0, 22.0],
+            "temperature_2m_min": [-8.0, -6.0],
+            "temperature_2m_max": [-1.0, 0.0],
+        }
+        result = self.service._process_snowfall(daily, hourly)
+        self.assertAlmostEqual(result["snowfall_24h"], 0.0)
+        self.assertAlmostEqual(result["snowfall_48h"], 0.0)
+        self.assertAlmostEqual(result["snowfall_72h"], 0.0)
+        self.assertAlmostEqual(result["predicted_24h"], 22.0)
+        # Temperatures still come from the hourly series
+        self.assertEqual(result["min_temp_24h"], -5.0)
+        self.assertEqual(result["max_temp_24h"], -5.0)

@@ -910,11 +910,12 @@ class OpenMeteoService:
                     current_index = i
                     break
 
-            # Calculate rolling snowfall windows from hourly data
-            # Hourly snowfall is in cm, sum over the windows
-            start_24h = max(0, current_index - 24)
-            start_48h = max(0, current_index - 48)
-            start_72h = max(0, current_index - 72)
+            # Rolling windows of exactly N hourly values. Open-Meteo hourly
+            # snowfall is the preceding hour's sum, so the current hour is
+            # observed: past 24h = [ci-23, ci], next 24h = [ci+1, ci+24].
+            start_24h = max(0, current_index - 23)
+            start_48h = max(0, current_index - 47)
+            start_72h = max(0, current_index - 71)
             # For freeze-thaw detection, look back up to 14 days
             start_historical = max(0, current_index - MAX_HISTORICAL_HOURS)
 
@@ -928,9 +929,9 @@ class OpenMeteoService:
                     result["snowfall_72h"] += snow_cm
 
             # Calculate predicted snowfall (future hours)
-            future_24h = min(len(hourly_snowfall), current_index + 24)
-            future_48h = min(len(hourly_snowfall), current_index + 48)
-            future_72h = min(len(hourly_snowfall), current_index + 72)
+            future_24h = min(len(hourly_snowfall), current_index + 25)
+            future_48h = min(len(hourly_snowfall), current_index + 49)
+            future_72h = min(len(hourly_snowfall), current_index + 73)
 
             for i in range(current_index + 1, future_72h):
                 if i < len(hourly_snowfall) and hourly_snowfall[i] is not None:
@@ -1101,8 +1102,9 @@ class OpenMeteoService:
                 result["min_temp_24h"] = min(temps_24h)
                 result["max_temp_24h"] = max(temps_24h)
 
-        # Fallback to daily data if hourly is incomplete
-        if result["snowfall_24h"] == 0.0 and result["snowfall_48h"] == 0.0:
+        # Fallback to daily data only when hourly data is missing. A dry
+        # hourly window is a real 0: today's daily sum includes forecast hours.
+        if not (hourly_snowfall and hourly_times):
             daily_snowfall = daily.get("snowfall_sum", [])
             daily_min_temps = daily.get("temperature_2m_min", [])
             daily_max_temps = daily.get("temperature_2m_max", [])

@@ -664,7 +664,7 @@ def _condition(level: str, depth: float):
 
 
 class TestWeekendEndpoint:
-    def _patches(self, resorts, forecasts):
+    def _patches(self, resorts, forecasts, today=FRI):
         weather = MagicMock()
         weather.get_latest_conditions_all_elevations.side_effect = lambda rid: [
             _condition("base", 50.0 if rid == "a" else 80.0)
@@ -686,11 +686,11 @@ class TestWeekendEndpoint:
             patch(
                 "handlers.api_handler._get_static_snow_quality_from_s3", return_value={}
             ),
-            patch("handlers.api_handler.resort_today", return_value=FRI),
+            patch("handlers.api_handler.resort_today", return_value=today),
         ]
 
-    def _get(self, client, url, resorts, forecasts):
-        patches = self._patches(resorts, forecasts)
+    def _get(self, client, url, resorts, forecasts, today=FRI):
+        patches = self._patches(resorts, forecasts, today)
         for p in patches:
             p.start()
         try:
@@ -791,6 +791,17 @@ class TestWeekendEndpoint:
         second = self._get(client, "/api/v1/rankings/weekend?resort_ids=a", resorts, {})
         assert first.headers["X-Cache"] == "MISS"
         assert second.headers["X-Cache"] == "HIT"
+
+    def test_cache_not_shared_across_days(self, client):
+        """'Today' drives the 7-day history window and opening overrides, so a
+        ranking cached on Friday must not be served on Saturday for the same
+        explicit window."""
+        resorts = [_resort_model("a")]
+        url = "/api/v1/rankings/weekend?resort_ids=a&start=2026-11-21&end=2026-11-22"
+        friday = self._get(client, url, resorts, {}, today=FRI)
+        saturday = self._get(client, url, resorts, {}, today=SAT)
+        assert friday.headers["X-Cache"] == "MISS"
+        assert saturday.headers["X-Cache"] == "MISS"
 
 
 class TestRankTiers:

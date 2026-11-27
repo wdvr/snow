@@ -139,12 +139,9 @@ class MultiSourceMerger:
                     source_details_24h = details
 
         # Snow depth: use priority-based override (resort-reported > model)
-        for priority_source in DEPTH_PRIORITY:
-            if priority_source in available_sources:
-                source = available_sources[priority_source]
-                if source.snow_depth_cm is not None:
-                    merged["snow_depth_cm"] = source.snow_depth_cm
-                    break
+        depth, suspect_zero = MultiSourceMerger._select_snow_depth(available_sources)
+        if depth is not None:
+            merged["snow_depth_cm"] = depth
 
         # Determine confidence level based on source agreement
         source_count = len(available_sources)
@@ -231,6 +228,13 @@ class MultiSourceMerger:
                 "source_count": len(available_sources),
             }
 
+        if suspect_zero:
+            merged["source_details"]["depth_check"] = {
+                "status": "suspect_zero",
+                "sources": [SOURCE_DOMAIN_MAP.get(n, n) for n in suspect_zero],
+                "reason": "Reported 0cm depth while another source reports snow",
+            }
+
         # Add missing sources (not available for this resort) so the UI
         # can show all 4 known sources with excluded ones marked
         for _internal_name, domain in SOURCE_DOMAIN_MAP.items():
@@ -267,6 +271,33 @@ class MultiSourceMerger:
         )
 
         return merged
+
+    @staticmethod
+    def _select_snow_depth(
+        available_sources: dict[str, SourceData],
+    ) -> tuple[float | None, list[str]]:
+        """Pick snow depth by DEPTH_PRIORITY, guarding against bogus zeros.
+
+        0cm (no snow, no skiing) is only accepted when at least two resort
+        sources report it. Open-Meteo's depth defaults to 0 when missing, so a
+        model zero never confirms. A zero contradicted by a source reporting
+        snow is suspected bad data: it is skipped and returned as suspect.
+
+        Returns (depth or None to keep the base value, suspect source names).
+        """
+        depths = {
+            name: available_sources[name].snow_depth_cm
+            for name in DEPTH_PRIORITY
+            if name in available_sources
+            and available_sources[name].snow_depth_cm is not None
+        }
+        zeros = [name for name, d in depths.items() if d <= 0 and name != "open-meteo"]
+        positive = [name for name, d in depths.items() if d > 0]
+        if len(zeros) >= 2:
+            return 0.0, []
+        if positive:
+            return depths[positive[0]], zeros
+        return None, []
 
     @staticmethod
     def _weighted_average(

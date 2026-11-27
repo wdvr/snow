@@ -507,6 +507,8 @@ def process_elevation_point(
                     if hasattr(snow_quality, "value")
                     else str(snow_quality)
                 )
+                # History rows are keyed by UTC date (owner decision): readers
+                # treat the date as an approximate day, not resort-local.
                 daily_history_service.record_daily_snapshot(
                     resort_id=resort_id,
                     date=datetime.now(UTC).strftime("%Y-%m-%d"),

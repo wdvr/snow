@@ -3723,7 +3723,7 @@ async def get_weekend_rankings(
             scope = "global"
 
         cache_key = (
-            f"weekend:{','.join(sorted(r.resort_id for r in candidates))}:"
+            f"weekend:{today}:{','.join(sorted(r.resort_id for r in candidates))}:"
             f"{window_start}:{window_end}:{','.join(sorted(user_passes))}:{limit}"
         )
         cache = get_recommendations_cache()

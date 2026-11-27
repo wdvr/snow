@@ -196,27 +196,47 @@ class ScrapedSnowData:
     @property
     def snowfall_24h_cm(self) -> float | None:
         """Convert 24h snowfall to cm."""
-        return self.snowfall_24h_inches * 2.54 if self.snowfall_24h_inches else None
+        return (
+            self.snowfall_24h_inches * 2.54
+            if self.snowfall_24h_inches is not None
+            else None
+        )
 
     @property
     def snowfall_48h_cm(self) -> float | None:
         """Convert 48h snowfall to cm."""
-        return self.snowfall_48h_inches * 2.54 if self.snowfall_48h_inches else None
+        return (
+            self.snowfall_48h_inches * 2.54
+            if self.snowfall_48h_inches is not None
+            else None
+        )
 
     @property
     def snowfall_72h_cm(self) -> float | None:
         """Convert 72h snowfall to cm."""
-        return self.snowfall_72h_inches * 2.54 if self.snowfall_72h_inches else None
+        return (
+            self.snowfall_72h_inches * 2.54
+            if self.snowfall_72h_inches is not None
+            else None
+        )
 
     @property
     def base_depth_cm(self) -> float | None:
         """Convert base depth to cm."""
-        return self.base_depth_inches * 2.54 if self.base_depth_inches else None
+        return (
+            self.base_depth_inches * 2.54
+            if self.base_depth_inches is not None
+            else None
+        )
 
     @property
     def summit_depth_cm(self) -> float | None:
         """Convert summit depth to cm."""
-        return self.summit_depth_inches * 2.54 if self.summit_depth_inches else None
+        return (
+            self.summit_depth_inches * 2.54
+            if self.summit_depth_inches is not None
+            else None
+        )
 
 
 class OnTheSnowScraper:
@@ -548,7 +568,11 @@ class OnTheSnowScraper:
         # Resort-reported base/summit depth is far more accurate than
         # Open-Meteo's grid-level model estimate (~10-25km resolution).
         scraped_depth = self._get_scraped_depth_for_level(scraped_data, elevation_level)
-        if scraped_depth is not None:
+        # A scraped 0cm only wins when the model agrees (no snow); a lone zero
+        # contradicted by the model is treated as suspect data.
+        if scraped_depth is not None and (
+            scraped_depth > 0 or merged.get("snow_depth_cm") == 0
+        ):
             merged["snow_depth_cm"] = scraped_depth
 
         # Upgrade confidence level since we have resort-reported data
@@ -588,7 +612,14 @@ class OnTheSnowScraper:
 
         if elevation_level == "base":
             return base
-        elif elevation_level == "top":
+        # Bare base under a snowy summit is real at the base, but must not
+        # drag mid/top down; likewise a 0 summit over a snowy base.
+        if base == 0 and summit:
+            base = None
+        if summit == 0 and base:
+            summit = None
+
+        if elevation_level == "top":
             # Prefer summit depth, fall back to base if summit not available
             return summit if summit is not None else base
         else:  # mid
